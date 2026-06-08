@@ -243,7 +243,7 @@ workshop at the satellite campus. The engine
 supports per-campus attendance via the
 `Campus` field on the class-section.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **attendance** crate depends on
   `smscore-academic` for `StudentId`, `ClassId`,

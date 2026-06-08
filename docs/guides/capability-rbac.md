@@ -2,7 +2,7 @@
 
 ## Goal
 
-Permissions in SMScore are **capabilities**, not role strings. A
+Permissions in SMSengine are **capabilities**, not role strings. A
 capability is a typed enum value: `Capability::StudentAdmit`,
 `Capability::FinanceInvoiceGenerate`. The engine refuses a command if
 the actor's session does not contain the required capability.

@@ -1,4 +1,4 @@
-# SMScore Library Documentation
+# SMSengine Library Documentation
 
 This document is the consumer-facing entry point. It demonstrates how a
 consumer application constructs an engine, plugs in adapters, and drives the
@@ -69,23 +69,83 @@ println!("Admitted {}", student.full_name());
 
 ## Querying
 
+Domain records are exposed to the query layer through the
+`#[derive(DomainQuery)]` procedural macro, which lives in the
+`smscore-query-derive` crate. The macro emits a typed `*Field` enum
+and a `*QueryBuilder` state struct per aggregate — there is no
+hand-written `StudentField` in the consumer codebase, the type is
+generated from the struct definition on every compile.
+
+Domain-specific scopes (e.g. `.active()`, `.in_class()`) are
+implemented as extension traits in your code, layered on top of the
+macro-generated builder. The macro produces a structurally complete
+but semantically neutral builder; humans author the vocabulary.
+
+### A typed, scoped query
+
 ```rust
 use smscore::academic::query::*;
 
 let page = engine
     .students()
-    .query(StudentQuery {
-        school_id: tenant.school_id(),
-        status: Some(StudentStatus::Active),
-        class_id: Some(class_id),
-        ..Default::default()
-    })
-    .order_by(StudentField::LastName)
+    .query()
+    .active()                          // extension trait: StudentQueryScopes
+    .in_class(class_id)                // extension trait
+    .order_by(StudentField::LastName)  // macro-generated field enum
     .page(0, 50)
     .await?;
 
 for s in page.items {
     println!("{} {}", s.first_name, s.last_name);
+}
+```
+
+### Nested relational filters (`where_has`)
+
+Cross-aggregate filters are written as closures over the related
+entity's macro-generated builder. The closure compiles into a typed
+`HasRelation(relation, Box<QueryNode<RelatedField>>)` AST node; the
+storage adapter is responsible for translating that node into the
+storage dialect.
+
+```rust
+let students = engine
+    .students()
+    .query()
+    .active()
+    .where_has(StudentRelation::Parent, |parent_q| {
+        parent_q.where_eq(ParentField::BillingStatus, BillingStatus::Active)
+    })
+    .order_by(StudentField::LastName)
+    .page(0, 50)
+    .await?;
+```
+
+### Strict eager loading (`.with(...)`)
+
+Related fields are never loaded implicitly. `.with(...)` is the only
+way to populate them, and the repository must complete all hydration
+before returning. Omitting `.with(...)` leaves the field `None` (or
+empty for `Vec<T>`). Lazy accessors and async getters on domain
+models do not exist.
+
+```rust
+let students = engine
+    .students()
+    .query()
+    .active()
+    .where_has(StudentRelation::Parent, |parent_q| {
+        parent_q.where_eq(ParentField::BillingStatus, BillingStatus::Active)
+    })
+    .with(StudentRelation::Parent)
+    .order_by(StudentField::LastName)
+    .page(0, 50)
+    .await?;
+
+for s in students {
+    if let Some(parent) = &s.parent {
+        println!("{} -> {}", s.last_name, parent.last_name);
+    }
 }
 ```
 

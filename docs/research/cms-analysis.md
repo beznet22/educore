@@ -229,7 +229,7 @@ engine's `Gallery` aggregate supports pagination
 and lazy loading; the consumer's frontend
 implements the rendering.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **cms** crate depends on
   `smscore-platform` for `SchoolId` and

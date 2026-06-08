@@ -2,7 +2,7 @@
 
 This document maps the engine's 15 bounded contexts and the
 directional dependencies between them. The map is the
-authoritative view of "what depends on what?" in SMScore.
+authoritative view of "what depends on what?" in SMSengine.
 
 ## 1. All 15 Domains
 

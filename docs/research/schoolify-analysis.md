@@ -3,7 +3,7 @@
 ## Purpose
 
 This document is the bridge between the operational knowledge
-of real schools and the design of the SMScore engine. It
+of real schools and the design of the SMSengine engine. It
 describes what schools actually do, why they do it that way,
 and how the engine encodes those behaviors.
 
@@ -217,7 +217,7 @@ design in concrete ways:
 - **One crate per domain.** The school's organizational
   structure maps to the engine's crate layout.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The engine's **academic** domain is foundational. Every
   other domain depends on it. The `Student`, `Class`,
@@ -255,7 +255,7 @@ design in concrete ways:
 - The engine's **operations** domain is the system's
   hygiene: backups, jobs, versions, audit projections.
 
-## Mapping to SMScore Files
+## Mapping to SMSengine Files
 
 - Per-domain behavior: `docs/research/<domain>-analysis.md`.
 - Per-domain aggregates: `docs/specs/<domain>/aggregates.md`.

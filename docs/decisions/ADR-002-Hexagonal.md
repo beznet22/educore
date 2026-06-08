@@ -6,7 +6,7 @@ Accepted.
 
 ## Context
 
-SMScore is an embeddable engine. It will be consumed by:
+SMSengine is an embeddable engine. It will be consumed by:
 
 - A SaaS platform serving thousands of schools on PostgreSQL.
 - An on-premise deployment for a single school on SQLite.
@@ -38,7 +38,7 @@ should reflect the business, not the implementation.
 
 ## Decision
 
-SMScore adopts **hexagonal architecture** (also known as
+SMSengine adopts **hexagonal architecture** (also known as
 "ports and adapters").
 
 Concretely:

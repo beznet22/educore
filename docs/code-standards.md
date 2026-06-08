@@ -1,4 +1,4 @@
-# SMScore Code Standards
+# SMSengine Code Standards
 
 These standards are mandatory. They are the rules every implementation must
 follow. They are deliberately simple and focused on production correctness.

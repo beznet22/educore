@@ -3,7 +3,7 @@
 ## Goal
 
 Establish a continuous integration and deployment pipeline for an
-SMScore consumer application.
+SMSengine consumer application.
 
 ## Build
 

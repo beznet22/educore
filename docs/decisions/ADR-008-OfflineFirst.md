@@ -32,7 +32,7 @@ feature. We need a robust, well-understood model.
 
 ## Decision
 
-SMScore is **offline-capable**: aggregates carry the
+SMSengine is **offline-capable**: aggregates carry the
 metadata needed for conflict-free reconciliation, and the
 engine's command / event model is naturally suited to
 event-log-based sync.

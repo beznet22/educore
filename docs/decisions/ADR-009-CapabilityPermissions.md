@@ -41,7 +41,7 @@ aggregate.
 
 ## Decision
 
-SMScore adopts **capability-based permissions** as the
+SMSengine adopts **capability-based permissions** as the
 authorization model. Roles exist as a UI and management
 convenience; the engine authorizes on capabilities.
 

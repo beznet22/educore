@@ -344,7 +344,7 @@ finds it. The librarian:
    wallet).
 3. The book is back in circulation.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **library** crate depends on
   `smscore-academic` for `StudentId` and

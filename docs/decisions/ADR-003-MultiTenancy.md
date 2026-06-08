@@ -28,7 +28,7 @@ default must be safe; safety must be structural, not
 
 ## Decision
 
-SMScore is **multi-tenant by default**, with structural
+SMSengine is **multi-tenant by default**, with structural
 isolation:
 
 1. **Every aggregate root carries a `SchoolId`** as part of its
@@ -40,7 +40,10 @@ isolation:
 3. **Storage adapters enforce `school_id` filtering** on every
    read. The engine's query layer carries the active
    `school_id` from the `TenantContext`; the adapter injects it
-   into the query.
+   into the query. The query is constructed via the
+   `#[derive(DomainQuery)]`-generated builder, which is a closed
+   type that only accepts a `SchoolId` at construction time. The
+   builder cannot be built without a tenant.
 4. **Row-level security policies** are mandatory on every
    aggregate table in the default PostgreSQL adapter. The
    policies are configured by the storage adapter; the consumer
@@ -69,6 +72,9 @@ isolation:
   filter by `school_id`; the storage adapter does it
   automatically. The query layer's types require a
   `TenantContext`; the database refuses unfiltered reads.
+  The `#[derive(DomainQuery)]` macro makes this even more
+  robust: a builder without a `SchoolId` does not exist in the
+  type system.
 - **No cross-school data leaks.** A bug that exposes one
   school's data to a user in another school would require
   bypassing the type system, the query layer, the storage
@@ -90,8 +96,10 @@ isolation:
 - **The `SchoolId` is everywhere.** Every aggregate, every
   identifier, every query, every event carries it. This
   adds a small amount of boilerplate, mitigated by the
-  `smscore-core` identifier wrappers and the query layer's
-  tenant binding.
+  `smscore-core` identifier wrappers, the query layer's
+  tenant binding, and the `#[derive(DomainQuery)]` macro
+  (whose generated builder requires a `SchoolId` at
+  construction time).
 - **Global reporting is awkward.** "How many students
   across all schools?" is not a free query; it requires an
   explicit, capability-gated reporting command. We accept

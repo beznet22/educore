@@ -271,7 +271,7 @@ details confidential (no public mention). The
 engine's incident log is access-controlled;
 the public calendar does not show incidents.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **events** crate depends on
   `smscore-core` and `smscore-events`. It does

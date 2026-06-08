@@ -377,7 +377,7 @@ but empty. The engine does not auto-close empty
 sections; the school may keep them as a future
 option or close them manually.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **academic** crate is the foundational domain.
   Every other operational domain depends on it.

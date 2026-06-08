@@ -1,4 +1,4 @@
-Here is the complete, consolidated set of **Macro Architecture & Optimization Guidelines** for SMScore. This integrates the structural compile-time safety requirements, closure-based nested relationships, and explicit compile-time eager loading constraints into a cohesive architectural standard.
+Here is the complete, consolidated set of **Macro Architecture & Optimization Guidelines** for SMSengine. This integrates the structural compile-time safety requirements, closure-based nested relationships, and explicit compile-time eager loading constraints into a cohesive architectural standard.
 
 ---
 
@@ -6,7 +6,7 @@ Here is the complete, consolidated set of **Macro Architecture & Optimization Gu
 
 ## Macro Generation Strategy
 
-To achieve the ergonomic developer experience of Laravel Eloquent without runtime reflection, schema parsing, or "black-box" macro magic, SMScore utilizes **Procedural Derive Macros** strictly to generate localized query AST components and builders.
+To achieve the ergonomic developer experience of Laravel Eloquent without runtime reflection, schema parsing, or "black-box" macro magic, SMSengine utilizes **Procedural Derive Macros** strictly to generate localized query AST components and builders.
 
 The core of this strategy is the custom `#[derive(DomainQuery)]` macro. When applied to a domain struct, it extracts structural definitions to generate compile-time types.
 
@@ -83,7 +83,7 @@ pub enum StudentField {
 
 ## Domain-Specific Queries (Query Scopes)
 
-To replicate Eloquent's high-level semantic query capabilities (`.active()`, `.in_class()`) without polluting the primary macro generator, SMScore uses **Extension Traits** implemented on top of the macro-generated builders.
+To replicate Eloquent's high-level semantic query capabilities (`.active()`, `.in_class()`) without polluting the primary macro generator, SMSengine uses **Extension Traits** implemented on top of the macro-generated builders.
 
 ### Scope Separation Pattern
 
@@ -149,7 +149,7 @@ The conversion of this nested node into structural filters (e.g., SQL `WHERE EXI
 
 ## Data Hydration & Strict Eager Loading
 
-SMScore **categorically outlaws lazy loading**. To eliminate N+1 latency degradations at compile time, domain models are defined as plain, decoupled structures without underlying database connections or network hooks.
+SMSengine **categorically outlaws lazy loading**. To eliminate N+1 latency degradations at compile time, domain models are defined as plain, decoupled structures without underlying database connections or network hooks.
 
 ### Eager Loading Execution Framework
 

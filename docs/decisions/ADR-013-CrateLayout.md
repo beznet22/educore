@@ -6,7 +6,7 @@ Accepted.
 
 ## Context
 
-SMScore is a school-domain engine. It is organized into
+SMSengine is a school-domain engine. It is organized into
 15 bounded contexts: academic, finance, hr, attendance,
 assessment, library, facilities, communication,
 documents, events, cms, platform, rbac, settings,
@@ -43,7 +43,7 @@ The engine's crate layout should reflect this.
 
 ## Decision
 
-SMScore is organized as a Cargo workspace with **one
+SMSengine is organized as a Cargo workspace with **one
 crate per domain**, plus a small set of shared
 crates.
 

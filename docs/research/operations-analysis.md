@@ -322,7 +322,7 @@ does not block jobs during maintenance.
 infrastructure work, not for blocking
 background tasks.)
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **operations** crate depends on
   `smscore-platform` for `SchoolId` and

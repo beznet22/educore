@@ -2,7 +2,7 @@
 
 ## Goal
 
-Every command in SMScore is idempotent. Re-issuing the same command
+Every command in SMSengine is idempotent. Re-issuing the same command
 (with the same idempotency key) produces the same result without
 duplicating state changes.
 

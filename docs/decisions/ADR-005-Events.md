@@ -34,7 +34,7 @@ order events without losing any.
 
 ## Decision
 
-SMScore adopts **event-driven design** at the domain level.
+SMSengine adopts **event-driven design** at the domain level.
 
 Concretely:
 

@@ -288,7 +288,7 @@ officer records the item with a "donation"
 source. The engine's `Item` aggregate supports a
 `source` field.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **facilities** crate depends on
   `smscore-academic` for `StudentId`, `ClassId`,

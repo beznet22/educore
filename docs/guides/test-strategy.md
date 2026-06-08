@@ -2,7 +2,7 @@
 
 ## Goal
 
-Establish a comprehensive test pyramid for SMScore consumers and
+Establish a comprehensive test pyramid for SMSengine consumers and
 provide a clear, repeatable test workflow.
 
 ## Test Pyramid
@@ -177,6 +177,17 @@ The storage adapter ships with:
 - A tenancy test.
 - A load test (10k records in <1s).
 
+### Storage Adapter Parity Tests
+
+The same query AST — built through the macro-generated
+`*QueryBuilder` — must produce identical results across the
+PostgreSQL, SQLite, SurrealDB, and MongoDB adapters. Parity is
+enforced by running the same query fixture suite against each
+adapter and diffing the materialized result sets. A mismatch fails
+the build, because AST translation is the adapter's sole
+responsibility and storage-specific behaviour must never leak into
+the consumer layer.
+
 ## Event Tests
 
 Every event has:
@@ -198,6 +209,119 @@ fn student_admitted_event_serializes_to_canonical_json() {
     insta::assert_snapshot!(json);
 }
 ```
+
+For the macro-generated `StudentField` enum, snapshot the expansion
+itself so any drift between the struct and its emitted queryable
+fields is caught in CI:
+
+```rust
+#[test]
+fn student_field_enum_expansion_is_stable() {
+    let expansion = smscore_query_derive::__expand_for_tests::<Student>();
+    insta::assert_snapshot!(expansion);
+}
+```
+
+## Macro Snapshot Tests
+
+The `#[derive(DomainQuery)]` expansion is deterministic and is
+captured per domain aggregate with `insta`. Both the generated
+`*Field` enum and the `*QueryBuilder` state type are snapshot-tested;
+a change to the macro output is a deliberate breaking change and
+must be approved by reviewers.
+
+```rust
+#[test]
+fn student_query_builder_expansion_is_stable() {
+    let expansion = smscore_query_derive::__expand_for_tests::<Student>();
+    insta::assert_snapshot!(expansion);
+}
+```
+
+## `where_has` AST Tests
+
+Verify that the closure body compiles into a
+`HasRelation(relation, Box<QueryNode<RelatedField>>)` node on the
+parent AST. The closure must preserve the related entity's
+macro-generated builder type so the inner `QueryNode` carries the
+correct `FieldKind`.
+
+```rust
+#[test]
+fn where_has_emits_has_relation_node() {
+    let node = StudentQueryBuilder::new(school_id)
+        .where_has(StudentRelation::Parent, |parent_q| {
+            parent_q.where_eq(ParentField::BillingStatus, BillingStatus::Active)
+        })
+        .into_node();
+
+    match node {
+        QueryNode::HasRelation(StudentRelation::Parent, inner) => {
+            assert!(matches!(
+                *inner,
+                QueryNode::Eq(ParentField::BillingStatus, _)
+            ));
+        }
+        other => panic!("expected HasRelation, got {:?}", other),
+    }
+}
+```
+
+## Eager Loading Tests
+
+For every relation declared on an aggregate, three assertions are
+required:
+
+(a) the relation field is hydrated when `.with(...)` is requested;
+(b) the relation field remains `None` (or empty for `Vec<T>`) when
+    `.with(...)` is omitted;
+(c) hydration failures surface as `StorageError::HydrationFailure`
+    and are mapped to `DomainError::Infrastructure`.
+
+```rust
+#[tokio::test]
+async fn with_hydrates_parent_and_omission_keeps_none() {
+    let engine = test_engine().await;
+
+    // (a) .with(...) hydrates the relation field.
+    let hydrated = engine.students().query()
+        .with(StudentRelation::Parent)
+        .first()
+        .await
+        .unwrap();
+    assert!(hydrated.parent.is_some());
+
+    // (b) omitting .with(...) leaves the field None.
+    let plain = engine.students().query()
+        .first()
+        .await
+        .unwrap();
+    assert!(plain.parent.is_none());
+}
+
+#[tokio::test]
+async fn hydration_failure_maps_to_hydration_failure() {
+    let failing = test_engine_with_failing_hydration().await;
+
+    // (c) hydration failures surface as StorageError::HydrationFailure.
+    let err = failing.students().query()
+        .with(StudentRelation::Parent)
+        .first()
+        .await
+        .unwrap_err();
+    assert!(matches!(err, StorageError::HydrationFailure { .. }));
+}
+```
+
+## Macro Output Drift Tests
+
+The procedural macro is tested in isolation: for every aggregate,
+the expansion of `#[derive(DomainQuery)]` is captured as an `insta`
+snapshot. Any unintended change in the generated `*Field` enum, the
+`*QueryBuilder` state struct, or the `*Relation` enum produces a
+snapshot diff in CI. Snapshots are committed; reviewers must approve
+any change to the expansion output, since drift in generated types
+ripples through every consumer of the aggregate.
 
 ## Coverage
 

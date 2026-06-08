@@ -2,7 +2,7 @@
 
 ## Goal
 
-SMScore works correctly in disconnected environments. A teacher on a
+SMSengine works correctly in disconnected environments. A teacher on a
 school visit in a remote village, a parent on a phone in a low-signal
 area, and a clerk in a temporary office should all be able to operate
 the system. State changes are queued locally and reconciled with the

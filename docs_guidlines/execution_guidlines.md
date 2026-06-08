@@ -2,7 +2,7 @@
 
 These standards apply to every architecture decision, specification, implementation recommendation, generated code sample, repository contract, query abstraction, storage adapter, command, event, and domain service described by the documentation.
 
-SMScore is production software.
+SMSengine is production software.
 
 All documentation should assume that the resulting implementation will be deployed in real schools managing:
 
@@ -71,7 +71,7 @@ to prevent nested Git repositories.
 
 # Workspace Layout
 
-SMScore is a Cargo workspace.
+SMSengine is a Cargo workspace.
 
 Root Cargo.toml must remain a virtual workspace.
 
@@ -233,7 +233,7 @@ should compile successfully.
 
 # Testing Philosophy
 
-SMScore follows Test-Driven Development.
+SMSengine follows Test-Driven Development.
 
 Tests are not optional.
 
@@ -412,4 +412,4 @@ Every generated specification should be evaluated against the following question
 
 If any answer is "No", revise the specification.
 
-The final SMScore documentation should guide implementation toward a production-grade Rust domain engine rather than a framework, application, or enterprise architecture experiment.
+The final SMSengine documentation should guide implementation toward a production-grade Rust domain engine rather than a framework, application, or enterprise architecture experiment.

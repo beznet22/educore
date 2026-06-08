@@ -3,7 +3,7 @@
 This document is **normative**. It defines the engine's audit log:
 what is recorded, how it is recorded, how it is queried, and how it
 is retained. The audit log is the canonical record of every state
-change in SMScore and the foundation of compliance reporting.
+change in SMSengine and the foundation of compliance reporting.
 
 ## 1. Purpose
 

@@ -1,10 +1,10 @@
-# SMScore Autonomous Domain Discovery, Architecture Analysis & Documentation Generation Mission
+# SMSengine Autonomous Domain Discovery, Architecture Analysis & Documentation Generation Mission
 
 ## Mission
 
-You are operating inside the SMScore repository.
+You are operating inside the SMSengine repository.
 
-Your objective is to transform the database schema, business knowledge, and domain behavior contained within this repository into a complete, production-grade documentation system that enables developers and AI agents to implement SMScore without requiring access to the Schoolify project.
+Your objective is to transform the database schema, business knowledge, and domain behavior contained within this repository into a complete, production-grade documentation system that enables developers and AI agents to implement SMSengine without requiring access to the Schoolify project.
 
 This is a domain discovery and specification generation mission.
 
@@ -27,7 +27,7 @@ You ARE:
 * discovering lifecycle transitions
 * generating implementation-grade specifications
 
-The resulting documentation must become the authoritative source of truth for SMScore.
+The resulting documentation must become the authoritative source of truth for SMSengine.
 
 ---
 
@@ -58,11 +58,11 @@ If a conflict exists:
 
 ---
 
-# What Is SMScore?
+# What Is SMSengine?
 
-SMScore is NOT an application.
+SMSengine is NOT an application.
 
-SMScore is:
+SMSengine is:
 
 * a reusable school-domain engine
 * a business platform crate
@@ -92,7 +92,7 @@ Consumer applications should provide:
 * Payment implementation
 * External integrations
 
-Everything else belongs inside SMScore.
+Everything else belongs inside SMSengine.
 
 Business rules must never leak into consumer applications.
 
@@ -302,7 +302,7 @@ Prefer:
 * maintainability
 * explicitness
 
-SMScore is a domain engine.
+SMSengine is a domain engine.
 
 Not an industrial-scale distributed platform.
 
@@ -636,7 +636,7 @@ All generated architecture must naturally support those standards.
 
 # Rust Architecture Expectations
 
-SMScore should feel like a modern Rust crate.
+SMSengine should feel like a modern Rust crate.
 
 Prefer:
 
@@ -660,7 +660,7 @@ Avoid:
 
 # Production Engineering Goal
 
-SMScore is intended to manage:
+SMSengine is intended to manage:
 
 * students
 * staff
@@ -700,4 +700,4 @@ Before work is considered complete, verify:
 
 If any answer is "No", continue researching, refining, and expanding the documentation.
 
-The final deliverable is a complete documentation operating system that becomes the authoritative source of truth for the SMScore domain engine.
+The final deliverable is a complete documentation operating system that becomes the authoritative source of truth for the SMSengine domain engine.

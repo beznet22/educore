@@ -43,7 +43,7 @@ the admission code to know about every other domain.
 
 ## Decision
 
-SMScore adopts **command-oriented execution** as the only
+SMSengine adopts **command-oriented execution** as the only
 sanctioned way to mutate engine state.
 
 Concretely:
@@ -153,11 +153,16 @@ offline sync, and event-driven integration.
 
 ### 4. CQRS with separate write model
 
-Two models: write (commands) and read (queries). SMScore
+Two models: write (commands) and read (queries). SMSengine
 already has this — the command layer is the write model;
-the query layer is the read model. We do not, however,
-require that they live in different processes or
-different storage. The consumer can colocate them.
+the query layer is the read model. The query layer is
+built on the `#[derive(DomainQuery)]` procedural macro,
+which emits compile-time field enums and state builders
+that translate into a typed `QueryNode` AST. Adapters
+translate the AST into the storage dialect. We do not,
+however, require that the write model and the read model
+live in different processes or different storage. The
+consumer can colocate them.
 
 ### 5. GraphQL mutations
 

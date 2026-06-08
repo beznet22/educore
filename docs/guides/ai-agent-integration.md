@@ -2,7 +2,7 @@
 
 ## Goal
 
-Expose SMScore to AI agents (LLM tool-use) safely. The agent can
+Expose SMSengine to AI agents (LLM tool-use) safely. The agent can
 admit students, mark attendance, generate invoices, and answer
 questions, but cannot bypass business rules.
 

@@ -1,8 +1,8 @@
-# SMScore Build Plan
+# SMSengine Build Plan
 
 ## Phases
 
-SMScore is implemented in eight sequential phases. Each phase produces a
+SMSengine is implemented in eight sequential phases. Each phase produces a
 reviewable, testable, and demonstrably useful increment.
 
 ## Phase 1 — Foundation

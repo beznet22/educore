@@ -345,7 +345,7 @@ A school has a custom date format
 (UTC+5:30). The settings are independent;
 no conflict.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **settings** crate depends on
   `smscore-core` and `smscore-platform`.

@@ -248,7 +248,7 @@ engine's rank computation breaks the tie by:
 
 The tie-breaking policy is configurable per school.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **assessment** crate depends on
   `smscore-academic` for `StudentId`, `ClassId`,

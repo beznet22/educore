@@ -1,6 +1,6 @@
-# SMScore Progress Tracker
+# SMSengine Progress Tracker
 
-This document tracks the implementation status of SMScore.
+This document tracks the implementation status of SMSengine.
 
 ## Workspace Status
 

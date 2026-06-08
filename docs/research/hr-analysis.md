@@ -397,7 +397,7 @@ engine's audit log shows the hires, the
 resignations, the promotions, the salary
 changes, with the actor and the reason.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **hr** crate depends on
   `smscore-academic` for class and subject

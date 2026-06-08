@@ -292,7 +292,7 @@ aggregate supports attachments. The file is
 stored in the consumer's file storage; the
 engine records the reference.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **communication** crate depends on
   `smscore-events` (for event subscriptions) and

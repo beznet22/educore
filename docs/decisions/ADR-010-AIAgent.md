@@ -51,7 +51,7 @@ the admin's capabilities.
 
 ## Decision
 
-SMScore is **AI-agent friendly by design**. The
+SMSengine is **AI-agent friendly by design**. The
 engine's command catalog, capability model, audit log,
 and error semantics are designed to be driven safely
 by tool-using LLM agents.

@@ -2,7 +2,7 @@
 
 ## Query Layer Philosophy
 
-SMScore must provide a lightweight, high-performance, fully type-safe query layer.
+SMSengine must provide a lightweight, high-performance, fully type-safe query layer.
 
 The goal is developer ergonomics similar to Laravel Eloquent's query builder while remaining idiomatic Rust.
 
@@ -191,7 +191,7 @@ Avoid:
 * excessive generic abstractions
 * unnecessary macro magic
 
-SMScore should feel like a modern Rust crate rather than a framework.
+SMSengine should feel like a modern Rust crate rather than a framework.
 
 ---
 
@@ -213,7 +213,7 @@ The architecture should prioritize simplicity and correctness before abstraction
 
 ## Production Engineering Standards
 
-SMScore is a production system.
+SMSengine is a production system.
 
 All generated architecture and specifications must assume:
 

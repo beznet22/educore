@@ -1,6 +1,6 @@
 # Deployment Map
 
-How a consumer application is structured with the SMScore
+How a consumer application is structured with the SMSengine
 engine. The maps below show the consumer's surface, the
 engine's facade, the command flow, and the runtime topology.
 
@@ -15,7 +15,7 @@ graph TB
         Adapter[Adapter Layer<br/>(implements engine ports)]
     end
 
-    subgraph engine [SMScore Engine]
+    subgraph engine [SMSengine Engine]
         Facade[Engine Facade<br/>smscore::Engine]
         Domain[Domain Crates<br/>smscore-academic, smscore-finance, ...]
         Ports[Port Traits<br/>Storage, Auth, Notification, ...]
@@ -57,7 +57,7 @@ graph TB
         Agent[AI Agent<br/>(LLM + tools)]
     end
 
-    subgraph engine [SMScore Engine]
+    subgraph engine [SMSengine Engine]
         Facade[Engine Facade]
     end
 

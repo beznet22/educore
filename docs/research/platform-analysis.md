@@ -408,7 +408,7 @@ The engine's `TimeZone` carries the DST
 rules. The engine uses the time zone for
 event scheduling and timestamp display.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **platform** crate depends only on
   `smscore-core`. It is the foundational

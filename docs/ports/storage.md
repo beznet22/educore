@@ -185,6 +185,125 @@ Adapters must satisfy the **parity test suite** in
 exercises every repository method against a seeded database and
 verifies identical results across adapters.
 
+## Query Translation Contract
+
+The storage port's repository handles consume the **macro-emitted query
+AST**, not a fluent builder. The query value (e.g. `StudentQuery`) that
+crosses the port boundary is materialized by the macro-generated
+`StudentQueryBuilder` at await time, after all predicates, orderings,
+and hydration directives have been accumulated. Adapters translate
+this AST into storage-specific execution plans.
+
+### What the Macro Emits
+
+For each aggregate, the `#[derive(DomainQuery)]` macro emits, **at
+compile time**, three discrete types and nothing else:
+
+- A field-exhaustiveness enum (`StudentField`).
+- A typed state builder (`StudentQueryBuilder`).
+- A relation enum (`StudentRelation`).
+
+The macro does **not** generate SQL, NoSQL, or any storage-specific
+syntax. It does not perform I/O. It does not open connections. Adapters
+receive the AST; they do not receive the builder, and they do not
+participate in macro expansion.
+
+### The Typed AST
+
+At await time the builder yields a `StudentQuery` whose filter set is a
+`Vec<QueryNode<StudentField>>`. The AST is a **closed, finite** set of
+variants:
+
+```rust
+pub enum QueryNode<F: FieldKind> {
+    Eq(F, Value),
+    Ne(F, Value),
+    Lt(F, Value),
+    Lte(F, Value),
+    Gt(F, Value),
+    Gte(F, Value),
+    In(F, Vec<Value>),
+    NotIn(F, Vec<Value>),
+    Between(F, Value, Value),
+    IsNull(F),
+    IsNotNull(F),
+    Like(F, Pattern),
+    ILike(F, Pattern),
+    HasRelation(<Self as HasRelations>::Relation, Box<QueryNode<RelatedField>>),
+}
+```
+
+Because the AST is closed and the field enum is exhaustive, the
+adapter's translation is **exhaustive at compile time**. Adding a new
+operator or a new field causes the adapter's `match` to fail to compile
+until a new arm is added — there is no silently unhandled case at
+runtime.
+
+### Macro vs. Adapter
+
+| Concern                       | Macro (compile time) | Adapter (runtime)            |
+| ----------------------------- | -------------------- | ---------------------------- |
+| Field enum                    | emits                | pattern-matches              |
+| State builder                 | emits                | reads the materialized value |
+| Relation enum                 | emits                | pattern-matches              |
+| Operator variants             | emits                | emits SQL / NoSQL            |
+| Storage execution plan        | —                    | emits                        |
+| Connection / pool             | —                    | owns                         |
+
+The macro is **not** the adapter's concern. The adapter consumes the
+AST that the builder emitted.
+
+### Caller-Facing Sample
+
+The caller uses the macro-generated builder; the repository receives
+the AST it produced:
+
+```rust
+let students = engine
+    .students()
+    .query()                                       // -> StudentQueryBuilder
+    .where_eq(StudentField::Status, StudentStatus::Active)
+    .where_has(StudentRelation::Parent, |parent| {
+        parent.where_eq(ParentField::BillingStatus, BillingStatus::Active)
+    })
+    .order_by(StudentField::LastName)
+    .limit(50)
+    .with(StudentRelation::Parent)                 // hydration directive
+    .await?;                                       // emits QueryNode<StudentField> AST
+```
+
+The repository consumes the AST and is responsible for emitting the
+storage plan. There is no `String` field name, no
+`serde_json::Value`, and no schema introspection on this path.
+
+## Hydration Atomicity
+
+Eager loading is **mandatory** and **atomic**. The adapter must
+complete every join or batched secondary load implied by the query's
+hydration set **before** returning control to the application layer.
+The application never receives a partially hydrated graph.
+
+Rules:
+
+1. **The hydration set is a separate directive.** A
+   `with(StudentRelation::Parent)` on the query is the **only** way to
+   populate the `parent` field on the returned aggregate. Filtering
+   via `where_has` does not imply hydration; hydration via `with` does
+   not imply filtering. The two operations are independent and may
+   appear in the same query.
+2. **All hydration completes inside the repository.** Whether the
+   adapter chooses a `JOIN` or a batched secondary query is a
+   storage-level decision. The application layer never observes a
+   half-built result.
+3. **Hydration failures are surfaced as
+   `StorageError::HydrationFailure`.** The adapter does not return a
+   partially populated aggregate. The engine maps this to
+   `DomainError::Infrastructure`.
+4. **Lazy loading is forbidden.** The storage port does not expose
+   async accessors on aggregates. There is no `.parent().await?` on a
+   hydrated `Student`. If the caller did not request
+   `.with(StudentRelation::Parent)`, the `parent` field is `None`.
+
 ## Configuration
 
 The adapter is constructed by the consumer with their own

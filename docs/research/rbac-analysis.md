@@ -343,7 +343,7 @@ The admin marks the widget as hidden for
 the role. The dashboard projection
 excludes the widget.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **rbac** crate depends on
   `smscore-core`, `smscore-platform`, and

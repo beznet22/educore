@@ -2,7 +2,7 @@
 
 This is the documentation operating system for the SMSCore school management system. It is a collection of markdown files organized in a hierarchical structure.
 
-**SMScore is not a school application**.
+**SMSengine is not a school application**.
 It is a:
 
 * Domain Engine
@@ -19,7 +19,7 @@ The biggest mistake would be organizing docs around screens, pages, or UI featur
 # Recommended Repository Structure
 
 ```text
-SMScore/
+SMSengine/
 │
 ├── docs/
 │
@@ -86,7 +86,7 @@ Business vision.
 Answers:
 
 ```text
-What is SMScore?
+What is SMSengine?
 Why does it exist?
 Who consumes it?
 ```
@@ -719,7 +719,7 @@ architecture.md
             schoolify/
 ```
 
-This structure reflects the reality of SMScore:
+This structure reflects the reality of SMSengine:
 
 **Schoolify** = business knowledge source
 
@@ -735,4 +735,4 @@ This structure reflects the reality of SMScore:
 
 **Events** = system communication
 
-**SMScore** = reusable Rust school-domain engine, not an application.
+**SMSengine** = reusable Rust school-domain engine, not an application.

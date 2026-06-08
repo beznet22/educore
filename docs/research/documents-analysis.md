@@ -246,7 +246,7 @@ A school's TC has a watermark. The engine's
 configuration. The rendering is the
 consumer's responsibility.
 
-## Notes for SMScore Implementation
+## Notes for SMSengine Implementation
 
 - The **documents** crate depends on
   `smscore-academic` for `StudentId` and

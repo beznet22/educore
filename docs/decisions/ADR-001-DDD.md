@@ -36,7 +36,7 @@ trails).
 
 ## Decision
 
-SMScore adopts **Domain-Driven Design** as the architectural
+SMSengine adopts **Domain-Driven Design** as the architectural
 philosophy for the engine.
 
 Concretely:

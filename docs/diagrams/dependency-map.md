@@ -2,7 +2,7 @@
 
 A directed graph of every dependency the engine permits
 between its crates. The graph is the authoritative answer
-to "which crate may import which?" in SMScore.
+to "which crate may import which?" in SMSengine.
 
 ## 1. Top-Level Dependency Graph
 
