@@ -1,0 +1,62 @@
+# Facilities Domain — Events
+
+Quick reference of every event the facilities domain emits. Events
+are immutable, append-only records. Every event carries a typed
+`EventEnvelope` and is durably persisted to the aggregate's event
+log.
+
+| Event                              | Aggregate         | Subscribers                                                  | Description                                                                | Durable? | Replicated? | Replayable? |
+| ---------------------------------- | ----------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------- | -------- | ----------- | ----------- |
+| `VehicleCreated`                   | `Vehicle`         | —                                                            | A vehicle was created.                                                     | yes      | yes         | yes         |
+| `VehicleUpdated`                   | `Vehicle`         | —                                                            | A vehicle was patched.                                                     | yes      | yes         | yes         |
+| `DriverAssignedToVehicle`          | `Vehicle`         | —                                                            | A driver was assigned to a vehicle.                                        | yes      | yes         | yes         |
+| `VehicleDeactivated`               | `Vehicle`         | —                                                            | A vehicle was deactivated.                                                 | yes      | yes         | yes         |
+| `VehicleDeleted`                   | `Vehicle`         | —                                                            | A vehicle was soft-deleted.                                                | yes      | yes         | yes         |
+| `RouteCreated`                     | `Route`           | —                                                            | A route was created.                                                       | yes      | yes         | yes         |
+| `RouteUpdated`                     | `Route`           | —                                                            | A route was patched.                                                       | yes      | yes         | yes         |
+| `StopAddedToRoute`                 | `Route`           | —                                                            | A stop was added to a route.                                               | yes      | yes         | yes         |
+| `StopUpdatedOnRoute`               | `Route`           | —                                                            | A stop on a route was patched.                                             | yes      | yes         | yes         |
+| `StopRemovedFromRoute`             | `Route`           | —                                                            | A stop was removed from a route.                                           | yes      | yes         | yes         |
+| `RouteDeleted`                     | `Route`           | —                                                            | A route was soft-deleted.                                                  | yes      | yes         | yes         |
+| `VehicleAssigned`                  | `AssignVehicle`   | `finance`                                                    | A vehicle was assigned to a route.                                         | yes      | yes         | yes         |
+| `VehicleUnassigned`                | `AssignVehicle`   | `finance`                                                    | A vehicle was unassigned from a route.                                     | yes      | yes         | yes         |
+| `StudentAssignedToRoute`           | `AssignStudent`   | `finance`, `communication`, `attendance`                     | A student was assigned to a vehicle-route.                                 | yes      | yes         | yes         |
+| `StudentUnassignedFromRoute`       | `AssignStudent`   | `finance`                                                    | A student was unassigned from a vehicle-route.                             | yes      | yes         | yes         |
+| `DormitoryCreated`                 | `Dormitory`       | —                                                            | A dormitory was created.                                                   | yes      | yes         | yes         |
+| `DormitoryUpdated`                 | `Dormitory`       | —                                                            | A dormitory was patched.                                                   | yes      | yes         | yes         |
+| `DormitoryDeleted`                 | `Dormitory`       | —                                                            | A dormitory was soft-deleted.                                              | yes      | yes         | yes         |
+| `RoomTypeCreated`                  | `RoomType`        | —                                                            | A room type was created.                                                   | yes      | yes         | yes         |
+| `RoomTypeUpdated`                  | `RoomType`        | —                                                            | A room type was patched.                                                   | yes      | yes         | yes         |
+| `RoomTypeDeleted`                  | `RoomType`        | —                                                            | A room type was soft-deleted.                                              | yes      | yes         | yes         |
+| `RoomCreated`                      | `Room`            | —                                                            | A room was created.                                                        | yes      | yes         | yes         |
+| `RoomUpdated`                      | `Room`            | —                                                            | A room was patched.                                                        | yes      | yes         | yes         |
+| `RoomDeleted`                      | `Room`            | —                                                            | A room was soft-deleted.                                                   | yes      | yes         | yes         |
+| `StudentAssignedToRoom`            | `Room`            | `finance`, `communication`                                   | A student was assigned to a bed.                                           | yes      | yes         | yes         |
+| `StudentUnassignedFromRoom`        | `Room`            | `finance`                                                    | A student was unassigned from a bed.                                       | yes      | yes         | yes         |
+| `ItemCategoryCreated`              | `ItemCategory`    | —                                                            | An item category was created.                                              | yes      | yes         | yes         |
+| `ItemCategoryUpdated`              | `ItemCategory`    | —                                                            | An item category was patched.                                              | yes      | yes         | yes         |
+| `ItemCategoryDeleted`              | `ItemCategory`    | —                                                            | An item category was soft-deleted.                                         | yes      | yes         | yes         |
+| `ItemCreated`                      | `Item`            | —                                                            | An item was created.                                                       | yes      | yes         | yes         |
+| `ItemUpdated`                      | `Item`            | —                                                            | An item was patched.                                                       | yes      | yes         | yes         |
+| `ItemDeleted`                      | `Item`            | —                                                            | An item was soft-deleted.                                                  | yes      | yes         | yes         |
+| `ItemStoreCreated`                 | `ItemStore`       | —                                                            | An item store was created.                                                 | yes      | yes         | yes         |
+| `ItemStoreUpdated`                 | `ItemStore`       | —                                                            | An item store was patched.                                                 | yes      | yes         | yes         |
+| `ItemStoreDeleted`                 | `ItemStore`       | —                                                            | An item store was soft-deleted.                                            | yes      | yes         | yes         |
+| `ItemReceived`                     | `ItemReceive`     | `finance`, `communication`                                   | An item receive was recorded.                                              | yes      | yes         | yes         |
+| `ItemReceiveUpdated`               | `ItemReceive`     | `finance`                                                    | An item receive was patched.                                               | yes      | yes         | yes         |
+| `ItemReceiveCancelled`             | `ItemReceive`     | `finance`                                                    | An item receive was cancelled.                                             | yes      | yes         | yes         |
+| `ItemIssued`                       | `ItemIssue`       | —                                                            | An item was issued.                                                        | yes      | yes         | yes         |
+| `ItemIssueStatusUpdated`           | `ItemIssue`       | —                                                            | An issue's status was updated.                                             | yes      | yes         | yes         |
+| `IssuedItemReturned`               | `ItemIssue`       | —                                                            | An issued item was returned.                                               | yes      | yes         | yes         |
+| `ItemSold`                         | `ItemSell`        | `finance`                                                    | An item was sold.                                                          | yes      | yes         | yes         |
+| `ItemSellUpdated`                  | `ItemSell`        | `finance`                                                    | An item sell was patched.                                                  | yes      | yes         | yes         |
+| `ItemSellCancelled`                | `ItemSell`        | `finance`                                                    | An item sell was cancelled.                                                | yes      | yes         | yes         |
+| `ItemSellRefunded`                 | `ItemSell`        | `finance`                                                    | A partial refund was issued against an item sell.                          | yes      | yes         | yes         |
+| `SupplierCreated`                  | `Supplier`        | `finance`                                                    | A supplier was created.                                                    | yes      | yes         | yes         |
+| `SupplierUpdated`                  | `Supplier`        | `finance`                                                    | A supplier was patched.                                                    | yes      | yes         | yes         |
+| `SupplierDeactivated`              | `Supplier`        | `finance`                                                    | A supplier was deactivated.                                                | yes      | yes         | yes         |
+| `SupplierDeleted`                  | `Supplier`        | `finance`                                                    | A supplier was soft-deleted.                                               | yes      | yes         | yes         |
+
+**See also:** `docs/specs/facilities/events.md` for full Rust struct
+definitions, the canonical `EventEnvelope`, and per-event
+subscribers.
