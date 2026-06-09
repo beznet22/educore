@@ -181,11 +181,10 @@ consumer's `DATABASE_URL` to point at the right database.
 ## Parity test
 
 The engine's parity test suite is in
-`crates/smsengine-storage-parity/` (added in v1 scaffold; see
-`crates/storage-parity/`). It runs every repository method against
-a seeded database and verifies identical results across adapters.
-The consumer runs it against `devdb_v2` after the migration is
-complete.
+`crates/tools/storage-parity/` (added in v1 scaffold). It runs
+every repository method against a seeded database and verifies
+identical results across adapters. The consumer runs it against
+`devdb_v2` after the migration is complete.
 
 ## Sample integrity check
 

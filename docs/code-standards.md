@@ -40,7 +40,7 @@ follow. They are deliberately simple and focused on production correctness.
 ## Module Rules
 
 ```text
-crates/<domain>/                 <-- package name: smsengine-<domain>
+crates/domains/<domain>/        <-- package name: smsengine-<domain>
 ├── src/
 │   ├── lib.rs
 │   ├── aggregate.rs

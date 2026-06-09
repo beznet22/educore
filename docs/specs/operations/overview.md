@@ -1,6 +1,6 @@
 # Operations Domain Overview
 
-**Implementation crate:** `smsengine-operations` (path: `crates/operations/`)
+**Implementation crate:** `smsengine-operations` (path: `crates/cross-cutting/operations/`)
 **Spec status:** spec'd, scaffolded; implementation begins in Phase 14 (per `docs/build-plan.md`).
 
 ## Purpose

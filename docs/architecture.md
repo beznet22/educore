@@ -355,3 +355,42 @@ capabilities, not generic magic, and must return fully hydrated graphs.
 - `docs/build-plan.md` — implementation roadmap
 - `docs/code-standards.md` — engineering rules
 - `docs/library-docs.md` — consumer-facing SDK documentation
+
+## Tier System
+
+The 34 crates are organized into **5 tiers + 1 umbrella**. The tier
+names and dependency direction are fixed at the filesystem level: a
+crate in `crates/domains/` may not import from `crates/adapters/` or
+`crates/tools/`, and a crate in `crates/cross-cutting/` may not
+import from `crates/domains/`, `crates/adapters/`, or
+`crates/tools/`. Tier boundaries are enforced at build time by the
+`smsengine-core::lint` sub-module.
+
+| Tier            | Path                            | Count | Purpose |
+| --------------- | ------------------------------- | ----- | ------- |
+| `core`          | `crates/core/`                  | 3     | Infrastructure: errors, identifiers, value objects, query AST, proc-macro, storage port. Depends on nothing. |
+| `cross-cutting` | `crates/cross-cutting/`         | 7     | Cross-domain foundations: platform, rbac, events envelope, audit, settings, operations, calendar. Depends on `core`. |
+| `domains`       | `crates/domains/`               | 10    | The 10 domain bounded contexts (academic, finance, hr, ...). Depends on `core` and `cross-cutting`. |
+| `adapters`      | `crates/adapters/`              | 9     | Port implementations: 3 storage adapters + 6 port adapters. Depends on `core` and `cross-cutting`. |
+| `tools`         | `crates/tools/`                 | 4     | Dev tooling: testkit, storage-parity, cli (binary), sdk. Depends on all of the above. |
+| umbrella        | `crates/smsengine/`             | 1     | Re-exports the public surface of all 34 internal crates. |
+
+Layered dependency direction (no cycles, no upward deps):
+
+```text
+core  <-  cross-cutting  <-  domains  <-  tools
+                          ^
+                          +--  adapters  (also depends on core + cross-cutting)
+```
+
+Internal crate directories are named without the `smsengine-`
+prefix (e.g. `crates/domains/academic/`, `crates/adapters/storage-postgres/`),
+while the published package name keeps the prefix
+(`smsengine-academic`, `smsengine-storage-postgres`). The umbrella
+re-exports each internal crate under its short name, so consumers
+write `smsengine::academic::commands::*` and never need to know the
+internal `smsengine-` prefix on the package name.
+
+See `AGENTS.md` § "Tier System" for the full rules, and
+`docs/build-plan.md` § "The No-Gaps Gates" for how tier boundaries
+are enforced at build time.

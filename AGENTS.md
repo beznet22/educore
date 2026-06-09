@@ -12,51 +12,65 @@ documentation.
 - **Brand (prose):** SMSengine
 - **Umbrella package:** `smsengine` (`crates/smsengine/`)
 - **Internal package names:** `smsengine-<name>` (e.g. `smsengine-academic`)
-- **Internal crate directories:** `crates/<name>/` (the `smsengine-`
-  prefix is dropped from the directory name; the package name and the
-  directory name are intentionally different)
+- **Internal crate directories:** `crates/<tier>/<name>/` (the
+  `smsengine-` prefix is dropped from the directory name; the
+  package name and the directory name are intentionally different.
+  Each internal crate lives under a tier directory that encodes
+  its purpose — see [§ Tier System](#tier-system) below)
 - **Public package registry path:** `smsengine::*`
 
 ## Workspace Layout
 
+The 34 crates are organized into 5 tiers + 1 umbrella. Tier
+boundaries are enforced at the filesystem level (the
+`smsengine-core::lint` sub-module verifies that a crate in
+`crates/domains/` does not import from `crates/adapters/` or
+`crates/tools/`). Each tier has a clear purpose documented in
+[§ Tier System](#tier-system) below.
+
 ```text
 <workspace-root>/                   <-- repository root on disk
-├── Cargo.toml                       <-- virtual workspace root
+├── Cargo.toml                       <-- virtual workspace root (5-tier glob pattern)
 ├── crates/
-│   ├── smsengine/                   <-- umbrella crate (smsengine)
-│   ├── core/                        <-- package: smsengine-core
-│   ├── query-derive/                <-- package: smsengine-query-derive
-│   ├── platform/                    <-- package: smsengine-platform
-│   ├── rbac/                        <-- package: smsengine-rbac
-│   ├── settings/                    <-- package: smsengine-settings
-│   ├── events/                      <-- package: smsengine-events
-│   ├── academic/                    <-- package: smsengine-academic
-│   ├── assessment/                  <-- package: smsengine-assessment
-│   ├── attendance/                  <-- package: smsengine-attendance
-│   ├── finance/                     <-- package: smsengine-finance
-│   ├── hr/                          <-- package: smsengine-hr
-│   ├── library/                     <-- package: smsengine-library
-│   ├── facilities/                  <-- package: smsengine-facilities
-│   ├── communication/               <-- package: smsengine-communication
-│   ├── events-domain/               <-- package: smsengine-events-domain
-│   ├── documents/                   <-- package: smsengine-documents
-│   ├── cms/                         <-- package: smsengine-cms
-│   ├── storage/                     <-- package: smsengine-storage
-│   ├── storage-postgres/            <-- package: smsengine-storage-postgres
-│   ├── storage-mysql/               <-- package: smsengine-storage-mysql
-│   ├── storage-sqlite/              <-- package: smsengine-storage-sqlite
-│   ├── storage-parity/              <-- package: smsengine-storage-parity (cross-adapter test suite)
-│   ├── audit/                       <-- package: smsengine-audit (audit log writer)
-│   ├── operations/                  <-- package: smsengine-operations (operations domain)
-│   ├── testkit/                     <-- package: smsengine-testkit (in-memory test adapters)
-│   ├── cli/                         <-- package: smsengine-cli (sample binary)
-│   ├── auth/                        <-- package: smsengine-auth
-│   ├── notify/                      <-- package: smsengine-notify
-│   ├── payment/                     <-- package: smsengine-payment
-│   ├── files/                       <-- package: smsengine-files
-│   ├── event-bus/                   <-- package: smsengine-event-bus
-│   ├── integrations/                <-- package: smsengine-integrations
-│   └── sdk/                         <-- package: smsengine-sdk
+│   ├── core/                        <-- core tier (infrastructure, no domain knowledge)
+│   │   ├── engine-core/             <-- package: smsengine-core
+│   │   ├── query-derive/            <-- package: smsengine-query-derive
+│   │   └── storage/                 <-- package: smsengine-storage
+│   ├── cross-cutting/               <-- cross-cutting tier (cross-domain foundations)
+│   │   ├── platform/                <-- package: smsengine-platform
+│   │   ├── rbac/                    <-- package: smsengine-rbac
+│   │   ├── events/                  <-- package: smsengine-events (envelope)
+│   │   ├── events-domain/           <-- package: smsengine-events-domain (calendar)
+│   │   ├── settings/                <-- package: smsengine-settings
+│   │   ├── operations/              <-- package: smsengine-operations
+│   │   └── audit/                   <-- package: smsengine-audit
+│   ├── domains/                     <-- domains tier (the 10 domain bounded contexts)
+│   │   ├── academic/                <-- package: smsengine-academic
+│   │   ├── assessment/              <-- package: smsengine-assessment
+│   │   ├── attendance/              <-- package: smsengine-attendance
+│   │   ├── cms/                     <-- package: smsengine-cms
+│   │   ├── communication/           <-- package: smsengine-communication
+│   │   ├── documents/               <-- package: smsengine-documents
+│   │   ├── facilities/              <-- package: smsengine-facilities
+│   │   ├── finance/                 <-- package: smsengine-finance
+│   │   ├── hr/                      <-- package: smsengine-hr
+│   │   └── library/                 <-- package: smsengine-library
+│   ├── adapters/                    <-- adapters tier (port implementations)
+│   │   ├── storage-postgres/        <-- package: smsengine-storage-postgres
+│   │   ├── storage-mysql/           <-- package: smsengine-storage-mysql
+│   │   ├── storage-sqlite/          <-- package: smsengine-storage-sqlite
+│   │   ├── auth/                    <-- package: smsengine-auth
+│   │   ├── event-bus/               <-- package: smsengine-event-bus
+│   │   ├── files/                   <-- package: smsengine-files
+│   │   ├── integrations/            <-- package: smsengine-integrations
+│   │   ├── notify/                  <-- package: smsengine-notify
+│   │   └── payment/                 <-- package: smsengine-payment
+│   ├── tools/                       <-- tools tier (dev tooling, not in release)
+│   │   ├── testkit/                 <-- package: smsengine-testkit
+│   │   ├── storage-parity/          <-- package: smsengine-storage-parity
+│   │   ├── cli/                     <-- package: smsengine-cli (binary)
+│   │   └── sdk/                     <-- package: smsengine-sdk
+│   └── smsengine/                   <-- umbrella crate
 ├── docs/                            <-- documentation operating system
 │   ├── project-overview.md
 │   ├── architecture.md
@@ -119,21 +133,75 @@ pub use smsengine_academic as academic;
 Consumers therefore write `smsengine::academic::commands::*` and never
 need to know the internal `smsengine-` prefix on the package name.
 
+## Tier System
+
+The 34 crates are organized into 5 tiers. Each tier has a
+distinct purpose, dependency direction, and lifecycle.
+
+| Tier | Path | Count | Purpose | Depends on |
+| --- | --- | --- | --- | --- |
+| `core` | `crates/core/` | 3 | Infrastructure: errors, identifiers, value objects, query AST, proc-macro, storage port | (none) |
+| `cross-cutting` | `crates/cross-cutting/` | 7 | Cross-domain foundations: platform, rbac, events, audit, settings, operations, calendar | `core` |
+| `domains` | `crates/domains/` | 10 | The 10 domain bounded contexts (academic, finance, hr, ...) | `core`, `cross-cutting` |
+| `adapters` | `crates/adapters/` | 9 | Port implementations: 3 storage adapters + 6 port adapters (auth, event-bus, files, integrations, notify, payment) | `core`, `cross-cutting` |
+| `tools` | `crates/tools/` | 4 | Dev tooling: testkit, storage-parity, cli (binary), sdk | `core`, `cross-cutting`, `domains` |
+
+The umbrella crate `smsengine` re-exports the public surface of
+all 34 internal crates.
+
+**Layered dependency direction** (no cycles, no upward deps):
+
+```text
+core  ←  cross-cutting  ←  domains  ←  tools
+                          ↑
+                          └──  adapters  (also depends on core + cross-cutting)
+```
+
+**Tier boundary enforcement:** the `smsengine-core::lint`
+sub-module verifies at build time that a crate in `crates/domains/`
+does not import from `crates/adapters/` or `crates/tools/`, and
+that a crate in `crates/cross-cutting/` does not import from
+`crates/domains/`, `crates/adapters/`, or `crates/tools/`. See
+`docs/build-plan.md` § The No-Gaps Gates.
+
+**Note on `smsengine-events` vs `smsengine-events-domain`:**
+- `smsengine-events` (cross-cutting tier) is the **event envelope + bus
+  port** (DomainEvent trait, EventEnvelope, EventBus trait).
+- `smsengine-events-domain` (cross-cutting tier) is the **calendar
+  domain** (CalendarEvent, Holiday, Incident, Weekend aggregates).
+  These are distinct crates with distinct packages. Do not
+  conflate them.
+
+**Note on `engine-core`:** the `smsengine-core` crate lives at
+`crates/core/engine-core/`. The directory name `engine-core` differs
+from the package name `smsengine-core` to avoid the double-naming
+`crates/core/core/`. This is a naming convention, not a typographical
+error. The two other crates in the `core` tier (`query-derive` and
+`storage`) have short names that don't collide with the tier name, so
+they keep their original directories.
+
+See `docs/decisions/ADR-013-CrateLayout.md` for the full rationale
+and the migration history.
+
 ## Authoritative Documents (Read These First)
 
 In priority order:
 
-1. `docs/project-overview.md` — engine philosophy and scope
-2. `docs/architecture.md` — the system map
-3. `docs/build-plan.md` — the implementation roadmap
-4. `docs/code-standards.md` — the engineering rules (must follow)
-5. `docs/library-docs.md` — consumer-facing SDK documentation
-6. `docs/query_layer.md` — the macro-driven query specification
-7. `docs/specs/<domain>/overview.md` — per-domain specifications
-8. `docs/ports/*.md` — port contracts
-9. `docs/decisions/*.md` — architectural decisions (ADRs)
-10. `docs/guides/saas-backend.md` — building a production SaaS on
+1. `CONTRIBUTING.md` — the spec-to-PR workflow for human
+   developers (the companion to this document; see
+   `CONTRIBUTING.md` for the human-facing version)
+2. `docs/project-overview.md` — engine philosophy and scope
+3. `docs/architecture.md` — the system map
+4. `docs/build-plan.md` — the implementation roadmap
+5. `docs/code-standards.md` — the engineering rules (must follow)
+6. `docs/library-docs.md` — consumer-facing SDK documentation
+7. `docs/query_layer.md` — the macro-driven query specification
+8. `docs/specs/<domain>/overview.md` — per-domain specifications
+9. `docs/ports/*.md` — port contracts
+10. `docs/decisions/*.md` — architectural decisions (ADRs)
+11. `docs/guides/saas-backend.md` — building a production SaaS on
     top of the library (backend, control plane, identity, sync
+    engine, offline clients)
     engine, offline clients)
 
 ## Engine Rules (Non-Negotiable)
@@ -181,7 +249,7 @@ See `docs/code-standards.md` for the full rules. Highlights:
 ## Module Layout (per domain)
 
 ```text
-crates/<domain>/                   <-- directory
+crates/domains/<domain>/           <-- directory (under the domains tier)
 ├── src/
 │   ├── lib.rs
 │   ├── aggregate.rs
@@ -210,21 +278,23 @@ private types stay private.
 
 ## Dependency Rules
 
-A domain crate may depend on:
-
-- `smsengine-core`
-- `smsengine-platform`
-- `smsengine-rbac`
-- `smsengine-events`
-
-Other domain crates only with explicit justification in an ADR.
+A domain crate may depend on crates in the `core` and
+`cross-cutting` tiers, plus other domain crates in the
+`domains` tier (only with explicit justification in an ADR).
 
 A domain crate may **not** depend on:
 
-- Any adapter crate
-- Any infrastructure crate
+- Any crate in the `adapters` tier
+- Any crate in the `tools` tier
 - `tokio` directly (only through `smsengine-core` re-exports where needed)
 - `serde_json::Value`
+
+External crate versions, MSRV pinning, and cross-compile status
+(Linux, Android, WASM) are governed by
+[`docs/decisions/ADR-015-ExternalCrates.md`](docs/decisions/ADR-015-ExternalCrates.md).
+
+The `smsengine-core::lint` sub-module verifies these rules at
+build time.
 
 ## Validation Checklist (per PR)
 
@@ -289,6 +359,16 @@ Enforce full type safety at all times:
   structured error types where callers need to match variants.
 - **Trait objects must be object-safe**. Verify with
   `let _: Box<dyn Trait>;` compile tests.
+- **External crate selection policy.** All external crates are
+  documented in
+  [`docs/decisions/ADR-015-ExternalCrates.md`](docs/decisions/ADR-015-ExternalCrates.md),
+  including the chosen version, the alternatives considered, the
+  rationale, the cross-compile status (Linux, Android, WASM), and
+  any MSRV-floor pinning. When adding a new external crate, update
+  the ADR in the same commit. The 11 crates that exceed the
+  engine's MSRV floor (1.75) are pinned to their last compatible
+  line; the pinning policy is in § "MSRV floor conflict resolution"
+  of the ADR.
 
 These rules are a strict superset of the "Code Standards" section
 above; in case of conflict, this section wins.
@@ -389,43 +469,43 @@ each crate to the phase that implements it. **This is the
 authoritative source** — do not rely on the directory tree or the
 umbrella re-exports to determine phase assignment.
 
-| # | Crate | Phase | Title |
-| --- | --- | --- | --- |
-| 1 | `smsengine-core` | 0 | Foundation |
-| 2 | `smsengine-query-derive` | 0 | Foundation (proc-macro) |
-| 3 | `smsengine-storage` | 0 | Foundation (port trait) |
-| 4 | `smsengine-storage-postgres` | 0 | Foundation (PG adapter) |
-| 5 | `smsengine-storage-parity` | 0 | Foundation (cross-adapter test suite) |
-| 6 | `smsengine-storage-mysql` | 1 | Adapter parity |
-| 7 | `smsengine-storage-sqlite` | 1 | Adapter parity |
-| 8 | `smsengine-platform` | 2 | Cross-cutting foundations |
-| 9 | `smsengine-rbac` | 2 | Cross-cutting foundations |
-| 10 | `smsengine-events` | 2 | Cross-cutting foundations (envelope) |
-| 11 | `smsengine-event-bus` | 2 | Cross-cutting foundations (bus port) |
-| 12 | `smsengine-audit` | 2 | Cross-cutting foundations (audit log) |
-| 13 | `smsengine-academic` | 3 | Academic |
-| 14 | `smsengine-assessment` | 4 | Assessment |
-| 15 | `smsengine-attendance` | 5 | Attendance |
-| 16 | `smsengine-hr` | 6 | HR |
-| 17 | `smsengine-finance` | 7 | Finance |
-| 18 | `smsengine-facilities` | 8 | Facilities |
-| 19 | `smsengine-library` | 9 | Library |
-| 20 | `smsengine-communication` | 10 | Communication |
-| 21 | `smsengine-documents` | 11 | Documents |
-| 22 | `smsengine-cms` | 12 | CMS |
-| 23 | `smsengine-events-domain` | 13 | Events domain (calendar) |
-| 24 | `smsengine-settings` | 14 | Settings + Operations |
-| 25 | `smsengine-operations` | 14 | Settings + Operations |
-| 26 | `smsengine-auth` | 15 | Port adapters |
-| 27 | `smsengine-notify` | 15 | Port adapters |
-| 28 | `smsengine-payment` | 15 | Port adapters |
-| 29 | `smsengine-files` | 15 | Port adapters |
-| 30 | `smsengine-integrations` | 15 | Port adapters |
-| 31 | `smsengine-testkit` | 16 | Test infrastructure + SDK |
-| 32 | `smsengine-storage-parity` | 16 | (Test infrastructure + SDK) |
-| 33 | `smsengine-sdk` | 16 | Test infrastructure + SDK |
-| 34 | `smsengine-cli` | 16 | Test infrastructure + SDK |
-| — | `smsengine` (umbrella) | 0 | re-exports only; first usable at Phase 0+ |
+| # | Tier | Crate | Phase | Title |
+| --- | --- | --- | --- | --- |
+| 1 | core | `smsengine-core` | 0 | Foundation |
+| 2 | core | `smsengine-query-derive` | 0 | Foundation (proc-macro) |
+| 3 | core | `smsengine-storage` | 0 | Foundation (port trait) |
+| 4 | adapters | `smsengine-storage-postgres` | 0 | Foundation (PG adapter) |
+| 5 | tools | `smsengine-storage-parity` | 0 | Foundation (cross-adapter test suite) |
+| 6 | adapters | `smsengine-storage-mysql` | 1 | Adapter parity |
+| 7 | adapters | `smsengine-storage-sqlite` | 1 | Adapter parity |
+| 8 | cross-cutting | `smsengine-platform` | 2 | Cross-cutting foundations |
+| 9 | cross-cutting | `smsengine-rbac` | 2 | Cross-cutting foundations |
+| 10 | cross-cutting | `smsengine-events` | 2 | Cross-cutting foundations (envelope) |
+| 11 | adapters | `smsengine-event-bus` | 2 | Cross-cutting foundations (bus port) |
+| 12 | cross-cutting | `smsengine-audit` | 2 | Cross-cutting foundations (audit log) |
+| 13 | domains | `smsengine-academic` | 3 | Academic |
+| 14 | domains | `smsengine-assessment` | 4 | Assessment |
+| 15 | domains | `smsengine-attendance` | 5 | Attendance |
+| 16 | domains | `smsengine-hr` | 6 | HR |
+| 17 | domains | `smsengine-finance` | 7 | Finance |
+| 18 | domains | `smsengine-facilities` | 8 | Facilities |
+| 19 | domains | `smsengine-library` | 9 | Library |
+| 20 | domains | `smsengine-communication` | 10 | Communication |
+| 21 | domains | `smsengine-documents` | 11 | Documents |
+| 22 | domains | `smsengine-cms` | 12 | CMS |
+| 23 | domains | `smsengine-events-domain` | 13 | Events domain (calendar) |
+| 24 | cross-cutting | `smsengine-settings` | 14 | Settings + Operations |
+| 25 | cross-cutting | `smsengine-operations` | 14 | Settings + Operations |
+| 26 | adapters | `smsengine-auth` | 15 | Port adapters |
+| 27 | adapters | `smsengine-notify` | 15 | Port adapters |
+| 28 | adapters | `smsengine-payment` | 15 | Port adapters |
+| 29 | adapters | `smsengine-files` | 15 | Port adapters |
+| 30 | adapters | `smsengine-integrations` | 15 | Port adapters |
+| 31 | tools | `smsengine-testkit` | 16 | Test infrastructure + SDK |
+| 32 | tools | `smsengine-storage-parity` | 16 | (Test infrastructure + SDK) |
+| 33 | tools | `smsengine-sdk` | 16 | Test infrastructure + SDK |
+| 34 | tools | `smsengine-cli` | 16 | Test infrastructure + SDK |
+| — | umbrella | `smsengine` | 0 | re-exports only; first usable at Phase 0+ |
 
 **Note on duplicates:** `smsengine-storage-parity` is listed at
 both Phase 0 and Phase 16. Phase 0 scaffolds the crate; Phase 16

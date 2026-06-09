@@ -8,46 +8,51 @@ or **Done** as the corresponding phase lands.
 ## Workspace Status
 
 The workspace has **34 crates**: the umbrella `smsengine` plus 33
-internal crates, grouped below by the phase that ships them. Every
-crate is scaffolded (`Cargo.toml`, `lib.rs`, `#[forbid(unsafe_code)]`,
-`#[deny(missing_docs)]`); none are implemented yet.
+internal crates, grouped below by tier and by the phase that ships
+them. Every crate is scaffolded (`Cargo.toml`, `lib.rs`,
+`#[forbid(unsafe_code)]`, `#[deny(missing_docs)]`); none are
+implemented yet. The tier-to-directory mapping is
+`crates/<tier>/<name>/` (e.g. `crates/domains/academic/`,
+`crates/adapters/storage-postgres/`); the package name on disk
+keeps the `smsengine-` prefix (e.g. `smsengine-academic`). See
+`AGENTS.md` § "Tier System" for the full rules.
 
-| Crate                          | Phase | Spec'd | Implementing | Tested | Notes                          |
-| ------------------------------ | ----- | ------ | ------------ | ------ | ------------------------------ |
-| `smsengine`                    | -     | Yes    | No           | No     | Umbrella; re-exports all 33    |
-| `smsengine-core`               | 0     | Yes    | No           | No     | Errors, ids, value objects, clock |
-| `smsengine-query-derive`       | 0     | Yes    | No           | No     | `#[derive(DomainQuery)]` macro |
-| `smsengine-storage`            | 0     | Yes    | No           | No     | `StorageAdapter` port + sub-ports |
-| `smsengine-storage-postgres`   | 0     | Yes    | No           | No     | Primary adapter; `sqlx` + `rustls` |
-| `smsengine-storage-parity`     | 16    | Yes    | No           | No     | Cross-adapter parity suite     |
-| `smsengine-storage-mysql`      | 1     | Yes    | No           | No     | `MySQL 8.0+`, RLS via session var |
-| `smsengine-storage-sqlite`     | 1     | Yes    | No           | No     | Embedded / offline; `json1`    |
-| `smsengine-platform`           | 2     | Yes    | No           | No     | School, User, TenantContext    |
-| `smsengine-rbac`               | 2     | Yes    | No           | No     | Capability, Role, Permission   |
-| `smsengine-events`             | 2     | Yes    | No           | No     | Envelope crate; `DomainEvent`  |
-| `smsengine-event-bus`          | 2     | Yes    | No           | No     | in-process, NATS, Redis impls  |
-| `smsengine-audit`              | 2     | Yes    | No           | No     | `AuditLogEntry`, retention     |
-| `smsengine-academic`           | 3     | Yes    | No           | No     | First vertical slice; 8 aggs   |
-| `smsengine-assessment`         | 4     | Yes    | No           | No     | Exams, marks, results          |
-| `smsengine-attendance`         | 5     | Yes    | No           | No     | Student/staff/subject/exam     |
-| `smsengine-hr`                 | 6     | Yes    | No           | No     | Staff, leave, payroll          |
-| `smsengine-finance`            | 7     | Yes    | No           | No     | Largest spec; double-entry     |
-| `smsengine-facilities`         | 8     | Yes    | No           | No     | Dorm, transport, inventory     |
-| `smsengine-library`            | 9     | Yes    | No           | No     | Books, issues, fines           |
-| `smsengine-communication`      | 10    | Yes    | No           | No     | Notices, complaints, logs      |
-| `smsengine-documents`          | 11    | Yes    | No           | No     | Forms, postal                  |
-| `smsengine-cms`                | 12    | Yes    | No           | No     | Pages, news, testimonial       |
-| `smsengine-events-domain`      | 13    | Yes    | No           | No     | Calendar (distinct from envelope) |
-| `smsengine-settings`           | 14    | Yes    | No           | No     | Per-school config, language    |
-| `smsengine-operations`         | 14    | Yes    | No           | No     | Bell schedule, substitution    |
-| `smsengine-auth`               | 15    | Yes    | No           | No     | `AuthProvider` + JWT impl      |
-| `smsengine-notify`             | 15    | Yes    | No           | No     | `NotificationProvider` + email/SMS |
-| `smsengine-payment`            | 15    | Yes    | No           | No     | `PaymentProvider` + Stripe     |
-| `smsengine-files`              | 15    | Yes    | No           | No     | `FileStorage` + S3/local       |
-| `smsengine-integrations`       | 15    | Yes    | No           | No     | LMS, video-conferencing        |
-| `smsengine-testkit`            | 16    | Yes    | No           | No     | In-memory impls of 6 ports     |
-| `smsengine-sdk`                | 16    | Yes    | No           | No     | `Engine::builder()` facade     |
-| `smsengine-cli`                | 16    | Yes    | No           | No     | Sample binary, dogfooding      |
+| Tier            | Crate                          | Phase | Spec'd | Implementing | Tested | Notes                          |
+| --------------- | ------------------------------ | ----- | ------ | ------------ | ------ | ------------------------------ |
+| umbrella        | `smsengine`                    | -     | Yes    | No           | No     | Umbrella; re-exports all 33    |
+| core            | `smsengine-core`               | 0     | Yes    | No           | No     | Errors, ids, value objects, clock |
+| core            | `smsengine-query-derive`       | 0     | Yes    | No           | No     | `#[derive(DomainQuery)]` macro |
+| core            | `smsengine-storage`            | 0     | Yes    | No           | No     | `StorageAdapter` port + sub-ports |
+| adapters        | `smsengine-storage-postgres`   | 0     | Yes    | No           | No     | Primary adapter; `sqlx` + `rustls` |
+| tools           | `smsengine-storage-parity`     | 16    | Yes    | No           | No     | Cross-adapter parity suite     |
+| adapters        | `smsengine-storage-mysql`      | 1     | Yes    | No           | No     | `MySQL 8.0+`, RLS via session var |
+| adapters        | `smsengine-storage-sqlite`     | 1     | Yes    | No           | No     | Embedded / offline; `json1`    |
+| cross-cutting   | `smsengine-platform`           | 2     | Yes    | No           | No     | School, User, TenantContext    |
+| cross-cutting   | `smsengine-rbac`               | 2     | Yes    | No           | No     | Capability, Role, Permission   |
+| cross-cutting   | `smsengine-events`             | 2     | Yes    | No           | No     | Envelope crate; `DomainEvent`  |
+| adapters        | `smsengine-event-bus`          | 2     | Yes    | No           | No     | in-process, NATS, Redis impls  |
+| cross-cutting   | `smsengine-audit`              | 2     | Yes    | No           | No     | `AuditLogEntry`, retention     |
+| domains         | `smsengine-academic`           | 3     | Yes    | No           | No     | First vertical slice; 8 aggs   |
+| domains         | `smsengine-assessment`         | 4     | Yes    | No           | No     | Exams, marks, results          |
+| domains         | `smsengine-attendance`         | 5     | Yes    | No           | No     | Student/staff/subject/exam     |
+| domains         | `smsengine-hr`                 | 6     | Yes    | No           | No     | Staff, leave, payroll          |
+| domains         | `smsengine-finance`            | 7     | Yes    | No           | No     | Largest spec; double-entry     |
+| domains         | `smsengine-facilities`         | 8     | Yes    | No           | No     | Dorm, transport, inventory     |
+| domains         | `smsengine-library`            | 9     | Yes    | No           | No     | Books, issues, fines           |
+| domains         | `smsengine-communication`      | 10    | Yes    | No           | No     | Notices, complaints, logs      |
+| domains         | `smsengine-documents`          | 11    | Yes    | No           | No     | Forms, postal                  |
+| domains         | `smsengine-cms`                | 12    | Yes    | No           | No     | Pages, news, testimonial       |
+| domains         | `smsengine-events-domain`      | 13    | Yes    | No           | No     | Calendar (distinct from envelope) |
+| cross-cutting   | `smsengine-settings`           | 14    | Yes    | No           | No     | Per-school config, language    |
+| cross-cutting   | `smsengine-operations`         | 14    | Yes    | No           | No     | Bell schedule, substitution    |
+| adapters        | `smsengine-auth`               | 15    | Yes    | No           | No     | `AuthProvider` + JWT impl      |
+| adapters        | `smsengine-notify`             | 15    | Yes    | No           | No     | `NotificationProvider` + email/SMS |
+| adapters        | `smsengine-payment`            | 15    | Yes    | No           | No     | `PaymentProvider` + Stripe     |
+| adapters        | `smsengine-files`              | 15    | Yes    | No           | No     | `FileStorage` + S3/local       |
+| adapters        | `smsengine-integrations`       | 15    | Yes    | No           | No     | LMS, video-conferencing        |
+| tools           | `smsengine-testkit`            | 16    | Yes    | No           | No     | In-memory impls of 6 ports     |
+| tools           | `smsengine-sdk`                | 16    | Yes    | No           | No     | `Engine::builder()` facade     |
+| tools           | `smsengine-cli`                | 16    | Yes    | No           | No     | Sample binary, dogfooding      |
 
 Phase 17 ships no new crates; it hardens the workspace
 (multi-tenant suite, load test, cross-compile, security review,

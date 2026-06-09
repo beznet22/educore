@@ -6,6 +6,33 @@ phase has explicit exit criteria and updates the Coverage Matrix
 emission flow referenced throughout is documented in
 [`docs/schemas/sql-dialects/README.md` § "Runtime DDL emission — end-to-end flow"](schemas/sql-dialects/README.md#runtime-ddl-emission--end-to-end-flow).
 
+## Tier System
+
+The 34 crates are organized into 5 tiers + 1 umbrella. Each phase in
+this plan targets one or more tiers:
+
+| Phase | Tiers | Crates |
+| --- | --- | --- |
+| 0 | core, adapters, tools | `smsengine-core`, `smsengine-query-derive`, `smsengine-storage`, `smsengine-storage-postgres`, `smsengine-storage-parity` |
+| 1 | adapters | `smsengine-storage-mysql`, `smsengine-storage-sqlite` |
+| 2 | cross-cutting | `smsengine-platform`, `smsengine-rbac`, `smsengine-events`, `smsengine-event-bus`, `smsengine-audit` |
+| 3-13 | domains | one per phase (academic, assessment, attendance, hr, finance, facilities, library, communication, documents, cms, settings + operations, events-domain) |
+| 14 | cross-cutting, domains | `smsengine-settings`, `smsengine-operations` |
+| 15 | adapters | `smsengine-auth`, `smsengine-notify`, `smsengine-payment`, `smsengine-files`, `smsengine-integrations` |
+| 16 | tools | `smsengine-testkit`, `smsengine-storage-parity` (full suite), `smsengine-sdk`, `smsengine-cli` |
+| 17 | (production hardening only — no new crates) | n/a |
+
+On disk the tier lives one level above each crate's source tree, e.g.
+the `smsengine-core` package is at `crates/core/engine-core/src/`, the
+`smsengine-academic` package is at `crates/domains/academic/src/`,
+and the `smsengine-storage-postgres` package is at
+`crates/adapters/storage-postgres/src/`. Package names are unchanged
+across the restructure — only directory paths moved.
+
+The layered dependency direction is enforced by the
+`smsengine-core::lint` sub-module. See
+[AGENTS.md § Tier System](../../AGENTS.md#tier-system).
+
 ## The 17 phases
 
 1. Phase 0 — Foundation: `core`, `query-derive`, `storage` port, `storage-postgres` + outbox e2e
@@ -41,8 +68,8 @@ The runtime DDL emission flow is documented in
 [`docs/schemas/sql-dialects/README.md`](schemas/sql-dialects/README.md#runtime-ddl-emission--end-to-end-flow)
 § "Runtime DDL emission — end-to-end flow". The five views are:
 **Design contract** (`docs/specs/<domain>/tables.md`) → **Type
-contract** (`crates/<domain>/src/aggregate.rs`) → **Machine contract**
-(`crates/<domain>/src/entities.rs`, macro-emitted AST) → **Adapter
+contract** (`crates/domains/<domain>/src/aggregate.rs`) → **Machine contract**
+(`crates/domains/<domain>/src/entities.rs`, macro-emitted AST) → **Adapter
 emission** (`smsengine-storage-<db>`) → **Consumer startup**
 (`storage.create_schema().await`).
 
@@ -52,6 +79,13 @@ cross-cutting tables: `outbox`, `audit_log`, `idempotency`,
 `include_str!` these files at compile time. The ~310 domain tables
 are emitted from the macro AST at runtime, not from `.sql` files.
 
+- **External crate selection.** The 27 external crates the engine
+  depends on are documented in
+  [`docs/decisions/ADR-015-ExternalCrates.md`](decisions/ADR-015-ExternalCrates.md)
+  (verified 2026-06-09 against crates.io and GitHub). 11 crates are
+  pinned to their last pre-1.75 line; the pinning policy is in
+  § "MSRV floor conflict resolution".
+
 ---
 
 ## Phase 0 — Foundation: `core` + macro + storage port + PG adapter + outbox e2e
@@ -60,6 +94,11 @@ are emitted from the macro AST at runtime, not from `.sql` files.
 `smsengine-storage` (port trait only), `smsengine-storage-postgres`
 (full impl). The first end-to-end test passes: create schema, insert
 one outbox row, read it back, verify invariants.
+
+Phase 0 also depends on the ADR-015 MSRV pinning policy:
+`sqlx 0.8.x` (pinned), `mysql_async 0.34.x` (pinned),
+`reqwest 0.12.x` (pinned), `rustls 0.23.x` (pinned). See
+ADR-015 § "MSRV floor conflict resolution".
 
 **Tasks.**
 
@@ -238,7 +277,7 @@ section management, subject assignment, academic year rollover).
 
 **Tasks.**
 
-1. `crates/academic/src/{aggregate.rs, entities.rs, value_objects.rs,
+1. `crates/domains/academic/src/{aggregate.rs, entities.rs, value_objects.rs,
    commands.rs, events.rs, services.rs, policies.rs, repository.rs,
    query.rs, errors.rs}` plus `tests/`. One `#[derive(DomainQuery)]`
    per aggregate documented in `docs/specs/academic/aggregates.md`.
@@ -557,9 +596,9 @@ calendar domain: `CalendarEvent`, `Holiday`, `Incident`, `Weekend`.
 **Coverage matrix updates.** All `events_domain_*` rows.
 
 **Risks.** *The two `events` crates are easy to confuse.*
-Mitigation: `crates/events/` is the envelope; `crates/events-domain/`
-is the calendar. Document this explicitly in both `lib.rs` headers
-and in `AGENTS.md`.
+Mitigation: `crates/cross-cutting/events/` is the envelope;
+`crates/cross-cutting/events-domain/` is the calendar. Document
+this explicitly in both `lib.rs` headers and in `AGENTS.md`.
 
 ---
 
@@ -793,10 +832,10 @@ verifies that:
 Three mechanisms enforce the coverage invariant — that every
 spec'd item is implemented and every implemented item is spec'd.
 
-### 1. Hand-written integration tests in `crates/<domain>/tests/`
+### 1. Hand-written integration tests in `crates/domains/<domain>/tests/`
 
 For every domain crate, the integration test directory
-`crates/<domain>/tests/` contains hand-written tests that exercise
+`crates/domains/<domain>/tests/` contains hand-written tests that exercise
 the spec'd behavior. Each test:
 
 - Validates a real-world scenario (round-trip serialization, error
@@ -817,29 +856,32 @@ Conventions for the test files:
 
 | File                       | What it tests                                  |
 | -------------------------- | ---------------------------------------------- |
-| `crates/<d>/tests/aggregate_fields.rs` | Field-level invariants from `aggregates.md`     |
-| `crates/<d>/tests/commands.rs`         | Command handlers from `commands.md`             |
-| `crates/<d>/tests/events.rs`           | Event envelopes from `events.md`                |
-| `crates/<d>/tests/services.rs`         | Domain services from `services.md`              |
-| `crates/<d>/tests/repository.rs`       | Repository port methods from `repositories.md`  |
-| `crates/<d>/tests/value_objects.rs`    | Value-object validation from `value-objects.md` |
-| `crates/<d>/tests/workflows.rs`        | Multi-aggregate workflows from `workflows.md`   |
+| `crates/domains/<d>/tests/aggregate_fields.rs` | Field-level invariants from `aggregates.md`     |
+| `crates/domains/<d>/tests/commands.rs`         | Command handlers from `commands.md`             |
+| `crates/domains/<d>/tests/events.rs`           | Event envelopes from `events.md`                |
+| `crates/domains/<d>/tests/services.rs`         | Domain services from `services.md`              |
+| `crates/domains/<d>/tests/repository.rs`       | Repository port methods from `repositories.md`  |
+| `crates/domains/<d>/tests/value_objects.rs`    | Value-object validation from `value-objects.md` |
+| `crates/domains/<d>/tests/workflows.rs`        | Multi-aggregate workflows from `workflows.md`   |
 
 ### 2. Cross-reference lint (`smsengine-core::lint`)
 
 A sub-module of `smsengine-core` (not a separate crate), enabled
 via the `lint` Cargo feature flag in `smsengine-core`. The lint
-sub-module is a CLI binary that:
+source lives at `crates/core/engine-core/src/lint.rs` (the
+`smsengine-core` package was renamed and moved under the `core/`
+tier in the directory restructure; the package name is unchanged).
+The lint sub-module is a CLI binary that:
 
 1. Walks the repo and verifies the **spec → code** direction:
    - Every `docs/specs/<domain>/tables.md` row has a corresponding
      `#[derive(DomainQuery)]` struct in
-     `crates/<domain>/src/aggregate.rs` (matched by table name).
+     `crates/domains/<domain>/src/aggregate.rs` (matched by table name).
    - Every `docs/commands/<domain>.md` entry has a corresponding
-     handler in `crates/<domain>/src/commands.rs` (matched by
+     handler in `crates/domains/<domain>/src/commands.rs` (matched by
      command name).
    - Every `docs/events/<domain>.md` entry has a corresponding
-     event in `crates/<domain>/src/events.rs` (matched by event
+     event in `crates/domains/<domain>/src/events.rs` (matched by event
      name).
    - Every `migrations/engine/*.sql` table has a corresponding
      `create_<table>_ddl()` function in each adapter crate (or is
@@ -879,7 +921,7 @@ primitives.
 Because the matrix lives at `docs/coverage.toml`, the CI step is:
 
 1. `git diff --exit-code docs/coverage.toml` on PRs that touch
-   `docs/specs/` or `crates/<d>/` — the matrix MUST be updated in
+   `docs/specs/` or `crates/domains/<d>/` — the matrix MUST be updated in
    the same commit as the spec change or the implementation
    change. A PR that adds an aggregate without a matrix row fails.
 2. The lint sub-module (§ 2 above) re-validates the committed
@@ -894,7 +936,7 @@ This is the **per-PR gate** — it runs on every pull request.
 
 | Layer  | Gate                                   | When it runs    | What it catches |
 | ------ | -------------------------------------- | --------------- | --------------- |
-| Domain | hand-written tests in `crates/<d>/tests/` | `cargo test`    | Drift between spec and actual behavior |
+| Domain | hand-written tests in `crates/domains/<d>/tests/` | `cargo test`    | Drift between spec and actual behavior |
 | Crate  | `smsengine-core::lint` (feature-gated) | `cargo build` (CI) | Missing handlers, anti-patterns, reverse drift, matrix lies |
 | Repo   | TOML matrix diff in CI                 | every PR        | Spec or impl change without matrix update |
 

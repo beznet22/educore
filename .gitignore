@@ -242,3 +242,16 @@ logs/
 *.pid
 *.seed
 *.pid.lock
+
+# -----------------------------------------------------------------------------
+# License
+# -----------------------------------------------------------------------------
+# COMMERCIAL-LICENSE.md is a deferred placeholder; do not commit until the
+# commercial license is properly drafted and executed (see the file's
+# internal TODO). All real license text lives in LICENSE-MIT, LICENSE-APACHE,
+# and NOTICE (which ARE tracked). See docs/guides/license-faq.md.
+COMMERCIAL-LICENSE.md
+COMMERCIAL-LICENSE-*.md
+LICENSE-*.md
+LICENSE-COMMERCIAL
+LICENSE.COMMERCIAL

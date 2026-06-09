@@ -1,6 +1,32 @@
 [workspace]
 resolver = "2"
-members = ["crates/*"]
+# The 34 crates are organized into 5 tiers under `crates/`:
+#   crates/core/*           — infrastructure (3 crates: core, query-derive, storage)
+#   crates/cross-cutting/*  — cross-domain foundations (7 crates)
+#   crates/domains/*        — 10 domain bounded contexts (10 crates)
+#   crates/adapters/*       — port implementations (9 crates)
+#   crates/tools/*          — dev tooling (4 crates)
+#   crates/smsengine/       — umbrella (1 crate)
+#
+# Sub-workspace isolation (per the build plan) is enforced at the
+# filesystem level: a domain crate in `crates/domains/` can only
+# depend on crates in `crates/core/`, `crates/cross-cutting/`, and
+# other `crates/domains/`. The `smsengine-core::lint` sub-module
+# verifies this at build time. See `docs/build-plan.md` § The
+# No-Gaps Gates.
+#
+# We use glob patterns (not sub-workspaces) so that all 34 crates
+# share a single `[workspace.dependencies]` and a single
+# `[workspace.lints]` section, avoiding the duplication that
+# sub-workspaces require.
+members = [
+    "crates/core/*",
+    "crates/cross-cutting/*",
+    "crates/domains/*",
+    "crates/adapters/*",
+    "crates/tools/*",
+    "crates/smsengine",
+]
 
 [workspace.package]
 version = "0.1.0"
@@ -19,40 +45,49 @@ publish = false
 # Umbrella
 smsengine = { path = "crates/smsengine" }
 
-# Internal crates (package names retain the smsengine- prefix; directory names omit it)
-smsengine-core = { path = "crates/core" }
-smsengine-query-derive = { path = "crates/query-derive" }
-smsengine-platform = { path = "crates/platform" }
-smsengine-rbac = { path = "crates/rbac" }
-smsengine-settings = { path = "crates/settings" }
-smsengine-events = { path = "crates/events" }
-smsengine-academic = { path = "crates/academic" }
-smsengine-assessment = { path = "crates/assessment" }
-smsengine-attendance = { path = "crates/attendance" }
-smsengine-finance = { path = "crates/finance" }
-smsengine-hr = { path = "crates/hr" }
-smsengine-library = { path = "crates/library" }
-smsengine-facilities = { path = "crates/facilities" }
-smsengine-communication = { path = "crates/communication" }
-smsengine-events-domain = { path = "crates/events-domain" }
-smsengine-documents = { path = "crates/documents" }
-smsengine-cms = { path = "crates/cms" }
-smsengine-storage = { path = "crates/storage" }
-smsengine-storage-postgres = { path = "crates/storage-postgres" }
-smsengine-storage-mysql = { path = "crates/storage-mysql" }
-smsengine-storage-sqlite = { path = "crates/storage-sqlite" }
-smsengine-auth = { path = "crates/auth" }
-smsengine-notify = { path = "crates/notify" }
-smsengine-payment = { path = "crates/payment" }
-smsengine-files = { path = "crates/files" }
-smsengine-event-bus = { path = "crates/event-bus" }
-smsengine-integrations = { path = "crates/integrations" }
-smsengine-sdk = { path = "crates/sdk" }
-smsengine-audit = { path = "crates/audit" }
-smsengine-operations = { path = "crates/operations" }
-smsengine-testkit = { path = "crates/testkit" }
-smsengine-cli = { path = "crates/cli" }
-smsengine-storage-parity = { path = "crates/storage-parity" }
+# core tier (infrastructure — no domain knowledge)
+smsengine-core = { path = "crates/core/engine-core" }
+smsengine-query-derive = { path = "crates/core/query-derive" }
+smsengine-storage = { path = "crates/core/storage" }
+
+# cross-cutting tier (cross-domain foundations)
+smsengine-platform = { path = "crates/cross-cutting/platform" }
+smsengine-rbac = { path = "crates/cross-cutting/rbac" }
+smsengine-events = { path = "crates/cross-cutting/events" }
+smsengine-events-domain = { path = "crates/cross-cutting/events-domain" }
+smsengine-settings = { path = "crates/cross-cutting/settings" }
+smsengine-operations = { path = "crates/cross-cutting/operations" }
+smsengine-audit = { path = "crates/cross-cutting/audit" }
+
+# domains tier (the 14 domain crates — only a subset here; the rest
+# live in crates/domains/Cargo.toml which is the sub-workspace manifest)
+smsengine-academic = { path = "crates/domains/academic" }
+smsengine-assessment = { path = "crates/domains/assessment" }
+smsengine-attendance = { path = "crates/domains/attendance" }
+smsengine-cms = { path = "crates/domains/cms" }
+smsengine-communication = { path = "crates/domains/communication" }
+smsengine-documents = { path = "crates/domains/documents" }
+smsengine-facilities = { path = "crates/domains/facilities" }
+smsengine-finance = { path = "crates/domains/finance" }
+smsengine-hr = { path = "crates/domains/hr" }
+smsengine-library = { path = "crates/domains/library" }
+
+# adapters tier (port implementations)
+smsengine-storage-postgres = { path = "crates/adapters/storage-postgres" }
+smsengine-storage-mysql = { path = "crates/adapters/storage-mysql" }
+smsengine-storage-sqlite = { path = "crates/adapters/storage-sqlite" }
+smsengine-auth = { path = "crates/adapters/auth" }
+smsengine-event-bus = { path = "crates/adapters/event-bus" }
+smsengine-files = { path = "crates/adapters/files" }
+smsengine-integrations = { path = "crates/adapters/integrations" }
+smsengine-notify = { path = "crates/adapters/notify" }
+smsengine-payment = { path = "crates/adapters/payment" }
+
+# tools tier (dev tooling, not in release)
+smsengine-testkit = { path = "crates/tools/testkit" }
+smsengine-storage-parity = { path = "crates/tools/storage-parity" }
+smsengine-cli = { path = "crates/tools/cli" }
+smsengine-sdk = { path = "crates/tools/sdk" }
 
 # Async runtime
 tokio = { version = "1.40", features = ["full"] }
@@ -68,9 +103,12 @@ thiserror = "1.0"
 anyhow = "1.0"
 
 # Identifiers and time
-uuid = { version = "1.10", features = ["v4", "v7", "serde"] }
+# Pinned per ADR-015 § "MSRV floor conflict resolution" (engine MSRV 1.75)
+uuid = { version = ">=1.10, <1.23", features = ["v4", "v7", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
-time = { version = "0.3", features = ["serde", "macros"] }
+# NOTE: the `time` crate is intentionally not declared here.
+# Per ADR-015 § "MSRV floor conflict resolution", the engine uses `chrono`
+# instead of `time` (time 0.3.47 requires MSRV 1.88, which exceeds the 1.75 floor).
 ulid = { version = "1.1", features = ["serde"] }
 
 # Tracing and observability
@@ -79,6 +117,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 # Hashing and crypto
 argon2 = "0.5"
+# Pinned per ADR-015 § "MSRV floor conflict resolution" (engine MSRV 1.75)
 hmac = "0.12"
 sha2 = "0.10"
 rand = "0.8"
@@ -98,9 +137,11 @@ rustls-pemfile = "2.1"
 rustls-webpki = "0.102"
 
 # HTTP (for adapters)
+# Pinned per ADR-015 § "MSRV floor conflict resolution" (engine MSRV 1.75)
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
 
 # SQL adapters — multi-dialect (PostgreSQL, MySQL, SQLite)
+# Pinned per ADR-015 § "MSRV floor conflict resolution" (engine MSRV 1.75)
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "macros", "json", "uuid", "chrono", "rust_decimal", "mysql", "postgres", "sqlite"] }
 
 # MySQL native driver
@@ -113,15 +154,19 @@ mysql_async = { version = "0.34", default-features = false, features = ["rustls-
 # Cargo.toml and implement the StorageAdapter trait in-tree.
 
 # File storage
+# Pinned per ADR-015 § "MSRV floor conflict resolution" (engine MSRV 1.75)
 aws-sdk-s3 = { version = "1.55", features = ["behavior-version-latest"] }
 
 # Email
-lettre = { version = "0.11", default-features = false, features = ["rustls-tls", "tokio1-native-tls"] }
+# Pinned per ADR-015 § "MSRV floor conflict resolution" (engine MSRV 1.75)
+lettre = { version = "0.10", default-features = false, features = ["rustls-tls", "tokio1-native-tls"] }
 
 # Validation
-validator = { version = "0.18", features = ["derive"] }
+# Pinned per ADR-015 § "MSRV floor conflict resolution" (engine MSRV 1.75)
+validator = { version = "0.19", features = ["derive"] }
 
 # Collections
+# Pinned per ADR-015 § "MSRV floor conflict resolution" (engine MSRV 1.75)
 indexmap = { version = "2.5", features = ["serde"] }
 
 # Derive helpers

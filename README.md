@@ -29,29 +29,60 @@ event-driven kernel that any application can drive.
 
 ## Workspace
 
-This repository is a Cargo workspace with **29 crates**:
+This repository is a Cargo workspace with **34 crates** organized into 5 tiers:
 
-- `smsengine` — the umbrella crate, re-exports everything.
+### core (3 crates) — infrastructure
+
 - `smsengine-core` — errors, identifiers, value objects, query AST.
 - `smsengine-query-derive` — `#[derive(DomainQuery)]` proc macro.
-- 14 per-domain crates — `smsengine-academic`, `smsengine-assessment`,
-  `smsengine-attendance`, `smsengine-finance`, `smsengine-hr`,
-  `smsengine-library`, `smsengine-facilities`, `smsengine-communication`,
-  `smsengine-events-domain`, `smsengine-documents`, `smsengine-cms`,
-  `smsengine-settings`, `smsengine-rbac`, `smsengine-platform`.
-- 3 reference storage adapters — `smsengine-storage-postgres`,
-  `smsengine-storage-mysql`, `smsengine-storage-sqlite`.
-- 6 port adapters — `smsengine-auth`, `smsengine-notify`,
-  `smsengine-payment`, `smsengine-files`, `smsengine-event-bus`,
-  `smsengine-integrations`.
-- 1 SDK — `smsengine-sdk`.
+- `smsengine-storage` — port trait.
+
+### cross-cutting (7 crates) — cross-domain foundations
+
+- `smsengine-platform` — tenant, school, user, session.
+- `smsengine-rbac` — role, permission, capability.
+- `smsengine-events` — envelope + bus port.
+- `smsengine-events-domain` — calendar events.
+- `smsengine-settings` — general settings.
+- `smsengine-operations` — backups, jobs, system versions.
+- `smsengine-audit` — audit log writer.
+
+### domains (10 crates) — the 10 domain bounded contexts
+
+- `smsengine-academic` — students, classes, sections, subjects.
+- `smsengine-assessment` — exams, marks, results.
+- `smsengine-attendance` — student & staff attendance.
+- `smsengine-cms` — pages, news, content.
+- `smsengine-communication` — notices, complaints, chat.
+- `smsengine-documents` — forms, postal.
+- `smsengine-facilities` — transport, dormitory, inventory.
+- `smsengine-finance` — fees, payments, banking, payroll.
+- `smsengine-hr` — staff, payroll, leave.
+- `smsengine-library` — books, members, issues.
+
+### adapters (9 crates) — port implementations
+
+- 3 reference storage adapters: `smsengine-storage-postgres`, `smsengine-storage-mysql`, `smsengine-storage-sqlite`.
+- 6 port adapters: `smsengine-auth`, `smsengine-notify`, `smsengine-payment`, `smsengine-files`, `smsengine-event-bus`, `smsengine-integrations`.
+
+### tools (4 crates) — dev tooling
+
+- `smsengine-testkit` — in-memory test adapters.
+- `smsengine-storage-parity` — cross-adapter parity suite.
+- `smsengine-cli` — sample binary CLI.
+- `smsengine-sdk` — high-level consumer SDK.
+
+### umbrella (1 crate)
+
+- `smsengine` — re-exports the public surface of all 34 internal crates.
 
 Internal crate directories are named without the `smsengine-` prefix
-(`crates/academic/`), while the published package name keeps the
-prefix (`smsengine-academic`). The umbrella re-exports each crate
-under its short name.
+(`crates/domains/academic/`), while the published package name keeps
+the prefix (`smsengine-academic`). The umbrella re-exports each
+crate under its short name.
 
-See `AGENTS.md` for the full layout and naming convention.
+See `AGENTS.md` for the full layout, tier rules, and crate
+inventory. See `CONTRIBUTING.md` for the spec-to-PR workflow.
 
 ## Quickstart (Scaffold Only)
 
@@ -144,7 +175,11 @@ for the 5-step flow.
 
 Dual-licensed under either of:
 
-- Apache License, Version 2.0
-- MIT License
+- Apache License, Version 2.0 ([`LICENSE-APACHE`](LICENSE-APACHE))
+- MIT License ([`LICENSE-MIT`](LICENSE-MIT))
 
-at your option.
+at your option. The canonical text files are in the repo root.
+
+For the full license FAQ (attribution, warranties, patents, SaaS
+use, trademarks), see
+[`docs/guides/license-faq.md`](docs/guides/license-faq.md).

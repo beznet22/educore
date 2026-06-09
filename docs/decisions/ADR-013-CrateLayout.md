@@ -1,4 +1,4 @@
-# ADR-013: One Crate per Domain
+# ADR-013: Crate Layout
 
 ## Status
 
@@ -7,286 +7,304 @@ Accepted.
 ## Context
 
 SMSengine is a school-domain engine. It is organized into
-15 bounded contexts: academic, finance, hr, attendance,
+15 bounded contexts (academic, finance, hr, attendance,
 assessment, library, facilities, communication,
 documents, events, cms, platform, rbac, settings,
-operations. Each context has its own aggregates, value
-objects, commands, events, repositories, services, and
-policies.
+operations) plus a small set of cross-cutting
+foundations and port implementations. Across these
+contexts the engine contains ~310 domain tables,
+~1500 aggregates, and tens of thousands of value
+objects, commands, and events. The crate layout
+must:
 
-The naive approach is a single Rust crate with one
-module per domain. This compiles fast and is easy to
-navigate in a small codebase. It does not scale:
+- **Scale past ~50 crates.** A flat `crates/<name>/`
+  tree with 30+ sibling directories stops being
+  navigable. A contributor should be able to answer
+  "where do I look for X?" by reading the tier name
+  alone.
+- **Enforce layer boundaries.** A domain crate
+  that imports an adapter is a layer-boundary
+  violation; the same goes for a cross-cutting
+  crate importing a domain. Convention is too soft;
+  the boundary must be enforced at build time.
+- **Preserve the "embed what you need" promise.**
+  A consumer building a small admin tool may want
+  only `academic` and `rbac`. The crate layout must
+  not force them to pull in adapters, settings, or
+  the entire umbrella.
+- **Keep compile-time iteration fast.** A change to
+  `smsengine-academic` should not trigger a rebuild
+  of `smsengine-storage-postgres` or
+  `smsengine-notify`. The 34-crate granularity is
+  already at the right level; the layout must
+  preserve it.
+- **Avoid workspace metadata duplication.** A
+  sub-workspace model in Cargo requires duplicating
+  `[workspace.dependencies]` and `[workspace.lints]`
+  in every sub-workspace's `Cargo.toml`. The layout
+  should be enforceable from a single source of
+  truth.
 
-- **Compile time** — every change to any domain
-  triggers a full rebuild of the engine. With 15
-  domains and hundreds of aggregates, the
-  iteration loop slows to minutes.
-- **Visibility control** — `pub` in a single crate
-  exposes everything to everything else. The
-  domain boundaries become conventions, not
-  enforced rules.
-- **Versioning** — a consumer who wants only the
-  academic domain pulls in finance, hr, and the
-  rest. The "embed what you need" promise breaks.
-- **Testing** — tests for one domain drag in the
-  dependencies of every other domain.
-- **Refactoring** — moving an aggregate from one
-  domain to another is a single-crate chore.
-
-The school domain's bounded contexts are also
-**independently consumable**. A consumer who is
-building a small admin tool may want only
-`academic` and `rbac`. A consumer building a finance-
-heavy product may want only `finance` and `rbac`.
-The engine's crate layout should reflect this.
+The naive approaches (one giant crate, flat sibling
+crates, sub-workspaces) each fail one or more of
+the constraints above. The 5-tier layout adopted by
+this ADR resolves the tension by treating
+**directory organization** as the primary grouping
+mechanism, **single-root `[workspace]`** as the
+metadata source, and a **lint sub-module** as the
+boundary enforcement.
 
 ## Decision
 
-SMSengine is organized as a Cargo workspace with **one
-crate per domain**, plus a small set of shared
-crates. The workspace today contains **34 crates**;
-the inventory below is the canonical list.
+SMSengine is organized as a single Cargo workspace
+with **34 crates grouped into 5 tiers + 1 umbrella**.
+The 5 tiers are directory-organized under `crates/`
+and the single root `Cargo.toml` is the source of
+truth for workspace metadata. Tier boundaries are
+enforced at build time by a `smsengine-core::lint`
+sub-module that statically inspects each crate's
+declared dependencies.
 
 Concretely:
 
-**Foundation (2 crates)**
+### The 5 tiers
 
-1. **`smsengine-core`** — the foundation crate. Error
-   types, identifier trait, result type, value
-   object trait, clock, id generator, common
-   derives.
-2. **`smsengine-platform`** — the multi-tenant
-   substrate. `SchoolId`, `UserId`, `TenantContext`,
-   `School`, `User` aggregates. Depends only on
-   `smsengine-core`.
+| Tier | Path | Count | Purpose |
+| --- | --- | --- | --- |
+| core | `crates/core/` | 3 | Infrastructure: errors, identifiers, value objects, query AST, proc-macro, storage port |
+| cross-cutting | `crates/cross-cutting/` | 7 | Cross-domain foundations: platform, rbac, events, audit, settings, operations, calendar |
+| domains | `crates/domains/` | 10 | The 10 domain bounded contexts (academic, finance, hr, ...) |
+| adapters | `crates/adapters/` | 9 | Port implementations: 3 storage adapters + 6 port adapters (auth, event-bus, files, integrations, notify, payment) |
+| tools | `crates/tools/` | 4 | Dev tooling: testkit, storage-parity, cli, sdk |
+| umbrella | `crates/smsengine/` | 1 | Re-exports the public surface of all 34 internal crates |
 
-**Cross-cutting (3 crates)**
+### Dependency direction
 
-3. **`smsengine-rbac`** — role and capability
-   management. Depends on `smsengine-core`,
-   `smsengine-platform`, `smsengine-events`.
-4. **`smsengine-events`** — event bus port, envelope,
-   schema registry, outbox. Depends only on
-   `smsengine-core`.
-5. **`smsengine-audit`** — audit log port, query port,
-   retention policy, redactor. Depends only on
-   `smsengine-core`. (Added in v1 scaffold; see
-   `crates/audit/`.)
+```text
+core  ←  cross-cutting  ←  domains  ←  tools
+                          ↑
+                          └──  adapters  (also depends on core + cross-cutting)
+```
 
-**Per-tenant (1 crate)**
+- `core` depends on nothing in the workspace.
+- `cross-cutting` depends on `core`.
+- `domains` depends on `core` and `cross-cutting`
+  (and may depend on other `domains` crates only
+  with explicit justification in an ADR).
+- `adapters` depends on `core` and `cross-cutting`.
+- `tools` depends on `core`, `cross-cutting`,
+  `domains`, and `adapters`.
+- The `smsengine` umbrella crate re-exports each
+  internal crate under its short name
+  (`pub use smsengine_core as core;`,
+  `pub use smsengine_academic as academic;`, ...).
+  Consumers therefore write
+  `smsengine::academic::commands::*` and never need
+  to know the internal `smsengine-` prefix on the
+  package name.
 
-6. **`smsengine-settings`** — per-tenant configuration
-   registry. Depends on `smsengine-core`,
-   `smsengine-platform`.
+### Boundary enforcement
 
-**Domain (12 crates)**
+The boundary is enforced at **two levels**:
 
-7. `smsengine-academic`
-8. `smsengine-assessment`
-9. `smsengine-attendance`
-10. `smsengine-finance`
-11. `smsengine-hr`
-12. `smsengine-library`
-13. `smsengine-facilities`
-14. `smsengine-communication`
-15. `smsengine-documents`
-16. `smsengine-events-domain`
-17. `smsengine-cms`
-18. `smsengine-operations` (added in v1 scaffold;
-    see `crates/operations/`.)
+1. **Glob patterns in the root `Cargo.toml`.** The
+   virtual workspace uses one `members = [...]` glob
+   per tier (`crates/core/*/Cargo.toml`,
+   `crates/cross-cutting/*/Cargo.toml`, ...). This
+   means a single `cargo build --workspace` covers
+   the entire engine, and a single
+   `[workspace.dependencies]` /
+   `[workspace.lints]` block applies to all 34
+   crates. We considered Cargo's sub-workspace
+   feature (a `Cargo.toml` per tier with its own
+   `[workspace]` table) and chose glob patterns
+   instead: sub-workspaces require duplicating
+   `[workspace.dependencies]` and
+   `[workspace.lints]` in each sub-workspace's
+   `Cargo.toml`, which is a high maintenance cost
+   for no enforcement benefit.
+2. **`smsengine-core::lint` sub-module.** A build-
+   time check that walks every domain crate's
+   declared dependencies and rejects any import
+   that crosses a tier boundary upward (e.g. a
+   `crates/domains/<x>/` crate that depends on a
+   `crates/adapters/<y>/` crate, or a
+   `crates/cross-cutting/<x>/` crate that depends
+   on a `crates/domains/<y>/` crate). The lint
+   sub-module is the **authoritative boundary
+   enforcer**; the directory organization is for
+   humans, the lint is for the compiler.
 
-**Storage (5 crates)**
-
-19. **`smsengine-storage`** — the storage port trait.
-20. **`smsengine-storage-postgres`** — PostgreSQL
-    adapter (primary target).
-21. **`smsengine-storage-mysql`** — MySQL 8.0+
-    adapter (production target).
-22. **`smsengine-storage-sqlite`** — SQLite adapter
-    (embedded / offline mode).
-23. **`smsengine-storage-parity`** — cross-dialect
-    conformance test harness. (Added in v1
-    scaffold; see `crates/storage-parity/`.) Not
-    a runtime adapter; it runs the same query
-    suite against all three adapters and asserts
-    identical observable behavior.
-
-**Port adapters (6 crates)**
-
-24. **`smsengine-auth`** — authentication and
-    identity.
-25. **`smsengine-event-bus`** — concrete event
-    bus implementations.
-26. **`smsengine-files`** — file storage port.
-27. **`smsengine-integrations`** — third-party
-    integration adapters.
-28. **`smsengine-notify`** — notification delivery
-    (email, SMS, push).
-29. **`smsengine-payment`** — payment gateway port.
-
-**Proc-macro (1 crate)**
-
-30. **`smsengine-query-derive`** — the
-    `#[derive(DomainQuery)]` proc macro. Depends
-    on `syn`, `quote`, the compiler. This is the
-    only proc-macro crate in v1; additional
-    derives are added in subsequent phases.
-
-**Test infrastructure (1 crate)**
-
-31. **`smsengine-testkit`** — in-memory test
-    adapters for every port. Depends on every
-    domain crate. (Added in v1 scaffold; see
-    `crates/testkit/`.)
-
-**Operator tooling (1 crate)**
-
-32. **`smsengine-cli`** — operator tool. Optional.
-    (Added in v1 scaffold; see `crates/cli/`.)
-
-**High-level SDK (1 crate)**
-
-33. **`smsengine-sdk`** — consumer-facing high-level
-    SDK on top of the umbrella.
-
-**Umbrella (1 crate)**
-
-34. **`smsengine`** — the facade crate. Re-exports
-    the engine surface as a single, stable
-    `smsengine::Engine` API. Consumers depend on
-    `smsengine` (or, for finer control, on individual
-    domain crates). The 34 re-exports are listed in
-    `crates/smsengine/src/lib.rs`.
-
-Each crate has:
-
-- `Cargo.toml` with pinned dependencies.
-- `src/lib.rs` describing what the crate owns and
-  what it depends on.
-- `src/<module>.rs` per file in the standard
-  layout (`aggregate.rs`, `entities.rs`,
-  `value_objects.rs`, `commands.rs`, `events.rs`,
-  `services.rs`, `policies.rs`, `repository.rs`,
-  `query.rs`, `errors.rs`).
-- `tests/` with integration tests.
-- `README.md` summarizing the crate's purpose.
-
-A consumer enables a domain by depending on the
-corresponding crate. The `smsengine` facade re-exports
-the surface for convenience.
+The lint sub-module is a **Phase 0 deliverable** of
+`docs/build-plan.md` and lives in
+`crates/core/engine-core/src/lint.rs`. See
+`docs/build-plan.md` § "The No-Gaps Gates" for the
+full gate list.
 
 ### Crate status
 
 All 34 crates are scaffolded. Implementation begins
 in Phase 0 of `docs/build-plan.md`.
 
+The 5-tier layout was adopted in this restructure.
+All 34 crates retain their `smsengine-<name>` package
+names; only directory paths changed. The full path
+mapping is in the table above and in `AGENTS.md` §
+"Tier System".
+
+## Rationale
+
+### Why 5 tiers, not 3 (foundation/business/edges)
+
+A 3-tier "foundation / business / edges" grouping
+would mix the 6 cross-cutting foundations
+(platform, rbac, events, audit, settings,
+operations) with the 14 domain crates in a single
+business tier. A contributor landing in the
+`business/` directory would see 20+ crates and have
+no way to tell, at a glance, which are foundations
+and which are domains. Splitting cross-cutting out
+into its own tier lets a domain contributor navigate
+to `crates/domains/` and see the 10 domain crates
+in isolation; cross-cutting foundations are a
+deliberate hop away, and the dependency direction
+makes that hop explicit. The 5-tier model also
+isolates `tools/` (testkit, cli, sdk,
+storage-parity) from the runtime crates, which
+makes it obvious at a glance that `smsengine-cli`
+is not part of the engine's release artifact.
+
+### Why directory organization, not sub-workspaces
+
+Cargo's sub-workspace feature (a `Cargo.toml` per
+tier with its own `[workspace]` table) is a natural
+way to group crates, but it has a real cost: every
+sub-workspace's `Cargo.toml` must duplicate
+`[workspace.dependencies]` and `[workspace.lints]`
+(there is no `[workspace.dependencies]` inheritance
+across sub-workspaces). With 5 tiers, that is 5
+copies of the workspace metadata, all of which must
+be kept in sync by hand. A single root `[workspace]`
+with glob `members = [...]` patterns achieves the
+same organizational benefit (one directory per
+tier, one set of crates per directory) at zero
+maintenance cost. The tier boundaries are still
+enforced; they are enforced by
+`smsengine-core::lint` rather than by Cargo
+metadata.
+
+### Why strict enforcement via lint, not convention
+
+A domain crate that imports an adapter is a
+layer-boundary violation. So is a cross-cutting
+crate importing a domain crate. These violations
+are easy to introduce by accident and hard to
+spot in code review. The AGENTS.md file documents
+the rule, but a contributor who skims a domain
+crate's `Cargo.toml` and sees an adapter listed as
+a dependency will not be stopped by AGENTS.md
+alone. The `smsengine-core::lint` sub-module walks
+the workspace at build time and rejects any
+upward tier import. The cost is small (one module
+of ~200 lines); the benefit is that the boundary
+is enforced by the compiler rather than by
+discipline.
+
+### Migration history
+
+The engine was first scaffolded as a flat 29-crate
+layout under `crates/<name>/`. Five additional
+crates (`smsengine-audit`, `smsengine-operations`,
+`smsengine-testkit`, `smsengine-cli`,
+`smsengine-storage-parity`) were added during the
+v1 scaffold pass to reach 34. The 5-tier restructure
+moved all 34 crates into the directory organization
+described above; package names (`smsengine-<name>`)
+and crate contents are unchanged. The full migration
+is recorded in `docs/decisions/ADR-013-CrateLayout.md`
+(this document) and cross-referenced from
+`AGENTS.md` § "Tier System".
+
+## Consequences
+
 ### Positive
 
-- **Compile time scales linearly per domain.** A
-  change to `smsengine-academic` does not trigger
-  a rebuild of `smsengine-finance`. The iteration
-  loop is fast.
-- **Visibility is enforced.** Each domain's types
-  are `pub` within the crate and `pub` across
-  the crate boundary through explicit re-exports.
-  A domain that wants to hide an internal type
-  does so without ceremony.
-- **Consumers pull in only what they need.** A
-  small admin tool that needs only `academic`
-  and `rbac` compiles with only those two
-  crates (and their transitive deps).
-- **Refactoring is mechanical.** Moving an
-  aggregate from one domain to another is a
-  series of file moves and visibility tweaks.
-- **Domain boundaries are visible in the
-  dependency graph.** A consumer can audit
-  "which crates depend on which?" with
-  `cargo tree`.
-- **Test isolation.** Tests in `smsengine-finance`
-  do not run when `smsengine-academic` is built.
+- **Clean mental model.** A contributor knows which
+  tier their crate is in (the rule is one of
+  {core, cross-cutting, domains, adapters, tools,
+  umbrella}); the tier is the first thing to
+  communicate in a PR description.
+- **Faster navigation.** `ls crates/domains/`
+  shows the 10 domain crates in isolation.
+  `ls crates/cross-cutting/` shows the 7 cross-
+  cutting foundations. A contributor does not have
+  to read 34 directory names to find the right
+  crate.
+- **Strict boundary enforcement.** A domain crate
+  cannot import an adapter. A cross-cutting crate
+  cannot import a domain crate. The compiler
+  rejects the violation; the convention is not
+  left to memory.
+- **Per-tier CI parallelism.** A future change to
+  a domain crate can build only the
+  `crates/domains/<x>/` subtree and its
+  transitive workspace dependencies, skipping
+  the adapter crates entirely. (Not yet wired in
+  CI; the build-plan reserves this for a future
+  optimization.)
+- **Single source of truth for workspace
+  metadata.** One root `Cargo.toml` carries
+  `[workspace.dependencies]` and
+  `[workspace.lints]`; no tier-local copies to
+  keep in sync.
 
 ### Negative
 
-- **More crates, more boilerplate.** Each crate
-  has its own `Cargo.toml`, `lib.rs`, README.
-  This is paid once per crate, not per release.
-- **Cross-domain types are an explicit
-  re-export.** `StudentId` is defined in
-  `smsengine-academic`; consumers get it from
-  `smsengine` or from `smsengine-academic` directly.
-  The duplication is not real (it's re-exports),
-  but the choice is the consumer's.
-- **Workspace-wide refactors touch many
-  `Cargo.toml` files.** A version bump of a
-  shared crate updates the workspace's
-  `Cargo.toml` and every dependent crate's
-  `Cargo.toml`. This is mechanical.
-- **Discoverability.** A consumer landing in
-  the repo sees 25+ crates. The
-  `architecture.md` and the per-crate README
-  mitigate this.
-
-### Mitigations
-
-- The `smsengine` facade crate re-exports the
-  most common types, so a consumer who wants
-  the simple path can depend on a single
-  crate.
-- The workspace's top-level `Cargo.toml`
-  groups the crates and sets the workspace
-  dependencies.
-- The `code-standards.md` documents the
-  per-crate layout and the standard module
-  files.
-- A `cargo xtask` tool scaffolds a new domain
-  crate with the standard layout.
+- **Tier paths are 1 level deeper.** A domain
+  crate's source path is `crates/domains/<name>/`
+  rather than `crates/<name>/`. Imports between
+  crates use the same `smsengine_<name>` path as
+  before, but the on-disk path is one level
+  deeper.
+- **5 tier directories, but no sub-workspace
+  `Cargo.toml` files.** The single root
+  `Cargo.toml` is the source of truth; contributors
+  must not add a `Cargo.toml` at a tier root. This
+  is a convention enforced by the lint sub-module
+  and by code review.
+- **Tier boundary enforcement requires the lint
+  sub-module to be implemented.** The lint is a
+  Phase 0 deliverable; until it lands, the tier
+  boundaries are conventional, not enforced.
+- **Glob patterns in the root `Cargo.toml` must be
+  kept in sync with the tier layout.** Adding a
+  sixth tier in the future requires editing the
+  root `Cargo.toml`'s `members` glob. (This is a
+  one-line change, not a refactor.)
 
 ## Alternatives Considered
 
-### 1. Single crate, many modules
+| Alternative | Why not chosen |
+| --- | --- |
+| Flat 34-crate layout (`crates/<name>/`) | Works but doesn't scale past ~50 crates; no layer boundaries; a contributor landing in the repo sees 34 sibling directories with no signal as to which is which |
+| Sub-workspaces (5 `[workspace]` files, one per tier) | Each sub-workspace needs its own `[workspace.dependencies]` and `[workspace.lints]`; high maintenance cost (5 copies of workspace metadata, all of which must be kept in sync by hand) |
+| 3 tiers (foundation/business/edges) | 14 domain crates mixed with 6 cross-cutting foundations in the same tier; harder to navigate; the foundation/edges distinction doesn't map cleanly onto the engine's actual dependency graph |
+| Per-domain repository (polyrepo) | 34 repos with separate version control; CI complexity; loses atomic commits across crates; cross-cutting refactors become multi-PR coordination problems |
+| One giant `smsengine` crate | Fails on compile time, visibility control, consumer pull-in scope, and test isolation; see ADR-013 § "Context" for the full list |
+| One crate per aggregate | Hundreds of crates; the relationships between aggregates of the same domain are too tight to justify the per-aggregate boilerplate |
+| One crate per layer (commands/events/aggregates) | Separates the bounded context; a domain owns its commands, events, and aggregates together; separating them fragments the domain |
 
-All in one `smsengine` crate. Rejected per above:
-visibility, compile time, and consumption
-control suffer.
+## Cross-References
 
-### 2. One crate per aggregate
-
-Hundreds of crates, one per `Student`,
-`Invoice`, etc. Rejected because the
-relationships between aggregates of the same
-domain are too tight to justify the per-
-aggregate boilerplate.
-
-### 3. One crate per layer (commands,
-events, aggregates)
-
-`commands/`, `events/`, `aggregates/` as
-separate crates. Rejected because a domain
-owns its commands, its events, and its
-aggregates together; separating them
-fragments the bounded context.
-
-### 4. One crate per command or event
-
-Ultra-granular. Rejected for the same reasons
-as (2), amplified.
-
-### 5. Workspace per deployment shape
-(SaaS, on-premise, mobile)
-
-Three workspaces with overlapping crates.
-Rejected because the engine's code path is
-the same; the deployment shape is a runtime
-configuration, not a compile-time one.
-
-### 6. Hybrid: one crate per domain, but
-no `smsengine` facade
-
-Consumers depend on individual crates only.
-Rejected because the facade provides a
-stable, well-known entry point and reduces
-"which crate do I depend on for
-`Engine`?" friction. The facade is opt-in
-by name; consumers can still depend on
-individual crates directly.
+- `AGENTS.md` § "Tier System" — the operator's
+  summary of the 5-tier model and the dependency
+  direction.
+- `docs/build-plan.md` § "Tier System" and
+  § "The No-Gaps Gates" — the build-time gates
+  that depend on this layout (lint sub-module,
+  dependency-direction checks).
+- `docs/decisions/ADR-013-CrateLayout.md` — this
+  document.
+- `crates/smsengine/src/lib.rs` — the umbrella
+  re-exports (`pub use smsengine_core as core;`,
+  `pub use smsengine_academic as academic;`, ...).
