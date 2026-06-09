@@ -43,7 +43,7 @@ defense in depth.
 ```sql
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 CREATE POLICY students_school_isolation ON students
-    USING (school_id = current_setting('app.current_school_id')::int);
+    USING (school_id = current_setting('app.current_school_id')::uuid);
 ```
 
 The consumer sets `app.current_school_id` per connection from

@@ -400,8 +400,8 @@ changes, with the actor and the reason.
 ## Notes for SMSengine Implementation
 
 - The **hr** crate depends on
-  `smscore-academic` for class and subject
-  assignments and `smscore-finance` for
+  `smsengine-academic` for class and subject
+  assignments and `smsengine-finance` for
   payroll integration.
 - The HR domain is **eventually consistent**
   with finance (payroll), academic (class

@@ -33,7 +33,7 @@ The platform domain does **not** own:
 - Academic structures (classes, sections, subjects) — see
   `specs/academic/`.
 - Permissions, roles, and two-factor policies — see `specs/rbac/`.
-- School-wide settings, themes, languages — see `specs/settings/`.
+- School-wide settings, settings_themes, languages — see `specs/settings/`.
 - Backups, jobs, system versions, audit logs — see
   `specs/operations/`.
 - Authentication mechanisms (password hashing, JWT, OAuth) — these
@@ -52,7 +52,7 @@ The platform domain **does** provide:
 
 ## Dependencies
 
-- `smscore-core` — error types, identifier trait.
+- `smsengine-core` — error types, identifier trait.
 - No other engine domains.
 
 ## Domain Invariants

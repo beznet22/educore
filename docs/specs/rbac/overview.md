@@ -44,9 +44,9 @@ The RBAC domain does **not** own:
 
 ## Dependencies
 
-- `smscore-core` — error types, identifier trait.
-- `smscore-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smscore-events` — domain event publishing.
+- `smsengine-core` — error types, identifier trait.
+- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `smsengine-events` — domain event publishing.
 
 ## Domain Invariants
 
@@ -77,8 +77,6 @@ The RBAC domain does **not** own:
 | Capability               | `Capability`             | The atomic permission value (typed enum)    |
 | PermissionSection        | `PermissionSection`      | UI grouping label for permission categories |
 | AssignPermission         | `AssignPermission`       | A capability-to-role grant with overrides   |
-| InfixRole                | `InfixRole`              | SaaS-flavored role alternate (is_saas flag) |
-| InfixPermissionAssign    | `InfixPermissionAssign`  | SaaS-flavored permission assignment         |
 | ModulePermission         | `ModulePermission`       | A named dashboard-level permission group    |
 | ModulePermissionAssign   | `ModulePermissionAssign` | A module-permission-to-role grant           |
 | RolePermission           | `RolePermission`         | A module-link-to-role grant (menu binding)  |

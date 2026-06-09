@@ -84,11 +84,11 @@ crates/*
 Examples:
 
 ```text
-crates/smscore-core
-crates/smscore-academic
-crates/smscore-finance
-crates/smscore-storage
-crates/smscore-events
+crates/core            (package: smsengine-core)
+crates/academic        (package: smsengine-academic)
+crates/finance         (package: smsengine-finance)
+crates/storage         (package: smsengine-storage)
+crates/events          (package: smsengine-events)
 ```
 
 Avoid dependencies outside the workspace.

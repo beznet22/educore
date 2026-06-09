@@ -117,17 +117,17 @@ The default PostgreSQL adapter documents the following indexes; consumers
 should declare them in their migrations:
 
 ```sql
-CREATE INDEX ix_events_school_id_from_to ON sm_events (school_id, from_date, to_date);
-CREATE INDEX ix_events_school_id_audience ON sm_events (school_id, for_whom);
-CREATE INDEX ix_events_school_id_academic ON sm_events (school_id, academic_id);
-CREATE INDEX ix_holidays_school_id_from_to ON sm_holidays (school_id, from_date, to_date);
-CREATE INDEX ix_holidays_school_id_academic ON sm_holidays (school_id, academic_id);
-CREATE INDEX ix_weekends_school_id_name ON sm_weekends (school_id, name);
+CREATE INDEX ix_events_school_id_from_to ON events_events (school_id, from_date, to_date);
+CREATE INDEX ix_events_school_id_audience ON events_events (school_id, for_whom);
+CREATE INDEX ix_events_school_id_academic ON events_events (school_id, academic_id);
+CREATE INDEX ix_holidays_school_id_from_to ON operations_holidays (school_id, from_date, to_date);
+CREATE INDEX ix_holidays_school_id_academic ON operations_holidays (school_id, academic_id);
+CREATE INDEX ix_weekends_school_id_name ON operations_weekends (school_id, name);
 CREATE INDEX ix_incidents_school_id_status ON incidents (school_id);
 CREATE INDEX ix_assign_incidents_school_id_incident ON assign_incidents (school_id, incident_id);
 CREATE INDEX ix_assign_incidents_school_id_student ON assign_incidents (school_id, student_id);
 CREATE INDEX ix_assign_incident_comments_incident ON assign_incident_comments (incident_id);
-CREATE INDEX ix_calendar_settings_school_id_name ON sm_calendar_settings (school_id, menu_name);
+CREATE INDEX ix_calendar_settings_school_id_name ON operations_calendar_settings (school_id, menu_name);
 ```
 
 The `school_id` predicate is mandatory for tenant isolation.

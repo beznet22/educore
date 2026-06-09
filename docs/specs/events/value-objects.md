@@ -11,13 +11,13 @@ and the local id (`Uuid`).
 
 | Identifier                  | Backing Type           | Source Column                  |
 | --------------------------- | ---------------------- | ------------------------------ |
-| `CalendarEventId`           | `Id<CalendarEvent>`    | `sm_events.id`                 |
-| `HolidayId`                 | `Id<Holiday>`          | `sm_holidays.id`               |
-| `WeekendId`                 | `Id<Weekend>`          | `sm_weekends.id`               |
+| `CalendarEventId`           | `Id<CalendarEvent>`    | `events_calendar_events.id`                 |
+| `HolidayId`                 | `Id<Holiday>`          | `events_holidays.id`               |
+| `WeekendId`                 | `Id<Weekend>`          | `events_weekends.id`               |
 | `IncidentId`                | `Id<Incident>`         | `incidents.id`                 |
 | `AssignIncidentId`          | `Id<...>`              | `assign_incidents.id`          |
 | `IncidentCommentId`         | `Id<...>`              | `assign_incident_comments.id`  |
-| `CalendarSettingId`         | `Id<CalendarSetting>`  | `sm_calendar_settings.id`      |
+| `CalendarSettingId`         | `Id<CalendarSetting>`  | `events_calendar_settings.id`      |
 
 ## Event and Holiday
 
@@ -67,16 +67,16 @@ and the local id (`Uuid`).
 | --------------------- | ------------------------------------------------------------------ |
 | `EventDate`           | `NaiveDate`                                                        |
 | `DateRange`           | `(from: NaiveDate, to: NaiveDate)`, `from ≤ to`                    |
-| `AcademicYearId`      | From `smscore-academic`                                            |
-| `CreatedByUserId`     | From `smscore-platform`                                            |
-| `TenantContext`       | `(SchoolId, UserId, ...)` from `smscore-platform`                 |
+| `AcademicYearId`      | From `smsengine-academic`                                            |
+| `CreatedByUserId`     | From `smsengine-platform`                                            |
+| `TenantContext`       | `(SchoolId, UserId, ...)` from `smsengine-platform`                 |
 
 ## URL and File
 
 | Type                 | Notes                                                          |
 | -------------------- | -------------------------------------------------------------- |
 | `Url`                | Validated URL, max 2048 chars                                  |
-| `FileReference`      | From `smscore-platform`                                        |
+| `FileReference`      | From `smsengine-platform`                                        |
 
 ## Status Enums
 

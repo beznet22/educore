@@ -251,50 +251,50 @@ consumers should declare them in their migrations:
 
 ```sql
 -- Staff
-CREATE UNIQUE INDEX ux_sm_staffs_school_id_staff_no ON sm_staffs (school_id, staff_no) WHERE staff_no IS NOT NULL;
-CREATE UNIQUE INDEX ux_sm_staffs_school_id_email ON sm_staffs (school_id, email) WHERE email IS NOT NULL;
-CREATE UNIQUE INDEX ux_sm_staffs_school_id_mobile ON sm_staffs (school_id, mobile) WHERE mobile IS NOT NULL;
-CREATE UNIQUE INDEX ux_sm_staffs_school_id_user_id ON sm_staffs (school_id, user_id);
-CREATE INDEX ix_sm_staffs_school_id_department ON sm_staffs (school_id, department_id);
-CREATE INDEX ix_sm_staffs_school_id_designation ON sm_staffs (school_id, designation_id);
-CREATE INDEX ix_sm_staffs_school_id_role ON sm_staffs (school_id, role_id);
+CREATE UNIQUE INDEX ux_hr_staffs_school_id_staff_no ON hr_staffs (school_id, staff_no) WHERE staff_no IS NOT NULL;
+CREATE UNIQUE INDEX ux_hr_staffs_school_id_email ON hr_staffs (school_id, email) WHERE email IS NOT NULL;
+CREATE UNIQUE INDEX ux_hr_staffs_school_id_mobile ON hr_staffs (school_id, mobile) WHERE mobile IS NOT NULL;
+CREATE UNIQUE INDEX ux_hr_staffs_school_id_user_id ON hr_staffs (school_id, user_id);
+CREATE INDEX ix_hr_staffs_school_id_department ON hr_staffs (school_id, department_id);
+CREATE INDEX ix_hr_staffs_school_id_designation ON hr_staffs (school_id, designation_id);
+CREATE INDEX ix_hr_staffs_school_id_role ON hr_staffs (school_id, role_id);
 -- Department / Designation
-CREATE UNIQUE INDEX ux_sm_human_departments_school_id_name ON sm_human_departments (school_id, name);
-CREATE UNIQUE INDEX ux_sm_designations_school_id_title ON sm_designations (school_id, title);
+CREATE UNIQUE INDEX ux_hr_human_departments_school_id_name ON hr_departments (school_id, name);
+CREATE UNIQUE INDEX ux_hr_designations_school_id_title ON hr_designations (school_id, title);
 -- Leave
-CREATE INDEX ix_sm_leave_types_school_id ON sm_leave_types (school_id);
-CREATE INDEX ix_sm_leave_defines_school_id_role_type ON sm_leave_defines (school_id, role_id, type_id, academic_id);
-CREATE INDEX ix_sm_leave_defines_school_id_user_type ON sm_leave_defines (school_id, user_id, type_id, academic_id);
-CREATE INDEX ix_sm_leave_requests_school_id_staff ON sm_leave_requests (school_id, staff_id);
-CREATE INDEX ix_sm_leave_requests_school_id_status ON sm_leave_requests (school_id, approve_status);
-CREATE INDEX ix_sm_leave_requests_school_id_type ON sm_leave_requests (school_id, type_id);
+CREATE INDEX ix_hr_leave_types_school_id ON hr_leave_types (school_id);
+CREATE INDEX ix_hr_leave_defines_school_id_role_type ON hr_leave_defines (school_id, role_id, type_id, academic_id);
+CREATE INDEX ix_hr_leave_defines_school_id_user_type ON hr_leave_defines (school_id, user_id, type_id, academic_id);
+CREATE INDEX ix_hr_leave_requests_school_id_staff ON hr_leave_requests (school_id, staff_id);
+CREATE INDEX ix_hr_leave_requests_school_id_status ON hr_leave_requests (school_id, approve_status);
+CREATE INDEX ix_hr_leave_requests_school_id_type ON hr_leave_requests (school_id, type_id);
 -- Attendance
-CREATE UNIQUE INDEX ux_sm_staff_attendences_school_id_staff_date ON sm_staff_attendences (school_id, staff_id, attendance_date);
-CREATE INDEX ix_sm_staff_attendences_school_id_date ON sm_staff_attendences (school_id, attendance_date);
-CREATE INDEX ix_sm_staff_attendance_imports_school_id_staff ON sm_staff_attendance_imports (school_id, staff_id);
-CREATE INDEX ix_sm_staff_attendance_imports_school_id_date ON sm_staff_attendance_imports (school_id, attendence_date);
+CREATE UNIQUE INDEX ux_hr_staff_attendences_school_id_staff_date ON hr_staff_attendances (school_id, staff_id, attendance_date);
+CREATE INDEX ix_attendance_staff_attendances_school_id_date ON hr_staff_attendances (school_id, attendance_date);
+CREATE INDEX ix_attendance_staff_attendance_imports_school_id_staff ON attendance_staff_attendance_imports (school_id, staff_id);
+CREATE INDEX ix_attendance_staff_attendance_imports_school_id_date ON attendance_staff_attendance_imports (school_id, attendence_date);
 -- Class teacher
-CREATE UNIQUE INDEX ux_sm_assign_class_teachers_school_id_class_section_year
-  ON sm_assign_class_teachers (school_id, class_id, section_id, academic_id);
-CREATE INDEX ix_sm_assign_class_teachers_school_id_school_year ON sm_assign_class_teachers (school_id, academic_id);
+CREATE UNIQUE INDEX ux_hr_assign_class_teachers_school_id_class_section_year
+  ON hr_assign_class_teachers (school_id, class_id, section_id, academic_id);
+CREATE INDEX ix_hr_assign_class_teachers_school_id_school_year ON hr_assign_class_teachers (school_id, academic_id);
 -- Salary / Rate
-CREATE UNIQUE INDEX ux_sm_hr_salary_templates_school_id_grade ON sm_hr_salary_templates (school_id, salary_grades, academic_id);
-CREATE UNIQUE INDEX ux_sm_hourly_rates_school_id_grade ON sm_hourly_rates (school_id, grade, academic_id);
+CREATE UNIQUE INDEX ux_hr_hr_salary_templates_school_id_grade ON hr_salary_templates (school_id, salary_grades, academic_id);
+CREATE UNIQUE INDEX ux_hr_hourly_rates_school_id_grade ON hr_hourly_rates (school_id, grade, academic_id);
 -- Payroll
-CREATE INDEX ix_sm_hr_payroll_generates_school_id_staff ON sm_hr_payroll_generates (school_id, staff_id);
-CREATE UNIQUE INDEX ux_sm_hr_payroll_generates_school_id_staff_period
-  ON sm_hr_payroll_generates (school_id, staff_id, payroll_month, payroll_year);
-CREATE INDEX ix_sm_hr_payroll_generates_school_id_status ON sm_hr_payroll_generates (school_id, payroll_status);
-CREATE INDEX ix_sm_hr_payroll_earn_deducs_school_id_payroll ON sm_hr_payroll_earn_deducs (school_id, payroll_generate_id);
+CREATE INDEX ix_hr_payroll_generates_school_id_staff ON hr_payroll_generates (school_id, staff_id);
+CREATE UNIQUE INDEX ux_hr_hr_payroll_generates_school_id_staff_period
+  ON hr_payroll_generates (school_id, staff_id, payroll_month, payroll_year);
+CREATE INDEX ix_hr_payroll_generates_school_id_status ON hr_payroll_generates (school_id, payroll_status);
+CREATE INDEX ix_hr_payroll_earn_deducs_school_id_payroll ON hr_payroll_earn_deducs (school_id, payroll_generate_id);
 -- Leave deduction
-CREATE INDEX ix_sm_leave_deduction_infos_school_id_staff ON sm_leave_deduction_infos (school_id, staff_id);
-CREATE INDEX ix_sm_leave_deduction_infos_school_id_payroll ON sm_leave_deduction_infos (school_id, payroll_id);
+CREATE INDEX ix_hr_leave_deduction_infos_school_id_staff ON hr_leave_deduction_infos (school_id, staff_id);
+CREATE INDEX ix_hr_leave_deduction_infos_school_id_payroll ON hr_leave_deduction_infos (school_id, payroll_id);
 -- Registration field
-CREATE INDEX ix_sm_staff_registration_fields_school_id ON sm_staff_registration_fields (school_id, position);
+CREATE INDEX ix_hr_staff_registration_fields_school_id ON hr_staff_registration_fields (school_id, position);
 -- Bulk import
-CREATE INDEX ix_staff_import_bulk_temporaries_user_id ON staff_import_bulk_temporaries (user_id);
-CREATE INDEX ix_staff_import_bulk_temporaries_email ON staff_import_bulk_temporaries (email);
-CREATE INDEX ix_staff_import_bulk_temporaries_staff_no ON staff_import_bulk_temporaries (staff_no);
+CREATE INDEX ix_staff_import_bulk_temporaries_user_id ON hr_staff_import_bulk_temporaries (user_id);
+CREATE INDEX ix_staff_import_bulk_temporaries_email ON hr_staff_import_bulk_temporaries (email);
+CREATE INDEX ix_staff_import_bulk_temporaries_staff_no ON hr_staff_import_bulk_temporaries (staff_no);
 ```
 
 The `school_id` predicate is mandatory for tenant isolation.

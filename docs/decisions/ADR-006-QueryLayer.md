@@ -159,7 +159,7 @@ per-domain `repositories.md` files.
 
 ### Mitigations
 
-- The macro crate (`smscore-query-derive`) is itself cargo-cacheable
+- The macro crate (`smsengine-query-derive`) is itself cargo-cacheable
   and incremental.
 - Builder trait provides common methods (`where_eq`, `where_in`,
   `order_by`, `limit`, `paginate`) that work for any aggregate.

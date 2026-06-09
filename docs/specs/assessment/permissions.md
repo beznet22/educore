@@ -140,7 +140,7 @@ domain maps capabilities to roles.
 
 - `ExamRoutine.Publish`
 - `ExamRoutinePage.Update`
-- `FrontResult.Publish`
+- `FrontendResult.Publish`
 - `FrontendExamResult.Update`
 
 ### Exam Signature / Settings

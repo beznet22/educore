@@ -245,7 +245,7 @@ A `strftime` pattern with a human-readable preview (`normal_view`).
 ### Purpose
 
 A color palette and chart palette. Drives the dashboard chart
-colors, sidebar background, and primary text/background colors.
+settings_colors, sidebar background, and primary text/background settings_colors.
 
 ### Invariants
 
@@ -417,7 +417,7 @@ consumer.
 6. `box_shadow` is a boolean.
 7. `is_default` is a boolean; the engine refuses to delete a
    default theme.
-8. `is_system` is a boolean; system themes are seeded by the
+8. `is_system` is a boolean; system settings_themes are seeded by the
    engine and cannot be deleted.
 
 ### Commands

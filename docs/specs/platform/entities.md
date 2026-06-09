@@ -296,21 +296,24 @@ A chapter marker on a video upload (timestamp, title).
 
 A per-user view record (who watched, when, how much).
 
-## InfixModuleInfo
+## ModuleInfo
 
-**Identity:** `InfixModuleInfoId(SchoolId, Uuid)`
+**Identity:** `ModuleInfoId(SchoolId, Uuid)`
 **Owner:** `Module` (logical; used by RBAC to map module ids
 to their display info)
 
 A denormalized module info row carrying the module's display
 metadata (icon, lang name, route, parent route, type). The
 `type` field discriminates `module` (1), `module_link` (2),
-`module_link_crud` (3).
+`module_link_crud` (3). This aggregate replaces the legacy
+`InfixModuleInfo` brand artifact.
 
-## InfixModuleManager
+## ModuleManager
 
-**Identity:** `InfixModuleManagerId(Uuid)` (global)
+**Identity:** `ModuleManagerId(Uuid)` (global)
 **Owner:** `ModuleManager`
 
-A legacy compatibility row mirroring `ModuleManager` with
-saas-aware fields (`is_default`, `addon_url`, `lang_type`).
+A module-manager row carrying the platform's per-tenant module
+configuration (`is_default`, `addon_url`, `lang_type`). This
+aggregate replaces the legacy `InfixModuleManager` brand artifact
+and lives in the `platform` domain, not as a SaaS-scoped shadow.

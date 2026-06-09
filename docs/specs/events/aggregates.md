@@ -238,7 +238,7 @@ Settings drive the visual categorization of calendar entries.
 1. A `CalendarSetting` has a non-empty `menu_name`.
 2. The `status` field is `Enabled` or `Disabled`. Disabled settings
    are not surfaced in the calendar UI.
-3. The colors are CSS color strings (hex codes or named colors).
+3. The settings_colors are CSS color strings (hex codes or named settings_colors).
 4. A setting is uniquely named within a school.
 
 ### Commands

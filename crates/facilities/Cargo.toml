@@ -1,0 +1,20 @@
+[package]
+name = "smsengine-facilities"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Transport vehicles and routes, dormitories and rooms, inventory and suppliers."
+
+[lints]
+workspace = true
+
+[dependencies]
+smsengine-core = { workspace = true }
+smsengine-platform = { workspace = true }
+smsengine-rbac = { workspace = true }
+smsengine-events = { workspace = true }
+smsengine-academic = { workspace = true }
+smsengine-settings = { workspace = true }
+

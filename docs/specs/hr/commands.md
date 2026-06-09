@@ -181,8 +181,8 @@ pub struct CreateDepartmentCommand {
 `Department.Delete`.
 
 A department cannot be deleted while any `Staff` references it. A
-department with `is_saas` set is system-defined and cannot be
-deleted.
+department with `is_system_defined` set is system-defined and cannot
+be deleted.
 
 ## Designation
 
@@ -199,8 +199,8 @@ pub struct CreateDesignationCommand {
 `Designation.Delete`.
 
 A designation cannot be deleted while any `Staff` references it. A
-designation with `is_saas` set is system-defined and cannot be
-deleted.
+designation with `is_system_defined` set is system-defined and
+cannot be deleted.
 
 ## AssignClassTeacher
 

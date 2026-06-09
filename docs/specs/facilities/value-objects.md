@@ -12,21 +12,21 @@ explicit cross-tenant commands.
 
 | Identifier            | Backing Type         | Source Column                  |
 | --------------------- | -------------------- | ------------------------------ |
-| `VehicleId`           | `Id<Vehicle>`        | `sm_vehicles.id`               |
-| `RouteId`             | `Id<Route>`          | `sm_routes.id`                 |
-| `AssignVehicleId`     | `Id<AssignVehicle>`  | `sm_assign_vehicles.id`        |
-| `DormitoryId`         | `Id<Dormitory>`      | `sm_dormitory_lists.id`        |
-| `RoomId`              | `Id<Room>`           | `sm_room_lists.id`             |
-| `RoomTypeId`          | `Id<RoomType>`       | `sm_room_types.id`             |
-| `ItemCategoryId`      | `Id<ItemCategory>`   | `sm_item_categories.id`        |
-| `ItemId`              | `Id<Item>`           | `sm_items.id`                  |
-| `ItemStoreId`         | `Id<ItemStore>`      | `sm_item_stores.id`            |
-| `ItemIssueId`         | `Id<ItemIssue>`      | `sm_item_issues.id`            |
-| `ItemReceiveId`      | `Id<ItemReceive>`    | `sm_item_receives.id`          |
-| `ItemReceiveChildId`  | `Id<...>`            | `sm_item_receive_children.id`  |
-| `ItemSellId`          | `Id<ItemSell>`       | `sm_item_sells.id`             |
-| `ItemSellChildId`     | `Id<...>`            | `sm_item_sell_children.id`     |
-| `SupplierId`          | `Id<Supplier>`       | `sm_suppliers.id`              |
+| `VehicleId`           | `Id<Vehicle>`        | `facilities_vehicles.id`               |
+| `RouteId`             | `Id<Route>`          | `facilities_routes.id`                 |
+| `AssignVehicleId`     | `Id<AssignVehicle>`  | `facilities_assign_vehicles.id`        |
+| `DormitoryId`         | `Id<Dormitory>`      | `facilities_dormitories.id`        |
+| `RoomId`              | `Id<Room>`           | `facilities_rooms.id`             |
+| `RoomTypeId`          | `Id<RoomType>`       | `facilities_room_types.id`             |
+| `ItemCategoryId`      | `Id<ItemCategory>`   | `facilities_item_categories.id`        |
+| `ItemId`              | `Id<Item>`           | `facilities_items.id`                  |
+| `ItemStoreId`         | `Id<ItemStore>`      | `facilities_item_stores.id`            |
+| `ItemIssueId`         | `Id<ItemIssue>`      | `facilities_item_issues.id`            |
+| `ItemReceiveId`      | `Id<ItemReceive>`    | `facilities_item_receives.id`          |
+| `ItemReceiveChildId`  | `Id<...>`            | `facilities_item_receive_children.id`  |
+| `ItemSellId`          | `Id<ItemSell>`       | `facilities_item_sells.id`             |
+| `ItemSellChildId`     | `Id<...>`            | `facilities_item_sell_children.id`     |
+| `SupplierId`          | `Id<Supplier>`       | `facilities_suppliers.id`              |
 | `RouteStopId`         | `Id<RouteStop>`      | (derived)                      |
 | `RoomAssignmentId`    | `Id<...>`            | (derived)                      |
 | `TransportMembershipId` | `Id<...>`          | (derived)                      |
@@ -36,15 +36,15 @@ Identifiers from other domains referenced by the facilities domain:
 
 | Identifier         | Source Domain    |
 | ------------------ | ---------------- |
-| `SchoolId`         | `smscore-platform` |
-| `UserId`           | `smscore-platform` |
-| `StudentId`        | `smscore-academic` |
-| `StaffId`          | `smscore-hr`        |
-| `RoleId`           | `smscore-rbac`     |
-| `AcademicYearId`   | `smscore-academic` |
-| `ClassId`          | `smscore-academic` |
-| `SectionId`        | `smscore-academic` |
-| `TenantContext`    | `smscore-platform` |
+| `SchoolId`         | `smsengine-platform` |
+| `UserId`           | `smsengine-platform` |
+| `StudentId`        | `smsengine-academic` |
+| `StaffId`          | `smsengine-hr`        |
+| `RoleId`           | `smsengine-rbac`     |
+| `AcademicYearId`   | `smsengine-academic` |
+| `ClassId`          | `smsengine-academic` |
+| `SectionId`        | `smsengine-academic` |
+| `TenantContext`    | `smsengine-platform` |
 
 ## Names & Numbers
 
@@ -144,10 +144,10 @@ or numerics where a value object exists.
 
 | Type              | Notes                                                    |
 | ----------------- | -------------------------------------------------------- |
-| `SchoolId`        | From `smscore-platform`                                  |
-| `UserId`          | From `smscore-platform`                                  |
-| `TenantContext`   | From `smscore-platform`                                  |
-| `StudentId`       | From `smscore-academic` (read-only reference)            |
-| `StaffId`         | From `smscore-hr` (read-only reference)                  |
-| `AcademicYearId`  | From `smscore-academic` (read-only reference)            |
-| `RoleId`          | From `smscore-rbac` (read-only reference)                |
+| `SchoolId`        | From `smsengine-platform`                                  |
+| `UserId`          | From `smsengine-platform`                                  |
+| `TenantContext`   | From `smsengine-platform`                                  |
+| `StudentId`       | From `smsengine-academic` (read-only reference)            |
+| `StaffId`         | From `smsengine-hr` (read-only reference)                  |
+| `AcademicYearId`  | From `smsengine-academic` (read-only reference)            |
+| `RoleId`          | From `smsengine-rbac` (read-only reference)                |

@@ -1,0 +1,22 @@
+[package]
+name = "smsengine-storage-mysql"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Reference MySQL storage adapter."
+
+[lints]
+workspace = true
+
+[dependencies]
+smsengine-core = { workspace = true }
+smsengine-storage = { workspace = true }
+sqlx = { workspace = true }
+mysql_async = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+

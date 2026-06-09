@@ -216,7 +216,7 @@ CREATE INDEX ix_background_settings_school_id_default ON background_settings (sc
 CREATE INDEX ix_dashboard_settings_school_id_role ON dashboard_settings (school_id, role_id);
 CREATE UNIQUE INDEX ux_dashboard_settings_school_id_sec_role ON dashboard_settings (school_id, dashboard_sec_id, role_id);
 CREATE UNIQUE INDEX ux_custom_links_school_id ON custom_links (school_id);
-CREATE UNIQUE INDEX ux_themes_school_id_title ON themes (school_id, title);
+CREATE UNIQUE INDEX ux_themes_school_id_title ON settings_themes (school_id, title);
 CREATE INDEX ix_color_themes_theme_id ON color_themes (theme_id);
 CREATE INDEX ix_color_themes_color_id ON color_themes (color_id);
 CREATE UNIQUE INDEX ux_color_themes_color_theme ON color_themes (color_id, theme_id);

@@ -221,29 +221,29 @@ The default PostgreSQL adapter documents the following indexes; consumers
 should declare them in their migrations:
 
 ```sql
-CREATE INDEX ix_pages_school_id_status ON infixedu__pages (school_id, status);
-CREATE INDEX ix_pages_school_id_slug ON infixedu__pages (school_id, slug);
-CREATE INDEX ix_pages_school_id_home ON infixedu__pages (school_id, home_page) WHERE home_page = 1;
-CREATE INDEX ix_news_school_id_category ON sm_news (school_id, category_id);
-CREATE INDEX ix_news_school_id_publish ON sm_news (school_id, publish_date);
-CREATE INDEX ix_news_school_id_active ON sm_news (school_id, active_status);
-CREATE INDEX ix_news_school_id_global ON sm_news (is_global) WHERE is_global = 1;
-CREATE INDEX ix_news_comments_news_id ON sm_news_comments (news_id);
-CREATE INDEX ix_news_comments_user_id ON sm_news_comments (user_id);
-CREATE INDEX ix_news_categories_school_id_name ON sm_news_categories (school_id, category_name);
-CREATE INDEX ix_notice_boards_school_id_publish ON sm_notice_boards (school_id, publish_on);
-CREATE INDEX ix_notice_boards_school_id_published ON sm_notice_boards (school_id, is_published);
-CREATE INDEX ix_testimonials_school_id ON sm_testimonials (school_id);
+CREATE INDEX ix_cms_pages_school_id_status ON cms_pages (school_id, status);
+CREATE INDEX ix_cms_pages_school_id_slug ON cms_pages (school_id, slug);
+CREATE INDEX ix_cms_pages_school_id_home ON cms_pages (school_id, home_page) WHERE home_page = 1;
+CREATE INDEX ix_cms_news_school_id_category ON cms_news (school_id, category_id);
+CREATE INDEX ix_cms_news_school_id_publish ON cms_news (school_id, publish_date);
+CREATE INDEX ix_cms_news_school_id_active ON cms_news (school_id, active_status);
+CREATE INDEX ix_cms_news_school_id_global ON cms_news (is_global) WHERE is_global = 1;
+CREATE INDEX ix_cms_news_comments_news_id ON cms_news_comments (news_id);
+CREATE INDEX ix_news_comments_user_id ON cms_news_comments (user_id);
+CREATE INDEX ix_news_categories_school_id_name ON cms_news_categories (school_id, category_name);
+CREATE INDEX ix_notice_boards_school_id_publish ON communication_notice_boards (school_id, publish_on);
+CREATE INDEX ix_notice_boards_school_id_published ON communication_notice_boards (school_id, is_published);
+CREATE INDEX ix_testimonials_school_id ON cms_testimonials (school_id);
 CREATE INDEX ix_home_sliders_school_id ON home_sliders (school_id);
 CREATE INDEX ix_speech_sliders_school_id ON speech_sliders (school_id);
 CREATE INDEX ix_contents_school_id_type ON contents (school_id, content_type_id);
 CREATE INDEX ix_contents_school_id_academic ON contents (school_id, academic_id);
 CREATE INDEX ix_content_share_lists_school_id ON content_share_lists (school_id, share_date);
-CREATE INDEX ix_teacher_upload_contents_school_id_class ON sm_teacher_upload_contents (school_id, class, section);
-CREATE INDEX ix_teacher_upload_contents_school_id_academic ON sm_teacher_upload_contents (school_id, academic_id);
-CREATE INDEX ix_upload_contents_school_id ON sm_upload_contents (school_id, content_type);
-CREATE INDEX ix_course_pages_school_id_parent ON sm_course_pages (school_id, is_parent);
-CREATE INDEX ix_pages_school_id_sub_title ON sm_pages (school_id, sub_title);
+CREATE INDEX ix_teacher_upload_contents_school_id_class ON cms_teacher_upload_contents (school_id, class, section);
+CREATE INDEX ix_teacher_upload_contents_school_id_academic ON cms_teacher_upload_contents (school_id, academic_id);
+CREATE INDEX ix_upload_contents_school_id ON cms_upload_contents (school_id, content_type);
+CREATE INDEX ix_course_pages_school_id_parent ON cms_course_pages (school_id, is_parent);
+CREATE INDEX ix_pages_school_id_sub_title ON cms_frontend_pages (school_id, sub_title);
 ```
 
 The `school_id` predicate is mandatory for tenant isolation.

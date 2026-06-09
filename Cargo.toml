@@ -1,0 +1,186 @@
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/smsengine/smsengine"
+homepage = "https://smsengine.dev"
+documentation = "https://docs.rs/smsengine"
+readme = "README.md"
+keywords = ["school", "domain-engine", "ddd", "multi-tenant", "education"]
+categories = ["domain-modeling", "data-structures"]
+publish = false
+
+[workspace.dependencies]
+# Umbrella
+smsengine = { path = "crates/smsengine" }
+
+# Internal crates (package names retain the smsengine- prefix; directory names omit it)
+smsengine-core = { path = "crates/core" }
+smsengine-query-derive = { path = "crates/query-derive" }
+smsengine-platform = { path = "crates/platform" }
+smsengine-rbac = { path = "crates/rbac" }
+smsengine-settings = { path = "crates/settings" }
+smsengine-events = { path = "crates/events" }
+smsengine-academic = { path = "crates/academic" }
+smsengine-assessment = { path = "crates/assessment" }
+smsengine-attendance = { path = "crates/attendance" }
+smsengine-finance = { path = "crates/finance" }
+smsengine-hr = { path = "crates/hr" }
+smsengine-library = { path = "crates/library" }
+smsengine-facilities = { path = "crates/facilities" }
+smsengine-communication = { path = "crates/communication" }
+smsengine-events-domain = { path = "crates/events-domain" }
+smsengine-documents = { path = "crates/documents" }
+smsengine-cms = { path = "crates/cms" }
+smsengine-storage = { path = "crates/storage" }
+smsengine-storage-postgres = { path = "crates/storage-postgres" }
+smsengine-storage-mysql = { path = "crates/storage-mysql" }
+smsengine-storage-sqlite = { path = "crates/storage-sqlite" }
+smsengine-auth = { path = "crates/auth" }
+smsengine-notify = { path = "crates/notify" }
+smsengine-payment = { path = "crates/payment" }
+smsengine-files = { path = "crates/files" }
+smsengine-event-bus = { path = "crates/event-bus" }
+smsengine-integrations = { path = "crates/integrations" }
+smsengine-sdk = { path = "crates/sdk" }
+smsengine-audit = { path = "crates/audit" }
+smsengine-operations = { path = "crates/operations" }
+smsengine-testkit = { path = "crates/testkit" }
+smsengine-cli = { path = "crates/cli" }
+smsengine-storage-parity = { path = "crates/storage-parity" }
+
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Errors
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Identifiers and time
+uuid = { version = "1.10", features = ["v4", "v7", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+time = { version = "0.3", features = ["serde", "macros"] }
+ulid = { version = "1.1", features = ["serde"] }
+
+# Tracing and observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Hashing and crypto
+argon2 = "0.5"
+hmac = "0.12"
+sha2 = "0.10"
+rand = "0.8"
+secrecy = "0.10"
+
+# Money and decimal
+rust_decimal = { version = "1.36", features = ["serde-with-str"] }
+rust_decimal_macros = "1.36"
+
+# Regular expressions
+regex = "1.10"
+once_cell = "1.20"
+
+# TLS (rustls only — never native-tls)
+rustls = "0.23"
+rustls-pemfile = "2.1"
+rustls-webpki = "0.102"
+
+# HTTP (for adapters)
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
+
+# SQL adapters — multi-dialect (PostgreSQL, MySQL, SQLite)
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "macros", "json", "uuid", "chrono", "rust_decimal", "mysql", "postgres", "sqlite"] }
+
+# MySQL native driver
+mysql_async = { version = "0.34", default-features = false, features = ["rustls-tls"] }
+
+# SurrealDB and MongoDB adapters are deferred to a future release.
+# See docs/ports/storage.md#future-storage-backends for the rationale.
+# The dependencies below are intentionally not declared in the
+# workspace. Consumers who need them must add them in their own
+# Cargo.toml and implement the StorageAdapter trait in-tree.
+
+# File storage
+aws-sdk-s3 = { version = "1.55", features = ["behavior-version-latest"] }
+
+# Email
+lettre = { version = "0.11", default-features = false, features = ["rustls-tls", "tokio1-native-tls"] }
+
+# Validation
+validator = { version = "0.18", features = ["derive"] }
+
+# Collections
+indexmap = { version = "2.5", features = ["serde"] }
+
+# Derive helpers
+derive_more = { version = "1.0", features = ["full"] }
+
+# Procedural macro deps
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "2.0", features = ["full", "extra-traits"] }
+
+# Config / dotenv
+dotenvy = "0.15"
+
+# Logging init
+env_logger = "0.11"
+
+[profile.dev]
+opt-level = 0
+debug = true
+incremental = true
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+debug = false
+panic = "abort"
+strip = "symbols"
+
+[profile.bench]
+opt-level = 3
+debug = false
+lto = "thin"
+
+[profile.test]
+opt-level = 0
+debug = true
+
+# Workspace lints — fail on warnings
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+missing_errors_doc = "warn"
+missing_panics_doc = "warn"
+cast_possible_truncation = "deny"
+cast_possible_wrap = "deny"
+cast_lossless = "deny"
+cast_sign_loss = "deny"
+unnecessary_wraps = "warn"
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "warn"
+dbg_macro = "deny"
+print_stdout = "deny"
+print_stderr = "deny"

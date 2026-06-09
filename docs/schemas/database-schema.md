@@ -77,7 +77,7 @@ Every aggregate root carries a `school_id`. The engine's storage
 adapters MUST:
 
 - Add a database-level row-security policy on every aggregate table:
-  `USING (school_id = current_setting('app.school_id')::int)` (or the
+  `USING (school_id = current_setting('app.school_id')::uuid)` (or the
   adapter's equivalent mechanism for the target database).
 - Inject a `school_id` predicate into every query unless the caller is
   an explicit, capability-gated cross-tenant operation.

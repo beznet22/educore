@@ -12,10 +12,10 @@ through explicit cross-tenant commands.
 
 | Identifier           | Backing Type            | Source Column              |
 | -------------------- | ----------------------- | -------------------------- |
-| `BookId`             | `Id<Book>`              | `sm_books.id`              |
-| `BookCategoryId`     | `Id<BookCategory>`      | `sm_book_categories.id`    |
-| `LibraryMemberId`    | `Id<LibraryMember>`     | `sm_library_members.id`    |
-| `BookIssueId`        | `Id<BookIssue>`         | `sm_book_issues.id`        |
+| `BookId`             | `Id<Book>`              | `library_books.id`              |
+| `BookCategoryId`     | `Id<BookCategory>`      | `library_book_categories.id`    |
+| `LibraryMemberId`    | `Id<LibraryMember>`     | `library_members.id`    |
+| `BookIssueId`        | `Id<BookIssue>`         | `library_book_issues.id`        |
 | `BookIssueRenewalId` | `Id<...>`               | (derived)                  |
 | `BookIssueFineId`    | `Id<...>`               | (derived)                  |
 | `BookAcquisitionId`  | `Id<...>`               | (derived)                  |
@@ -26,14 +26,14 @@ Identifiers from other domains referenced by the library domain:
 
 | Identifier         | Source Domain      |
 | ------------------ | ------------------ |
-| `SchoolId`         | `smscore-platform`   |
-| `UserId`           | `smscore-platform`   |
-| `StudentId`        | `smscore-academic`   |
-| `StaffId`          | `smscore-hr`         |
-| `RoleId`           | `smscore-rbac`       |
-| `SubjectId`        | `smscore-academic`   |
-| `AcademicYearId`   | `smscore-academic`   |
-| `TenantContext`    | `smscore-platform`   |
+| `SchoolId`         | `smsengine-platform`   |
+| `UserId`           | `smsengine-platform`   |
+| `StudentId`        | `smsengine-academic`   |
+| `StaffId`          | `smsengine-hr`         |
+| `RoleId`           | `smsengine-rbac`       |
+| `SubjectId`        | `smsengine-academic`   |
+| `AcademicYearId`   | `smsengine-academic`   |
+| `TenantContext`    | `smsengine-platform`   |
 
 ## Bibliographic
 
@@ -121,11 +121,11 @@ strings or numerics where a value object exists.
 
 | Type              | Notes                                                    |
 | ----------------- | -------------------------------------------------------- |
-| `SchoolId`        | From `smscore-platform`                                  |
-| `UserId`          | From `smscore-platform`                                  |
-| `TenantContext`   | From `smscore-platform`                                  |
-| `StudentId`       | From `smscore-academic` (read-only reference)            |
-| `StaffId`         | From `smscore-hr` (read-only reference)                  |
-| `AcademicYearId`  | From `smscore-academic` (read-only reference)            |
-| `RoleId`          | From `smscore-rbac` (read-only reference)                |
-| `SubjectId`       | From `smscore-academic` (read-only reference)            |
+| `SchoolId`        | From `smsengine-platform`                                  |
+| `UserId`          | From `smsengine-platform`                                  |
+| `TenantContext`   | From `smsengine-platform`                                  |
+| `StudentId`       | From `smsengine-academic` (read-only reference)            |
+| `StaffId`         | From `smsengine-hr` (read-only reference)                  |
+| `AcademicYearId`  | From `smsengine-academic` (read-only reference)            |
+| `RoleId`          | From `smsengine-rbac` (read-only reference)                |
+| `SubjectId`       | From `smsengine-academic` (read-only reference)            |

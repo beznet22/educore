@@ -1,0 +1,14 @@
+[package]
+name = "smsengine-testkit"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "In-memory test adapters for the storage, auth, notify, payment, files, and event-bus ports. For unit and integration tests only."
+
+[lints]
+workspace = true
+
+[dependencies]
+# No production dependencies yet — scaffold only.

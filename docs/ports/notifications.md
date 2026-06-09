@@ -91,7 +91,7 @@ pub struct NotificationReceipt {
 ```
 
 The receipt is durable. The engine stores it in the
-`sm_email_sms_logs` table and emits a `NotificationSent` event.
+`communication_email_sms_logs` table and emits a `NotificationSent` event.
 
 ## DeliveryStatus
 

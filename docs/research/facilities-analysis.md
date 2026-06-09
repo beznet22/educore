@@ -291,8 +291,8 @@ source. The engine's `Item` aggregate supports a
 ## Notes for SMSengine Implementation
 
 - The **facilities** crate depends on
-  `smscore-academic` for `StudentId`, `ClassId`,
-  `SectionId`, and `smscore-hr` for `StaffId`.
+  `smsengine-academic` for `StudentId`, `ClassId`,
+  `SectionId`, and `smsengine-hr` for `StaffId`.
 - The domain's **transport** sub-aggregate is
   tightly coupled to finance (transport fees)
   and attendance (transport attendance). The

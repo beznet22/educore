@@ -15,8 +15,6 @@ school and the local id (`Uuid`).
 | `CapabilityId`               | `Id<Capability>`            | A permission row (a capability)    |
 | `PermissionSectionId`        | `Id<PermissionSection>`     | A UI grouping label                |
 | `AssignPermissionId`         | `Id<AssignPermission>`      | A capability-to-role grant         |
-| `InfixRoleId`                | `Id<InfixRole>`             | SaaS shadow of `Role`              |
-| `InfixPermissionAssignId`    | `Id<InfixPermissionAssign>` | SaaS shadow of `AssignPermission`  |
 | `ModulePermissionId`         | `Id<ModulePermission>`      | A dashboard-level permission group |
 | `ModulePermissionAssignId`   | `Id<ModulePermissionAssign>`| A module-permission-to-role grant  |
 | `RolePermissionId`           | `Id<RolePermission>`        | A module-link-to-role grant        |

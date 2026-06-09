@@ -59,14 +59,14 @@ The default PostgreSQL adapter documents the following indexes; consumers
 should declare them in their migrations:
 
 ```sql
-CREATE INDEX ix_form_downloads_school_id_publish ON sm_form_downloads (school_id, publish_date);
-CREATE INDEX ix_form_downloads_school_id_public ON sm_form_downloads (school_id, show_public);
-CREATE INDEX ix_postal_dispatches_school_id_date ON sm_postal_dispatches (school_id, date);
-CREATE INDEX ix_postal_dispatches_school_id_reference ON sm_postal_dispatches (school_id, reference_no);
-CREATE INDEX ix_postal_dispatches_school_id_academic ON sm_postal_dispatches (school_id, academic_id);
-CREATE INDEX ix_postal_receives_school_id_date ON sm_postal_receives (school_id, date);
-CREATE INDEX ix_postal_receives_school_id_reference ON sm_postal_receives (school_id, reference_no);
-CREATE INDEX ix_postal_receives_school_id_academic ON sm_postal_receives (school_id, academic_id);
+CREATE INDEX ix_form_downloads_school_id_publish ON documents_form_downloads (school_id, publish_date);
+CREATE INDEX ix_form_downloads_school_id_public ON documents_form_downloads (school_id, show_public);
+CREATE INDEX ix_postal_dispatches_school_id_date ON documents_postal_dispatches (school_id, date);
+CREATE INDEX ix_postal_dispatches_school_id_reference ON documents_postal_dispatches (school_id, reference_no);
+CREATE INDEX ix_postal_dispatches_school_id_academic ON documents_postal_dispatches (school_id, academic_id);
+CREATE INDEX ix_postal_receives_school_id_date ON documents_postal_receives (school_id, date);
+CREATE INDEX ix_postal_receives_school_id_reference ON documents_postal_receives (school_id, reference_no);
+CREATE INDEX ix_postal_receives_school_id_academic ON documents_postal_receives (school_id, academic_id);
 ```
 
 The `school_id` predicate is mandatory for tenant isolation.

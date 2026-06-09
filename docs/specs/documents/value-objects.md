@@ -11,9 +11,9 @@ school and the local id (`Uuid`).
 
 | Identifier           | Backing Type             | Source Column                  |
 | -------------------- | ------------------------ | ------------------------------ |
-| `FormDownloadId`     | `Id<FormDownload>`       | `sm_form_downloads.id`         |
-| `PostalDispatchId`   | `Id<PostalDispatch>`     | `sm_postal_dispatches.id`      |
-| `PostalReceiveId`    | `Id<PostalReceive>`      | `sm_postal_receives.id`        |
+| `FormDownloadId`     | `Id<FormDownload>`       | `documents_form_downloads.id`         |
+| `PostalDispatchId`   | `Id<PostalDispatch>`     | `documents_postal_dispatches.id`      |
+| `PostalReceiveId`    | `Id<PostalReceive>`      | `documents_postal_receives.id`        |
 
 ## Names and Free Text
 
@@ -49,15 +49,15 @@ school and the local id (`Uuid`).
 | `PublishDate`         | `NaiveDate`                                                        |
 | `DispatchDate`        | `NaiveDate`                                                        |
 | `ReceiveDate`         | `NaiveDate`                                                        |
-| `AcademicYearId`      | From `smscore-academic`                                            |
-| `TenantContext`       | `(SchoolId, UserId, ...)` from `smscore-platform`                 |
+| `AcademicYearId`      | From `smsengine-academic`                                            |
+| `TenantContext`       | `(SchoolId, UserId, ...)` from `smsengine-platform`                 |
 
 ## URL and File
 
 | Type                 | Notes                                                          |
 | -------------------- | -------------------------------------------------------------- |
 | `Url`                | Validated URL, max 2048 chars                                  |
-| `FileReference`      | From `smscore-platform`                                        |
+| `FileReference`      | From `smsengine-platform`                                        |
 
 ## Visibility
 

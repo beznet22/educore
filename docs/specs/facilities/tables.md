@@ -6,29 +6,29 @@ tells you which aggregate owns the row.
 
 | Table                            | Aggregate              | Notes                                    |
 | -------------------------------- | ---------------------- | ---------------------------------------- |
-| `sm_vehicles`                    | Vehicle                | Vehicle master                           |
-| `sm_routes`                      | Route                  | Route master                             |
-| `sm_route_stops`                 | RouteStop              | Ordered stops on a route                 |
-| `sm_assign_vehicles`             | AssignVehicle          | Vehicle-route-year pairing               |
-| `sm_transport_memberships`       | TransportMembership    | Student-in-assignment membership         |
-| `sm_dormitory_lists`             | Dormitory              | Dormitory master                         |
-| `sm_room_types`                  | RoomType               | Room type catalog                        |
-| `sm_room_lists`                  | Room                   | Rooms under a dormitory                  |
-| `sm_room_assignments`            | RoomAssignment         | Student-to-bed allocations               |
-| `sm_item_categories`             | ItemCategory           | Item grouping                            |
-| `sm_items`                       | Item                   | Item master with stock-on-hand           |
-| `sm_item_stores`                 | ItemStore              | Store catalog                            |
-| `sm_item_issues`                 | ItemIssue              | Goods issue note (header)                |
-| `sm_item_receives`               | ItemReceive            | Goods receive note (header)              |
-| `sm_item_receive_children`       | ItemReceiveChild       | Goods receive line                       |
-| `sm_item_sells`                  | ItemSell               | Item sale (header)                       |
-| `sm_item_sell_children`          | ItemSellChild          | Item sale line                           |
-| `sm_suppliers`                   | Supplier               | Vendor master                            |
-| `sm_supplier_contacts`           | SupplierContact        | Additional supplier contacts             |
-| `sm_driver_assignments`          | DriverAssignment       | Driver-to-vehicle history                |
-| `sm_store_stocktakes`            | StoreStocktake         | Stocktake header                         |
-| `sm_store_stocktake_lines`       | StoreStocktake line    | Stocktake line                           |
-| `sm_dormitory_notes`             | DormitoryNote          | Administrative notes on a dormitory      |
+| `facilities_vehicles`                    | Vehicle                | Vehicle master                           |
+| `facilities_routes`                      | Route                  | Route master                             |
+| `facilities_route_stops`                 | RouteStop              | Ordered stops on a route                 |
+| `facilities_assign_vehicles`             | AssignVehicle          | Vehicle-route-year pairing               |
+| `facilities_transport_memberships`       | TransportMembership    | Student-in-assignment membership         |
+| `facilities_dormitories`             | Dormitory              | Dormitory master                         |
+| `facilities_room_types`                  | RoomType               | Room type catalog                        |
+| `facilities_rooms`                  | Room                   | Rooms under a dormitory                  |
+| `facilities_room_assignments`            | RoomAssignment         | Student-to-bed allocations               |
+| `facilities_item_categories`             | ItemCategory           | Item grouping                            |
+| `facilities_items`                       | Item                   | Item master with stock-on-hand           |
+| `facilities_item_stores`                 | ItemStore              | Store catalog                            |
+| `facilities_item_issues`                 | ItemIssue              | Goods issue note (header)                |
+| `facilities_item_receives`               | ItemReceive            | Goods receive note (header)              |
+| `facilities_item_receive_children`       | ItemReceiveChild       | Goods receive line                       |
+| `facilities_item_sells`                  | ItemSell               | Item sale (header)                       |
+| `facilities_item_sell_children`          | ItemSellChild          | Item sale line                           |
+| `facilities_suppliers`                   | Supplier               | Vendor master                            |
+| `facilities_supplier_contacts`           | SupplierContact        | Additional supplier contacts             |
+| `facilities_driver_assignments`          | DriverAssignment       | Driver-to-vehicle history                |
+| `facilities_store_stocktakes`            | StoreStocktake         | Stocktake header                         |
+| `facilities_store_stocktake_lines`       | StoreStocktake line    | Stocktake line                           |
+| `facilities_dormitory_notes`             | DormitoryNote          | Administrative notes on a dormitory      |
 
 ## Field Mapping
 
@@ -273,16 +273,16 @@ the mapping is a recommendation, not a requirement.
 - Every table includes `created_at`, `updated_at`, `created_by`,
   `updated_by`, `active_status` (where applicable). These are
   managed by the engine's storage adapter.
-- `academic_id` references `sm_academic_years` (the per-year
+- `academic_id` references `academic_academic_years` (the per-year
   scope) and exists on every operational table.
 - Monetary fields use `DECIMAL(20,2)`. The engine treats them as
   `Decimal` at the type level; storage adapters serialize to the
   appropriate SQL type.
-- The `type` column on `sm_dormitory_lists` uses a `CHAR(1)` with
+- The `type` column on `facilities_dormitories` uses a `CHAR(1)` with
   values `B` (Boys) and `G` (Girls); the engine maps it to the
   `DormitoryType` enum on read and writes the corresponding
   short code on save.
-- The `paid_status` column on `sm_item_sells` carries a comment
+- The `paid_status` column on `facilities_item_sells` carries a comment
   in the original migration: `P = paid, PP = partially paid, U =
   unpaid, R = ----`. The engine maps these to `Paid`, `Partial`,
   `Unpaid`, and `Refunded` respectively, with the `R` value

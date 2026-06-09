@@ -96,7 +96,7 @@ isolation:
 - **The `SchoolId` is everywhere.** Every aggregate, every
   identifier, every query, every event carries it. This
   adds a small amount of boilerplate, mitigated by the
-  `smscore-core` identifier wrappers, the query layer's
+  `smsengine-core` identifier wrappers, the query layer's
   tenant binding, and the `#[derive(DomainQuery)]` macro
   (whose generated builder requires a `SchoolId` at
   construction time).
@@ -113,14 +113,14 @@ isolation:
 
 ### Mitigations
 
-- The `smscore-platform` crate provides `SchoolId`,
+- The `smsengine-platform` crate provides `SchoolId`,
   `TenantContext`, and the cross-tenant port in a single,
   well-documented module.
-- The `smscore-rbac` crate treats `SuperAdmin` as a system
+- The `smsengine-rbac` crate treats `SuperAdmin` as a system
   role; consumers cannot delete it.
 - The default PostgreSQL storage adapter configures
   row-level security on every table at install time.
-- The CLI scaffold (`smscore new --multi-tenant`) generates
+- The CLI scaffold (`smsengine new --multi-tenant`) generates
   a starter configuration that wires the policies.
 
 ## Alternatives Considered

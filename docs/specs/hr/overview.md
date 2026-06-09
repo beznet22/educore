@@ -44,11 +44,11 @@ aggregates (HR-owned writes; finance reads and pays).
 
 ## Dependencies
 
-- `smscore-core` — error types, result, identifier trait.
-- `smscore-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smscore-rbac` — capability checks.
-- `smscore-events` — domain event publishing.
-- `smscore-academic` — `ClassId`, `SectionId`, `SubjectId`,
+- `smsengine-core` — error types, result, identifier trait.
+- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `smsengine-rbac` — capability checks.
+- `smsengine-events` — domain event publishing.
+- `smsengine-academic` — `ClassId`, `SectionId`, `SubjectId`,
   `AcademicYearId` (for class teacher and subject teacher
   assignments).
 

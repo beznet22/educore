@@ -739,9 +739,9 @@ pub struct PublishFrontResultCommand {
 }
 ```
 
-**Capabilities:** `ExamRoutine.Publish`, `FrontResult.Publish`.
-**Effects:** Emits `FrontExamRoutinePublished` /
-`FrontResultPublished`.
+**Capabilities:** `ExamRoutine.Publish`, `FrontendResult.Publish`.
+**Effects:** Emits `FrontendExamRoutinePublished` /
+`FrontendResultPublished`.
 
 ## UpdateExamRoutinePage / UpdateFrontendExamResult
 

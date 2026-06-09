@@ -40,7 +40,7 @@ follow. They are deliberately simple and focused on production correctness.
 ## Module Rules
 
 ```text
-crates/smscore-<domain>/
+crates/<domain>/                 <-- package name: smsengine-<domain>
 ├── src/
 │   ├── lib.rs
 │   ├── aggregate.rs
@@ -49,7 +49,6 @@ crates/smscore-<domain>/
 │   ├── commands.rs
 │   ├── events.rs
 │   ├── services.rs
-│   ├── policies.rs
 │   ├── repository.rs   // port trait
 │   ├── query.rs        // query builder
 │   └── errors.rs
@@ -64,6 +63,30 @@ crates/smscore-<domain>/
 - One crate per domain.
 - `lib.rs` re-exports the public surface.
 - Public types are gated by re-exports. Crate-private types stay private.
+
+## Spec folder layout
+
+Per-domain documentation lives in `docs/specs/<domain>/`. The 11 files
+per spec folder are:
+
+| File | Purpose |
+| --- | --- |
+| `overview.md` | Domain philosophy, scope, dependencies |
+| `aggregates.md` | Aggregate root definitions (Rust structs) |
+| `entities.md` | Macro-emitted entity rows (the `#[derive(DomainQuery)]` inputs) |
+| `value-objects.md` | Value object definitions (Rust types) |
+| `commands.md` | Command structs + handlers |
+| `events.md` | Domain event structs |
+| `services.md` | Domain services (stateless operations) |
+| `permissions.md` | RBAC capability mapping |
+| `repositories.md` | Repository port trait + methods |
+| `workflows.md` | Multi-aggregate workflows (e.g. admission) |
+| `tables.md` | Table layout (column list, indexes, FKs) |
+
+Note: spec folders use `services.md` and `permissions.md` (not
+`policies.md`), and `workflows.md` (not `errors.md`). This is by
+design — `services.md` hosts policy logic, `permissions.md` hosts
+RBAC capability maps, and `workflows.md` hosts error scenarios.
 
 ## Type Safety
 
@@ -129,15 +152,15 @@ impl StudentId {
 ## Dependency Rules
 
 - A domain crate may depend on:
-  - `smscore-core`
-  - `smscore-platform`
-  - `smscore-rbac`
-  - `smscore-events`
+  - `smsengine-core`
+  - `smsengine-platform`
+  - `smsengine-rbac`
+  - `smsengine-events`
   - Other domain crates only with explicit justification in an ADR.
 - A domain crate may **not** depend on:
   - Any adapter crate
   - Any infrastructure crate
-  - `tokio` directly (only through `smscore-core` re-exports where needed)
+  - `tokio` directly (only through `smsengine-core` re-exports where needed)
   - `serde_json::Value`
 
 ## Cross-Compilation

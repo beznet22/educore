@@ -24,3 +24,4 @@ walkthrough of a specific task.
 | `school-onboarding.md`                               | First-run school setup workflow                      |
 | `ai-agent-integration.md`                            | Exposing SMSengine to an AI agent                      |
 | `ci-cd.md`                                           | CI/CD for an SMSengine consumer application           |
+| `saas-backend.md`                                    | Building a production SaaS: thin backend, control plane, identity, sync engine, offline clients |

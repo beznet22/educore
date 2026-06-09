@@ -43,10 +43,10 @@ that other domains depend on: `StudentId`, `ClassId`, `SectionId`,
 
 ## Dependencies
 
-- `smscore-core` — error types, result, identifier trait.
-- `smscore-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smscore-rbac` — capability checks.
-- `smscore-events` — domain event publishing.
+- `smsengine-core` — error types, result, identifier trait.
+- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `smsengine-rbac` — capability checks.
+- `smsengine-events` — domain event publishing.
 
 ## Domain Invariants
 

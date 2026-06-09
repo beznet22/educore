@@ -56,12 +56,12 @@ objects that other domains depend on: `NoticeId`, `ComplaintId`,
 
 ## Dependencies
 
-- `smscore-core` — error types, result, identifier trait.
-- `smscore-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smscore-rbac` — capability checks.
-- `smscore-events` — domain event publishing.
-- `smscore-attendance` — emits `StudentMarkedAbsent` (read-only consumer).
-- `smscore-academic` — `ClassId`, `SectionId`, `StudentId` for role-based
+- `smsengine-core` — error types, result, identifier trait.
+- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `smsengine-rbac` — capability checks.
+- `smsengine-events` — domain event publishing.
+- `smsengine-attendance` — emits `StudentMarkedAbsent` (read-only consumer).
+- `smsengine-academic` — `ClassId`, `SectionId`, `StudentId` for role-based
   routing.
 
 ## Domain Invariants

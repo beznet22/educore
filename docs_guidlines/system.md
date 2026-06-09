@@ -1,6 +1,6 @@
 # Documentation Operating System
 
-This is the documentation operating system for the SMSCore school management system. It is a collection of markdown files organized in a hierarchical structure.
+This is the documentation operating system for the SMSengine school management system. It is a collection of markdown files organized in a hierarchical structure.
 
 **SMSengine is not a school application**.
 It is a:
@@ -33,7 +33,7 @@ SMSengine/
 │   └── (Laravel Knowledge Base)
 │
 └── crates/
-    └── smscore/
+    └── smsengine/
 ```
 
 ---

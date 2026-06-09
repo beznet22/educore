@@ -118,7 +118,7 @@ requiring event sourcing at the aggregate level.
 
 ### Mitigations
 
-- The `smscore-storage` port provides a `LocalAdapter`
+- The `smsengine-storage` port provides a `LocalAdapter`
   trait that consumers implement for offline devices.
   The trait is the same as the server-side
   `StorageAdapter`; the difference is in the
@@ -128,7 +128,7 @@ requiring event sourcing at the aggregate level.
   (e.g. "attendance is the union of all marks").
 - The engine's audit log captures every conflict and
   every resolution, so the operator can review.
-- The CLI scaffold (`smscore sync`) demonstrates the
+- The CLI scaffold (`smsengine sync`) demonstrates the
   pattern.
 
 ## Alternatives Considered

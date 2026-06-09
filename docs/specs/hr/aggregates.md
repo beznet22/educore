@@ -89,7 +89,7 @@ A logical grouping of staff (e.g. "Mathematics", "Administration",
 
 1. A `Department` is uniquely named within a school.
 2. A `Department` cannot be deleted while any `Staff` references it.
-3. A `Department` with `is_saas` set is a system-defined
+3. A `Department` with `is_system_defined` set is a system-defined
    department and cannot be deleted.
 
 ### Commands
@@ -120,7 +120,7 @@ A job title (e.g. "Principal", "Math Teacher", "Accountant",
 
 1. A `Designation` is uniquely named within a school.
 2. A `Designation` cannot be deleted while any `Staff` references it.
-3. A `Designation` with `is_saas` set is a system-defined
+3. A `Designation` with `is_system_defined` set is a system-defined
    designation and cannot be deleted.
 
 ### Commands

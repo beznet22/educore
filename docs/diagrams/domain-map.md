@@ -187,7 +187,7 @@ graph TB
 
 ```mermaid
 graph TB
-    Engine["smscore::Engine"]
+    Engine["smsengine::Engine"]
     Engine --> P1[platform + rbac + events + audit]
     Engine --> P2[academic]
     Engine -.optional.-> P3[assessment]

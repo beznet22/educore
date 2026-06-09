@@ -212,7 +212,7 @@ pub struct InvoiceNumberingConfigured {
 - `InvoiceCounterIncremented { fees_invoice_id, next_number }`
 - `FeesInvoiceSettingConfigured { fees_invoice_setting_id, academic_id, layout }`
 - `InvoiceSettingConfigured { invoice_setting_id, academic_id, layout }`
-- `FmFeesInvoiceSettingConfigured { fm_fees_invoice_setting_id, layout }`
+- `FinanceInvoiceSettingConfigured { finance_invoice_setting_id, layout }`
 
 ## FM Invoice Scheme
 
@@ -220,7 +220,7 @@ pub struct InvoiceNumberingConfigured {
 
 ```rust
 pub struct FmFeesInvoiceGenerated {
-    pub fm_fees_invoice_id: FmFeesInvoiceId,
+    pub finance_invoice_id: FmFeesInvoiceId,
     pub invoice_id: InvoiceNumber,
     pub student_id: StudentId,
     pub record_id: StudentRecordId,
@@ -235,18 +235,18 @@ pub struct FmFeesInvoiceGenerated {
 **Subscribers:**
 - `communication` — invoice notification.
 
-- `FmFeesInvoiceStatusUpdated { fm_fees_invoice_id, status }`
-- `FmFeesInvoiceCancelled { fm_fees_invoice_id, reason }`
-- `FmFeesInvoiceLineAdded { fm_fees_invoice_id, line_id, fees_type, amount }`
-- `FmFeesInvoiceLineUpdated { fm_fees_invoice_id, line_id, changes }`
-- `FmFeesInvoiceLineRemoved { fm_fees_invoice_id, line_id }`
-- `FmFeesTransactionRecorded { fm_fees_transaction_id, fm_fees_invoice_id, payment_method, total_paid_amount, add_wallet_money }`
-- `FmFeesTransactionReversed { fm_fees_transaction_id, reason }`
-- `FmFeesTransactionLineAdded { fm_fees_transaction_id, line_id, fees_type, paid_amount }`
-- `FmFeesWeaverApplied { fm_fees_weaver_id, fm_fees_invoice_id, fees_type, amount, note }`
-- `FmFeesWeaverReversed { fm_fees_weaver_id, reason }`
-- `FmFeesGroupCreated / Updated / Deleted { fm_fees_group_id, ... }`
-- `FmFeesTypeCreated / Updated / Deleted { fm_fees_type_id, ... }`
+- `FinanceInvoiceStatusUpdated { finance_invoice_id, status }`
+- `FinanceInvoiceCancelled { finance_invoice_id, reason }`
+- `FinanceInvoiceLineAdded { finance_invoice_id, line_id, fees_type, amount }`
+- `FinanceInvoiceLineUpdated { finance_invoice_id, line_id, changes }`
+- `FinanceInvoiceLineRemoved { finance_invoice_id, line_id }`
+- `FinanceTransactionRecorded { finance_transaction_id, finance_invoice_id, payment_method, total_paid_amount, add_wallet_money }`
+- `FmFeesTransactionReversed { finance_transaction_id, reason }`
+- `FmFeesTransactionLineAdded { finance_transaction_id, line_id, fees_type, paid_amount }`
+- `FinanceWeaverApplied { finance_weaver_id, finance_invoice_id, fees_type, amount, note }`
+- `FinanceWeaverReversed { finance_weaver_id, reason }`
+- `FinanceFeesGroupCreated / Updated / Deleted { finance_fees_group_id, ... }`
+- `FinanceFeesTypeCreated / Updated / Deleted { finance_fees_type_id, ... }`
 
 ## Direct Fees
 
@@ -490,7 +490,7 @@ pub struct PayrollGenerated {
 
 - `InvoiceSettingConfigured { invoice_setting_id, academic_id }`
 - `FeesInvoiceSettingConfigured { fees_invoice_setting_id, academic_id }`
-- `FmFeesInvoiceSettingConfigured { fm_fees_invoice_setting_id, layout }`
+- `FinanceInvoiceSettingConfigured { finance_invoice_setting_id, layout }`
 - `PaymentGatewayConfigured { payment_gateway_setting_id, gateway_name, gateway_mode }`
 - `PaymentGatewayUpdated { payment_gateway_setting_id, changes }`
 - `PaymentGatewayDisabled { payment_gateway_setting_id, disabled_at }`

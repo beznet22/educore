@@ -11,25 +11,25 @@ and the local id (`Uuid`).
 
 | Identifier                  | Backing Type            | Source Column                  |
 | --------------------------- | ----------------------- | ------------------------------ |
-| `PageId`                    | `Id<Page>`              | `infixedu__pages.id`           |
-| `NewsId`                    | `Id<News>`              | `sm_news.id`                   |
-| `NewsCategoryId`            | `Id<NewsCategory>`      | `sm_news_categories.id`        |
-| `NewsCommentId`             | `Id<NewsComment>`       | `sm_news_comments.id`          |
-| `NewsPageId`                | `Id<NewsPage>`          | `sm_news_pages.id`             |
-| `NoticeBoardId`             | `Id<NoticeBoard>`       | `sm_notice_boards.id`          |
-| `TestimonialId`             | `Id<Testimonial>`       | `sm_testimonials.id`           |
-| `HomeSliderId`              | `Id<HomeSlider>`        | `home_sliders.id`              |
-| `SpeechSliderId`            | `Id<SpeechSlider>`      | `speech_sliders.id`            |
-| `ContentId`                 | `Id<Content>`           | `contents.id`                  |
-| `ContentTypeId`             | `Id<ContentType>`       | `sm_content_types.id`          |
-| `ContentShareListId`        | `Id<ContentShareList>`  | `content_share_lists.id`       |
-| `TeacherUploadContentId`    | `Id<TeacherUploadContent>` | `sm_teacher_upload_contents.id` |
-| `UploadContentId`           | `Id<UploadContent>`     | `sm_upload_contents.id`        |
-| `AboutPageId`               | `Id<AboutPage>`         | `sm_about_pages.id`            |
-| `ContactPageId`             | `Id<ContactPage>`       | `sm_contact_pages.id`          |
-| `CoursePageId`              | `Id<CoursePage>`        | `sm_course_pages.id`           |
-| `HomePageSettingId`         | `Id<HomePageSetting>`   | `sm_home_page_settings.id`     |
-| `FrontendPageId`            | `Id<FrontendPage>`      | `sm_pages.id`                  |
+| `PageId`                    | `Id<Page>`              | `cms_pages.id`                 |
+| `NewsId`                    | `Id<News>`              | `cms_news.id`                  |
+| `NewsCategoryId`            | `Id<NewsCategory>`      | `cms_news_categories.id`       |
+| `NewsCommentId`             | `Id<NewsComment>`       | `cms_news_comments.id`         |
+| `NewsPageId`                | `Id<NewsPage>`          | `cms_news_pages.id`            |
+| `NoticeBoardId`             | `Id<NoticeBoard>`       | `cms_notice_boards.id`         |
+| `TestimonialId`             | `Id<Testimonial>`       | `cms_testimonials.id`          |
+| `HomeSliderId`              | `Id<HomeSlider>`        | `cms_home_sliders.id`          |
+| `SpeechSliderId`            | `Id<SpeechSlider>`      | `cms_speech_sliders.id`        |
+| `ContentId`                 | `Id<Content>`           | `cms_contents.id`              |
+| `ContentTypeId`             | `Id<ContentType>`       | `cms_content_types.id`         |
+| `ContentShareListId`        | `Id<ContentShareList>`  | `cms_content_share_lists.id`   |
+| `TeacherUploadContentId`    | `Id<TeacherUploadContent>` | `cms_teacher_upload_contents.id` |
+| `UploadContentId`           | `Id<UploadContent>`     | `cms_upload_contents.id`        |
+| `AboutPageId`               | `Id<AboutPage>`         | `cms_about_pages.id`            |
+| `ContactPageId`             | `Id<ContactPage>`       | `cms_contact_pages.id`          |
+| `CoursePageId`              | `Id<CoursePage>`        | `cms_course_pages.id`           |
+| `HomePageSettingId`         | `Id<HomePageSetting>`   | `cms_home_page_settings.id`     |
+| `FrontendPageId`            | `Id<FrontendPage>`      | `cms_frontend_pages.id`                  |
 
 ## Names and Free Text
 
@@ -60,7 +60,7 @@ and the local id (`Uuid`).
 | -------------------- | ----------------------------------------------------------------- |
 | `Slug`               | URL-safe slug, 1..200 chars, `[a-z0-9-]`                          |
 | `Url`                | Validated URL, max 2048 chars                                     |
-| `FileReference`      | From `smscore-platform`                                           |
+| `FileReference`      | From `smsengine-platform`                                           |
 | `YoutubeLink`        | URL or null; validated as a YouTube URL when present              |
 | `SourceUrl`          | URL or null                                                       |
 | `ButtonText`         | 1..191 chars                                                      |
@@ -106,10 +106,10 @@ and the local id (`Uuid`).
 
 | Type                  | Notes                                                              |
 | --------------------- | ------------------------------------------------------------------ |
-| `RoleId`              | From `smscore-rbac`                                                |
-| `ClassId`             | From `smscore-academic`                                            |
-| `SectionId`           | From `smscore-academic`                                            |
-| `UserId`              | From `smscore-platform`                                            |
+| `RoleId`              | From `smsengine-rbac`                                                |
+| `ClassId`             | From `smsengine-academic`                                            |
+| `SectionId`           | From `smsengine-academic`                                            |
+| `UserId`              | From `smsengine-platform`                                            |
 | `AudienceDescriptor`  | `Vec<RoleId>` OR `ClassId`+`SectionId` OR `Vec<UserId>` OR `Public` |
 | `RoleIdList`          | Comma-separated list of `RoleId` (decoded into `Vec<RoleId>`)     |
 
@@ -122,8 +122,8 @@ and the local id (`Uuid`).
 | `ShareDate`           | `NaiveDate`                                                        |
 | `ValidUntil`          | `NaiveDate`                                                        |
 | `UploadDate`          | `NaiveDate`                                                        |
-| `AcademicYearId`      | From `smscore-academic`                                            |
-| `TenantContext`       | `(SchoolId, UserId, ...)` from `smscore-platform`                 |
+| `AcademicYearId`      | From `smsengine-academic`                                            |
+| `TenantContext`       | `(SchoolId, UserId, ...)` from `smsengine-platform`                 |
 
 ## Page Settings
 

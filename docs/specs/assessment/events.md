@@ -293,8 +293,8 @@ pub struct ExamSignatureDeleted { pub exam_signature_id: ExamSignatureId }
 
 pub struct ExamRoutinePageUpdated { pub page_id: ExamRoutinePageId, pub changes: Vec<&'static str> }
 
-pub struct FrontExamRoutinePublished { pub front_id: FrontExamRoutineId, pub title: String, pub publish_date: PublishDate }
-pub struct FrontResultPublished { pub front_id: FrontResultId, pub title: String, pub publish_date: PublishDate }
+pub struct FrontendExamRoutinePublished { pub frontend_id: FrontExamRoutineId, pub title: String, pub publish_date: PublishDate }
+pub struct FrontendResultPublished { pub frontend_id: FrontResultId, pub title: String, pub publish_date: PublishDate }
 pub struct FrontendExamResultUpdated { pub id: FrontendExamResultId, pub changes: Vec<&'static str> }
 ```
 

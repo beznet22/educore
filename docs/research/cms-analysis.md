@@ -232,7 +232,7 @@ implements the rendering.
 ## Notes for SMSengine Implementation
 
 - The **cms** crate depends on
-  `smscore-platform` for `SchoolId` and
+  `smsengine-platform` for `SchoolId` and
   `CustomField`. It does not depend on the
   operational domains (academic, finance, etc.).
 - The CMS is **public-facing**. The engine's

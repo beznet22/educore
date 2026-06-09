@@ -1,0 +1,38 @@
+[package]
+name = "smsengine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "SMSengine umbrella crate providing the engine facade and prelude."
+
+[lints]
+workspace = true
+
+[dependencies]
+smsengine-core = { workspace = true }
+smsengine-platform = { workspace = true }
+smsengine-rbac = { workspace = true }
+smsengine-settings = { workspace = true }
+smsengine-events = { workspace = true }
+smsengine-academic = { workspace = true }
+smsengine-assessment = { workspace = true }
+smsengine-attendance = { workspace = true }
+smsengine-finance = { workspace = true }
+smsengine-hr = { workspace = true }
+smsengine-library = { workspace = true }
+smsengine-facilities = { workspace = true }
+smsengine-communication = { workspace = true }
+smsengine-events-domain = { workspace = true }
+smsengine-documents = { workspace = true }
+smsengine-cms = { workspace = true }
+smsengine-storage = { workspace = true }
+smsengine-auth = { workspace = true }
+smsengine-notify = { workspace = true }
+smsengine-payment = { workspace = true }
+smsengine-files = { workspace = true }
+smsengine-event-bus = { workspace = true }
+smsengine-integrations = { workspace = true }
+smsengine-sdk = { workspace = true }
+

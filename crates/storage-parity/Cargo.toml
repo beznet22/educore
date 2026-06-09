@@ -1,0 +1,14 @@
+[package]
+name = "smsengine-storage-parity"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Cross-adapter parity test suite — verifies that all three storage adapters emit equivalent DDL and exhibit equivalent behavior on the same test scenarios."
+
+[lints]
+workspace = true
+
+[dependencies]
+# No production dependencies yet — scaffold only.

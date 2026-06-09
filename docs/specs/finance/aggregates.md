@@ -485,9 +485,9 @@ A group of fees in the newer (FM) invoice scheme. Similar to
 
 ### Events
 
-- `FmFeesGroupCreated`
-- `FmFeesGroupUpdated`
-- `FmFeesGroupDeleted`
+- `FinanceFeesGroupCreated`
+- `FinanceFeesGroupUpdated`
+- `FinanceFeesGroupDeleted`
 
 ---
 
@@ -515,9 +515,9 @@ and an optional `course_id` for LMS contexts.
 
 ### Events
 
-- `FmFeesTypeCreated`
-- `FmFeesTypeUpdated`
-- `FmFeesTypeDeleted`
+- `FinanceFeesTypeCreated`
+- `FinanceFeesTypeUpdated`
+- `FinanceFeesTypeDeleted`
 
 ---
 
@@ -548,8 +548,8 @@ A newer invoice header carrying a typed `invoice_id` (e.g.
 ### Events
 
 - `FmFeesInvoiceGenerated`
-- `FmFeesInvoiceStatusUpdated`
-- `FmFeesInvoiceCancelled`
+- `FinanceInvoiceStatusUpdated`
+- `FinanceInvoiceCancelled`
 
 ---
 
@@ -578,9 +578,9 @@ amount, and a note.
 
 ### Events
 
-- `FmFeesInvoiceLineAdded`
-- `FmFeesInvoiceLineUpdated`
-- `FmFeesInvoiceLineRemoved`
+- `FinanceInvoiceLineAdded`
+- `FinanceInvoiceLineUpdated`
+- `FinanceInvoiceLineRemoved`
 
 ---
 
@@ -610,7 +610,7 @@ lines.
 
 ### Events
 
-- `FmFeesTransactionRecorded`
+- `FinanceTransactionRecorded`
 - `FmFeesTransactionReversed`
 
 ---
@@ -663,8 +663,8 @@ the invoice id, fees type, student, weaver amount, and note.
 
 ### Events
 
-- `FmFeesWeaverApplied`
-- `FmFeesWeaverReversed`
+- `FinanceWeaverApplied`
+- `FinanceWeaverReversed`
 
 ---
 
@@ -742,7 +742,7 @@ A separate row carrying the FM invoice positions, the
 
 ### Events
 
-- `FmFeesInvoiceSettingConfigured`
+- `FinanceInvoiceSettingConfigured`
 
 ---
 

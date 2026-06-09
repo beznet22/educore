@@ -251,7 +251,7 @@ The tie-breaking policy is configurable per school.
 ## Notes for SMSengine Implementation
 
 - The **assessment** crate depends on
-  `smscore-academic` for `StudentId`, `ClassId`,
+  `smsengine-academic` for `StudentId`, `ClassId`,
   `SubjectId`, `AcademicYearId`.
 - Marks are **write-once-ish**: a mark is created,
   may be updated before publication, and may be

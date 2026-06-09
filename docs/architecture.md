@@ -13,7 +13,7 @@ engine organized as a Cargo workspace.
                                       │ invokes commands
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                       Engine Facade (smscore::Engine)                    │
+│                       Engine Facade (smsengine::Engine)                    │
 │                                                                          │
 │   students()  attendance()  examinations()  finance()  hr()  ...        │
 │   rbac()  library()  transport()  events()  reports()                   │
@@ -52,7 +52,7 @@ engine organized as a Cargo workspace.
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                       Adapters (consumer-supplied)                       │
 │                                                                          │
-│   PostgreSQL/SQLite/SurrealDB   OAuth/SAML/Local                         │
+│   PostgreSQL/MySQL/SQLite (+ SurrealDB, MongoDB deferred)   OAuth/SAML/Local                         │
 │   SMTP/SMS/Push/FCM              Stripe/PayPal/Cash/Bank                │
 │   S3/GCS/Local                   Inproc/Redis/NATS                       │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -262,8 +262,9 @@ engine
 ## Storage Strategy
 
 The storage port is a thin trait that repositories translate to. The default
-adapters target PostgreSQL and SQLite. SurrealDB and MongoDB are admissible
-through the same trait as long as they can serve the domain query shapes.
+adapters target PostgreSQL, MySQL, and SQLite. SurrealDB and MongoDB adapters
+are deferred to a future release; they are admissible through the same trait
+when implemented in-tree by a consumer.
 
 The engine assumes:
 
@@ -280,6 +281,15 @@ The engine does **not** assume:
 - A specific migration tool.
 
 Migrations are owned by the consumer.
+
+The end-to-end flow from `docs/specs/<domain>/tables.md` (design
+contract) to the runtime DDL string (executable contract) is
+documented in
+[`docs/schemas/sql-dialects/README.md` § "Runtime DDL emission"](../schemas/sql-dialects/README.md#runtime-ddl-emission--end-to-end-flow).
+The engine emits DDL **at schema-creation time** (once per process
+lifetime, via `storage.create_schema().await`) from a typed macro
+AST and the `include_str!`-embedded canonical SQL for the 6
+engine cross-cutting tables.
 
 ## Query Layer
 
@@ -311,7 +321,7 @@ Example — typed filter chain with scope trait, nested filter, and
 explicit eager load:
 
 ```rust
-use smscore::students::query::{StudentQueryScopes, StudentRelation, ParentField};
+use smsengine::students::query::{StudentQueryScopes, StudentRelation, ParentField};
 
 let active = engine
     .students()

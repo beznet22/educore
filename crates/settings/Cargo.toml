@@ -1,0 +1,17 @@
+[package]
+name = "smsengine-settings"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "General settings, language catalog, themes, base setups, custom links."
+
+[lints]
+workspace = true
+
+[dependencies]
+smsengine-core = { workspace = true }
+smsengine-platform = { workspace = true }
+smsengine-events = { workspace = true }
+

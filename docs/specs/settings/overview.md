@@ -4,8 +4,8 @@
 
 The settings domain owns the school's cosmetic and behavioral
 configuration: general settings, language catalog, language phrases,
-base setup groupings, custom links, dashboard layout, themes, color
-themes, date formats, styles, background settings, and the behaviour
+base setup groupings, custom links, dashboard layout, settings_themes, color
+settings_themes, date formats, styles, background settings, and the behaviour
 record feature flag. The settings domain also owns the per-school
 admin setup catalog (purpose, complaint type, source, reference).
 
@@ -18,7 +18,7 @@ admin setup catalog (purpose, complaint type, source, reference).
 - Custom links (footer / sidebar links).
 - Dashboard card layout per role.
 - Date format patterns.
-- Style profiles (color palette, font, chart colors).
+- Style profiles (color palette, font, chart settings_colors).
 - Color theme and color definitions.
 - Theme registry (active theme, color mode, background).
 - Background settings (image or color).
@@ -39,8 +39,8 @@ The settings domain does **not** own:
 
 ## Dependencies
 
-- `smscore-core` — error types, identifier trait.
-- `smscore-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `smsengine-core` — error types, identifier trait.
+- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
 
 ## Domain Invariants
 

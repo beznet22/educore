@@ -184,29 +184,29 @@ The default PostgreSQL adapter documents the following indexes;
 consumers should declare them in their migrations:
 
 ```sql
-CREATE INDEX ix_sm_student_attendances_school_id_class_section_date
-    ON sm_student_attendances (school_id, academic_id, class_id, section_id, attendance_date);
-CREATE UNIQUE INDEX ux_sm_student_attendances_school_id_student_date
-    ON sm_student_attendances (school_id, academic_id, student_id, attendance_date);
-CREATE INDEX ix_sm_student_attendances_school_id_date
-    ON sm_student_attendances (school_id, attendance_date);
-CREATE INDEX ix_sm_student_attendances_school_id_student_range
-    ON sm_student_attendances (school_id, student_id, attendance_date);
+CREATE INDEX ix_attendance_student_attendances_school_id_class_section_date
+    ON attendance_student_attendances (school_id, academic_id, class_id, section_id, attendance_date);
+CREATE UNIQUE INDEX ux_attendance_student_attendances_school_id_student_date
+    ON attendance_student_attendances (school_id, academic_id, student_id, attendance_date);
+CREATE INDEX ix_attendance_student_attendances_school_id_date
+    ON attendance_student_attendances (school_id, attendance_date);
+CREATE INDEX ix_attendance_student_attendances_school_id_student_range
+    ON attendance_student_attendances (school_id, student_id, attendance_date);
 
-CREATE INDEX ix_sm_subject_attendances_school_id_class_section_subject_date
-    ON sm_subject_attendances (school_id, academic_id, class_id, section_id, subject_id, attendance_date);
-CREATE UNIQUE INDEX ux_sm_subject_attendances_school_id_student_subject_date
-    ON sm_subject_attendances (school_id, academic_id, student_id, subject_id, attendance_date);
+CREATE INDEX ix_attendance_subject_attendances_school_id_class_section_subject_date
+    ON attendance_subject_attendances (school_id, academic_id, class_id, section_id, subject_id, attendance_date);
+CREATE UNIQUE INDEX ux_attendance_subject_attendances_school_id_student_subject_date
+    ON attendance_subject_attendances (school_id, academic_id, student_id, subject_id, attendance_date);
 
-CREATE INDEX ix_sm_staff_attendances_school_id_staff_date
-    ON sm_staff_attendances (school_id, staff_id, attendance_date);
-CREATE INDEX ix_sm_staff_attendances_school_id_date
-    ON sm_staff_attendances (school_id, attendance_date);
+CREATE INDEX ix_attendance_staff_attendances_school_id_staff_date
+    ON hr_staff_attendances (school_id, staff_id, attendance_date);
+CREATE INDEX ix_attendance_staff_attendances_school_id_date
+    ON hr_staff_attendances (school_id, attendance_date);
 
-CREATE INDEX ix_sm_student_attendance_imports_school_id_date
-    ON sm_student_attendance_imports (school_id, attendance_date);
-CREATE INDEX ix_sm_student_attendance_imports_school_id_student
-    ON sm_student_attendance_imports (school_id, student_id);
+CREATE INDEX ix_attendance_student_attendance_imports_school_id_date
+    ON attendance_student_attendance_imports (school_id, attendance_date);
+CREATE INDEX ix_attendance_student_attendance_imports_school_id_student
+    ON attendance_student_attendance_imports (school_id, student_id);
 
 CREATE UNIQUE INDEX ux_class_attendances_school_id_student_exam
     ON class_attendances (school_id, student_id, exam_type_id, academic_id);

@@ -144,7 +144,7 @@ Auditors can answer: "What did the agent do on 2026-06-08 between
 
 ## Testing Agents
 
-The engine provides a `smscore-agent-test` crate:
+The engine provides a `smsengine-agent-test` crate:
 
 ```rust
 let agent = TestAgent::new("test-agent", capabilities![

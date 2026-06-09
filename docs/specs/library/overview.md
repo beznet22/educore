@@ -41,15 +41,15 @@ consumers: `BookId`, `BookCategoryId`, `LibraryMemberId`,
 
 ## Dependencies
 
-- `smscore-core` — error types, result, identifier trait.
-- `smscore-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smscore-rbac` — capability checks.
-- `smscore-events` — domain event publishing.
-- `smscore-academic` — `StudentId`, `AcademicYearId`
+- `smsengine-core` — error types, result, identifier trait.
+- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `smsengine-rbac` — capability checks.
+- `smsengine-events` — domain event publishing.
+- `smsengine-academic` — `StudentId`, `AcademicYearId`
   (read-only references).
-- `smscore-hr` — `StaffId` (read-only references).
-- `smscore-rbac` — `RoleId` (read-only reference).
-- `smscore-finance` — receives fine events for invoicing and
+- `smsengine-hr` — `StaffId` (read-only references).
+- `smsengine-rbac` — `RoleId` (read-only reference).
+- `smsengine-finance` — receives fine events for invoicing and
   payment.
 
 ## Domain Invariants

@@ -654,46 +654,46 @@ consumers should declare them in their migrations:
 
 ```sql
 -- Fees catalog
-CREATE INDEX ix_fees_groups_school_id_academic ON fees_groups (school_id, academic_id);
-CREATE UNIQUE INDEX ux_fees_groups_school_id_name ON fees_groups (school_id, name);
-CREATE INDEX ix_fees_types_school_id_group ON fees_types (school_id, fees_group_id);
+CREATE INDEX ix_fees_groups_school_id_academic ON finance_fees_groups (school_id, academic_id);
+CREATE UNIQUE INDEX ux_fees_groups_school_id_name ON finance_fees_groups (school_id, name);
+CREATE INDEX ix_fees_types_school_id_group ON finance_fees_types (school_id, fees_group_id);
 CREATE UNIQUE INDEX ux_fees_masters_school_id_group_type_class_section_year
-  ON fees_masters (school_id, fees_group_id, fees_type_id, class_id, section_id, academic_id);
+  ON finance_fees_masters (school_id, fees_group_id, fees_type_id, class_id, section_id, academic_id);
 CREATE UNIQUE INDEX ux_fees_assigns_school_id_master_student_year
   ON fees_assigns (school_id, fees_master_id, student_id, academic_id);
 CREATE INDEX ix_fees_assigns_school_id_class ON fees_assigns (school_id, class_id, section_id, academic_id);
-CREATE INDEX ix_fees_payments_school_id_date ON fees_payments (school_id, payment_date);
-CREATE INDEX ix_fees_payments_school_id_method ON fees_payments (school_id, payment_method_id);
-CREATE INDEX ix_fees_payments_school_id_student ON fees_payments (school_id, student_id, academic_id);
-CREATE INDEX ix_fees_installment_assigns_school_id_student ON fees_installment_assigns (school_id, student_id);
-CREATE INDEX ix_direct_fees_installment_assigns_school_id_student ON direct_fees_installment_assigns (school_id, student_id);
+CREATE INDEX ix_fees_payments_school_id_date ON finance_payments (school_id, payment_date);
+CREATE INDEX ix_fees_payments_school_id_method ON finance_payments (school_id, payment_method_id);
+CREATE INDEX ix_fees_payments_school_id_student ON finance_payments (school_id, student_id, academic_id);
+CREATE INDEX ix_fees_installment_assigns_school_id_student ON finance_fees_installment_assigns (school_id, student_id);
+CREATE INDEX ix_direct_fees_installment_assigns_school_id_student ON finance_direct_fees_installment_assigns (school_id, student_id);
 CREATE INDEX ix_fees_carry_forwards_school_id_student ON fees_carry_forwards (school_id, student_id);
 CREATE UNIQUE INDEX ux_fees_carry_forwards_school_id_student_year ON fees_carry_forwards (school_id, student_id, academic_id);
 CREATE UNIQUE INDEX ux_fees_installment_credits_school_id_student_record ON fees_installment_credits (school_id, student_id, student_record_id);
 -- FM invoice
-CREATE INDEX ix_fm_fees_invoices_school_id_student ON fm_fees_invoices (school_id, student_id, academic_id);
-CREATE UNIQUE INDEX ux_fm_fees_invoices_school_id_invoice_number ON fm_fees_invoices (school_id, invoice_id);
-CREATE INDEX ix_fm_fees_invoices_school_id_class ON fm_fees_invoices (school_id, class_id, academic_id);
-CREATE INDEX ix_fm_fees_invoice_chields_invoice ON fm_fees_invoice_chields (fees_invoice_id);
-CREATE INDEX ix_fm_fees_transactions_school_id_invoice ON fm_fees_transactions (school_id, fees_invoice_id);
+CREATE INDEX ix_finance_invoices_school_id_student ON finance_invoices (school_id, student_id, academic_id);
+CREATE UNIQUE INDEX ux_finance_fees_invoices_school_id_invoice_number ON finance_invoices (school_id, invoice_id);
+CREATE INDEX ix_finance_invoices_school_id_class ON finance_invoices (school_id, class_id, academic_id);
+CREATE INDEX ix_finance_fees_invoice_chields_invoice ON finance_invoice_lines (fees_invoice_id);
+CREATE INDEX ix_finance_fees_transactions_school_id_invoice ON finance_transactions (school_id, fees_invoice_id);
 -- Bank
-CREATE UNIQUE INDEX ux_sm_bank_accounts_school_id_account_number ON sm_bank_accounts (school_id, account_number);
-CREATE INDEX ix_sm_bank_statements_school_id_bank_date ON sm_bank_statements (school_id, bank_id, payment_date);
-CREATE INDEX ix_sm_bank_payment_slips_school_id_status ON sm_bank_payment_slips (school_id, approve_status);
-CREATE INDEX ix_sm_bank_payment_slips_school_id_student ON sm_bank_payment_slips (school_id, student_id);
+CREATE UNIQUE INDEX ux_finance_bank_accounts_school_id_account_number ON finance_bank_accounts (school_id, account_number);
+CREATE INDEX ix_finance_bank_statements_school_id_bank_date ON finance_bank_statements (school_id, bank_id, payment_date);
+CREATE INDEX ix_finance_bank_payment_slips_school_id_status ON finance_bank_payment_slips (school_id, approve_status);
+CREATE INDEX ix_finance_bank_payment_slips_school_id_student ON finance_bank_payment_slips (school_id, student_id);
 -- Expense & income
-CREATE INDEX ix_sm_add_expenses_school_id_date ON sm_add_expenses (school_id, date);
-CREATE INDEX ix_sm_add_expenses_school_id_head ON sm_add_expenses (school_id, expense_head_id);
-CREATE INDEX ix_sm_add_incomes_school_id_date ON sm_add_incomes (school_id, date);
-CREATE INDEX ix_sm_add_incomes_school_id_head ON sm_add_incomes (school_id, income_head_id);
+CREATE INDEX ix_finance_add_expenses_school_id_date ON finance_add_expenses (school_id, date);
+CREATE INDEX ix_finance_add_expenses_school_id_head ON finance_add_expenses (school_id, expense_head_id);
+CREATE INDEX ix_finance_add_incomes_school_id_date ON finance_add_incomes (school_id, date);
+CREATE INDEX ix_finance_add_incomes_school_id_head ON finance_add_incomes (school_id, income_head_id);
 -- Wallet
 CREATE INDEX ix_wallet_transactions_school_id_user ON wallet_transactions (school_id, user_id);
 CREATE INDEX ix_wallet_transactions_school_id_status ON wallet_transactions (school_id, status);
 -- Payroll
-CREATE INDEX ix_payroll_payments_school_id_payroll ON payroll_payments (sm_hr_payroll_generate_id);
-CREATE INDEX ix_sm_hr_payroll_earn_deducs_school_id_payroll ON sm_hr_payroll_earn_deducs (school_id, payroll_generate_id);
+CREATE INDEX ix_payroll_payments_school_id_payroll ON payroll_payments (hr_payroll_generate_id);
+CREATE INDEX ix_hr_hr_payroll_earn_deducs_school_id_payroll ON hr_payroll_earn_deducs (school_id, payroll_generate_id);
 -- Due fees
-CREATE INDEX ix_due_fees_login_prevents_school_id_user ON due_fees_login_prevents (school_id, user_id, role_id);
+CREATE INDEX ix_finance_due_fees_login_prevents_school_id_user ON due_fees_login_prevents (school_id, user_id, role_id);
 -- Carry forward
 CREATE INDEX ix_fees_carry_forward_logs_school_id_student ON fees_carry_forward_logs (school_id, student_record_id);
 ```

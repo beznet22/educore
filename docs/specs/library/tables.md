@@ -6,15 +6,15 @@ tells you which aggregate owns the row.
 
 | Table                            | Aggregate           | Notes                                    |
 | -------------------------------- | ------------------- | ---------------------------------------- |
-| `sm_book_categories`             | BookCategory        | Category catalog                         |
-| `sm_books`                       | Book                | Book master                              |
-| `sm_library_members`             | LibraryMember       | Registered borrowers                     |
-| `sm_book_issues`                 | BookIssue           | Issue, return, renew, lost               |
-| `sm_book_issue_renewals`         | BookIssueRenewal    | Renewal history                          |
-| `sm_book_issue_fines`            | BookIssueFine       | Fine history                             |
-| `sm_book_acquisitions`           | BookAcquisition     | Acquisition history                      |
-| `sm_book_catalog_entries`        | BookCatalogEntry    | Cataloguing metadata history             |
-| `sm_library_member_notes`        | LibraryMemberNote   | Administrative notes on a member         |
+| `library_book_categories`             | BookCategory        | Category catalog                         |
+| `library_books`                       | Book                | Book master                              |
+| `library_members`             | LibraryMember       | Registered borrowers                     |
+| `library_book_issues`                 | BookIssue           | Issue, return, renew, lost               |
+| `library_book_issue_renewals`         | BookIssueRenewal    | Renewal history                          |
+| `library_book_issue_fines`            | BookIssueFine       | Fine history                             |
+| `library_book_acquisitions`           | BookAcquisition     | Acquisition history                      |
+| `library_book_catalog_entries`        | BookCatalogEntry    | Cataloguing metadata history             |
+| `library_library_member_notes`        | LibraryMemberNote   | Administrative notes on a member         |
 
 ## Field Mapping
 
@@ -92,29 +92,29 @@ requirement.
   `created_by`, `updated_by`, `active_status` (where
   applicable). These are managed by the engine's storage
   adapter.
-- `academic_id` references `sm_academic_years` (the
+- `academic_id` references `academic_academic_years` (the
   per-year scope) and exists on every operational table.
-- The `student_staff_id` column on `sm_library_members` is a
+- The `student_staff_id` column on `library_members` is a
   polymorphic reference: it is either a `StudentId` or a
   `StaffId`. The `member_type` column (a `RoleId`) tells the
   domain layer how to interpret the reference. The storage
   adapter enforces that the value is consistent with the
   member type (a `RoleId` of `Student` requires the reference
   to resolve to a `StudentId`).
-- The `member_id` column on `sm_book_issues` references
-  `sm_library_members.id` (a `LibraryMemberId`), not the
+- The `member_id` column on `library_book_issues` references
+  `library_members.id` (a `LibraryMemberId`), not the
   underlying user table. This keeps the library domain
   decoupled from the platform user table.
 - Foreign keys use `ON DELETE CASCADE`. The engine does not
   rely on database cascades for invariant enforcement; the
   application layer checks referential integrity before
   issuing the delete command.
-- The `book_price` column on `sm_books` is `INT` in the
+- The `book_price` column on `library_books` is `INT` in the
   source migration. The engine treats it as a non-negative
   integer and surfaces it as a `BookPrice` value object.
   Storage adapters MAY widen the column to `DECIMAL(20,2)`
   in their own migrations.
-- The `quantity` column on `sm_books` is `INT` in the source
+- The `quantity` column on `library_books` is `INT` in the source
   migration. The engine treats it as a `u32` and surfaces it
   as `StockCopies`. Storage adapters MAY widen the column
   when fractional stock is needed (e.g. for shared sets in

@@ -47,7 +47,7 @@ Concretely:
    no infrastructure. No `tokio` in domain logic. No
    `serde_json::Value` in domain types. No `sqlx`, no
    `reqwest`, no `aws-sdk-s3`. Domain code depends only on
-   `smscore-core` and other domain crates.
+   `smsengine-core` and other domain crates.
 2. **Ports** are Rust traits that define what the engine needs
    from the outside world. The engine owns the trait
    definitions. Adapters implement them.
@@ -111,7 +111,7 @@ exposes a typed, async, business-facing API.
 
 ### Mitigations
 
-- The `smscore-core` crate re-exports `tracing`, `async_trait`,
+- The `smsengine-core` crate re-exports `tracing`, `async_trait`,
   and a curated set of common helpers to keep adapter code
   short.
 - A standard `Engine::builder()` API wires the most common

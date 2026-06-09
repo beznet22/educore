@@ -13,41 +13,41 @@ explicit cross-tenant commands.
 
 | Identifier                   | Backing Type    | Source Column                     |
 | ---------------------------- | --------------- | --------------------------------- |
-| `StudentId`                  | `Id<Student>`   | `sm_students.id`                  |
-| `GuardianId`                 | `Id<Guardian>`  | `sm_parents.id`                   |
-| `ClassId`                    | `Id<Class>`     | `sm_classes.id`                   |
-| `SectionId`                  | `Id<Section>`   | `sm_sections.id`                  |
-| `ClassSectionId`             | `Id<ClassSection>` | `sm_class_sections.id`         |
-| `SubjectId`                  | `Id<Subject>`   | `sm_subjects.id`                  |
-| `ClassSubjectId`             | `Id<ClassSubject>` | `sm_assign_subjects.id`        |
-| `AcademicYearId`             | `Id<AcademicYear>` | `sm_academic_years.id`         |
-| `ClassRoutineId`             | `Id<ClassRoutine>` | `sm_class_routines.id`         |
-| `ClassRoutineUpdateId`       | `Id<...>`       | `sm_class_routine_updates.id`     |
-| `ClassTimeId`                | `Id<ClassTime>` | `sm_class_times.id`               |
-| `ClassRoomId`                | `Id<ClassRoom>` | `sm_class_rooms.id`               |
-| `HomeworkId`                 | `Id<Homework>`  | `sm_homeworks.id`                 |
-| `HomeworkSubmissionId`       | `Id<...>`       | `sm_homework_students.id`         |
+| `StudentId`                  | `Id<Student>`   | `academic_students.id`                  |
+| `GuardianId`                 | `Id<Guardian>`  | `academic_parents.id`                   |
+| `ClassId`                    | `Id<Class>`     | `academic_classes.id`                   |
+| `SectionId`                  | `Id<Section>`   | `academic_sections.id`                  |
+| `ClassSectionId`             | `Id<ClassSection>` | `academic_class_sections.id`         |
+| `SubjectId`                  | `Id<Subject>`   | `academic_subjects.id`                  |
+| `ClassSubjectId`             | `Id<ClassSubject>` | `academic_assign_subjects.id`        |
+| `AcademicYearId`             | `Id<AcademicYear>` | `academic_academic_years.id`         |
+| `ClassRoutineId`             | `Id<ClassRoutine>` | `academic_class_routines.id`         |
+| `ClassRoutineUpdateId`       | `Id<...>`       | `academic_class_routine_updates.id`     |
+| `ClassTimeId`                | `Id<ClassTime>` | `academic_class_times.id`               |
+| `ClassRoomId`                | `Id<ClassRoom>` | `academic_class_rooms.id`               |
+| `HomeworkId`                 | `Id<Homework>`  | `academic_homeworks.id`                 |
+| `HomeworkSubmissionId`       | `Id<...>`       | `academic_homework_students.id`         |
 | `LessonPlanId`               | `Id<LessonPlan>` | `lesson_planners.id`             |
-| `LessonId`                   | `Id<Lesson>`    | `sm_lessons.id`                   |
-| `LessonDetailId`             | `Id<LessonDetail>` | `sm_lesson_details.id`        |
-| `LessonTopicId`              | `Id<LessonTopic>` | `sm_lesson_topics.id`          |
-| `LessonTopicDetailId`        | `Id<LessonTopicDetail>` | `sm_lesson_topic_details.id` |
+| `LessonId`                   | `Id<Lesson>`    | `academic_lessons.id`                   |
+| `LessonDetailId`             | `Id<LessonDetail>` | `academic_lesson_details.id`        |
+| `LessonTopicId`              | `Id<LessonTopic>` | `academic_lesson_topics.id`          |
+| `LessonTopicDetailId`        | `Id<LessonTopicDetail>` | `academic_lesson_topic_details.id` |
 | `LessonPlanTopicId`          | `Id<...>`       | `lesson_plan_topics.id`           |
 | `StudentRecordId`            | `Id<StudentRecord>` | `student_records.id`         |
-| `StudentPromotionId`         | `Id<StudentPromotion>` | `sm_student_promotions.id` |
-| `StudentCategoryId`          | `Id<StudentCategory>` | `sm_student_categories.id`   |
-| `StudentGroupId`             | `Id<StudentGroup>` | `sm_student_groups.id`         |
-| `StudentDocumentId`          | `Id<StudentDocument>` | `sm_student_documents.id`   |
-| `StudentTimelineId`          | `Id<StudentTimeline>` | `sm_student_timelines.id`    |
-| `StudentHomeworkId`          | `Id<StudentHomework>` | `sm_student_homeworks.id`   |
-| `OptionalSubjectAssignmentId`| `Id<...>`       | `sm_optional_subject_assigns.id`  |
-| `RegistrationFieldId`        | `Id<RegistrationField>` | `sm_student_registration_fields.id` |
-| `CertificateId`              | `Id<Certificate>` | `sm_student_certificates.id`    |
-| `IdCardId`                   | `Id<IdCard>`    | `sm_student_id_cards.id`          |
+| `StudentPromotionId`         | `Id<StudentPromotion>` | `academic_student_promotions.id` |
+| `StudentCategoryId`          | `Id<StudentCategory>` | `academic_student_categories.id`   |
+| `StudentGroupId`             | `Id<StudentGroup>` | `academic_student_groups.id`         |
+| `StudentDocumentId`          | `Id<StudentDocument>` | `academic_student_documents.id`   |
+| `StudentTimelineId`          | `Id<StudentTimeline>` | `academic_student_timelines.id`    |
+| `StudentHomeworkId`          | `Id<StudentHomework>` | `academic_student_homeworks.id`   |
+| `OptionalSubjectAssignmentId`| `Id<...>`       | `academic_optional_subject_assigns.id`  |
+| `RegistrationFieldId`        | `Id<RegistrationField>` | `academic_student_registration_fields.id` |
+| `CertificateId`              | `Id<Certificate>` | `academic_student_certificates.id`    |
+| `IdCardId`                   | `Id<IdCard>`    | `academic_student_id_cards.id`          |
 | `GraduateId`                 | `Id<Graduate>`  | `graduates.id`                    |
-| `AdmissionQueryId`           | `Id<AdmissionQuery>` | `sm_admission_queries.id`   |
-| `AdmissionQueryFollowupId`   | `Id<...>`       | `sm_admission_query_followups.id` |
-| `AssignmentSubmissionId`     | `Id<...>`       | `sm_upload_homework_contents.id`  |
+| `AdmissionQueryId`           | `Id<AdmissionQuery>` | `academic_admission_queries.id`   |
+| `AdmissionQueryFollowupId`   | `Id<...>`       | `academic_admission_query_followups.id` |
+| `AssignmentSubmissionId`     | `Id<...>`       | `academic_upload_homework_contents.id`  |
 
 ## Names
 
@@ -123,8 +123,8 @@ explicit cross-tenant commands.
 
 | Type                  | Notes                                                       |
 | --------------------- | ----------------------------------------------------------- |
-| `SchoolId`            | From `smscore-platform`                                     |
-| `TenantContext`       | `(SchoolId, UserId, ...)` from `smscore-platform`           |
+| `SchoolId`            | From `smsengine-platform`                                     |
+| `TenantContext`       | `(SchoolId, UserId, ...)` from `smsengine-platform`           |
 | `BankAccount`         | Used by finance; academic owns no money                     |
 
 ## Admission Inquiry

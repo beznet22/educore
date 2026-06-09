@@ -109,32 +109,6 @@ pub trait RolePermissionRepository: Send + Sync {
 }
 ```
 
-## InfixRoleRepository
-
-```rust
-#[async_trait]
-pub trait InfixRoleRepository: Send + Sync {
-    async fn get(&self, id: InfixRoleId) -> Result<Option<InfixRole>>;
-    async fn list_saas(&self) -> Result<Vec<InfixRole>>;
-    async fn insert(&self, r: &InfixRole) -> Result<()>;
-    async fn update(&self, r: &InfixRole) -> Result<()>;
-    async fn delete(&self, id: InfixRoleId) -> Result<()>;
-}
-```
-
-## InfixPermissionAssignRepository
-
-```rust
-#[async_trait]
-pub trait InfixPermissionAssignRepository: Send + Sync {
-    async fn get(&self, id: InfixPermissionAssignId) -> Result<Option<InfixPermissionAssign>>;
-    async fn list_for_role(&self, role: RoleId) -> Result<Vec<InfixPermissionAssign>>;
-    async fn insert(&self, a: &InfixPermissionAssign) -> Result<()>;
-    async fn update(&self, a: &InfixPermissionAssign) -> Result<()>;
-    async fn delete(&self, id: InfixPermissionAssignId) -> Result<()>;
-}
-```
-
 ## TwoFactorSettingRepository
 
 ```rust
@@ -190,7 +164,7 @@ CREATE INDEX ix_module_permission_assigns_school_id_role ON module_permission_as
 CREATE UNIQUE INDEX ux_module_permission_assigns_school_id_module_role ON module_permission_assigns (school_id, module_id, role_id);
 CREATE INDEX ix_role_permissions_school_id_role ON role_permissions (school_id, role_id);
 CREATE UNIQUE INDEX ux_role_permissions_school_id_module_link_role ON role_permissions (school_id, module_link_id, role_id);
-CREATE INDEX ix_infix_roles_school_id_saas ON infix_roles (school_id) WHERE is_saas = 1;
+CREATE INDEX ix_rbac_roles_school_replicated ON rbac_roles (school_id) WHERE is_replicated = TRUE;
 CREATE UNIQUE INDEX ux_two_factor_settings_school_id ON two_factor_settings (school_id);
 CREATE INDEX ix_permission_overrides_school_id_actor ON permission_overrides (school_id, actor_id);
 CREATE INDEX ix_permission_overrides_school_id_capability ON permission_overrides (school_id, capability);

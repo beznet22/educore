@@ -274,7 +274,7 @@ the public calendar does not show incidents.
 ## Notes for SMSengine Implementation
 
 - The **events** crate depends on
-  `smscore-core` and `smscore-events`. It does
+  `smsengine-core` and `smsengine-events`. It does
   not depend on operational domains; it is a
   cross-cutting concern.
 - The domain's calendar is a **read model**

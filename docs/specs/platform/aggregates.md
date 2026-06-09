@@ -609,7 +609,7 @@ A timezone entry. Seeded once by the engine.
 ## Country
 
 **Root type:** `Country` (global, not tenant-scoped; the
-`sm_countries` table is per-school as a quirk of legacy data,
+`platform_countries` table is per-school as a quirk of legacy data,
 but the domain model treats it as global)
 **Identity:** `CountryId(Uuid)`
 
@@ -664,7 +664,7 @@ A continent entry.
 ## Currency
 
 **Root type:** `Currency` (per-school; the storage table is
-`sm_currencies` and carries `school_id`; the engine treats the
+`platform_currencies` and carries `school_id`; the engine treats the
 active currency as a per-school configuration)
 **Identity:** `CurrencyId(SchoolId, Uuid)`
 

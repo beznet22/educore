@@ -6,16 +6,16 @@ aggregate owns the row.
 
 | Table                                        | Aggregate                    | Notes                                          |
 | -------------------------------------------- | ---------------------------- | ---------------------------------------------- |
-| `sm_notice_boards`                           | Notice                       | School-wide notice publication                 |
-| `sm_complaints`                              | Complaint                    | Complaint intake and lifecycle                 |
-| `sm_complaint_types`                         | ComplaintType                | Categorization                                 |
-| `sm_notifications`                           | Notification                 | In-app notification record                     |
+| `communication_notice_boards`                           | Notice                       | School-wide notice publication                 |
+| `communication_complaints`                              | Complaint                    | Complaint intake and lifecycle                 |
+| `communication_complaint_types`                         | ComplaintType                | Categorization                                 |
+| `communication_notifications`                           | Notification                 | In-app notification record                     |
 | `notifications`                              | Notification (alt)           | Generic notification inbox                      |
-| `sm_notification_settings`                   | NotificationSetting          | Event → channel routing rule                   |
-| `sm_email_sms_logs`                          | EmailLog / SmsLog            | Email and SMS dispatch audit                   |
+| `communication_notification_settings`                   | NotificationSetting          | Event → channel routing rule                   |
+| `communication_email_sms_logs`                          | EmailLog / SmsLog            | Email and SMS dispatch audit                   |
 | `sms_templates`                              | SmsTemplate                  | Reusable template (SMS or email)               |
-| `sm_email_settings`                          | EmailSetting                 | Email engine configuration                     |
-| `sm_sms_gateways`                            | SmsGateway                   | SMS provider configuration                     |
+| `communication_email_settings`                          | EmailSetting                 | Email engine configuration                     |
+| `communication_sms_gateways`                            | SmsGateway                   | SMS provider configuration                     |
 | `custom_sms_settings`                        | CustomSmsSetting             | Custom gateway parameter shape                 |
 | `absent_notification_time_setups`            | AbsentNotificationTimeSetup  | Daily window for absence notification dispatch |
 | `chat_conversations`                         | ChatMessage / ChatConversation | One-to-one message and conversation stream   |
@@ -27,10 +27,10 @@ aggregate owns the row.
 | `chat_invitations`                           | ChatInvitation               | One-to-one chat invitation                     |
 | `chat_invitation_types`                      | ChatInvitationType           | Variant of an invitation                       |
 | `chat_statuses`                              | ChatStatus                   | Presence status of a user                      |
-| `sm_send_messages`                           | SendMessage                  | Bulk send-message job                          |
-| `sm_contact_messages`                        | ContactMessage               | Public contact-form submission                 |
+| `communication_send_messages`                           | SendMessage                  | Bulk send-message job                          |
+| `communication_contact_messages`                        | ContactMessage               | Public contact-form submission                 |
 | `speech_sliders`                             | SpeechSlider                 | Front-page leadership message                  |
-| `sm_phone_call_logs`                         | PhoneCallLog                 | Phone-call follow-up record                    |
+| `communication_phone_call_logs`                         | PhoneCallLog                 | Phone-call follow-up record                    |
 
 ## Notes
 
@@ -38,7 +38,7 @@ aggregate owns the row.
   isolation. The `school_id` is `NOT NULL DEFAULT 1` for the bootstrap
   school.
 - Every school-scoped table includes `academic_id` referencing
-  `sm_academic_years`. The communication domain rarely uses
+  `academic_academic_years`. The communication domain rarely uses
   `academic_id` to scope behavior, but the column is preserved for
   reporting consistency.
 - Every table includes `created_at`, `updated_at`, `created_by`,

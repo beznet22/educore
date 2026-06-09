@@ -48,11 +48,11 @@ objects that other domains depend on: `ExamId`, `ExamTypeId`,
 
 ## Dependencies
 
-- `smscore-core` — error types, identifier trait, validation.
-- `smscore-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smscore-rbac` — capability checks.
-- `smscore-events` — domain event publishing.
-- `smscore-academic` — `StudentId`, `ClassId`, `SectionId`, `SubjectId`,
+- `smsengine-core` — error types, identifier trait, validation.
+- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `smsengine-rbac` — capability checks.
+- `smsengine-events` — domain event publishing.
+- `smsengine-academic` — `StudentId`, `ClassId`, `SectionId`, `SubjectId`,
   `AcademicYearId`, `StaffId`, `ClassRoomId`, `ClassTimeId`.
 
 ## Domain Invariants
@@ -115,8 +115,8 @@ objects that other domains depend on: `ExamId`, `ExamTypeId`,
 | ExamSetting            | `ExamSetting`        | School-wide exam publication settings      |
 | ExamSignature          | `ExamSignature`      | Signatures shown on report cards           |
 | ExamRoutinePage        | `ExamRoutinePage`    | Public-facing routine page content         |
-| FrontExamRoutine       | `FrontExamRoutine`   | Front-end published exam routine           |
-| FrontResult            | `FrontResult`        | Front-end published result                 |
+| FrontendExamRoutine       | `FrontendExamRoutine`   | Front-end published exam routine           |
+| FrontendResult            | `FrontendResult`        | Front-end published result                 |
 | FrontendExamResult     | `FrontendExamResult` | Marketing block for exam results           |
 | OnlineExam             | `OnlineExam`         | A digital exam instance                    |
 | QuestionBank           | `QuestionBank`       | Reusable question pool                     |

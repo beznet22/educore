@@ -16,8 +16,6 @@ assigned to gain the union of capabilities of all roles they hold.
 - `RolePermission` — module-link bindings (menu visibility per role).
 - `ModulePermissionAssign` — module-permission bindings (dashboard
   visibility per role).
-- `InfixRole` / `InfixPermissionAssign` — SaaS-scoped shadow of the
-  above (same id namespace within a school).
 
 ### Invariants
 
@@ -32,8 +30,12 @@ assigned to gain the union of capabilities of all roles they hold.
    the slot).
 6. Deleting a `Role` revokes all `AssignPermission` rows that
    reference it.
-7. A `Role` carries an `is_saas` flag indicating whether it is
-   available across sibling schools in a SaaS deployment.
+7. A `Role` carries an `is_replicated` flag indicating whether it is
+   available across sibling schools in a SaaS deployment. Replicated
+   roles are seeded by the platform admin into each sibling school
+   via the `Role.Assign` command; the engine does not have a
+   separate "promote to SaaS" command — replication is a provisioning
+   action, not a data-state change.
 
 ### Commands
 
@@ -183,65 +185,6 @@ Each `AssignPermission` is its own aggregate. The role does not
 own its assignment rows; the role and the assignment are mutated
 independently. This allows bulk permission edits to scale without
 loading the role aggregate.
-
----
-
-## InfixRole
-
-**Root type:** `InfixRole`
-**Identity:** `InfixRoleId(SchoolId, Uuid)`
-
-### Purpose
-
-A SaaS-aware shadow of the `Role` aggregate. In single-school mode
-it is structurally identical to `Role`. In SaaS mode it carries
-`is_saas` semantics to control replication to sibling schools.
-
-### Invariants
-
-1. One `InfixRole` exists per `Role` (1:1 by id).
-2. The `Role` aggregate is the canonical record; `InfixRole` is
-   an alternate read model for SaaS provisioning flows.
-
-### Commands
-
-- `PromoteRoleToSaas`
-- `DemoteRoleFromSaas`
-
-### Events
-
-- `RolePromotedToSaas`
-- `RoleDemotedFromSaas`
-
----
-
-## InfixPermissionAssign
-
-**Root type:** `InfixPermissionAssign`
-**Identity:** `InfixPermissionAssignId(SchoolId, Uuid)`
-
-### Purpose
-
-A SaaS-aware shadow of `AssignPermission`. Carries a `module_info`
-text field that records the original module, module-link, or
-module-link-option id from the source catalog.
-
-### Invariants
-
-1. One `InfixPermissionAssign` exists per `AssignPermission` (1:1
-   by id).
-2. The `AssignPermission` is the canonical record;
-   `InfixPermissionAssign` is the alternate read model.
-
-### Commands
-
-- (None — mutations are made through `AssignPermission`; the
-  `InfixPermissionAssign` projection is updated by an event
-  subscriber.)
-
-### Events
-
-- (Subscribed from `CapabilityAssigned` / `CapabilityRevoked`.)
 
 ---
 

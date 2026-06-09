@@ -116,12 +116,12 @@ authority on the model.
 
 - The engine's domain crates are sized for incremental delivery
   (see `build-plan.md`). One bounded context at a time.
-- The `smscore-core` crate provides shared building blocks
+- The `smsengine-core` crate provides shared building blocks
   (identifier trait, error type, result, value object trait) to
   reduce boilerplate.
-- The `smscore-events` crate provides a stable event bus and
+- The `smsengine-events` crate provides a stable event bus and
   subscription primitives.
-- The `smscore-events` semantics are "at-least-once with
+- The `smsengine-events` semantics are "at-least-once with
   idempotency," which absorbs the eventual-consistency window.
 
 ## Alternatives Considered

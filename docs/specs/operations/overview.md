@@ -1,5 +1,8 @@
 # Operations Domain Overview
 
+**Implementation crate:** `smsengine-operations` (path: `crates/operations/`)
+**Spec status:** spec'd, scaffolded; implementation begins in Phase 14 (per `docs/build-plan.md`).
+
 ## Purpose
 
 The operations domain owns the school's infrastructure-level
@@ -31,7 +34,7 @@ The operations domain does **not** own:
 
 - User identity, profile, or role binding — see `specs/platform/`
   and `specs/rbac/`.
-- Settings, themes, language — see `specs/settings/`.
+- Settings, settings_themes, language — see `specs/settings/`.
 - Academic, finance, attendance, etc.
 
 The operations domain **does** provide:
@@ -45,8 +48,8 @@ The operations domain **does** provide:
 
 ## Dependencies
 
-- `smscore-core` — error types, identifier trait.
-- `smscore-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `smsengine-core` — error types, identifier trait.
+- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
 
 ## Domain Invariants
 

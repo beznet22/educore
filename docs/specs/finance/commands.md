@@ -985,4 +985,4 @@ pub struct ConsumeFeesInstallmentCreditCommand {
 
 **Capability:** `FeesInstallmentCredit.Consume`
 **Effects:** Emits `FeesInstallmentCreditConsumed` and an
-`FmFeesWeaverApplied`-equivalent adjustment.
+`FinanceWeaverApplied`-equivalent adjustment.

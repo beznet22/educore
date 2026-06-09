@@ -41,7 +41,7 @@ pub struct RoleCreated {
     pub role_id: RoleId,
     pub name: RoleName,
     pub role_type: RoleType,
-    pub is_saas: bool,
+    pub is_replicated: bool,
 }
 ```
 

@@ -425,15 +425,13 @@ proxies.
 
 ### Mitigations
 
-- The `smscore-macros` crate provides
-  `#[derive(Command)]`,
-  `#[derive(QueryFields)]`,
-  `#[derive(Aggregate)]`,
-  `#[derive(DomainEvent)]`,
-  `#[derive(DomainQuery)]` and similar
-  macros that reduce the per-aggregate
-  boilerplate to a few lines.
-- A `smscore-cli` tool reads the
+- The `smsengine-query-derive` crate provides
+  `#[derive(DomainQuery)]` (and is the only
+  proc-macro crate in v1; additional derives
+  are added in subsequent phases), which
+  reduces the per-aggregate boilerplate to a
+  few lines.
+- A `smsengine-cli` tool reads the
   generated schema registry and prints
   the catalog for the consumer.
 - The `build-plan.md` describes how the

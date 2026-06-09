@@ -69,11 +69,11 @@ that other domains depend on: `PageId`, `NewsId`, `NewsCategoryId`,
 
 ## Dependencies
 
-- `smscore-core` — error types, result, identifier trait.
-- `smscore-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smscore-rbac` — capability checks.
-- `smscore-events` — domain event publishing.
-- `smscore-academic` — `ClassId`, `SectionId` for content
+- `smsengine-core` — error types, result, identifier trait.
+- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `smsengine-rbac` — capability checks.
+- `smsengine-events` — domain event publishing.
+- `smsengine-academic` — `ClassId`, `SectionId` for content
   availability scope (read-only references).
 
 ## Domain Invariants

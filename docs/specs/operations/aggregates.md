@@ -262,8 +262,8 @@ non-admin logins for the school.
 A per-role, per-permission sidebar layout projection. The base
 `Sidebar` row carries the `permission_id`, `position`,
 `section_id`, `parent`, `parent_route`, `level`, `user_id`
-(creator), `is_saas` flag, `ignore` flag, `role_id`, and
-`active_status`.
+(creator), `is_system_defined` flag, `ignore` flag, `role_id`,
+and `active_status`.
 
 ### Invariants
 

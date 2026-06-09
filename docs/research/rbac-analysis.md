@@ -29,9 +29,6 @@ real schools hit.
   permission categories.
 - **AssignPermission** — a capability-to-role
   grant with optional overrides.
-- **InfixRole** / **InfixPermissionAssign** — SaaS-
-  flavored role and permission assignment
-  alternatives.
 - **ModulePermission** — a named dashboard-level
   permission group.
 - **ModulePermissionAssign** — a module-
@@ -346,8 +343,8 @@ excludes the widget.
 ## Notes for SMSengine Implementation
 
 - The **rbac** crate depends on
-  `smscore-core`, `smscore-platform`, and
-  `smscore-events`. It is the only domain
+  `smsengine-core`, `smsengine-platform`, and
+  `smsengine-events`. It is the only domain
   whose mutations change what other domains
   allow.
 - The RBAC domain provides the

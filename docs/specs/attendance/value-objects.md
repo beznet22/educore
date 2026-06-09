@@ -85,10 +85,10 @@ mapped to `AttendanceStatus` on validation.
 
 | Type                  | Notes                                                       |
 | --------------------- | ----------------------------------------------------------- |
-| `SchoolId`            | From `smscore-platform`                                     |
-| `TenantContext`       | `(SchoolId, UserId, ...)` from `smscore-platform`           |
-| `UserId`              | From `smscore-platform`                                     |
-| `CorrelationId`       | From `smscore-platform`                                     |
+| `SchoolId`            | From `smsengine-platform`                                     |
+| `TenantContext`       | `(SchoolId, UserId, ...)` from `smsengine-platform`           |
+| `UserId`              | From `smsengine-platform`                                     |
+| `CorrelationId`       | From `smsengine-platform`                                     |
 
 ## Validation Rules
 
@@ -114,5 +114,5 @@ bypass validation.
 ## Cross-Reference
 
 - `StudentId`, `ClassId`, `SectionId`, `SubjectId`, `AcademicYearId`,
-  `StaffId`, `StudentRecordId` — from `smscore-academic`.
-- `ExamTypeId` — from `smscore-assessment`.
+  `StaffId`, `StudentRecordId` — from `smsengine-academic`.
+- `ExamTypeId` — from `smsengine-assessment`.

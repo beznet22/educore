@@ -246,7 +246,7 @@ supports per-campus attendance via the
 ## Notes for SMSengine Implementation
 
 - The **attendance** crate depends on
-  `smscore-academic` for `StudentId`, `ClassId`,
+  `smsengine-academic` for `StudentId`, `ClassId`,
   `SectionId`, `ClassSectionId`, `AcademicYearId`.
 - The domain is **high-frequency**. The engine's
   command pipeline must be fast: a single

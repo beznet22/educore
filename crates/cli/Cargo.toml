@@ -1,0 +1,18 @@
+[package]
+name = "smsengine-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Sample CLI demonstrating consumer-side wiring of the engine. NOT shipped to library consumers."
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "smsengine-cli"
+path = "src/main.rs"
+
+[dependencies]
+# No production dependencies yet — scaffold only.

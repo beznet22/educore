@@ -294,7 +294,7 @@ pub struct CreateSidebarEntryCommand {
     pub parent_route: Option<SidebarParentRoute>,
     pub level: SidebarLevel,
     pub role_id: RoleId,
-    pub is_saas: SidebarIsSaas,
+    pub is_system_defined: SidebarIsSystemDefined,
     pub ignore: SidebarIgnore,
 }
 ```

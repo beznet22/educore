@@ -32,8 +32,8 @@ wrapper carries the `SchoolId` of the owning school and a `Uuid`.
 | `CustomTemporaryResultId`               | `Id<CustomTemporaryResult>` | Custom result staging              |
 | `ExamStepSkipId`                        | `Id<ExamStepSkip>`          | Wizard-skip flag                   |
 | `ExamRoutinePageId`                     | `Id<ExamRoutinePage>`       | Public routine page content        |
-| `FrontExamRoutineId`                    | `Id<FrontExamRoutine>`      | Front-end exam routine             |
-| `FrontResultId`                         | `Id<FrontResult>`           | Front-end result publication       |
+| `FrontExamRoutineId`                    | `Id<FrontendExamRoutine>`      | Front-end exam routine             |
+| `FrontResultId`                         | `Id<FrontendResult>`           | Front-end result publication       |
 | `FrontendExamResultId`                  | `Id<FrontendExamResult>`    | Marketing block for results        |
 | `OnlineExamId`                          | `Id<OnlineExam>`            | Digital exam                       |
 | `QuestionBankId`                        | `Id<QuestionBank>`          | Reusable question                  |
@@ -133,9 +133,9 @@ wrapper carries the `SchoolId` of the owning school and a `Uuid`.
 
 | Type                       | Constraints                                              |
 | -------------------------- | -------------------------------------------------------- |
-| `AdmissionNumber`          | from `smscore-academic`, 1..50 chars                     |
-| `RollNumber`               | from `smscore-academic`, 1..50 chars                     |
-| `StudentName`              | from `smscore-academic`, 1..200 chars                    |
+| `AdmissionNumber`          | from `smsengine-academic`, 1..50 chars                     |
+| `RollNumber`               | from `smsengine-academic`, 1..50 chars                     |
+| `StudentName`              | from `smsengine-academic`, 1..200 chars                    |
 | `SubjectsString`           | Comma-separated subject names for printing               |
 | `MarksString`              | Comma-separated marks for printing                       |
 | `SubjectsIdString`         | Comma-separated subject ids                              |
@@ -144,10 +144,10 @@ wrapper carries the `SchoolId` of the owning school and a `Uuid`.
 
 | Type                  | Notes                                                       |
 | --------------------- | ----------------------------------------------------------- |
-| `SchoolId`            | From `smscore-platform`                                     |
-| `TenantContext`       | `(SchoolId, UserId, ...)` from `smscore-platform`           |
-| `UserId`              | From `smscore-platform`                                     |
-| `CorrelationId`       | From `smscore-platform`                                     |
+| `SchoolId`            | From `smsengine-platform`                                     |
+| `TenantContext`       | `(SchoolId, UserId, ...)` from `smsengine-platform`           |
+| `UserId`              | From `smsengine-platform`                                     |
+| `CorrelationId`       | From `smsengine-platform`                                     |
 
 ## Validation Rules
 
@@ -174,4 +174,4 @@ bypass validation.
 ## Cross-Reference
 
 - `StudentId`, `ClassId`, `SectionId`, `SubjectId`, `AcademicYearId`,
-  `StaffId`, `ClassRoomId`, `ClassTimeId` — from `smscore-academic`.
+  `StaffId`, `ClassRoomId`, `ClassTimeId` — from `smsengine-academic`.

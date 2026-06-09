@@ -46,7 +46,7 @@ Schools are globally unique and have no parent tenant.
 | `CommentTagId`                | `Id<CommentTag>`         | A comment tag                        |
 | `PersonalAccessTokenId`       | `Id<PersonalAccessToken>` (global) | A PAT                          |
 | `VideoUploadId`               | `Id<VideoUpload>`        | A class-section video                |
-| `InfixModuleInfoId`           | `Id<InfixModuleInfo>`    | A module info projection             |
+| `ModuleInfoId`                | `Id<ModuleInfo>`         | A module info projection             |
 
 ## Names & Identifiers
 
@@ -61,7 +61,7 @@ Schools are globally unique and have no parent tenant.
 | `PersonName`        | 1..200 chars, unicode letters and basic punctuation               |
 | `FullName`          | Computed from `PersonName` parts                                  |
 | `Username`          | 1..192 chars, unique within `(school_id, lower(username))`        |
-| `RoleId`            | From `smscore-rbac`                                               |
+| `RoleId`            | From `smsengine-rbac`                                               |
 
 ## School Status
 
@@ -254,8 +254,8 @@ Schools are globally unique and have no parent tenant.
 | Type            | Notes                                                       |
 | --------------- | ------------------------------------------------------------ |
 | `SchoolId`      | Globally unique; carries no parent tenant                   |
-| `TenantContext` | `(SchoolId, UserId, CorrelationId, ...)` per `smscore-core` |
-| `Capability`    | From `smscore-rbac`                                         |
+| `TenantContext` | `(SchoolId, UserId, CorrelationId, ...)` per `smsengine-core` |
+| `Capability`    | From `smsengine-rbac`                                         |
 
 ## Validation Rules
 

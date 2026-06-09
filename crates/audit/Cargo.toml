@@ -1,0 +1,14 @@
+[package]
+name = "smsengine-audit"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Audit log writer, retention policies, and the audit_log table port."
+
+[lints]
+workspace = true
+
+[dependencies]
+# No production dependencies yet — scaffold only.

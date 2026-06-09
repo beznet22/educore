@@ -6,13 +6,13 @@ aggregate owns the row.
 
 | Table                              | Aggregate          | Notes                                       |
 | ---------------------------------- | ------------------ | ------------------------------------------- |
-| `sm_events`                        | CalendarEvent      | School calendar entry                       |
-| `sm_holidays`                      | Holiday            | School holiday with a date range            |
-| `sm_weekends`                      | Weekend            | Weekend day configuration                   |
+| `events_calendar_events`                        | CalendarEvent      | School calendar entry                       |
+| `events_holidays`                      | Holiday            | School holiday with a date range            |
+| `events_weekends`                      | Weekend            | Weekend day configuration                   |
 | `incidents`                        | Incident           | Reported incident                           |
 | `assign_incidents`                 | AssignIncident     | Incident-to-student or incident-to-staff    |
 | `assign_incident_comments`         | IncidentComment    | Comments on an incident                     |
-| `sm_calendar_settings`             | CalendarSetting    | Calendar UI menu label and color            |
+| `events_calendar_settings`             | CalendarSetting    | Calendar UI menu label and color            |
 
 ## Notes
 
@@ -20,7 +20,7 @@ aggregate owns the row.
   isolation. The `school_id` is `NOT NULL DEFAULT 1` for the bootstrap
   school.
 - Every school-scoped table includes `academic_id` referencing
-  `sm_academic_years`. The events domain uses `academic_id` to scope
+  `academic_academic_years`. The events domain uses `academic_id` to scope
   holidays, weekends, and calendar events.
 - Every table includes `created_at`, `updated_at`, `created_by`,
   `updated_by`, `active_status` (where applicable). These are managed

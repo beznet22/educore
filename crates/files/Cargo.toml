@@ -1,0 +1,19 @@
+[package]
+name = "smsengine-files"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "File storage port, S3-compatible, GCS, local filesystem adapters."
+
+[lints]
+workspace = true
+
+[dependencies]
+smsengine-core = { workspace = true }
+smsengine-platform = { workspace = true }
+smsengine-events = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+

@@ -347,8 +347,8 @@ finds it. The librarian:
 ## Notes for SMSengine Implementation
 
 - The **library** crate depends on
-  `smscore-academic` for `StudentId` and
-  `smscore-hr` for `StaffId`.
+  `smsengine-academic` for `StudentId` and
+  `smsengine-hr` for `StaffId`.
 - The library domain is **eventually
   consistent** with academic (member
   creation on admission), HR (member

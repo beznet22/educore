@@ -1,1 +1,244 @@
+# =============================================================================
+# SMSengine — Standard Rust Workspace .gitignore
+# =============================================================================
+# This file is the authoritative ignore list for an SMSengine workspace.
+# It is split into sections so that consumers can layer their own
+# additional rules without conflicting with the project's defaults.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Environment and secrets (CRITICAL)
+# -----------------------------------------------------------------------------
+# SMSengine is a library; the engine itself reads no environment
+# variables. Consumers (CLI/Tauri/Web/SaaS applications built on top
+# of the engine) read `.env` from their own working directory.
+#
+# The workspace ships a tracked template at `.env.example` that
+# documents every variable the consumer-side adapters can read.
+# Each developer creates their own `.env` from it:
+#
+#     cp .env.example .env
+#
+# `.env` is gitignored. Real secrets, credentials, and local
+# overrides must never be committed.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+.secrets/
 schoolify/
+docs_guidlines/
+
+# -----------------------------------------------------------------------------
+# Cargo build artifacts
+# -----------------------------------------------------------------------------
+/target
+**/target/
+!target/.gitkeep
+
+# Cargo.lock is committed for binaries; uncomment the next line for libraries
+# Cargo.lock
+
+# Generated Cargo files
+.cargo/
+**/*.rustc_info
+
+# -----------------------------------------------------------------------------
+# Rust toolchain
+# -----------------------------------------------------------------------------
+rust-toolchain.toml.bak
+rustfmt.toml.bak
+
+# -----------------------------------------------------------------------------
+# IDE / Editor
+# -----------------------------------------------------------------------------
+# VSCode
+.vscode/
+!.vscode/settings.json.example
+!.vscode/extensions.json.example
+
+# IntelliJ / JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+\#*\#
+.\#*
+
+# Zed
+.zed/
+
+# Helix
+.helix/
+
+# -----------------------------------------------------------------------------
+# OS-specific files
+# -----------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.Trash-*
+.nfs*
+
+# -----------------------------------------------------------------------------
+# Coverage and profiling
+# -----------------------------------------------------------------------------
+coverage/
+*.gcda
+*.gcno
+*.gcov
+*.lcov
+tarpaulin-report.html
+cargo-coverage/
+grcov/
+.profraw
+.profdata
+flamegraph.svg
+flamegraph.html
+
+# -----------------------------------------------------------------------------
+# Test artifacts
+# -----------------------------------------------------------------------------
+# Test databases created by testcontainers or in-memory SQLite
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Integration test outputs
+tests/.artifacts/
+tests/output/
+test-results/
+junit.xml
+ci-test-report.xml
+
+# Mutation testing
+cargo-mutants.out/
+mutants.out/
+
+# Snapshot test outputs (uncomment if not committed)
+# tests/snapshots/
+
+# -----------------------------------------------------------------------------
+# Documentation build artifacts
+# -----------------------------------------------------------------------------
+# mdBook
+book/
+docs/book/
+
+# Rustdoc
+doc/
+target/doc/
+
+# Sphinx / Python docs
+_build/
+*.doctree
+
+# -----------------------------------------------------------------------------
+# Local override and scratch directories
+# -----------------------------------------------------------------------------
+# The `schoolify/` source tree (the legacy Laravel / InfixEdu
+# project) is intentionally tracked in the SMSengine workspace as
+# a read-only knowledge source for the engine's domain analysis.
+# The 15 `migrations/0001_*.sql` through `migrations/0015_*.sql`
+# files are a Schoolify dump; the engine's target schema is
+# `docs/schemas/`. See `migrations/README.md` and
+# `docs/schemas/data-migration/` for the migration plan. Consumers
+# can drop the `schoolify/` tree from their fork; the engine does
+# not depend on it.
+# schoolify/
+
+# Local scratch / playground
+scratch/
+playground/
+tmp/
+local/
+sandbox/
+experiments/
+
+# -----------------------------------------------------------------------------
+# Build / CI artifacts
+# -----------------------------------------------------------------------------
+# GitHub Actions
+.github/caches/
+
+# Docker
+docker-compose.override.yml
+.docker-volumes/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*.swp
+
+# -----------------------------------------------------------------------------
+# Local data / fixtures
+# -----------------------------------------------------------------------------
+# Local data files (school fixtures, sample CSVs)
+data/local/
+data/private/
+fixtures/private/
+
+# -----------------------------------------------------------------------------
+# Workspace-specific
+# -----------------------------------------------------------------------------
+# Cached build outputs
+.cache/
+.turbo/
+.parcel-cache/
+
+# Local SQLite databases used during development
+*.local.db
+*.local.sqlite
+*.dev.db
+
+# -----------------------------------------------------------------------------
+# Logs
+# -----------------------------------------------------------------------------
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock

@@ -243,7 +243,7 @@ CREATE TABLE outbox (
     event_id UUID PRIMARY KEY,
     event_type TEXT NOT NULL,
     aggregate_id UUID NOT NULL,
-    school_id INT NOT NULL,
+    school_id UUID NOT NULL,
     payload JSONB NOT NULL,
     occurred_at TIMESTAMPTZ NOT NULL,
     published_at TIMESTAMPTZ,
@@ -277,7 +277,7 @@ Row-level security is recommended as defense in depth:
 ```sql
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 CREATE POLICY students_school_isolation ON students
-    USING (school_id = current_setting('app.current_school_id', true)::int);
+    USING (school_id = current_setting('app.current_school_id', true)::uuid);
 ```
 
 The adapter sets `app.current_school_id` on every connection from

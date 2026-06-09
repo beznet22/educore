@@ -128,7 +128,7 @@ list).
 **Owner:** `Theme`
 
 A replication record. When a user clicks "replicate this theme",
-the engine creates a new `Theme` with the same `color_theme`
+the engine creates a new `Theme` with the same `settings_color_theme`
 bindings and stores a `ThemeReplicate` row pointing to the
 source.
 

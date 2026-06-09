@@ -176,7 +176,7 @@ The per-student final mark on an online exam. `Marks`, `Abs`
 **Owner:** `OnlineExam`
 
 Alias for `QuestionAssignment`. Provided here for consistency with
-the schema's `sm_online_exam_question_assigns` table name.
+the schema's `assessment_online_exam_question_assigns` table name.
 
 ## OnlineExamQuestion
 
@@ -277,7 +277,7 @@ Public-facing content block for the exam routine page. `Title`,
 
 1. One record per school.
 
-## FrontExamRoutine
+## FrontendExamRoutine
 
 **Identity:** `FrontExamRoutineId(SchoolId, Uuid)`
 **Owner:** `School`
@@ -289,7 +289,7 @@ A front-end publication of a specific exam routine. `Title`,
 
 1. `PublishDate` is in the past relative to the visibility check.
 
-## FrontResult
+## FrontendResult
 
 **Identity:** `FrontResultId(SchoolId, Uuid)`
 **Owner:** `School`

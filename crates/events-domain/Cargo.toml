@@ -1,0 +1,19 @@
+[package]
+name = "smsengine-events-domain"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Calendar events, holidays, weekends, incidents."
+
+[lints]
+workspace = true
+
+[dependencies]
+smsengine-core = { workspace = true }
+smsengine-platform = { workspace = true }
+smsengine-rbac = { workspace = true }
+smsengine-events = { workspace = true }
+smsengine-settings = { workspace = true }
+

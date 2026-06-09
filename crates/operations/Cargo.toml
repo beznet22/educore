@@ -1,0 +1,14 @@
+[package]
+name = "smsengine-operations"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Operations domain — backups, jobs, system versions, user logs, runtime maintenance."
+
+[lints]
+workspace = true
+
+[dependencies]
+# No production dependencies yet — scaffold only.

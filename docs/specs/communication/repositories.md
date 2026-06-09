@@ -323,17 +323,17 @@ should declare them in their migrations:
 ```sql
 CREATE INDEX ix_notice_boards_school_id_publish ON notice_boards (school_id, publish_on);
 CREATE INDEX ix_notice_boards_school_id_audience ON notice_boards (school_id, message_to);
-CREATE INDEX ix_complaints_school_id_status ON sm_complaints (school_id, active_status);
-CREATE INDEX ix_complaints_school_id_type ON sm_complaints (school_id, complaint_type);
-CREATE INDEX ix_complaints_school_id_assigned ON sm_complaints (school_id, assigned);
-CREATE INDEX ix_notifications_school_id_user ON sm_notifications (school_id, user_id, is_read);
-CREATE INDEX ix_notifications_school_id_role ON sm_notifications (school_id, role_id);
-CREATE INDEX ix_email_sms_logs_school_id_send_date ON sm_email_sms_logs (school_id, send_date);
-CREATE INDEX ix_email_sms_logs_school_id_send_through ON sm_email_sms_logs (school_id, send_through);
+CREATE INDEX ix_complaints_school_id_status ON communication_complaints (school_id, active_status);
+CREATE INDEX ix_complaints_school_id_type ON communication_complaints (school_id, complaint_type);
+CREATE INDEX ix_complaints_school_id_assigned ON communication_complaints (school_id, assigned);
+CREATE INDEX ix_notifications_school_id_user ON communication_notifications (school_id, user_id, is_read);
+CREATE INDEX ix_notifications_school_id_role ON communication_notifications (school_id, role_id);
+CREATE INDEX ix_email_sms_logs_school_id_send_date ON communication_email_sms_logs (school_id, send_date);
+CREATE INDEX ix_email_sms_logs_school_id_send_through ON communication_email_sms_logs (school_id, send_through);
 CREATE INDEX ix_sms_templates_school_id_channel_purpose ON sms_templates (school_id, type, purpose);
-CREATE INDEX ix_email_settings_school_id_active ON sm_email_settings (school_id, active_status);
-CREATE INDEX ix_sms_gateways_school_id_type_active ON sm_sms_gateways (school_id, gateway_type, active_status);
-CREATE INDEX ix_notification_settings_school_id_event ON sm_notification_settings (school_id, event);
+CREATE INDEX ix_email_settings_school_id_active ON communication_email_settings (school_id, active_status);
+CREATE INDEX ix_sms_gateways_school_id_type_active ON communication_sms_gateways (school_id, gateway_type, active_status);
+CREATE INDEX ix_notification_settings_school_id_event ON communication_notification_settings (school_id, event);
 CREATE INDEX ix_chat_conversations_from_to ON chat_conversations (from_id, to_id);
 CREATE INDEX ix_chat_conversations_to_from ON chat_conversations (to_id, from_id);
 CREATE INDEX ix_chat_groups_school_id_class ON chat_groups (school_id, class_id, section_id);
@@ -341,9 +341,9 @@ CREATE INDEX ix_chat_group_users_group_user ON chat_group_users (group_id, user_
 CREATE INDEX ix_chat_group_message_recipients_user ON chat_group_message_recipients (user_id, read_at);
 CREATE INDEX ix_chat_block_users_block_by_to ON chat_block_users (block_by, block_to);
 CREATE INDEX ix_chat_invitations_from_to ON chat_invitations (from, to);
-CREATE INDEX ix_send_messages_school_id_publish ON sm_send_messages (school_id, publish_on);
-CREATE INDEX ix_contact_messages_school_id_view ON sm_contact_messages (school_id, view_status);
-CREATE INDEX ix_phone_call_logs_school_id_follow_up ON sm_phone_call_logs (school_id, next_follow_up_date);
+CREATE INDEX ix_send_messages_school_id_publish ON communication_send_messages (school_id, publish_on);
+CREATE INDEX ix_contact_messages_school_id_view ON communication_contact_messages (school_id, view_status);
+CREATE INDEX ix_phone_call_logs_school_id_follow_up ON communication_phone_call_logs (school_id, next_follow_up_date);
 ```
 
 The `school_id` predicate is mandatory for tenant isolation.

@@ -7,7 +7,7 @@ school domain.
 ## Construction
 
 ```rust
-use smscore::prelude::*;
+use smsengine::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,7 +41,7 @@ let tenant = TenantContext::new(session.school_id(), session.user_id());
 ## Calling a Command
 
 ```rust
-use smscore::academic::commands::*;
+use smsengine::academic::commands::*;
 
 let student = engine
     .students()
@@ -71,7 +71,7 @@ println!("Admitted {}", student.full_name());
 
 Domain records are exposed to the query layer through the
 `#[derive(DomainQuery)]` procedural macro, which lives in the
-`smscore-query-derive` crate. The macro emits a typed `*Field` enum
+`smsengine-query-derive` crate. The macro emits a typed `*Field` enum
 and a `*QueryBuilder` state struct per aggregate — there is no
 hand-written `StudentField` in the consumer codebase, the type is
 generated from the struct definition on every compile.
@@ -84,7 +84,7 @@ but semantically neutral builder; humans author the vocabulary.
 ### A typed, scoped query
 
 ```rust
-use smscore::academic::query::*;
+use smsengine::academic::query::*;
 
 let page = engine
     .students()
@@ -152,7 +152,7 @@ for s in students {
 ## Subscribing to Events
 
 ```rust
-use smscore::events::*;
+use smsengine::events::*;
 
 let mut sub = engine
     .events()

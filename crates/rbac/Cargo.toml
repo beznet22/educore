@@ -1,0 +1,17 @@
+[package]
+name = "smsengine-rbac"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Capability-based roles, permission assignments, two-factor configuration."
+
+[lints]
+workspace = true
+
+[dependencies]
+smsengine-core = { workspace = true }
+smsengine-platform = { workspace = true }
+smsengine-events = { workspace = true }
+

@@ -449,54 +449,54 @@ The default PostgreSQL adapter documents the following indexes;
 consumers should declare them in their migrations:
 
 ```sql
-CREATE INDEX ix_sm_exams_school_id_year_type
-    ON sm_exams (school_id, academic_id, exam_type_id);
-CREATE UNIQUE INDEX ux_sm_exams_school_id_unique
-    ON sm_exams (school_id, academic_id, exam_type_id, class_id, section_id, subject_id, parent_id);
+CREATE INDEX ix_assessment_exams_school_id_year_type
+    ON assessment_exams (school_id, academic_id, exam_type_id);
+CREATE UNIQUE INDEX ux_assessment_exams_school_id_unique
+    ON assessment_exams (school_id, academic_id, exam_type_id, class_id, section_id, subject_id, parent_id);
 
-CREATE INDEX ix_sm_exam_schedules_school_id_class_section
-    ON sm_exam_schedules (school_id, academic_id, class_id, section_id);
-CREATE INDEX ix_sm_exam_schedules_school_id_teacher_date
-    ON sm_exam_schedules (school_id, academic_id, teacher_id, date);
-CREATE INDEX ix_sm_exam_schedules_school_id_room_date
-    ON sm_exam_schedules (school_id, academic_id, room_id, date);
+CREATE INDEX ix_assessment_exam_schedules_school_id_class_section
+    ON assessment_exam_schedules (school_id, academic_id, class_id, section_id);
+CREATE INDEX ix_assessment_exam_schedules_school_id_teacher_date
+    ON assessment_exam_schedules (school_id, academic_id, teacher_id, date);
+CREATE INDEX ix_assessment_exam_schedules_school_id_room_date
+    ON assessment_exam_schedules (school_id, academic_id, room_id, date);
 
-CREATE INDEX ix_sm_marks_registers_school_id_exam
-    ON sm_marks_registers (school_id, academic_id, exam_id);
-CREATE UNIQUE INDEX ux_sm_marks_registers_school_id_exam_student
-    ON sm_marks_registers (school_id, academic_id, exam_id, student_id);
-CREATE INDEX ix_sm_marks_register_children_school_id_register
-    ON sm_marks_register_children (school_id, academic_id, marks_register_id);
+CREATE INDEX ix_assessment_marks_registers_school_id_exam
+    ON assessment_marks_registers (school_id, academic_id, exam_id);
+CREATE UNIQUE INDEX ux_assessment_marks_registers_school_id_exam_student
+    ON assessment_marks_registers (school_id, academic_id, exam_id, student_id);
+CREATE INDEX ix_assessment_marks_register_children_school_id_register
+    ON assessment_marks_register_children (school_id, academic_id, marks_register_id);
 
-CREATE INDEX ix_sm_mark_stores_school_id_setup_student
-    ON sm_mark_stores (school_id, academic_id, exam_setup_id, student_id);
-CREATE INDEX ix_sm_result_stores_school_id_exam_setup_student
-    ON sm_result_stores (school_id, academic_id, exam_setup_id, student_id);
-CREATE INDEX ix_sm_result_stores_school_id_exam_type_class_section
-    ON sm_result_stores (school_id, academic_id, exam_type_id, class_id, section_id);
+CREATE INDEX ix_assessment_mark_stores_school_id_setup_student
+    ON assessment_mark_stores (school_id, academic_id, exam_setup_id, student_id);
+CREATE INDEX ix_assessment_result_stores_school_id_exam_setup_student
+    ON assessment_result_stores (school_id, academic_id, exam_setup_id, student_id);
+CREATE INDEX ix_assessment_result_stores_school_id_exam_type_class_section
+    ON assessment_result_stores (school_id, academic_id, exam_type_id, class_id, section_id);
 CREATE INDEX ix_exam_merit_positions_school_id_section_term
     ON exam_merit_positions (school_id, academic_id, class_id, section_id, exam_term_id);
 CREATE INDEX ix_all_exam_wise_positions_school_id_class
     ON all_exam_wise_positions (school_id, academic_id, class_id);
 
-CREATE INDEX ix_sm_marks_grades_school_id
-    ON sm_marks_grades (school_id, academic_id);
+CREATE INDEX ix_assessment_marks_grades_school_id
+    ON assessment_marks_grade_rules (school_id, academic_id);
 
-CREATE INDEX ix_sm_online_exams_school_id_class_section
-    ON sm_online_exams (school_id, academic_id, class_id, section_id);
-CREATE INDEX ix_sm_online_exams_school_id_status_date
-    ON sm_online_exams (school_id, status, date);
-CREATE INDEX ix_sm_online_exam_questions_school_id_exam
-    ON sm_online_exam_questions (school_id, online_exam_id);
-CREATE INDEX ix_sm_student_take_online_exams_school_id_exam_student
-    ON sm_student_take_online_exams (school_id, online_exam_id, student_id);
-CREATE INDEX ix_sm_student_take_online_exam_questions_school_id_take
-    ON sm_student_take_online_exam_questions (school_id, take_online_exam_id);
+CREATE INDEX ix_assessment_online_exams_school_id_class_section
+    ON assessment_online_exams (school_id, academic_id, class_id, section_id);
+CREATE INDEX ix_assessment_online_exams_school_id_status_date
+    ON assessment_online_exams (school_id, status, date);
+CREATE INDEX ix_assessment_online_exam_questions_school_id_exam
+    ON assessment_online_exam_questions (school_id, online_exam_id);
+CREATE INDEX ix_assessment_student_take_online_exams_school_id_exam_student
+    ON assessment_student_take_online_exams (school_id, online_exam_id, student_id);
+CREATE INDEX ix_assessment_student_take_online_exam_questions_school_id_take
+    ON assessment_student_take_online_exam_questions (school_id, take_online_exam_id);
 
-CREATE INDEX ix_sm_seat_plans_school_id_type_class_section
-    ON sm_seat_plans (school_id, academic_id, exam_id, class_id, section_id);
-CREATE UNIQUE INDEX ux_sm_seat_plans_school_id_unique
-    ON sm_seat_plans (school_id, academic_id, exam_id, class_id, section_id);
+CREATE INDEX ix_assessment_seat_plans_school_id_type_class_section
+    ON assessment_seat_plans (school_id, academic_id, exam_id, class_id, section_id);
+CREATE UNIQUE INDEX ux_assessment_seat_plans_school_id_unique
+    ON assessment_seat_plans (school_id, academic_id, exam_id, class_id, section_id);
 
 CREATE INDEX ix_admit_cards_school_id_student_record_type
     ON admit_cards (school_id, academic_id, student_record_id, exam_type_id);
@@ -508,17 +508,17 @@ CREATE INDEX ix_teacher_evaluations_school_id_teacher_subject
 CREATE UNIQUE INDEX ux_teacher_remarks_school_id_student_exam
     ON teacher_remarks (school_id, student_id, exam_type_id, academic_id);
 
-CREATE INDEX ix_sm_exam_attendances_school_id_exam_subject_section
-    ON sm_exam_attendances (school_id, academic_id, exam_id, subject_id, class_id, section_id);
-CREATE INDEX ix_sm_exam_attendance_children_school_id_attendance
-    ON sm_exam_attendance_children (school_id, exam_attendance_id);
+CREATE INDEX ix_assessment_exam_attendances_school_id_exam_subject_section
+    ON assessment_exam_attendances (school_id, academic_id, exam_id, subject_id, class_id, section_id);
+CREATE INDEX ix_assessment_exam_attendance_children_school_id_attendance
+    ON assessment_exam_attendance_children (school_id, exam_attendance_id);
 
 CREATE INDEX ix_custom_result_settings_school_id_exam_type
     ON custom_result_settings (school_id, academic_id, exam_type_id);
-CREATE INDEX ix_sm_exam_signatures_school_id
-    ON sm_exam_signatures (school_id, academic_id);
-CREATE INDEX ix_sm_exam_settings_school_id_year
-    ON sm_exam_settings (school_id, academic_id);
+CREATE INDEX ix_assessment_exam_signatures_school_id
+    ON assessment_exam_signatures (school_id, academic_id);
+CREATE INDEX ix_assessment_exam_settings_school_id_year
+    ON assessment_exam_settings (school_id, academic_id);
 ```
 
 The `school_id` predicate is mandatory for tenant isolation.

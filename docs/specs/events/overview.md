@@ -20,7 +20,7 @@ mobile is performed by consumer adapters.
 - Weekend configuration, with an ordered list of days-of-week that
   constitute non-instructional days for the school.
 - Calendar UI menu configuration (the categorical labels used by the
-  calendar widget, with display colors).
+  calendar widget, with display settings_colors).
 - Incident reporting, with severity scoring, description, and school
   scope.
 - Incident assignment of points to students or staff for an incident
@@ -49,11 +49,11 @@ that other domains depend on: `CalendarEventId`, `HolidayId`,
 
 ## Dependencies
 
-- `smscore-core` — error types, result, identifier trait.
-- `smscore-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smscore-rbac` — capability checks.
-- `smscore-events` — domain event publishing.
-- `smscore-academic` — `ClassId`, `SectionId`, `SubjectId` for audience
+- `smsengine-core` — error types, result, identifier trait.
+- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `smsengine-rbac` — capability checks.
+- `smsengine-events` — domain event publishing.
+- `smsengine-academic` — `ClassId`, `SectionId`, `SubjectId` for audience
   scope on calendar events (read-only references).
 
 ## Domain Invariants

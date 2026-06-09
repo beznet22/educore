@@ -1,0 +1,29 @@
+[package]
+name = "smsengine-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "SMSengine core types: errors, identifiers, value objects, the query AST, and shared infrastructure."
+
+[lints]
+workspace = true
+
+[dependencies]
+smsengine-query-derive = { workspace = true }
+
+serde = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+indexmap = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+derive_more = { workspace = true }
+validator = { workspace = true }
+secrecy = { workspace = true }
+
+[dev-dependencies]
+proptest = "1.5"

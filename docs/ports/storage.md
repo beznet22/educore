@@ -79,7 +79,7 @@ The engine always passes a `SchoolId` filter; the adapter MUST add a
 `school_id = $1` predicate to every read query. Recommended defenses:
 
 - Row-level security policies in the database (`CREATE POLICY ... USING
-  (school_id = current_setting('app.school_id')::int)`).
+  (school_id = current_setting('app.school_id')::uuid)`).
 - Wrapper functions on top of raw SQL that always inject the predicate.
 - A test suite that attempts to read across tenants and fails.
 
@@ -176,14 +176,57 @@ other variants are translated to domain errors (`Conflict`,
 The engine ships reference adapters for:
 
 - PostgreSQL (primary target)
+- MySQL (production target, including MySQL 8.0+)
 - SQLite (embedded deployments, including single-process offline mode)
-- SurrealDB (consumer-supplied, experimental)
-- MongoDB (consumer-supplied, document adapter)
+- SurrealDB (deferred; consumer-supplied experimental adapter; not shipped)
+- MongoDB (deferred; consumer-supplied document adapter; not shipped)
 
 Adapters must satisfy the **parity test suite** in
-`crates/smscore-storage-parity` to be considered compliant. The suite
+`crates/smsengine-storage-parity` to be considered compliant. The suite
 exercises every repository method against a seeded database and
 verifies identical results across adapters.
+
+## Future Storage Backends (Deferred)
+
+The reference adapter set is intentionally narrow: **PostgreSQL**,
+**MySQL**, and **SQLite**. These three cover the vast majority of
+real-school deployments (managed Postgres, managed MySQL / MariaDB,
+and embedded / field-mode SQLite for offline work).
+
+The following backends are **deferred to a future release** and are
+**not** shipped from the engine:
+
+- **SurrealDB** — a multi-model document/graph store. Deferred because
+  the operational footprint of supporting a second document dialect
+  (in addition to MongoDB) is large, and no school in the current
+  consumer pipeline has expressed a hard requirement. Consumers who
+  need it can implement the `StorageAdapter` trait in-tree against
+  `surrealdb` 2.x and add a parity test against the seeded test suite.
+- **MongoDB** — a document store. Deferred for the same reason as
+  SurrealDB. The reference design assumes the consumer who needs
+  document storage will commit the adapter as an in-tree crate
+  alongside their own application code, with the same parity test
+  obligations as the reference adapters.
+
+When either backend becomes a hard requirement (e.g. a SaaS platform
+wants a hosted document backend, or a school district requires
+SurrealDB for compliance), the engine will accept a PR that
+introduces the adapter, parity tests, and CI matrix entries. The
+**trait surface is intentionally stable** so adding a new backend
+does not require any engine changes — only the implementation of
+`StorageAdapter` and the parity suite.
+
+Consumers implementing a deferred adapter must:
+
+1. Add the adapter as a new workspace member (e.g. `smsengine-storage-mongodb`).
+2. Implement every method in the `StorageAdapter` trait.
+3. Translate the macro-emitted `QueryNode` AST into the backend's
+   native execution plan.
+4. Pass the parity test suite under `tests/storage_parity.rs`.
+5. Document the adapter in `docs/ports/storage.md`.
+
+The engine does not maintain a roadmap for these adapters; they are
+adopted on demand.
 
 ## Query Translation Contract
 
@@ -335,7 +378,7 @@ A consumer wires the storage adapter into the engine:
 
 ```rust
 let storage: Arc<dyn StorageAdapter> = Arc::new(
-    PostgresStorage::connect("postgres://app:secret@db/smscore").await?
+    PostgresStorage::connect("postgres://app:secret@db/smsengine").await?
 );
 
 let engine = Engine::builder()

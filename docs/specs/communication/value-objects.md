@@ -11,16 +11,16 @@ school and the local id (`Uuid`).
 
 | Identifier                          | Backing Type                | Source Column                          |
 | ----------------------------------- | --------------------------- | -------------------------------------- |
-| `NoticeId`                          | `Id<Notice>`                | `sm_notice_boards.id`                  |
-| `ComplaintId`                       | `Id<Complaint>`             | `sm_complaints.id`                     |
-| `ComplaintTypeId`                   | `Id<ComplaintType>`         | derived from `sm_complaints.complaint_type` |
-| `NotificationId`                    | `Id<Notification>`          | `sm_notifications.id`                  |
-| `EmailLogId`                        | `Id<EmailLog>`              | `sm_email_sms_logs.id`                 |
-| `SmsLogId`                          | `Id<SmsLog>`                | `sm_email_sms_logs.id`                 |
+| `NoticeId`                          | `Id<Notice>`                | `communication_notice_boards.id`                  |
+| `ComplaintId`                       | `Id<Complaint>`             | `communication_complaints.id`                     |
+| `ComplaintTypeId`                   | `Id<ComplaintType>`         | derived from `communication_complaints.complaint_type` |
+| `NotificationId`                    | `Id<Notification>`          | `communication_notifications.id`                  |
+| `EmailLogId`                        | `Id<EmailLog>`              | `communication_email_sms_logs.id`                 |
+| `SmsLogId`                          | `Id<SmsLog>`                | `communication_email_sms_logs.id`                 |
 | `SmsTemplateId`                     | `Id<SmsTemplate>`           | `sms_templates.id`                     |
-| `EmailSettingId`                    | `Id<EmailSetting>`          | `sm_email_settings.id`                 |
-| `SmsGatewayId`                      | `Id<SmsGateway>`            | `sm_sms_gateways.id`                   |
-| `NotificationSettingId`             | `Id<NotificationSetting>`   | `sm_notification_settings.id`          |
+| `EmailSettingId`                    | `Id<EmailSetting>`          | `communication_email_settings.id`                 |
+| `SmsGatewayId`                      | `Id<SmsGateway>`            | `communication_sms_gateways.id`                   |
+| `NotificationSettingId`             | `Id<NotificationSetting>`   | `communication_notification_settings.id`          |
 | `AbsentNotificationTimeSetupId`     | `Id<AbsentNotificationTimeSetup>` | `absent_notification_time_setups.id` |
 | `ChatMessageId`                     | `Id<ChatMessage>`           | `chat_conversations.id`                |
 | `ChatConversationId`                | `Id<ChatConversation>`      | `chat_conversations.id`                |
@@ -32,10 +32,10 @@ school and the local id (`Uuid`).
 | `ChatInvitationId`                  | `Id<ChatInvitation>`        | `chat_invitations.id`                  |
 | `ChatInvitationTypeId`              | `Id<ChatInvitationType>`    | `chat_invitation_types.id`             |
 | `ChatStatusId`                      | `Id<ChatStatus>`            | `chat_statuses.id`                     |
-| `SendMessageId`                     | `Id<SendMessage>`           | `sm_send_messages.id`                  |
-| `ContactMessageId`                  | `Id<ContactMessage>`        | `sm_contact_messages.id`               |
+| `SendMessageId`                     | `Id<SendMessage>`           | `communication_send_messages.id`                  |
+| `ContactMessageId`                  | `Id<ContactMessage>`        | `communication_contact_messages.id`               |
 | `SpeechSliderId`                    | `Id<SpeechSlider>`          | `speech_sliders.id`                    |
-| `PhoneCallLogId`                    | `Id<PhoneCallLog>`          | `sm_phone_call_logs.id`                |
+| `PhoneCallLogId`                    | `Id<PhoneCallLog>`          | `communication_phone_call_logs.id`                |
 | `CustomSmsSettingId`                | `Id<CustomSmsSetting>`      | `custom_sms_settings.id`               |
 
 ## Names and Free Text
@@ -89,13 +89,13 @@ school and the local id (`Uuid`).
 
 | Type                  | Notes                                                              |
 | --------------------- | ------------------------------------------------------------------ |
-| `RoleId`              | From `smscore-rbac`                                                |
-| `ClassId`             | From `smscore-academic`                                            |
-| `SectionId`           | From `smscore-academic`                                            |
-| `StudentId`           | From `smscore-academic`                                            |
-| `StaffId`             | From `smscore-hr`                                                  |
-| `GuardianId`          | From `smscore-academic`                                            |
-| `UserId`              | From `smscore-platform` — the actor of a chat message              |
+| `RoleId`              | From `smsengine-rbac`                                                |
+| `ClassId`             | From `smsengine-academic`                                            |
+| `SectionId`           | From `smsengine-academic`                                            |
+| `StudentId`           | From `smsengine-academic`                                            |
+| `StaffId`             | From `smsengine-hr`                                                  |
+| `GuardianId`          | From `smsengine-academic`                                            |
+| `UserId`              | From `smsengine-platform` — the actor of a chat message              |
 | `AudienceDescriptor`  | `Vec<RoleId>` OR `ClassId`+`SectionId` OR `Vec<UserId>` OR `All`   |
 | `NotificationRoute`   | `(event: String, destination: Destination, recipient: AudienceDescriptor)` |
 
@@ -114,7 +114,7 @@ school and the local id (`Uuid`).
 
 | Type                 | Notes                                                          |
 | -------------------- | -------------------------------------------------------------- |
-| `FileReference`      | From `smscore-platform` (port-owned)                          |
+| `FileReference`      | From `smsengine-platform` (port-owned)                          |
 | `SecretReference`    | Opaque reference to a secret in the secret-store port         |
 | `Url`                | Validated URL, max 2048 chars                                  |
 | `EmailAddress`       | RFC 5322 with length cap 200                                   |
@@ -127,11 +127,11 @@ school and the local id (`Uuid`).
 
 | Type                 | Notes                                                          |
 | -------------------- | -------------------------------------------------------------- |
-| `SchoolId`           | From `smscore-platform`                                        |
-| `UserId`             | From `smscore-platform`                                        |
-| `TenantContext`      | `(SchoolId, UserId, ...)` from `smscore-platform`             |
-| `AcademicYearId`     | From `smscore-academic`                                        |
-| `CorrelationId`      | From `smscore-events`                                          |
+| `SchoolId`           | From `smsengine-platform`                                        |
+| `UserId`             | From `smsengine-platform`                                        |
+| `TenantContext`      | `(SchoolId, UserId, ...)` from `smsengine-platform`             |
+| `AcademicYearId`     | From `smsengine-academic`                                        |
+| `CorrelationId`      | From `smsengine-events`                                          |
 
 ## Variable Substitution
 

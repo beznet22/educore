@@ -348,7 +348,7 @@ no conflict.
 ## Notes for SMSengine Implementation
 
 - The **settings** crate depends on
-  `smscore-core` and `smscore-platform`.
+  `smsengine-core` and `smsengine-platform`.
   It is a per-tenant configuration
   registry.
 - The settings domain's **read** is

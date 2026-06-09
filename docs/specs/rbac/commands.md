@@ -19,7 +19,7 @@ pub struct CreateRoleCommand {
     pub tenant: TenantContext,
     pub name: RoleName,
     pub role_type: RoleType,
-    pub is_saas: bool,
+    pub is_replicated: bool,
 }
 ```
 
@@ -29,8 +29,9 @@ pub struct CreateRoleCommand {
 - `role_type` is allowed for the actor (system roles require
   `Rbac.Role.Manage`).
 
-**Effects:** Creates a `Role`, an `InfixRole` shadow, and emits
-`RoleCreated`.
+**Effects:** Creates a `Role` and emits `RoleCreated`. The legacy
+`InfixRole` shadow aggregate is removed — `is_replicated` is a
+flag on the engine's `Role`.
 
 ### UpdateRole
 
@@ -39,7 +40,7 @@ pub struct UpdateRoleCommand {
     pub tenant: TenantContext,
     pub role_id: RoleId,
     pub name: Option<RoleName>,
-    pub is_saas: Option<bool>,
+    pub is_replicated: Option<bool>,
 }
 ```
 

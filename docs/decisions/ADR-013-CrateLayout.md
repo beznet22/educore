@@ -45,55 +45,119 @@ The engine's crate layout should reflect this.
 
 SMSengine is organized as a Cargo workspace with **one
 crate per domain**, plus a small set of shared
-crates.
+crates. The workspace today contains **34 crates**;
+the inventory below is the canonical list.
 
 Concretely:
 
-1. **`smscore-core`** — the foundation crate. Error
+**Foundation (2 crates)**
+
+1. **`smsengine-core`** — the foundation crate. Error
    types, identifier trait, result type, value
    object trait, clock, id generator, common
    derives.
-2. **`smscore-platform`** — the multi-tenant
+2. **`smsengine-platform`** — the multi-tenant
    substrate. `SchoolId`, `UserId`, `TenantContext`,
    `School`, `User` aggregates. Depends only on
-   `smscore-core`.
-3. **`smscore-rbac`** — role and capability
-   management. Depends on `smscore-core`,
-   `smscore-platform`, `smscore-events`.
-4. **`smscore-events`** — event bus port, envelope,
+   `smsengine-core`.
+
+**Cross-cutting (3 crates)**
+
+3. **`smsengine-rbac`** — role and capability
+   management. Depends on `smsengine-core`,
+   `smsengine-platform`, `smsengine-events`.
+4. **`smsengine-events`** — event bus port, envelope,
    schema registry, outbox. Depends only on
-   `smscore-core`.
-5. **`smscore-audit`** — audit log port, query port,
+   `smsengine-core`.
+5. **`smsengine-audit`** — audit log port, query port,
    retention policy, redactor. Depends only on
-   `smscore-core`.
-6. **`smscore-settings`** — per-tenant configuration
-   registry. Depends on `smscore-core`,
-   `smscore-platform`.
-7. **One crate per domain**:
-   - `smscore-academic`
-   - `smscore-assessment`
-   - `smscore-attendance`
-   - `smscore-finance`
-   - `smscore-hr`
-   - `smscore-library`
-   - `smscore-facilities`
-   - `smscore-communication`
-   - `smscore-documents`
-   - `smscore-events-domain`
-   - `smscore-cms`
-   - `smscore-operations`
-8. **`smscore`** — the facade crate. Re-exports
-   the engine surface as a single, stable
-   `smscore::Engine` API. Consumers depend on
-   `smscore` (or, for finer control, on individual
-   domain crates).
-9. **`smscore-macros`** — derive macros shared
-   across crates. Depends on `syn`, `quote`, the
-   compiler.
-10. **`smscore-testkit`** — in-memory test
+   `smsengine-core`. (Added in v1 scaffold; see
+   `crates/audit/`.)
+
+**Per-tenant (1 crate)**
+
+6. **`smsengine-settings`** — per-tenant configuration
+   registry. Depends on `smsengine-core`,
+   `smsengine-platform`.
+
+**Domain (12 crates)**
+
+7. `smsengine-academic`
+8. `smsengine-assessment`
+9. `smsengine-attendance`
+10. `smsengine-finance`
+11. `smsengine-hr`
+12. `smsengine-library`
+13. `smsengine-facilities`
+14. `smsengine-communication`
+15. `smsengine-documents`
+16. `smsengine-events-domain`
+17. `smsengine-cms`
+18. `smsengine-operations` (added in v1 scaffold;
+    see `crates/operations/`.)
+
+**Storage (5 crates)**
+
+19. **`smsengine-storage`** — the storage port trait.
+20. **`smsengine-storage-postgres`** — PostgreSQL
+    adapter (primary target).
+21. **`smsengine-storage-mysql`** — MySQL 8.0+
+    adapter (production target).
+22. **`smsengine-storage-sqlite`** — SQLite adapter
+    (embedded / offline mode).
+23. **`smsengine-storage-parity`** — cross-dialect
+    conformance test harness. (Added in v1
+    scaffold; see `crates/storage-parity/`.) Not
+    a runtime adapter; it runs the same query
+    suite against all three adapters and asserts
+    identical observable behavior.
+
+**Port adapters (6 crates)**
+
+24. **`smsengine-auth`** — authentication and
+    identity.
+25. **`smsengine-event-bus`** — concrete event
+    bus implementations.
+26. **`smsengine-files`** — file storage port.
+27. **`smsengine-integrations`** — third-party
+    integration adapters.
+28. **`smsengine-notify`** — notification delivery
+    (email, SMS, push).
+29. **`smsengine-payment`** — payment gateway port.
+
+**Proc-macro (1 crate)**
+
+30. **`smsengine-query-derive`** — the
+    `#[derive(DomainQuery)]` proc macro. Depends
+    on `syn`, `quote`, the compiler. This is the
+    only proc-macro crate in v1; additional
+    derives are added in subsequent phases.
+
+**Test infrastructure (1 crate)**
+
+31. **`smsengine-testkit`** — in-memory test
     adapters for every port. Depends on every
-    domain crate.
-11. **`smscore-cli`** — operator tool. Optional.
+    domain crate. (Added in v1 scaffold; see
+    `crates/testkit/`.)
+
+**Operator tooling (1 crate)**
+
+32. **`smsengine-cli`** — operator tool. Optional.
+    (Added in v1 scaffold; see `crates/cli/`.)
+
+**High-level SDK (1 crate)**
+
+33. **`smsengine-sdk`** — consumer-facing high-level
+    SDK on top of the umbrella.
+
+**Umbrella (1 crate)**
+
+34. **`smsengine`** — the facade crate. Re-exports
+    the engine surface as a single, stable
+    `smsengine::Engine` API. Consumers depend on
+    `smsengine` (or, for finer control, on individual
+    domain crates). The 34 re-exports are listed in
+    `crates/smsengine/src/lib.rs`.
 
 Each crate has:
 
@@ -109,16 +173,19 @@ Each crate has:
 - `README.md` summarizing the crate's purpose.
 
 A consumer enables a domain by depending on the
-corresponding crate. The `smscore` facade re-exports
+corresponding crate. The `smsengine` facade re-exports
 the surface for convenience.
 
-## Consequences
+### Crate status
+
+All 34 crates are scaffolded. Implementation begins
+in Phase 0 of `docs/build-plan.md`.
 
 ### Positive
 
 - **Compile time scales linearly per domain.** A
-  change to `smscore-academic` does not trigger
-  a rebuild of `smscore-finance`. The iteration
+  change to `smsengine-academic` does not trigger
+  a rebuild of `smsengine-finance`. The iteration
   loop is fast.
 - **Visibility is enforced.** Each domain's types
   are `pub` within the crate and `pub` across
@@ -136,8 +203,8 @@ the surface for convenience.
   dependency graph.** A consumer can audit
   "which crates depend on which?" with
   `cargo tree`.
-- **Test isolation.** Tests in `smscore-finance`
-  do not run when `smscore-academic` is built.
+- **Test isolation.** Tests in `smsengine-finance`
+  do not run when `smsengine-academic` is built.
 
 ### Negative
 
@@ -146,8 +213,8 @@ the surface for convenience.
   This is paid once per crate, not per release.
 - **Cross-domain types are an explicit
   re-export.** `StudentId` is defined in
-  `smscore-academic`; consumers get it from
-  `smscore` or from `smscore-academic` directly.
+  `smsengine-academic`; consumers get it from
+  `smsengine` or from `smsengine-academic` directly.
   The duplication is not real (it's re-exports),
   but the choice is the consumer's.
 - **Workspace-wide refactors touch many
@@ -162,7 +229,7 @@ the surface for convenience.
 
 ### Mitigations
 
-- The `smscore` facade crate re-exports the
+- The `smsengine` facade crate re-exports the
   most common types, so a consumer who wants
   the simple path can depend on a single
   crate.
@@ -179,7 +246,7 @@ the surface for convenience.
 
 ### 1. Single crate, many modules
 
-All in one `smscore` crate. Rejected per above:
+All in one `smsengine` crate. Rejected per above:
 visibility, compile time, and consumption
 control suffer.
 
@@ -214,7 +281,7 @@ the same; the deployment shape is a runtime
 configuration, not a compile-time one.
 
 ### 6. Hybrid: one crate per domain, but
-no `smscore` facade
+no `smsengine` facade
 
 Consumers depend on individual crates only.
 Rejected because the facade provides a

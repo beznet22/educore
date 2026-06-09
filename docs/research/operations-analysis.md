@@ -201,7 +201,7 @@ sidebar.
 The engine's schema evolves. The consumer
 runs migrations:
 
-1. The consumer's `smscore migrate` CLI
+1. The consumer's `smsengine migrate` CLI
    command runs.
 2. The engine's storage adapter applies the
    pending migrations.
@@ -325,8 +325,8 @@ background tasks.)
 ## Notes for SMSengine Implementation
 
 - The **operations** crate depends on
-  `smscore-platform` for `SchoolId` and
-  `UserId`, and on `smscore-events` for
+  `smsengine-platform` for `SchoolId` and
+  `UserId`, and on `smsengine-events` for
   event publishing.
 - The operations domain is **append-only**
   for its core entities. `UserLog`,

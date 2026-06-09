@@ -25,7 +25,7 @@ aggregates that live here.
   payment gateway.
 - Bank accounts, bank statements, bank payment slips, and bank
   reconciliation.
-- Expenses, expense heads, income, income heads, and donors.
+- Expenses, expense heads, income, income heads, and finance_donors.
 - Payroll generation, approval, payment, and per-month earnings and
   deductions.
 - Wallet credits, debits, and refunds.
@@ -55,13 +55,13 @@ to a `SchoolId` and a `BankAccountId` (or to the cash account).
 
 ## Dependencies
 
-- `smscore-core` — error types, result, identifier trait.
-- `smscore-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smscore-rbac` — capability checks.
-- `smscore-events` — domain event publishing.
-- `smscore-academic` — `StudentId`, `ClassId`, `SectionId`,
+- `smsengine-core` — error types, result, identifier trait.
+- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `smsengine-rbac` — capability checks.
+- `smsengine-events` — domain event publishing.
+- `smsengine-academic` — `StudentId`, `ClassId`, `SectionId`,
   `AcademicYearId`, `StudentRecordId`.
-- `smscore-hr` — `StaffId` for payroll and staff-attendance related
+- `smsengine-hr` — `StaffId` for payroll and staff-attendance related
   expense capture.
 
 ## Domain Invariants

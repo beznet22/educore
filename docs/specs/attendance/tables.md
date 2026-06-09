@@ -6,15 +6,15 @@ which aggregate owns the row.
 
 | Table                              | Aggregate                  | Notes                                  |
 | ---------------------------------- | -------------------------- | -------------------------------------- |
-| `sm_student_attendances`           | StudentAttendance          | Daily student presence                 |
-| `sm_subject_attendances`           | SubjectAttendance          | Per-period student presence            |
-| `sm_staff_attendances`             | StaffAttendance            | Daily staff presence                   |
-| `sm_student_attendance_imports`    | StudentAttendanceImport    | Staging row for student import         |
-| `sm_staff_attendance_imports`      | StaffAttendanceImport      | Staging row for staff import           |
+| `attendance_student_attendances`           | StudentAttendance          | Daily student presence                 |
+| `attendance_subject_attendances`           | SubjectAttendance          | Per-period student presence            |
+| `attendance_staff_attendances`             | StaffAttendance            | Daily staff presence                   |
+| `attendance_student_attendance_imports`    | StudentAttendanceImport    | Staging row for student import         |
+| `attendance_staff_attendance_imports`      | StaffAttendanceImport      | Staging row for staff import           |
 | `student_attendance_bulks`         | AttendanceBulk             | Denormalized staging row               |
 | `class_attendances`                | ClassAttendance            | Per-(student, exam_type) summary       |
-| `sm_exam_attendances`              | ExamAttendance (assessment)| Exam-day per-subject roll (delegated)  |
-| `sm_exam_attendance_children`      | ExamAttendanceChild (assessment) | Per-student exam attendance       |
+| `assessment_exam_attendances`              | ExamAttendance (assessment)| Exam-day per-subject roll (delegated)  |
+| `assessment_exam_attendance_children`      | ExamAttendanceChild (assessment) | Per-student exam attendance       |
 
 ## Notes
 
@@ -32,9 +32,9 @@ which aggregate owns the row.
   `days_present` summary used in report cards. The attendance
   domain recomputes this from the underlying events; the table
   serves as a cached projection.
-- `sm_exam_attendances` and `sm_exam_attendance_children` are
+- `assessment_exam_attendances` and `assessment_exam_attendance_children` are
   physically defined in the attendance migration for convenience
   but their aggregate is owned by the **assessment** domain.
 - The `student_attendance_bulks` table is a denormalized staging
   representation used by the consumer's bulk import wizard. The
-  engine commits its rows into `sm_student_attendances`.
+  engine commits its rows into `attendance_student_attendances`.

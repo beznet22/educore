@@ -295,8 +295,8 @@ engine records the reference.
 ## Notes for SMSengine Implementation
 
 - The **communication** crate depends on
-  `smscore-events` (for event subscriptions) and
-  `smscore-rbac`. It does not depend on
+  `smsengine-events` (for event subscriptions) and
+  `smsengine-rbac`. It does not depend on
   operational domains; it consumes their events.
 - The domain is **event-driven**. Notices,
   complaints, and notifications are produced

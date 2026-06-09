@@ -107,7 +107,7 @@ and in the engine's rustdoc.
   indirection is a cost; the auditability is the benefit.
 - **Boilerplate per command.** A command struct, its
   capability list, its dispatcher, its preconditions, its
-  events, its tests. The `smscore-core` crate provides
+  events, its tests. The `smsengine-core` crate provides
   macros and derive helpers to reduce boilerplate.
 - **No "transaction script" escape hatch.** If a consumer
   wants to do "just a quick update" without a command, the

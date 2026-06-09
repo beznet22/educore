@@ -217,7 +217,7 @@ fields is caught in CI:
 ```rust
 #[test]
 fn student_field_enum_expansion_is_stable() {
-    let expansion = smscore_query_derive::__expand_for_tests::<Student>();
+    let expansion = smsengine_query_derive::__expand_for_tests::<Student>();
     insta::assert_snapshot!(expansion);
 }
 ```
@@ -233,7 +233,7 @@ must be approved by reviewers.
 ```rust
 #[test]
 fn student_query_builder_expansion_is_stable() {
-    let expansion = smscore_query_derive::__expand_for_tests::<Student>();
+    let expansion = smsengine_query_derive::__expand_for_tests::<Student>();
     insta::assert_snapshot!(expansion);
 }
 ```
@@ -355,7 +355,7 @@ generation, etc.). Track regressions in CI.
 
 ## Test Utilities
 
-The engine ships a `smscore-test` crate that provides:
+The engine ships a `smsengine-test` crate that provides:
 
 - `test_engine()` — a pre-configured engine with in-memory storage.
 - `test_tenant(school_id)` — a tenant context.

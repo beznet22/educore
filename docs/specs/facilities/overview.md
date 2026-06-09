@@ -47,14 +47,14 @@ identifier types to consumers: `VehicleId`, `RouteId`,
 
 ## Dependencies
 
-- `smscore-core` — error types, result, identifier trait.
-- `smscore-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smscore-rbac` — capability checks.
-- `smscore-events` — domain event publishing.
-- `smscore-academic` — `StudentId`, `ClassId`, `SectionId`,
+- `smsengine-core` — error types, result, identifier trait.
+- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `smsengine-rbac` — capability checks.
+- `smsengine-events` — domain event publishing.
+- `smsengine-academic` — `StudentId`, `ClassId`, `SectionId`,
   `AcademicYearId`, `RoleId` (read-only references).
-- `smscore-hr` — `StaffId` (read-only references).
-- `smscore-finance` — receives payment events for item sales and GRNs.
+- `smsengine-hr` — `StaffId` (read-only references).
+- `smsengine-finance` — receives payment events for item sales and GRNs.
 
 ## Domain Invariants
 

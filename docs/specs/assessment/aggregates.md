@@ -428,7 +428,7 @@ Public-facing content block for the exam routine page: `Title`,
 
 ---
 
-## FrontExamRoutine
+## FrontendExamRoutine
 
 **Identity:** `FrontExamRoutineId(SchoolId, Uuid)`
 **Owner:** `School`
@@ -443,7 +443,7 @@ website.
 
 ---
 
-## FrontResult
+## FrontendResult
 
 **Identity:** `FrontResultId(SchoolId, Uuid)`
 **Owner:** `School`

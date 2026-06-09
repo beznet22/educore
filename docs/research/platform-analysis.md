@@ -411,7 +411,7 @@ event scheduling and timestamp display.
 ## Notes for SMSengine Implementation
 
 - The **platform** crate depends only on
-  `smscore-core`. It is the foundational
+  `smsengine-core`. It is the foundational
   crate; no other domain depends on
   platform.
 - The platform domain provides `SchoolId`,

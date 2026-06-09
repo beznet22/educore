@@ -231,7 +231,7 @@ pub struct CreateStyleCommand {
     pub tenant: TenantContext,
     pub style_name: StyleName,
     pub path_main_style: StylePath,
-    pub path_infix_style: StylePath,
+    pub path_style: StylePath,
     pub primary_color: ColorHex,
     pub primary_color2: ColorHex,
     pub title_color: ColorHex,
@@ -319,7 +319,7 @@ pub struct CreateThemeCommand {
     pub tenant: TenantContext,
     pub title: ThemeTitle,
     pub path_main_style: ThemePath,
-    pub path_infix_style: ThemePath,
+    pub path_style: ThemePath,
     pub color_mode: ColorMode,
     pub box_shadow: BoxShadow,
     pub background_type: BackgroundType,
@@ -334,7 +334,7 @@ pub struct CreateThemeCommand {
 ### UpdateTheme / ActivateTheme / DeleteTheme / ReplicateTheme
 
 Standard CRUD on `Theme` plus `ReplicateTheme` (which clones a
-theme's `color_theme` bindings into a new theme row).
+theme's `settings_color_theme` bindings into a new theme row).
 
 **Capabilities:** `Settings.Theme.Update`, `Settings.Theme.Activate`,
 `Settings.Theme.Delete`, `Settings.Theme.Replicate`.

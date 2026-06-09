@@ -48,7 +48,7 @@ mandatory for every crate in the engine.
  2. **MSRV:** 1.75 (the latest stable LTS at the time of
     release). Crate-level `rust-version` is set.
  3. **Async:** `tokio` is the runtime. The
-    `smscore-core` crate re-exports `tokio` selectively
+    `smsengine-core` crate re-exports `tokio` selectively
     so domain code does not import `tokio` directly.
  4. **Error handling:** `thiserror` for public error
     types, `anyhow` for glue code (CLI, scripts). Domain
@@ -277,7 +277,7 @@ in-engine contract is in
 
 ### Mitigations
 
-- The `smscore-core` crate re-exports common
+- The `smsengine-core` crate re-exports common
   building blocks so domain crates have a
   consistent surface.
 - A `cargo xtask` script (or equivalent) wires
@@ -287,15 +287,13 @@ in-engine contract is in
   one.
 - A "Rust style" rustdoc page summarizes the
   standards for new contributors.
-- The `smscore-macros` crate provides
-  `#[derive(DomainQuery)]`,
-  `#[derive(Command)]`,
-  `#[derive(DomainEvent)]`,
-  `#[derive(QueryFields)]`,
-  `#[derive(Aggregate)]` so the per-aggregate
-  boilerplate is a few lines of attribute
-  decoration, not a hundred lines of hand-
-  written enum.
+- The `smsengine-query-derive` crate provides
+  `#[derive(DomainQuery)]` (and is the only
+  proc-macro crate in v1; additional derives
+  are added in subsequent phases) so the
+  per-aggregate boilerplate is a few lines of
+  attribute decoration, not a hundred lines
+  of hand-written enum.
 - The `docs_guidlines/query_optimze.md`
   document defines the macro architecture
   in full, with worked examples for the

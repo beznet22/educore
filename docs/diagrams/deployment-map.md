@@ -16,8 +16,8 @@ graph TB
     end
 
     subgraph engine [SMSengine Engine]
-        Facade[Engine Facade<br/>smscore::Engine]
-        Domain[Domain Crates<br/>smscore-academic, smscore-finance, ...]
+        Facade[Engine Facade<br/>smsengine::Engine]
+        Domain[Domain Crates<br/>smsengine-academic, smsengine-finance, ...]
         Ports[Port Traits<br/>Storage, Auth, Notification, ...]
     end
 
@@ -177,7 +177,7 @@ payment.
 
 ```mermaid
 graph LR
-    CLI[smscore CLI]
+    CLI[smsengine CLI]
     CLI -->|in-process| Engine[Engine]
     Engine -->|in-process| Storage[Storage Adapter]
     Engine -->|in-process| EventBus[Event Bus]
@@ -382,7 +382,7 @@ graph LR
     Builder --> P10[with_audit(audit_sink)]
     Builder --> P11[with_search(search_index)]
     Builder --> P12[with_integration(integration_gateway)]
-    Engine[smscore::Engine] --> Builder
+    Engine[smsengine::Engine] --> Builder
     Engine --> Academic[engine.academic]
     Engine --> Finance[engine.finance]
     Engine --> HR[engine.hr]
