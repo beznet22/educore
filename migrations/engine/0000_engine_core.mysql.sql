@@ -6,7 +6,7 @@
 --      docs/schemas/sql-dialects/README.md (Runtime DDL emission section)
 
 -- =============================================================================
--- SMSengine — Engine Cross-Cutting Tables
+-- Educore — Engine Cross-Cutting Tables
 -- =============================================================================
 -- File:        0000_engine_core.mysql.sql
 -- Target DBs:  MySQL 8+

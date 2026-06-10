@@ -1,11 +1,11 @@
 # License FAQ
 
 This document answers the questions a contributor or consumer of the
-SMSengine would have about licensing.
+Educore would have about licensing.
 
 ## TL;DR
 
-The SMSengine is **dual-licensed under `MIT OR Apache-2.0`**. Both are
+The Educore is **dual-licensed under `MIT OR Apache-2.0`**. Both are
 permissive open-source licenses. You can use, modify, redistribute, and
 sell products that include the engine, for free, under either license
 at your option. The canonical text files are:
@@ -62,7 +62,7 @@ Yes, in two ways:
    documentation.
 
 The `NOTICE` file in this repo contains the engine's attribution
-("SMSengine, Copyright 2026 The SMSengine Authors, https://smsengine.dev").
+("Educore, Copyright 2026 The Educore Authors, https://educore.dev").
 When you distribute the engine (binary or source), include the
 contents of `NOTICE` in your distribution.
 
@@ -139,7 +139,7 @@ deliberately chose MIT/Apache-2.0 over AGPL-3.0 to avoid this.
 ### What about trademarks?
 
 Neither MIT nor Apache-2.0 grants trademark rights. You can use the
-engine's source code, but you **may not use the SMSengine name and
+engine's source code, but you **may not use the Educore name and
 logos** in your marketing materials without separate written
 permission. Per Apache 2.0 § 6, the trademark restriction is
 explicit.

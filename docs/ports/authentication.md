@@ -173,8 +173,8 @@ The consumer constructs the adapter:
 let auth: Arc<dyn AuthProvider> = Arc::new(
     JwtAuthProvider::builder()
         .signing_key(env::var("JWT_SECRET")?)
-        .issuer("smsengine.example.com")
-        .audience("smsengine")
+        .issuer("educore.example.com")
+        .audience("educore")
         .access_ttl(Duration::from_hours(1))
         .refresh_ttl(Duration::from_days(7))
         .build()

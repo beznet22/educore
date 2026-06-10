@@ -36,15 +36,15 @@ Identifiers from other domains referenced by the facilities domain:
 
 | Identifier         | Source Domain    |
 | ------------------ | ---------------- |
-| `SchoolId`         | `smsengine-platform` |
-| `UserId`           | `smsengine-platform` |
-| `StudentId`        | `smsengine-academic` |
-| `StaffId`          | `smsengine-hr`        |
-| `RoleId`           | `smsengine-rbac`     |
-| `AcademicYearId`   | `smsengine-academic` |
-| `ClassId`          | `smsengine-academic` |
-| `SectionId`        | `smsengine-academic` |
-| `TenantContext`    | `smsengine-platform` |
+| `SchoolId`         | `educore-platform` |
+| `UserId`           | `educore-platform` |
+| `StudentId`        | `educore-academic` |
+| `StaffId`          | `educore-hr`        |
+| `RoleId`           | `educore-rbac`     |
+| `AcademicYearId`   | `educore-academic` |
+| `ClassId`          | `educore-academic` |
+| `SectionId`        | `educore-academic` |
+| `TenantContext`    | `educore-platform` |
 
 ## Names & Numbers
 
@@ -144,10 +144,10 @@ or numerics where a value object exists.
 
 | Type              | Notes                                                    |
 | ----------------- | -------------------------------------------------------- |
-| `SchoolId`        | From `smsengine-platform`                                  |
-| `UserId`          | From `smsengine-platform`                                  |
-| `TenantContext`   | From `smsengine-platform`                                  |
-| `StudentId`       | From `smsengine-academic` (read-only reference)            |
-| `StaffId`         | From `smsengine-hr` (read-only reference)                  |
-| `AcademicYearId`  | From `smsengine-academic` (read-only reference)            |
-| `RoleId`          | From `smsengine-rbac` (read-only reference)                |
+| `SchoolId`        | From `educore-platform`                                  |
+| `UserId`          | From `educore-platform`                                  |
+| `TenantContext`   | From `educore-platform`                                  |
+| `StudentId`       | From `educore-academic` (read-only reference)            |
+| `StaffId`         | From `educore-hr` (read-only reference)                  |
+| `AcademicYearId`  | From `educore-academic` (read-only reference)            |
+| `RoleId`          | From `educore-rbac` (read-only reference)                |

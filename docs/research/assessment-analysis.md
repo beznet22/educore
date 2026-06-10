@@ -248,10 +248,10 @@ engine's rank computation breaks the tie by:
 
 The tie-breaking policy is configurable per school.
 
-## Notes for SMSengine Implementation
+## Notes for Educore Implementation
 
 - The **assessment** crate depends on
-  `smsengine-academic` for `StudentId`, `ClassId`,
+  `educore-academic` for `StudentId`, `ClassId`,
   `SubjectId`, `AcademicYearId`.
 - Marks are **write-once-ish**: a mark is created,
   may be updated before publication, and may be

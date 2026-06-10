@@ -1,5 +1,5 @@
 [package]
-name = "smsengine-cli"
+name = "educore-cli"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,7 +11,7 @@ description = "Sample CLI demonstrating consumer-side wiring of the engine. NOT 
 workspace = true
 
 [[bin]]
-name = "smsengine-cli"
+name = "educore-cli"
 path = "src/main.rs"
 
 [dependencies]

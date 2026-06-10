@@ -49,11 +49,11 @@ objects that other domains depend on: `StudentAttendanceId`,
 
 ## Dependencies
 
-- `smsengine-core` — error types, identifier trait, validation.
-- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smsengine-rbac` — capability checks.
-- `smsengine-events` — domain event publishing.
-- `smsengine-academic` — `StudentId`, `ClassId`, `SectionId`,
+- `educore-core` — error types, identifier trait, validation.
+- `educore-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `educore-rbac` — capability checks.
+- `educore-events` — domain event publishing.
+- `educore-academic` — `StudentId`, `ClassId`, `SectionId`,
   `SubjectId`, `AcademicYearId`, `StaffId`, `StudentRecordId`.
 
 ## Domain Invariants

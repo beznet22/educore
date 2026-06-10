@@ -74,7 +74,7 @@ Procedural derive macros (`#[derive(DomainQuery)]`,
 typed artifacts at compile time, with the same
 ergonomics as a runtime reflection framework and
 none of the runtime cost. They are the canonical
-mechanism by which SMSengine avoids reflection in
+mechanism by which Educore avoids reflection in
 the query layer. The macro is preferred over
 declarative `macro_rules!` for the query DSL
 precisely because the derive macro's output is a
@@ -85,7 +85,7 @@ introspect.
 
 ## Decision
 
-SMSengine uses **no runtime reflection**, **no
+Educore uses **no runtime reflection**, **no
 runtime schema parsing**, and **no lazy loading**.
 The engine's structure is encoded in Rust types,
 derives, and macros — all resolved at compile time.
@@ -169,7 +169,7 @@ and in `ADR-006: Compile-Time-Safe Query Layer`.
 
 ## Macro Generation Strategy
 
-SMSengine's answer to the boilerplate cost of typed
+Educore's answer to the boilerplate cost of typed
 Rust is the **`#[derive(DomainQuery)]` procedural
 macro**. The macro is the canonical, compile-time
 mechanism for eliminating reflection from the query
@@ -306,7 +306,7 @@ responsible for I/O.
 
 ## Lazy Loading Forbidden
 
-SMSengine categorically outlaws lazy loading. The
+Educore categorically outlaws lazy loading. The
 engine is a strict eager-loading system; N+1
 patterns are a correctness failure, not a
 performance optimization. The following patterns
@@ -353,7 +353,7 @@ the result; the consumer reads it synchronously
 in a `for` loop, a `match`, or a `let Some(...)`.
 
 A domain model whose fields trigger I/O is not
-a domain model; it is a proxy. SMSengine has no
+a domain model; it is a proxy. Educore has no
 proxies.
 
 ## Consequences
@@ -425,13 +425,13 @@ proxies.
 
 ### Mitigations
 
-- The `smsengine-query-derive` crate provides
+- The `educore-query-derive` crate provides
   `#[derive(DomainQuery)]` (and is the only
   proc-macro crate in v1; additional derives
   are added in subsequent phases), which
   reduces the per-aggregate boilerplate to a
   few lines.
-- A `smsengine-cli` tool reads the
+- A `educore-cli` tool reads the
   generated schema registry and prints
   the catalog for the consumer.
 - The `build-plan.md` describes how the

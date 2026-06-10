@@ -2,7 +2,7 @@
 
 ## Purpose
 
-SMSengine provides a compile-time-safe, storage-agnostic, Eloquent-like
+Educore provides a compile-time-safe, storage-agnostic, Eloquent-like
 query layer through **procedural derive macros** that emit typed AST
 components and state builders, combined with developer-authored
 **extension traits** for domain-specific scopes. The layer supports

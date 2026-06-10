@@ -1,6 +1,6 @@
 # Event Schema
 
-This document is **normative**. Every domain event published by SMSengine
+This document is **normative**. Every domain event published by Educore
 MUST conform to the envelope defined here. The envelope is the contract
 between producers (domain aggregates), the event bus, and consumers
 (other domains, projections, AI agents, audit trails, offline

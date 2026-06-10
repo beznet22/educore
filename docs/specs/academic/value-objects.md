@@ -123,8 +123,8 @@ explicit cross-tenant commands.
 
 | Type                  | Notes                                                       |
 | --------------------- | ----------------------------------------------------------- |
-| `SchoolId`            | From `smsengine-platform`                                     |
-| `TenantContext`       | `(SchoolId, UserId, ...)` from `smsengine-platform`           |
+| `SchoolId`            | From `educore-platform`                                     |
+| `TenantContext`       | `(SchoolId, UserId, ...)` from `educore-platform`           |
 | `BankAccount`         | Used by finance; academic owns no money                     |
 
 ## Admission Inquiry

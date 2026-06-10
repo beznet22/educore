@@ -202,7 +202,7 @@ considered. Documented here for the audit trail.
 | `indexmap ^2.5` | Insertion-ordered hash map | The de-facto insertion-ordered map; pinned to 2.5.x for MSRV 1.75. |
 | `derive_more ^1.0` | More `#[derive]` macros | Standard companion to `std` derives. |
 | `once_cell ^1.20` | `Lazy`/`OnceCell` | Standard `std::sync::OnceLock` replacement; pre-stabilization. |
-| `proc-macro2 / quote / syn` | Proc-macro infrastructure | Standard; required by `smsengine-query-derive`. |
+| `proc-macro2 / quote / syn` | Proc-macro infrastructure | Standard; required by `educore-query-derive`. |
 
 ## Cross-compile matrix (per category)
 

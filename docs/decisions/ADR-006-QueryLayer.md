@@ -40,7 +40,7 @@ safety.
 
 ## Decision
 
-SMSengine adopts a **compile-time-safe, macro-generated query layer**
+Educore adopts a **compile-time-safe, macro-generated query layer**
 with **closure-based nested filters** and **strict eager loading**.
 
 Concretely:
@@ -159,7 +159,7 @@ per-domain `repositories.md` files.
 
 ### Mitigations
 
-- The macro crate (`smsengine-query-derive`) is itself cargo-cacheable
+- The macro crate (`educore-query-derive`) is itself cargo-cacheable
   and incremental.
 - Builder trait provides common methods (`where_eq`, `where_in`,
   `order_by`, `limit`, `paginate`) that work for any aggregate.

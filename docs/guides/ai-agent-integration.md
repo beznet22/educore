@@ -2,7 +2,7 @@
 
 ## Goal
 
-Expose SMSengine to AI agents (LLM tool-use) safely. The agent can
+Expose Educore to AI agents (LLM tool-use) safely. The agent can
 admit students, mark attendance, generate invoices, and answer
 questions, but cannot bypass business rules.
 
@@ -144,7 +144,7 @@ Auditors can answer: "What did the agent do on 2026-06-08 between
 
 ## Testing Agents
 
-The engine provides a `smsengine-agent-test` crate:
+The engine provides a `educore-agent-test` crate:
 
 ```rust
 let agent = TestAgent::new("test-agent", capabilities![

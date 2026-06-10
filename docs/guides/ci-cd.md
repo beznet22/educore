@@ -3,7 +3,7 @@
 ## Goal
 
 Establish a continuous integration and deployment pipeline for an
-SMSengine consumer application.
+Educore consumer application.
 
 ## Build
 
@@ -49,7 +49,7 @@ Integration tests require a real database. Use testcontainers:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --workspace --features integration
         env:
-          DATABASE_URL: postgres://postgres:test@localhost/smsengine_test
+          DATABASE_URL: postgres://postgres:test@localhost/educore_test
 ```
 
 ## Cross-Compilation
@@ -134,8 +134,8 @@ Integration tests require a real database. Use testcontainers:
       - name: Publish
         run: |
           gh release create ${{ github.ref_name }} \
-            target/x86_64-unknown-linux-gnu/release/smsengine \
-            target/aarch64-unknown-linux-gnu/release/smsengine
+            target/x86_64-unknown-linux-gnu/release/educore \
+            target/aarch64-unknown-linux-gnu/release/educore
 ```
 
 ## Pre-commit Hooks
@@ -167,8 +167,8 @@ RUN cargo build --release
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /app/target/release/smsengine /usr/local/bin/
-ENTRYPOINT ["smsengine"]
+COPY --from=builder /app/target/release/educore /usr/local/bin/
+ENTRYPOINT ["educore"]
 ```
 
 The image uses `debian-slim` (musl for static binaries) and includes

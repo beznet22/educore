@@ -6,8 +6,8 @@ Canonical DDL for the **6 engine cross-cutting tables** (`outbox`,
 
 These files are the **authoritative source of truth** for the
 cross-cutting schema. The storage adapter crates
-(`smsengine-storage-postgres`, `smsengine-storage-mysql`,
-`smsengine-storage-sqlite`) embed them via `include_str!` and apply
+(`educore-storage-postgres`, `educore-storage-mysql`,
+`educore-storage-sqlite`) embed them via `include_str!` and apply
 them at startup via `storage.create_schema().await`. The DB
 round-trip dominates the cost (~6 s for ~310 tables on MySQL);
 string build time is <10 ms.

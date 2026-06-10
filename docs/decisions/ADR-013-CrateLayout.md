@@ -6,7 +6,7 @@ Accepted.
 
 ## Context
 
-SMSengine is a school-domain engine. It is organized into
+Educore is a school-domain engine. It is organized into
 15 bounded contexts (academic, finance, hr, attendance,
 assessment, library, facilities, communication,
 documents, events, cms, platform, rbac, settings,
@@ -33,9 +33,9 @@ must:
   not force them to pull in adapters, settings, or
   the entire umbrella.
 - **Keep compile-time iteration fast.** A change to
-  `smsengine-academic` should not trigger a rebuild
-  of `smsengine-storage-postgres` or
-  `smsengine-notify`. The 34-crate granularity is
+  `educore-academic` should not trigger a rebuild
+  of `educore-storage-postgres` or
+  `educore-notify`. The 34-crate granularity is
   already at the right level; the layout must
   preserve it.
 - **Avoid workspace metadata duplication.** A
@@ -56,12 +56,12 @@ boundary enforcement.
 
 ## Decision
 
-SMSengine is organized as a single Cargo workspace
+Educore is organized as a single Cargo workspace
 with **34 crates grouped into 5 tiers + 1 umbrella**.
 The 5 tiers are directory-organized under `crates/`
 and the single root `Cargo.toml` is the source of
 truth for workspace metadata. Tier boundaries are
-enforced at build time by a `smsengine-core::lint`
+enforced at build time by a `educore-core::lint`
 sub-module that statically inspects each crate's
 declared dependencies.
 
@@ -71,12 +71,12 @@ Concretely:
 
 | Tier | Path | Count | Purpose |
 | --- | --- | --- | --- |
-| core | `crates/core/` | 3 | Infrastructure: errors, identifiers, value objects, query AST, proc-macro, storage port |
+| infra | `crates/infra/` | 3 | Infrastructure: errors, identifiers, value objects, query AST, proc-macro, storage port |
 | cross-cutting | `crates/cross-cutting/` | 7 | Cross-domain foundations: platform, rbac, events, audit, settings, operations, calendar |
 | domains | `crates/domains/` | 10 | The 10 domain bounded contexts (academic, finance, hr, ...) |
 | adapters | `crates/adapters/` | 9 | Port implementations: 3 storage adapters + 6 port adapters (auth, event-bus, files, integrations, notify, payment) |
 | tools | `crates/tools/` | 4 | Dev tooling: testkit, storage-parity, cli, sdk |
-| umbrella | `crates/smsengine/` | 1 | Re-exports the public surface of all 34 internal crates |
+| umbrella | `crates/educore/` | 1 | Re-exports the public surface of all 34 internal crates |
 
 ### Dependency direction
 
@@ -94,13 +94,13 @@ core  ←  cross-cutting  ←  domains  ←  tools
 - `adapters` depends on `core` and `cross-cutting`.
 - `tools` depends on `core`, `cross-cutting`,
   `domains`, and `adapters`.
-- The `smsengine` umbrella crate re-exports each
+- The `educore` umbrella crate re-exports each
   internal crate under its short name
-  (`pub use smsengine_core as core;`,
-  `pub use smsengine_academic as academic;`, ...).
+  (`pub use educore_core as core;`,
+  `pub use educore_academic as academic;`, ...).
   Consumers therefore write
-  `smsengine::academic::commands::*` and never need
-  to know the internal `smsengine-` prefix on the
+  `educore::academic::commands::*` and never need
+  to know the internal `educore-` prefix on the
   package name.
 
 ### Boundary enforcement
@@ -109,7 +109,7 @@ The boundary is enforced at **two levels**:
 
 1. **Glob patterns in the root `Cargo.toml`.** The
    virtual workspace uses one `members = [...]` glob
-   per tier (`crates/core/*/Cargo.toml`,
+   per tier (`crates/infra/*/Cargo.toml`,
    `crates/cross-cutting/*/Cargo.toml`, ...). This
    means a single `cargo build --workspace` covers
    the entire engine, and a single
@@ -123,7 +123,7 @@ The boundary is enforced at **two levels**:
    `[workspace.lints]` in each sub-workspace's
    `Cargo.toml`, which is a high maintenance cost
    for no enforcement benefit.
-2. **`smsengine-core::lint` sub-module.** A build-
+2. **`educore-core::lint` sub-module.** A build-
    time check that walks every domain crate's
    declared dependencies and rejects any import
    that crosses a tier boundary upward (e.g. a
@@ -137,7 +137,7 @@ The boundary is enforced at **two levels**:
 
 The lint sub-module is a **Phase 0 deliverable** of
 `docs/build-plan.md` and lives in
-`crates/core/engine-core/src/lint.rs`. See
+`crates/infra/core/src/lint.rs`. See
 `docs/build-plan.md` § "The No-Gaps Gates" for the
 full gate list.
 
@@ -147,7 +147,7 @@ All 34 crates are scaffolded. Implementation begins
 in Phase 0 of `docs/build-plan.md`.
 
 The 5-tier layout was adopted in this restructure.
-All 34 crates retain their `smsengine-<name>` package
+All 34 crates retain their `educore-<name>` package
 names; only directory paths changed. The full path
 mapping is in the table above and in `AGENTS.md` §
 "Tier System".
@@ -171,7 +171,7 @@ deliberate hop away, and the dependency direction
 makes that hop explicit. The 5-tier model also
 isolates `tools/` (testkit, cli, sdk,
 storage-parity) from the runtime crates, which
-makes it obvious at a glance that `smsengine-cli`
+makes it obvious at a glance that `educore-cli`
 is not part of the engine's release artifact.
 
 ### Why directory organization, not sub-workspaces
@@ -190,7 +190,7 @@ same organizational benefit (one directory per
 tier, one set of crates per directory) at zero
 maintenance cost. The tier boundaries are still
 enforced; they are enforced by
-`smsengine-core::lint` rather than by Cargo
+`educore-core::lint` rather than by Cargo
 metadata.
 
 ### Why strict enforcement via lint, not convention
@@ -203,7 +203,7 @@ spot in code review. The AGENTS.md file documents
 the rule, but a contributor who skims a domain
 crate's `Cargo.toml` and sees an adapter listed as
 a dependency will not be stopped by AGENTS.md
-alone. The `smsengine-core::lint` sub-module walks
+alone. The `educore-core::lint` sub-module walks
 the workspace at build time and rejects any
 upward tier import. The cost is small (one module
 of ~200 lines); the benefit is that the boundary
@@ -214,12 +214,12 @@ discipline.
 
 The engine was first scaffolded as a flat 29-crate
 layout under `crates/<name>/`. Five additional
-crates (`smsengine-audit`, `smsengine-operations`,
-`smsengine-testkit`, `smsengine-cli`,
-`smsengine-storage-parity`) were added during the
+crates (`educore-audit`, `educore-operations`,
+`educore-testkit`, `educore-cli`,
+`educore-storage-parity`) were added during the
 v1 scaffold pass to reach 34. The 5-tier restructure
 moved all 34 crates into the directory organization
-described above; package names (`smsengine-<name>`)
+described above; package names (`educore-<name>`)
 and crate contents are unchanged. The full migration
 is recorded in `docs/decisions/ADR-013-CrateLayout.md`
 (this document) and cross-referenced from
@@ -263,7 +263,7 @@ is recorded in `docs/decisions/ADR-013-CrateLayout.md`
 - **Tier paths are 1 level deeper.** A domain
   crate's source path is `crates/domains/<name>/`
   rather than `crates/<name>/`. Imports between
-  crates use the same `smsengine_<name>` path as
+  crates use the same `educore_<name>` path as
   before, but the on-disk path is one level
   deeper.
 - **5 tier directories, but no sub-workspace
@@ -290,7 +290,7 @@ is recorded in `docs/decisions/ADR-013-CrateLayout.md`
 | Sub-workspaces (5 `[workspace]` files, one per tier) | Each sub-workspace needs its own `[workspace.dependencies]` and `[workspace.lints]`; high maintenance cost (5 copies of workspace metadata, all of which must be kept in sync by hand) |
 | 3 tiers (foundation/business/edges) | 14 domain crates mixed with 6 cross-cutting foundations in the same tier; harder to navigate; the foundation/edges distinction doesn't map cleanly onto the engine's actual dependency graph |
 | Per-domain repository (polyrepo) | 34 repos with separate version control; CI complexity; loses atomic commits across crates; cross-cutting refactors become multi-PR coordination problems |
-| One giant `smsengine` crate | Fails on compile time, visibility control, consumer pull-in scope, and test isolation; see ADR-013 § "Context" for the full list |
+| One giant `educore` crate | Fails on compile time, visibility control, consumer pull-in scope, and test isolation; see ADR-013 § "Context" for the full list |
 | One crate per aggregate | Hundreds of crates; the relationships between aggregates of the same domain are too tight to justify the per-aggregate boilerplate |
 | One crate per layer (commands/events/aggregates) | Separates the bounded context; a domain owns its commands, events, and aggregates together; separating them fragments the domain |
 
@@ -305,6 +305,6 @@ is recorded in `docs/decisions/ADR-013-CrateLayout.md`
   dependency-direction checks).
 - `docs/decisions/ADR-013-CrateLayout.md` — this
   document.
-- `crates/smsengine/src/lib.rs` — the umbrella
-  re-exports (`pub use smsengine_core as core;`,
-  `pub use smsengine_academic as academic;`, ...).
+- `crates/educore/src/lib.rs` — the umbrella
+  re-exports (`pub use educore_core as core;`,
+  `pub use educore_academic as academic;`, ...).

@@ -1,5 +1,5 @@
 [package]
-name = "smsengine-settings"
+name = "educore-settings"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,7 +11,7 @@ description = "General settings, language catalog, themes, base setups, custom l
 workspace = true
 
 [dependencies]
-smsengine-core = { workspace = true }
-smsengine-platform = { workspace = true }
-smsengine-events = { workspace = true }
+educore-core = { workspace = true }
+educore-platform = { workspace = true }
+educore-events = { workspace = true }
 

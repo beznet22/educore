@@ -89,13 +89,13 @@ school and the local id (`Uuid`).
 
 | Type                  | Notes                                                              |
 | --------------------- | ------------------------------------------------------------------ |
-| `RoleId`              | From `smsengine-rbac`                                                |
-| `ClassId`             | From `smsengine-academic`                                            |
-| `SectionId`           | From `smsengine-academic`                                            |
-| `StudentId`           | From `smsengine-academic`                                            |
-| `StaffId`             | From `smsengine-hr`                                                  |
-| `GuardianId`          | From `smsengine-academic`                                            |
-| `UserId`              | From `smsengine-platform` — the actor of a chat message              |
+| `RoleId`              | From `educore-rbac`                                                |
+| `ClassId`             | From `educore-academic`                                            |
+| `SectionId`           | From `educore-academic`                                            |
+| `StudentId`           | From `educore-academic`                                            |
+| `StaffId`             | From `educore-hr`                                                  |
+| `GuardianId`          | From `educore-academic`                                            |
+| `UserId`              | From `educore-platform` — the actor of a chat message              |
 | `AudienceDescriptor`  | `Vec<RoleId>` OR `ClassId`+`SectionId` OR `Vec<UserId>` OR `All`   |
 | `NotificationRoute`   | `(event: String, destination: Destination, recipient: AudienceDescriptor)` |
 
@@ -114,7 +114,7 @@ school and the local id (`Uuid`).
 
 | Type                 | Notes                                                          |
 | -------------------- | -------------------------------------------------------------- |
-| `FileReference`      | From `smsengine-platform` (port-owned)                          |
+| `FileReference`      | From `educore-platform` (port-owned)                          |
 | `SecretReference`    | Opaque reference to a secret in the secret-store port         |
 | `Url`                | Validated URL, max 2048 chars                                  |
 | `EmailAddress`       | RFC 5322 with length cap 200                                   |
@@ -127,11 +127,11 @@ school and the local id (`Uuid`).
 
 | Type                 | Notes                                                          |
 | -------------------- | -------------------------------------------------------------- |
-| `SchoolId`           | From `smsengine-platform`                                        |
-| `UserId`             | From `smsengine-platform`                                        |
-| `TenantContext`      | `(SchoolId, UserId, ...)` from `smsengine-platform`             |
-| `AcademicYearId`     | From `smsengine-academic`                                        |
-| `CorrelationId`      | From `smsengine-events`                                          |
+| `SchoolId`           | From `educore-platform`                                        |
+| `UserId`             | From `educore-platform`                                        |
+| `TenantContext`      | `(SchoolId, UserId, ...)` from `educore-platform`             |
+| `AcademicYearId`     | From `educore-academic`                                        |
+| `CorrelationId`      | From `educore-events`                                          |
 
 ## Variable Substitution
 

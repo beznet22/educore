@@ -1,5 +1,5 @@
 [package]
-name = "smsengine-communication"
+name = "educore-communication"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,9 +11,9 @@ description = "Notices, complaints, chat, email/SMS logs, notifications, contact
 workspace = true
 
 [dependencies]
-smsengine-core = { workspace = true }
-smsengine-platform = { workspace = true }
-smsengine-rbac = { workspace = true }
-smsengine-events = { workspace = true }
-smsengine-settings = { workspace = true }
+educore-core = { workspace = true }
+educore-platform = { workspace = true }
+educore-rbac = { workspace = true }
+educore-events = { workspace = true }
+educore-settings = { workspace = true }
 

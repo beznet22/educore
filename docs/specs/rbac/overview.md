@@ -44,9 +44,9 @@ The RBAC domain does **not** own:
 
 ## Dependencies
 
-- `smsengine-core` — error types, identifier trait.
-- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smsengine-events` — domain event publishing.
+- `educore-core` — error types, identifier trait.
+- `educore-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `educore-events` — domain event publishing.
 
 ## Domain Invariants
 

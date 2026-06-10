@@ -32,7 +32,7 @@ feature. We need a robust, well-understood model.
 
 ## Decision
 
-SMSengine is **offline-capable**: aggregates carry the
+Educore is **offline-capable**: aggregates carry the
 metadata needed for conflict-free reconciliation, and the
 engine's command / event model is naturally suited to
 event-log-based sync.
@@ -118,7 +118,7 @@ requiring event sourcing at the aggregate level.
 
 ### Mitigations
 
-- The `smsengine-storage` port provides a `LocalAdapter`
+- The `educore-storage` port provides a `LocalAdapter`
   trait that consumers implement for offline devices.
   The trait is the same as the server-side
   `StorageAdapter`; the difference is in the
@@ -128,7 +128,7 @@ requiring event sourcing at the aggregate level.
   (e.g. "attendance is the union of all marks").
 - The engine's audit log captures every conflict and
   every resolution, so the operator can review.
-- The CLI scaffold (`smsengine sync`) demonstrates the
+- The CLI scaffold (`educore sync`) demonstrates the
   pattern.
 
 ## Alternatives Considered

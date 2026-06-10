@@ -288,11 +288,11 @@ officer records the item with a "donation"
 source. The engine's `Item` aggregate supports a
 `source` field.
 
-## Notes for SMSengine Implementation
+## Notes for Educore Implementation
 
 - The **facilities** crate depends on
-  `smsengine-academic` for `StudentId`, `ClassId`,
-  `SectionId`, and `smsengine-hr` for `StaffId`.
+  `educore-academic` for `StudentId`, `ClassId`,
+  `SectionId`, and `educore-hr` for `StaffId`.
 - The domain's **transport** sub-aggregate is
   tightly coupled to finance (transport fees)
   and attendance (transport attendance). The

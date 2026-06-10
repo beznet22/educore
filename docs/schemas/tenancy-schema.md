@@ -1,12 +1,12 @@
 # Tenancy Schema
 
-This document is **normative**. It defines how SMSengine models
+This document is **normative**. It defines how Educore models
 multi-tenancy, how `SchoolId` flows through every layer, and the
 rules for cross-tenant operations.
 
 ## 1. The Tenant is a `School`
 
-The unit of tenancy in SMSengine is a `School`. Every aggregate belongs
+The unit of tenancy in Educore is a `School`. Every aggregate belongs
 to exactly one school. A school is the legal and operational boundary
 for data, configuration, users, and authorization.
 

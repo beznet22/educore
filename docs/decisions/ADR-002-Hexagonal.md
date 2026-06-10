@@ -6,7 +6,7 @@ Accepted.
 
 ## Context
 
-SMSengine is an embeddable engine. It will be consumed by:
+Educore is an embeddable engine. It will be consumed by:
 
 - A SaaS platform serving thousands of schools on PostgreSQL.
 - An on-premise deployment for a single school on SQLite.
@@ -38,7 +38,7 @@ should reflect the business, not the implementation.
 
 ## Decision
 
-SMSengine adopts **hexagonal architecture** (also known as
+Educore adopts **hexagonal architecture** (also known as
 "ports and adapters").
 
 Concretely:
@@ -47,7 +47,7 @@ Concretely:
    no infrastructure. No `tokio` in domain logic. No
    `serde_json::Value` in domain types. No `sqlx`, no
    `reqwest`, no `aws-sdk-s3`. Domain code depends only on
-   `smsengine-core` and other domain crates.
+   `educore-core` and other domain crates.
 2. **Ports** are Rust traits that define what the engine needs
    from the outside world. The engine owns the trait
    definitions. Adapters implement them.
@@ -111,7 +111,7 @@ exposes a typed, async, business-facing API.
 
 ### Mitigations
 
-- The `smsengine-core` crate re-exports `tracing`, `async_trait`,
+- The `educore-core` crate re-exports `tracing`, `async_trait`,
   and a curated set of common helpers to keep adapter code
   short.
 - A standard `Engine::builder()` API wires the most common

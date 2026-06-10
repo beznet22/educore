@@ -138,11 +138,11 @@ tokens are global (not tenant-scoped).
 
 | Type            | Notes                                                       |
 | --------------- | ------------------------------------------------------------ |
-| `SchoolId`      | From `smsengine-platform`                                     |
-| `TenantContext` | `(SchoolId, UserId, ...)` from `smsengine-platform`           |
-| `UserId`        | From `smsengine-platform`                                     |
-| `RoleId`        | From `smsengine-rbac`                                         |
-| `AcademicYearId`| From `smsengine-academic`                                     |
+| `SchoolId`      | From `educore-platform`                                     |
+| `TenantContext` | `(SchoolId, UserId, ...)` from `educore-platform`           |
+| `UserId`        | From `educore-platform`                                     |
+| `RoleId`        | From `educore-rbac`                                         |
+| `AcademicYearId`| From `educore-academic`                                     |
 
 ## Validation Rules
 

@@ -43,7 +43,7 @@ the admission code to know about every other domain.
 
 ## Decision
 
-SMSengine adopts **command-oriented execution** as the only
+Educore adopts **command-oriented execution** as the only
 sanctioned way to mutate engine state.
 
 Concretely:
@@ -107,7 +107,7 @@ and in the engine's rustdoc.
   indirection is a cost; the auditability is the benefit.
 - **Boilerplate per command.** A command struct, its
   capability list, its dispatcher, its preconditions, its
-  events, its tests. The `smsengine-core` crate provides
+  events, its tests. The `educore-core` crate provides
   macros and derive helpers to reduce boilerplate.
 - **No "transaction script" escape hatch.** If a consumer
   wants to do "just a quick update" without a command, the
@@ -153,7 +153,7 @@ offline sync, and event-driven integration.
 
 ### 4. CQRS with separate write model
 
-Two models: write (commands) and read (queries). SMSengine
+Two models: write (commands) and read (queries). Educore
 already has this — the command layer is the write model;
 the query layer is the read model. The query layer is
 built on the `#[derive(DomainQuery)]` procedural macro,

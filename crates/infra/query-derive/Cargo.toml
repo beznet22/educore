@@ -1,11 +1,11 @@
 [package]
-name = "smsengine-query-derive"
+name = "educore-query-derive"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Procedural macro crate that emits DomainQuery field enums, state builders, and relation enums for SMSengine."
+description = "Procedural macro crate that emits DomainQuery field enums, state builders, and relation enums for Educore."
 
 [lints]
 workspace = true

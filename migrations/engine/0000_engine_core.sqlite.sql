@@ -8,7 +8,7 @@
 --      docs/schemas/sql-dialects/README.md (Runtime DDL emission section)
 
 -- =============================================================================
--- SMSengine — Engine Cross-Cutting Tables
+-- Educore — Engine Cross-Cutting Tables
 -- =============================================================================
 -- File:        0000_engine_core.sqlite.sql
 -- Target DBs:  SQLite 3.x

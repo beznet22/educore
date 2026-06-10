@@ -1,4 +1,4 @@
-//! # smsengine-core
+//! # educore-core
 //!
 //! Stub. Public surface only; implementation will be filled in later.
 

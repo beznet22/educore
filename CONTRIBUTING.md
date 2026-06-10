@@ -1,6 +1,6 @@
-# Contributing to SMSengine
+# Contributing to Educore
 
-Welcome. SMSengine is a school-domain engine — a typed, multi-tenant,
+Welcome. Educore is a school-domain engine — a typed, multi-tenant,
 event-sourced kernel that captures the business behavior, workflows,
 and rules required to operate a real school. Contributions add
 aggregates, commands, events, port implementations, or engine
@@ -126,7 +126,7 @@ new item. The schema is:
 id      = "stable_snake_case_identifier"
 item    = "Human-readable name"
 spec    = "relative/path/to/spec.md"
-crate   = "smsengine-<name>"
+crate   = "educore-<name>"
 phase   = 0                # 0..17 per docs/build-plan.md
 status  = "Pending"        # Pending | Implemented | Tested | Deprecated
   tests   = "crates/domains/<d>/tests/<file>.rs"  # only when status >= Tested
@@ -149,10 +149,10 @@ Run the cross-reference lint sub-module to verify the spec ↔ code
 parity, anti-pattern checks, and matrix sync:
 
 ```bash
-cargo run -p smsengine-core --bin lint --features lint
+cargo run -p educore-core --bin lint --features lint
 ```
 
-The lint is a sub-module of `smsengine-core` (not a separate
+The lint is a sub-module of `educore-core` (not a separate
 crate), gated behind the `lint` Cargo feature flag. It runs in CI
 on every PR and locally on demand. It catches:
 
@@ -178,7 +178,7 @@ Before opening a pull request, run the validation checklist in
       passes
 - [ ] `cargo fmt --all -- --check` passes
 - [ ] All hand-written tests pass
-- [ ] `smsengine-core::lint` is clean
+- [ ] `educore-core::lint` is clean
 - [ ] `docs/coverage.toml` is updated and the matrix diff is
       clean
 - [ ] No legacy table prefixes (`sm_`, `fm_`, `infix_`, etc.) —
@@ -221,14 +221,14 @@ The 34 crates are organized into 5 tiers + 1 umbrella. The
 tier system enforces a layered dependency direction:
 
 ```text
-core  ←  cross-cutting  ←  domains  ←  tools
-                          ↑
-                          └──  adapters  (depends on core + cross-cutting)
+infra  ←  cross-cutting  ←  domains  ←  tools
+                           ↑
+                           └──  adapters  (depends on infra + cross-cutting)
 ```
 
 | Tier | Path | What lives here |
 | --- | --- | --- |
-| **core** | `crates/core/` | Infrastructure: errors, identifiers, value objects, query AST, proc-macro, storage port |
+| **infra** | `crates/infra/` | Infrastructure: errors, identifiers, value objects, query AST, proc-macro, storage port |
 | **cross-cutting** | `crates/cross-cutting/` | Cross-domain foundations: platform, rbac, events (envelope), events-domain (calendar), settings, operations, audit |
 | **domains** | `crates/domains/` | The 10 domain bounded contexts (academic, finance, hr, etc.) |
 | **adapters** | `crates/adapters/` | Port implementations: 3 storage adapters + 6 port adapters |
@@ -236,13 +236,13 @@ core  ←  cross-cutting  ←  domains  ←  tools
 
 When adding a new feature, **identify its tier first**:
 
-- Adding a new error type, identifier, or query AST node → `core`
+- Adding a new error type, identifier, or query AST node → `infra`
 - Adding a new cross-domain foundation (e.g. a new port) →
   `cross-cutting` (port trait) or `adapters` (impl)
 - Adding a new bounded context or aggregate → `domains`
 - Adding a new testkit or CLI command → `tools`
 
-The `smsengine-core::lint` sub-module verifies the tier
+The `educore-core::lint` sub-module verifies the tier
 boundaries at build time (the "No-Gaps Gates" mechanism; see
 the Read-first list above for the build-plan link).
 
@@ -349,21 +349,21 @@ The full schema is documented in
 
 ## The lint sub-module
 
-The cross-reference lint is a sub-module of `smsengine-core`
+The cross-reference lint is a sub-module of `educore-core`
 (not a separate crate), gated by the `lint` Cargo feature flag.
-It is implemented in `smsengine-core::lint` (the source file is
-`crates/core/engine-core/src/lint.rs` under the new tier-based layout)
+It is implemented in `educore-core::lint` (the source file is
+`crates/infra/core/src/lint.rs` under the new tier-based layout)
 and exposed as a binary.
 
 Run it locally with:
 
 ```bash
-cargo run -p smsengine-core --bin lint --features lint
+cargo run -p educore-core --bin lint --features lint
 ```
 
-The `-p smsengine-core` flag works because the package name is
+The `-p educore-core` flag works because the package name is
 unchanged even though the source directory moved from
-`crates/smsengine-core/` to `crates/core/engine-core/`.
+`crates/educore-core/` to `crates/infra/core/`.
 
 It runs in CI on every PR. It catches:
 
@@ -382,7 +382,22 @@ It runs in CI on every PR. It catches:
 If the lint fails, fix the code or the spec — do not silence the
 lint.
 
-## Worked example: adding a new aggregate to `smsengine-academic`
+## The engine graph
+
+A pre-computed knowledge graph of the engine source lives at
+`graphify-out/` at the repo root (committed). Read
+`graphify-out/GRAPH_REPORT.md` for the god nodes and community
+structure; use `graphify query "<question>"` from the repo root
+to traverse. The graph auto-rebuilds on every commit via
+`graphify hook install` (one-time per-user setup; AST-only
+regen, no API cost). A git merge driver keeps `graph.json`
+conflict-free across parallel commits. See
+[AGENTS.md § "Engine Graph (graphify)"](AGENTS.md#engine-graph-graphify)
+and [`docs/decisions/ADR-016-EngineGraph.md`](docs/decisions/ADR-016-EngineGraph.md)
+for the full reference. Note: this is a per-user CI gate;
+contributors do NOT need to manually update the graph.
+
+## Worked example: adding a new aggregate to `educore-academic`
 
 Let's add a new `academic_guardian_relationships` aggregate that
 links a student to a guardian with a relationship type (parent,
@@ -435,8 +450,8 @@ Edit `crates/domains/academic/src/aggregate.rs` (or create the
 file if the crate is in scaffold state). Add:
 
 ```rust
-use smsengine_core::prelude::*;
-use smsengine_query_derive::DomainQuery;
+use educore_core::prelude::*;
+use educore_query_derive::DomainQuery;
 
 #[derive(DomainQuery)]
 #[domain_query(
@@ -475,7 +490,7 @@ Edit (or create) `crates/domains/academic/tests/aggregate_fields.rs`:
 
 ```rust
 // Implements: docs/specs/academic/aggregates.md#guardian-relationship
-use smsengine_academic::aggregate::*;
+use educore_academic::aggregate::*;
 
 #[test]
 fn guardian_relationship_invariants() -> Result<(), Box<dyn std::error::Error>> {
@@ -526,7 +541,7 @@ Academic section:
 id = "academic_guardian_relationships_aggregate"
 item = "academic_guardian_relationships aggregate"
 spec = "docs/specs/academic/aggregates.md"
-crate = "smsengine-academic"
+crate = "educore-academic"
 phase = 3
 status = "Pending"
 ```
@@ -538,7 +553,7 @@ Once the code lands and the test passes, update the row to:
 id = "academic_guardian_relationships_aggregate"
 item = "academic_guardian_relationships aggregate"
 spec = "docs/specs/academic/aggregates.md"
-crate = "smsengine-academic"
+crate = "educore-academic"
 phase = 3
 status = "Tested"
   tests = "crates/domains/academic/tests/aggregate_fields.rs"
@@ -549,7 +564,7 @@ status = "Tested"
 Run the lint sub-module to verify everything is in sync:
 
 ```bash
-cargo run -p smsengine-core --bin lint --features lint
+cargo run -p educore-core --bin lint --features lint
 ```
 
 The lint checks that the new aggregate has a spec row (it does,
@@ -566,7 +581,7 @@ cargo build --workspace
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --all -- --check
-cargo run -p smsengine-core --bin lint --features lint
+cargo run -p educore-core --bin lint --features lint
 ```
 
 Then commit with a descriptive message:

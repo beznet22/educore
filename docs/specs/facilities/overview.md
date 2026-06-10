@@ -47,14 +47,14 @@ identifier types to consumers: `VehicleId`, `RouteId`,
 
 ## Dependencies
 
-- `smsengine-core` — error types, result, identifier trait.
-- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smsengine-rbac` — capability checks.
-- `smsengine-events` — domain event publishing.
-- `smsengine-academic` — `StudentId`, `ClassId`, `SectionId`,
+- `educore-core` — error types, result, identifier trait.
+- `educore-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `educore-rbac` — capability checks.
+- `educore-events` — domain event publishing.
+- `educore-academic` — `StudentId`, `ClassId`, `SectionId`,
   `AcademicYearId`, `RoleId` (read-only references).
-- `smsengine-hr` — `StaffId` (read-only references).
-- `smsengine-finance` — receives payment events for item sales and GRNs.
+- `educore-hr` — `StaffId` (read-only references).
+- `educore-finance` — receives payment events for item sales and GRNs.
 
 ## Domain Invariants
 

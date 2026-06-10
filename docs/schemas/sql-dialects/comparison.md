@@ -18,7 +18,7 @@ Legend:
 | Identifier quoting | backticks `` ` `` | backticks or double quotes `"` | double quotes `"` |
 | Identifier case-sensitivity | Linux/macOS: case-sensitive; Windows: case-insensitive | case-sensitive | case-sensitive (when quoted) |
 | Max identifier length | 64 chars | unlimited | 63 chars (NAMEDATALEN - 1) |
-| Schema (namespace) | database (different `db.smsengine`) | `ATTACH DATABASE` | native `SCHEMA` |
+| Schema (namespace) | database (different `db.educore`) | `ATTACH DATABASE` | native `SCHEMA` |
 | Per-session `search_path` | n/a (use `USE db`) | n/a | `SET search_path = ...` |
 | Table name parity | ✓ (`academic_students` etc.) | ✓ | ✓ (or `engine.academic_students` if wrapped) |
 

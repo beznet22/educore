@@ -345,10 +345,10 @@ A school has a custom date format
 (UTC+5:30). The settings are independent;
 no conflict.
 
-## Notes for SMSengine Implementation
+## Notes for Educore Implementation
 
 - The **settings** crate depends on
-  `smsengine-core` and `smsengine-platform`.
+  `educore-core` and `educore-platform`.
   It is a per-tenant configuration
   registry.
 - The settings domain's **read** is

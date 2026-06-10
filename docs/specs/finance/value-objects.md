@@ -247,16 +247,16 @@ and the local id.
 
 | Type                  | Notes                                                       |
 | --------------------- | ----------------------------------------------------------- |
-| `SchoolId`            | From `smsengine-platform`                                     |
-| `TenantContext`       | `(SchoolId, UserId, ...)` from `smsengine-platform`           |
-| `UserId`              | From `smsengine-platform`                                     |
-| `AcademicYearId`      | From `smsengine-academic`                                     |
-| `StudentId`           | From `smsengine-academic`                                     |
-| `StudentRecordId`     | From `smsengine-academic`                                     |
-| `ClassId`             | From `smsengine-academic`                                     |
-| `SectionId`           | From `smsengine-academic`                                     |
-| `StaffId`             | From `smsengine-hr`                                           |
-| `PayrollGenerateId`   | From `smsengine-hr` (queried by finance)                      |
+| `SchoolId`            | From `educore-platform`                                     |
+| `TenantContext`       | `(SchoolId, UserId, ...)` from `educore-platform`           |
+| `UserId`              | From `educore-platform`                                     |
+| `AcademicYearId`      | From `educore-academic`                                     |
+| `StudentId`           | From `educore-academic`                                     |
+| `StudentRecordId`     | From `educore-academic`                                     |
+| `ClassId`             | From `educore-academic`                                     |
+| `SectionId`           | From `educore-academic`                                     |
+| `StaffId`             | From `educore-hr`                                           |
+| `PayrollGenerateId`   | From `educore-hr` (queried by finance)                      |
 
 ## Validation Rules
 

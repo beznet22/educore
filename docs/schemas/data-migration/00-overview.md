@@ -3,7 +3,7 @@
 ## Goal
 
 Migrate the live `devdb` MySQL database (legacy Schoolify / InfixEdu
-Laravel project) to the SMSengine schema. The engine's domain
+Laravel project) to the Educore schema. The engine's domain
 shapes are documented in `docs/schemas/` and the engine's
 aggregates are described in `docs/specs/<domain>/`. The migration
 preserves all real school data with no loss.
@@ -99,7 +99,7 @@ the engine's repositories work against the new schema.
 ## T+0 — cutover (Phase 8)
 
 The consumer's application (the Laravel Schoolify app being replaced,
-or the new SMSengine consumer app) switches its `DATABASE_URL` to
+or the new Educore consumer app) switches its `DATABASE_URL` to
 `devdb_v2`. The switch is a config change and a process restart.
 Downtime is seconds.
 
@@ -126,7 +126,7 @@ frozen). The sandbox `devdb_rehearsal` is dropped.
 ## What the engine does not do
 
 The migration is a **consumer concern**. The engine library does not
-run any of the phases. The `smsengine-storage-<db>` adapters emit
+run any of the phases. The `educore-storage-<db>` adapters emit
 DDL that conforms to the schemas documented in
 `docs/schemas/sql-dialects/`, but the consumer runs the migrations
 through their own migration runner (`refinery`, `sqlx-migrate`,

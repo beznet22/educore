@@ -2,8 +2,8 @@
 
 This folder holds the **engine's** migration set. The migrations are
 **owned by the consumer**, not by the engine library. The engine's
-storage adapters (`smsengine-storage-mysql`, `smsengine-storage-sqlite`,
-`smsengine-storage-postgres`) emit DDL that conforms to the schemas
+storage adapters (`educore-storage-mysql`, `educore-storage-sqlite`,
+`educore-storage-postgres`) emit DDL that conforms to the schemas
 specified here.
 
 ## Folder layout
@@ -96,7 +96,7 @@ Examples (15 of 310):
 
 ### Engine cross-cutting tables
 
-Unprefixed. Identical name in all three backends. The `smsengine-events-domain` crate
+Unprefixed. Identical name in all three backends. The `educore-events-domain` crate
 is the engine's events-bounded-context (calendar, holidays, incidents)
 and uses the `events` prefix for its domain tables; the `outbox` /
 `audit_log` / `idempotency` / `event_log` / `schema_registry` /
@@ -225,7 +225,7 @@ under `migrations/engine/`:
 | `engine/0000_engine_core.postgres.sql` | PostgreSQL 14+ | `engine` schema, native `UUID`/`JSONB`/`TIMESTAMPTZ`, `CREATE POLICY` RLS |
 | `engine/0000_engine_core.sqlite.sql` | SQLite 3.x | `TEXT` for ids, ISO 8601 timestamps, no RLS |
 
-The `smsengine-storage-<db>` adapter crates `include_str!` these
+The `educore-storage-<db>` adapter crates `include_str!` these
 files at compile time and emit the dialect-specific DDL at
 `storage.create_schema()` time. The MySQL file is also the
 authoritative reference for the 6 tables; the PG and SQLite files
@@ -242,7 +242,7 @@ engine schema. The legacy→engine map is in
    `failed_jobs`, `personal_access_tokens`, `jobs`, `job_batches`,
    `telescope_entries`, `password_resets`, `oauth_*`, `sessions`):
    **drop** (engine doesn't model them; the Laravel app that is
-   replaced by SMSengine doesn't need them) or **keep** (preserve
+   replaced by Educore doesn't need them) or **keep** (preserve
    Laravel's auth pipeline during the transition)? Recommendation:
    drop. The engine's `platform_sessions` and `platform_password_resets`
    replace them.

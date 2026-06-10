@@ -133,9 +133,9 @@ wrapper carries the `SchoolId` of the owning school and a `Uuid`.
 
 | Type                       | Constraints                                              |
 | -------------------------- | -------------------------------------------------------- |
-| `AdmissionNumber`          | from `smsengine-academic`, 1..50 chars                     |
-| `RollNumber`               | from `smsengine-academic`, 1..50 chars                     |
-| `StudentName`              | from `smsengine-academic`, 1..200 chars                    |
+| `AdmissionNumber`          | from `educore-academic`, 1..50 chars                     |
+| `RollNumber`               | from `educore-academic`, 1..50 chars                     |
+| `StudentName`              | from `educore-academic`, 1..200 chars                    |
 | `SubjectsString`           | Comma-separated subject names for printing               |
 | `MarksString`              | Comma-separated marks for printing                       |
 | `SubjectsIdString`         | Comma-separated subject ids                              |
@@ -144,10 +144,10 @@ wrapper carries the `SchoolId` of the owning school and a `Uuid`.
 
 | Type                  | Notes                                                       |
 | --------------------- | ----------------------------------------------------------- |
-| `SchoolId`            | From `smsengine-platform`                                     |
-| `TenantContext`       | `(SchoolId, UserId, ...)` from `smsengine-platform`           |
-| `UserId`              | From `smsengine-platform`                                     |
-| `CorrelationId`       | From `smsengine-platform`                                     |
+| `SchoolId`            | From `educore-platform`                                     |
+| `TenantContext`       | `(SchoolId, UserId, ...)` from `educore-platform`           |
+| `UserId`              | From `educore-platform`                                     |
+| `CorrelationId`       | From `educore-platform`                                     |
 
 ## Validation Rules
 
@@ -174,4 +174,4 @@ bypass validation.
 ## Cross-Reference
 
 - `StudentId`, `ClassId`, `SectionId`, `SubjectId`, `AcademicYearId`,
-  `StaffId`, `ClassRoomId`, `ClassTimeId` — from `smsengine-academic`.
+  `StaffId`, `ClassRoomId`, `ClassTimeId` — from `educore-academic`.

@@ -1,5 +1,5 @@
 [package]
-name = "smsengine-sdk"
+name = "educore-sdk"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,14 +11,14 @@ description = "High-level consumer SDK wrapping common workflows."
 workspace = true
 
 [dependencies]
-smsengine-core = { workspace = true }
-smsengine-platform = { workspace = true }
-smsengine-rbac = { workspace = true }
-smsengine-academic = { workspace = true }
-smsengine-assessment = { workspace = true }
-smsengine-attendance = { workspace = true }
-smsengine-finance = { workspace = true }
-smsengine-hr = { workspace = true }
-smsengine-events = { workspace = true }
-smsengine-storage = { workspace = true }
+educore-core = { workspace = true }
+educore-platform = { workspace = true }
+educore-rbac = { workspace = true }
+educore-academic = { workspace = true }
+educore-assessment = { workspace = true }
+educore-attendance = { workspace = true }
+educore-finance = { workspace = true }
+educore-hr = { workspace = true }
+educore-events = { workspace = true }
+educore-storage = { workspace = true }
 

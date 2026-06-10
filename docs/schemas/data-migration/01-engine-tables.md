@@ -46,7 +46,7 @@ every other phase.
 ### MySQL / SQLite (via `devdb_v2`)
 
 ```bash
-mysql -u smsengine -p devdb_v2 < migrations/engine/0000_engine_core.mysql.sql
+mysql -u educore -p devdb_v2 < migrations/engine/0000_engine_core.mysql.sql
 ```
 
 The DDL uses `CREATE TABLE IF NOT EXISTS` so re-running is safe.
@@ -54,7 +54,7 @@ The DDL uses `CREATE TABLE IF NOT EXISTS` so re-running is safe.
 ### PostgreSQL (via `devdb_v2`)
 
 ```bash
-psql -U smsengine -d devdb_v2 -f migrations/engine/0000_engine_core.mysql.sql
+psql -U educore -d devdb_v2 -f migrations/engine/0000_engine_core.mysql.sql
 ```
 
 The PostgreSQL DDL differs only in identifier quoting (`"outbox"`

@@ -3,7 +3,7 @@
 ## Goal
 
 Switch the consumer's application (the Laravel Schoolify app being
-replaced, or the new SMSengine consumer app) to read from
+replaced, or the new Educore consumer app) to read from
 `devdb_v2` instead of `devdb`. The switch is a config change and a
 process restart. Downtime is seconds.
 
@@ -41,7 +41,7 @@ process restart. Downtime is seconds.
    DATABASE_URL="mysql://devuser:...@127.0.0.1:3306/devdb"
 
    # devdb_v2 (engine)
-   DATABASE_URL="mysql://smsengine:...@127.0.0.1:3306/devdb_v2"
+   DATABASE_URL="mysql://educore:...@127.0.0.1:3306/devdb_v2"
    ```
 
    The new password is the one issued at T-7d after the rotation
@@ -82,7 +82,7 @@ process restart. Downtime is seconds.
 ### Engine rejects a command because the schema is missing a column
 
 The error: `StorageError::ColumnNotFound` from
-`smsengine-storage-mysql`. The engine emits a `DomainError::Infrastructure`
+`educore-storage-mysql`. The engine emits a `DomainError::Infrastructure`
 to the caller. The HTTP layer returns 500.
 
 **Recovery**: roll back per `10-rollback.md`. The rollback script

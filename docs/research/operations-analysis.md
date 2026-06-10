@@ -201,7 +201,7 @@ sidebar.
 The engine's schema evolves. The consumer
 runs migrations:
 
-1. The consumer's `smsengine migrate` CLI
+1. The consumer's `educore migrate` CLI
    command runs.
 2. The engine's storage adapter applies the
    pending migrations.
@@ -322,11 +322,11 @@ does not block jobs during maintenance.
 infrastructure work, not for blocking
 background tasks.)
 
-## Notes for SMSengine Implementation
+## Notes for Educore Implementation
 
 - The **operations** crate depends on
-  `smsengine-platform` for `SchoolId` and
-  `UserId`, and on `smsengine-events` for
+  `educore-platform` for `SchoolId` and
+  `UserId`, and on `educore-events` for
   event publishing.
 - The operations domain is **append-only**
   for its core entities. `UserLog`,

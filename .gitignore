@@ -1,7 +1,7 @@
 # =============================================================================
-# SMSengine — Standard Rust Workspace .gitignore
+# Educore — Standard Rust Workspace .gitignore
 # =============================================================================
-# This file is the authoritative ignore list for an SMSengine workspace.
+# This file is the authoritative ignore list for an Educore workspace.
 # It is split into sections so that consumers can layer their own
 # additional rules without conflicting with the project's defaults.
 # =============================================================================
@@ -9,7 +9,7 @@
 # -----------------------------------------------------------------------------
 # Environment and secrets (CRITICAL)
 # -----------------------------------------------------------------------------
-# SMSengine is a library; the engine itself reads no environment
+# Educore is a library; the engine itself reads no environment
 # variables. Consumers (CLI/Tauri/Web/SaaS applications built on top
 # of the engine) read `.env` from their own working directory.
 #
@@ -177,7 +177,7 @@ _build/
 # Local override and scratch directories
 # -----------------------------------------------------------------------------
 # The `schoolify/` source tree (the legacy Laravel / InfixEdu
-# project) is intentionally tracked in the SMSengine workspace as
+# project) is intentionally tracked in the Educore workspace as
 # a read-only knowledge source for the engine's domain analysis.
 # The 15 `migrations/0001_*.sql` through `migrations/0015_*.sql`
 # files are a Schoolify dump; the engine's target schema is
@@ -255,3 +255,14 @@ COMMERCIAL-LICENSE-*.md
 LICENSE-*.md
 LICENSE-COMMERCIAL
 LICENSE.COMMERCIAL
+
+# -----------------------------------------------------------------------------
+# Engine graph (graphify) — see .graphifyignore for the engine source
+# exclusion list. Per the graphify "Recommended .gitignore additions":
+#   - cost.json: local-only (regen cost metrics change every regen)
+#   - cache/:    optional; commit for speed, skip to keep repo small
+# The committed artefacts are: graph.html, graph.json, manifest.json,
+# GRAPH_REPORT.md.
+# -----------------------------------------------------------------------------
+graphify-out/cost.json
+graphify-out/cache/

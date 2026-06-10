@@ -1,58 +1,59 @@
-# SMSengine Progress Tracker
+# Educore Progress Tracker
 
-This document tracks the implementation status of SMSengine against
+This document tracks the implementation status of Educore against
 the 17-phase build plan defined in `docs/build-plan.md`. Every row
 starts in the **Planned** state and is flipped to **Implementing**
 or **Done** as the corresponding phase lands.
 
 ## Workspace Status
 
-The workspace has **34 crates**: the umbrella `smsengine` plus 33
+The workspace has **34 crates**: the umbrella `educore` plus 33
 internal crates, grouped below by tier and by the phase that ships
 them. Every crate is scaffolded (`Cargo.toml`, `lib.rs`,
 `#[forbid(unsafe_code)]`, `#[deny(missing_docs)]`); none are
 implemented yet. The tier-to-directory mapping is
 `crates/<tier>/<name>/` (e.g. `crates/domains/academic/`,
 `crates/adapters/storage-postgres/`); the package name on disk
-keeps the `smsengine-` prefix (e.g. `smsengine-academic`). See
+keeps the `educore-` prefix (e.g. `educore-academic`). See
 `AGENTS.md` § "Tier System" for the full rules.
 
 | Tier            | Crate                          | Phase | Spec'd | Implementing | Tested | Notes                          |
 | --------------- | ------------------------------ | ----- | ------ | ------------ | ------ | ------------------------------ |
-| umbrella        | `smsengine`                    | -     | Yes    | No           | No     | Umbrella; re-exports all 33    |
-| core            | `smsengine-core`               | 0     | Yes    | No           | No     | Errors, ids, value objects, clock |
-| core            | `smsengine-query-derive`       | 0     | Yes    | No           | No     | `#[derive(DomainQuery)]` macro |
-| core            | `smsengine-storage`            | 0     | Yes    | No           | No     | `StorageAdapter` port + sub-ports |
-| adapters        | `smsengine-storage-postgres`   | 0     | Yes    | No           | No     | Primary adapter; `sqlx` + `rustls` |
-| tools           | `smsengine-storage-parity`     | 16    | Yes    | No           | No     | Cross-adapter parity suite     |
-| adapters        | `smsengine-storage-mysql`      | 1     | Yes    | No           | No     | `MySQL 8.0+`, RLS via session var |
-| adapters        | `smsengine-storage-sqlite`     | 1     | Yes    | No           | No     | Embedded / offline; `json1`    |
-| cross-cutting   | `smsengine-platform`           | 2     | Yes    | No           | No     | School, User, TenantContext    |
-| cross-cutting   | `smsengine-rbac`               | 2     | Yes    | No           | No     | Capability, Role, Permission   |
-| cross-cutting   | `smsengine-events`             | 2     | Yes    | No           | No     | Envelope crate; `DomainEvent`  |
-| adapters        | `smsengine-event-bus`          | 2     | Yes    | No           | No     | in-process, NATS, Redis impls  |
-| cross-cutting   | `smsengine-audit`              | 2     | Yes    | No           | No     | `AuditLogEntry`, retention     |
-| domains         | `smsengine-academic`           | 3     | Yes    | No           | No     | First vertical slice; 8 aggs   |
-| domains         | `smsengine-assessment`         | 4     | Yes    | No           | No     | Exams, marks, results          |
-| domains         | `smsengine-attendance`         | 5     | Yes    | No           | No     | Student/staff/subject/exam     |
-| domains         | `smsengine-hr`                 | 6     | Yes    | No           | No     | Staff, leave, payroll          |
-| domains         | `smsengine-finance`            | 7     | Yes    | No           | No     | Largest spec; double-entry     |
-| domains         | `smsengine-facilities`         | 8     | Yes    | No           | No     | Dorm, transport, inventory     |
-| domains         | `smsengine-library`            | 9     | Yes    | No           | No     | Books, issues, fines           |
-| domains         | `smsengine-communication`      | 10    | Yes    | No           | No     | Notices, complaints, logs      |
-| domains         | `smsengine-documents`          | 11    | Yes    | No           | No     | Forms, postal                  |
-| domains         | `smsengine-cms`                | 12    | Yes    | No           | No     | Pages, news, testimonial       |
-| domains         | `smsengine-events-domain`      | 13    | Yes    | No           | No     | Calendar (distinct from envelope) |
-| cross-cutting   | `smsengine-settings`           | 14    | Yes    | No           | No     | Per-school config, language    |
-| cross-cutting   | `smsengine-operations`         | 14    | Yes    | No           | No     | Bell schedule, substitution    |
-| adapters        | `smsengine-auth`               | 15    | Yes    | No           | No     | `AuthProvider` + JWT impl      |
-| adapters        | `smsengine-notify`             | 15    | Yes    | No           | No     | `NotificationProvider` + email/SMS |
-| adapters        | `smsengine-payment`            | 15    | Yes    | No           | No     | `PaymentProvider` + Stripe     |
-| adapters        | `smsengine-files`              | 15    | Yes    | No           | No     | `FileStorage` + S3/local       |
-| adapters        | `smsengine-integrations`       | 15    | Yes    | No           | No     | LMS, video-conferencing        |
-| tools           | `smsengine-testkit`            | 16    | Yes    | No           | No     | In-memory impls of 6 ports     |
-| tools           | `smsengine-sdk`                | 16    | Yes    | No           | No     | `Engine::builder()` facade     |
-| tools           | `smsengine-cli`                | 16    | Yes    | No           | No     | Sample binary, dogfooding      |
+| umbrella        | `educore`                    | -     | Yes    | No           | No     | Umbrella; re-exports all 33    |
+| infra           | `educore-core`               | 0     | Yes    | No           | No     | Errors, ids, value objects, clock |
+| infra           | `educore-query-derive`       | 0     | Yes    | No           | No     | `#[derive(DomainQuery)]` macro |
+| infra           | `educore-storage`            | 0     | Yes    | No           | No     | `StorageAdapter` port + sub-ports |
+| adapters        | `educore-storage-postgres`   | 0     | Yes    | No           | No     | Primary adapter; `sqlx` + `rustls` |
+| tools           | `educore-storage-parity`     | 16    | Yes    | No           | No     | Cross-adapter parity suite     |
+| adapters        | `educore-storage-mysql`      | 1     | Yes    | No           | No     | `MySQL 8.0+`, RLS via session var |
+| adapters        | `educore-storage-sqlite`     | 1     | Yes    | No           | No     | Embedded / offline; `json1`    |
+| cross-cutting   | `educore-platform`           | 2     | Yes    | No           | No     | School, User, TenantContext    |
+| cross-cutting   | `educore-rbac`               | 2     | Yes    | No           | No     | Capability, Role, Permission   |
+| cross-cutting   | `educore-events`             | 2     | Yes    | No           | No     | Envelope crate; `DomainEvent`  |
+| adapters        | `educore-event-bus`          | 2     | Yes    | No           | No     | in-process, NATS, Redis impls  |
+| cross-cutting   | `educore-audit`              | 2     | Yes    | No           | No     | `AuditLogEntry`, retention     |
+| domains         | `educore-academic`           | 3     | Yes    | No           | No     | First vertical slice; 8 aggs   |
+| domains         | `educore-assessment`         | 4     | Yes    | No           | No     | Exams, marks, results          |
+| domains         | `educore-attendance`         | 5     | Yes    | No           | No     | Student/staff/subject/exam     |
+| domains         | `educore-hr`                 | 6     | Yes    | No           | No     | Staff, leave, payroll          |
+| domains         | `educore-finance`            | 7     | Yes    | No           | No     | Largest spec; double-entry     |
+| domains         | `educore-facilities`         | 8     | Yes    | No           | No     | Dorm, transport, inventory     |
+| domains         | `educore-library`            | 9     | Yes    | No           | No     | Books, issues, fines           |
+| domains         | `educore-communication`      | 10    | Yes    | No           | No     | Notices, complaints, logs      |
+| domains         | `educore-documents`          | 11    | Yes    | No           | No     | Forms, postal                  |
+| domains         | `educore-cms`                | 12    | Yes    | No           | No     | Pages, news, testimonial       |
+| domains         | `educore-events-domain`      | 13    | Yes    | No           | No     | Calendar (distinct from envelope) |
+| cross-cutting   | `educore-settings`           | 14    | Yes    | No           | No     | Per-school config, language    |
+| cross-cutting   | `educore-operations`         | 14    | Yes    | No           | No     | Bell schedule, substitution    |
+| adapters        | `educore-auth`               | 15    | Yes    | No           | No     | `AuthProvider` + JWT impl      |
+| adapters        | `educore-notify`             | 15    | Yes    | No           | No     | `NotificationProvider` + email/SMS |
+| adapters        | `educore-payment`            | 15    | Yes    | No           | No     | `PaymentProvider` + Stripe     |
+| adapters        | `educore-files`              | 15    | Yes    | No           | No     | `FileStorage` + S3/local       |
+| adapters        | `educore-integrations`       | 15    | Yes    | No           | No     | LMS, video-conferencing        |
+| tools           | `educore-testkit`            | 16    | Yes    | No           | No     | In-memory impls of 6 ports     |
+| tools           | `educore-sdk`                | 16    | Yes    | No           | No     | `Engine::builder()` facade     |
+| tools           | `educore-cli`                | 16    | Yes    | No           | No     | Sample binary, dogfooding      |
+| -              | **Graph regen**                | -     | -      | -            | -      | Auto-rebuilt on every commit via local `graphify hook install`; output at `graphify-out/` (committed). Legacy `schoolify/graphify-out/` is frozen. |
 
 Phase 17 ships no new crates; it hardens the workspace
 (multi-tenant suite, load test, cross-compile, security review,
@@ -62,7 +63,7 @@ docs audit).
 
 | Phase | Title                              | Crates                                                                 | Status   | Exit Criteria Met |
 | ----- | ---------------------------------- | ---------------------------------------------------------------------- | -------- | ----------------- |
-| 0     | Foundation                         | `core`, `query-derive`, `storage`, `storage-postgres`                  | Planned  | No                |
+| 0     | Foundation                         | `infra`, `query-derive`, `storage`, `storage-postgres`                  | Planned  | No                |
 | 1     | Adapter parity (MySQL + SQLite)    | `storage-mysql`, `storage-sqlite`                                      | Planned  | No                |
 | 2     | Cross-cutting foundations          | `platform`, `rbac`, `events`, `event-bus`, `audit`                     | Planned  | No                |
 | 3     | Academic (first vertical slice)    | `academic`                                                             | Planned  | No                |
@@ -80,6 +81,7 @@ docs audit).
 | 15    | Port adapters                      | `auth`, `notify`, `payment`, `files`, `integrations`                   | Planned  | No                |
 | 16    | Test infrastructure + SDK          | `testkit`, `storage-parity`, `sdk`, `cli`                              | Planned  | No                |
 | 17    | Production readiness               | (no new crates)                                                        | Planned  | No                |
+| -     | graphify hook installed + graph fresh | (no new crates)                                                    | Pending  | No                |
 
 ## Documentation Status
 
@@ -135,7 +137,7 @@ The current `docs/coverage.toml` has an initial scaffold of
 ~80 representative rows covering the engine cross-cutting tables,
 the 7 port traits, and 1-3 aggregates per domain. The full
 226+ row matrix is generated by the lint sub-module
-(`smsengine-core::lint`, gated behind the `lint` Cargo feature)
+(`educore-core::lint`, gated behind the `lint` Cargo feature)
 once implementation begins.
 
 ## See also

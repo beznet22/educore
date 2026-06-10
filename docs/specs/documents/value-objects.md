@@ -49,15 +49,15 @@ school and the local id (`Uuid`).
 | `PublishDate`         | `NaiveDate`                                                        |
 | `DispatchDate`        | `NaiveDate`                                                        |
 | `ReceiveDate`         | `NaiveDate`                                                        |
-| `AcademicYearId`      | From `smsengine-academic`                                            |
-| `TenantContext`       | `(SchoolId, UserId, ...)` from `smsengine-platform`                 |
+| `AcademicYearId`      | From `educore-academic`                                            |
+| `TenantContext`       | `(SchoolId, UserId, ...)` from `educore-platform`                 |
 
 ## URL and File
 
 | Type                 | Notes                                                          |
 | -------------------- | -------------------------------------------------------------- |
 | `Url`                | Validated URL, max 2048 chars                                  |
-| `FileReference`      | From `smsengine-platform`                                        |
+| `FileReference`      | From `educore-platform`                                        |
 
 ## Visibility
 

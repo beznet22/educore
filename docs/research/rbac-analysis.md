@@ -340,11 +340,11 @@ The admin marks the widget as hidden for
 the role. The dashboard projection
 excludes the widget.
 
-## Notes for SMSengine Implementation
+## Notes for Educore Implementation
 
 - The **rbac** crate depends on
-  `smsengine-core`, `smsengine-platform`, and
-  `smsengine-events`. It is the only domain
+  `educore-core`, `educore-platform`, and
+  `educore-events`. It is the only domain
   whose mutations change what other domains
   allow.
 - The RBAC domain provides the

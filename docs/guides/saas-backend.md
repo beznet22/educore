@@ -2,11 +2,11 @@
 
 ## Goal
 
-A consumer turns the SMSengine library into a production SaaS: a
+A consumer turns the Educore library into a production SaaS: a
 thin HTTP backend, a platform-admin control plane, an identity layer,
 a sync engine for offline-first clients, and the desktop / mobile
 clients themselves. Every school-domain concern flows through
-SMSengine; every SaaS-infrastructure concern is owned by the
+Educore; every SaaS-infrastructure concern is owned by the
 consumer.
 
 This guide is the **canonical reference** for that split. It
@@ -15,22 +15,22 @@ consumer-facing API in `docs/library-docs.md`.
 
 ## The Library Boundary
 
-SMSengine is a domain engine. It provides:
+Educore is a domain engine. It provides:
 
-- 15 domain crates (`smsengine-academic`, `smsengine-finance`, ..., `smsengine-events-domain`).
+- 15 domain crates (`educore-academic`, `educore-finance`, ..., `educore-events-domain`).
 - 3 shipped storage adapters (PostgreSQL, MySQL, SQLite) and
-  2 deferred (`smsengine-storage-mongodb` and
-  `smsengine-storage-surrealdb`).
-- 6 port adapters (`smsengine-auth`, `smsengine-notify`,
-  `smsengine-payment`, `smsengine-files`, `smsengine-event-bus`,
-  `smsengine-integrations`).
-- The `smsengine` umbrella that re-exports the above under short
-  names (`smsengine::academic`, `smsengine::storage_mysql`, ...).
+  2 deferred (`educore-storage-mongodb` and
+  `educore-storage-surrealdb`).
+- 6 port adapters (`educore-auth`, `educore-notify`,
+  `educore-payment`, `educore-files`, `educore-event-bus`,
+  `educore-integrations`).
+- The `educore` umbrella that re-exports the above under short
+  names (`educore::academic`, `educore::storage_mysql`, ...).
 - A typed query layer (`#[derive(DomainQuery)]`).
 - An event envelope and outbox primitives.
 - A tracing instrumentation surface.
 
-SMSengine does **not** provide:
+Educore does **not** provide:
 
 - An HTTP server, an API gateway, or any RPC layer.
 - A web UI, admin dashboard, or any presentation layer.
@@ -54,7 +54,7 @@ same and must not be conflated.
 
 | Layer | Identity | Lives in | Managed by |
 | --- | --- | --- | --- |
-| **Engine tenancy** | `SchoolId` (UUIDv7) | Every aggregate root in SMSengine | School admin |
+| **Engine tenancy** | `SchoolId` (UUIDv7) | Every aggregate root in Educore | School admin |
 | **Platform tenancy** | `TenantId` (consumer-defined) | Consumer's SaaS database | System / platform admin |
 
 The engine never sees `TenantId`. It only enforces `SchoolId`. The
@@ -82,13 +82,13 @@ must equal the `TenantContext::school_id` or the command returns
 ## Consumer Repository Layout
 
 The consumer's repository is a **separate workspace** that depends
-on the SMSengine crates. The SMSengine repo is consumed as a
-path or git dependency; the consumer never edits SMSengine to ship
+on the Educore crates. The Educore repo is consumed as a
+path or git dependency; the consumer never edits Educore to ship
 a SaaS feature.
 
 ```text
 consumer-repo/                       <-- the consumer's own workspace
-├── Cargo.toml                       <-- depends on `smsengine = "0.1"`
+├── Cargo.toml                       <-- depends on `educore = "0.1"`
 ├── backend/                         <-- the SaaS HTTP API
 │   ├── Cargo.toml
 │   └── src/
@@ -112,7 +112,7 @@ consumer-repo/                       <-- the consumer's own workspace
 ├── client/                          <-- offline-first desktop / mobile
 │   ├── Cargo.toml
 │   └── src/
-│       ├── main.rs                  <-- Tauri entry, embeds smsengine
+│       ├── main.rs                  <-- Tauri entry, embeds educore
 │       ├── outbox.rs                <-- local pending events
 │       └── sync.rs                  <-- invokes sync-engine
 ├── ops/
@@ -135,7 +135,7 @@ single call into the engine.
 
 ```rust
 // backend/src/main.rs
-use smsengine::prelude::*;
+use educore::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -143,13 +143,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let storage: Arc<dyn StorageAdapter> = Arc::new(
         MysqlStorage::builder()
             .url(env::var("DATABASE_URL")?)
-            .max_connections(env::var("SMSENGINE_STORAGE_MAX_CONNECTIONS")?
+            .max_connections(env::var("EDUCORE_STORAGE_MAX_CONNECTIONS")?
                 .parse().unwrap_or(20))
             .build()
             .await?,
     );
 
-    // 2. Authentication — JWT + OAuth2 + SAML via smsengine-auth.
+    // 2. Authentication — JWT + OAuth2 + SAML via educore-auth.
     let auth: Arc<dyn AuthProvider> = Arc::new(
         JwtAuthProvider::builder()
             .signing_key(env::var("JWT_SECRET")?)
@@ -162,17 +162,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .build(),
     );
 
-    // 3. Notification — SMTP / SMS / push via smsengine-notify.
+    // 3. Notification — SMTP / SMS / push via educore-notify.
     let notify: Arc<dyn NotificationProvider> = Arc::new(
         EmailNotifier::from_env()?,        // reads SMTP_* from .env
     );
 
-    // 4. Payment — Stripe / PayPal / cash via smsengine-payment.
+    // 4. Payment — Stripe / PayPal / cash via educore-payment.
     let payment: Arc<dyn PaymentProvider> = Arc::new(
         StripePaymentProvider::from_env()?, // reads STRIPE_* from .env
     );
 
-    // 5. File storage — S3 / local via smsengine-files.
+    // 5. File storage — S3 / local via educore-files.
     let files: Arc<dyn FileStorage> = Arc::new(
         S3FileStorage::from_env()?,         // reads S3_* from .env
     );
@@ -204,7 +204,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 9. Hand the engine to the HTTP layer.
     let app = api::router(engine);
     let listener = tokio::net::TcpListener::bind(
-        env::var("SMSENGINE_BIND").unwrap_or_else(|_| "0.0.0.0:8080".into())
+        env::var("EDUCORE_BIND").unwrap_or_else(|_| "0.0.0.0:8080".into())
     ).await?;
     axum::serve(listener, app).await?;
 
@@ -289,10 +289,10 @@ pub fn router(engine: Engine) -> Router {
 }
 ```
 
-## Identity Provider via `smsengine-auth`
+## Identity Provider via `educore-auth`
 
 The consumer has three realistic options for the identity layer.
-All three go through the `smsengine-auth` port, so the engine code
+All three go through the `educore-auth` port, so the engine code
 does not change between them.
 
 ### Option A — JWT only (consumer-issued)
@@ -324,7 +324,7 @@ does not change between them.
 │          │ ◄──────────────────────
 │          │  { access, refresh }     ┌──────────────┐
 │          │                          │  Oauth2Auth  │
-└──────────┘                          │  (smsengine- │
+└──────────┘                          │  (educore- │
                                       │   auth)      │
                                       └──────────────┘
 ```
@@ -345,7 +345,7 @@ does not change between them.
 
 ### Multi-factor
 
-`smsengine-auth` supports TOTP, SMS, email, WebAuthn, and backup
+`educore-auth` supports TOTP, SMS, email, WebAuthn, and backup
 codes. The consumer decides which command surfaces require MFA
 based on configuration; the engine restricts sensitive commands
 when `session.mfa_satisfied == false`.
@@ -367,7 +367,7 @@ fast (cache lookup); the engine call is authoritative.
 ## The Control Plane (Platform Admin)
 
 The control plane is **a second consumer** of the engine, with
-elevated capabilities. It uses the same `smsengine` library but is
+elevated capabilities. It uses the same `educore` library but is
 configured for cross-tenant operations.
 
 ```text
@@ -401,7 +401,7 @@ configured for cross-tenant operations.
 ### Engine-level support for platform admins
 
 The engine ships a `platform` domain crate
-(`smsengine-platform`) that contains:
+(`educore-platform`) that contains:
 
 - `CreateSchoolCommand`, `SuspendSchoolCommand`,
   `UnsuspendSchoolCommand`, `ArchiveSchoolCommand`.
@@ -473,7 +473,7 @@ consumer writes the relay.
 │  client/ (Tauri, offline-first)             │
 │                                             │
 │  ┌─────────────┐    ┌──────────────┐        │
-│  │  smsengine  │    │  local       │        │
+│  │  educore  │    │  local       │        │
 │  │  (embedded) │    │  SQLite      │        │
 │  └──────┬──────┘    └──────┬───────┘        │
 │         │ outbox writes   │                 │
@@ -500,7 +500,7 @@ consumer writes the relay.
 │  backend/  /v1/sync                         │
 │                                             │
 │  for each event:                            │
-│    smsengine.handle_synced_event(event)     │
+│    educore.handle_synced_event(event)     │
 │  (re-runs the command in central MySQL,     │
 │   same domain rules, same idempotency,      │
 │   same audit trail)                         │
@@ -577,15 +577,15 @@ UniFFI or direct FFI), or even a CLI.
 # client/Cargo.toml
 # In development, point at the local engine workspace; in production,
 # depend on the published crate:
-#   smsengine = "0.1"
+#   educore = "0.1"
 [dependencies]
-smsengine        = { path = "../engine/crates/smsengine" }
-smsengine-core   = { path = "../engine/crates/core" }
-smsengine-storage-sqlite = { path = "../engine/crates/storage-sqlite" }
-smsengine-auth   = { path = "../engine/crates/auth" }
+educore        = { path = "../engine/crates/educore" }
+educore-core   = { path = "../engine/crates/core" }
+educore-storage-sqlite = { path = "../engine/crates/storage-sqlite" }
+educore-auth   = { path = "../engine/crates/auth" }
 # ... only the domains the client actually uses
-smsengine-academic   = { path = "../engine/crates/academic" }
-smsengine-attendance = { path = "../engine/crates/attendance" }
+educore-academic   = { path = "../engine/crates/academic" }
+educore-attendance = { path = "../engine/crates/attendance" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 # android-specific UniFFI bindings
@@ -593,13 +593,13 @@ smsengine-attendance = { path = "../engine/crates/attendance" }
 
 ```rust
 // client/src/main.rs (Tauri sketch)
-use smsengine::prelude::*;
+use educore::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let local_db = dirs::data_local_dir()
         .unwrap()
-        .join("smsengine/client.db");
+        .join("educore/client.db");
     tokio::fs::create_dir_all(local_db.parent().unwrap()).await?;
 
     let storage: Arc<dyn StorageAdapter> = Arc::new(
@@ -694,7 +694,7 @@ pub struct OtelAuditSink;
 impl AuditSink for OtelAuditSink {
     async fn record(&self, entry: AuditEntry) -> Result<()> {
         tracing::info!(
-            target: "smsengine.audit",
+            target: "educore.audit",
             audit_id = %entry.audit_id,
             school_id = %entry.school_id,
             actor = %entry.actor,
@@ -728,7 +728,7 @@ that tails the outbox and updates a counter per event type.
 
 ## Billing Integration
 
-The engine's `smsengine-payment` port handles the money movement.
+The engine's `educore-payment` port handles the money movement.
 The consumer wires Stripe (or Paddle, LemonSqueezy, etc.) and
 turns Stripe webhooks into engine events.
 
@@ -887,8 +887,8 @@ primitive that makes all three viable.
    a full causal chain from the outbox + audit log.
 
 7. **Treat the engine as a black box at the API boundary.** The
-   engine's internal `smsengine_*` module paths are not part of
-   its public API. Consumers depend on `smsengine::*` and never
+   engine's internal `educore_*` module paths are not part of
+   its public API. Consumers depend on `educore::*` and never
    on the internal crate names.
 
 8. **The control plane is a separate binary.** Even if it shares
@@ -913,13 +913,13 @@ primitive that makes all three viable.
 | Engine construction | `Engine::builder()` | `docs/library-docs.md` |
 | Command dispatch | `engine.<domain>().<command>(cmd)` | `docs/commands/<domain>.md` |
 | Query surface | `engine.<domain>().query().<chain>` | `docs/query_layer.md` |
-| Storage adapter | `smsengine-storage-{postgres,mysql,sqlite}` | `docs/ports/storage.md` |
-| Authentication | `smsengine-auth` | `docs/ports/authentication.md` |
-| Notification | `smsengine-notify` | `docs/ports/notifications.md` |
-| Payment | `smsengine-payment` | `docs/ports/payments.md` |
-| File storage | `smsengine-files` | `docs/ports/file-storage.md` |
-| Event bus | `smsengine-event-bus` | `docs/ports/event-bus.md` |
-| Integrations | `smsengine-integrations` | `docs/ports/integrations.md` |
+| Storage adapter | `educore-storage-{postgres,mysql,sqlite}` | `docs/ports/storage.md` |
+| Authentication | `educore-auth` | `docs/ports/authentication.md` |
+| Notification | `educore-notify` | `docs/ports/notifications.md` |
+| Payment | `educore-payment` | `docs/ports/payments.md` |
+| File storage | `educore-files` | `docs/ports/file-storage.md` |
+| Event bus | `educore-event-bus` | `docs/ports/event-bus.md` |
+| Integrations | `educore-integrations` | `docs/ports/integrations.md` |
 | Outbox pattern | Engine | `docs/ports/storage.md#outbox` |
 | Offline mode | Engine + consumer sync-engine | `docs/guides/offline-sync.md` |
 | Audit | Engine + consumer `AuditSink` | `docs/guides/audit-trail.md` |

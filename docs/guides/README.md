@@ -19,9 +19,9 @@ walkthrough of a specific task.
 | `payroll-calculation.md`                             | Calculating monthly payroll with templates & leave  |
 | `idempotent-commands.md`                             | Implementing idempotent command handlers           |
 | `event-replay.md`                                    | Replaying events for new projections                |
-| `test-strategy.md`                                   | Test pyramid for SMSengine consumers                  |
+| `test-strategy.md`                                   | Test pyramid for Educore consumers                  |
 | `crud-patterns.md`                                   | Standard CRUD command patterns                       |
 | `school-onboarding.md`                               | First-run school setup workflow                      |
-| `ai-agent-integration.md`                            | Exposing SMSengine to an AI agent                      |
-| `ci-cd.md`                                           | CI/CD for an SMSengine consumer application           |
+| `ai-agent-integration.md`                            | Exposing Educore to an AI agent                      |
+| `ci-cd.md`                                           | CI/CD for an Educore consumer application           |
 | `saas-backend.md`                                    | Building a production SaaS: thin backend, control plane, identity, sync engine, offline clients |

@@ -67,16 +67,16 @@ and the local id (`Uuid`).
 | --------------------- | ------------------------------------------------------------------ |
 | `EventDate`           | `NaiveDate`                                                        |
 | `DateRange`           | `(from: NaiveDate, to: NaiveDate)`, `from ≤ to`                    |
-| `AcademicYearId`      | From `smsengine-academic`                                            |
-| `CreatedByUserId`     | From `smsengine-platform`                                            |
-| `TenantContext`       | `(SchoolId, UserId, ...)` from `smsengine-platform`                 |
+| `AcademicYearId`      | From `educore-academic`                                            |
+| `CreatedByUserId`     | From `educore-platform`                                            |
+| `TenantContext`       | `(SchoolId, UserId, ...)` from `educore-platform`                 |
 
 ## URL and File
 
 | Type                 | Notes                                                          |
 | -------------------- | -------------------------------------------------------------- |
 | `Url`                | Validated URL, max 2048 chars                                  |
-| `FileReference`      | From `smsengine-platform`                                        |
+| `FileReference`      | From `educore-platform`                                        |
 
 ## Status Enums
 

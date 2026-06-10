@@ -4,7 +4,7 @@ Target: **SQLite 3.x** (3.38+ for `STRICT` tables; 3.39+ for
 `JSONB`-like functions; 3.41+ for `RIGHT JOIN`).
 
 The reference adapter implementing these conventions is
-`smsengine-storage-sqlite`. The DDL strings in this file are
+`educore-storage-sqlite`. The DDL strings in this file are
 emitted by `SqliteStorageAdapter::create_<table>_ddl()`.
 
 SQLite is the engine's embedded / offline mode. It runs in the
@@ -432,7 +432,7 @@ module).
 
 - SQLite Documentation: `CREATE TABLE`, `STRICT` tables, `WITHOUT
   ROWID`, `json_valid`/`json_extract`, `PRAGMA`.
-- The `smsengine-storage-sqlite` crate README.
+- The `educore-storage-sqlite` crate README.
 - `docs/ports/storage.md` § 4: `Configuration` — the engine's
   `SqliteStorage::open()` pattern.
 - `docs/schemas/database-schema.md` § 11: the canonical minimum

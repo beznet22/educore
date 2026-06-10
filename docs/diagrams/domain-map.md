@@ -2,7 +2,7 @@
 
 This document maps the engine's 15 bounded contexts and the
 directional dependencies between them. The map is the
-authoritative view of "what depends on what?" in SMSengine.
+authoritative view of "what depends on what?" in Educore.
 
 ## 1. All 15 Domains
 
@@ -187,7 +187,7 @@ graph TB
 
 ```mermaid
 graph TB
-    Engine["smsengine::Engine"]
+    Engine["educore::Engine"]
     Engine --> P1[platform + rbac + events + audit]
     Engine --> P2[academic]
     Engine -.optional.-> P3[assessment]

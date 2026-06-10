@@ -6,7 +6,7 @@ Accepted.
 
 ## Context
 
-SMSengine is a Rust crate ecosystem. The Rust ecosystem has
+Educore is a Rust crate ecosystem. The Rust ecosystem has
 strong conventions: edition, MSRV, async runtime, error
 handling, serialization, logging, observability, testing,
 dependency management. The engine's standards must be
@@ -40,7 +40,7 @@ macro family.
 
 ## Decision
 
-SMSengine adopts the **Rust ecosystem's modern standards**
+Educore adopts the **Rust ecosystem's modern standards**
 as the engineering baseline. These standards are
 mandatory for every crate in the engine.
 
@@ -48,7 +48,7 @@ mandatory for every crate in the engine.
  2. **MSRV:** 1.75 (the latest stable LTS at the time of
     release). Crate-level `rust-version` is set.
  3. **Async:** `tokio` is the runtime. The
-    `smsengine-core` crate re-exports `tokio` selectively
+    `educore-core` crate re-exports `tokio` selectively
     so domain code does not import `tokio` directly.
  4. **Error handling:** `thiserror` for public error
     types, `anyhow` for glue code (CLI, scripts). Domain
@@ -123,7 +123,7 @@ mandatory for every crate in the engine.
 The query layer follows a strict set of preferred
 and avoided patterns. These patterns are the
 authoritative reference for how query code is
-written in SMSengine. The full specification is
+written in Educore. The full specification is
 in `docs_guidlines/query_optimze.md`; the
 in-engine contract is in
 `ADR-006: Compile-Time-Safe Query Layer`.
@@ -277,7 +277,7 @@ in-engine contract is in
 
 ### Mitigations
 
-- The `smsengine-core` crate re-exports common
+- The `educore-core` crate re-exports common
   building blocks so domain crates have a
   consistent surface.
 - A `cargo xtask` script (or equivalent) wires
@@ -287,7 +287,7 @@ in-engine contract is in
   one.
 - A "Rust style" rustdoc page summarizes the
   standards for new contributors.
-- The `smsengine-query-derive` crate provides
+- The `educore-query-derive` crate provides
   `#[derive(DomainQuery)]` (and is the only
   proc-macro crate in v1; additional derives
   are added in subsequent phases) so the

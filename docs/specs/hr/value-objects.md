@@ -154,15 +154,15 @@ school and the local id.
 
 | Type                  | Notes                                                       |
 | --------------------- | ----------------------------------------------------------- |
-| `SchoolId`            | From `smsengine-platform`                                     |
-| `TenantContext`       | `(SchoolId, UserId, ...)` from `smsengine-platform`           |
-| `UserId`              | From `smsengine-platform`                                     |
-| `RoleId`              | From `smsengine-rbac`                                         |
-| `ClassId`             | From `smsengine-academic`                                     |
-| `SectionId`           | From `smsengine-academic`                                     |
-| `SubjectId`           | From `smsengine-academic`                                     |
-| `AcademicYearId`      | From `smsengine-academic`                                     |
-| `BankAccountId`       | From `smsengine-finance`                                      |
+| `SchoolId`            | From `educore-platform`                                     |
+| `TenantContext`       | `(SchoolId, UserId, ...)` from `educore-platform`           |
+| `UserId`              | From `educore-platform`                                     |
+| `RoleId`              | From `educore-rbac`                                         |
+| `ClassId`             | From `educore-academic`                                     |
+| `SectionId`           | From `educore-academic`                                     |
+| `SubjectId`           | From `educore-academic`                                     |
+| `AcademicYearId`      | From `educore-academic`                                     |
+| `BankAccountId`       | From `educore-finance`                                      |
 
 ## Validation Rules
 

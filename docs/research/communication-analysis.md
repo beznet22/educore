@@ -292,11 +292,11 @@ aggregate supports attachments. The file is
 stored in the consumer's file storage; the
 engine records the reference.
 
-## Notes for SMSengine Implementation
+## Notes for Educore Implementation
 
 - The **communication** crate depends on
-  `smsengine-events` (for event subscriptions) and
-  `smsengine-rbac`. It does not depend on
+  `educore-events` (for event subscriptions) and
+  `educore-rbac`. It does not depend on
   operational domains; it consumes their events.
 - The domain is **event-driven**. Notices,
   complaints, and notifications are produced

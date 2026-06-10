@@ -1,5 +1,5 @@
 [package]
-name = "smsengine-storage-postgres"
+name = "educore-storage-postgres"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,8 +11,8 @@ description = "Reference PostgreSQL storage adapter."
 workspace = true
 
 [dependencies]
-smsengine-core = { workspace = true }
-smsengine-storage = { workspace = true }
+educore-core = { workspace = true }
+educore-storage = { workspace = true }
 sqlx = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }

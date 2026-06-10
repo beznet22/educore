@@ -182,7 +182,7 @@ The engine ships reference adapters for:
 - MongoDB (deferred; consumer-supplied document adapter; not shipped)
 
 Adapters must satisfy the **parity test suite** in
-`crates/smsengine-storage-parity` to be considered compliant. The suite
+`crates/educore-storage-parity` to be considered compliant. The suite
 exercises every repository method against a seeded database and
 verifies identical results across adapters.
 
@@ -218,7 +218,7 @@ does not require any engine changes — only the implementation of
 
 Consumers implementing a deferred adapter must:
 
-1. Add the adapter as a new workspace member (e.g. `smsengine-storage-mongodb`).
+1. Add the adapter as a new workspace member (e.g. `educore-storage-mongodb`).
 2. Implement every method in the `StorageAdapter` trait.
 3. Translate the macro-emitted `QueryNode` AST into the backend's
    native execution plan.
@@ -378,7 +378,7 @@ A consumer wires the storage adapter into the engine:
 
 ```rust
 let storage: Arc<dyn StorageAdapter> = Arc::new(
-    PostgresStorage::connect("postgres://app:secret@db/smsengine").await?
+    PostgresStorage::connect("postgres://app:secret@db/educore").await?
 );
 
 let engine = Engine::builder()

@@ -135,7 +135,7 @@ The engine can publish events to a configured webhook URL:
 
 ```rust
 let adapter = WebhookIntegration::new(WebhookConfig {
-    url: Url::parse("https://school.example.com/hooks/smsengine")?,
+    url: Url::parse("https://school.example.com/hooks/educore")?,
     secret: SecretString::from("shared-secret"),
     retry_policy: RetryPolicy::Exponential { max_retries: 5, base: Duration::from_secs(2) },
     filter: Some(EventFilter::EventType("InvoicePaid")),

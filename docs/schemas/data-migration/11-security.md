@@ -127,7 +127,7 @@ The `.env` is gitignored. The `.env.example` is tracked. The
 
 The current state of `.env.example` is the safe template:
 
-- `DATABASE_URL` is a placeholder (`mysql://smsengine:smsengine@...`).
+- `DATABASE_URL` is a placeholder (`mysql://educore:educore@...`).
 - All credentials are placeholder values (`replace-me-*`).
 - The real credential is not in the file.
 
@@ -228,10 +228,10 @@ exists for the audit query port.
 
 ```sql
 -- Writes (engine's user)
-GRANT INSERT ON devdb_v2.audit_log TO 'smsengine_writer'@'%';
+GRANT INSERT ON devdb_v2.audit_log TO 'educore_writer'@'%';
 
 -- Reads (audit query port's user)
-GRANT SELECT ON devdb_v2.audit_log TO 'smsengine_audit_reader'@'%';
+GRANT SELECT ON devdb_v2.audit_log TO 'educore_audit_reader'@'%';
 ```
 
 ## Pre-push checklist
@@ -246,7 +246,7 @@ Before any public push of the repository:
 - [ ] No real credentials in any file in the repository.
 - [ ] `.env.example` is a clean template.
 - [ ] `.gitignore` has `.env` and `.env.*`.
-- [ ] MySQL `devuser` and `smsengine_writer` have least-privilege
+- [ ] MySQL `devuser` and `educore_writer` have least-privilege
       roles.
 
 ## Post-cutover (T+0)

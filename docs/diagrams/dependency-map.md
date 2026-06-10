@@ -12,77 +12,77 @@ is [`AGENTS.md` § Dependency Rules](../../AGENTS.md#dependency-rules).
 
 | Crate | Purpose |
 | --- | --- |
-| `smsengine-core` | Identifiers, `DomainError`, `Result`, value objects, clock, id generator. The root of every dependency. |
-| `smsengine-query-derive` | Proc-macro crate that emits the typed query AST for `#[derive(DomainQuery)]`. The only macro crate shipped in v1. |
-| `smsengine-storage` | Storage port trait; dialect-agnostic AST translation contract. |
+| `educore-core` | Identifiers, `DomainError`, `Result`, value objects, clock, id generator. The root of every dependency. |
+| `educore-query-derive` | Proc-macro crate that emits the typed query AST for `#[derive(DomainQuery)]`. The only macro crate shipped in v1. |
+| `educore-storage` | Storage port trait; dialect-agnostic AST translation contract. |
 
 ### cross-cutting tier (7 crates) — cross-domain foundations
 
-Each cross-cutting crate depends on `smsengine-core`. Some
-additionally depend on `smsengine-platform`.
+Each cross-cutting crate depends on `educore-core`. Some
+additionally depend on `educore-platform`.
 
 | Crate | Purpose |
 | --- | --- |
-| `smsengine-platform` | `School`, `User`, `TenantContext`, modules, custom fields. |
-| `smsengine-rbac` | `Capability` enum, `Role` aggregate, `CapabilityCheckService`. |
-| `smsengine-events` | `EventEnvelope`, `EventBus` and `Outbox` ports, schema registry. |
-| `smsengine-events-domain` | Calendar and event-scheduling domain (the calendar, not the envelope). |
-| `smsengine-audit` | `AuditSink`, `AuditQuery`, retention, redactor. Dev-dependency for domains; re-exported by the umbrella. |
-| `smsengine-settings` | Per-school general settings, theme, language. |
-| `smsengine-operations` | Cross-domain operations, jobs, scheduled tasks. |
+| `educore-platform` | `School`, `User`, `TenantContext`, modules, custom fields. |
+| `educore-rbac` | `Capability` enum, `Role` aggregate, `CapabilityCheckService`. |
+| `educore-events` | `EventEnvelope`, `EventBus` and `Outbox` ports, schema registry. |
+| `educore-events-domain` | Calendar and event-scheduling domain (the calendar, not the envelope). |
+| `educore-audit` | `AuditSink`, `AuditQuery`, retention, redactor. Dev-dependency for domains; re-exported by the umbrella. |
+| `educore-settings` | Per-school general settings, theme, language. |
+| `educore-operations` | Cross-domain operations, jobs, scheduled tasks. |
 
 ### domains tier (10 crates) — the bounded contexts
 
-Each domain crate depends on `smsengine-core`, `smsengine-platform`,
-`smsengine-rbac`, and `smsengine-events`. Some additionally depend
-on `smsengine-audit`. `smsengine-settings` omits `smsengine-audit`.
+Each domain crate depends on `educore-core`, `educore-platform`,
+`educore-rbac`, and `educore-events`. Some additionally depend
+on `educore-audit`. `educore-settings` omits `educore-audit`.
 
 | Crate | Purpose |
 | --- | --- |
-| `smsengine-academic` | Academic year, classes, subjects, timetabling, grading scale. |
-| `smsengine-assessment` | Examinations, marks, grade entry, report cards. |
-| `smsengine-attendance` | Daily and period attendance, leave, notifications. |
-| `smsengine-cms` | Content management: pages, menus, announcements. |
-| `smsengine-communication` | Messaging, email, SMS, push channels. |
-| `smsengine-documents` | Document storage and metadata (the engine-side catalog; files live in `smsengine-files`). |
-| `smsengine-facilities` | Rooms, assets, inventory, maintenance. |
-| `smsengine-finance` | Fees, invoices, payments, ledgers. |
-| `smsengine-hr` | Staff records, payroll inputs, contracts. |
-| `smsengine-library` | Books, lending, reservations. |
+| `educore-academic` | Academic year, classes, subjects, timetabling, grading scale. |
+| `educore-assessment` | Examinations, marks, grade entry, report cards. |
+| `educore-attendance` | Daily and period attendance, leave, notifications. |
+| `educore-cms` | Content management: pages, menus, announcements. |
+| `educore-communication` | Messaging, email, SMS, push channels. |
+| `educore-documents` | Document storage and metadata (the engine-side catalog; files live in `educore-files`). |
+| `educore-facilities` | Rooms, assets, inventory, maintenance. |
+| `educore-finance` | Fees, invoices, payments, ledgers. |
+| `educore-hr` | Staff records, payroll inputs, contracts. |
+| `educore-library` | Books, lending, reservations. |
 
 ### adapters tier (9 crates) — port implementations
 
-Storage and event-bus adapters depend on `smsengine-storage` /
-`smsengine-events` and may not be imported by domain crates. The
+Storage and event-bus adapters depend on `educore-storage` /
+`educore-events` and may not be imported by domain crates. The
 6 port adapters (auth, files, integrations, notify, payment, ...)
 implement the engine's outbound ports for specific backends.
 
 | Crate | Purpose |
 | --- | --- |
-| `smsengine-storage-postgres` | PostgreSQL 14+ storage adapter; reference DDL emitter. |
-| `smsengine-storage-mysql` | MySQL 8.0+ storage adapter; production target. |
-| `smsengine-storage-sqlite` | SQLite 3.x storage adapter; embedded and offline mode. |
-| `smsengine-event-bus` | In-process `EventBus` adapter implementing the `smsengine-events` port. |
-| `smsengine-auth` | Identity, sessions, OAuth/OIDC. |
-| `smsengine-files` | Object storage adapter (S3, local, GCS). |
-| `smsengine-integrations` | Third-party integration adapters (LMS, SIS, proctors). |
-| `smsengine-notify` | Notification channel adapters (email, SMS, push). |
-| `smsengine-payment` | Payment gateway adapters (Stripe, Razorpay, manual). |
+| `educore-storage-postgres` | PostgreSQL 14+ storage adapter; reference DDL emitter. |
+| `educore-storage-mysql` | MySQL 8.0+ storage adapter; production target. |
+| `educore-storage-sqlite` | SQLite 3.x storage adapter; embedded and offline mode. |
+| `educore-event-bus` | In-process `EventBus` adapter implementing the `educore-events` port. |
+| `educore-auth` | Identity, sessions, OAuth/OIDC. |
+| `educore-files` | Object storage adapter (S3, local, GCS). |
+| `educore-integrations` | Third-party integration adapters (LMS, SIS, proctors). |
+| `educore-notify` | Notification channel adapters (email, SMS, push). |
+| `educore-payment` | Payment gateway adapters (Stripe, Razorpay, manual). |
 
 ### tools tier (4 crates) — dev tooling
 
 | Crate | Purpose |
 | --- | --- |
-| `smsengine-testkit` | In-memory adapters and test helpers; used by domain and integration tests. |
-| `smsengine-storage-parity` | Cross-dialect conformance harness; runs the same test suite against every storage adapter. |
-| `smsengine-sdk` | High-level consumer SDK; convenient builders for the common flows. |
-| `smsengine-cli` | Sample binary CLI (`[[bin]]`); not a library. Demonstrates consumer use of the umbrella. |
+| `educore-testkit` | In-memory adapters and test helpers; used by domain and integration tests. |
+| `educore-storage-parity` | Cross-dialect conformance harness; runs the same test suite against every storage adapter. |
+| `educore-sdk` | High-level consumer SDK; convenient builders for the common flows. |
+| `educore-cli` | Sample binary CLI (`[[bin]]`); not a library. Demonstrates consumer use of the umbrella. |
 
 ### umbrella (1 crate)
 
 | Crate | Purpose |
 | --- | --- |
-| `smsengine` | Umbrella crate; re-exports every public crate under `smsengine::*` and is the only crate consumers are expected to depend on directly. |
+| `educore` | Umbrella crate; re-exports every public crate under `educore::*` and is the only crate consumers are expected to depend on directly. |
 
 ## 2. Top-Level Dependency Graph
 
@@ -104,20 +104,20 @@ graph TD
     classDef umbrella fill:#fce4ec,stroke:#880e4f,stroke-width:3px
 
     %% core tier
-    core["smsengine-core"]:::core
-    query_derive["smsengine-query-derive"]:::core
-    storage["smsengine-storage"]:::core
+    core["educore-core"]:::core
+    query_derive["educore-query-derive"]:::core
+    storage["educore-storage"]:::core
     %% core internal edges
     query_derive --> core
     storage --> core
     %% cross-cutting tier
-    platform["smsengine-platform"]:::cross
-    rbac["smsengine-rbac"]:::cross
-    events["smsengine-events"]:::cross
-    events_domain["smsengine-events-domain"]:::cross
-    audit["smsengine-audit"]:::cross
-    settings["smsengine-settings"]:::cross
-    operations["smsengine-operations"]:::cross
+    platform["educore-platform"]:::cross
+    rbac["educore-rbac"]:::cross
+    events["educore-events"]:::cross
+    events_domain["educore-events-domain"]:::cross
+    audit["educore-audit"]:::cross
+    settings["educore-settings"]:::cross
+    operations["educore-operations"]:::cross
     %% cross-cutting internal edges
     platform --> core
     rbac --> core & platform & events
@@ -127,30 +127,30 @@ graph TD
     settings --> core & platform & rbac & events
     operations --> core & platform & rbac & events & audit
     %% domains tier
-    academic["smsengine-academic"]:::domain
-    assessment["smsengine-assessment"]:::domain
-    attendance["smsengine-attendance"]:::domain
-    cms["smsengine-cms"]:::domain
-    communication["smsengine-communication"]:::domain
-    documents["smsengine-documents"]:::domain
-    facilities["smsengine-facilities"]:::domain
-    finance["smsengine-finance"]:::domain
-    hr["smsengine-hr"]:::domain
-    library["smsengine-library"]:::domain
+    academic["educore-academic"]:::domain
+    assessment["educore-assessment"]:::domain
+    attendance["educore-attendance"]:::domain
+    cms["educore-cms"]:::domain
+    communication["educore-communication"]:::domain
+    documents["educore-documents"]:::domain
+    facilities["educore-facilities"]:::domain
+    finance["educore-finance"]:::domain
+    hr["educore-hr"]:::domain
+    library["educore-library"]:::domain
     %% domain internal edges: every domain depends on core+platform+rbac+events;
     %% many also use audit.
     academic & assessment & attendance & cms & communication & documents & facilities & finance & hr & library --> core & platform & rbac & events
     academic & assessment & attendance & cms & communication & documents & facilities & finance & hr & library --> audit
     %% adapters tier
-    storage_postgres["smsengine-storage-postgres"]:::adapter
-    storage_mysql["smsengine-storage-mysql"]:::adapter
-    storage_sqlite["smsengine-storage-sqlite"]:::adapter
-    event_bus["smsengine-event-bus"]:::adapter
-    auth["smsengine-auth"]:::adapter
-    files["smsengine-files"]:::adapter
-    integrations["smsengine-integrations"]:::adapter
-    notify["smsengine-notify"]:::adapter
-    payment["smsengine-payment"]:::adapter
+    storage_postgres["educore-storage-postgres"]:::adapter
+    storage_mysql["educore-storage-mysql"]:::adapter
+    storage_sqlite["educore-storage-sqlite"]:::adapter
+    event_bus["educore-event-bus"]:::adapter
+    auth["educore-auth"]:::adapter
+    files["educore-files"]:::adapter
+    integrations["educore-integrations"]:::adapter
+    notify["educore-notify"]:::adapter
+    payment["educore-payment"]:::adapter
     %% adapter internal edges
     storage_postgres --> storage & core
     storage_mysql --> storage & core
@@ -162,17 +162,17 @@ graph TD
     notify --> core & events
     payment --> core & storage & events
     %% tools tier
-    testkit["smsengine-testkit"]:::tool
-    storage_parity["smsengine-storage-parity"]:::tool
-    sdk["smsengine-sdk"]:::tool
-    cli["smsengine-cli"]:::tool
+    testkit["educore-testkit"]:::tool
+    storage_parity["educore-storage-parity"]:::tool
+    sdk["educore-sdk"]:::tool
+    cli["educore-cli"]:::tool
     %% tool internal edges
     testkit --> core & storage & events
     storage_parity --> core & storage_postgres & storage_mysql & storage_sqlite
     sdk --> core & platform & events & rbac & settings
     cli --> umbrella & sdk
     %% umbrella re-exports every public crate
-    umbrella["smsengine<br/>umbrella"]:::umbrella
+    umbrella["educore<br/>umbrella"]:::umbrella
     umbrella --> core & query_derive & storage
     umbrella --> platform & rbac & events & events_domain & audit & settings & operations
     umbrella --> academic & assessment & attendance & cms & communication & documents & facilities & finance & hr & library
@@ -188,8 +188,8 @@ graph LR
     Adapter[Adapter Crate] -.X forbidden.-> Domain[Domain Crate]
     Domain -.X forbidden.-> Adapter
     DomainA[Domain A] -.X forbidden.-> DomainB[Domain B in same tier]
-    DomainAny[Domain Crate] -.X forbidden.-> Umbrella[smsengine facade]
-    DomainAny2[Domain Crate] -.X forbidden.-> Sdk[smsengine-sdk]
+    DomainAny[Domain Crate] -.X forbidden.-> Umbrella[educore facade]
+    DomainAny2[Domain Crate] -.X forbidden.-> Sdk[educore-sdk]
     DomainAny3[Domain Crate] -.X forbidden.-> Tool[tools/* crate]
 
     classDef forbidden stroke:#b71c1c,stroke-width:3px,fill:#ffebee
@@ -202,20 +202,20 @@ The engine enforces:
   The dependency is one-way: domain defines a port;
   adapter implements it.
 - **Domain crates may not import other domain crates
-  in the same tier.** `smsengine-finance` and
-  `smsengine-hr` are both in the domains tier; they
+  in the same tier.** `educore-finance` and
+  `educore-hr` are both in the domains tier; they
   do not import each other. They communicate through
   events.
 - **Domain crates may not import the umbrella, the SDK,
-  `smsengine-cli`, or any other `tools/*` crate.** The
+  `educore-cli`, or any other `tools/*` crate.** The
   umbrella and SDK re-export the domain surface;
   importing either from a domain would create a cycle.
-- **The proc-macro crate `smsengine-query-derive` is a
+- **The proc-macro crate `educore-query-derive` is a
   leaf.** It depends on `syn`/`quote` only and is used
   by every domain crate at compile time. No runtime
   crate may depend on it.
-- **`smsengine-audit`, `smsengine-testkit`, and
-  `smsengine-storage-parity` are not load-bearing for
+- **`educore-audit`, `educore-testkit`, and
+  `educore-storage-parity` are not load-bearing for
   production.** They are imported only by the umbrella
   and (for `testkit`/`storage-parity`) by the workspace
   test harness. Domains treat them as optional
@@ -240,8 +240,8 @@ Cross-domain coordination happens through events.
 Domain A does not call Domain B directly. Domain B
 subscribes to Domain A's events and reacts. The bus
 is the only shared medium. The `EventBus` port lives
-in `smsengine-events`; the default in-process adapter
-is `smsengine-event-bus`.
+in `educore-events`; the default in-process adapter
+is `educore-event-bus`.
 
 ## See also
 

@@ -242,13 +242,13 @@ A large set of boolean feature flags carried on `GeneralSettings`:
 
 | Type            | Notes                                                       |
 | --------------- | ------------------------------------------------------------ |
-| `SchoolId`      | From `smsengine-platform`                                     |
-| `TenantContext` | `(SchoolId, UserId, ...)` from `smsengine-platform`           |
-| `RoleId`        | From `smsengine-rbac`                                         |
-| `LanguageCode`  | From `smsengine-platform`                                     |
-| `CurrencyCode`  | From `smsengine-platform`                                     |
-| `TimeZoneId`    | From `smsengine-platform`                                     |
-| `AcademicYearId` | From `smsengine-academic`                                     |
+| `SchoolId`      | From `educore-platform`                                     |
+| `TenantContext` | `(SchoolId, UserId, ...)` from `educore-platform`           |
+| `RoleId`        | From `educore-rbac`                                         |
+| `LanguageCode`  | From `educore-platform`                                     |
+| `CurrencyCode`  | From `educore-platform`                                     |
+| `TimeZoneId`    | From `educore-platform`                                     |
+| `AcademicYearId` | From `educore-academic`                                     |
 
 ## Validation Rules
 

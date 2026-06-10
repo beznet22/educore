@@ -1,5 +1,5 @@
 [package]
-name = "smsengine-event-bus"
+name = "educore-event-bus"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,8 +11,8 @@ description = "Event bus port, in-process, NATS, Redis Streams, Kafka adapters."
 workspace = true
 
 [dependencies]
-smsengine-core = { workspace = true }
-smsengine-events = { workspace = true }
+educore-core = { workspace = true }
+educore-events = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
 

@@ -5,7 +5,7 @@ inline `CHECK`; 8.0.21+ for `utf8mb4_0900_ai_ci` as default collation;
 8.0.23+ for `INVISIBLE` columns).
 
 The reference adapter implementing these conventions is
-`smsengine-storage-mysql`. The DDL strings in this file are emitted
+`educore-storage-mysql`. The DDL strings in this file are emitted
 by `MysqlStorageAdapter::create_<table>_ddl()`.
 
 ## Identifier quoting
@@ -300,7 +300,7 @@ CREATE TABLE IF NOT EXISTS `academic_students` (
 
 - MySQL 8 Reference Manual: `CREATE TABLE` syntax, `utf8mb4` charset,
   `INVISIBLE` columns, `CHECK` constraints.
-- The `smsengine-storage-mysql` crate README.
+- The `educore-storage-mysql` crate README.
 - `docs/ports/storage.md` § 4: `Configuration` — the engine's
   `MysqlStorage::builder()` pattern.
 - `docs/schemas/database-schema.md` § 11: the canonical minimum

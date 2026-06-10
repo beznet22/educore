@@ -34,7 +34,7 @@ must be safe under an unreliable network.
 
 ## Decision
 
-SMSengine commands are **idempotent on
+Educore commands are **idempotent on
 `idempotency_key`**. A retry of the same command
 with the same `idempotency_key` produces the same
 result and emits no additional events.

@@ -1,4 +1,4 @@
-# SMSengine Code Standards
+# Educore Code Standards
 
 These standards are mandatory. They are the rules every implementation must
 follow. They are deliberately simple and focused on production correctness.
@@ -40,7 +40,7 @@ follow. They are deliberately simple and focused on production correctness.
 ## Module Rules
 
 ```text
-crates/domains/<domain>/        <-- package name: smsengine-<domain>
+crates/domains/<domain>/        <-- package name: educore-<domain>
 ├── src/
 │   ├── lib.rs
 │   ├── aggregate.rs
@@ -152,15 +152,15 @@ impl StudentId {
 ## Dependency Rules
 
 - A domain crate may depend on:
-  - `smsengine-core`
-  - `smsengine-platform`
-  - `smsengine-rbac`
-  - `smsengine-events`
+  - `educore-core`
+  - `educore-platform`
+  - `educore-rbac`
+  - `educore-events`
   - Other domain crates only with explicit justification in an ADR.
 - A domain crate may **not** depend on:
   - Any adapter crate
   - Any infrastructure crate
-  - `tokio` directly (only through `smsengine-core` re-exports where needed)
+  - `tokio` directly (only through `educore-core` re-exports where needed)
   - `serde_json::Value`
 
 ## Cross-Compilation

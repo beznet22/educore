@@ -271,10 +271,10 @@ details confidential (no public mention). The
 engine's incident log is access-controlled;
 the public calendar does not show incidents.
 
-## Notes for SMSengine Implementation
+## Notes for Educore Implementation
 
 - The **events** crate depends on
-  `smsengine-core` and `smsengine-events`. It does
+  `educore-core` and `educore-events`. It does
   not depend on operational domains; it is a
   cross-cutting concern.
 - The domain's calendar is a **read model**

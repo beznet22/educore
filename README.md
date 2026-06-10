@@ -1,11 +1,11 @@
-# SMSengine
+# Educore
 
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)]()
 [![Edition](https://img.shields.io/badge/rust-edition%202021-blue.svg)]()
 [![MSRV](https://img.shields.io/badge/rust-1.75%2B-blue.svg)]()
 [![Status](https://img.shields.io/badge/status-scaffold-yellow.svg)]()
 
-**SMSengine** is a reusable, embeddable **school-domain engine** for
+**Educore** is a reusable, embeddable **school-domain engine** for
 production software. It captures the business behavior, workflows, and
 rules required to operate a real school — admissions, attendance,
 examinations, finance, payroll, communication, facilities, library,
@@ -14,7 +14,7 @@ event-driven kernel that any application can drive.
 
 > **Not an application. Not a framework. A domain engine.**
 
-## Why SMSengine
+## Why Educore
 
 - **Compile-time safety.** Identifiers, fields, and operators are
   typed; consumer bugs fail at compile time, not at runtime.
@@ -33,52 +33,52 @@ This repository is a Cargo workspace with **34 crates** organized into 5 tiers:
 
 ### core (3 crates) — infrastructure
 
-- `smsengine-core` — errors, identifiers, value objects, query AST.
-- `smsengine-query-derive` — `#[derive(DomainQuery)]` proc macro.
-- `smsengine-storage` — port trait.
+- `educore-core` — errors, identifiers, value objects, query AST.
+- `educore-query-derive` — `#[derive(DomainQuery)]` proc macro.
+- `educore-storage` — port trait.
 
 ### cross-cutting (7 crates) — cross-domain foundations
 
-- `smsengine-platform` — tenant, school, user, session.
-- `smsengine-rbac` — role, permission, capability.
-- `smsengine-events` — envelope + bus port.
-- `smsengine-events-domain` — calendar events.
-- `smsengine-settings` — general settings.
-- `smsengine-operations` — backups, jobs, system versions.
-- `smsengine-audit` — audit log writer.
+- `educore-platform` — tenant, school, user, session.
+- `educore-rbac` — role, permission, capability.
+- `educore-events` — envelope + bus port.
+- `educore-events-domain` — calendar events.
+- `educore-settings` — general settings.
+- `educore-operations` — backups, jobs, system versions.
+- `educore-audit` — audit log writer.
 
 ### domains (10 crates) — the 10 domain bounded contexts
 
-- `smsengine-academic` — students, classes, sections, subjects.
-- `smsengine-assessment` — exams, marks, results.
-- `smsengine-attendance` — student & staff attendance.
-- `smsengine-cms` — pages, news, content.
-- `smsengine-communication` — notices, complaints, chat.
-- `smsengine-documents` — forms, postal.
-- `smsengine-facilities` — transport, dormitory, inventory.
-- `smsengine-finance` — fees, payments, banking, payroll.
-- `smsengine-hr` — staff, payroll, leave.
-- `smsengine-library` — books, members, issues.
+- `educore-academic` — students, classes, sections, subjects.
+- `educore-assessment` — exams, marks, results.
+- `educore-attendance` — student & staff attendance.
+- `educore-cms` — pages, news, content.
+- `educore-communication` — notices, complaints, chat.
+- `educore-documents` — forms, postal.
+- `educore-facilities` — transport, dormitory, inventory.
+- `educore-finance` — fees, payments, banking, payroll.
+- `educore-hr` — staff, payroll, leave.
+- `educore-library` — books, members, issues.
 
 ### adapters (9 crates) — port implementations
 
-- 3 reference storage adapters: `smsengine-storage-postgres`, `smsengine-storage-mysql`, `smsengine-storage-sqlite`.
-- 6 port adapters: `smsengine-auth`, `smsengine-notify`, `smsengine-payment`, `smsengine-files`, `smsengine-event-bus`, `smsengine-integrations`.
+- 3 reference storage adapters: `educore-storage-postgres`, `educore-storage-mysql`, `educore-storage-sqlite`.
+- 6 port adapters: `educore-auth`, `educore-notify`, `educore-payment`, `educore-files`, `educore-event-bus`, `educore-integrations`.
 
 ### tools (4 crates) — dev tooling
 
-- `smsengine-testkit` — in-memory test adapters.
-- `smsengine-storage-parity` — cross-adapter parity suite.
-- `smsengine-cli` — sample binary CLI.
-- `smsengine-sdk` — high-level consumer SDK.
+- `educore-testkit` — in-memory test adapters.
+- `educore-storage-parity` — cross-adapter parity suite.
+- `educore-cli` — sample binary CLI.
+- `educore-sdk` — high-level consumer SDK.
 
 ### umbrella (1 crate)
 
-- `smsengine` — re-exports the public surface of all 34 internal crates.
+- `educore` — re-exports the public surface of all 34 internal crates.
 
-Internal crate directories are named without the `smsengine-` prefix
+Internal crate directories are named without the `educore-` prefix
 (`crates/domains/academic/`), while the published package name keeps
-the prefix (`smsengine-academic`). The umbrella re-exports each
+the prefix (`educore-academic`). The umbrella re-exports each
 crate under its short name.
 
 See `AGENTS.md` for the full layout, tier rules, and crate
@@ -106,7 +106,7 @@ cargo test --workspace
 Once implementation lands, a consumer wires the engine like this:
 
 ```rust
-use smsengine::prelude::*;
+use educore::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -130,9 +130,9 @@ See `docs/library-docs.md` for the full consumer-facing walkthrough.
 
 Three reference adapters ship with the engine:
 
-- **PostgreSQL** — primary target (`smsengine-storage-postgres`)
-- **MySQL** — production target, MySQL 8.0+ (`smsengine-storage-mysql`)
-- **SQLite** — embedded / offline mode (`smsengine-storage-sqlite`)
+- **PostgreSQL** — primary target (`educore-storage-postgres`)
+- **MySQL** — production target, MySQL 8.0+ (`educore-storage-mysql`)
+- **SQLite** — embedded / offline mode (`educore-storage-sqlite`)
 
 **Deferred** to a future release (not shipped, consumer may implement
 in-tree on demand): SurrealDB, MongoDB. See

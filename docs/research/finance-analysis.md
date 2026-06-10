@@ -657,7 +657,7 @@ ledger and the bank statement. The engine's
 produces the reconciliation. The audit log
 captures the report generation.
 
-## Notes for SMSengine Implementation
+## Notes for Educore Implementation
 
 - The **finance** crate is the most complex
   domain. It has the most aggregates, the most

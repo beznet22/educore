@@ -1,5 +1,5 @@
 [package]
-name = "smsengine-storage"
+name = "educore-storage"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,6 +11,6 @@ description = "Storage port trait, repository traits, parity test suite, common 
 workspace = true
 
 [dependencies]
-smsengine-core = { workspace = true }
-smsengine-events = { workspace = true }
+educore-core = { workspace = true }
+educore-events = { workspace = true }
 

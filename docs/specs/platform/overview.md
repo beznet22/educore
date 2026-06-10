@@ -52,7 +52,7 @@ The platform domain **does** provide:
 
 ## Dependencies
 
-- `smsengine-core` — error types, identifier trait.
+- `educore-core` — error types, identifier trait.
 - No other engine domains.
 
 ## Domain Invariants

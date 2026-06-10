@@ -1,7 +1,7 @@
 # Data Migration — Index
 
 This folder is the **single source of truth** for the migration of
-the legacy Schoolify/InfixEdu database (`devdb`) to the SMSengine
+the legacy Schoolify/InfixEdu database (`devdb`) to the Educore
 schema. The parent `migrations/README.md` summarises the gap and the
 naming convention; the files here are the playbook.
 

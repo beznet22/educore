@@ -1,5 +1,5 @@
 [package]
-name = "smsengine-payment"
+name = "educore-payment"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,10 +11,10 @@ description = "Payment port, cash, cheque, bank, gateway, wallet adapter impleme
 workspace = true
 
 [dependencies]
-smsengine-core = { workspace = true }
-smsengine-platform = { workspace = true }
-smsengine-events = { workspace = true }
-smsengine-finance = { workspace = true }
+educore-core = { workspace = true }
+educore-platform = { workspace = true }
+educore-events = { workspace = true }
+educore-finance = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
 

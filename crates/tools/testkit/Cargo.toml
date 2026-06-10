@@ -1,5 +1,5 @@
 [package]
-name = "smsengine-testkit"
+name = "educore-testkit"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

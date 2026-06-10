@@ -246,11 +246,11 @@ A school's TC has a watermark. The engine's
 configuration. The rendering is the
 consumer's responsibility.
 
-## Notes for SMSengine Implementation
+## Notes for Educore Implementation
 
 - The **documents** crate depends on
-  `smsengine-academic` for `StudentId` and
-  `smsengine-hr` for `StaffId`.
+  `educore-academic` for `StudentId` and
+  `educore-hr` for `StaffId`.
 - The domain's documents are
   **storage-port driven**. The engine's
   `Document` aggregate is the metadata; the

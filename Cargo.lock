@@ -2285,114 +2285,114 @@ dependencies = [
 ]
 
 [[package]]
-name = "smsengine"
+name = "educore"
 version = "0.1.0"
 dependencies = [
- "smsengine-academic",
- "smsengine-assessment",
- "smsengine-attendance",
- "smsengine-auth",
- "smsengine-cms",
- "smsengine-communication",
- "smsengine-core",
- "smsengine-documents",
- "smsengine-event-bus",
- "smsengine-events",
- "smsengine-events-domain",
- "smsengine-facilities",
- "smsengine-files",
- "smsengine-finance",
- "smsengine-hr",
- "smsengine-integrations",
- "smsengine-library",
- "smsengine-notify",
- "smsengine-payment",
- "smsengine-platform",
- "smsengine-rbac",
- "smsengine-sdk",
- "smsengine-settings",
- "smsengine-storage",
+ "educore-academic",
+ "educore-assessment",
+ "educore-attendance",
+ "educore-auth",
+ "educore-cms",
+ "educore-communication",
+ "educore-core",
+ "educore-documents",
+ "educore-event-bus",
+ "educore-events",
+ "educore-events-domain",
+ "educore-facilities",
+ "educore-files",
+ "educore-finance",
+ "educore-hr",
+ "educore-integrations",
+ "educore-library",
+ "educore-notify",
+ "educore-payment",
+ "educore-platform",
+ "educore-rbac",
+ "educore-sdk",
+ "educore-settings",
+ "educore-storage",
 ]
 
 [[package]]
-name = "smsengine-academic"
+name = "educore-academic"
 version = "0.1.0"
 dependencies = [
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
- "smsengine-rbac",
- "smsengine-settings",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
+ "educore-rbac",
+ "educore-settings",
 ]
 
 [[package]]
-name = "smsengine-assessment"
+name = "educore-assessment"
 version = "0.1.0"
 dependencies = [
- "smsengine-academic",
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
- "smsengine-rbac",
- "smsengine-settings",
+ "educore-academic",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
+ "educore-rbac",
+ "educore-settings",
 ]
 
 [[package]]
-name = "smsengine-attendance"
+name = "educore-attendance"
 version = "0.1.0"
 dependencies = [
- "smsengine-academic",
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
- "smsengine-rbac",
- "smsengine-settings",
+ "educore-academic",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
+ "educore-rbac",
+ "educore-settings",
 ]
 
 [[package]]
-name = "smsengine-audit"
+name = "educore-audit"
 version = "0.1.0"
 
 [[package]]
-name = "smsengine-auth"
+name = "educore-auth"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
- "smsengine-rbac",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
+ "educore-rbac",
  "tokio",
 ]
 
 [[package]]
-name = "smsengine-cli"
+name = "educore-cli"
 version = "0.1.0"
 
 [[package]]
-name = "smsengine-cms"
+name = "educore-cms"
 version = "0.1.0"
 dependencies = [
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
- "smsengine-rbac",
- "smsengine-settings",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
+ "educore-rbac",
+ "educore-settings",
 ]
 
 [[package]]
-name = "smsengine-communication"
+name = "educore-communication"
 version = "0.1.0"
 dependencies = [
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
- "smsengine-rbac",
- "smsengine-settings",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
+ "educore-rbac",
+ "educore-settings",
 ]
 
 [[package]]
-name = "smsengine-core"
+name = "educore-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -2403,7 +2403,7 @@ dependencies = [
  "proptest",
  "secrecy",
  "serde",
- "smsengine-query-derive",
+ "educore-query-derive",
  "thiserror 1.0.69",
  "tracing",
  "uuid",
@@ -2411,152 +2411,152 @@ dependencies = [
 ]
 
 [[package]]
-name = "smsengine-documents"
+name = "educore-documents"
 version = "0.1.0"
 dependencies = [
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
- "smsengine-rbac",
- "smsengine-settings",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
+ "educore-rbac",
+ "educore-settings",
 ]
 
 [[package]]
-name = "smsengine-event-bus"
+name = "educore-event-bus"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "smsengine-core",
- "smsengine-events",
+ "educore-core",
+ "educore-events",
  "tokio",
 ]
 
 [[package]]
-name = "smsengine-events"
+name = "educore-events"
 version = "0.1.0"
 dependencies = [
- "smsengine-core",
+ "educore-core",
 ]
 
 [[package]]
-name = "smsengine-events-domain"
+name = "educore-events-domain"
 version = "0.1.0"
 dependencies = [
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
- "smsengine-rbac",
- "smsengine-settings",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
+ "educore-rbac",
+ "educore-settings",
 ]
 
 [[package]]
-name = "smsengine-facilities"
+name = "educore-facilities"
 version = "0.1.0"
 dependencies = [
- "smsengine-academic",
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
- "smsengine-rbac",
- "smsengine-settings",
+ "educore-academic",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
+ "educore-rbac",
+ "educore-settings",
 ]
 
 [[package]]
-name = "smsengine-files"
+name = "educore-files"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
  "tokio",
 ]
 
 [[package]]
-name = "smsengine-finance"
+name = "educore-finance"
 version = "0.1.0"
 dependencies = [
- "smsengine-academic",
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
- "smsengine-rbac",
- "smsengine-settings",
+ "educore-academic",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
+ "educore-rbac",
+ "educore-settings",
 ]
 
 [[package]]
-name = "smsengine-hr"
+name = "educore-hr"
 version = "0.1.0"
 dependencies = [
- "smsengine-academic",
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
- "smsengine-rbac",
- "smsengine-settings",
+ "educore-academic",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
+ "educore-rbac",
+ "educore-settings",
 ]
 
 [[package]]
-name = "smsengine-integrations"
+name = "educore-integrations"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "reqwest",
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
  "tokio",
 ]
 
 [[package]]
-name = "smsengine-library"
+name = "educore-library"
 version = "0.1.0"
 dependencies = [
- "smsengine-academic",
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
- "smsengine-rbac",
- "smsengine-settings",
+ "educore-academic",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
+ "educore-rbac",
+ "educore-settings",
 ]
 
 [[package]]
-name = "smsengine-notify"
+name = "educore-notify"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
  "tokio",
 ]
 
 [[package]]
-name = "smsengine-operations"
+name = "educore-operations"
 version = "0.1.0"
 
 [[package]]
-name = "smsengine-payment"
+name = "educore-payment"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "smsengine-core",
- "smsengine-events",
- "smsengine-finance",
- "smsengine-platform",
+ "educore-core",
+ "educore-events",
+ "educore-finance",
+ "educore-platform",
  "tokio",
 ]
 
 [[package]]
-name = "smsengine-platform"
+name = "educore-platform"
 version = "0.1.0"
 dependencies = [
- "smsengine-core",
- "smsengine-events",
+ "educore-core",
+ "educore-events",
 ]
 
 [[package]]
-name = "smsengine-query-derive"
+name = "educore-query-derive"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
@@ -2565,55 +2565,55 @@ dependencies = [
 ]
 
 [[package]]
-name = "smsengine-rbac"
+name = "educore-rbac"
 version = "0.1.0"
 dependencies = [
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
 ]
 
 [[package]]
-name = "smsengine-sdk"
+name = "educore-sdk"
 version = "0.1.0"
 dependencies = [
- "smsengine-academic",
- "smsengine-assessment",
- "smsengine-attendance",
- "smsengine-core",
- "smsengine-events",
- "smsengine-finance",
- "smsengine-hr",
- "smsengine-platform",
- "smsengine-rbac",
- "smsengine-storage",
+ "educore-academic",
+ "educore-assessment",
+ "educore-attendance",
+ "educore-core",
+ "educore-events",
+ "educore-finance",
+ "educore-hr",
+ "educore-platform",
+ "educore-rbac",
+ "educore-storage",
 ]
 
 [[package]]
-name = "smsengine-settings"
+name = "educore-settings"
 version = "0.1.0"
 dependencies = [
- "smsengine-core",
- "smsengine-events",
- "smsengine-platform",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
 ]
 
 [[package]]
-name = "smsengine-storage"
+name = "educore-storage"
 version = "0.1.0"
 dependencies = [
- "smsengine-core",
- "smsengine-events",
+ "educore-core",
+ "educore-events",
 ]
 
 [[package]]
-name = "smsengine-storage-mysql"
+name = "educore-storage-mysql"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "mysql_async",
- "smsengine-core",
- "smsengine-storage",
+ "educore-core",
+ "educore-storage",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
@@ -2621,29 +2621,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "smsengine-storage-parity"
+name = "educore-storage-parity"
 version = "0.1.0"
 
 [[package]]
-name = "smsengine-storage-postgres"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "smsengine-core",
- "smsengine-storage",
- "sqlx",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "smsengine-storage-sqlite"
+name = "educore-storage-postgres"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "smsengine-core",
- "smsengine-storage",
+ "educore-core",
+ "educore-storage",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
@@ -2651,7 +2638,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "smsengine-testkit"
+name = "educore-storage-sqlite"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "educore-core",
+ "educore-storage",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "educore-testkit"
 version = "0.1.0"
 
 [[package]]

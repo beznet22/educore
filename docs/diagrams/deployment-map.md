@@ -1,6 +1,6 @@
 # Deployment Map
 
-How a consumer application is structured with the SMSengine
+How a consumer application is structured with the Educore
 engine. The maps below show the consumer's surface, the
 engine's facade, the command flow, and the runtime topology.
 
@@ -15,9 +15,9 @@ graph TB
         Adapter[Adapter Layer<br/>(implements engine ports)]
     end
 
-    subgraph engine [SMSengine Engine]
-        Facade[Engine Facade<br/>smsengine::Engine]
-        Domain[Domain Crates<br/>smsengine-academic, smsengine-finance, ...]
+    subgraph engine [Educore Engine]
+        Facade[Engine Facade<br/>educore::Engine]
+        Domain[Domain Crates<br/>educore-academic, educore-finance, ...]
         Ports[Port Traits<br/>Storage, Auth, Notification, ...]
     end
 
@@ -57,7 +57,7 @@ graph TB
         Agent[AI Agent<br/>(LLM + tools)]
     end
 
-    subgraph engine [SMSengine Engine]
+    subgraph engine [Educore Engine]
         Facade[Engine Facade]
     end
 
@@ -177,7 +177,7 @@ payment.
 
 ```mermaid
 graph LR
-    CLI[smsengine CLI]
+    CLI[educore CLI]
     CLI -->|in-process| Engine[Engine]
     Engine -->|in-process| Storage[Storage Adapter]
     Engine -->|in-process| EventBus[Event Bus]
@@ -382,7 +382,7 @@ graph LR
     Builder --> P10[with_audit(audit_sink)]
     Builder --> P11[with_search(search_index)]
     Builder --> P12[with_integration(integration_gateway)]
-    Engine[smsengine::Engine] --> Builder
+    Engine[educore::Engine] --> Builder
     Engine --> Academic[engine.academic]
     Engine --> Finance[engine.finance]
     Engine --> HR[engine.hr]

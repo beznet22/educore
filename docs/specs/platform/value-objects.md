@@ -61,7 +61,7 @@ Schools are globally unique and have no parent tenant.
 | `PersonName`        | 1..200 chars, unicode letters and basic punctuation               |
 | `FullName`          | Computed from `PersonName` parts                                  |
 | `Username`          | 1..192 chars, unique within `(school_id, lower(username))`        |
-| `RoleId`            | From `smsengine-rbac`                                               |
+| `RoleId`            | From `educore-rbac`                                               |
 
 ## School Status
 
@@ -254,8 +254,8 @@ Schools are globally unique and have no parent tenant.
 | Type            | Notes                                                       |
 | --------------- | ------------------------------------------------------------ |
 | `SchoolId`      | Globally unique; carries no parent tenant                   |
-| `TenantContext` | `(SchoolId, UserId, CorrelationId, ...)` per `smsengine-core` |
-| `Capability`    | From `smsengine-rbac`                                         |
+| `TenantContext` | `(SchoolId, UserId, CorrelationId, ...)` per `educore-core` |
+| `Capability`    | From `educore-rbac`                                         |
 
 ## Validation Rules
 

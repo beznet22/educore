@@ -164,15 +164,15 @@ small Python script.
 
 ## Storage adapter test
 
-The engine's `smsengine-storage-<db>` adapters include a smoke
+The engine's `educore-storage-<db>` adapters include a smoke
 test that runs the repository trait against a seeded database.
 This is the same test the engine's CI runs against PostgreSQL,
 MySQL, and SQLite. The consumer runs it against `devdb_v2`:
 
 ```bash
-cargo test -p smsengine-storage-mysql -- --test-threads=1
-cargo test -p smsengine-storage-postgres -- --test-threads=1
-cargo test -p smsengine-storage-sqlite -- --test-threads=1
+cargo test -p educore-storage-mysql -- --test-threads=1
+cargo test -p educore-storage-postgres -- --test-threads=1
+cargo test -p educore-storage-sqlite -- --test-threads=1
 ```
 
 All three must pass against `devdb_v2`. The test uses the
@@ -231,7 +231,7 @@ If any check fails, the migration is **rolled back** per
 After the verification script runs, it produces a report:
 
 ```text
-SMSengine Migration Verification Report
+Educore Migration Verification Report
 ========================================
 
 Domain         | Tables | Rows    | FK Orphans | Invariants | Brand  | UUIDv7 | Adapter | Parity

@@ -166,13 +166,13 @@ The cutover is a config change. The rollback is:
 
 ```bash
 # 1. Stop the consumer's HTTP process
-systemctl stop smsengine-backend
+systemctl stop educore-backend
 
 # 2. Revert DATABASE_URL to devdb
 # (restore the pre-cutover .env from backup)
 
 # 3. Restart the consumer's HTTP process
-systemctl start smsengine-backend
+systemctl start educore-backend
 
 # 4. Verify the app works against devdb
 
@@ -225,13 +225,13 @@ the wall. The script is:
 
 set -euo pipefail
 
-echo "Rolling back SMSengine migration to devdb_v2"
+echo "Rolling back Educore migration to devdb_v2"
 echo "================================================"
 
 # 1. Stop the consumer's HTTP process
-systemctl stop smsengine-backend || true
-systemctl stop smsengine-outbox-relay || true
-systemctl stop smsengine-audit-sink || true
+systemctl stop educore-backend || true
+systemctl stop educore-outbox-relay || true
+systemctl stop educore-audit-sink || true
 
 # 2. Drop devdb_v2
 mysql -e "DROP DATABASE IF EXISTS devdb_v2;"
@@ -240,7 +240,7 @@ mysql -e "DROP DATABASE IF EXISTS devdb_v2;"
 install -m 0600 .env.legacy .env
 
 # 4. Restart the consumer's HTTP process
-systemctl start smsengine-backend
+systemctl start educore-backend
 
 # 5. Verify the app works
 curl -fsS http://localhost:8080/healthz || {

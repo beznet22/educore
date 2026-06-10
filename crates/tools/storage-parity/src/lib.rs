@@ -1,8 +1,8 @@
-//! # smsengine-storage-parity
+//! # educore-storage-parity
 //!
 //!  Cross-adapter parity test suite — verifies that all three storage adapters emit equivalent DDL and exhibit equivalent behavior on the same test scenarios.
 //!
-//! This crate is a member of the SMSengine workspace. See
+//! This crate is a member of the Educore workspace. See
 //! `docs/architecture.md` and the domain spec in
 //! `docs/specs/` for behavioral details.
 
@@ -11,7 +11,7 @@
 
 /// Package name constant. Re-exported so consumers can assert they
 /// are using the right crate version at compile time.
-pub const PACKAGE_NAME: &str = "smsengine-storage-parity";
+pub const PACKAGE_NAME: &str = "educore-storage-parity";
 
 /// Package version at compile time.
 pub const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -21,7 +21,7 @@ mod tests {
     use super::*;
     #[test]
     fn package_metadata_is_set() {
-        assert_eq!(PACKAGE_NAME, "smsengine-storage-parity");
+        assert_eq!(PACKAGE_NAME, "educore-storage-parity");
         assert!(!PACKAGE_VERSION.is_empty());
     }
 }

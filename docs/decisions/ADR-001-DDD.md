@@ -36,7 +36,7 @@ trails).
 
 ## Decision
 
-SMSengine adopts **Domain-Driven Design** as the architectural
+Educore adopts **Domain-Driven Design** as the architectural
 philosophy for the engine.
 
 Concretely:
@@ -116,12 +116,12 @@ authority on the model.
 
 - The engine's domain crates are sized for incremental delivery
   (see `build-plan.md`). One bounded context at a time.
-- The `smsengine-core` crate provides shared building blocks
+- The `educore-core` crate provides shared building blocks
   (identifier trait, error type, result, value object trait) to
   reduce boilerplate.
-- The `smsengine-events` crate provides a stable event bus and
+- The `educore-events` crate provides a stable event bus and
   subscription primitives.
-- The `smsengine-events` semantics are "at-least-once with
+- The `educore-events` semantics are "at-least-once with
   idempotency," which absorbs the eventual-consistency window.
 
 ## Alternatives Considered

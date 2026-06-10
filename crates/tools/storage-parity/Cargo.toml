@@ -1,5 +1,5 @@
 [package]
-name = "smsengine-storage-parity"
+name = "educore-storage-parity"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

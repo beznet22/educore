@@ -397,11 +397,11 @@ engine's audit log shows the hires, the
 resignations, the promotions, the salary
 changes, with the actor and the reason.
 
-## Notes for SMSengine Implementation
+## Notes for Educore Implementation
 
 - The **hr** crate depends on
-  `smsengine-academic` for class and subject
-  assignments and `smsengine-finance` for
+  `educore-academic` for class and subject
+  assignments and `educore-finance` for
   payroll integration.
 - The HR domain is **eventually consistent**
   with finance (payroll), academic (class

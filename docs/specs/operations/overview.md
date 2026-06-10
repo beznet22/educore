@@ -1,6 +1,6 @@
 # Operations Domain Overview
 
-**Implementation crate:** `smsengine-operations` (path: `crates/cross-cutting/operations/`)
+**Implementation crate:** `educore-operations` (path: `crates/cross-cutting/operations/`)
 **Spec status:** spec'd, scaffolded; implementation begins in Phase 14 (per `docs/build-plan.md`).
 
 ## Purpose
@@ -48,8 +48,8 @@ The operations domain **does** provide:
 
 ## Dependencies
 
-- `smsengine-core` — error types, identifier trait.
-- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `educore-core` — error types, identifier trait.
+- `educore-platform` — `SchoolId`, `UserId`, `TenantContext`.
 
 ## Domain Invariants
 

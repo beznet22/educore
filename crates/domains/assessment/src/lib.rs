@@ -1,8 +1,8 @@
-//! # smsengine-assessment
+//! # educore-assessment
 //!
 //!  Exams, marks registers, results, report cards, online exams, seat plans, admit cards.
 //!
-//! This crate is a member of the SMSengine workspace. See
+//! This crate is a member of the Educore workspace. See
 //! `docs/architecture.md` and the domain spec in
 //! `docs/specs/` for behavioral details.
 
@@ -11,7 +11,7 @@
 
 /// Package name constant. Re-exported so consumers can assert they
 /// are using the right crate version at compile time.
-pub const PACKAGE_NAME: &str = "smsengine-assessment";
+pub const PACKAGE_NAME: &str = "educore-assessment";
 
 /// Package version at compile time.
 pub const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -21,7 +21,7 @@ mod tests {
     use super::*;
     #[test]
     fn package_metadata_is_set() {
-        assert_eq!(PACKAGE_NAME, "smsengine-assessment");
+        assert_eq!(PACKAGE_NAME, "educore-assessment");
         assert!(!PACKAGE_VERSION.is_empty());
     }
 }

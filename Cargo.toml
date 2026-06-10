@@ -1,17 +1,17 @@
 [workspace]
 resolver = "2"
 # The 34 crates are organized into 5 tiers under `crates/`:
-#   crates/core/*           — infrastructure (3 crates: core, query-derive, storage)
+#   crates/infra/*           — infrastructure (3 crates: core, query-derive, storage)
 #   crates/cross-cutting/*  — cross-domain foundations (7 crates)
 #   crates/domains/*        — 10 domain bounded contexts (10 crates)
 #   crates/adapters/*       — port implementations (9 crates)
 #   crates/tools/*          — dev tooling (4 crates)
-#   crates/smsengine/       — umbrella (1 crate)
+#   crates/educore/       — umbrella (1 crate)
 #
 # Sub-workspace isolation (per the build plan) is enforced at the
 # filesystem level: a domain crate in `crates/domains/` can only
-# depend on crates in `crates/core/`, `crates/cross-cutting/`, and
-# other `crates/domains/`. The `smsengine-core::lint` sub-module
+# depend on crates in `crates/infra/`, `crates/cross-cutting/`, and
+# other `crates/domains/`. The `educore-core::lint` sub-module
 # verifies this at build time. See `docs/build-plan.md` § The
 # No-Gaps Gates.
 #
@@ -20,12 +20,12 @@ resolver = "2"
 # `[workspace.lints]` section, avoiding the duplication that
 # sub-workspaces require.
 members = [
-    "crates/core/*",
+    "crates/infra/*",
     "crates/cross-cutting/*",
     "crates/domains/*",
     "crates/adapters/*",
     "crates/tools/*",
-    "crates/smsengine",
+    "crates/educore",
 ]
 
 [workspace.package]
@@ -33,9 +33,9 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/smsengine/smsengine"
-homepage = "https://smsengine.dev"
-documentation = "https://docs.rs/smsengine"
+repository = "https://github.com/educore/educore"
+homepage = "https://educore.dev"
+documentation = "https://docs.rs/educore"
 readme = "README.md"
 keywords = ["school", "domain-engine", "ddd", "multi-tenant", "education"]
 categories = ["domain-modeling", "data-structures"]
@@ -43,51 +43,51 @@ publish = false
 
 [workspace.dependencies]
 # Umbrella
-smsengine = { path = "crates/smsengine" }
+educore = { path = "crates/educore" }
 
-# core tier (infrastructure — no domain knowledge)
-smsengine-core = { path = "crates/core/engine-core" }
-smsengine-query-derive = { path = "crates/core/query-derive" }
-smsengine-storage = { path = "crates/core/storage" }
+# infra tier (infrastructure — no domain knowledge; was: core/ before 2026-06-09 rename)
+educore-core = { path = "crates/infra/core" }
+educore-query-derive = { path = "crates/infra/query-derive" }
+educore-storage = { path = "crates/infra/storage" }
 
 # cross-cutting tier (cross-domain foundations)
-smsengine-platform = { path = "crates/cross-cutting/platform" }
-smsengine-rbac = { path = "crates/cross-cutting/rbac" }
-smsengine-events = { path = "crates/cross-cutting/events" }
-smsengine-events-domain = { path = "crates/cross-cutting/events-domain" }
-smsengine-settings = { path = "crates/cross-cutting/settings" }
-smsengine-operations = { path = "crates/cross-cutting/operations" }
-smsengine-audit = { path = "crates/cross-cutting/audit" }
+educore-platform = { path = "crates/cross-cutting/platform" }
+educore-rbac = { path = "crates/cross-cutting/rbac" }
+educore-events = { path = "crates/cross-cutting/events" }
+educore-events-domain = { path = "crates/cross-cutting/events-domain" }
+educore-settings = { path = "crates/cross-cutting/settings" }
+educore-operations = { path = "crates/cross-cutting/operations" }
+educore-audit = { path = "crates/cross-cutting/audit" }
 
 # domains tier (the 14 domain crates — only a subset here; the rest
 # live in crates/domains/Cargo.toml which is the sub-workspace manifest)
-smsengine-academic = { path = "crates/domains/academic" }
-smsengine-assessment = { path = "crates/domains/assessment" }
-smsengine-attendance = { path = "crates/domains/attendance" }
-smsengine-cms = { path = "crates/domains/cms" }
-smsengine-communication = { path = "crates/domains/communication" }
-smsengine-documents = { path = "crates/domains/documents" }
-smsengine-facilities = { path = "crates/domains/facilities" }
-smsengine-finance = { path = "crates/domains/finance" }
-smsengine-hr = { path = "crates/domains/hr" }
-smsengine-library = { path = "crates/domains/library" }
+educore-academic = { path = "crates/domains/academic" }
+educore-assessment = { path = "crates/domains/assessment" }
+educore-attendance = { path = "crates/domains/attendance" }
+educore-cms = { path = "crates/domains/cms" }
+educore-communication = { path = "crates/domains/communication" }
+educore-documents = { path = "crates/domains/documents" }
+educore-facilities = { path = "crates/domains/facilities" }
+educore-finance = { path = "crates/domains/finance" }
+educore-hr = { path = "crates/domains/hr" }
+educore-library = { path = "crates/domains/library" }
 
 # adapters tier (port implementations)
-smsengine-storage-postgres = { path = "crates/adapters/storage-postgres" }
-smsengine-storage-mysql = { path = "crates/adapters/storage-mysql" }
-smsengine-storage-sqlite = { path = "crates/adapters/storage-sqlite" }
-smsengine-auth = { path = "crates/adapters/auth" }
-smsengine-event-bus = { path = "crates/adapters/event-bus" }
-smsengine-files = { path = "crates/adapters/files" }
-smsengine-integrations = { path = "crates/adapters/integrations" }
-smsengine-notify = { path = "crates/adapters/notify" }
-smsengine-payment = { path = "crates/adapters/payment" }
+educore-storage-postgres = { path = "crates/adapters/storage-postgres" }
+educore-storage-mysql = { path = "crates/adapters/storage-mysql" }
+educore-storage-sqlite = { path = "crates/adapters/storage-sqlite" }
+educore-auth = { path = "crates/adapters/auth" }
+educore-event-bus = { path = "crates/adapters/event-bus" }
+educore-files = { path = "crates/adapters/files" }
+educore-integrations = { path = "crates/adapters/integrations" }
+educore-notify = { path = "crates/adapters/notify" }
+educore-payment = { path = "crates/adapters/payment" }
 
 # tools tier (dev tooling, not in release)
-smsengine-testkit = { path = "crates/tools/testkit" }
-smsengine-storage-parity = { path = "crates/tools/storage-parity" }
-smsengine-cli = { path = "crates/tools/cli" }
-smsengine-sdk = { path = "crates/tools/sdk" }
+educore-testkit = { path = "crates/tools/testkit" }
+educore-storage-parity = { path = "crates/tools/storage-parity" }
+educore-cli = { path = "crates/tools/cli" }
+educore-sdk = { path = "crates/tools/sdk" }
 
 # Async runtime
 tokio = { version = "1.40", features = ["full"] }

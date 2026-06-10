@@ -63,7 +63,7 @@ The archive's metadata:
 ```yaml
 archive_id: devdb-archive-2026-08-08
 source_database: devdb
-decommission_reason: migration_to_smsengine_engine
+decommission_reason: migration_to_educore_engine
 migration_target_database: devdb_v2
 migration_date: 2026-07-08
 retention_until: 2033-08-08

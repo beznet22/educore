@@ -1,8 +1,8 @@
-# SMSengine Architecture
+# Educore Architecture
 
 ## System Architecture
 
-SMSengine is a hexagonal, domain-driven, event-driven, command-oriented Rust
+Educore is a hexagonal, domain-driven, event-driven, command-oriented Rust
 engine organized as a Cargo workspace.
 
 ```text
@@ -13,7 +13,7 @@ engine organized as a Cargo workspace.
                                       │ invokes commands
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                       Engine Facade (smsengine::Engine)                    │
+│                       Engine Facade (educore::Engine)                    │
 │                                                                          │
 │   students()  attendance()  examinations()  finance()  hr()  ...        │
 │   rbac()  library()  transport()  events()  reports()                   │
@@ -60,7 +60,7 @@ engine organized as a Cargo workspace.
 
 ## DDD Model
 
-SMSengine models a school as a set of bounded contexts. Each context has its
+Educore models a school as a set of bounded contexts. Each context has its
 own aggregates, value objects, domain services, and policies.
 
 ```text
@@ -155,7 +155,7 @@ Concrete dependency rules:
 
 ## Port Architecture
 
-SMSengine defines the following ports in `docs/ports/`:
+Educore defines the following ports in `docs/ports/`:
 
 | Port              | Trait                         | Consumer adapter example                    |
 | ----------------- | ----------------------------- | ------------------------------------------- |
@@ -205,7 +205,7 @@ Event schema: `docs/schemas/event-schema.md`.
 
 ## Multi-Tenancy
 
-Multi-tenancy is **structural** in SMSengine. Every aggregate root contains
+Multi-tenancy is **structural** in Educore. Every aggregate root contains
 `SchoolId`. The engine never queries without a tenant filter, the storage
 adapters are responsible for enforcing tenant isolation through queries, and
 the type system prevents cross-tenant reference by distinguishing `StudentId`
@@ -321,7 +321,7 @@ Example — typed filter chain with scope trait, nested filter, and
 explicit eager load:
 
 ```rust
-use smsengine::students::query::{StudentQueryScopes, StudentRelation, ParentField};
+use educore::students::query::{StudentQueryScopes, StudentRelation, ParentField};
 
 let active = engine
     .students()
@@ -364,32 +364,32 @@ crate in `crates/domains/` may not import from `crates/adapters/` or
 `crates/tools/`, and a crate in `crates/cross-cutting/` may not
 import from `crates/domains/`, `crates/adapters/`, or
 `crates/tools/`. Tier boundaries are enforced at build time by the
-`smsengine-core::lint` sub-module.
+`educore-core::lint` sub-module.
 
 | Tier            | Path                            | Count | Purpose |
 | --------------- | ------------------------------- | ----- | ------- |
-| `core`          | `crates/core/`                  | 3     | Infrastructure: errors, identifiers, value objects, query AST, proc-macro, storage port. Depends on nothing. |
-| `cross-cutting` | `crates/cross-cutting/`         | 7     | Cross-domain foundations: platform, rbac, events envelope, audit, settings, operations, calendar. Depends on `core`. |
-| `domains`       | `crates/domains/`               | 10    | The 10 domain bounded contexts (academic, finance, hr, ...). Depends on `core` and `cross-cutting`. |
-| `adapters`      | `crates/adapters/`              | 9     | Port implementations: 3 storage adapters + 6 port adapters. Depends on `core` and `cross-cutting`. |
+| `infra`         | `crates/infra/`                 | 3     | Infrastructure: errors, identifiers, value objects, query AST, proc-macro, storage port. Depends on nothing. |
+| `cross-cutting` | `crates/cross-cutting/`         | 7     | Cross-domain foundations: platform, rbac, events envelope, audit, settings, operations, calendar. Depends on `infra`. |
+| `domains`       | `crates/domains/`               | 10    | The 10 domain bounded contexts (academic, finance, hr, ...). Depends on `infra` and `cross-cutting`. |
+| `adapters`      | `crates/adapters/`              | 9     | Port implementations: 3 storage adapters + 6 port adapters. Depends on `infra` and `cross-cutting`. |
 | `tools`         | `crates/tools/`                 | 4     | Dev tooling: testkit, storage-parity, cli (binary), sdk. Depends on all of the above. |
-| umbrella        | `crates/smsengine/`             | 1     | Re-exports the public surface of all 34 internal crates. |
+| umbrella        | `crates/educore/`             | 1     | Re-exports the public surface of all 34 internal crates. |
 
 Layered dependency direction (no cycles, no upward deps):
 
 ```text
-core  <-  cross-cutting  <-  domains  <-  tools
+infra  <-  cross-cutting  <-  domains  <-  tools
                           ^
-                          +--  adapters  (also depends on core + cross-cutting)
+                          +--  adapters  (also depends on infra + cross-cutting)
 ```
 
-Internal crate directories are named without the `smsengine-`
+Internal crate directories are named without the `educore-`
 prefix (e.g. `crates/domains/academic/`, `crates/adapters/storage-postgres/`),
 while the published package name keeps the prefix
-(`smsengine-academic`, `smsengine-storage-postgres`). The umbrella
+(`educore-academic`, `educore-storage-postgres`). The umbrella
 re-exports each internal crate under its short name, so consumers
-write `smsengine::academic::commands::*` and never need to know the
-internal `smsengine-` prefix on the package name.
+write `educore::academic::commands::*` and never need to know the
+internal `educore-` prefix on the package name.
 
 See `AGENTS.md` § "Tier System" for the full rules, and
 `docs/build-plan.md` § "The No-Gaps Gates" for how tier boundaries

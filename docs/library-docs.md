@@ -1,4 +1,4 @@
-# SMSengine Library Documentation
+# Educore Library Documentation
 
 This document is the consumer-facing entry point. It demonstrates how a
 consumer application constructs an engine, plugs in adapters, and drives the
@@ -7,7 +7,7 @@ school domain.
 ## Construction
 
 ```rust
-use smsengine::prelude::*;
+use educore::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,7 +41,7 @@ let tenant = TenantContext::new(session.school_id(), session.user_id());
 ## Calling a Command
 
 ```rust
-use smsengine::academic::commands::*;
+use educore::academic::commands::*;
 
 let student = engine
     .students()
@@ -71,7 +71,7 @@ println!("Admitted {}", student.full_name());
 
 Domain records are exposed to the query layer through the
 `#[derive(DomainQuery)]` procedural macro, which lives in the
-`smsengine-query-derive` crate. The macro emits a typed `*Field` enum
+`educore-query-derive` crate. The macro emits a typed `*Field` enum
 and a `*QueryBuilder` state struct per aggregate — there is no
 hand-written `StudentField` in the consumer codebase, the type is
 generated from the struct definition on every compile.
@@ -84,7 +84,7 @@ but semantically neutral builder; humans author the vocabulary.
 ### A typed, scoped query
 
 ```rust
-use smsengine::academic::query::*;
+use educore::academic::query::*;
 
 let page = engine
     .students()
@@ -152,7 +152,7 @@ for s in students {
 ## Subscribing to Events
 
 ```rust
-use smsengine::events::*;
+use educore::events::*;
 
 let mut sub = engine
     .events()

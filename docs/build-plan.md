@@ -1,4 +1,4 @@
-# SMSengine Build Plan
+# Educore Build Plan
 
 The engine is implemented in **17 sequential phases** (Phase 0..17). Each
 phase has explicit exit criteria and updates the Coverage Matrix
@@ -13,24 +13,24 @@ this plan targets one or more tiers:
 
 | Phase | Tiers | Crates |
 | --- | --- | --- |
-| 0 | core, adapters, tools | `smsengine-core`, `smsengine-query-derive`, `smsengine-storage`, `smsengine-storage-postgres`, `smsengine-storage-parity` |
-| 1 | adapters | `smsengine-storage-mysql`, `smsengine-storage-sqlite` |
-| 2 | cross-cutting | `smsengine-platform`, `smsengine-rbac`, `smsengine-events`, `smsengine-event-bus`, `smsengine-audit` |
+| 0 | infra, adapters, tools | `educore-core`, `educore-query-derive`, `educore-storage`, `educore-storage-postgres`, `educore-storage-parity` |
+| 1 | adapters | `educore-storage-mysql`, `educore-storage-sqlite` |
+| 2 | cross-cutting | `educore-platform`, `educore-rbac`, `educore-events`, `educore-event-bus`, `educore-audit` |
 | 3-13 | domains | one per phase (academic, assessment, attendance, hr, finance, facilities, library, communication, documents, cms, settings + operations, events-domain) |
-| 14 | cross-cutting, domains | `smsengine-settings`, `smsengine-operations` |
-| 15 | adapters | `smsengine-auth`, `smsengine-notify`, `smsengine-payment`, `smsengine-files`, `smsengine-integrations` |
-| 16 | tools | `smsengine-testkit`, `smsengine-storage-parity` (full suite), `smsengine-sdk`, `smsengine-cli` |
+| 14 | cross-cutting, domains | `educore-settings`, `educore-operations` |
+| 15 | adapters | `educore-auth`, `educore-notify`, `educore-payment`, `educore-files`, `educore-integrations` |
+| 16 | tools | `educore-testkit`, `educore-storage-parity` (full suite), `educore-sdk`, `educore-cli` |
 | 17 | (production hardening only — no new crates) | n/a |
 
 On disk the tier lives one level above each crate's source tree, e.g.
-the `smsengine-core` package is at `crates/core/engine-core/src/`, the
-`smsengine-academic` package is at `crates/domains/academic/src/`,
-and the `smsengine-storage-postgres` package is at
+the `educore-core` package is at `crates/infra/core/src/`, the
+`educore-academic` package is at `crates/domains/academic/src/`,
+and the `educore-storage-postgres` package is at
 `crates/adapters/storage-postgres/src/`. Package names are unchanged
 across the restructure — only directory paths moved.
 
 The layered dependency direction is enforced by the
-`smsengine-core::lint` sub-module. See
+`educore-core::lint` sub-module. See
 [AGENTS.md § Tier System](../../AGENTS.md#tier-system).
 
 ## The 17 phases
@@ -57,9 +57,9 @@ The layered dependency direction is enforced by the
 ## Pre-implementation state
 
 All 269 markdown files are spec'd. The workspace has **34 crates** (29
-from the original scaffold + 5 new: `smsengine-audit`,
-`smsengine-operations`, `smsengine-testkit`, `smsengine-cli`,
-`smsengine-storage-parity`). Domain spec cleanup is complete: all
+from the original scaffold + 5 new: `educore-audit`,
+`educore-operations`, `educore-testkit`, `educore-cli`,
+`educore-storage-parity`). Domain spec cleanup is complete: all
 legacy `sm_` / `fm_` / `infix_` / `front_` / `check_` / `un_` table
 references have been removed from `docs/specs/` and replaced with
 engine `<domain>_<aggregate>` names.
@@ -70,7 +70,7 @@ The runtime DDL emission flow is documented in
 **Design contract** (`docs/specs/<domain>/tables.md`) → **Type
 contract** (`crates/domains/<domain>/src/aggregate.rs`) → **Machine contract**
 (`crates/domains/<domain>/src/entities.rs`, macro-emitted AST) → **Adapter
-emission** (`smsengine-storage-<db>`) → **Consumer startup**
+emission** (`educore-storage-<db>`) → **Consumer startup**
 (`storage.create_schema().await`).
 
 Migrations live in `migrations/engine/` (3 dialect files for the 6
@@ -90,8 +90,8 @@ are emitted from the macro AST at runtime, not from `.sql` files.
 
 ## Phase 0 — Foundation: `core` + macro + storage port + PG adapter + outbox e2e
 
-**Deliverables.** `smsengine-core`, `smsengine-query-derive`,
-`smsengine-storage` (port trait only), `smsengine-storage-postgres`
+**Deliverables.** `educore-core`, `educore-query-derive`,
+`educore-storage` (port trait only), `educore-storage-postgres`
 (full impl). The first end-to-end test passes: create schema, insert
 one outbox row, read it back, verify invariants.
 
@@ -102,7 +102,7 @@ ADR-015 § "MSRV floor conflict resolution".
 
 **Tasks.**
 
-1. `smsengine-core`: `errors.rs` (`DomainError` via `thiserror`),
+1. `educore-core`: `errors.rs` (`DomainError` via `thiserror`),
    `ids.rs` (`SchoolId`, `UserId`, `EventId`, `CorrelationId`,
    `Source` — `UuidV7`), `value_objects.rs` (`Timestamp`, `Version`,
    `Etag`, `ActiveStatus`), `clock.rs` (`Clock` trait + `SystemClock`
@@ -110,16 +110,16 @@ ADR-015 § "MSRV floor conflict resolution".
    deterministic test backend), `tenant.rs` (`TenantContext`), and
    `query.rs` (the `EntityDescriptor` AST types consumed by the
    macro).
-2. `smsengine-query-derive`: the `#[derive(DomainQuery)]` proc macro.
+2. `educore-query-derive`: the `#[derive(DomainQuery)]` proc macro.
    Reads the struct's fields, field types, `#[domain_query(...)]`
    attributes, and emits an `EntityDescriptor { table, columns,
    indexes, foreign_keys, rls }`. Emits a `__spec_coverage__` test
    module on every `#[derive(DomainQuery)]` (see § [The No-Gaps Gates](#the-no-gaps-gates)).
-3. `smsengine-storage`: the `StorageAdapter` port trait
+3. `educore-storage`: the `StorageAdapter` port trait
    (`create_schema`, `apply_command`, `query`, `begin_tx`,
    `commit_tx`, `rollback_tx`) plus the sub-ports `Outbox`,
    `AuditLog`, `Idempotency`, `EventLog` (see `docs/ports/storage.md`).
-4. `smsengine-storage-postgres`: full impl. `include_str!`s
+4. `educore-storage-postgres`: full impl. `include_str!`s
    `migrations/engine/0000_engine_core.postgres.sql` for the 6
    cross-cutting tables. Walks the macro-emitted AST to render the
    ~310 domain tables at `create_schema()` time. RLS policies via
@@ -135,7 +135,7 @@ ADR-015 § "MSRV floor conflict resolution".
 **Exit criteria.**
 
 1. `cargo build --workspace` green.
-2. `cargo test -p smsengine-storage-postgres` green; the outbox
+2. `cargo test -p educore-storage-postgres` green; the outbox
    e2e test passes.
 3. The outbox DDL emitted by the adapter byte-matches
    `migrations/engine/0000_engine_core.postgres.sql`.
@@ -163,18 +163,18 @@ macro`, `StorageAdapter port`.
 
 ## Phase 1 — Adapter parity (MySQL + SQLite)
 
-**Deliverables.** `smsengine-storage-mysql`, `smsengine-storage-sqlite`.
+**Deliverables.** `educore-storage-mysql`, `educore-storage-sqlite`.
 The same outbox scenario from Phase 0 runs in all three adapters.
 
 **Tasks.**
 
-1. `smsengine-storage-mysql`: full impl. `include_str!`s
+1. `educore-storage-mysql`: full impl. `include_str!`s
    `migrations/engine/0000_engine_core.mysql.sql`. `MySQL 8.0+`
    `utf8mb4_unicode_ci`, `ENGINE=InnoDB`, `JSON`, `CHAR(36)`,
    backtick identifier quoting. RLS not native — emulate via session
    variable `SET @app_tenant_id = ?` + `WHERE school_id = @app_tenant_id`
    on every query (per `docs/schemas/sql-dialects/mysql.md`).
-2. `smsengine-storage-sqlite`: full impl. `include_str!`s
+2. `educore-storage-sqlite`: full impl. `include_str!`s
    `migrations/engine/0000_engine_core.sqlite.sql`. `TEXT` with
    `CHECK(length() = 36)` for UUIDs, `INTEGER` for booleans, ISO
    8601 `TEXT` for timestamps, no RLS, no schema namespaces. JSON
@@ -187,8 +187,8 @@ The same outbox scenario from Phase 0 runs in all three adapters.
 
 **Exit criteria.**
 
-1. `cargo test -p smsengine-storage-mysql` green.
-2. `cargo test -p smsengine-storage-sqlite` green.
+1. `cargo test -p educore-storage-mysql` green.
+2. `cargo test -p educore-storage-sqlite` green.
 3. The cross-adapter test passes on all three adapters.
 4. `cargo test --workspace` green.
 
@@ -209,26 +209,26 @@ this phase flips 12 rows.)
 
 ## Phase 2 — Cross-cutting foundations: `platform` + `rbac` + `events` + `audit`
 
-**Deliverables.** `smsengine-platform`, `smsengine-rbac`,
-`smsengine-events`, `smsengine-event-bus`, `smsengine-audit`. The 6
+**Deliverables.** `educore-platform`, `educore-rbac`,
+`educore-events`, `educore-event-bus`, `educore-audit`. The 6
 cross-cutting tables (`outbox`, `audit_log`, `event_log`,
 `idempotency`, `schema_registry`, `system_user`) are all exercised
 end-to-end.
 
 **Tasks.**
 
-1. `smsengine-platform`: `School`, `User`, `SchoolId`, `UserId`,
+1. `educore-platform`: `School`, `User`, `SchoolId`, `UserId`,
    `TenantContext`. Spec is in `docs/specs/platform/`.
-2. `smsengine-rbac`: `Capability`, `Role`, `Permission`, the
+2. `educore-rbac`: `Capability`, `Role`, `Permission`, the
    capability check port, the default role catalog, `is_replicated`
    flag for distributed deployments. Spec is in `docs/specs/rbac/`.
-3. `smsengine-events`: the **envelope** crate. `DomainEvent` trait,
+3. `educore-events`: the **envelope** crate. `DomainEvent` trait,
    `EventEnvelope` (event_id, correlation_id, causation_id, occurred_at,
    payload), `EventBus` trait. **Not** the calendar domain (that's
-   `smsengine-events-domain` in Phase 13).
-4. `smsengine-event-bus`: in-process, NATS, Redis impls behind the
+   `educore-events-domain` in Phase 13).
+4. `educore-event-bus`: in-process, NATS, Redis impls behind the
    `EventBus` port (per `docs/ports/event-bus.md`).
-5. `smsengine-audit`: the audit log writer
+5. `educore-audit`: the audit log writer
    (`AuditLogEntry { actor, action, target, before, after, occurred_at,
    correlation_id }`), retention policies (configurable
    `retention_days`; engine emits a `retention_sweep_due` event when
@@ -271,7 +271,7 @@ catalogs.
 
 ## Phase 3 — Academic domain (first vertical slice)
 
-**Deliverables.** `smsengine-academic`. The largest domain, exercises
+**Deliverables.** `educore-academic`. The largest domain, exercises
 the most code paths (student lifecycle, enrollment, promotion, class/
 section management, subject assignment, academic year rollover).
 
@@ -289,7 +289,7 @@ section management, subject assignment, academic year rollover).
    `docs/commands/academic.md`. Each emits the events listed in
    `docs/specs/academic/events.md` and `docs/events/academic.md`.
 4. Repository port in `repository.rs`; the per-backend
-   `smsengine-storage-<db>` crates provide the impl.
+   `educore-storage-<db>` crates provide the impl.
 5. Integration test: end-to-end vertical slice — admit a student →
    assign to class/section → record attendance (via a stub command;
    full attendance impl is Phase 5) → mark an exam (stub; full
@@ -306,8 +306,8 @@ section management, subject assignment, academic year rollover).
 3. Every event in `docs/events/academic.md` has a Rust enum variant.
 4. The vertical-slice integration test passes against PG, MySQL, and
    SQLite.
-5. `cargo test -p smsengine-academic` green.
-6. `cargo clippy -p smsengine-academic --all-targets -- -D warnings`
+5. `cargo test -p educore-academic` green.
+6. `cargo clippy -p educore-academic --all-targets -- -D warnings`
    green.
 
 **Coverage matrix updates.** All `academic_*` aggregate, command,
@@ -333,7 +333,7 @@ and event rows. (One row per aggregate in
 
 ## Phase 4 — Assessment
 
-**Deliverables.** `smsengine-assessment`. Exams, marks, results,
+**Deliverables.** `educore-assessment`. Exams, marks, results,
 online exams, seat plans, admit cards, report cards.
 
 **Tasks.**
@@ -344,7 +344,7 @@ online exams, seat plans, admit cards, report cards.
 2. Commands per `docs/commands/assessment.md`; events per
    `docs/events/assessment.md`.
 3. Services: result computation (GPA, grade, merit position),
-   report-card PDF generation (delegated to `smsengine-files` port).
+   report-card PDF generation (delegated to `educore-files` port).
 4. Integration test: schedule an exam, enter marks, compute result,
    publish report card. Verify outbox + audit + RLS.
 
@@ -354,7 +354,7 @@ online exams, seat plans, admit cards, report cards.
    Rust struct + tests.
 2. The result-computation service has a unit test per grading rule
    in `docs/specs/assessment/services.md`.
-3. `cargo test -p smsengine-assessment` green.
+3. `cargo test -p educore-assessment` green.
 
 **Coverage matrix updates.** All `assessment_*` rows.
 
@@ -366,7 +366,7 @@ driven fixtures.
 
 ## Phase 5 — Attendance
 
-**Deliverables.** `smsengine-attendance`. Student, staff, subject,
+**Deliverables.** `educore-attendance`. Student, staff, subject,
 exam attendance.
 
 **Tasks.**
@@ -375,7 +375,7 @@ exam attendance.
    `StudentAttendance`, `StaffAttendance`, `SubjectAttendance`,
    `ExamAttendance`.
 2. Bulk-marking command (CSV import + per-class UI). The
-   `smsengine-storage` bulk-insert path is exercised here for the
+   `educore-storage` bulk-insert path is exercised here for the
    first time at scale.
 3. Integration test: bulk-mark attendance for a class-section of 200
    students in a single command. Verify outbox emits one
@@ -395,7 +395,7 @@ add a benchmark in `tests/benches/`.
 
 ## Phase 6 — HR
 
-**Deliverables.** `smsengine-hr`. Staff, department, designation,
+**Deliverables.** `educore-hr`. Staff, department, designation,
 leave, payroll.
 
 **Tasks.**
@@ -404,7 +404,7 @@ leave, payroll.
    `Staff`, `Department`, `Designation`, `LeaveType`, `LeaveRequest`,
    `Payroll`.
 2. Leave accrual service; payroll computation service (depends on
-   `smsengine-finance` for the chart-of-accounts write — mock that
+   `educore-finance` for the chart-of-accounts write — mock that
    dep in tests).
 3. Integration test: hire a staff member, request leave, approve it,
    run payroll. Verify outbox + audit + RLS.
@@ -423,7 +423,7 @@ responsibility.
 
 ## Phase 7 — Finance
 
-**Deliverables.** `smsengine-finance`. The largest spec
+**Deliverables.** `educore-finance`. The largest spec
 (~5,567 lines). Fees (group, type, master, assign, discount,
 invoice, installment, payment), bank (account, statement), expense,
 income, wallet, payroll accounting.
@@ -452,7 +452,7 @@ income, wallet, payroll accounting.
    (proptest) — not just example-based.
 3. The carry-forward service has a unit test per rule in
    `docs/specs/finance/services.md`.
-4. `cargo test -p smsengine-finance` green.
+4. `cargo test -p educore-finance` green.
 
 **Coverage matrix updates.** All `finance_*` rows.
 
@@ -465,7 +465,7 @@ cents/paisa). The `as` ban (per `AGENTS.md`) is enforced
 
 ## Phase 8 — Facilities
 
-**Deliverables.** `smsengine-facilities`. Dormitory, room, transport
+**Deliverables.** `educore-facilities`. Dormitory, room, transport
 (route, vehicle), inventory (item, category, store, issue, receive,
 sell), supplier.
 
@@ -493,7 +493,7 @@ write lock.
 
 ## Phase 9 — Library
 
-**Deliverables.** `smsengine-library`. Book, book category, library
+**Deliverables.** `educore-library`. Book, book category, library
 member, book issue, book return, fine.
 
 **Tasks.**
@@ -512,7 +512,7 @@ member, book issue, book return, fine.
 
 ## Phase 10 — Communication
 
-**Deliverables.** `smsengine-communication`. Notice, complaint,
+**Deliverables.** `educore-communication`. Notice, complaint,
 chat message, email log, SMS log, notification setting.
 
 **Tasks.**
@@ -534,7 +534,7 @@ chat message, email log, SMS log, notification setting.
 
 ## Phase 11 — Documents
 
-**Deliverables.** `smsengine-documents`. Form download, postal
+**Deliverables.** `educore-documents`. Form download, postal
 dispatch, postal receive.
 
 **Tasks.**
@@ -554,8 +554,8 @@ dispatch, postal receive.
 
 ## Phase 12 — CMS
 
-**Deliverables.** `smsengine-cms`. Page, news, notice (distinct
-from `smsengine-communication`'s `Notice`), testimonial.
+**Deliverables.** `educore-cms`. Page, news, notice (distinct
+from `educore-communication`'s `Notice`), testimonial.
 
 **Tasks.**
 
@@ -579,8 +579,8 @@ explicitly allow it (per `docs/schemas/tenancy-schema.md`).
 
 ## Phase 13 — Events domain (calendar)
 
-**Deliverables.** `smsengine-events-domain`. **Distinct** from
-`smsengine-events` (the envelope crate from Phase 2). This is the
+**Deliverables.** `educore-events-domain`. **Distinct** from
+`educore-events` (the envelope crate from Phase 2). This is the
 calendar domain: `CalendarEvent`, `Holiday`, `Incident`, `Weekend`.
 
 **Tasks.**
@@ -604,13 +604,13 @@ this explicitly in both `lib.rs` headers and in `AGENTS.md`.
 
 ## Phase 14 — Settings + Operations
 
-**Deliverables.** `smsengine-settings`, `smsengine-operations`.
+**Deliverables.** `educore-settings`, `educore-operations`.
 
 **Tasks.**
 
-1. `smsengine-settings`: per-school configuration, language phrases,
+1. `educore-settings`: per-school configuration, language phrases,
    base setups. Aggregates per `docs/specs/settings/aggregates.md`.
-2. `smsengine-operations` (new in v1): school-day operations —
+2. `educore-operations` (new in v1): school-day operations —
    `AcademicSession`, `BellSchedule`, `Substitution`,
    `TimetableChange`, `DailyDiary`. Aggregates per
    `docs/specs/operations/aggregates.md`.
@@ -625,22 +625,22 @@ rows.
 
 ## Phase 15 — Port adapters
 
-**Deliverables.** `smsengine-auth`, `smsengine-notify`,
-`smsengine-payment`, `smsengine-files`, `smsengine-integrations`.
+**Deliverables.** `educore-auth`, `educore-notify`,
+`educore-payment`, `educore-files`, `educore-integrations`.
 Port trait **plus** one reference impl per port.
 
 **Tasks.**
 
-1. `smsengine-auth`: the `AuthProvider` port
+1. `educore-auth`: the `AuthProvider` port
    (per `docs/ports/authentication.md`) + a `JwtAuthProvider`
    reference impl.
-2. `smsengine-notify`: the `NotificationProvider` port + email and
+2. `educore-notify`: the `NotificationProvider` port + email and
    SMS reference impls.
-3. `smsengine-payment`: the `PaymentProvider` port + a Stripe
+3. `educore-payment`: the `PaymentProvider` port + a Stripe
    reference impl.
-4. `smsengine-files`: the `FileStorage` port + S3 and local
+4. `educore-files`: the `FileStorage` port + S3 and local
    reference impls.
-5. `smsengine-integrations`: the `IntegrationGateway` port + LMS
+5. `educore-integrations`: the `IntegrationGateway` port + LMS
    and video-conferencing reference impls.
 6. For each port, an integration test that wires a real reference
    impl against a docker-compose stack (mailhog, localstack S3,
@@ -672,33 +672,33 @@ port`. Plus all reference-impl test rows.
 
 ## Phase 16 — Test infrastructure + SDK
 
-**Deliverables.** `smsengine-testkit`, `smsengine-storage-parity`,
-`smsengine-sdk`, `smsengine-cli`.
+**Deliverables.** `educore-testkit`, `educore-storage-parity`,
+`educore-sdk`, `educore-cli`.
 
 **Tasks.**
 
-1. `smsengine-testkit`: in-memory impls of all 6 ports
+1. `educore-testkit`: in-memory impls of all 6 ports
    (`StorageAdapter`, `AuthProvider`, `NotificationProvider`,
    `PaymentProvider`, `FileStorage`, `EventBus`). Consumer tests use
    these to run domain commands without docker.
-2. `smsengine-storage-parity`: a cross-adapter parity test suite
+2. `educore-storage-parity`: a cross-adapter parity test suite
    that runs the same scenario against PG, MySQL, SQLite, and the
    in-memory testkit impl, asserting identical observable behavior
    (modulo documented dialect differences).
-3. `smsengine-sdk`: a high-level consumer facade — `Engine::builder()`
+3. `educore-sdk`: a high-level consumer facade — `Engine::builder()`
    wires the umbrella crate's re-exports into a single
    configuration surface. The SDK is the public face of the engine
    for the consumer (`docs/library-docs.md`).
-4. `smsengine-cli`: a sample binary demonstrating daily operations
+4. `educore-cli`: a sample binary demonstrating daily operations
    (admit a student, mark attendance, record a payment) for
    developer ergonomics and dogfooding.
 5. A consumer-facing integration test in
-   `crates/smsengine/tests/consumer_e2e.rs` that uses the SDK +
+   `crates/educore/tests/consumer_e2e.rs` that uses the SDK +
    testkit to run a full admission workflow without docker.
 
 **Exit criteria.**
 
-1. `smsengine-testkit` ports compile and pass their own unit tests.
+1. `educore-testkit` ports compile and pass their own unit tests.
 2. The parity suite runs in <60 s on a developer laptop and is
    green on all four backends.
 3. The CLI binary builds and the three sample commands work
@@ -776,7 +776,7 @@ The matrix has the following columns:
 | `id`     | string          | Stable identifier, e.g. `outbox_ddl_pg` |
 | `item`   | string          | Human-readable name |
 | `spec`   | path (string)   | Spec doc that defines the item |
-| `crate`  | string          | `smsengine-<name>` package that owns the impl |
+| `crate`  | string          | `educore-<name>` package that owns the impl |
 | `phase`  | integer 0..17   | Build-plan phase that delivers the impl |
 | `status` | enum            | `Pending` \| `Implemented` \| `Tested` \| `Deprecated` |
 | `tests`  | path (string)?   | Integration-test path that exercises the impl (set when status >= `Tested`) |
@@ -785,14 +785,14 @@ The matrix has the following columns:
 The TOML schema is grouped by item kind:
 
 ```toml
-[[row]]   id = "outbox_ddl_pg"        item = "outbox table DDL (PG)"        spec = "migrations/engine/0000_engine_core.postgres.sql" crate = "smsengine-storage-postgres" phase = 0  status = "Pending"
-[[row]]   id = "outbox_ddl_mysql"     item = "outbox table DDL (MySQL)"     spec = "migrations/engine/0000_engine_core.mysql.sql"   crate = "smsengine-storage-mysql"    phase = 1  status = "Pending"
-[[row]]   id = "outbox_ddl_sqlite"    item = "outbox table DDL (SQLite)"    spec = "migrations/engine/0000_engine_core.sqlite.sql"  crate = "smsengine-storage-sqlite"   phase = 1  status = "Pending"
-[[row]]   id = "audit_log_ddl_pg"     item = "audit_log table DDL (PG)"     spec = "migrations/engine/0000_engine_core.postgres.sql" crate = "smsengine-audit"            phase = 2  status = "Pending"
+[[row]]   id = "outbox_ddl_pg"        item = "outbox table DDL (PG)"        spec = "migrations/engine/0000_engine_core.postgres.sql" crate = "educore-storage-postgres" phase = 0  status = "Pending"
+[[row]]   id = "outbox_ddl_mysql"     item = "outbox table DDL (MySQL)"     spec = "migrations/engine/0000_engine_core.mysql.sql"   crate = "educore-storage-mysql"    phase = 1  status = "Pending"
+[[row]]   id = "outbox_ddl_sqlite"    item = "outbox table DDL (SQLite)"    spec = "migrations/engine/0000_engine_core.sqlite.sql"  crate = "educore-storage-sqlite"   phase = 1  status = "Pending"
+[[row]]   id = "audit_log_ddl_pg"     item = "audit_log table DDL (PG)"     spec = "migrations/engine/0000_engine_core.postgres.sql" crate = "educore-audit"            phase = 2  status = "Pending"
 # ... 222 more rows ...
-[[row]]   id = "academic_students_aggregate"   item = "academic_students aggregate"   spec = "docs/specs/academic/aggregates.md"   crate = "smsengine-academic"   phase = 3  status = "Pending"
-[[row]]   id = "student_admitted_event"        item = "StudentAdmitted event"         spec = "docs/events/academic.md"             crate = "smsengine-academic"   phase = 3  status = "Pending"
-[[row]]   id = "admit_student_command"         item = "AdmitStudent command"          spec = "docs/commands/academic.md"           crate = "smsengine-academic"   phase = 3  status = "Pending"
+[[row]]   id = "academic_students_aggregate"   item = "academic_students aggregate"   spec = "docs/specs/academic/aggregates.md"   crate = "educore-academic"   phase = 3  status = "Pending"
+[[row]]   id = "student_admitted_event"        item = "StudentAdmitted event"         spec = "docs/events/academic.md"             crate = "educore-academic"   phase = 3  status = "Pending"
+[[row]]   id = "admit_student_command"         item = "AdmitStudent command"          spec = "docs/commands/academic.md"           crate = "educore-academic"   phase = 3  status = "Pending"
 # ... etc
 ```
 
@@ -864,12 +864,12 @@ Conventions for the test files:
 | `crates/domains/<d>/tests/value_objects.rs`    | Value-object validation from `value-objects.md` |
 | `crates/domains/<d>/tests/workflows.rs`        | Multi-aggregate workflows from `workflows.md`   |
 
-### 2. Cross-reference lint (`smsengine-core::lint`)
+### 2. Cross-reference lint (`educore-core::lint`)
 
-A sub-module of `smsengine-core` (not a separate crate), enabled
-via the `lint` Cargo feature flag in `smsengine-core`. The lint
-source lives at `crates/core/engine-core/src/lint.rs` (the
-`smsengine-core` package was renamed and moved under the `core/`
+A sub-module of `educore-core` (not a separate crate), enabled
+via the `lint` Cargo feature flag in `educore-core`. The lint
+source lives at `crates/infra/core/src/lint.rs` (the
+`educore-core` package was renamed and moved under the `infra/`
 tier in the directory restructure; the package name is unchanged).
 The lint sub-module is a CLI binary that:
 
@@ -907,11 +907,11 @@ The lint sub-module is a CLI binary that:
      catalog that doesn't exist.
 
 This is the **per-crate gate** — it runs in CI (and locally via
-`cargo run -p smsengine-core --bin lint --features lint`) and
+`cargo run -p educore-core --bin lint --features lint`) and
 catches missing handlers, anti-patterns, reverse-direction drift,
 and matrix lies.
 
-Putting the lint inside `smsengine-core` (rather than as a separate
+Putting the lint inside `educore-core` (rather than as a separate
 crate) keeps the workspace at 34 crates and makes the lint
 implementation a Phase 0 deliverable alongside the other core
 primitives.
@@ -937,7 +937,7 @@ This is the **per-PR gate** — it runs on every pull request.
 | Layer  | Gate                                   | When it runs    | What it catches |
 | ------ | -------------------------------------- | --------------- | --------------- |
 | Domain | hand-written tests in `crates/domains/<d>/tests/` | `cargo test`    | Drift between spec and actual behavior |
-| Crate  | `smsengine-core::lint` (feature-gated) | `cargo build` (CI) | Missing handlers, anti-patterns, reverse drift, matrix lies |
+| Crate  | `educore-core::lint` (feature-gated) | `cargo build` (CI) | Missing handlers, anti-patterns, reverse drift, matrix lies |
 | Repo   | TOML matrix diff in CI                 | every PR        | Spec or impl change without matrix update |
 
 Together, the three gates make it impossible to merge a PR that
@@ -988,7 +988,7 @@ code, or claims implementation without updating the matrix.
 - [`docs/code-standards.md`](code-standards.md) — the engineering
   rules every implementation must follow.
 - [`docs/query_layer.md`](query_layer.md) — the macro-driven query
-  specification consumed by `smsengine-query-derive`.
+  specification consumed by `educore-query-derive`.
 - [`docs/specs/<domain>/overview.md`](specs/) — per-domain
   specifications (15 domains, 11 files each).
 - [`docs/ports/*.md`](ports/) — port contracts (7 ports).

@@ -1,29 +1,29 @@
 # AGENTS.md
 
 Orientation for AI agents and human developers working in the
-**SMSengine** repository. The brand is **SMSengine**; the package
-namespace is **`smsengine`**; internal crates publish under
-**`smsengine-<name>`**. Use these forms everywhere. No legacy names
+**Educore** repository. The brand is **Educore**; the package
+namespace is **`educore`**; internal crates publish under
+**`educore-<name>`**. Use these forms everywhere. No legacy names
 are permitted in new code, comments, commit messages, or
 documentation.
 
 ## Project Identity
 
-- **Brand (prose):** SMSengine
-- **Umbrella package:** `smsengine` (`crates/smsengine/`)
-- **Internal package names:** `smsengine-<name>` (e.g. `smsengine-academic`)
+- **Brand (prose):** Educore
+- **Umbrella package:** `educore` (`crates/educore/`)
+- **Internal package names:** `educore-<name>` (e.g. `educore-academic`)
 - **Internal crate directories:** `crates/<tier>/<name>/` (the
-  `smsengine-` prefix is dropped from the directory name; the
+  `educore-` prefix is dropped from the directory name; the
   package name and the directory name are intentionally different.
   Each internal crate lives under a tier directory that encodes
   its purpose — see [§ Tier System](#tier-system) below)
-- **Public package registry path:** `smsengine::*`
+- **Public package registry path:** `educore::*`
 
 ## Workspace Layout
 
 The 34 crates are organized into 5 tiers + 1 umbrella. Tier
 boundaries are enforced at the filesystem level (the
-`smsengine-core::lint` sub-module verifies that a crate in
+`educore-core::lint` sub-module verifies that a crate in
 `crates/domains/` does not import from `crates/adapters/` or
 `crates/tools/`). Each tier has a clear purpose documented in
 [§ Tier System](#tier-system) below.
@@ -32,45 +32,45 @@ boundaries are enforced at the filesystem level (the
 <workspace-root>/                   <-- repository root on disk
 ├── Cargo.toml                       <-- virtual workspace root (5-tier glob pattern)
 ├── crates/
-│   ├── core/                        <-- core tier (infrastructure, no domain knowledge)
-│   │   ├── engine-core/             <-- package: smsengine-core
-│   │   ├── query-derive/            <-- package: smsengine-query-derive
-│   │   └── storage/                 <-- package: smsengine-storage
+│   ├── infra/                       <-- infra tier (infrastructure, no domain knowledge)
+│   │   ├── core/                    <-- package: educore-core
+│   │   ├── query-derive/            <-- package: educore-query-derive
+│   │   └── storage/                 <-- package: educore-storage
 │   ├── cross-cutting/               <-- cross-cutting tier (cross-domain foundations)
-│   │   ├── platform/                <-- package: smsengine-platform
-│   │   ├── rbac/                    <-- package: smsengine-rbac
-│   │   ├── events/                  <-- package: smsengine-events (envelope)
-│   │   ├── events-domain/           <-- package: smsengine-events-domain (calendar)
-│   │   ├── settings/                <-- package: smsengine-settings
-│   │   ├── operations/              <-- package: smsengine-operations
-│   │   └── audit/                   <-- package: smsengine-audit
+│   │   ├── platform/                <-- package: educore-platform
+│   │   ├── rbac/                    <-- package: educore-rbac
+│   │   ├── events/                  <-- package: educore-events (envelope)
+│   │   ├── events-domain/           <-- package: educore-events-domain (calendar)
+│   │   ├── settings/                <-- package: educore-settings
+│   │   ├── operations/              <-- package: educore-operations
+│   │   └── audit/                   <-- package: educore-audit
 │   ├── domains/                     <-- domains tier (the 10 domain bounded contexts)
-│   │   ├── academic/                <-- package: smsengine-academic
-│   │   ├── assessment/              <-- package: smsengine-assessment
-│   │   ├── attendance/              <-- package: smsengine-attendance
-│   │   ├── cms/                     <-- package: smsengine-cms
-│   │   ├── communication/           <-- package: smsengine-communication
-│   │   ├── documents/               <-- package: smsengine-documents
-│   │   ├── facilities/              <-- package: smsengine-facilities
-│   │   ├── finance/                 <-- package: smsengine-finance
-│   │   ├── hr/                      <-- package: smsengine-hr
-│   │   └── library/                 <-- package: smsengine-library
+│   │   ├── academic/                <-- package: educore-academic
+│   │   ├── assessment/              <-- package: educore-assessment
+│   │   ├── attendance/              <-- package: educore-attendance
+│   │   ├── cms/                     <-- package: educore-cms
+│   │   ├── communication/           <-- package: educore-communication
+│   │   ├── documents/               <-- package: educore-documents
+│   │   ├── facilities/              <-- package: educore-facilities
+│   │   ├── finance/                 <-- package: educore-finance
+│   │   ├── hr/                      <-- package: educore-hr
+│   │   └── library/                 <-- package: educore-library
 │   ├── adapters/                    <-- adapters tier (port implementations)
-│   │   ├── storage-postgres/        <-- package: smsengine-storage-postgres
-│   │   ├── storage-mysql/           <-- package: smsengine-storage-mysql
-│   │   ├── storage-sqlite/          <-- package: smsengine-storage-sqlite
-│   │   ├── auth/                    <-- package: smsengine-auth
-│   │   ├── event-bus/               <-- package: smsengine-event-bus
-│   │   ├── files/                   <-- package: smsengine-files
-│   │   ├── integrations/            <-- package: smsengine-integrations
-│   │   ├── notify/                  <-- package: smsengine-notify
-│   │   └── payment/                 <-- package: smsengine-payment
+│   │   ├── storage-postgres/        <-- package: educore-storage-postgres
+│   │   ├── storage-mysql/           <-- package: educore-storage-mysql
+│   │   ├── storage-sqlite/          <-- package: educore-storage-sqlite
+│   │   ├── auth/                    <-- package: educore-auth
+│   │   ├── event-bus/               <-- package: educore-event-bus
+│   │   ├── files/                   <-- package: educore-files
+│   │   ├── integrations/            <-- package: educore-integrations
+│   │   ├── notify/                  <-- package: educore-notify
+│   │   └── payment/                 <-- package: educore-payment
 │   ├── tools/                       <-- tools tier (dev tooling, not in release)
-│   │   ├── testkit/                 <-- package: smsengine-testkit
-│   │   ├── storage-parity/          <-- package: smsengine-storage-parity
-│   │   ├── cli/                     <-- package: smsengine-cli (binary)
-│   │   └── sdk/                     <-- package: smsengine-sdk
-│   └── smsengine/                   <-- umbrella crate
+│   │   ├── testkit/                 <-- package: educore-testkit
+│   │   ├── storage-parity/          <-- package: educore-storage-parity
+│   │   ├── cli/                     <-- package: educore-cli (binary)
+│   │   └── sdk/                     <-- package: educore-sdk
+│   └── educore/                   <-- umbrella crate
 ├── docs/                            <-- documentation operating system
 │   ├── project-overview.md
 │   ├── architecture.md
@@ -109,7 +109,11 @@ boundaries are enforced at the filesystem level (the
 │   │   ├── 0000_engine_core.postgres.sql <-- PostgreSQL 14+ reference
 │   │   └── 0000_engine_core.sqlite.sql    <-- SQLite 3.x reference
 │   └── 0001_*.sql..0015_*.sql       <-- legacy Schoolify dump (research source)
+├── .gitignore                       <-- excludes target/, .DS_Store, etc.
+├── .graphifyignore                  <-- graphify exclude list (schoolify/, docs_guidlines/, target/, .git/, graphify-out/cache/, graphify-out/cost.json)
+├── graphify-out/                    <-- engine knowledge graph (committed; cache/ and cost.json are gitignored)
 ├── schoolify/                       <-- legacy Laravel project (read-only)
+│   └── graphify-out/                <-- legacy Laravel graph (frozen; research artefact only — not auto-rebuilt)
 └── docs_guidlines/                  <-- three authoritative guideline docs
 ```
 
@@ -117,21 +121,21 @@ boundaries are enforced at the filesystem level (the
 
 | Layer                       | Package name              | Directory             | Rust extern crate id    |
 | --------------------------- | ------------------------- | --------------------- | ----------------------- |
-| Umbrella                    | `smsengine`               | `crates/smsengine/`   | `smsengine`             |
-| Internal (per-domain)       | `smsengine-<name>`        | `crates/<name>/`      | `smsengine_<name>`      |
-| Storage adapters (shipped)  | `smsengine-storage-<db>`   | `crates/storage-<db>/`| `smsengine_storage_<db>`|
+| Umbrella                    | `educore`               | `crates/educore/`   | `educore`             |
+| Internal (per-domain)       | `educore-<name>`        | `crates/<name>/`      | `educore_<name>`      |
+| Storage adapters (shipped)  | `educore-storage-<db>`   | `crates/storage-<db>/`| `educore_storage_<db>`|
 
 The umbrella re-exports each internal crate under its short name:
 
 ```rust
-// crates/smsengine/src/lib.rs
-pub use smsengine_core as core;
-pub use smsengine_academic as academic;
+// crates/educore/src/lib.rs
+pub use educore_core as core;
+pub use educore_academic as academic;
 // ...
 ```
 
-Consumers therefore write `smsengine::academic::commands::*` and never
-need to know the internal `smsengine-` prefix on the package name.
+Consumers therefore write `educore::academic::commands::*` and never
+need to know the internal `educore-` prefix on the package name.
 
 ## Tier System
 
@@ -140,45 +144,46 @@ distinct purpose, dependency direction, and lifecycle.
 
 | Tier | Path | Count | Purpose | Depends on |
 | --- | --- | --- | --- | --- |
-| `core` | `crates/core/` | 3 | Infrastructure: errors, identifiers, value objects, query AST, proc-macro, storage port | (none) |
-| `cross-cutting` | `crates/cross-cutting/` | 7 | Cross-domain foundations: platform, rbac, events, audit, settings, operations, calendar | `core` |
-| `domains` | `crates/domains/` | 10 | The 10 domain bounded contexts (academic, finance, hr, ...) | `core`, `cross-cutting` |
-| `adapters` | `crates/adapters/` | 9 | Port implementations: 3 storage adapters + 6 port adapters (auth, event-bus, files, integrations, notify, payment) | `core`, `cross-cutting` |
-| `tools` | `crates/tools/` | 4 | Dev tooling: testkit, storage-parity, cli (binary), sdk | `core`, `cross-cutting`, `domains` |
+| `infra` | `crates/infra/` | 3 | Infrastructure: errors, identifiers, value objects, query AST, proc-macro, storage port | (none) |
+| `cross-cutting` | `crates/cross-cutting/` | 7 | Cross-domain foundations: platform, rbac, events, audit, settings, operations, calendar | `infra` |
+| `domains` | `crates/domains/` | 10 | The 10 domain bounded contexts (academic, finance, hr, ...) | `infra`, `cross-cutting` |
+| `adapters` | `crates/adapters/` | 9 | Port implementations: 3 storage adapters + 6 port adapters (auth, event-bus, files, integrations, notify, payment) | `infra`, `cross-cutting` |
+| `tools` | `crates/tools/` | 4 | Dev tooling: testkit, storage-parity, cli (binary), sdk | `infra`, `cross-cutting`, `domains` |
 
-The umbrella crate `smsengine` re-exports the public surface of
+The umbrella crate `educore` re-exports the public surface of
 all 34 internal crates.
 
 **Layered dependency direction** (no cycles, no upward deps):
 
 ```text
-core  ←  cross-cutting  ←  domains  ←  tools
-                          ↑
-                          └──  adapters  (also depends on core + cross-cutting)
+infra  ←  cross-cutting  ←  domains  ←  tools
+                           ↑
+                           └──  adapters  (also depends on infra + cross-cutting)
 ```
 
-**Tier boundary enforcement:** the `smsengine-core::lint`
+**Tier boundary enforcement:** the `educore-core::lint`
 sub-module verifies at build time that a crate in `crates/domains/`
 does not import from `crates/adapters/` or `crates/tools/`, and
 that a crate in `crates/cross-cutting/` does not import from
 `crates/domains/`, `crates/adapters/`, or `crates/tools/`. See
 `docs/build-plan.md` § The No-Gaps Gates.
 
-**Note on `smsengine-events` vs `smsengine-events-domain`:**
-- `smsengine-events` (cross-cutting tier) is the **event envelope + bus
+**Note on `educore-events` vs `educore-events-domain`:**
+- `educore-events` (cross-cutting tier) is the **event envelope + bus
   port** (DomainEvent trait, EventEnvelope, EventBus trait).
-- `smsengine-events-domain` (cross-cutting tier) is the **calendar
+- `educore-events-domain` (cross-cutting tier) is the **calendar
   domain** (CalendarEvent, Holiday, Incident, Weekend aggregates).
   These are distinct crates with distinct packages. Do not
   conflate them.
 
-**Note on `engine-core`:** the `smsengine-core` crate lives at
-`crates/core/engine-core/`. The directory name `engine-core` differs
-from the package name `smsengine-core` to avoid the double-naming
-`crates/core/core/`. This is a naming convention, not a typographical
-error. The two other crates in the `core` tier (`query-derive` and
-`storage`) have short names that don't collide with the tier name, so
-they keep their original directories.
+**Note on `infra/core`:** the `educore-core` package (the engine's
+core types — errors, identifiers, value objects, the query AST) lives
+at `crates/infra/core/`. The tier is named `infra/` (infrastructure)
+to make room for the package name `core/` without a double-naming
+collision. The two other crates in the `infra` tier (`query-derive`
+and `storage`) keep their original directories because their short
+names don't collide with the tier name. This is a naming
+convention, not a typographical error.
 
 See `docs/decisions/ADR-013-CrateLayout.md` for the full rationale
 and the migration history.
@@ -210,8 +215,8 @@ These are repeated from `docs/code-standards.md` and
 `docs/project-overview.md` for quick reference. They are the rules
 every implementation must follow.
 
-1. **Brand is SMSengine.** Use **SMSengine** in prose and
-   **`smsengine`** in code. No legacy names are permitted anywhere.
+1. **Brand is Educore.** Use **Educore** in prose and
+   **`educore`** in code. No legacy names are permitted anywhere.
 2. **Compile-time safety over strings.** Use macro-generated enums
    (`StudentField::Status`) — never string field names.
 3. **Domain scopes via extension traits.** `.active()`, `.in_class()`,
@@ -262,7 +267,7 @@ crates/domains/<domain>/           <-- directory (under the domains tier)
 │   ├── query.rs                   <-- query builder
 │   └── errors.rs
 ├── tests/
-├── Cargo.toml                     <-- [package] name = "smsengine-<domain>"
+├── Cargo.toml                     <-- [package] name = "educore-<domain>"
 └── README.md
 ```
 
@@ -278,7 +283,7 @@ private types stay private.
 
 ## Dependency Rules
 
-A domain crate may depend on crates in the `core` and
+A domain crate may depend on crates in the `infra` and
 `cross-cutting` tiers, plus other domain crates in the
 `domains` tier (only with explicit justification in an ADR).
 
@@ -286,14 +291,14 @@ A domain crate may **not** depend on:
 
 - Any crate in the `adapters` tier
 - Any crate in the `tools` tier
-- `tokio` directly (only through `smsengine-core` re-exports where needed)
+- `tokio` directly (only through `educore-core` re-exports where needed)
 - `serde_json::Value`
 
 External crate versions, MSRV pinning, and cross-compile status
 (Linux, Android, WASM) are governed by
 [`docs/decisions/ADR-015-ExternalCrates.md`](docs/decisions/ADR-015-ExternalCrates.md).
 
-The `smsengine-core::lint` sub-module verifies these rules at
+The `educore-core::lint` sub-module verifies these rules at
 build time.
 
 ## Validation Checklist (per PR)
@@ -408,32 +413,39 @@ implementation, never as an afterthought.
 
 Three reference adapters are shipped:
 
-- `smsengine-storage-postgres` (primary target)
-- `smsengine-storage-mysql` (production target, MySQL 8.0+)
-- `smsengine-storage-sqlite` (embedded / offline mode)
+- `educore-storage-postgres` (primary target)
+- `educore-storage-mysql` (production target, MySQL 8.0+)
+- `educore-storage-sqlite` (embedded / offline mode)
 
 The SurrealDB and MongoDB adapters are **deferred to a future release**
 and are **not** shipped from the engine. See
 `docs/ports/storage.md#future-storage-backends-deferred` for the
 rationale and the path for consumers who need a deferred adapter.
 
-## Graphify
+## Engine Graph (graphify)
 
-A pre-computed knowledge graph of the legacy `schoolify/` codebase
-lives at `schoolify/graphify-out/`. Read
-`schoolify/graphify-out/GRAPH_REPORT.md` for god nodes and community
-structure. Use `cd schoolify && graphify query "<question>"` to
-traverse the graph when investigating legacy behavior. The graph is a
-**navigation aid for the Laravel source only** — never copy code from
-it into SMSengine.
+A pre-computed knowledge graph of the engine source
+(`crates/`, `docs/`, `migrations/`, and the top-level `*.md`
+files) lives at `graphify-out/` at the repo root. Read
+`graphify-out/GRAPH_REPORT.md` for the god nodes and community
+structure. Use `graphify query "<question>"` from the repo root
+to traverse the graph when investigating engine behavior, design
+rationale, or spec-to-code traceability.
 
-The `schoolify/` tree is the legacy Laravel project. It is **not**
-the engine schema. The engine's target schema is in
-`docs/schemas/` and the migration plan from legacy to engine is in
-`docs/schemas/data-migration/`. The 15 `migrations/0001_*.sql` through
-`migrations/0015_*.sql` files are a Schoolify dump, not the engine
-schema — see `migrations/README.md` for the gap and the migration
-plan.
+The graph is **auto-rebuilt on every commit** via the local
+`graphify hook install` (one-time per-machine setup, AST-only
+regen, no API cost). A git merge driver keeps
+`graphify-out/graph.json` conflict-free across parallel commits.
+The graph is **committed to the repo** for static browsing; the
+volatile parts (cost metrics, cache) are gitignored. See
+`.graphifyignore` at the repo root for the exclusion list.
+
+The legacy `schoolify/graphify-out/` graph is **frozen** and
+retained as a research artefact only. AGENTS.md does not direct
+agents to it; it is not auto-rebuilt.
+
+See [`docs/decisions/ADR-016-EngineGraph.md`](docs/decisions/ADR-016-EngineGraph.md)
+for the full rationale.
 
 ## Status
 
@@ -455,11 +467,11 @@ plan.
 - Build plan: **17 phases** (Phase 0..17) with coverage matrix and
   no-gaps gates documented in `docs/build-plan.md`. The 5 new
   crates are scaffolded and assigned to:
-  - `smsengine-storage-parity` → Phase 0 (cross-adapter test suite)
-  - `smsengine-audit` → Phase 2 (cross-cutting foundations)
-  - `smsengine-operations` → Phase 14 (Settings + Operations)
-  - `smsengine-testkit` → Phase 16 (Test infrastructure + SDK)
-  - `smsengine-cli` → Phase 16 (Test infrastructure + SDK)
+  - `educore-storage-parity` → Phase 0 (cross-adapter test suite)
+  - `educore-audit` → Phase 2 (cross-cutting foundations)
+  - `educore-operations` → Phase 14 (Settings + Operations)
+  - `educore-testkit` → Phase 16 (Test infrastructure + SDK)
+  - `educore-cli` → Phase 16 (Test infrastructure + SDK)
 
 ## Crate Inventory (per-crate phase assignment)
 
@@ -471,52 +483,52 @@ umbrella re-exports to determine phase assignment.
 
 | # | Tier | Crate | Phase | Title |
 | --- | --- | --- | --- | --- |
-| 1 | core | `smsengine-core` | 0 | Foundation |
-| 2 | core | `smsengine-query-derive` | 0 | Foundation (proc-macro) |
-| 3 | core | `smsengine-storage` | 0 | Foundation (port trait) |
-| 4 | adapters | `smsengine-storage-postgres` | 0 | Foundation (PG adapter) |
-| 5 | tools | `smsengine-storage-parity` | 0 | Foundation (cross-adapter test suite) |
-| 6 | adapters | `smsengine-storage-mysql` | 1 | Adapter parity |
-| 7 | adapters | `smsengine-storage-sqlite` | 1 | Adapter parity |
-| 8 | cross-cutting | `smsengine-platform` | 2 | Cross-cutting foundations |
-| 9 | cross-cutting | `smsengine-rbac` | 2 | Cross-cutting foundations |
-| 10 | cross-cutting | `smsengine-events` | 2 | Cross-cutting foundations (envelope) |
-| 11 | adapters | `smsengine-event-bus` | 2 | Cross-cutting foundations (bus port) |
-| 12 | cross-cutting | `smsengine-audit` | 2 | Cross-cutting foundations (audit log) |
-| 13 | domains | `smsengine-academic` | 3 | Academic |
-| 14 | domains | `smsengine-assessment` | 4 | Assessment |
-| 15 | domains | `smsengine-attendance` | 5 | Attendance |
-| 16 | domains | `smsengine-hr` | 6 | HR |
-| 17 | domains | `smsengine-finance` | 7 | Finance |
-| 18 | domains | `smsengine-facilities` | 8 | Facilities |
-| 19 | domains | `smsengine-library` | 9 | Library |
-| 20 | domains | `smsengine-communication` | 10 | Communication |
-| 21 | domains | `smsengine-documents` | 11 | Documents |
-| 22 | domains | `smsengine-cms` | 12 | CMS |
-| 23 | domains | `smsengine-events-domain` | 13 | Events domain (calendar) |
-| 24 | cross-cutting | `smsengine-settings` | 14 | Settings + Operations |
-| 25 | cross-cutting | `smsengine-operations` | 14 | Settings + Operations |
-| 26 | adapters | `smsengine-auth` | 15 | Port adapters |
-| 27 | adapters | `smsengine-notify` | 15 | Port adapters |
-| 28 | adapters | `smsengine-payment` | 15 | Port adapters |
-| 29 | adapters | `smsengine-files` | 15 | Port adapters |
-| 30 | adapters | `smsengine-integrations` | 15 | Port adapters |
-| 31 | tools | `smsengine-testkit` | 16 | Test infrastructure + SDK |
-| 32 | tools | `smsengine-storage-parity` | 16 | (Test infrastructure + SDK) |
-| 33 | tools | `smsengine-sdk` | 16 | Test infrastructure + SDK |
-| 34 | tools | `smsengine-cli` | 16 | Test infrastructure + SDK |
-| — | umbrella | `smsengine` | 0 | re-exports only; first usable at Phase 0+ |
+| 1 | infra | `educore-core` | 0 | Foundation |
+| 2 | infra | `educore-query-derive` | 0 | Foundation (proc-macro) |
+| 3 | infra | `educore-storage` | 0 | Foundation (port trait) |
+| 4 | adapters | `educore-storage-postgres` | 0 | Foundation (PG adapter) |
+| 5 | tools | `educore-storage-parity` | 0 | Foundation (cross-adapter test suite) |
+| 6 | adapters | `educore-storage-mysql` | 1 | Adapter parity |
+| 7 | adapters | `educore-storage-sqlite` | 1 | Adapter parity |
+| 8 | cross-cutting | `educore-platform` | 2 | Cross-cutting foundations |
+| 9 | cross-cutting | `educore-rbac` | 2 | Cross-cutting foundations |
+| 10 | cross-cutting | `educore-events` | 2 | Cross-cutting foundations (envelope) |
+| 11 | adapters | `educore-event-bus` | 2 | Cross-cutting foundations (bus port) |
+| 12 | cross-cutting | `educore-audit` | 2 | Cross-cutting foundations (audit log) |
+| 13 | domains | `educore-academic` | 3 | Academic |
+| 14 | domains | `educore-assessment` | 4 | Assessment |
+| 15 | domains | `educore-attendance` | 5 | Attendance |
+| 16 | domains | `educore-hr` | 6 | HR |
+| 17 | domains | `educore-finance` | 7 | Finance |
+| 18 | domains | `educore-facilities` | 8 | Facilities |
+| 19 | domains | `educore-library` | 9 | Library |
+| 20 | domains | `educore-communication` | 10 | Communication |
+| 21 | domains | `educore-documents` | 11 | Documents |
+| 22 | domains | `educore-cms` | 12 | CMS |
+| 23 | domains | `educore-events-domain` | 13 | Events domain (calendar) |
+| 24 | cross-cutting | `educore-settings` | 14 | Settings + Operations |
+| 25 | cross-cutting | `educore-operations` | 14 | Settings + Operations |
+| 26 | adapters | `educore-auth` | 15 | Port adapters |
+| 27 | adapters | `educore-notify` | 15 | Port adapters |
+| 28 | adapters | `educore-payment` | 15 | Port adapters |
+| 29 | adapters | `educore-files` | 15 | Port adapters |
+| 30 | adapters | `educore-integrations` | 15 | Port adapters |
+| 31 | tools | `educore-testkit` | 16 | Test infrastructure + SDK |
+| 32 | tools | `educore-storage-parity` | 16 | (Test infrastructure + SDK) |
+| 33 | tools | `educore-sdk` | 16 | Test infrastructure + SDK |
+| 34 | tools | `educore-cli` | 16 | Test infrastructure + SDK |
+| — | umbrella | `educore` | 0 | re-exports only; first usable at Phase 0+ |
 
-**Note on duplicates:** `smsengine-storage-parity` is listed at
+**Note on duplicates:** `educore-storage-parity` is listed at
 both Phase 0 and Phase 16. Phase 0 scaffolds the crate; Phase 16
 implements the actual test scenarios. The umbrella crate
-`smsengine` is first usable once Phase 0 lands; its re-exports
-are wired in `crates/smsengine/src/lib.rs`.
+`educore` is first usable once Phase 0 lands; its re-exports
+are wired in `crates/educore/src/lib.rs`.
 
-**Note on `smsengine-events` vs `smsengine-events-domain`:**
-- `smsengine-events` (Phase 2) is the **event envelope + bus
+**Note on `educore-events` vs `educore-events-domain`:**
+- `educore-events` (Phase 2) is the **event envelope + bus
   port** (DomainEvent trait, EventEnvelope, EventBus trait).
-- `smsengine-events-domain` (Phase 13) is the **calendar domain**
+- `educore-events-domain` (Phase 13) is the **calendar domain**
   (CalendarEvent, Holiday, Incident, Weekend aggregates).
   These are distinct crates with distinct crates. Do not
   conflate them.
@@ -535,7 +547,7 @@ in
    (Rust struct, compiled).
 3. **Machine contract** — `crates/<domain>/src/entities.rs`
    (macro-emitted typed AST, dialect-agnostic).
-4. **Adapter emission** — `smsengine-storage-<db>` walks the AST
+4. **Adapter emission** — `educore-storage-<db>` walks the AST
    at schema-creation time and emits the dialect-specific DDL
    string. The 6 engine cross-cutting tables
    (`outbox`, `audit_log`, `idempotency`, `event_log`,
@@ -550,7 +562,7 @@ in
 The 6 cross-cutting tables have canonical DDL in three dialects under
 `migrations/engine/` (`0000_engine_core.mysql.sql`,
 `0000_engine_core.postgres.sql`, `0000_engine_core.sqlite.sql`).
-The `smsengine-storage-<db>` adapter crates `include_str!` these
+The `educore-storage-<db>` adapter crates `include_str!` these
 files at compile time. The `migrations/0001_*.sql`–
 `migrations/0015_*.sql` files are the legacy Schoolify/InfixEdu
 dump (research source only). The data-migration plan from legacy

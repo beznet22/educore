@@ -1,38 +1,37 @@
 [package]
-name = "smsengine"
+name = "educore"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "SMSengine umbrella crate providing the engine facade and prelude."
+description = "Educore umbrella crate providing the engine facade and prelude."
 
 [lints]
 workspace = true
 
 [dependencies]
-smsengine-core = { workspace = true }
-smsengine-platform = { workspace = true }
-smsengine-rbac = { workspace = true }
-smsengine-settings = { workspace = true }
-smsengine-events = { workspace = true }
-smsengine-academic = { workspace = true }
-smsengine-assessment = { workspace = true }
-smsengine-attendance = { workspace = true }
-smsengine-finance = { workspace = true }
-smsengine-hr = { workspace = true }
-smsengine-library = { workspace = true }
-smsengine-facilities = { workspace = true }
-smsengine-communication = { workspace = true }
-smsengine-events-domain = { workspace = true }
-smsengine-documents = { workspace = true }
-smsengine-cms = { workspace = true }
-smsengine-storage = { workspace = true }
-smsengine-auth = { workspace = true }
-smsengine-notify = { workspace = true }
-smsengine-payment = { workspace = true }
-smsengine-files = { workspace = true }
-smsengine-event-bus = { workspace = true }
-smsengine-integrations = { workspace = true }
-smsengine-sdk = { workspace = true }
-
+educore-core = { workspace = true }
+educore-platform = { workspace = true }
+educore-rbac = { workspace = true }
+educore-settings = { workspace = true }
+educore-events = { workspace = true }
+educore-academic = { workspace = true }
+educore-assessment = { workspace = true }
+educore-attendance = { workspace = true }
+educore-finance = { workspace = true }
+educore-hr = { workspace = true }
+educore-library = { workspace = true }
+educore-facilities = { workspace = true }
+educore-communication = { workspace = true }
+educore-events-domain = { workspace = true }
+educore-documents = { workspace = true }
+educore-cms = { workspace = true }
+educore-storage = { workspace = true }
+educore-auth = { workspace = true }
+educore-notify = { workspace = true }
+educore-payment = { workspace = true }
+educore-files = { workspace = true }
+educore-event-bus = { workspace = true }
+educore-integrations = { workspace = true }
+educore-sdk = { workspace = true }

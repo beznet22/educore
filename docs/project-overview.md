@@ -1,8 +1,8 @@
-# SMSengine Project Overview
+# Educore Project Overview
 
 ## Vision
 
-SMSengine is a reusable, embeddable **school-domain engine** for production software.
+Educore is a reusable, embeddable **school-domain engine** for production software.
 It captures the business behavior, workflows, and rules required to operate a real
 school — admissions, attendance, examinations, finance, payroll, communication,
 facilities, library, transport, and compliance — and exposes them as a
@@ -19,7 +19,7 @@ Transform the operational knowledge of real schools into a Rust domain engine th
 - Is **audit-first** so every state change leaves a durable trace.
 - Is **offline-capable** so field deployments never block on connectivity.
 
-## What SMSengine Is
+## What Educore Is
 
 - A **domain engine** (the school's business kernel, isolated from any application shell).
 - A **business platform crate** (a Cargo workspace consumable by CLI, Tauri, Web, mobile).
@@ -28,7 +28,7 @@ Transform the operational knowledge of real schools into a Rust domain engine th
 - An **event-driven school domain kernel** (Commands in, Events out).
 - An **AI-agent execution layer** (Capability catalog with capability-based permissions).
 
-## What SMSengine Is Not
+## What Educore Is Not
 
 - Not a Laravel port.
 - Not a PHP re-implementation.
@@ -44,11 +44,11 @@ Transform the operational knowledge of real schools into a Rust domain engine th
 | ----------------------- | --------------------------------------------------------------------------- |
 | CLI tools               | Operator scripts, automation pipelines, headless deployments                |
 | Desktop applications    | Native school administration tools                                          |
-| Tauri applications      | Cross-platform hybrid shells wrapping SMSengine                               |
+| Tauri applications      | Cross-platform hybrid shells wrapping Educore                               |
 | Mobile applications     | Parent, student, and teacher apps                                            |
-| Web APIs                | SaaS-style REST / GraphQL surfaces backed by SMSengine                        |
+| Web APIs                | SaaS-style REST / GraphQL surfaces backed by Educore                        |
 | SaaS platforms          | Hosted school platforms serving many tenants from one engine                |
-| AI agents               | Tool-using LLMs invoking SMSengine capabilities to assist school staff        |
+| AI agents               | Tool-using LLMs invoking Educore capabilities to assist school staff        |
 | Automation systems      | Scheduled jobs, reconciliation, billing, reporting engines                  |
 
 ## Core Philosophy
@@ -77,7 +77,7 @@ Transform the operational knowledge of real schools into a Rust domain engine th
 
 ## Success Criteria
 
-SMSengine is successful when:
+Educore is successful when:
 
 1. A consumer application can admit a student, take attendance, record marks, and
    collect fees using only the public API and this documentation.
@@ -129,7 +129,7 @@ Each excluded concern is a port that the consumer provides.
 
 ## Engine Style
 
-SMSengine should feel like a modern, well-engineered Rust crate. It is **not a
+Educore should feel like a modern, well-engineered Rust crate. It is **not a
 framework**. It exposes:
 
 - Traits for ports.

@@ -1,5 +1,5 @@
 [package]
-name = "smsengine-operations"
+name = "educore-operations"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

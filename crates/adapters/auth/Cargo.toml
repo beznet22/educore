@@ -1,5 +1,5 @@
 [package]
-name = "smsengine-auth"
+name = "educore-auth"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,10 +11,10 @@ description = "Authentication port, local-password, OAuth2, SAML, JWT adapter im
 workspace = true
 
 [dependencies]
-smsengine-core = { workspace = true }
-smsengine-platform = { workspace = true }
-smsengine-rbac = { workspace = true }
-smsengine-events = { workspace = true }
+educore-core = { workspace = true }
+educore-platform = { workspace = true }
+educore-rbac = { workspace = true }
+educore-events = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
 

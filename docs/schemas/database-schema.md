@@ -1,7 +1,7 @@
 # Database Schema — Cross-Cutting Invariants
 
 This document is **normative**. Every storage adapter, migration, and schema
-produced for SMSengine MUST conform to the rules defined here. The goal is that
+produced for Educore MUST conform to the rules defined here. The goal is that
 the engine's domain logic can be ported across PostgreSQL, SQLite, SurrealDB,
 and other backends without re-deriving the invariants.
 
@@ -127,7 +127,7 @@ its own immutable record of who did what, when.
 
 ## 6. Soft Delete
 
-Deletion in SMSengine is **soft by default**:
+Deletion in Educore is **soft by default**:
 
 - A row is retired by setting `active_status = 0` and `updated_at = now()`.
 - Hard deletion is reserved for GDPR-style erasure requests, system
@@ -174,7 +174,7 @@ treats both cases identically.
 
 ## 9. Offline Sync and Conflict Resolution
 
-SMSengine supports offline-first operation. Each aggregate table MUST
+Educore supports offline-first operation. Each aggregate table MUST
 expose the following two columns:
 
 | Column     | Type            | Purpose                                                                                  |

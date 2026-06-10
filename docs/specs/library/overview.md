@@ -41,15 +41,15 @@ consumers: `BookId`, `BookCategoryId`, `LibraryMemberId`,
 
 ## Dependencies
 
-- `smsengine-core` — error types, result, identifier trait.
-- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smsengine-rbac` — capability checks.
-- `smsengine-events` — domain event publishing.
-- `smsengine-academic` — `StudentId`, `AcademicYearId`
+- `educore-core` — error types, result, identifier trait.
+- `educore-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `educore-rbac` — capability checks.
+- `educore-events` — domain event publishing.
+- `educore-academic` — `StudentId`, `AcademicYearId`
   (read-only references).
-- `smsengine-hr` — `StaffId` (read-only references).
-- `smsengine-rbac` — `RoleId` (read-only reference).
-- `smsengine-finance` — receives fine events for invoicing and
+- `educore-hr` — `StaffId` (read-only references).
+- `educore-rbac` — `RoleId` (read-only reference).
+- `educore-finance` — receives fine events for invoicing and
   payment.
 
 ## Domain Invariants

@@ -60,7 +60,7 @@ and the local id (`Uuid`).
 | -------------------- | ----------------------------------------------------------------- |
 | `Slug`               | URL-safe slug, 1..200 chars, `[a-z0-9-]`                          |
 | `Url`                | Validated URL, max 2048 chars                                     |
-| `FileReference`      | From `smsengine-platform`                                           |
+| `FileReference`      | From `educore-platform`                                           |
 | `YoutubeLink`        | URL or null; validated as a YouTube URL when present              |
 | `SourceUrl`          | URL or null                                                       |
 | `ButtonText`         | 1..191 chars                                                      |
@@ -106,10 +106,10 @@ and the local id (`Uuid`).
 
 | Type                  | Notes                                                              |
 | --------------------- | ------------------------------------------------------------------ |
-| `RoleId`              | From `smsengine-rbac`                                                |
-| `ClassId`             | From `smsengine-academic`                                            |
-| `SectionId`           | From `smsengine-academic`                                            |
-| `UserId`              | From `smsengine-platform`                                            |
+| `RoleId`              | From `educore-rbac`                                                |
+| `ClassId`             | From `educore-academic`                                            |
+| `SectionId`           | From `educore-academic`                                            |
+| `UserId`              | From `educore-platform`                                            |
 | `AudienceDescriptor`  | `Vec<RoleId>` OR `ClassId`+`SectionId` OR `Vec<UserId>` OR `Public` |
 | `RoleIdList`          | Comma-separated list of `RoleId` (decoded into `Vec<RoleId>`)     |
 
@@ -122,8 +122,8 @@ and the local id (`Uuid`).
 | `ShareDate`           | `NaiveDate`                                                        |
 | `ValidUntil`          | `NaiveDate`                                                        |
 | `UploadDate`          | `NaiveDate`                                                        |
-| `AcademicYearId`      | From `smsengine-academic`                                            |
-| `TenantContext`       | `(SchoolId, UserId, ...)` from `smsengine-platform`                 |
+| `AcademicYearId`      | From `educore-academic`                                            |
+| `TenantContext`       | `(SchoolId, UserId, ...)` from `educore-platform`                 |
 
 ## Page Settings
 

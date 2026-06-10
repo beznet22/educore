@@ -243,10 +243,10 @@ workshop at the satellite campus. The engine
 supports per-campus attendance via the
 `Campus` field on the class-section.
 
-## Notes for SMSengine Implementation
+## Notes for Educore Implementation
 
 - The **attendance** crate depends on
-  `smsengine-academic` for `StudentId`, `ClassId`,
+  `educore-academic` for `StudentId`, `ClassId`,
   `SectionId`, `ClassSectionId`, `AcademicYearId`.
 - The domain is **high-frequency**. The engine's
   command pipeline must be fast: a single

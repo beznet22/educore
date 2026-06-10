@@ -344,11 +344,11 @@ finds it. The librarian:
    wallet).
 3. The book is back in circulation.
 
-## Notes for SMSengine Implementation
+## Notes for Educore Implementation
 
 - The **library** crate depends on
-  `smsengine-academic` for `StudentId` and
-  `smsengine-hr` for `StaffId`.
+  `educore-academic` for `StudentId` and
+  `educore-hr` for `StaffId`.
 - The library domain is **eventually
   consistent** with academic (member
   creation on admission), HR (member

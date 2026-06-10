@@ -8,8 +8,8 @@ the engine's storage adapter authors.
 ## Audience
 
 The reader of this folder is the **engine crate author** — the
-implementer of `smsengine-storage-mysql`, `smsengine-storage-sqlite`,
-or `smsengine-storage-postgres`. The consumer of those crates
+implementer of `educore-storage-mysql`, `educore-storage-sqlite`,
+or `educore-storage-postgres`. The consumer of those crates
 (whoever calls `MysqlStorage::builder().url(env::var("DATABASE_URL")?).build()`)
 does not read these files; they read `docs/ports/storage.md` and the
 adapter's README.
@@ -153,7 +153,7 @@ The macro output is **dialect-agnostic** — it carries table name,
 column types, nullable, defaults, indexes, FKs, RLS policies as a
 typed Rust data structure. No SQL strings.
 
-### Step 4 — Adapter emission (`smsengine-storage-<db>`)
+### Step 4 — Adapter emission (`educore-storage-<db>`)
 
 The storage adapter walks the AST and emits the dialect-specific
 DDL string. For the 6 engine cross-cutting tables (outbox,
@@ -168,7 +168,7 @@ from the AST. There is no per-table `.sql` file for domain tables —
 they are generated from the typed Rust struct at runtime.
 
 ```rust
-// crates/smsengine-storage-postgres/src/lib.rs
+// crates/educore-storage-postgres/src/lib.rs
 const ENGINE_CORE_DDLS: &[&str] = &[
     include_str!("../../migrations/engine/0000_engine_core.postgres.sql"),
 ];

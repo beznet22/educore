@@ -408,10 +408,10 @@ The engine's `TimeZone` carries the DST
 rules. The engine uses the time zone for
 event scheduling and timestamp display.
 
-## Notes for SMSengine Implementation
+## Notes for Educore Implementation
 
 - The **platform** crate depends only on
-  `smsengine-core`. It is the foundational
+  `educore-core`. It is the foundational
   crate; no other domain depends on
   platform.
 - The platform domain provides `SchoolId`,

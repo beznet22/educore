@@ -5,7 +5,7 @@ Target: **PostgreSQL 14+** (14.0+ for `gen_random_uuid()` in core;
 constraints; 16.0+ for `SQL/JSON` improvements).
 
 The reference adapter implementing these conventions is
-`smsengine-storage-postgres`. The DDL strings in this file are
+`educore-storage-postgres`. The DDL strings in this file are
 emitted by `PostgresStorageAdapter::create_<table>_ddl()`.
 
 ## Identifier quoting
@@ -151,11 +151,11 @@ policy. The `Platform.CrossTenant` capability is required.
 The `BYPASSRLS` attribute is set on the engine's database role:
 
 ```sql
-ALTER ROLE smsengine_writer BYPASSRLS;
+ALTER ROLE educore_writer BYPASSRLS;
 ```
 
-The consumer's `smsengine_writer` role is the engine's write
-role. The consumer's `smsengine_reader` role does NOT have
+The consumer's `educore_writer` role is the engine's write
+role. The consumer's `educore_reader` role does NOT have
 `BYPASSRLS`; it relies on the RLS policies.
 
 ## `CHECK` constraints
@@ -193,7 +193,7 @@ The default `search_path` is `$user, public` (the current user,
 then `public`). The consumer's setup may override:
 
 ```sql
-ALTER ROLE smsengine_writer SET search_path = engine, public;
+ALTER ROLE educore_writer SET search_path = engine, public;
 ALTER DATABASE devdb_v2 SET search_path = engine, public;
 ```
 
@@ -497,7 +497,7 @@ that decrypts on the fly.
 
 - PostgreSQL 14+ Documentation: `CREATE TABLE`, `UUID` type, `JSONB`
   type, `CREATE POLICY`, `TIMESTAMPTZ`.
-- The `smsengine-storage-postgres` crate README.
+- The `educore-storage-postgres` crate README.
 - `docs/ports/storage.md` § 4: `Configuration` — the engine's
   `PostgresStorage::builder()` pattern.
 - `docs/schemas/database-schema.md` § 11: the canonical minimum

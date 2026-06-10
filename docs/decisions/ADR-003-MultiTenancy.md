@@ -28,7 +28,7 @@ default must be safe; safety must be structural, not
 
 ## Decision
 
-SMSengine is **multi-tenant by default**, with structural
+Educore is **multi-tenant by default**, with structural
 isolation:
 
 1. **Every aggregate root carries a `SchoolId`** as part of its
@@ -96,7 +96,7 @@ isolation:
 - **The `SchoolId` is everywhere.** Every aggregate, every
   identifier, every query, every event carries it. This
   adds a small amount of boilerplate, mitigated by the
-  `smsengine-core` identifier wrappers, the query layer's
+  `educore-core` identifier wrappers, the query layer's
   tenant binding, and the `#[derive(DomainQuery)]` macro
   (whose generated builder requires a `SchoolId` at
   construction time).
@@ -113,14 +113,14 @@ isolation:
 
 ### Mitigations
 
-- The `smsengine-platform` crate provides `SchoolId`,
+- The `educore-platform` crate provides `SchoolId`,
   `TenantContext`, and the cross-tenant port in a single,
   well-documented module.
-- The `smsengine-rbac` crate treats `SuperAdmin` as a system
+- The `educore-rbac` crate treats `SuperAdmin` as a system
   role; consumers cannot delete it.
 - The default PostgreSQL storage adapter configures
   row-level security on every table at install time.
-- The CLI scaffold (`smsengine new --multi-tenant`) generates
+- The CLI scaffold (`educore new --multi-tenant`) generates
   a starter configuration that wires the policies.
 
 ## Alternatives Considered

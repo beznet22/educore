@@ -36,7 +36,7 @@ ends careers.
 
 ## Decision
 
-SMSengine is **audit-first**: every state-changing command
+Educore is **audit-first**: every state-changing command
 writes a durable audit record, and the audit log is the
 canonical record of every change in the engine.
 

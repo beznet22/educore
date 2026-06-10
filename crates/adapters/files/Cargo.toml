@@ -1,5 +1,5 @@
 [package]
-name = "smsengine-files"
+name = "educore-files"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,9 +11,9 @@ description = "File storage port, S3-compatible, GCS, local filesystem adapters.
 workspace = true
 
 [dependencies]
-smsengine-core = { workspace = true }
-smsengine-platform = { workspace = true }
-smsengine-events = { workspace = true }
+educore-core = { workspace = true }
+educore-platform = { workspace = true }
+educore-events = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
 

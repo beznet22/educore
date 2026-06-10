@@ -55,13 +55,13 @@ to a `SchoolId` and a `BankAccountId` (or to the cash account).
 
 ## Dependencies
 
-- `smsengine-core` — error types, result, identifier trait.
-- `smsengine-platform` — `SchoolId`, `UserId`, `TenantContext`.
-- `smsengine-rbac` — capability checks.
-- `smsengine-events` — domain event publishing.
-- `smsengine-academic` — `StudentId`, `ClassId`, `SectionId`,
+- `educore-core` — error types, result, identifier trait.
+- `educore-platform` — `SchoolId`, `UserId`, `TenantContext`.
+- `educore-rbac` — capability checks.
+- `educore-events` — domain event publishing.
+- `educore-academic` — `StudentId`, `ClassId`, `SectionId`,
   `AcademicYearId`, `StudentRecordId`.
-- `smsengine-hr` — `StaffId` for payroll and staff-attendance related
+- `educore-hr` — `StaffId` for payroll and staff-attendance related
   expense capture.
 
 ## Domain Invariants

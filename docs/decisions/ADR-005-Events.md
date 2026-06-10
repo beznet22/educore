@@ -34,7 +34,7 @@ order events without losing any.
 
 ## Decision
 
-SMSengine adopts **event-driven design** at the domain level.
+Educore adopts **event-driven design** at the domain level.
 
 Concretely:
 
