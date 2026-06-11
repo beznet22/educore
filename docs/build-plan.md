@@ -159,6 +159,15 @@ macro`, `StorageAdapter port`.
   `uuid >= 1.10` in workspace `Cargo.toml`; document the MSRV impact
   (still 1.75).
 
+**Engine graph (graphify).** Phase 0 also produces the engine
+knowledge graph. The graph lives at `graphify-out/` at the repo
+root (committed) and is auto-rebuilt on every commit via the
+local `graphify hook install` (one-time per-user; AST-only
+regen, no API cost). A git merge driver (`graphify-union`)
+keeps `graphify-out/graph.json` conflict-free across parallel
+commits. See
+[`docs/decisions/ADR-016-EngineGraph.md`](decisions/ADR-016-EngineGraph.md).
+
 ---
 
 ## Phase 1 — Adapter parity (MySQL + SQLite)
@@ -829,7 +838,7 @@ verifies that:
 
 ## The No-Gaps Gates
 
-Three mechanisms enforce the coverage invariant — that every
+Four mechanisms enforce the coverage invariant — that every
 spec'd item is implemented and every implemented item is spec'd.
 
 ### 1. Hand-written integration tests in `crates/domains/<domain>/tests/`
@@ -932,6 +941,22 @@ Because the matrix lives at `docs/coverage.toml`, the CI step is:
 
 This is the **per-PR gate** — it runs on every pull request.
 
+### 4. Graph regen freshness
+
+The pre-computed engine knowledge graph at `graphify-out/`
+(per [ADR-016](decisions/ADR-016-EngineGraph.md)) is
+auto-rebuilt on every commit by the local `graphify`
+post-commit hook. To guard against a broken or bypassed hook,
+a CI / pre-push step verifies that
+`graphify-out/GRAPH_REPORT.md` is no older than the latest
+commit that touched `crates/`, `docs/`, or `migrations/`. A
+stale graph is a sign the hook is broken or has been
+bypassed.
+
+Implementation: `tools/scripts/check-graph-freshness.sh` —
+exits 1 if stale. Run as a CI step or as a local pre-push
+hook.
+
 ### Combined effect
 
 | Layer  | Gate                                   | When it runs    | What it catches |
@@ -939,8 +964,9 @@ This is the **per-PR gate** — it runs on every pull request.
 | Domain | hand-written tests in `crates/domains/<d>/tests/` | `cargo test`    | Drift between spec and actual behavior |
 | Crate  | `educore-core::lint` (feature-gated) | `cargo build` (CI) | Missing handlers, anti-patterns, reverse drift, matrix lies |
 | Repo   | TOML matrix diff in CI                 | every PR        | Spec or impl change without matrix update |
+| Repo   | `graphify-out/GRAPH_REPORT.md` freshness | every push (or CI) | Stale graph (bypassed hook) |
 
-Together, the three gates make it impossible to merge a PR that
+Together, the four gates make it impossible to merge a PR that
 silently drops a spec'd feature, leaves a `todo!()` in production
 code, or claims implementation without updating the matrix.
 
@@ -949,7 +975,7 @@ code, or claims implementation without updating the matrix.
 ## Build Order (One-Page)
 
 ```text
-0. Foundation       — core, query-derive, storage port, storage-postgres + outbox e2e
+0. Foundation       — core, query-derive, storage port, storage-postgres, outbox e2e, + engine graph (graphify)
 1. Adapter parity   — storage-mysql, storage-sqlite + cross-adapter test
 2. Cross-cutting    — platform, rbac, events envelope, event-bus, audit
 3. Academic         — first domain vertical slice (largest)
@@ -987,6 +1013,9 @@ code, or claims implementation without updating the matrix.
   validation checklist, naming conventions.
 - [`docs/code-standards.md`](code-standards.md) — the engineering
   rules every implementation must follow.
+- [`docs/decisions/ADR-016-EngineGraph.md`](decisions/ADR-016-EngineGraph.md) —
+  the engine knowledge graph (graphify output, post-commit hook,
+  merge driver).
 - [`docs/query_layer.md`](query_layer.md) — the macro-driven query
   specification consumed by `educore-query-derive`.
 - [`docs/specs/<domain>/overview.md`](specs/) — per-domain
