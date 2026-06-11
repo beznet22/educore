@@ -1,0 +1,802 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/adapters/storage-postgres/src/lib.rs",
+      "source_location": "L1",
+      "id": "adapters_storage_postgres_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "package_metadata_is_set()",
+      "file_type": "code",
+      "source_file": "crates/infra/storage/src/lib.rs",
+      "source_location": "L23",
+      "id": "lib_package_metadata_is_set",
+      "community": 0,
+      "norm_label": "package_metadata_is_set()"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/adapters/payment/src/lib.rs",
+      "source_location": "L1",
+      "id": "adapters_payment_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/adapters/storage-mysql/src/lib.rs",
+      "source_location": "L1",
+      "id": "adapters_storage_mysql_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/adapters/storage-sqlite/src/lib.rs",
+      "source_location": "L1",
+      "id": "adapters_storage_sqlite_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/adapters/auth/src/lib.rs",
+      "source_location": "L1",
+      "id": "adapters_auth_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/adapters/event-bus/src/lib.rs",
+      "source_location": "L1",
+      "id": "adapters_event_bus_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/adapters/integrations/src/lib.rs",
+      "source_location": "L1",
+      "id": "adapters_integrations_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/adapters/notify/src/lib.rs",
+      "source_location": "L1",
+      "id": "adapters_notify_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/adapters/files/src/lib.rs",
+      "source_location": "L1",
+      "id": "adapters_files_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/smsengine/src/lib.rs",
+      "source_location": "L1",
+      "id": "smsengine_src_lib_rs",
+      "community": 1,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "version_is_set()",
+      "file_type": "code",
+      "source_file": "crates/smsengine/src/lib.rs",
+      "source_location": "L76",
+      "id": "lib_version_is_set",
+      "community": 1,
+      "norm_label": "version_is_set()"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/domains/finance/src/lib.rs",
+      "source_location": "L1",
+      "id": "domains_finance_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/domains/hr/src/lib.rs",
+      "source_location": "L1",
+      "id": "domains_hr_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/domains/cms/src/lib.rs",
+      "source_location": "L1",
+      "id": "domains_cms_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/domains/communication/src/lib.rs",
+      "source_location": "L1",
+      "id": "domains_communication_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/domains/assessment/src/lib.rs",
+      "source_location": "L1",
+      "id": "domains_assessment_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/domains/attendance/src/lib.rs",
+      "source_location": "L1",
+      "id": "domains_attendance_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/domains/academic/src/lib.rs",
+      "source_location": "L1",
+      "id": "domains_academic_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/domains/documents/src/lib.rs",
+      "source_location": "L1",
+      "id": "domains_documents_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/domains/library/src/lib.rs",
+      "source_location": "L1",
+      "id": "domains_library_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/domains/facilities/src/lib.rs",
+      "source_location": "L1",
+      "id": "domains_facilities_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/cross-cutting/rbac/src/lib.rs",
+      "source_location": "L1",
+      "id": "cross_cutting_rbac_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/cross-cutting/operations/src/lib.rs",
+      "source_location": "L1",
+      "id": "cross_cutting_operations_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/cross-cutting/platform/src/lib.rs",
+      "source_location": "L1",
+      "id": "cross_cutting_platform_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/cross-cutting/events-domain/src/lib.rs",
+      "source_location": "L1",
+      "id": "cross_cutting_events_domain_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/cross-cutting/audit/src/lib.rs",
+      "source_location": "L1",
+      "id": "cross_cutting_audit_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/cross-cutting/settings/src/lib.rs",
+      "source_location": "L1",
+      "id": "cross_cutting_settings_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/cross-cutting/events/src/lib.rs",
+      "source_location": "L1",
+      "id": "cross_cutting_events_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/tools/sdk/src/lib.rs",
+      "source_location": "L1",
+      "id": "tools_sdk_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/tools/testkit/src/lib.rs",
+      "source_location": "L1",
+      "id": "tools_testkit_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/tools/storage-parity/src/lib.rs",
+      "source_location": "L1",
+      "id": "tools_storage_parity_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/tools/cli/src/lib.rs",
+      "source_location": "L1",
+      "id": "tools_cli_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "main.rs",
+      "file_type": "code",
+      "source_file": "crates/tools/cli/src/main.rs",
+      "source_location": "L1",
+      "id": "tools_cli_src_main_rs",
+      "community": 2,
+      "norm_label": "main.rs"
+    },
+    {
+      "label": "main()",
+      "file_type": "code",
+      "source_file": "crates/tools/cli/src/main.rs",
+      "source_location": "L1",
+      "id": "main_main",
+      "community": 2,
+      "norm_label": "main()"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/infra/query-derive/src/lib.rs",
+      "source_location": "L1",
+      "id": "infra_query_derive_src_lib_rs",
+      "community": 3,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "ids.rs",
+      "file_type": "code",
+      "source_file": "crates/infra/core/src/ids.rs",
+      "source_location": "L1",
+      "id": "infra_core_src_ids_rs",
+      "community": 4,
+      "norm_label": "ids.rs"
+    },
+    {
+      "label": "value_objects.rs",
+      "file_type": "code",
+      "source_file": "crates/infra/core/src/value_objects.rs",
+      "source_location": "L1",
+      "id": "infra_core_src_value_objects_rs",
+      "community": 5,
+      "norm_label": "value_objects.rs"
+    },
+    {
+      "label": "query.rs",
+      "file_type": "code",
+      "source_file": "crates/infra/core/src/query.rs",
+      "source_location": "L1",
+      "id": "infra_core_src_query_rs",
+      "community": 6,
+      "norm_label": "query.rs"
+    },
+    {
+      "label": "clock.rs",
+      "file_type": "code",
+      "source_file": "crates/infra/core/src/clock.rs",
+      "source_location": "L1",
+      "id": "infra_core_src_clock_rs",
+      "community": 7,
+      "norm_label": "clock.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/infra/core/src/lib.rs",
+      "source_location": "L1",
+      "id": "infra_core_src_lib_rs",
+      "community": 8,
+      "norm_label": "lib.rs"
+    },
+    {
+      "label": "tenant.rs",
+      "file_type": "code",
+      "source_file": "crates/infra/core/src/tenant.rs",
+      "source_location": "L1",
+      "id": "infra_core_src_tenant_rs",
+      "community": 9,
+      "norm_label": "tenant.rs"
+    },
+    {
+      "label": "error.rs",
+      "file_type": "code",
+      "source_file": "crates/infra/core/src/error.rs",
+      "source_location": "L1",
+      "id": "infra_core_src_error_rs",
+      "community": 10,
+      "norm_label": "error.rs"
+    },
+    {
+      "label": "lib.rs",
+      "file_type": "code",
+      "source_file": "crates/infra/storage/src/lib.rs",
+      "source_location": "L1",
+      "id": "infra_storage_src_lib_rs",
+      "community": 0,
+      "norm_label": "lib.rs"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/adapters/storage-postgres/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "adapters_storage_postgres_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "adapters_storage_postgres_src_lib_rs",
+      "target": "lib_package_metadata_is_set",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/adapters/payment/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "adapters_payment_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "adapters_payment_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/adapters/storage-mysql/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "adapters_storage_mysql_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "adapters_storage_mysql_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/adapters/storage-sqlite/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "adapters_storage_sqlite_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "adapters_storage_sqlite_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/adapters/auth/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "adapters_auth_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "adapters_auth_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/adapters/event-bus/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "adapters_event_bus_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "adapters_event_bus_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/adapters/integrations/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "adapters_integrations_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "adapters_integrations_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/adapters/notify/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "adapters_notify_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "adapters_notify_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/adapters/files/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "adapters_files_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "adapters_files_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/domains/finance/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "domains_finance_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "domains_finance_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/domains/hr/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "domains_hr_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "domains_hr_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/domains/cms/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "domains_cms_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "domains_cms_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/domains/communication/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "domains_communication_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "domains_communication_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/domains/assessment/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "domains_assessment_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "domains_assessment_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/domains/attendance/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "domains_attendance_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "domains_attendance_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/domains/academic/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "domains_academic_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "domains_academic_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/domains/documents/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "domains_documents_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "domains_documents_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/domains/library/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "domains_library_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "domains_library_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/domains/facilities/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "domains_facilities_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "domains_facilities_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/cross-cutting/rbac/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "cross_cutting_rbac_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "cross_cutting_rbac_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/cross-cutting/operations/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "cross_cutting_operations_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "cross_cutting_operations_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/cross-cutting/platform/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "cross_cutting_platform_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "cross_cutting_platform_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/cross-cutting/events-domain/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "cross_cutting_events_domain_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "cross_cutting_events_domain_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/cross-cutting/audit/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "cross_cutting_audit_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "cross_cutting_audit_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/cross-cutting/settings/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "cross_cutting_settings_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "cross_cutting_settings_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/cross-cutting/events/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "cross_cutting_events_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "cross_cutting_events_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/tools/sdk/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "tools_sdk_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "tools_sdk_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/tools/testkit/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "tools_testkit_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "tools_testkit_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/tools/storage-parity/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "tools_storage_parity_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "tools_storage_parity_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/tools/cli/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "tools_cli_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "tools_cli_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/infra/storage/src/lib.rs",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "infra_storage_src_lib_rs",
+      "_tgt": "lib_package_metadata_is_set",
+      "source": "lib_package_metadata_is_set",
+      "target": "infra_storage_src_lib_rs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/smsengine/src/lib.rs",
+      "source_location": "L76",
+      "weight": 1.0,
+      "_src": "smsengine_src_lib_rs",
+      "_tgt": "lib_version_is_set",
+      "source": "smsengine_src_lib_rs",
+      "target": "lib_version_is_set",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "crates/tools/cli/src/main.rs",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "tools_cli_src_main_rs",
+      "_tgt": "main_main",
+      "source": "tools_cli_src_main_rs",
+      "target": "main_main",
+      "confidence_score": 1.0
+    }
+  ],
+  "hyperedges": []
+}
