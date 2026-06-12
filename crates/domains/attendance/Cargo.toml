@@ -11,10 +11,11 @@ description = "Student, subject, staff, and exam attendance, bulk import, absenc
 workspace = true
 
 [dependencies]
+educore-academic = { workspace = true }
+educore-assessment = { workspace = true }
 educore-core = { workspace = true }
+educore-event-bus = { workspace = true }
+educore-events = { workspace = true }
 educore-platform = { workspace = true }
 educore-rbac = { workspace = true }
-educore-events = { workspace = true }
-educore-academic = { workspace = true }
-educore-settings = { workspace = true }
 
