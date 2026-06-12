@@ -150,6 +150,56 @@ pub enum Capability {
     /// Cancel an admit card.
     AssessmentAdmitCardDelete,
 
+    // -- Attendance (Phase 5) -------------------------------------------
+    /// Create (mark) a daily student attendance record.
+    AttendanceStudentCreate,
+    /// Read a daily student attendance record.
+    AttendanceStudentRead,
+    /// Update a daily student attendance record.
+    AttendanceStudentUpdate,
+    /// Soft-delete / cancel a daily student attendance record.
+    AttendanceStudentDelete,
+    /// Create (mark) a per-period subject attendance record.
+    AttendanceSubjectCreate,
+    /// Read a per-period subject attendance record.
+    AttendanceSubjectRead,
+    /// Update a per-period subject attendance record.
+    AttendanceSubjectUpdate,
+    /// Soft-delete / cancel a per-period subject attendance record.
+    AttendanceSubjectDelete,
+    /// Request a guardian notification for a subject-absence.
+    AttendanceSubjectNotify,
+    /// Create (mark) a daily staff attendance record.
+    AttendanceStaffCreate,
+    /// Read a daily staff attendance record.
+    AttendanceStaffRead,
+    /// Update a daily staff attendance record.
+    AttendanceStaffUpdate,
+    /// Soft-delete / cancel a daily staff attendance record.
+    AttendanceStaffDelete,
+    /// Create an exam-attendance record.
+    AttendanceExamCreate,
+    /// Read an exam-attendance record.
+    AttendanceExamRead,
+    /// Update an exam-attendance record.
+    AttendanceExamUpdate,
+    /// Soft-delete / cancel an exam-attendance record.
+    AttendanceExamDelete,
+    /// Create a bulk-attendance-import job (CSV / biometric).
+    AttendanceImportCreate,
+    /// Read a bulk-attendance-import job.
+    AttendanceImportRead,
+    /// Validate / commit a bulk-attendance-import job.
+    AttendanceImportUpdate,
+    /// Cancel a bulk-attendance-import job.
+    AttendanceImportDelete,
+    /// Bulk-mark attendance for a class-section.
+    AttendanceBulkMark,
+    /// Read an attendance report (daily, weekly, monthly, by-class, by-student, by-staff).
+    AttendanceReportRead,
+    /// Request a guardian absence notification.
+    AttendanceNotify,
+
     // -- Finance (Phase 7 placeholders) ---------------------------------
     /// Create a finance invoice. Placeholder for the finance domain.
     FinanceInvoiceCreate,
@@ -286,10 +336,34 @@ impl Capability {
             | Self::AssessmentSeatPlanRead
             | Self::AssessmentSeatPlanUpdate
             | Self::AssessmentSeatPlanDelete
-            | Self::AssessmentAdmitCardCreate
+            |             Self::AssessmentAdmitCardCreate
             | Self::AssessmentAdmitCardRead
             | Self::AssessmentAdmitCardUpdate
             | Self::AssessmentAdmitCardDelete => CapabilityDomain::Assessment,
+            Self::AttendanceStudentCreate
+            | Self::AttendanceStudentRead
+            | Self::AttendanceStudentUpdate
+            | Self::AttendanceStudentDelete
+            | Self::AttendanceSubjectCreate
+            | Self::AttendanceSubjectRead
+            | Self::AttendanceSubjectUpdate
+            | Self::AttendanceSubjectDelete
+            | Self::AttendanceSubjectNotify
+            | Self::AttendanceStaffCreate
+            | Self::AttendanceStaffRead
+            | Self::AttendanceStaffUpdate
+            | Self::AttendanceStaffDelete
+            | Self::AttendanceExamCreate
+            | Self::AttendanceExamRead
+            | Self::AttendanceExamUpdate
+            | Self::AttendanceExamDelete
+            | Self::AttendanceImportCreate
+            | Self::AttendanceImportRead
+            | Self::AttendanceImportUpdate
+            | Self::AttendanceImportDelete
+            | Self::AttendanceBulkMark
+            | Self::AttendanceReportRead
+            | Self::AttendanceNotify => CapabilityDomain::Attendance,
             Self::FinanceInvoiceCreate
             | Self::FinanceInvoiceRead
             | Self::FinanceInvoiceUpdate
@@ -388,6 +462,30 @@ impl Capability {
             | Self::AssessmentAdmitCardRead
             | Self::AssessmentAdmitCardUpdate
             | Self::AssessmentAdmitCardDelete => "AdmitCard",
+            Self::AttendanceStudentCreate
+            | Self::AttendanceStudentRead
+            | Self::AttendanceStudentUpdate
+            | Self::AttendanceStudentDelete => "Student",
+            Self::AttendanceSubjectCreate
+            | Self::AttendanceSubjectRead
+            | Self::AttendanceSubjectUpdate
+            | Self::AttendanceSubjectDelete
+            | Self::AttendanceSubjectNotify => "Subject",
+            Self::AttendanceStaffCreate
+            | Self::AttendanceStaffRead
+            | Self::AttendanceStaffUpdate
+            | Self::AttendanceStaffDelete => "Staff",
+            Self::AttendanceExamCreate
+            | Self::AttendanceExamRead
+            | Self::AttendanceExamUpdate
+            | Self::AttendanceExamDelete => "Exam",
+            Self::AttendanceImportCreate
+            | Self::AttendanceImportRead
+            | Self::AttendanceImportUpdate
+            | Self::AttendanceImportDelete => "Import",
+            Self::AttendanceBulkMark => "BulkMark",
+            Self::AttendanceReportRead => "Report",
+            Self::AttendanceNotify => "Notify",
             Self::FinanceInvoiceCreate
             | Self::FinanceInvoiceRead
             | Self::FinanceInvoiceUpdate
@@ -447,7 +545,12 @@ impl Capability {
             | Self::DocumentsFolderCreate
             | Self::CmsPageCreate
             | Self::FacilitiesRoomCreate
-            | Self::EventsCalendarCreate => "Create",
+            | Self::EventsCalendarCreate
+            | Self::AttendanceStudentCreate
+            | Self::AttendanceSubjectCreate
+            | Self::AttendanceStaffCreate
+            | Self::AttendanceExamCreate
+            | Self::AttendanceImportCreate => "Create",
             Self::PlatformSchoolRead
             | Self::PlatformUserRead
             | Self::RbacRoleRead
@@ -469,7 +572,13 @@ impl Capability {
             | Self::DocumentsFolderRead
             | Self::CmsPageRead
             | Self::FacilitiesRoomRead
-            | Self::EventsCalendarRead => "Read",
+            | Self::EventsCalendarRead
+            | Self::AttendanceStudentRead
+            | Self::AttendanceSubjectRead
+            | Self::AttendanceStaffRead
+            | Self::AttendanceExamRead
+            | Self::AttendanceImportRead
+            | Self::AttendanceReportRead => "Read",
             Self::PlatformSchoolUpdate
             | Self::PlatformUserUpdate
             | Self::RbacRoleUpdate
@@ -490,7 +599,12 @@ impl Capability {
             | Self::DocumentsFolderUpdate
             | Self::CmsPageUpdate
             | Self::FacilitiesRoomUpdate
-            | Self::EventsCalendarUpdate => "Update",
+            | Self::EventsCalendarUpdate
+            | Self::AttendanceStudentUpdate
+            | Self::AttendanceSubjectUpdate
+            | Self::AttendanceStaffUpdate
+            | Self::AttendanceExamUpdate
+            | Self::AttendanceImportUpdate => "Update",
             Self::PlatformSchoolDelete
             | Self::PlatformUserDelete
             | Self::RbacRoleDelete
@@ -510,7 +624,12 @@ impl Capability {
             | Self::DocumentsFolderDelete
             | Self::CmsPageDelete
             | Self::FacilitiesRoomDelete
-            | Self::EventsCalendarDelete => "Delete",
+            | Self::EventsCalendarDelete
+            | Self::AttendanceStudentDelete
+            | Self::AttendanceSubjectDelete
+            | Self::AttendanceStaffDelete
+            | Self::AttendanceExamDelete
+            | Self::AttendanceImportDelete => "Delete",
             Self::RbacRoleManage => "Manage",
             Self::RbacRoleClone => "Clone",
             Self::RbacCapabilityAssign => "Assign",
@@ -518,6 +637,9 @@ impl Capability {
             Self::RbacBootstrap => "Bootstrap",
             Self::AssessmentReportCardGenerate => "Generate",
             Self::AssessmentReportCardDownload => "Download",
+            Self::AttendanceBulkMark => "BulkMark",
+            Self::AttendanceSubjectNotify => "Notify",
+            Self::AttendanceNotify => "Notify",
             Self::SettingsManage => "Manage",
             Self::OperationsManage => "Manage",
         }
@@ -618,6 +740,30 @@ impl Capability {
             Self::EventsCalendarRead => "Events.Calendar.Read",
             Self::EventsCalendarUpdate => "Events.Calendar.Update",
             Self::EventsCalendarDelete => "Events.Calendar.Delete",
+            Self::AttendanceStudentCreate => "Attendance.Student.Create",
+            Self::AttendanceStudentRead => "Attendance.Student.Read",
+            Self::AttendanceStudentUpdate => "Attendance.Student.Update",
+            Self::AttendanceStudentDelete => "Attendance.Student.Delete",
+            Self::AttendanceSubjectCreate => "Attendance.Subject.Create",
+            Self::AttendanceSubjectRead => "Attendance.Subject.Read",
+            Self::AttendanceSubjectUpdate => "Attendance.Subject.Update",
+            Self::AttendanceSubjectDelete => "Attendance.Subject.Delete",
+            Self::AttendanceSubjectNotify => "Attendance.Subject.Notify",
+            Self::AttendanceStaffCreate => "Attendance.Staff.Create",
+            Self::AttendanceStaffRead => "Attendance.Staff.Read",
+            Self::AttendanceStaffUpdate => "Attendance.Staff.Update",
+            Self::AttendanceStaffDelete => "Attendance.Staff.Delete",
+            Self::AttendanceExamCreate => "Attendance.Exam.Create",
+            Self::AttendanceExamRead => "Attendance.Exam.Read",
+            Self::AttendanceExamUpdate => "Attendance.Exam.Update",
+            Self::AttendanceExamDelete => "Attendance.Exam.Delete",
+            Self::AttendanceImportCreate => "Attendance.Import.Create",
+            Self::AttendanceImportRead => "Attendance.Import.Read",
+            Self::AttendanceImportUpdate => "Attendance.Import.Update",
+            Self::AttendanceImportDelete => "Attendance.Import.Delete",
+            Self::AttendanceBulkMark => "Attendance.BulkMark.BulkMark",
+            Self::AttendanceReportRead => "Attendance.Report.Read",
+            Self::AttendanceNotify => "Attendance.Notify.Notify",
             Self::SettingsManage => "Settings.Manage",
             Self::OperationsManage => "Operations.Manage",
         }
@@ -719,6 +865,30 @@ impl Capability {
             Self::EventsCalendarRead,
             Self::EventsCalendarUpdate,
             Self::EventsCalendarDelete,
+            Self::AttendanceStudentCreate,
+            Self::AttendanceStudentRead,
+            Self::AttendanceStudentUpdate,
+            Self::AttendanceStudentDelete,
+            Self::AttendanceSubjectCreate,
+            Self::AttendanceSubjectRead,
+            Self::AttendanceSubjectUpdate,
+            Self::AttendanceSubjectDelete,
+            Self::AttendanceSubjectNotify,
+            Self::AttendanceStaffCreate,
+            Self::AttendanceStaffRead,
+            Self::AttendanceStaffUpdate,
+            Self::AttendanceStaffDelete,
+            Self::AttendanceExamCreate,
+            Self::AttendanceExamRead,
+            Self::AttendanceExamUpdate,
+            Self::AttendanceExamDelete,
+            Self::AttendanceImportCreate,
+            Self::AttendanceImportRead,
+            Self::AttendanceImportUpdate,
+            Self::AttendanceImportDelete,
+            Self::AttendanceBulkMark,
+            Self::AttendanceReportRead,
+            Self::AttendanceNotify,
             Self::SettingsManage,
             Self::OperationsManage,
         ]
@@ -819,6 +989,30 @@ impl Capability {
             "Events.Calendar.Read" => Some(Self::EventsCalendarRead),
             "Events.Calendar.Update" => Some(Self::EventsCalendarUpdate),
             "Events.Calendar.Delete" => Some(Self::EventsCalendarDelete),
+            "Attendance.Student.Create" => Some(Self::AttendanceStudentCreate),
+            "Attendance.Student.Read" => Some(Self::AttendanceStudentRead),
+            "Attendance.Student.Update" => Some(Self::AttendanceStudentUpdate),
+            "Attendance.Student.Delete" => Some(Self::AttendanceStudentDelete),
+            "Attendance.Subject.Create" => Some(Self::AttendanceSubjectCreate),
+            "Attendance.Subject.Read" => Some(Self::AttendanceSubjectRead),
+            "Attendance.Subject.Update" => Some(Self::AttendanceSubjectUpdate),
+            "Attendance.Subject.Delete" => Some(Self::AttendanceSubjectDelete),
+            "Attendance.Subject.Notify" => Some(Self::AttendanceSubjectNotify),
+            "Attendance.Staff.Create" => Some(Self::AttendanceStaffCreate),
+            "Attendance.Staff.Read" => Some(Self::AttendanceStaffRead),
+            "Attendance.Staff.Update" => Some(Self::AttendanceStaffUpdate),
+            "Attendance.Staff.Delete" => Some(Self::AttendanceStaffDelete),
+            "Attendance.Exam.Create" => Some(Self::AttendanceExamCreate),
+            "Attendance.Exam.Read" => Some(Self::AttendanceExamRead),
+            "Attendance.Exam.Update" => Some(Self::AttendanceExamUpdate),
+            "Attendance.Exam.Delete" => Some(Self::AttendanceExamDelete),
+            "Attendance.Import.Create" => Some(Self::AttendanceImportCreate),
+            "Attendance.Import.Read" => Some(Self::AttendanceImportRead),
+            "Attendance.Import.Update" => Some(Self::AttendanceImportUpdate),
+            "Attendance.Import.Delete" => Some(Self::AttendanceImportDelete),
+            "Attendance.BulkMark.BulkMark" => Some(Self::AttendanceBulkMark),
+            "Attendance.Report.Read" => Some(Self::AttendanceReportRead),
+            "Attendance.Notify.Notify" => Some(Self::AttendanceNotify),
             "Settings.Manage" => Some(Self::SettingsManage),
             "Operations.Manage" => Some(Self::OperationsManage),
             _ => None,
@@ -1209,6 +1403,21 @@ mod tests {
             }
         }
         assert_eq!(count, 31, "expected 31 Assessment.* capabilities");
+    }
+
+    #[test]
+    fn attendance_capabilities_round_trip_and_resolve_to_attendance_domain() {
+        let mut count = 0u32;
+        for c in Capability::all() {
+            let s = c.as_str();
+            if s.starts_with("Attendance.") {
+                let parsed = Capability::from_str(s).unwrap();
+                assert_eq!(parsed, *c, "round-trip failed for {s}");
+                assert_eq!(c.domain(), CapabilityDomain::Attendance, "domain mismatch for {s}");
+                count += 1;
+            }
+        }
+        assert_eq!(count, 24, "expected 24 Attendance.* capabilities (got {count})");
     }
 
     #[test]
