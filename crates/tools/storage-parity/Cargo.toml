@@ -11,4 +11,24 @@ description = "Cross-adapter parity test suite — verifies that all three stora
 workspace = true
 
 [dependencies]
-# No production dependencies yet — scaffold only.
+educore-core = { workspace = true }
+educore-storage = { workspace = true }
+educore-events = { workspace = true }
+educore-event-bus = { workspace = true }
+educore-platform = { workspace = true }
+educore-rbac = { workspace = true }
+educore-audit = { workspace = true }
+educore-storage-sqlite = { workspace = true }
+educore-storage-postgres = { workspace = true }
+educore-storage-mysql = { workspace = true }
+async-trait = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true }
+sqlx = { workspace = true }

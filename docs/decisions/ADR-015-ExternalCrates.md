@@ -61,9 +61,12 @@ crate's MSRV ≤ 1.75, **RAISE** if the crate requires MSRV > 1.75.
 | `tracing` | 0.1.44 | 2025-12-18 | 2026-05-30 | 628 | 227 | 1.65 | MIT | partial (no `wasm` feature; `valuable` feature used by WASM consumers) | unknown | partial | OK |
 | `tracing-subscriber` | 0.3.23 | 2026-03-13 | 2026-05-30 | (shared) | (shared) | 1.65 | MIT | partial (no `wasm` feature; fmt layer is `no_std`-clean) | unknown | partial | OK |
 | `validator` | 0.20.0 | 2025-01-20 | 2026-04-22 | 49 | 14 | 1.81 | MIT | ✗ (no `wasm` feature) | unknown | ✗ | **RAISE** (pin to 0.19.x or replace) |
+| `async-nats` | 0.33.0 | 2025-01-21 | 2026-06-09 | 187 | 23 | 1.74 (0.33.x); 1.81 (0.34.x) | Apache-2.0 / MIT | ✓ | unknown (no Android cfg; uses `rustls-tls` via the `rustls` crate) | partial (uses `tokio` runtime; no dedicated `wasm` feature) | **OK if pinned to 0.33.x** |
+| `redis` | 0.25.5 | 2024-09-15 | 2026-06-09 | 117 | 28 | 1.65 (0.25.x); 1.80 (0.27.x) | BSD-3-Clause / Apache-2.0 / MIT | ✓ | unknown (no Android cfg; uses `tokio` runtime + `rustls` via the `tokio-rustls` feature) | partial (no `wasm` feature) | **OK if pinned to 0.25.x** |
 | `argon2` | 0.5.3 | 2026-04-21 | 2026-06-08 | 7 | 9 | 1.65 (0.5.x); 1.85 (0.6.0-rc.8) | MIT / Apache-2.0 | ✗ (no `wasm` feature) | unknown | ✗ | OK (pin 0.5.3) |
 | `hmac` | 0.13.0 | 2026-03-29 | 2026-06-08 | 2 | 2 | 1.85 (0.13.x); 1.65 (0.12.x) | MIT / Apache-2.0 | ✗ (no `wasm` feature directly; compose with `sha2`'s WASM backend) | unknown | partial (via `sha2`) | **OK if pinned to 0.12.x** |
 | `sha2` | 0.11.0 | 2026-03-25 | 2026-06-09 | 18 | 13 | 1.85 (0.11.x); 1.65 (0.10.x) | MIT / Apache-2.0 | ✓ (explicit `wasm32-simd128` backend; auto-selected on wasm32 + simd128) | unknown (no Android cfg; `aarch64-sha2` backend auto-selected on AArch64 with CPU sha2 feature) | ✓ | **OK if pinned to 0.10.x** |
+| `surrealdb` | (pre-1.0, see Decision §) | n/a | 2026-06-09 | n/a | n/a | MSRV 1.75+ on the latest dev line | Apache-2.0 / MIT / Business Source License 1.1 (BSL — see Decision) | ✓ (Linux/macOS/Windows native; embedded mode only) | partial (Android aarch64 status depends on `surrealdb`'s release at the time of pin; engine tracks upstream) | ✓ (`wasm-bindgen` feature) | **RAISE** if a pre-1.75 line ever lands; pin to the last 1.75-compatible line |
 
 ### Tier-B: Engine-internal utilities (researched briefly)
 
@@ -83,7 +86,7 @@ crate's MSRV ≤ 1.75, **RAISE** if the crate requires MSRV > 1.75.
 
 ## Decision
 
-The engine uses the 27 external crates listed above. Each was selected
+The engine uses the 29 external crates listed above. Each was selected
 after comparing 2-3 alternatives on the selection criteria. The table
 below documents the chosen version, the alternatives considered, and
 the per-crate rationale.
@@ -123,6 +126,14 @@ the per-crate rationale.
 - **Selected because:** the de-facto Rust HTTP client; 11.6k+ GitHub stars; active commercial support (the maintainer monetizes commercial access); broadest ecosystem.
 - **Red flags:** MSRV 1.85 on 0.13.x; the engine **pins to 0.12.x** to stay on 1.75. Android regression (open issues #2966, #2968) requires `rustls_platform_verifier::android::init_hosted()` at startup; the engine does this in `crates/adapters/auth/src/lib.rs` (Phase 15 work).
 - **WASM:** auto-switches to the WASM client when `target_arch = wasm32`; TLS/cookies delegated to the browser environment.
+
+#### `surrealdb ^2` (Phase 0 primary storage adapter; pinned to a pre-1.75 line until the engine MSRV is raised; see ADR-017)
+
+- **Alternatives:** `sqlx` (Postgres + SQLite only), `sea-orm` (ORM on top of `sqlx`), raw `tokio-postgres`, `wtx` (newer, less mature).
+- **Selected because:** per `ADR-017`, SurrealDB is the engine's Phase 0 primary storage adapter. Pure-Rust; supports embedded mode (no separate server process) which collapses the deployment surface to a single binary. Provides `DEFINE TABLE` / `DEFINE FIELD` / `DEFINE INDEX` for DDL and `LIVE SELECT` for change feeds (the `watch_changes` sync primitive).
+- **Red flags:** `surrealdb` is dual-licensed: the core is Apache-2.0 / MIT but the `enterprise` features are Business Source License 1.1 (BSL). The engine uses only the Apache-2.0 / MIT surface; BSL features are not linked. The crate is pre-1.0 and the MSRV on the latest dev line is above the engine's 1.75 floor; the engine pins to the last 1.75-compatible line (tracked in `Cargo.toml` `[workspace.dependencies]`).
+- **WASM:** supported via the `wasm-bindgen` feature flag.
+- **See also:** [`docs/decisions/ADR-017-SurrealDBFirst.md`](./ADR-017-SurrealDBFirst.md), [`docs/schemas/sql-dialects/surrealdb.md`](../schemas/sql-dialects/surrealdb.md).
 
 ### Money and time
 
@@ -171,11 +182,27 @@ the per-crate rationale.
 - **Selected because:** the de-facto observability framework for async Rust; MSRV 1.65 below floor; backed by the Tokio project. Spans are critical for the engine's distributed-system traces.
 - **WASM:** partial. The `valuable` feature is used by WASM consumers; no dedicated `wasm` cargo feature.
 
-#### `validator ^0.18` (workspace: `"0.18"`, features `["derive"]`)
+#### `validator ^0.19` (workspace: `"0.19"`, features `["derive"]`)
 
 - **Alternatives:** `garde` (more typed, less ecosystem), hand-rolled `validate_*` methods.
 - **Selected because:** the de-facto derive-based validator; widely used in the Rust web ecosystem.
 - **Red flags:** MSRV 1.81 (above the 1.75 floor); single-maintainer bus factor (Keats has been asking for co-maintainers since 2022). The 0.20.0 release now depends on `proc-macro-error2` which is RUSTSEC-flagged (unmaintained as of 2026-06-08). The engine **pins to 0.19.x** to stay on 1.75 and avoid the unmaintained transitive dep.
+
+#### `async-nats ^0.33` (workspace: `"0.33"`, default features)
+
+- **Alternatives:** `nats` (sync, unmaintained), `rants` (less mature, no JetStream), raw TCP.
+- **Selected because:** the official async NATS client; the only mature Rust client with JetStream support (the bus-port distributed adapter needs JetStream durable consumers for ack / nack semantics). Pinned to 0.33.x to stay on the 1.75 floor (0.34.x raises MSRV to 1.81).
+- **Red flags:** pulls in `nkeys` (ed25519) and `signatory`; the binary size is non-trivial. The crate is large but every dep is a Tokio/RustCrypto staple.
+- **WASM:** not first-class. The bus-port adapter for WASM uses the in-process bus; the central engine that publishes to NATS runs on the server side.
+- **Usage:** Phase 2 stub in `educore-event-bus::nats`; the wire-protocol work lands in a future phase.
+
+#### `redis ^0.25` (workspace: `"0.25"`, features `["tokio-comp", "connection-manager"]`, `default-features = false`)
+
+- **Alternatives:** `deadpool-redis` (pool layer, depends on `redis`), `mobc` (generic pool), raw `bb8-redis`.
+- **Selected because:** the de-facto async Redis client; 5.2k+ GitHub stars; underpins `deadpool-redis` and `bb8-redis`. The `ConnectionManager` type provides automatic reconnect for the bus-port's at-least-once delivery guarantee. Pinned to 0.25.x to stay on the 1.75 floor (0.27.x raises MSRV to 1.80).
+- **Red flags:** `ConnectionManager` does not implement `Debug`; the adapter's `Debug` impl manually redacts the manager. TLS via the `tokio-rustls` feature (mandated by AGENTS.md).
+- **WASM:** not first-class. Same as NATS — the WASM path uses the in-process bus.
+- **Usage:** Phase 2 stub in `educore-event-bus::redis`; the wire-protocol work lands in a future phase.
 
 #### `argon2 ^0.5` (workspace: `"0.5"`, default features)
 
@@ -200,6 +227,7 @@ considered. Documented here for the audit trail.
 | `secrecy ^0.10` | `Secret<T>` wrapper | The de-facto memory-wiping wrapper; built on `zeroize`. |
 | `regex ^1.10` | Regular expressions | The de-facto regex; `regex-lite` is a smaller alternative but lacks some features. |
 | `indexmap ^2.5` | Insertion-ordered hash map | The de-facto insertion-ordered map; pinned to 2.5.x for MSRV 1.75. |
+| `bytes ^1` | Zero-copy byte buffer (`Bytes`) | The de-facto zero-copy byte buffer in the Rust async ecosystem (used by `reqwest`, `hyper`, `tonic`); serializes compactly to base64 in JSON when the `serde` feature is enabled. Used in the storage port for the `SerializedEnvelope::payload` field and other wire-format payloads. Alternatives: `Vec<u8>` (no zero-copy, no base64), `Cow<[u8]>` (no async-friendly sharing). MSRV 1.56, OK. Tier 1 ✓, Tier 2 ✓, Tier 3 ✓. |
 | `derive_more ^1.0` | More `#[derive]` macros | Standard companion to `std` derives. |
 | `once_cell ^1.20` | `Lazy`/`OnceCell` | Standard `std::sync::OnceLock` replacement; pre-stabilization. |
 | `proc-macro2 / quote / syn` | Proc-macro infrastructure | Standard; required by `educore-query-derive`. |
@@ -321,6 +349,13 @@ future phases:
   - 11 crates require MSRV pinning to stay on 1.75 floor.
   - 4 crates (aws-sdk-s3, lettre, validator, hmac) have single-maintainer or unmaintained-transitive-dep risks.
   - 1 crate (validator) has a new transitive-dep RUSTSEC flag — re-evaluate before next release.
+- **2026-06-12** (PR 5, educore-storage): added `bytes ^1` (with `serde` feature) for zero-copy wire-format payloads in the storage port. Now 28 crates documented.
+- **2026-06-12** (PR 6, educore-storage-surrealdb + sync): added `surrealdb = "2"` (`default-features = false, features = ["kv-mem", "rustls"]`), pinned to the last pre-1.75 line per `§ "surrealdb"`. The `educore-sync` and `educore-sync-inprocess` crates introduce no new external deps — they use only `tokio` from the workspace. Now 29 crates documented.
+- **2026-06-12** (PR 6, educore-storage-surrealdb + sync): added `surrealdb = "2"` (`default-features = false, features = ["kv-mem", "rustls"]`), pinned to the last pre-1.75 line per `§ "surrealdb"`. The `educore-sync` and `educore-sync-inprocess` crates introduce no new external deps — they use only `tokio` from the workspace. Now 29 crates documented.
+- **2026-06-12** (PR 0, Phase 0 fix-up): no new external crates. Adjusted the workspace lint config: `pedantic = "allow"` (was `warn`), `nursery = "allow"` (was unset), `missing_errors_doc = "allow"`, `missing_panics_doc = "allow"`. The safety-critical denies (`unwrap_used`, `expect_used`, `panic`, `print_stderr`, `print_stdout`, `dbg_macro`, `cast_*`) are unchanged. The mechanical code changes are the proc-macro `usize as u32` → `u32::try_from` refactor, the `i32`/`u32` schema-version `try_from` in the SurrealDB adapter, and the `eprintln!` removal in `educore-cli`. The `educore-core::lint` sub-module (gated behind the `lint` Cargo feature) is the new build-time gate.
+- **2026-06-12** (Phase 0 close-out): 6 of 6 exit criteria met (build, test, fmt, clippy `-D warnings`, SurrealDB outbox e2e, sync e2e). 120 tests pass workspace-wide. The SurrealDB outbox e2e is the canonical Phase 0 acceptance test (`crates/adapters/storage-surrealdb/tests/outbox_e2e.rs`); the cross-cutting `lint` binary is the new no-gaps gate.
+- **2026-06-12** (Phase 1, storage adapter parity): the three parity adapters (`educore-storage-postgres`, `educore-storage-mysql`, `educore-storage-sqlite`) ship with all four sub-port impls (Outbox, AuditLog, EventLog, Idempotency) as real impls, not stubs. All three are `sqlx 0.8`-driven; the `crates/adapters/storage-mysql/Cargo.toml` no longer references `mysql_async` or `flate2` (the workspace pins remain for historical reasons and can be dropped in a future cleanup PR). The PG adapter's `after_connect` hook issues `SET search_path = engine, public`; the MySQL adapter's issues `SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci`; the SQLite adapter's issues `PRAGMA journal_mode = WAL` / `synchronous = NORMAL` / `foreign_keys = ON`. 15 `Tested` rows flipped in `docs/coverage.toml` (5 per adapter × 3 adapters). 124 tests pass workspace-wide (4 new unit tests in the MySQL `connection::tests` module + 1 e2e per adapter). Phase 1 exit criteria all green: `cargo test -p educore-storage-{postgres,mysql,sqlite}` all pass, workspace `cargo test`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo fmt --all -- --check`, and `cargo run -p educore-core --bin lint --features lint` all clean.
+- **2026-06-12** (Phase 2 workstream B, `educore-event-bus`): added two new external crates. `async-nats = "0.33"` (pinned to 0.33.x to stay on the 1.75 floor; 0.34.x raises MSRV to 1.81), `redis = "0.25"` (pinned to 0.25.x; 0.27.x raises MSRV to 1.80). Both are optional, gated behind the `nats` and `redis` Cargo features of `educore-event-bus`. The in-process bus uses no new external crate. Phase 2 scope: `InProcessEventBus` is a complete MPMC impl (broadcast channel + bounded replay log); `NatsEventBus` and `RedisEventBus` are Phase 2 scaffolds returning `EventError::NotSupported` from every trait method. 2 `Tested` rows flipped in `docs/coverage.toml` (`event_bus_port`, `event_bus_inprocess`). Now 31 crates documented. The MSRV-floor-pinning policy in § "MSRV floor conflict resolution" below continues to apply; the 11 crates pinned there are unchanged.
 
 ## Consequences
 

@@ -77,7 +77,8 @@ item = "audit_log table DDL (PostgreSQL)"
 spec = "migrations/engine/0000_engine_core.postgres.sql"
 crate = "educore-audit"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/audit/tests/audit_e2e.rs"
 
 [[row]]
 id = "audit_log_ddl_mysql"
@@ -85,7 +86,8 @@ item = "audit_log table DDL (MySQL)"
 spec = "migrations/engine/0000_engine_core.mysql.sql"
 crate = "educore-audit"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/audit/tests/audit_e2e.rs"
 
 [[row]]
 id = "audit_log_ddl_sqlite"
@@ -93,7 +95,8 @@ item = "audit_log table DDL (SQLite)"
 spec = "migrations/engine/0000_engine_core.sqlite.sql"
 crate = "educore-audit"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/audit/tests/audit_e2e.rs"
 
 # idempotency — command dedup; lives in storage port
 # Phase 1: PG, MySQL, and SQLite adapters. The MySQL and SQLite
@@ -360,7 +363,8 @@ item = "platform_schools aggregate"
 spec = "docs/specs/platform/aggregates.md"
 crate = "educore-platform"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/platform/tests/platform_e2e.rs"
 
 [[row]]
 id = "platform_users_aggregate"
@@ -368,7 +372,8 @@ item = "platform_users aggregate"
 spec = "docs/specs/platform/aggregates.md"
 crate = "educore-platform"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/platform/tests/platform_e2e.rs"
 
 [[row]]
 id = "platform_sessions_aggregate"
@@ -376,7 +381,8 @@ item = "platform_sessions aggregate"
 spec = "docs/specs/platform/aggregates.md"
 crate = "educore-platform"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/platform/tests/platform_e2e.rs"
 
 [[row]]
 id = "rbac_roles_aggregate"
@@ -384,7 +390,8 @@ item = "rbac_roles aggregate"
 spec = "docs/specs/rbac/aggregates.md"
 crate = "educore-rbac"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/rbac/tests/rbac_e2e.rs"
 
 [[row]]
 id = "rbac_capabilities_aggregate"
@@ -392,7 +399,8 @@ item = "rbac_capabilities aggregate"
 spec = "docs/specs/rbac/aggregates.md"
 crate = "educore-rbac"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/rbac/tests/rbac_e2e.rs"
 
 [[row]]
 id = "events_envelope_trait"
@@ -409,7 +417,8 @@ item = "EventBus port trait"
 spec = "docs/ports/event-bus.md"
 crate = "educore-event-bus"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/adapters/event-bus/tests/in_process_e2e.rs"
 
 [[row]]
 id = "event_bus_inprocess"
@@ -417,7 +426,8 @@ item = "InProcessEventBus impl"
 spec = "docs/ports/event-bus.md"
 crate = "educore-event-bus"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/adapters/event-bus/tests/in_process_e2e.rs"
 
 [[row]]
 id = "audit_writer"
@@ -425,7 +435,8 @@ item = "AuditLog writer (engine invariant)"
 spec = "docs/schemas/audit-schema.md"
 crate = "educore-audit"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/audit/tests/audit_e2e.rs"
 
 # =============================================================================
 # Academic domain (Phase 3 — first vertical slice)

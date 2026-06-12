@@ -1,11 +1,11 @@
 [package]
-name = "educore-audit"
+name = "educore-sync-inprocess"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Audit log writer, retention policies, and the audit_log table port."
+description = "In-process reference implementation of the educore-sync SyncAdapter port (default for single-process deployments and tests, per ADR-018)."
 
 [lints]
 workspace = true
@@ -13,15 +13,12 @@ workspace = true
 [dependencies]
 educore-core = { workspace = true }
 educore-events = { workspace = true }
-educore-storage = { workspace = true }
+educore-sync = { workspace = true }
 async-trait = { workspace = true }
 bytes = { workspace = true }
-chrono = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
+tokio = { workspace = true }
 tracing = { workspace = true }
-uuid = { workspace = true }
+futures = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true }
+educore-event-bus = { workspace = true }

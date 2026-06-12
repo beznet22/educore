@@ -311,7 +311,113 @@ and target `school_id` (the source is in the `actor_id`'s
 `TenantContext`, the target is in the resource's `school_id`).
 Cross-tenant audit records are visible only to `SuperAdmin`.
 
-## 13. Storage Layout
+## 13. Partitioning Strategy
+
+The `audit_log` table grows without bound: a school of 1,000
+students generates ~10⁵ rows per year, a school of 10,000 students
+generates ~10⁶ rows per year, and the engine's 7-year retention
+default keeps every row for the regulator-required period. To keep
+query latency and vacuum costs flat as the table grows, every
+supported storage backend partitions the table along the
+`school_id` and `occurred_at` axes. The partitioning strategy is
+dialect-specific (see `docs/schemas/sql-dialects/comparison.md`
+for the per-dialect DDL conventions).
+
+### 13.1 PostgreSQL
+
+PostgreSQL uses declarative range partitioning keyed on
+`(school_id, date_trunc('month', occurred_at))`. One partition per
+`(school, month)`. The partition naming convention is
+`audit_log_<school_uuid>_<yyyymm>` (e.g.
+`audit_log_0190a3b4_202605` for school `0190a3b4-…` in May 2026).
+
+```sql
+CREATE TABLE audit_log (
+    audit_id        UUID NOT NULL,
+    school_id       UUID NOT NULL,
+    -- ... other columns ...
+    occurred_at     TIMESTAMP NOT NULL,
+    PRIMARY KEY (school_id, occurred_at, audit_id)
+) PARTITION BY RANGE (school_id, date_trunc('month', occurred_at));
+```
+
+Partition creation is a consumer concern (a `pg_cron` job
+maintains a rolling 18-month window — 12 months of history plus 6
+months of headroom for late-arriving events). The engine emits
+the canonical DDL for the parent table and a default `audit_log_default`
+catch-all partition; the consumer's migration script creates the
+per-school, per-month partitions and rotates the oldest ones out
+as they age past the retention window.
+
+Dropping a partition is a `DROP TABLE` — no row-by-row
+deletion is needed. The retention sweep event
+(`RetentionSweepDue`) is the signal: the consumer's partition
+rotation job subscribes to it, drops any partition whose
+upper bound is older than `retention_days`, and archives the
+dropped partition to cold storage (S3 Glacier, Azure Archive) if
+the deployment is in a regulated mode.
+
+### 13.2 MySQL
+
+MySQL does not support declarative range partitioning on multiple
+columns the way PostgreSQL does, so the engine uses `KEY`
+partitioning on `school_id` with a fixed 12 partitions. MySQL's
+`KEY` partitioner uses an internal hash, so the partition count is
+fixed at table-creation time and is not changed at runtime.
+
+```sql
+CREATE TABLE audit_log (
+    audit_id        BINARY(16) NOT NULL,
+    school_id       BINARY(16) NOT NULL,
+    -- ... other columns ...
+    occurred_at     DATETIME(6) NOT NULL,
+    PRIMARY KEY (school_id, occurred_at, audit_id)
+) ENGINE=InnoDB
+  PARTITION BY KEY (school_id) PARTITIONS 12;
+```
+
+**Maintenance procedure** (consumer concern, documented in the
+operations runbook):
+
+1. **Per-school overflow**: when a single school's audit volume
+   exceeds ~10⁷ rows, the consumer's DBA adds a sub-partitioning
+   scheme by `ALTER TABLE … REORGANIZE PARTITION … INTO (…)`.
+   The engine ships a migration helper script
+   (`migrations/engine/audit_log_partition_rotate.sql`) that
+   demonstrates the procedure.
+2. **Time-range rotation**: MySQL's `KEY` partitioning does not
+   natively support time-range pruning, so the retention sweep
+   runs as a row-by-row `DELETE FROM audit_log WHERE
+   school_id = ? AND occurred_at < ?` per school. The
+   `RetentionSweepDue` event triggers the per-school batch.
+3. **Partition count tuning**: 12 partitions is a conservative
+   default that fits 1,000–10,000 schools on a single node.
+   Deployments with more schools increase to 16 or 24 via
+   `ALTER TABLE audit_log PARTITION BY KEY(school_id) PARTITIONS 24;`
+   (requires a full table rebuild; schedule during a maintenance
+   window).
+
+### 13.3 SQLite
+
+SQLite has no native partitioning. The engine treats the
+`audit_log` table as a regular B-tree and runs the retention
+sweep as a single `DELETE FROM audit_log WHERE occurred_at < ?`
+statement (parameterised by the `RetentionSweepDue.cutoff`
+field). The engine does not depend on partitioning for SQLite
+because the engine's target deployment is single-tenant or
+small-scale per SQLite instance; the consumer's job is to run
+the sweep on a schedule and to vacuum the database
+(`VACUUM;`) periodically to reclaim space.
+
+For deployments that need partitioning under SQLite, the engine
+ships a manual partitioning helper (`docs/guides/sqlite-sharding.md`,
+Phase 16) that creates a sibling `audit_log_<yyyymm>` table per
+month and a UNION view that aggregates them. The helper is a
+consumer-side tool, not an engine feature; SQLite's
+`ATTACH DATABASE` and view composition make it possible but
+not declarative.
+
+## 14. Storage Layout
 
 The audit log is stored in a separate table from the domain
 aggregates. The schema (per storage adapter):
@@ -349,7 +455,7 @@ The indexes support the common query patterns: per-tenant time
 range, per-actor history, per-resource history, per-correlation
 chain.
 
-## 14. Audit-Driven Subscriptions
+## 15. Audit-Driven Subscriptions
 
 Subscribers to the audit log are a port. A consumer MAY provide:
 
@@ -364,7 +470,7 @@ The audit port is a one-way firehose; the engine does not support
 acknowledgement or replay semantics on it. Replay is supported
 through the event bus.
 
-## 15. Engine-Internal vs. User-Facing Events
+## 16. Engine-Internal vs. User-Facing Events
 
 The audit log is for **user-facing** events only. The engine's
 internal events (cache invalidations, internal heartbeats) are not

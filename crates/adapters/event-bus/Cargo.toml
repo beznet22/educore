@@ -10,9 +10,60 @@ description = "Event bus port, in-process, NATS, Redis Streams, Kafka adapters."
 [lints]
 workspace = true
 
+[features]
+# Default features: only the in-process bus. NATS and Redis are
+# opt-in; the in-process bus is always built.
+default = ["in-process"]
+# Marker feature for the in-process bus. Always enabled by default;
+# listed as a feature so consumers can opt out in tests if they
+# want to verify a `default-features = false` build of the
+# adapter crate (e.g., for the distributed-only path).
+in-process = []
+# Phase 2 stub: gates `NatsEventBus` and its `async-nats` dep.
+nats = ["dep:async-nats"]
+# Phase 2 stub: gates `RedisEventBus` and its `redis` dep.
+redis = ["dep:redis"]
+
 [dependencies]
+# Engine deps (workspace members)
 educore-core = { workspace = true }
 educore-events = { workspace = true }
+
+# Async runtime / traits / combinators
 tokio = { workspace = true }
 async-trait = { workspace = true }
+futures = { workspace = true }
 
+# Errors / observability
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+# Wire-format serialization (envelope cross-process boundary)
+bytes = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Distributed adapters (optional)
+# `async-nats` is the official async NATS client; the engine's
+# bus-port future work will use its JetStream API. Pinned to a
+# pre-1.75-compatible line per ADR-015 § "MSRV floor conflict
+# resolution".
+async-nats = { version = "0.33", optional = true }
+
+# `redis` is the de-facto async Redis client (uses tokio under
+# the hood). Pinned per ADR-015 § "MSRV floor conflict
+# resolution" to the last pre-1.75-compatible line. Default
+# features disabled; we explicitly enable `tokio-comp` and the
+# `connection-manager` feature that powers `ConnectionManager`.
+redis = { version = "0.25", optional = true, default-features = false, features = ["tokio-comp", "connection-manager"] }
+
+[dev-dependencies]
+# `chrono` for the unit-test timestamp-offset arithmetic
+# (Timestamp::from_datetime uses chrono DateTime<Utc>); tests
+# shift occurred_at by ±1s to assert StartPosition::FromTimestamp
+# cursor semantics. The crate is a workspace dep.
+chrono = { workspace = true }
+# `uuid` for tests that build EventId cursors via
+# `Uuid::from_u128` and `Uuid::nil()`. The crate is a workspace
+# dep.
+uuid = { workspace = true }

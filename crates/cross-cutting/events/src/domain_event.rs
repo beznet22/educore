@@ -42,11 +42,11 @@ use crate::envelope::EventEnvelope;
 ///     const EVENT_TYPE: &'static str = "platform.school.created";
 ///     const SCHEMA_VERSION: u32 = 1;
 ///     const AGGREGATE_TYPE: &'static str = "school";
-///     fn event_id(&self) -> EventId { /* minted at construction */ unimplemented!() }
+///     fn event_id(&self) -> EventId { /* see SchoolCreated::event_id */ self.event_id_field }
 ///     fn aggregate_id(&self) -> Uuid { self.school_id.as_uuid() }
 ///     fn school_id(&self) -> SchoolId { self.school_id }
 ///     fn occurred_at(&self) -> Timestamp { self.occurred_at }
-///     fn to_value(&self) -> serde_json::Value { serde_json::to_value(self).unwrap() }
+///     fn to_value(&self) -> serde_json::Value { serde_json::to_value(self).ok().map(serde_json::Value::Object).unwrap_or(serde_json::Value::Null) }
 /// }
 /// ```
 pub trait DomainEvent: Send + Sync + 'static {
