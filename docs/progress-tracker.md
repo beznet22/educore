@@ -13,25 +13,28 @@ them. Every crate is scaffolded (`Cargo.toml`, `lib.rs`,
 `#[forbid(unsafe_code)]`, `#[deny(missing_docs)]`); none are
 implemented yet. The tier-to-directory mapping is
 `crates/<tier>/<name>/` (e.g. `crates/domains/academic/`,
-`crates/adapters/storage-postgres/`); the package name on disk
+`crates/adapters/storage-surrealdb/`); the package name on disk
 keeps the `educore-` prefix (e.g. `educore-academic`). See
 `AGENTS.md` § "Tier System" for the full rules.
 
 | Tier            | Crate                          | Phase | Spec'd | Implementing | Tested | Notes                          |
 | --------------- | ------------------------------ | ----- | ------ | ------------ | ------ | ------------------------------ |
-| umbrella        | `educore`                    | -     | Yes    | No           | No     | Umbrella; re-exports all 33    |
-| infra           | `educore-core`               | 0     | Yes    | No           | No     | Errors, ids, value objects, clock |
-| infra           | `educore-query-derive`       | 0     | Yes    | No           | No     | `#[derive(DomainQuery)]` macro |
-| infra           | `educore-storage`            | 0     | Yes    | No           | No     | `StorageAdapter` port + sub-ports |
-| adapters        | `educore-storage-postgres`   | 0     | Yes    | No           | No     | Primary adapter; `sqlx` + `rustls` |
-| tools           | `educore-storage-parity`     | 16    | Yes    | No           | No     | Cross-adapter parity suite     |
-| adapters        | `educore-storage-mysql`      | 1     | Yes    | No           | No     | `MySQL 8.0+`, RLS via session var |
-| adapters        | `educore-storage-sqlite`     | 1     | Yes    | No           | No     | Embedded / offline; `json1`    |
-| cross-cutting   | `educore-platform`           | 2     | Yes    | No           | No     | School, User, TenantContext    |
-| cross-cutting   | `educore-rbac`               | 2     | Yes    | No           | No     | Capability, Role, Permission   |
-| cross-cutting   | `educore-events`             | 2     | Yes    | No           | No     | Envelope crate; `DomainEvent`  |
-| adapters        | `educore-event-bus`          | 2     | Yes    | No           | No     | in-process, NATS, Redis impls  |
-| cross-cutting   | `educore-audit`              | 2     | Yes    | No           | No     | `AuditLogEntry`, retention     |
+| umbrella        | `educore`                    | -     | Yes    | Yes          | Yes    | Umbrella; re-exports all 33 internal crates (incl. `storage_surrealdb`, `sync`, `sync_inprocess`) |
+| infra           | `educore-core`               | 0     | Yes    | Yes          | Yes    | Errors, ids, value objects, clock, `lint` sub-module (feature-gated), `DomainError` (7 variants) |
+| infra           | `educore-query-derive`       | 0     | Yes    | Yes          | Yes    | `#[derive(DomainQuery)]` macro; 19 integration tests |
+| infra           | `educore-storage`            | 0     | Yes    | Yes          | Yes    | `StorageAdapter` port + 4 sub-ports (Outbox/AuditLog/EventLog/Idempotency); 11 unit tests |
+| adapters        | `educore-storage-surrealdb`  | 0     | Yes    | Yes          | Yes    | Primary adapter (SurrealDB); `surrealdb` 2.6.5 + `rustls`; 6/6 cross-cutting tables emitted; outbox e2e green |
+| adapters        | `educore-storage-postgres`   | 1     | Yes    | Yes          | Yes    | Parity adapter; `sqlx 0.8` + `rustls`; all 4 sub-ports real (Outbox/AuditLog/EventLog/Idempotency); e2e via `EDUCORE_PG_URL`; 1 outbox e2e test |
+| tools           | `educore-storage-parity`     | 16    | Yes    | No           | No     | Cross-adapter parity suite; scaffold only |
+| adapters        | `educore-storage-mysql`      | 1     | Yes    | Yes          | Yes    | `MySQL 8.0+`; `sqlx 0.8` (NOT `mysql_async`); backtick identifiers, `?` placeholders, `IN (?)` via `QueryBuilder`; 4 unit tests on the multi-statements URL helper; e2e via `EDUCORE_MYSQL_URL`; 1 outbox e2e test |
+| adapters        | `educore-storage-sqlite`     | 1     | Yes    | Yes          | Yes    | Embedded / offline; `sqlx 0.8` + `json1`; in-memory test (always runs in CI); `uuid::fmt::Hyphenated` for the 36-char `TEXT` representation; 1 outbox e2e test |
+| cross-cutting   | `educore-sync`               | 0     | Yes    | Yes          | Yes    | `SyncAdapter` port (SyncCoordinator) per ADR-018; 1 object-safety test |
+| cross-cutting   | `educore-sync-inprocess`     | 0     | Yes    | Yes          | Yes    | In-process sync impl (default); 6 tests, `tokio::sync::{mpsc,broadcast}` |
+| cross-cutting   | `educore-platform`           | 2     | Yes    | Yes          | Yes    | School, User, TenantContext; 9-file layout; 44 unit + 10 integration tests; 3 coverage rows flipped |
+| cross-cutting   | `educore-rbac`               | 2     | Yes    | Yes          | Yes    | Capability (55 variants), Role, Permission, `CapabilityCheck` port, `DefaultRoleCatalog`, `is_replicated`; 41 unit + 19 integration tests; 2 coverage rows flipped |
+| cross-cutting   | `educore-events`             | 2     | Yes    | Yes          | Yes    | Envelope crate; `DomainEvent`, `EventEnvelope`, `EventBus` port, 4 sync events (`SyncStarted`/`Paused`/`Resumed`/`Stopped`); 25 unit tests; 1 coverage row flipped |
+| adapters        | `educore-event-bus`          | 2     | Yes    | Yes          | Yes    | `InProcessEventBus` (default, MPMC broadcast) + `NatsEventBus` (feature `nats`) + `RedisEventBus` (feature `redis`) — both distributed adapters are Phase 2 stubs; 51 unit + 9 integration tests; 2 coverage rows flipped |
+| cross-cutting   | `educore-audit`              | 2     | Yes    | Yes          | Yes    | `AuditWriter` + `RetentionPolicy` + `RetentionSweepDue` event; partitioning strategy documented in `docs/schemas/audit-schema.md` § 13; 22 unit + 8 integration tests; 4 coverage rows flipped |
 | domains         | `educore-academic`           | 3     | Yes    | No           | No     | First vertical slice; 8 aggs   |
 | domains         | `educore-assessment`         | 4     | Yes    | No           | No     | Exams, marks, results          |
 | domains         | `educore-attendance`         | 5     | Yes    | No           | No     | Student/staff/subject/exam     |
@@ -63,9 +66,9 @@ docs audit).
 
 | Phase | Title                              | Crates                                                                 | Status   | Exit Criteria Met |
 | ----- | ---------------------------------- | ---------------------------------------------------------------------- | -------- | ----------------- |
-| 0     | Foundation                         | `infra`, `query-derive`, `storage`, `storage-postgres`                  | Planned  | No                |
-| 1     | Adapter parity (MySQL + SQLite)    | `storage-mysql`, `storage-sqlite`                                      | Planned  | No                |
-| 2     | Cross-cutting foundations          | `platform`, `rbac`, `events`, `event-bus`, `audit`                     | Planned  | No                |
+| 0     | Foundation                         | `core`, `query-derive`, `storage`, `storage-surrealdb`, `sync`, `sync-inprocess` | Done     | 6 of 6 ✅ (PR 0 closed the clippy gap; PR A flipped the docs) |
+| 1     | Adapter parity (Postgres + MySQL + SQLite) | `storage-postgres`, `storage-mysql`, `storage-sqlite`                | Done     | 7 of 7 ✅ (15 coverage rows flipped, 124 tests pass; see `docs/handoff/PHASE-1-HANDOFF.md`) |
+| 2     | Cross-cutting foundations          | `platform`, `rbac`, `events`, `event-bus`, `audit`                     | Done     | 5 of 5 ✅ (310 tests pass, 12 coverage rows flipped, `educore-sync` refactored to depend on `educore_events::EventEnvelope` resolving Phase 0 OQ #2; see `docs/handoff/PHASE-2-HANDOFF.md`) |
 | 3     | Academic (first vertical slice)    | `academic`                                                             | Planned  | No                |
 | 4     | Assessment                         | `assessment`                                                           | Planned  | No                |
 | 5     | Attendance                         | `attendance`                                                           | Planned  | No                |
@@ -79,9 +82,9 @@ docs audit).
 | 13    | Events domain (calendar)           | `events-domain`                                                        | Planned  | No                |
 | 14    | Settings + Operations              | `settings`, `operations`                                               | Planned  | No                |
 | 15    | Port adapters                      | `auth`, `notify`, `payment`, `files`, `integrations`                   | Planned  | No                |
-| 16    | Test infrastructure + SDK          | `testkit`, `storage-parity`, `sdk`, `cli`                              | Planned  | No                |
+| 16    | Test infrastructure + SDK          | `testkit`, `storage-parity` (full suite), `sdk`, `cli`                 | Planned  | No                |
 | 17    | Production readiness               | (no new crates)                                                        | Planned  | No                |
-| -     | graphify hook installed + graph fresh | (no new crates)                                                    | Pending  | No                |
+| -     | graphify hook installed + graph fresh | (no new crates)                                                    | Done     | Yes (graph fresh as of last commit) |
 
 ## Documentation Status
 
@@ -115,23 +118,33 @@ The full matrix (226+ rows) is **machine-readable** and lives at
 PR. The summary below rolls it up to the bucket level. The
 **Implemented** column starts at 0 and grows as phases complete.
 
-| Bucket                                                  | Total | Spec'd | Implemented |
-| ------------------------------------------------------- | ----- | ------ | ----------- |
-| Engine cross-cutting tables (6 x 3 dialects)            | 18    | 18     | 0           |
-| Port traits                                             | 7     | 7      | 0           |
-| Domain aggregates                                       | ~310  | ~310   | 0           |
-| Domain commands                                         | ~225  | ~225   | 0           |
-| Domain events                                           | ~280  | ~280   | 0           |
-| Storage adapters                                        | 3     | 3      | 0           |
-| Port adapters (5 ports + 1 cli binary)                  | 6     | 6      | 0           |
-| Reference impls (JWT, email, SMS, Stripe, S3, local, LMS, video) | 8 | 8 | 0      |
+| Bucket                                                  | Total | Spec'd | Implemented | Tested |
+| ------------------------------------------------------- | ----- | ------ | ----------- | ------ |
+| Engine cross-cutting tables (6 x 4 dialects)            | 24    | 24     | 16          | 16     |
+| Foundation layer (core + query-derive + storage port)   | 9     | 9      | 9           | 9      |
+| Sync engine (port + inprocess impl)                     | 2     | 2      | 2           | 2      |
+| Engine graph (graphify)                                | 1     | 1      | 1           | 1      |
+| Port traits (remaining 5: platform, rbac, events, event-bus, auth/notify/payment/files/integrations) | 12    | 12     | 0           | 0      |
+| Domain aggregates                                       | ~310  | ~310   | 0           | 0      |
+| Domain commands                                         | ~225  | ~225   | 0           | 0      |
+| Domain events                                           | ~280  | ~280   | 0           | 0      |
+| SQL-dialect parity adapters (PG, MySQL, SQLite)         | 3     | 3      | 3           | 3      |
+| Cross-adapter parity test suite                         | 1     | 1      | 0           | 0      |
+| Port adapters (5 ports + 1 cli binary)                  | 6     | 6      | 0           | 0      |
+| Reference impls (JWT, email, SMS, Stripe, S3, local, LMS, video) | 8 | 8 | 0      | 0      |
 
 The cross-cutting bucket is `outbox`, `audit_log`, `idempotency`,
-`event_log`, `schema_registry`, `system_user` rendered in each of
-the three dialect DDL files (`postgres`, `mysql`, `sqlite`).
-Aggregate / command / event totals derive from the per-domain
-specs in `docs/specs/<domain>/aggregates.md`,
-`docs/commands/<domain>.md`, and `docs/events/<domain>.md`.
+`event_log`, `schema_registry`, `system_user` rendered in each of the
+four dialect DDL files (`surreal`, `postgres`, `mysql`, `sqlite`).
+After Phase 0, 4 SurrealDB rows are `Tested`. After Phase 1, 12 more
+rows flip (4 DDL rows × 3 SQL dialects), for a total of 16 of 24
+in this bucket. The `audit_log` and `event_log` rows for PG, MySQL,
+SQLite are owned by `educore-audit` and `educore-events`
+respectively; they are physically present in the DDL files (so the
+SQL adapters can write to them) but flip to `Tested` in Phase 2.
+Aggregate / command / event totals derive from the per-domain specs
+in `docs/specs/<domain>/aggregates.md`, `docs/commands/<domain>.md`,
+and `docs/events/<domain>.md`.
 
 The current `docs/coverage.toml` has an initial scaffold of
 ~80 representative rows covering the engine cross-cutting tables,

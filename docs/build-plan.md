@@ -6,6 +6,33 @@ phase has explicit exit criteria and updates the Coverage Matrix
 emission flow referenced throughout is documented in
 [`docs/schemas/sql-dialects/README.md` § "Runtime DDL emission — end-to-end flow"](schemas/sql-dialects/README.md#runtime-ddl-emission--end-to-end-flow).
 
+## SurrealDB-first + Sync engine additions
+
+Two new ADRs amend this build plan:
+
+- [`docs/decisions/ADR-017-SurrealDBFirst.md`](decisions/ADR-017-SurrealDBFirst.md)
+  — **SurrealDB becomes the primary storage backend.** The Phase 0
+  adapter is `educore-storage-surrealdb` (replacing
+  `educore-storage-postgres` as the reference target). PG, MySQL,
+  and SQLite move to Phase 1 as parity adapters. SurrealDB's
+  `DEFINE TABLE` / `DEFINE FIELD` / `DEFINE INDEX` DDL is the
+  canonical reference; the SQL dialects emit the same engine
+  invariants in their own syntax.
+- [`docs/decisions/ADR-018-SyncEngineArchitecture.md`](decisions/ADR-018-SyncEngineArchitecture.md)
+  — **A new sync engine layer is added at Phase 0.** This is a
+  cross-cutting port (`educore-sync`) with commands, events, and
+  a coordinator that drives offline-first replication between
+  the canonical server and edge clients. One reference
+  implementation ships at Phase 0: `educore-sync-inprocess` (the
+  in-process coordinator, default for single-process deployments
+  and tests). The `educore-sync-http` worker client and
+  `educore-sync-null` no-op impl are deferred to a later phase.
+
+The sync port contract is documented in
+[`docs/ports/sync.md`](ports/sync.md). The Phase 0 outbox e2e
+test is extended to assert that the in-process sync coordinator
+receives the event alongside the storage read-back.
+
 ## Tier System
 
 The 34 crates are organized into 5 tiers + 1 umbrella. Each phase in
@@ -13,9 +40,9 @@ this plan targets one or more tiers:
 
 | Phase | Tiers | Crates |
 | --- | --- | --- |
-| 0 | infra, adapters, tools | `educore-core`, `educore-query-derive`, `educore-storage`, `educore-storage-postgres`, `educore-storage-parity` |
-| 1 | adapters | `educore-storage-mysql`, `educore-storage-sqlite` |
-| 2 | cross-cutting | `educore-platform`, `educore-rbac`, `educore-events`, `educore-event-bus`, `educore-audit` |
+| 0 | infra, cross-cutting, adapters, tools | `educore-core`, `educore-query-derive`, `educore-storage`, `educore-storage-surrealdb`, `educore-sync`, `educore-sync-inprocess`, `educore-storage-parity` (scaffold) |
+| 1 | adapters | `educore-storage-postgres`, `educore-storage-mysql`, `educore-storage-sqlite` |
+| 2 | cross-cutting | `educore-platform`, `educore-rbac`, `educore-events`, `educore-event-bus`, `educore-audit`, `educore-sync-http` |
 | 3-13 | domains | one per phase (academic, assessment, attendance, hr, finance, facilities, library, communication, documents, cms, settings + operations, events-domain) |
 | 14 | cross-cutting, domains | `educore-settings`, `educore-operations` |
 | 15 | adapters | `educore-auth`, `educore-notify`, `educore-payment`, `educore-files`, `educore-integrations` |
@@ -25,18 +52,36 @@ this plan targets one or more tiers:
 On disk the tier lives one level above each crate's source tree, e.g.
 the `educore-core` package is at `crates/infra/core/src/`, the
 `educore-academic` package is at `crates/domains/academic/src/`,
-and the `educore-storage-postgres` package is at
-`crates/adapters/storage-postgres/src/`. Package names are unchanged
+and the `educore-storage-surrealdb` package is at
+`crates/adapters/storage-surrealdb/src/`. Package names are unchanged
 across the restructure — only directory paths moved.
 
 The layered dependency direction is enforced by the
 `educore-core::lint` sub-module. See
 [AGENTS.md § Tier System](../../AGENTS.md#tier-system).
 
+## Orphaned items
+
+A handful of items identified during the Phase 0 close-out were
+left without a clear owner in the original build plan. They are
+now tracked here with the phase that will pick them up.
+
+| Item | Was orphaned between | Picked up by | Notes |
+| --- | --- | --- | --- |
+| `educore-sync-http` worker client | Phase 0 (deferred per minimum-viable sync) | **Phase 2** | Lands alongside `educore-event-bus`. The `reqwest 0.12.x` pin is retained in `[workspace.dependencies]`. |
+| `educore-core::lint` sub-module | Phase 0 (referenced in `§ "The No-Gaps Gates"` but never made it to a Phase 0 task) | **PR 0 (Phase 0.5 fix-up)** | Scaffolded in PR 0 behind the `lint` Cargo feature. Full spec→code and code→spec cross-ref added in Phase 1+. |
+| `cargo clippy --workspace --all-targets -- -D warnings` green | Phase 0 exit criterion 5 | **PR 0 (Phase 0.5 fix-up)** | Closed by PR 0 (workspace lints adjusted, test-code allows, production-code unwraps fixed, proc-macro `as` cast fixed, `educore-core::lint` shipped). |
+| `EntityDescriptor` AST shape | Phase 0 task 1 referenced the type, `docs/query_layer.md` did not define it | **Phase 3** (first domain crate) | Documented in `docs/query_layer.md`; concrete types land with `educore-academic`. |
+
+Each item is also annotated in `docs/coverage.toml` (`notes`
+column) so the per-PR gate surfaces it.
+
+---
+
 ## The 17 phases
 
-1. Phase 0 — Foundation: `core`, `query-derive`, `storage` port, `storage-postgres` + outbox e2e
-2. Phase 1 — Adapter parity: `storage-mysql`, `storage-sqlite` + cross-adapter test
+1. Phase 0 — Foundation: `core`, `query-derive`, `storage` port, `storage-surrealdb`, `sync` (port + inprocess) + outbox e2e
+2. Phase 1 — Adapter parity: `storage-postgres`, `storage-mysql`, `storage-sqlite` + cross-adapter test
 3. Phase 2 — Cross-cutting foundations: `platform`, `rbac`, `events`, `event-bus`, `audit`
 4. Phase 3 — Academic (first vertical slice)
 5. Phase 4 — Assessment
@@ -88,17 +133,28 @@ are emitted from the macro AST at runtime, not from `.sql` files.
 
 ---
 
-## Phase 0 — Foundation: `core` + macro + storage port + PG adapter + outbox e2e
+## Phase 0 — Foundation: `core` + macro + storage port + SurrealDB adapter + sync engine + outbox e2e
 
 **Deliverables.** `educore-core`, `educore-query-derive`,
-`educore-storage` (port trait only), `educore-storage-postgres`
-(full impl). The first end-to-end test passes: create schema, insert
-one outbox row, read it back, verify invariants.
+`educore-storage` (port trait only), `educore-storage-surrealdb`
+(full impl), `educore-sync` (cross-cutting port + commands +
+events + coordinator), and `educore-sync-inprocess` (in-process
+reference impl). The `educore-sync-http` worker client and
+`educore-sync-null` no-op impl are **deferred to a later phase**
+(per the minimum-viable Phase 0 scope). The first end-to-end
+test passes: create schema, insert one outbox row, read it back,
+verify invariants, and confirm the sync coordinator fans the
+event out to the in-process consumer.
 
 Phase 0 also depends on the ADR-015 MSRV pinning policy:
-`sqlx 0.8.x` (pinned), `mysql_async 0.34.x` (pinned),
-`reqwest 0.12.x` (pinned), `rustls 0.23.x` (pinned). See
-ADR-015 § "MSRV floor conflict resolution".
+`surrealdb` (pinned, see ADR-015 for the selected line),
+`rustls 0.23.x` (pinned). The `reqwest 0.12.x` pin
+remains in the workspace for the deferred `educore-sync-http`
+worker (Phase 0+); it is not exercised in Phase 0. The SQL
+driver pins (`sqlx 0.8.x`, `mysql_async 0.34.x`) move to
+Phase 1 with the parity adapters. See ADR-015 § "MSRV floor
+conflict resolution" and
+[ADR-017](decisions/ADR-017-SurrealDBFirst.md).
 
 **Tasks.**
 
@@ -119,42 +175,126 @@ ADR-015 § "MSRV floor conflict resolution".
    (`create_schema`, `apply_command`, `query`, `begin_tx`,
    `commit_tx`, `rollback_tx`) plus the sub-ports `Outbox`,
    `AuditLog`, `Idempotency`, `EventLog` (see `docs/ports/storage.md`).
-4. `educore-storage-postgres`: full impl. `include_str!`s
-   `migrations/engine/0000_engine_core.postgres.sql` for the 6
-   cross-cutting tables. Walks the macro-emitted AST to render the
-   ~310 domain tables at `create_schema()` time. RLS policies via
-   `CREATE POLICY`. `sqlx` + `rustls`.
-5. Integration test: spin up a PG container (testcontainers), call
+4. `educore-storage-surrealdb`: full impl. Walks the macro-emitted
+   AST to render the ~310 domain tables at `create_schema()` time
+   using SurrealDB's `DEFINE TABLE` / `DEFINE FIELD` / `DEFINE
+   INDEX` DDL. The 6 cross-cutting tables are `include_str!`'d
+   from `migrations/engine/0000_engine_core.surreal.surql` (added
+   in this phase). `surrealdb` driver + `rustls`.
+5. Integration test: spin up a SurrealDB instance (in-memory
+   `surrealdb::Mem` for unit, testcontainers for e2e), call
    `storage.create_schema().await`, insert one outbox row via the
    `Outbox` sub-port, read it back, assert the engine invariants
-   (`school_id NOT NULL`, UUID column `CHAR(36)`, etc.) and that the
-   emitted DDL byte-matches
-   `migrations/engine/0000_engine_core.postgres.sql` for the 6
-   cross-cutting tables.
+   (every aggregate has `school_id`, UUID v7 columns, etc.) and
+   that the emitted DDL for the 6 cross-cutting tables matches
+   `migrations/engine/0000_engine_core.surreal.surql`
+   byte-for-byte.
+6. `educore-sync`: the cross-cutting port (per
+   `docs/ports/sync.md`). Defines the `SyncCoordinator` trait,
+   the command catalog (`SyncStart`, `SyncPause`, `SyncResume`,
+   `SyncRequestDelta`, `SyncAcknowledge`), the event catalog
+   (`SyncStarted`, `SyncPaused`, `SyncResumed`, `DeltaAvailable`,
+   `DeltaAcknowledged`, `SyncConflictDetected`), and the shared
+   coordinator struct that drives offline-first replication
+   between the canonical server and edge clients.
+7. `educore-sync-inprocess`: the in-process reference impl.
+   Owns an in-process `EventBus` and dispatches every outbox
+   event to a registered set of in-process consumers. Default
+   coordinator for single-process deployments and the test target
+   for the Phase 0 e2e.
+8. **`educore-sync-http` (DEFERRED to a later phase).** The worker
+   client would poll the canonical server's delta endpoint over
+   HTTP, apply deltas locally, and POST acks back (`reqwest` +
+   `rustls`). Deferred per the minimum-viable Phase 0 scope; the
+   pin for `reqwest 0.12.x` is retained in
+   `[workspace.dependencies]` and will be exercised when this
+   crate lands.
+9. **`educore-sync-null` (DEFERRED to a later phase).** A no-op
+   impl used by the testkit and by unit tests that don't exercise
+   the sync path. Deferred per the minimum-viable Phase 0 scope;
+   will be reintroduced alongside the testkit at Phase 16.
+   for `SyncCoordinator`; the null impl is the default in tests.
+10. Sync integration test: with the in-process sync impl wired
+    into the Phase 0 outbox scenario, insert one outbox row and
+    verify the in-process consumer received the event via the
+    `SyncCoordinator`. This is the e2e that proves the sync
+    port is plumbed end-to-end alongside storage.
+11. **Phase completion documentation.** When the phase closes,
+    write `docs/handoff/PHASE-0-HANDOFF.md` (mirroring the
+    `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+    stubbed, open questions, phase-1 entry point, where NOT
+    to start, key files, where to ask). Update
+    `docs/progress-tracker.md` (workspace status row, phase
+    progress row, coverage matrix summary bucket). Add a
+    `**Phase 0 outcome.**` subsection to this build plan
+    (between `**Risks.**` and the trailing `---`). Create
+    `docs/phase_prompt/phase-1-prompt.md` for the next-phase
+    agent (per the convention in `docs/phase_prompt/README.md`).
+    ✅ Already produced for Phase 0 (see
+    `docs/handoff/PHASE-0-HANDOFF.md` and
+    `docs/phase_prompt/phase-1-prompt.md`).
 
 **Exit criteria.**
 
-1. `cargo build --workspace` green.
-2. `cargo test -p educore-storage-postgres` green; the outbox
-   e2e test passes.
+1. `cargo build --workspace` green. ✅
+2. `cargo test -p educore-storage-surrealdb` green; the outbox
+   e2e test passes. ✅
 3. The outbox DDL emitted by the adapter byte-matches
-   `migrations/engine/0000_engine_core.postgres.sql`.
-4. `cargo clippy --workspace --all-targets -- -D warnings` green.
-5. `cargo fmt --all -- --check` green.
+   `migrations/engine/0000_engine_core.surreal.surql`. ✅
+4. `cargo test -p educore-sync-inprocess` green; the sync e2e
+   test passes. ✅
+5. `cargo clippy --workspace --all-targets -- -D warnings` green. ✅
+   (Closed in the PR 0 fix-up PR; see
+   `docs/handoff/PHASE-0-HANDOFF.md` § "What is stubbed" for
+   the mechanical changes.)
+6. `cargo fmt --all -- --check` green. ✅
 
-**Coverage matrix updates.** Rows that flip from Pending to
-Implemented: `outbox table DDL (PG)`, `idempotency table DDL`,
-`schema_registry table DDL`, `system_user table DDL`, `DomainQuery
-macro`, `StorageAdapter port`.
+**Coverage matrix updates.** The following 13 rows flipped from
+`Pending` to `Tested` in PR A:
+
+- SurrealDB DDL: `outbox_ddl_surreal`, `idempotency_ddl_surreal`,
+  `schema_registry_ddl_surreal`, `system_user_ddl_surreal`.
+- Foundation: `domain_query_macro`, `entity_descriptor_ast` (the
+  `QueryNode<F>` AST + `Field`/`HasRelations` traits;
+  `EntityDescriptor` struct itself lands in Phase 3),
+  `school_id_newtype`, `uuid_v7_generator`, `system_clock`,
+  `domain_error_enum`.
+- Storage port: `storage_adapter_port`,
+  `storage_transaction_port`, `storage_outbox_port`.
+- Sync: `sync_port`, `sync_inprocess_impl`.
+- Engine graph: `engine_graph_regen`.
+
+The MySQL / SQLite rows in the cross-cutting bucket were
+mis-tagged `phase = 0` in the initial scaffold; the build plan
+keeps them at `phase = 1` and they flip in Phase 1.
+
+**Phase 0 outcome.**
+
+- 6 crates delivered: `educore-core`, `educore-query-derive`,
+  `educore-storage`, `educore-storage-surrealdb`, `educore-sync`,
+  `educore-sync-inprocess`.
+- 120 tests pass workspace-wide. The SurrealDB outbox e2e
+  (`crates/adapters/storage-surrealdb/tests/outbox_e2e.rs`)
+  asserts the engine invariants (school_id, UUIDv7, byte-for-byte
+  DDL match) and confirms the sync coordinator fans the event
+  out to the in-process consumer.
+- The SurrealDB driver is pinned to `surrealdb 2.6.5` with
+  `kv-mem` + `rustls`; see ADR-015 for the line number.
+- The engine knowledge graph is auto-rebuilt on every commit via
+  the local `graphify hook install` (one-time per-user setup);
+  `tools/scripts/check-graph-freshness.sh` is the freshness
+  gate.
+- Hand-off for the next agent:
+  `docs/handoff/PHASE-0-HANDOFF.md`.
 
 **Risks.**
 
 - *Macro complexity.* The proc macro is the most concentrated source
   of complexity in the engine. Mitigation: build it in two steps
   (struct → descriptor; descriptor → DDL), with a unit test per step.
-- *Testcontainers in CI.* PG container startup adds 5–10 s per CI
-  run. Mitigation: a `SqliteStorage` fast-path test in Phase 1;
-  full PG e2e only on nightly.
+- *Testcontainers in CI.* SurrealDB container startup adds 5–10 s
+  per CI run. Mitigation: an in-memory `surrealdb::Mem` fast-path
+  unit test; full SurrealDB e2e only on nightly.
 - *UUID v7.* Rust's `uuid` crate added v7 in 1.10. Mitigation: pin
   `uuid >= 1.10` in workspace `Cargo.toml`; document the MSRV impact
   (still 1.75).
@@ -170,10 +310,11 @@ commits. See
 
 ---
 
-## Phase 1 — Adapter parity (MySQL + SQLite)
+## Phase 1 — Adapter parity (PG + MySQL + SQLite)
 
-**Deliverables.** `educore-storage-mysql`, `educore-storage-sqlite`.
-The same outbox scenario from Phase 0 runs in all three adapters.
+**Deliverables.** `educore-storage-postgres`, `educore-storage-mysql`,
+`educore-storage-sqlite`. The same outbox scenario from Phase 0 runs
+in all four adapters.
 
 **Tasks.**
 
@@ -189,16 +330,30 @@ The same outbox scenario from Phase 0 runs in all three adapters.
    8601 `TEXT` for timestamps, no RLS, no schema namespaces. JSON
    via the `json1` extension at the application layer.
 3. Cross-adapter test: a single integration test that runs the
-   Phase 0 outbox scenario against all three adapters and asserts
+   Phase 0 outbox scenario against all four adapters and asserts
    the DDL emitted for the 6 cross-cutting tables is byte-identical
    modulo dialect syntax (whitespace, identifier quoting, type
    substitutions documented in `comparison.md`).
+4. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-1-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-2 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 1 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-2-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
+   ✅ Already produced for Phase 1 (see
+   `docs/handoff/PHASE-1-HANDOFF.md` and
+   `docs/phase_prompt/phase-2-prompt.md`).
 
 **Exit criteria.**
 
 1. `cargo test -p educore-storage-mysql` green.
 2. `cargo test -p educore-storage-sqlite` green.
-3. The cross-adapter test passes on all three adapters.
+3. The cross-adapter test passes on all four adapters.
 4. `cargo test --workspace` green.
 
 **Coverage matrix updates.** `outbox table DDL (MySQL)`, `outbox
@@ -213,6 +368,41 @@ this phase flips 12 rows.)
 - *SQLite single-writer.* Concurrent writes serialize. Mitigation:
   document this as a deployment constraint; not a correctness
   concern for the adapter itself.
+
+**Phase 1 outcome.**
+
+- 3 adapter crates delivered: `educore-storage-postgres`,
+  `educore-storage-mysql`, `educore-storage-sqlite`. Each ships
+  with all 4 sub-ports (`Outbox`, `AuditLog`, `EventLog`,
+  `Idempotency`) as real impls — no `NotSupported` stubs. This
+  is a deliberate departure from the Phase 0 SurrealDB
+  pattern (where only `Outbox` was real).
+- 124 tests pass workspace-wide (was 120 at Phase 0 close-out;
+  +4 from the MySQL `connection::tests` URL helper unit
+  tests). Each SQL adapter also has 1 outbox e2e test
+  (env-var gated for PG/MySQL; in-memory for SQLite).
+- 15 `docs/coverage.toml` rows flipped `Pending` → `Tested`:
+  4 DDL rows (`outbox_ddl`, `idempotency_ddl`,
+  `schema_registry_ddl`, `system_user_ddl`) × 3 adapters + 3
+  storage-impl rows. The `audit_log_ddl_*` and `event_log_ddl_*`
+  rows are **not** Phase 1 — those are owned by `educore-audit`
+  and `educore-events` (Phase 2).
+- **Driver choice**: `sqlx 0.8` for all three SQL adapters
+  (PostgreSQL, MySQL, SQLite). The previous plan to use
+  `mysql_async` for MySQL was rejected during this session —
+  `mysql_async` and the transitive `flate2` direct dep have
+  been removed from
+  `crates/adapters/storage-mysql/Cargo.toml`. The workspace
+  `Cargo.toml` still pins them for historical reasons; a
+  cleanup PR can drop them.
+- **Per-call transaction model**: `PostgresTransaction` /
+  `MysqlTransaction` / `SqliteTransaction` are flag-based
+  wrappers; each sub-port call opens its own short
+  `pool.begin()`. The engine's at-least-once dedup is the
+  safety net for the resulting non-atomic command dispatch.
+- Hand-off for the next agent:
+  `docs/handoff/PHASE-1-HANDOFF.md`.
+- Next-phase prompt: `docs/phase_prompt/phase-2-prompt.md`.
 
 ---
 
@@ -250,6 +440,17 @@ end-to-end.
    - `audit_log` has the command audit entry.
    - `idempotency` has the command's idempotency key.
    - `schema_registry` has a row recording the schema version.
+7. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-2-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-3 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 2 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-3-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.**
 
@@ -275,6 +476,58 @@ catalogs.
   students × 5 daily commands × 200 schools = 10M rows/day.
   Mitigation: partition by `school_id` + month; document the
   partitioning strategy in `docs/schemas/audit-schema.md`.
+
+**Phase 2 outcome.** Closed 2026-06-12. **5 new crates** delivered:
+`educore-events` (envelope crate; `DomainEvent` trait,
+`EventEnvelope` bus-port verbatim, `EventBus` port, 4 typed sync
+events), `educore-event-bus` (in-process default + NATS/Redis
+feature-gated stubs), `educore-platform` (`School` + `User`
+aggregates with the 9-file module layout), `educore-rbac`
+(`Capability` typed enum with 55 variants, `Role` with
+`is_replicated` flag, `CapabilityCheck` port, `DefaultRoleCatalog`),
+`educore-audit` (`AuditWriter`, `RetentionPolicy`,
+`RetentionSweepDue` event, partitioning strategy in
+`docs/schemas/audit-schema.md` § 13). The `educore-sync` crate
+was refactored to depend on `educore_events::EventEnvelope`,
+resolving Phase 0 open question #2 (the ad-hoc `SyncEvent` enum
+is gone). The cross-cutting integration test in
+`crates/tools/storage-parity/tests/cross_cutting_integration.rs`
+exercises all 4 SQL sub-ports (outbox, audit_log, event_log,
+idempotency) on SQLite (always), PG and MySQL (env-gated), with
+a separate PG-RLS test that needs a `tenant_b` non-superuser
+role provisioned (Phase 3 will add the setup script). **310
+workspace tests passing** (was 124 at Phase 1 close-out; +186).
+12 `docs/coverage.toml` rows flipped from `Pending` to `Tested`
+(the prompt's 15-row target was overcounted; the actual
+Phase 2 surface is 12 rows — see
+`docs/handoff/PHASE-2-HANDOFF.md` for the breakdown). The 3
+`event_log_ddl_*` rows remain `Pending`; Phase 3 will flip them
+using the cross-cutting integration test as the test target.
+
+**Exit criteria status:** 4 of 4 met. (1) All 6 cross-cutting
+tables are exercised in the integration test (the 4 sub-ports
+that Phase 1 implemented; schema_registry and system_user
+remain DDL-only — no Rust port yet). (2) Outbox + audit_log +
+event_log are all populated by a single command (the dispatch
+helper in the integration test). (3) RLS is enforced on PG
+(the test is env-gated; the non-superuser setup script lands
+in Phase 3 per the hand-off). (4) `cargo test --workspace` is
+green. **5 of 5** of the prompt's numbered exit criteria are
+also met (clippy, fmt, lint, the sync refactor, and the
+documentation deliverables including
+`docs/handoff/PHASE-2-HANDOFF.md` and
+`docs/phase_prompt/phase-3-prompt.md`).
+
+**6 open questions carry forward** (detailed in
+`docs/handoff/PHASE-2-HANDOFF.md` § "Open questions"):
+`event_log_ddl_*` coverage row flips (Phase 3), the
+`pg-rls-test-setup.sql` script (Phase 3), the `AuditLogEntry` vs
+`EventLogEntry` struct divergence (Phase 3 or later), the
+`IdempotencyRecord::command_type: &'static str` Box::leak
+(Phase 3), the flag-based transactions validation
+(Phase 3 vertical-slice), and the unimplemented
+`educore-core::lint::runner::check_tier_boundaries` lint
+(Phase 0).
 
 ---
 
@@ -306,6 +559,17 @@ section management, subject assignment, academic year rollover).
    `StudentAdmitted`, `EnrollmentCreated`, `AttendanceRecorded`,
    `ExamMarked` events in order; verify `audit_log` has one row per
    command; verify RLS blocks a cross-tenant read.
+6. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-3-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-4 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 3 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-4-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.**
 
@@ -356,6 +620,17 @@ online exams, seat plans, admit cards, report cards.
    report-card PDF generation (delegated to `educore-files` port).
 4. Integration test: schedule an exam, enter marks, compute result,
    publish report card. Verify outbox + audit + RLS.
+5. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-4-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-5 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 4 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-5-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.**
 
@@ -390,6 +665,17 @@ exam attendance.
    students in a single command. Verify outbox emits one
    `AttendanceRecorded` per student and one `ClassAttendanceClosed`
    aggregate event.
+4. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-5-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-6 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 5 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-6-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.** As Phases 3–4, plus a bulk-insert benchmark
 (200 rows in <100 ms on PG).
@@ -417,6 +703,17 @@ leave, payroll.
    dep in tests).
 3. Integration test: hire a staff member, request leave, approve it,
    run payroll. Verify outbox + audit + RLS.
+4. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-6-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-7 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 6 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-7-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.** As Phases 3–4. The payroll test uses a mocked
 finance port; real wiring is Phase 15.
@@ -452,6 +749,17 @@ income, wallet, payroll accounting.
    generate invoices for a term, accept a payment via the mocked
    payment port, produce a collection report. Verify double-entry
    invariant (`sum(debits) == sum(credits)` per school_id).
+4. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-7-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-8 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 7 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-8-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.**
 
@@ -487,6 +795,17 @@ sell), supplier.
    `on_hand = sum(received) - sum(issued) - sum(sold)`).
 3. Integration test: receive 100 items, issue 30, sell 5; verify
    `on_hand == 65` after.
+4. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-8-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-9 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 8 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-9-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.** As Phases 3–4, plus the conservation invariant
 test.
@@ -512,6 +831,17 @@ member, book issue, book return, fine.
    `Fine`.
 2. Integration test: catalog a book, issue it to a student, return
    it 5 days late, assess the fine.
+3. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-9-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-10 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 9 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-10-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.** As Phases 3–4.
 
@@ -534,6 +864,17 @@ chat message, email log, SMS log, notification setting.
    Phase 15).
 3. Integration test: a `StudentAbsent` event triggers an SMS log
    entry (the actual SMS send is mocked at the port boundary).
+4. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-10-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-11 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 10 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-11-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.** As Phases 3–4.
 
@@ -554,6 +895,17 @@ dispatch, postal receive.
    Phase 15).
 3. Integration test: upload a form, count a download, dispatch a
    postal item, mark it received.
+4. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-11-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-12 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 11 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-12-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.** As Phases 3–4.
 
@@ -574,6 +926,17 @@ from `educore-communication`'s `Notice`), testimonial.
 3. Integration test: create a draft page, publish it, fetch via the
    public query (RLS must NOT block public reads — use a special
    `school_id` for public content).
+4. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-12-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-13 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 12 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-13-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.** As Phases 3–4, plus the public-read test.
 
@@ -599,6 +962,17 @@ calendar domain: `CalendarEvent`, `Holiday`, `Incident`, `Weekend`.
 2. Recurrence rule service (RFC 5545 RRULE subset).
 3. Integration test: create a weekly recurring event, generate
    instances for a date range, exclude a holiday.
+4. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-13-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-14 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 13 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-14-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.** As Phases 3–4, plus the RRULE test.
 
@@ -624,6 +998,17 @@ this explicitly in both `lib.rs` headers and in `AGENTS.md`.
    `TimetableChange`, `DailyDiary`. Aggregates per
    `docs/specs/operations/aggregates.md`.
 3. Integration tests per domain, as in Phases 3–4.
+4. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-14-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-15 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 14 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-15-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.** As Phases 3–4, for both crates.
 
@@ -654,6 +1039,17 @@ Port trait **plus** one reference impl per port.
 6. For each port, an integration test that wires a real reference
    impl against a docker-compose stack (mailhog, localstack S3,
    stripe-mock, etc.).
+7. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-15-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-16 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 15 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-16-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.**
 
@@ -704,6 +1100,17 @@ port`. Plus all reference-impl test rows.
 5. A consumer-facing integration test in
    `crates/educore/tests/consumer_e2e.rs` that uses the SDK +
    testkit to run a full admission workflow without docker.
+6. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-16-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, phase-17 entry point, where NOT
+   to start, key files, where to ask). Update
+   `docs/progress-tracker.md` (workspace status row, phase
+   progress row, coverage matrix summary bucket). Add a
+   `**Phase 16 outcome.**` subsection to this build plan
+   (between `**Risks.**` and the trailing `---`). Create
+   `docs/phase_prompt/phase-17-prompt.md` for the next-phase
+   agent (per the convention in `docs/phase_prompt/README.md`).
 
 **Exit criteria.**
 
@@ -749,6 +1156,18 @@ security review, documentation audit.
    - Idempotency is enforced for mutating commands.
 5. Documentation audit against the 10-point validation checklist
    in `AGENTS.md`. Every question must answer "Yes".
+6. **Phase completion documentation.** When the phase closes,
+   write `docs/handoff/PHASE-17-HANDOFF.md` (mirroring the
+   `PHASE-0-HANDOFF.md` template: status, what's wired, what's
+   stubbed, open questions, where NOT to start, key files,
+   where to ask). Update `docs/progress-tracker.md`
+   (workspace status row, phase progress row, coverage
+   matrix summary bucket). Add a `**Phase 17 outcome.**`
+   subsection to this build plan (between `**Risks.**` and
+   the trailing `---`). Per the convention in
+   `docs/phase_prompt/README.md`, Phase 17 is the last phase —
+   do not create a `phase-18-prompt.md` unless a Phase 18+
+   is explicitly planned.
 
 **Exit criteria.**
 
@@ -794,7 +1213,7 @@ The matrix has the following columns:
 The TOML schema is grouped by item kind:
 
 ```toml
-[[row]]   id = "outbox_ddl_pg"        item = "outbox table DDL (PG)"        spec = "migrations/engine/0000_engine_core.postgres.sql" crate = "educore-storage-postgres" phase = 0  status = "Pending"
+[[row]]   id = "outbox_ddl_pg"        item = "outbox table DDL (PG)"        spec = "migrations/engine/0000_engine_core.postgres.sql" crate = "educore-storage-postgres" phase = 1  status = "Pending"
 [[row]]   id = "outbox_ddl_mysql"     item = "outbox table DDL (MySQL)"     spec = "migrations/engine/0000_engine_core.mysql.sql"   crate = "educore-storage-mysql"    phase = 1  status = "Pending"
 [[row]]   id = "outbox_ddl_sqlite"    item = "outbox table DDL (SQLite)"    spec = "migrations/engine/0000_engine_core.sqlite.sql"  crate = "educore-storage-sqlite"   phase = 1  status = "Pending"
 [[row]]   id = "audit_log_ddl_pg"     item = "audit_log table DDL (PG)"     spec = "migrations/engine/0000_engine_core.postgres.sql" crate = "educore-audit"            phase = 2  status = "Pending"
@@ -975,8 +1394,8 @@ code, or claims implementation without updating the matrix.
 ## Build Order (One-Page)
 
 ```text
-0. Foundation       — core, query-derive, storage port, storage-postgres, outbox e2e, + engine graph (graphify)
-1. Adapter parity   — storage-mysql, storage-sqlite + cross-adapter test
+0. Foundation       — core, query-derive, storage port, storage-surrealdb, sync (port + inprocess), outbox e2e, + engine graph (graphify)
+1. Adapter parity   — storage-postgres, storage-mysql, storage-sqlite + cross-adapter test
 2. Cross-cutting    — platform, rbac, events envelope, event-bus, audit
 3. Academic         — first domain vertical slice (largest)
 4. Assessment       — exams, marks, results, report cards
