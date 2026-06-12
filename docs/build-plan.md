@@ -650,6 +650,48 @@ online exams, seat plans, admit cards, report cards.
 all grading rules in `policies.rs` as pure functions with table-
 driven fixtures.
 
+**Phase 4 outcome.** Closed 2026-06-12. **`educore-assessment`**
+delivered as the second domain crate. The full prompt-named subset
+ships: 8 aggregates (Exam, ExamSchedule, MarksRegister, ResultStore,
+ReportCard projection, OnlineExam, SeatPlan, AdmitCard), 28 typed
+commands, 28 typed events implementing `DomainEvent`, 25+ pure
+factory services, 8 repository port traits, 8 typed query stubs,
+the `MarksGradeScale` port + the 10-function `ResultService`
+grading module, and the vertical-slice integration test on SQLite
+(always) / PG and MySQL (env-gated). The 9-file module layout is
+honored exactly. 67 unit tests pass in `educore-assessment` plus 3
+new integration tests in `crates/tools/storage-parity/tests/assessment_integration.rs`
+(1 SQLite + 1 PG/MySQL env-gated + 1 capability-check + 1 event-type
+round-trip). 8 `docs/coverage.toml` rows flipped: the
+8 `assessment_*_aggregate` rows now `Tested` with the integration
+test path. **433 tests pass workspace-wide** (was 380 at Phase 3
+close-out; +53 net new in Phase 4: 51 unit + 2 new env-gated
+ignored tests + 1 new SQLite integration test + 1 new
+capability-check test + 1 new event-type round-trip test). The
+Phase 4 scope was the full prompt-named subset; the spec's
+remaining 32+ aggregates (ExamType, MarksGrade, ExamSetting,
+QuestionBank, QuestionGroup, QuestionLevel, TeacherEvaluation,
+TeacherRemark, ExamAttendance, MeritPosition, ExamWisePosition,
+AllExamWisePosition, CustomResultSetting, ResultSetting,
+FrontendExamRoutine, ExamRoutinePage, FrontendResult,
+FrontendExamResult, ExamStepSkip, MarksRegisterStatus, …)
+land in later phases (the per-school settings and reports land
+in Phase 14 Settings; the calendar events-domain and CMS rendering
+land in Phases 13 + 12 respectively; the QuestionBank and grading
+extras land alongside Phase 6's HR workstream which will supply
+the StaffId placeholder definition). The capability check
+boundary was resolved as dispatcher-level (matching the platform
+/ rbac / academic crates' pattern); the integration test asserts
+the check via `InMemoryCapabilityCheck::has` against
+`Capability::AssessmentExamCreate`. The Phase 2 OQ #1
+(pg-rls-test-setup.sql + saas-backend.md procedure) was closed in
+Phase 4 Prereq 5. The Phase 2 OQ #5 (flag-based transactions)
+was validated by the vertical-slice test for both the academic
+and assessment domains; the design is adequate for Phase 4; the
+real `sqlx::Transaction` refactor is a separate phase. Hand-off:
+`docs/handoff/PHASE-4-HANDOFF.md`. Next-phase prompt:
+`docs/phase_prompt/phase-5-prompt.md`.
+
 ---
 
 ## Phase 5 — Attendance
