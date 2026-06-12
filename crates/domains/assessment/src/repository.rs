@@ -113,7 +113,11 @@ pub trait ExamRepository: Send + Sync {
 #[allow(dead_code)]
 #[async_trait]
 pub trait ExamScheduleRepository: Send + Sync {
-    async fn get(&self, ctx: &TenantContext, id: crate::value_objects::ExamScheduleId) -> Result<Option<crate::aggregate::ExamSchedule>>;
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::ExamScheduleId,
+    ) -> Result<Option<crate::aggregate::ExamSchedule>>;
     async fn find(
         &self,
         school: SchoolId,
@@ -131,25 +135,42 @@ pub trait ExamScheduleRepository: Send + Sync {
     ) -> Result<Vec<crate::aggregate::ExamSchedule>>;
     async fn insert(&self, ctx: &TenantContext, s: &crate::aggregate::ExamSchedule) -> Result<()>;
     async fn update(&self, ctx: &TenantContext, s: &crate::aggregate::ExamSchedule) -> Result<()>;
-    async fn delete(&self, ctx: &TenantContext, id: crate::value_objects::ExamScheduleId) -> Result<()>;
+    async fn delete(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::ExamScheduleId,
+    ) -> Result<()>;
 }
 
 /// The storage-port contract for [`SeatPlan`](crate::aggregate::SeatPlan) rows.
 #[allow(dead_code)]
 #[async_trait]
 pub trait SeatPlanRepository: Send + Sync {
-    async fn get(&self, ctx: &TenantContext, id: crate::value_objects::SeatPlanId) -> Result<Option<crate::aggregate::SeatPlan>>;
-    async fn list_for_exam(&self, school: SchoolId, exam: ExamId) -> Result<Vec<crate::aggregate::SeatPlan>>;
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::SeatPlanId,
+    ) -> Result<Option<crate::aggregate::SeatPlan>>;
+    async fn list_for_exam(
+        &self,
+        school: SchoolId,
+        exam: ExamId,
+    ) -> Result<Vec<crate::aggregate::SeatPlan>>;
     async fn insert(&self, ctx: &TenantContext, p: &crate::aggregate::SeatPlan) -> Result<()>;
     async fn update(&self, ctx: &TenantContext, p: &crate::aggregate::SeatPlan) -> Result<()>;
-    async fn delete(&self, ctx: &TenantContext, id: crate::value_objects::SeatPlanId) -> Result<()>;
+    async fn delete(&self, ctx: &TenantContext, id: crate::value_objects::SeatPlanId)
+        -> Result<()>;
 }
 
 /// The storage-port contract for [`AdmitCard`](crate::aggregate::AdmitCard) rows.
 #[allow(dead_code)]
 #[async_trait]
 pub trait AdmitCardRepository: Send + Sync {
-    async fn get(&self, ctx: &TenantContext, id: crate::value_objects::AdmitCardId) -> Result<Option<crate::aggregate::AdmitCard>>;
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::AdmitCardId,
+    ) -> Result<Option<crate::aggregate::AdmitCard>>;
     async fn find(
         &self,
         school: SchoolId,
@@ -159,7 +180,58 @@ pub trait AdmitCardRepository: Send + Sync {
     ) -> Result<Option<crate::aggregate::AdmitCard>>;
     async fn insert(&self, ctx: &TenantContext, c: &crate::aggregate::AdmitCard) -> Result<()>;
     async fn update(&self, ctx: &TenantContext, c: &crate::aggregate::AdmitCard) -> Result<()>;
-    async fn delete(&self, ctx: &TenantContext, id: crate::value_objects::AdmitCardId) -> Result<()>;
+    async fn delete(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::AdmitCardId,
+    ) -> Result<()>;
+}
+
+/// The storage-port contract for [`MarksRegister`](crate::aggregate::MarksRegister) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait MarksRegisterRepository: Send + Sync {
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::MarksRegisterId,
+    ) -> Result<Option<crate::aggregate::MarksRegister>>;
+    async fn find(
+        &self,
+        school: SchoolId,
+        exam: ExamId,
+        student: crate::value_objects::StudentId,
+    ) -> Result<Option<crate::aggregate::MarksRegister>>;
+    async fn list_for_exam(
+        &self,
+        school: SchoolId,
+        exam: ExamId,
+    ) -> Result<Vec<crate::aggregate::MarksRegister>>;
+    async fn insert(&self, ctx: &TenantContext, m: &crate::aggregate::MarksRegister) -> Result<()>;
+    async fn update(&self, ctx: &TenantContext, m: &crate::aggregate::MarksRegister) -> Result<()>;
+}
+
+/// The storage-port contract for [`ResultStore`](crate::aggregate::ResultStore) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait ResultRepository: Send + Sync {
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::ResultStoreId,
+    ) -> Result<Option<crate::aggregate::ResultStore>>;
+    async fn list_for_student(
+        &self,
+        school: SchoolId,
+        student: crate::value_objects::StudentId,
+    ) -> Result<Vec<crate::aggregate::ResultStore>>;
+    async fn list_for_exam(
+        &self,
+        school: SchoolId,
+        exam: ExamId,
+    ) -> Result<Vec<crate::aggregate::ResultStore>>;
+    async fn insert(&self, ctx: &TenantContext, r: &crate::aggregate::ResultStore) -> Result<()>;
+    async fn update(&self, ctx: &TenantContext, r: &crate::aggregate::ResultStore) -> Result<()>;
 }
 
 #[cfg(test)]
@@ -179,7 +251,3 @@ mod tests {
         fn _exam_repository(_: Box<dyn ExamRepository>) {}
     }
 }
-
-
-
-

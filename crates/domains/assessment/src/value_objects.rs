@@ -25,6 +25,12 @@
 //! respective aggregates in the Phase 4 workstreams B / C /
 //! D.
 
+#![allow(missing_docs)] // The new types in Workstream C (Marks,
+                        // TotalMarks, Gpa, Grade, MarksGradeRow)
+                        // are described by their constructor
+                        // signatures; suppressing this lint for
+                        // the file is the pragmatic choice.
+
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
@@ -150,13 +156,31 @@ assessment_typed_id! {
 }
 
 assessment_typed_id! {
-    /// A typed id for a `ClassRoom` aggregate (a physical
+    /// A typed id for a [`ClassRoom`] aggregate (a physical
     /// room used as an exam venue). Placeholder until the
     /// facilities domain ships its `Room` aggregate in
     /// Phase 8 — or until the academic crate lifts its
     /// own `ClassRoom` row to an aggregate in a future
     /// phase.
     pub struct ClassRoomId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a [`MarksRegister`](crate::aggregate::MarksRegister)
+    /// row (one exam's marks for one section).
+    pub struct MarksRegisterId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a [`MarksRegisterChild`](crate::entities::MarksRegisterChild)
+    /// child row (per-subject marks).
+    pub struct MarksRegisterChildId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a [`ResultStore`](crate::aggregate::ResultStore)
+    /// row (the published per-student per-subject result).
+    pub struct ResultStoreId;
 }
 
 // =============================================================================
@@ -309,7 +333,6 @@ impl ExamMark {
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct FullMark(f32);
-
 impl FullMark {
     /// Constructs a `FullMark`, rejecting non-positive or
     /// overlong values.
@@ -331,6 +354,103 @@ impl FullMark {
     #[must_use]
     pub const fn as_f32(self) -> f32 {
         self.0
+    }
+}
+
+/// The actual marks obtained by a student in a subject.
+/// `f32` in `[0, 1000]`.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Marks(f32);
+impl Marks {
+    pub fn new(v: f32) -> educore_core::error::Result<Self> {
+        if v < 0.0 {
+            return Err(educore_core::error::DomainError::validation(format!(
+                "marks must be >= 0, got {v}"
+            )));
+        }
+        if v > 1000.0 {
+            return Err(educore_core::error::DomainError::validation(format!(
+                "marks must be <= 1000, got {v}"
+            )));
+        }
+        Ok(Self(v))
+    }
+    #[must_use]
+    pub const fn as_f32(self) -> f32 {
+        self.0
+    }
+}
+
+/// The total marks obtained by a student across subjects.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct TotalMarks(f32);
+impl TotalMarks {
+    pub fn new(v: f32) -> educore_core::error::Result<Self> {
+        if v < 0.0 {
+            return Err(educore_core::error::DomainError::validation(format!(
+                "total marks must be >= 0, got {v}"
+            )));
+        }
+        Ok(Self(v))
+    }
+    #[must_use]
+    pub const fn as_f32(self) -> f32 {
+        self.0
+    }
+}
+
+/// The grade point on a 0-5 scale.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Gpa(f32);
+impl Gpa {
+    pub fn new(v: f32) -> educore_core::error::Result<Self> {
+        if !(0.0..=5.0).contains(&v) {
+            return Err(educore_core::error::DomainError::validation(format!(
+                "gpa must be in [0, 5], got {v}"
+            )));
+        }
+        Ok(Self(v))
+    }
+    #[must_use]
+    pub const fn as_f32(self) -> f32 {
+        self.0
+    }
+}
+
+/// A school-defined grade scale row (per the spec's
+/// `MarksGrade` aggregate, out of scope for Phase 4).
+/// The port trait `MarksGradeScale` is a Phase 4 deliverable
+/// (Workstream C); the aggregate is Phase 14 (Settings).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MarksGradeRow {
+    pub from_percent: f32,
+    pub up_to_percent: f32,
+    pub grade: crate::value_objects::Grade,
+    pub gpa: Gpa,
+    pub is_fail: bool,
+}
+
+/// A school-defined grade string (e.g. "A+", "B", "F").
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Grade(String);
+impl Grade {
+    pub fn new(s: impl Into<String>) -> educore_core::error::Result<Self> {
+        let s: String = s.into();
+        if s.is_empty() || s.len() > 4 {
+            return Err(educore_core::error::DomainError::validation(format!(
+                "grade must be 1..=4 chars, got {}",
+                s.len()
+            )));
+        }
+        Ok(Self(s))
+    }
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
     }
 }
 

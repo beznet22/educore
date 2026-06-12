@@ -48,8 +48,9 @@ mod repository;
 pub use crate::value_objects::{
     AcademicYearId, AcademicYearRange, AdmitCardId, ClassId, ClassRoomId, DateOfBirth, ExamCode,
     ExamId, ExamMark, ExamName, ExamScheduleId, ExamScheduleSubjectId, ExamTerm, ExamTypeId,
-    FullMark, PassMark, ResultStatus, SeatPlanChildId, SeatPlanId, SectionId, StaffId, StudentId,
-    StudentRecordId, SubjectId,
+    FullMark, Gpa, Grade, Marks, MarksGradeRow, MarksRegisterChildId, MarksRegisterId, PassMark,
+    ResultStatus, ResultStoreId, SeatPlanChildId, SeatPlanId, SectionId, StaffId, StudentId,
+    StudentRecordId, SubjectId, TotalMarks,
 };
 
 /// Convenience re-exports of the engine types the assessment
@@ -65,40 +66,51 @@ pub mod prelude {
     pub use educore_events::envelope::EventEnvelope;
     pub use educore_rbac::value_objects::Capability;
 
-    pub use crate::aggregate::{AdmitCard, Exam, ExamSchedule, SeatPlan};
+    pub use crate::aggregate::{
+        AdmitCard, Exam, ExamSchedule, MarksRegister, ResultStore, SeatPlan,
+    };
     pub use crate::commands::{
         validate_exam_code, validate_exam_mark, validate_exam_name, validate_pass_mark,
         AssessmentUniquenessChecker, CancelAdmitCardCommand, CancelExamScheduleCommand,
-        CancelSeatPlanCommand, CreateExamCommand, DeleteExamCommand, GenerateAdmitCardCommand,
-        GenerateSeatPlanCommand, RegenerateAdmitCardCommand, ScheduleExamCommand,
-        UniquenessChecker, UpdateExamCommand, UpdateExamScheduleCommand, UpdateSeatPlanCommand,
-        ASSESSMENT_ADMIT_CARD_CANCEL_COMMAND_TYPE, ASSESSMENT_ADMIT_CARD_GENERATE_COMMAND_TYPE,
-        ASSESSMENT_ADMIT_CARD_REGENERATE_COMMAND_TYPE, ASSESSMENT_EXAM_CREATE_COMMAND_TYPE,
-        ASSESSMENT_EXAM_DELETE_COMMAND_TYPE, ASSESSMENT_EXAM_SCHEDULE_CANCEL_COMMAND_TYPE,
-        ASSESSMENT_EXAM_SCHEDULE_CREATE_COMMAND_TYPE, ASSESSMENT_EXAM_SCHEDULE_UPDATE_COMMAND_TYPE,
-        ASSESSMENT_EXAM_UPDATE_COMMAND_TYPE, ASSESSMENT_SEAT_PLAN_CANCEL_COMMAND_TYPE,
-        ASSESSMENT_SEAT_PLAN_GENERATE_COMMAND_TYPE, ASSESSMENT_SEAT_PLAN_UPDATE_COMMAND_TYPE,
+        CancelSeatPlanCommand, CreateExamCommand, DeleteExamCommand, EnterMarksCommand,
+        GenerateAdmitCardCommand, GenerateReportCardCommand, GenerateSeatPlanCommand,
+        InitializeMarksRegisterCommand, MarksGradeScale, RegenerateAdmitCardCommand,
+        RepublishResultCommand, ScheduleExamCommand, SubmitMarksCommand, UniquenessChecker,
+        UpdateExamCommand, UpdateExamScheduleCommand, UpdateResultRemarksCommand,
+        UpdateSeatPlanCommand, ASSESSMENT_ADMIT_CARD_CANCEL_COMMAND_TYPE,
+        ASSESSMENT_ADMIT_CARD_GENERATE_COMMAND_TYPE, ASSESSMENT_ADMIT_CARD_REGENERATE_COMMAND_TYPE,
+        ASSESSMENT_EXAM_CREATE_COMMAND_TYPE, ASSESSMENT_EXAM_DELETE_COMMAND_TYPE,
+        ASSESSMENT_EXAM_SCHEDULE_CANCEL_COMMAND_TYPE, ASSESSMENT_EXAM_SCHEDULE_CREATE_COMMAND_TYPE,
+        ASSESSMENT_EXAM_SCHEDULE_UPDATE_COMMAND_TYPE, ASSESSMENT_EXAM_UPDATE_COMMAND_TYPE,
+        ASSESSMENT_SEAT_PLAN_CANCEL_COMMAND_TYPE, ASSESSMENT_SEAT_PLAN_GENERATE_COMMAND_TYPE,
+        ASSESSMENT_SEAT_PLAN_UPDATE_COMMAND_TYPE,
     };
-    pub use crate::entities::{ExamScheduleSubject, SeatPlanChild};
+    pub use crate::entities::{ExamScheduleSubject, MarksRegisterChild, SeatPlanChild};
     pub use crate::errors::AssessmentError;
     pub use crate::events::{
         AdmitCardCancelled, AdmitCardGenerated, AdmitCardRegenerated, ExamCreated, ExamDeleted,
-        ExamScheduleCancelled, ExamScheduleUpdated, ExamScheduled, SeatPlanCancelled,
-        SeatPlanGenerated, SeatPlanUpdated, ExamUpdated,
+        ExamScheduleCancelled, ExamScheduleUpdated, ExamScheduled, ExamUpdated, MarksEntered,
+        MarksRegisterCancelled, MarksRegisterCreated, MarksSubmitted, ReportCardGenerated,
+        ResultPublished, ResultRemarksUpdated, ResultRepublished, ResultStoreCreated,
+        SeatPlanCancelled, SeatPlanGenerated, SeatPlanUpdated,
     };
     pub use crate::repository::{
-        AdmitCardRepository, ExamRepository, ExamScheduleRepository, SeatPlanRepository,
+        AdmitCardRepository, ExamRepository, ExamScheduleRepository, MarksRegisterRepository,
+        ResultRepository, SeatPlanRepository,
     };
     pub use crate::services::{
-        cancel_admit_card, cancel_exam_schedule, cancel_seat_plan, create_exam, delete_exam,
-        generate_admit_card, generate_seat_plan, regenerate_admit_card, schedule_exam,
-        school_matches, update_exam, update_exam_schedule, update_seat_plan,
+        cancel_admit_card, cancel_exam_schedule, cancel_marks_register, cancel_seat_plan,
+        create_exam, delete_exam, enter_marks, generate_admit_card, generate_report_card,
+        generate_seat_plan, initialize_marks_register, publish_result, regenerate_admit_card,
+        republish_result, schedule_exam, school_matches, submit_marks, update_exam,
+        update_exam_schedule, update_result_remarks, update_seat_plan, ResultService,
     };
     pub use crate::value_objects::{
         AcademicYearId, AcademicYearRange, AdmitCardId, ClassId, ClassRoomId, DateOfBirth,
         ExamCode, ExamId, ExamMark, ExamName, ExamScheduleId, ExamScheduleSubjectId, ExamTerm,
-        ExamTypeId, FullMark, PassMark, ResultStatus, SeatPlanChildId, SeatPlanId, SectionId,
-        StaffId, StudentId, StudentRecordId, SubjectId,
+        ExamTypeId, FullMark, Gpa, Grade, Marks, MarksGradeRow, MarksRegisterChildId,
+        MarksRegisterId, PassMark, ResultStatus, ResultStoreId, SeatPlanChildId, SeatPlanId,
+        SectionId, StaffId, StudentId, StudentRecordId, SubjectId, TotalMarks,
     };
 }
 
@@ -107,7 +119,8 @@ pub mod prelude {
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::panic,
-    clippy::dbg_macro
+    clippy::dbg_macro,
+    clippy::items_after_test_module
 )]
 mod tests {
     use super::*;

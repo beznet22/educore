@@ -27,14 +27,15 @@
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
+use educore_academic::value_objects::PassMark;
 use educore_core::error::Result;
 use educore_core::ids::SchoolId;
 use educore_core::tenant::TenantContext;
-use educore_academic::value_objects::PassMark;
+use educore_core::value_objects::Timestamp;
 
 use crate::value_objects::{
     AcademicYearId, AdmitCardId, ClassId, ExamCode, ExamId, ExamMark, ExamName, ExamScheduleId,
-    ExamTypeId, SectionId, SeatPlanId, SubjectId,
+    ExamTypeId, SeatPlanId, SectionId, SubjectId,
 };
 
 // =============================================================================
@@ -204,7 +205,10 @@ pub struct ScheduleExamCommand {
     pub subjects: Vec<ScheduleSubjectEntry>,
 }
 impl ScheduleExamCommand {
-    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
 }
 
 /// The `update_exam_schedule` command.
@@ -217,7 +221,10 @@ pub struct UpdateExamScheduleCommand {
     pub end_time: Option<chrono::NaiveTime>,
 }
 impl UpdateExamScheduleCommand {
-    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
 }
 
 /// The `cancel_exam_schedule` command.
@@ -228,7 +235,10 @@ pub struct CancelExamScheduleCommand {
     pub reason: String,
 }
 impl CancelExamScheduleCommand {
-    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
 }
 
 /// A per-room allocation in a `GenerateSeatPlan` command.
@@ -251,7 +261,10 @@ pub struct GenerateSeatPlanCommand {
     pub allocations: Vec<SeatPlanAllocation>,
 }
 impl GenerateSeatPlanCommand {
-    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
 }
 
 /// The `update_seat_plan` command.
@@ -262,7 +275,10 @@ pub struct UpdateSeatPlanCommand {
     pub allocations: Option<Vec<SeatPlanAllocation>>,
 }
 impl UpdateSeatPlanCommand {
-    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
 }
 
 /// The `cancel_seat_plan` command.
@@ -272,7 +288,10 @@ pub struct CancelSeatPlanCommand {
     pub seat_plan_id: SeatPlanId,
 }
 impl CancelSeatPlanCommand {
-    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
 }
 
 /// The `generate_admit_card` command.
@@ -285,7 +304,10 @@ pub struct GenerateAdmitCardCommand {
     pub academic_year_id: AcademicYearId,
 }
 impl GenerateAdmitCardCommand {
-    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
 }
 
 /// The `regenerate_admit_card` command.
@@ -297,7 +319,10 @@ pub struct RegenerateAdmitCardCommand {
     pub reason: String,
 }
 impl RegenerateAdmitCardCommand {
-    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
 }
 
 /// The `cancel_admit_card` command.
@@ -308,7 +333,10 @@ pub struct CancelAdmitCardCommand {
     pub reason: String,
 }
 impl CancelAdmitCardCommand {
-    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
 }
 
 // =============================================================================
@@ -520,4 +548,142 @@ mod tests {
         let err = validate_pass_mark(101.0).unwrap_err();
         assert!(matches!(err, DomainError::Validation(_)));
     }
+}
+
+// =============================================================================
+// Workstream C commands: MarksRegister, ResultStore, ReportCard
+// =============================================================================
+
+/// The `initialize_marks_register` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct InitializeMarksRegisterCommand {
+    pub tenant: TenantContext,
+    pub marks_register_id: crate::value_objects::MarksRegisterId,
+    pub exam_id: ExamId,
+    pub student_id: crate::value_objects::StudentId,
+    pub class_id: ClassId,
+    pub section_id: SectionId,
+    pub academic_year_id: AcademicYearId,
+    pub subject_ids: Vec<SubjectId>,
+}
+impl InitializeMarksRegisterCommand {
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
+}
+
+/// The `enter_marks` command. Enters a single subject's marks
+/// for a student.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EnterMarksCommand {
+    pub tenant: TenantContext,
+    pub marks_register_id: crate::value_objects::MarksRegisterId,
+    pub subject_id: SubjectId,
+    pub student_id: crate::value_objects::StudentId,
+    pub marks: Option<f32>,
+    pub is_absent: bool,
+    pub comment: Option<String>,
+}
+impl EnterMarksCommand {
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
+}
+
+/// The `submit_marks` command. Locks the register for grading.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SubmitMarksCommand {
+    pub tenant: TenantContext,
+    pub marks_register_id: crate::value_objects::MarksRegisterId,
+}
+impl SubmitMarksCommand {
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
+}
+
+/// The `publish_result` command. Materialises `ResultStore`
+/// rows and emits `ResultPublished`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PublishResultCommand {
+    pub tenant: TenantContext,
+    pub exam_id: ExamId,
+    pub class_id: ClassId,
+    pub section_id: SectionId,
+    pub academic_year_id: AcademicYearId,
+    pub published_at: Timestamp,
+}
+impl PublishResultCommand {
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
+}
+
+/// The `republish_result` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RepublishResultCommand {
+    pub tenant: TenantContext,
+    pub result_store_id: crate::value_objects::ResultStoreId,
+    pub reason: String,
+    pub republished_at: Timestamp,
+}
+impl RepublishResultCommand {
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
+}
+
+/// The `update_result_remarks` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateResultRemarksCommand {
+    pub tenant: TenantContext,
+    pub result_store_id: crate::value_objects::ResultStoreId,
+    pub teacher_remarks: String,
+}
+impl UpdateResultRemarksCommand {
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
+}
+
+/// The `generate_report_card` command (the report card is
+/// a projection — it has no aggregate; the service
+/// materialises a `ReportCardPayload` from a published
+/// result).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GenerateReportCardCommand {
+    pub tenant: TenantContext,
+    pub result_store_id: crate::value_objects::ResultStoreId,
+    pub student_id: crate::value_objects::StudentId,
+    pub include_remarks: bool,
+}
+impl GenerateReportCardCommand {
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.tenant.school_id
+    }
+}
+
+// =============================================================================
+// MarksGradeScale port (Workstream C)
+// =============================================================================
+
+/// The school's `MarksGrade` scale, supplied to
+/// `publish_result` and the `ResultService` grading
+/// functions. Production wires a per-school
+/// `MarksGradeScale` (Phase 14, Settings); tests wire an
+/// `InMemoryMarksGradeScale` (default A-F scale).
+pub trait MarksGradeScale: Send + Sync {
+    /// Returns the `MarksGradeRow` for the given percent.
+    /// Returns `None` if the percent is outside the scale
+    /// (which is a `Validation` error for the caller).
+    fn lookup(&self, percent: f32) -> Option<crate::value_objects::MarksGradeRow>;
+    /// Returns `true` if the scale is valid (no overlaps, no gaps).
+    fn validate(&self) -> bool;
 }

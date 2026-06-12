@@ -145,10 +145,26 @@ pub struct ExamScheduleQuery {
 }
 impl ExamScheduleQuery {
     #[allow(dead_code)]
-    #[must_use] pub const fn new() -> Self { Self { exam_id: None, class_id: None, section_id: None, from_date: None, to_date: None, offset: 0, limit: 50 } }
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            exam_id: None,
+            class_id: None,
+            section_id: None,
+            from_date: None,
+            to_date: None,
+            offset: 0,
+            limit: 50,
+        }
+    }
     #[allow(dead_code)]
-    pub async fn execute(&self, _ctx: &TenantContext) -> Result<Vec<crate::aggregate::ExamSchedule>> {
-        Err(DomainError::not_supported("ExamScheduleQuery::execute is a Phase 4 stub"))
+    pub async fn execute(
+        &self,
+        _ctx: &TenantContext,
+    ) -> Result<Vec<crate::aggregate::ExamSchedule>> {
+        Err(DomainError::not_supported(
+            "ExamScheduleQuery::execute is a Phase 4 stub",
+        ))
     }
 }
 
@@ -165,10 +181,21 @@ pub struct SeatPlanQuery {
 }
 impl SeatPlanQuery {
     #[allow(dead_code)]
-    #[must_use] pub const fn new() -> Self { Self { exam_id: None, class_id: None, section_id: None, offset: 0, limit: 50 } }
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            exam_id: None,
+            class_id: None,
+            section_id: None,
+            offset: 0,
+            limit: 50,
+        }
+    }
     #[allow(dead_code)]
     pub async fn execute(&self, _ctx: &TenantContext) -> Result<Vec<crate::aggregate::SeatPlan>> {
-        Err(DomainError::not_supported("SeatPlanQuery::execute is a Phase 4 stub"))
+        Err(DomainError::not_supported(
+            "SeatPlanQuery::execute is a Phase 4 stub",
+        ))
     }
 }
 
@@ -185,10 +212,21 @@ pub struct AdmitCardQuery {
 }
 impl AdmitCardQuery {
     #[allow(dead_code)]
-    #[must_use] pub const fn new() -> Self { Self { student_record_id: None, exam_type_id: None, academic_year_id: None, offset: 0, limit: 50 } }
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            student_record_id: None,
+            exam_type_id: None,
+            academic_year_id: None,
+            offset: 0,
+            limit: 50,
+        }
+    }
     #[allow(dead_code)]
     pub async fn execute(&self, _ctx: &TenantContext) -> Result<Vec<crate::aggregate::AdmitCard>> {
-        Err(DomainError::not_supported("AdmitCardQuery::execute is a Phase 4 stub"))
+        Err(DomainError::not_supported(
+            "AdmitCardQuery::execute is a Phase 4 stub",
+        ))
     }
 }
 
@@ -254,5 +292,81 @@ mod tests {
             .expect("runtime");
         let err = rt.block_on(q.execute(&ctx)).unwrap_err();
         assert!(matches!(err, DomainError::NotSupported(_)));
+    }
+}
+
+// =============================================================================
+// Workstream C query stubs
+// =============================================================================
+
+/// A typed query over the [`MarksRegister`](crate::aggregate::MarksRegister)
+/// aggregate. **Phase 4 stub.**
+#[allow(dead_code)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MarksRegisterQuery {
+    pub exam_id: Option<crate::value_objects::ExamId>,
+    pub student_id: Option<crate::value_objects::StudentId>,
+    pub class_id: Option<educore_academic::ClassId>,
+    pub section_id: Option<educore_academic::SectionId>,
+    pub is_open: Option<bool>,
+    pub offset: u32,
+    pub limit: u32,
+}
+impl MarksRegisterQuery {
+    #[allow(dead_code)]
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            exam_id: None,
+            student_id: None,
+            class_id: None,
+            section_id: None,
+            is_open: None,
+            offset: 0,
+            limit: 50,
+        }
+    }
+    #[allow(dead_code)]
+    pub async fn execute(
+        &self,
+        _ctx: &TenantContext,
+    ) -> Result<Vec<crate::aggregate::MarksRegister>> {
+        Err(DomainError::not_supported(
+            "MarksRegisterQuery::execute is a Phase 4 stub",
+        ))
+    }
+}
+
+/// A typed query over the [`ResultStore`](crate::aggregate::ResultStore)
+/// aggregate. **Phase 4 stub.**
+#[allow(dead_code)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ResultStoreQuery {
+    pub exam_id: Option<crate::value_objects::ExamId>,
+    pub student_id: Option<crate::value_objects::StudentId>,
+    pub status: Option<crate::value_objects::ResultStatus>,
+    pub offset: u32,
+    pub limit: u32,
+}
+impl ResultStoreQuery {
+    #[allow(dead_code)]
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            exam_id: None,
+            student_id: None,
+            status: None,
+            offset: 0,
+            limit: 50,
+        }
+    }
+    #[allow(dead_code)]
+    pub async fn execute(
+        &self,
+        _ctx: &TenantContext,
+    ) -> Result<Vec<crate::aggregate::ResultStore>> {
+        Err(DomainError::not_supported(
+            "ResultStoreQuery::execute is a Phase 4 stub",
+        ))
     }
 }

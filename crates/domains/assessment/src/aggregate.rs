@@ -31,7 +31,7 @@ use educore_academic::value_objects::PassMark;
 
 use crate::value_objects::{
     AcademicYearId, AdmitCardId, ClassId, ExamCode, ExamId, ExamMark, ExamName, ExamScheduleId,
-    ExamTypeId, SectionId, SeatPlanId, StaffId, SubjectId,
+    ExamTypeId, SeatPlanId, SectionId, StaffId, SubjectId,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -477,6 +477,151 @@ impl AdmitCard {
             exam_type_id,
             academic_year_id,
             generated_at: now,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: now,
+            updated_at: now,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        }
+    }
+}
+
+// =============================================================================
+// MarksRegister (Workstream C)
+// =============================================================================
+
+/// A per-student container for the marks obtained in an
+/// exam. There is one `MarksRegister` per
+/// `(exam_id, student_id)`. Its children
+/// ([`MarksRegisterChild`](crate::entities::MarksRegisterChild))
+/// hold the per-subject marks.
+#[allow(clippy::too_many_arguments)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MarksRegister {
+    pub id: crate::value_objects::MarksRegisterId,
+    pub school_id: SchoolId,
+    pub exam_id: ExamId,
+    pub student_id: crate::value_objects::StudentId,
+    pub class_id: ClassId,
+    pub section_id: SectionId,
+    pub academic_year_id: AcademicYearId,
+    /// `true` while the register is being entered;
+    /// `false` once `submit_marks` locks it.
+    pub is_open: bool,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+impl MarksRegister {
+    pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn fresh(
+        id: crate::value_objects::MarksRegisterId,
+        exam_id: ExamId,
+        student_id: crate::value_objects::StudentId,
+        class_id: ClassId,
+        section_id: SectionId,
+        academic_year_id: AcademicYearId,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        Self {
+            school_id: id.school_id(),
+            id,
+            exam_id,
+            student_id,
+            class_id,
+            section_id,
+            academic_year_id,
+            is_open: true,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: now,
+            updated_at: now,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        }
+    }
+}
+
+// =============================================================================
+// ResultStore (Workstream C)
+// =============================================================================
+
+/// The published, per-student per-subject result row.
+/// Drives report cards and merit position calculations.
+#[allow(clippy::too_many_arguments)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ResultStore {
+    pub id: crate::value_objects::ResultStoreId,
+    pub school_id: SchoolId,
+    pub exam_id: ExamId,
+    pub student_id: crate::value_objects::StudentId,
+    pub class_id: ClassId,
+    pub section_id: SectionId,
+    pub academic_year_id: AcademicYearId,
+    pub total_marks: f32,
+    pub total_gpa: f32,
+    pub total_grade: crate::value_objects::Grade,
+    pub status: crate::value_objects::ResultStatus,
+    pub published_at: Timestamp,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+impl ResultStore {
+    pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn fresh(
+        id: crate::value_objects::ResultStoreId,
+        exam_id: ExamId,
+        student_id: crate::value_objects::StudentId,
+        class_id: ClassId,
+        section_id: SectionId,
+        academic_year_id: AcademicYearId,
+        total_marks: f32,
+        total_gpa: f32,
+        total_grade: crate::value_objects::Grade,
+        status: crate::value_objects::ResultStatus,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        Self {
+            school_id: id.school_id(),
+            id,
+            exam_id,
+            student_id,
+            class_id,
+            section_id,
+            academic_year_id,
+            total_marks,
+            total_gpa,
+            total_grade,
+            status,
+            published_at: now,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at: now,
