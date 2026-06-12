@@ -566,6 +566,54 @@ crate = "educore-assessment"
 phase = 4
 status = "Pending"
 
+[[row]]
+id = "assessment_exam_schedules_aggregate"
+item = "assessment_exam_schedules aggregate"
+spec = "docs/specs/assessment/aggregates.md"
+crate = "educore-assessment"
+phase = 4
+status = "Pending"
+
+[[row]]
+id = "assessment_result_stores_aggregate"
+item = "assessment_result_stores aggregate"
+spec = "docs/specs/assessment/aggregates.md"
+crate = "educore-assessment"
+phase = 4
+status = "Pending"
+
+[[row]]
+id = "assessment_report_cards_aggregate"
+item = "assessment_report_cards projection"
+spec = "docs/specs/assessment/aggregates.md"
+crate = "educore-assessment"
+phase = 4
+status = "Pending"
+
+[[row]]
+id = "assessment_online_exams_aggregate"
+item = "assessment_online_exams aggregate"
+spec = "docs/specs/assessment/aggregates.md"
+crate = "educore-assessment"
+phase = 4
+status = "Pending"
+
+[[row]]
+id = "assessment_seat_plans_aggregate"
+item = "assessment_seat_plans aggregate"
+spec = "docs/specs/assessment/aggregates.md"
+crate = "educore-assessment"
+phase = 4
+status = "Pending"
+
+[[row]]
+id = "assessment_admit_cards_aggregate"
+item = "assessment_admit_cards aggregate"
+spec = "docs/specs/assessment/aggregates.md"
+crate = "educore-assessment"
+phase = 4
+status = "Pending"
+
 # =============================================================================
 # Attendance domain (Phase 5)
 # =============================================================================
