@@ -113,6 +113,20 @@ academic_typed_id! {
     pub struct AcademicYearId;
 }
 
+academic_typed_id! {
+    /// A typed id for a `StudentRecord` row (the per-academic-year
+    /// enrollment that downstream domains — including
+    /// [`educore_assessment`](::educore_assessment) for admit cards
+    /// and report cards — depend on).
+    ///
+    /// The full `StudentRecord` aggregate lands in a later
+    /// academic phase (Phase 3 hand-off § Open questions). The
+    /// typed id is added in Phase 4 as a non-breaking additive
+    /// so the assessment domain can declare its foreign-key
+    /// fields against a stable type from the academic crate.
+    pub struct StudentRecordId;
+}
+
 // =============================================================================
 // Names (1..=N chars, validated at construction)
 // =============================================================================

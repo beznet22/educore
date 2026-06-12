@@ -122,8 +122,9 @@ pub use crate::commands::UniquenessChecker;
 pub use crate::value_objects::{
     AcademicYearId, AcademicYearRange, AcademicYearTitle, Address, AdmissionNumber, BloodGroup,
     ClassId, ClassName, DateOfBirth, FullName, Gender, OptionalSubjectGpaThreshold, PassMark,
-    PersonName, ResultStatus, RollNumber, SectionId, SectionName, StudentId, StudentStatus,
-    SubjectCode, SubjectId, SubjectType, SuspensionReason, TransferReason, WithdrawalReason,
+    PersonName, ResultStatus, RollNumber, SectionId, SectionName, StudentId, StudentRecordId,
+    StudentStatus, SubjectCode, SubjectId, SubjectType, SuspensionReason, TransferReason,
+    WithdrawalReason,
 };
 
 // ---- Re-exports of the engine types most commonly reached for ----------------
@@ -180,8 +181,9 @@ pub mod prelude {
     pub use crate::value_objects::{
         AcademicYearId, AcademicYearRange, AcademicYearTitle, Address, AdmissionNumber, BloodGroup,
         ClassId, ClassName, DateOfBirth, FullName, Gender, OptionalSubjectGpaThreshold, PassMark,
-        PersonName, ResultStatus, RollNumber, SectionId, SectionName, StudentId, StudentStatus,
-        SubjectCode, SubjectId, SubjectType, SuspensionReason, TransferReason, WithdrawalReason,
+        PersonName, ResultStatus, RollNumber, SectionId, SectionName, StudentId, StudentRecordId,
+        StudentStatus, SubjectCode, SubjectId, SubjectType, SuspensionReason, TransferReason,
+        WithdrawalReason,
     };
 }
 
@@ -225,5 +227,15 @@ mod tests {
         let _: SectionId = SectionId::new(school, g.next_uuid());
         let _: SubjectId = SubjectId::new(school, g.next_uuid());
         let _: AcademicYearId = AcademicYearId::new(school, g.next_uuid());
+    }
+
+    #[test]
+    fn student_record_id_round_trips() {
+        let school = educore_core::ids::SchoolId(uuid::Uuid::now_v7());
+        let value = uuid::Uuid::now_v7();
+        let id = StudentRecordId::new(school, value);
+        assert_eq!(id.school_id(), school);
+        assert_eq!(id.as_uuid(), value);
+        assert_eq!(id.to_string(), format!("{school}/{value}"));
     }
 }
