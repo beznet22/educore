@@ -81,6 +81,62 @@ are forbidden by the engine itself — the aggregate's `SchoolId`
 must equal the `TenantContext::school_id` or the command returns
 `DomainError::Forbidden`.
 
+### PG Row-Level Security (RLS) test procedure
+
+The `educore-storage-postgres` adapter backs engine tenancy at the
+database level with PostgreSQL's row-level security (RLS). Every
+storage port sub-table (`outbox`, `audit_log`, `event_log`,
+`idempotency`, and the assessment-domain tables) carries a
+`school_id` column; a row-level policy filters rows to
+`school_id = current_setting('app.current_school_id')` (the
+adapter sets this GUC on every connection it opens).
+
+The integration suite asserts RLS is in effect with the
+`pg_rls_blocks_cross_tenant_audit_reads` test
+(`crates/tools/storage-parity/tests/cross_cutting_integration.rs`).
+That test was `#[ignore]`-gated since Phase 2 (it requires a
+non-superuser role that the test runner must provision). Phase 4
+closes this gap with a canonical setup script.
+
+To run the RLS tests end-to-end:
+
+```bash
+# 1. Provision the role + policies (run once per PG instance).
+psql -U postgres -d educore -f tools/scripts/pg-rls-test-setup.sql
+
+# 2. Export two URLs (superuser + non-superuser).
+export EDUCORE_PG_URL="postgres://postgres:pw@host:5432/educore"
+export EDUCORE_PG_TENANT_B_URL="postgres://tenant_b:tenant_b_pw@host:5432/educore"
+
+# 3. Run the gated RLS test (and any sibling RLS tests).
+cargo test -p educore-storage-parity -- --ignored \
+    pg_rls_blocks_cross_tenant
+```
+
+The setup script is **idempotent** — re-running it drops and
+re-creates the `tenant_b` role, re-asserts the schema grants, and
+re-emits the policies. It is **not for production use** (the
+password is hard-coded and the role is `LOGIN`-enabled for the
+test runner only; the production consumer must replace the
+script with a real role-provisioning pipeline).
+
+The script's policy model is the **school-id-only filter**: a
+non-superuser role that has `CONNECT` on the database sees only
+rows whose `school_id` matches the session's `app.current_school_id`
+GUC. The `audit_log_school_isolation` policy on
+`engine.audit_log` is the canonical example; the other engine
+tables have the same policy. The assessment-domain tables
+(`engine.assessment_*`, `engine.admit_cards`) get their policies
+on first run *after* the assessment migration is applied; the
+`DO $$ ... $$` block at the bottom of the script detects the
+absence of the assessment tables and skips the assessment grants
+on the first run, picking them up on the next run.
+
+For the MySQL adapter, the equivalent isolation is enforced at
+the application layer (the storage adapter's `read_for_*` and
+`list_*` methods always include `school_id` in the WHERE clause);
+PG is the only adapter that uses database-level RLS.
+
 ## Consumer Repository Layout
 
 The consumer's repository is a **separate workspace** that depends
