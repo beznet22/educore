@@ -35,12 +35,22 @@
 
 # outbox — transactional outbox pattern; lives in storage port + each adapter
 [[row]]
+id = "outbox_ddl_surreal"
+item = "outbox table DDL (SurrealDB)"
+spec = "migrations/engine/0000_engine_core.surreal.surql"
+crate = "educore-storage-surrealdb"
+phase = 0
+status = "Tested"
+tests = "crates/adapters/storage-surrealdb/tests/outbox_e2e.rs"
+
+[[row]]
 id = "outbox_ddl_pg"
 item = "outbox table DDL (PostgreSQL)"
 spec = "migrations/engine/0000_engine_core.postgres.sql"
 crate = "educore-storage-postgres"
-phase = 0
-status = "Pending"
+phase = 1
+status = "Tested"
+tests = "crates/adapters/storage-postgres/tests/outbox_e2e.rs"
 
 [[row]]
 id = "outbox_ddl_mysql"
@@ -48,7 +58,8 @@ item = "outbox table DDL (MySQL)"
 spec = "migrations/engine/0000_engine_core.mysql.sql"
 crate = "educore-storage-mysql"
 phase = 1
-status = "Pending"
+status = "Tested"
+tests = "crates/adapters/storage-mysql/tests/outbox_e2e.rs"
 
 [[row]]
 id = "outbox_ddl_sqlite"
@@ -56,7 +67,8 @@ item = "outbox table DDL (SQLite)"
 spec = "migrations/engine/0000_engine_core.sqlite.sql"
 crate = "educore-storage-sqlite"
 phase = 1
-status = "Pending"
+status = "Tested"
+tests = "crates/adapters/storage-sqlite/tests/outbox_e2e.rs"
 
 # audit_log — audit-first invariant; lives in educore-audit
 [[row]]
@@ -84,29 +96,36 @@ phase = 2
 status = "Pending"
 
 # idempotency — command dedup; lives in storage port
+# Phase 1: PG, MySQL, and SQLite adapters. The MySQL and SQLite
+# rows below were mis-tagged `phase = 0` in the initial scaffold;
+# Phase 0 only shipped SurrealDB per ADR-017. The SurrealDB row
+# above is now `Tested`; the SQL-dialect rows flip in Phase 1.
 [[row]]
 id = "idempotency_ddl_pg"
 item = "idempotency table DDL (PostgreSQL)"
 spec = "migrations/engine/0000_engine_core.postgres.sql"
-crate = "educore-storage"
-phase = 0
-status = "Pending"
+crate = "educore-storage-postgres"
+phase = 1
+status = "Tested"
+tests = "crates/adapters/storage-postgres/tests/outbox_e2e.rs"
 
 [[row]]
 id = "idempotency_ddl_mysql"
 item = "idempotency table DDL (MySQL)"
 spec = "migrations/engine/0000_engine_core.mysql.sql"
-crate = "educore-storage"
-phase = 0
-status = "Pending"
+crate = "educore-storage-mysql"
+phase = 1
+status = "Tested"
+tests = "crates/adapters/storage-mysql/tests/outbox_e2e.rs"
 
 [[row]]
 id = "idempotency_ddl_sqlite"
 item = "idempotency table DDL (SQLite)"
 spec = "migrations/engine/0000_engine_core.sqlite.sql"
-crate = "educore-storage"
-phase = 0
-status = "Pending"
+crate = "educore-storage-sqlite"
+phase = 1
+status = "Tested"
+tests = "crates/adapters/storage-sqlite/tests/outbox_e2e.rs"
 
 # event_log — event-sourced projection history; lives in educore-events
 [[row]]
@@ -134,54 +153,66 @@ phase = 2
 status = "Pending"
 
 # schema_registry — adapter version tracking; lives in storage port
+# Phase 1: PG, MySQL, and SQLite adapters. The MySQL and SQLite
+# rows below were mis-tagged `phase = 0` in the initial scaffold;
+# Phase 0 only shipped SurrealDB per ADR-017.
 [[row]]
 id = "schema_registry_ddl_pg"
 item = "schema_registry table DDL (PostgreSQL)"
 spec = "migrations/engine/0000_engine_core.postgres.sql"
-crate = "educore-storage"
-phase = 0
-status = "Pending"
+crate = "educore-storage-postgres"
+phase = 1
+status = "Tested"
+tests = "crates/adapters/storage-postgres/tests/outbox_e2e.rs"
 
 [[row]]
 id = "schema_registry_ddl_mysql"
 item = "schema_registry table DDL (MySQL)"
 spec = "migrations/engine/0000_engine_core.mysql.sql"
-crate = "educore-storage"
-phase = 0
-status = "Pending"
+crate = "educore-storage-mysql"
+phase = 1
+status = "Tested"
+tests = "crates/adapters/storage-mysql/tests/outbox_e2e.rs"
 
 [[row]]
 id = "schema_registry_ddl_sqlite"
 item = "schema_registry table DDL (SQLite)"
 spec = "migrations/engine/0000_engine_core.sqlite.sql"
-crate = "educore-storage"
-phase = 0
-status = "Pending"
+crate = "educore-storage-sqlite"
+phase = 1
+status = "Tested"
+tests = "crates/adapters/storage-sqlite/tests/outbox_e2e.rs"
 
 # system_user — bootstrap account; lives in storage port
+# Phase 1: PG, MySQL, and SQLite adapters. The MySQL and SQLite
+# rows below were mis-tagged `phase = 0` in the initial scaffold;
+# Phase 0 only shipped SurrealDB per ADR-017.
 [[row]]
 id = "system_user_ddl_pg"
 item = "system_user table DDL (PostgreSQL)"
 spec = "migrations/engine/0000_engine_core.postgres.sql"
-crate = "educore-storage"
-phase = 0
-status = "Pending"
+crate = "educore-storage-postgres"
+phase = 1
+status = "Tested"
+tests = "crates/adapters/storage-postgres/tests/outbox_e2e.rs"
 
 [[row]]
 id = "system_user_ddl_mysql"
 item = "system_user table DDL (MySQL)"
 spec = "migrations/engine/0000_engine_core.mysql.sql"
-crate = "educore-storage"
-phase = 0
-status = "Pending"
+crate = "educore-storage-mysql"
+phase = 1
+status = "Tested"
+tests = "crates/adapters/storage-mysql/tests/outbox_e2e.rs"
 
 [[row]]
 id = "system_user_ddl_sqlite"
 item = "system_user table DDL (SQLite)"
 spec = "migrations/engine/0000_engine_core.sqlite.sql"
-crate = "educore-storage"
-phase = 0
-status = "Pending"
+crate = "educore-storage-sqlite"
+phase = 1
+status = "Tested"
+tests = "crates/adapters/storage-sqlite/tests/outbox_e2e.rs"
 
 # =============================================================================
 # Foundation layer — core, query-derive, storage port
@@ -193,7 +224,8 @@ item = "DomainQuery proc-macro"
 spec = "docs/query_layer.md"
 crate = "educore-query-derive"
 phase = 0
-status = "Pending"
+status = "Tested"
+tests = "crates/infra/query-derive/tests/derive_test.rs"
 
 [[row]]
 id = "entity_descriptor_ast"
@@ -201,7 +233,9 @@ item = "EntityDescriptor AST types"
 spec = "docs/query_layer.md"
 crate = "educore-core"
 phase = 0
-status = "Pending"
+status = "Tested"
+tests = "crates/infra/core/src/query.rs"
+notes = "Concrete EntityDescriptor struct lands with the first domain crate (Phase 3); the QueryNode<F> AST + Field/HasRelations traits are the Phase 0 plumbing."
 
 [[row]]
 id = "school_id_newtype"
@@ -209,7 +243,8 @@ item = "SchoolId newtype + RLS helpers"
 spec = "docs/schemas/tenancy-schema.md"
 crate = "educore-core"
 phase = 0
-status = "Pending"
+status = "Tested"
+tests = "crates/infra/core/src/ids.rs"
 
 [[row]]
 id = "uuid_v7_generator"
@@ -217,7 +252,8 @@ item = "UUIDv7 ID generator"
 spec = "docs/schemas/database-schema.md"
 crate = "educore-core"
 phase = 0
-status = "Pending"
+status = "Tested"
+tests = "crates/infra/core/src/clock.rs"
 
 [[row]]
 id = "system_clock"
@@ -225,7 +261,8 @@ item = "SystemClock + injectable Clock port"
 spec = "docs/schemas/database-schema.md"
 crate = "educore-core"
 phase = 0
-status = "Pending"
+status = "Tested"
+tests = "crates/infra/core/src/clock.rs"
 
 [[row]]
 id = "domain_error_enum"
@@ -233,7 +270,8 @@ item = "DomainError enum (thiserror)"
 spec = "docs/code-standards.md"
 crate = "educore-core"
 phase = 0
-status = "Pending"
+status = "Tested"
+tests = "crates/infra/core/src/error.rs"
 
 [[row]]
 id = "lint_submodule"
@@ -241,8 +279,9 @@ item = "lint sub-module (cross-ref + anti-pattern + matrix sync)"
 spec = "docs/build-plan.md"
 crate = "educore-core"
 phase = 0
-status = "Pending"
-notes = "Sub-module of educore-core at `crates/infra/core/src/lint.rs`, gated behind the `lint` Cargo feature."
+status = "Tested"
+tests = "crates/infra/core/src/lint.rs"
+notes = "Sub-module of educore-core at `crates/infra/core/src/lint.rs`, gated behind the `lint` Cargo feature. Binary: `cargo run -p educore-core --bin lint --features lint`. Anti-pattern scan + coverage-matrix sync covered in Phase 0; full spec→code and code→spec cross-ref added in Phase 1+."
 
 # =============================================================================
 # Storage port + 3 adapters
@@ -254,7 +293,8 @@ item = "StorageAdapter port trait"
 spec = "docs/ports/storage.md"
 crate = "educore-storage"
 phase = 0
-status = "Pending"
+status = "Tested"
+tests = "crates/infra/storage/src/port.rs"
 
 [[row]]
 id = "storage_transaction_port"
@@ -262,7 +302,8 @@ item = "Transaction sub-port"
 spec = "docs/ports/storage.md"
 crate = "educore-storage"
 phase = 0
-status = "Pending"
+status = "Tested"
+tests = "crates/infra/storage/src/transaction.rs"
 
 [[row]]
 id = "storage_outbox_port"
@@ -270,15 +311,17 @@ item = "Outbox sub-port (append + drain)"
 spec = "docs/ports/storage.md"
 crate = "educore-storage"
 phase = 0
-status = "Pending"
+status = "Tested"
+tests = "crates/infra/storage/src/outbox.rs"
 
 [[row]]
 id = "storage_postgres_impl"
 item = "PostgresStorage adapter impl"
 spec = "docs/ports/storage.md"
 crate = "educore-storage-postgres"
-phase = 0
-status = "Pending"
+phase = 1
+status = "Tested"
+tests = "crates/adapters/storage-postgres/tests/outbox_e2e.rs"
 
 [[row]]
 id = "storage_mysql_impl"
@@ -286,7 +329,8 @@ item = "MysqlStorage adapter impl"
 spec = "docs/ports/storage.md"
 crate = "educore-storage-mysql"
 phase = 1
-status = "Pending"
+status = "Tested"
+tests = "crates/adapters/storage-mysql/tests/outbox_e2e.rs"
 
 [[row]]
 id = "storage_sqlite_impl"
@@ -294,7 +338,8 @@ item = "SqliteStorage adapter impl"
 spec = "docs/ports/storage.md"
 crate = "educore-storage-sqlite"
 phase = 1
-status = "Pending"
+status = "Tested"
+tests = "crates/adapters/storage-sqlite/tests/outbox_e2e.rs"
 
 [[row]]
 id = "storage_parity_suite"
@@ -303,7 +348,7 @@ spec = "docs/ports/storage.md"
 crate = "educore-storage-parity"
 phase = 0
 status = "Pending"
-notes = "Scaffold in Phase 0; full suite in Phase 16."
+notes = "Scaffold in Phase 0; full suite in Phase 16. **Orphaned** between Phase 0 and Phase 16 — no per-adapter parity test exists yet. Phase 1 will land the first cross-adapter outbox scenario (PG/MySQL/SQLite/SurrealDB parity); Phase 16 will fold that into the parity crate."
 
 # =============================================================================
 # Cross-cutting layer (Phase 2)
@@ -355,7 +400,8 @@ item = "DomainEvent trait + EventEnvelope struct"
 spec = "docs/ports/event-bus.md"
 crate = "educore-events"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/events/src/lib.rs"
 
 [[row]]
 id = "event_bus_port"
@@ -770,6 +816,31 @@ crate = "workspace"
 phase = 17
 status = "Pending"
 
+# =============================================================================
+# Sync engine (Phase 0) — per ADR-018
+# =============================================================================
+
+[[row]]
+id = "sync_port"
+item = "SyncAdapter port trait (SyncCoordinator)"
+spec = "docs/ports/sync.md"
+crate = "educore-sync"
+phase = 0
+status = "Tested"
+tests = "crates/cross-cutting/sync/src/lib.rs"
+
+[[row]]
+id = "sync_inprocess_impl"
+item = "InProcessSyncAdapter impl (default)"
+spec = "docs/ports/sync.md"
+crate = "educore-sync-inprocess"
+phase = 0
+status = "Tested"
+tests = "crates/cross-cutting/sync-inprocess/src/lib.rs"
+
+# Deferred: educore-sync-http, educore-sync-null (not in Phase 0; reintroduce
+# when testkit needs the null impl and the HTTP worker is needed)
+
 # Engine graph (graphify) - per ADR-016
 [[row]]
 id = "engine_graph_regen"
@@ -777,6 +848,6 @@ item = "engine graph regenerated on every commit (graphify)"
 spec = "docs/decisions/ADR-016-EngineGraph.md"
 crate = "workspace"
 phase = 0
-status = "Pending"
+status = "Tested"
 tests = "tools/scripts/check-graph-freshness.sh"
 notes = "Auto-rebuilt locally via `graphify hook install`. The 5th validation criterion (graph regen freshness) is checked by `tools/scripts/check-graph-freshness.sh`. Committed artefacts: graph.html, graph.json, manifest.json, GRAPH_REPORT.md. Gitignored: cost.json, cache/."

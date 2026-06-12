@@ -5,11 +5,19 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Domain event envelope, event bus port, in-process and outbox implementations."
+description = "Domain event envelope, event bus port, sync events, and the outbox-pattern bridge."
 
 [lints]
 workspace = true
 
 [dependencies]
 educore-core = { workspace = true }
-
+async-trait = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+futures = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
