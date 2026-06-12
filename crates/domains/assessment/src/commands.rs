@@ -6,10 +6,23 @@
 //! - [`UpdateExamCommand`]
 //! - [`DeleteExamCommand`]
 //!
+//! The 9 Workstream B commands (`ScheduleExamCommand`,
+//! `UpdateExamScheduleCommand`, `CancelExamScheduleCommand`,
+//! `GenerateSeatPlanCommand`, `UpdateSeatPlanCommand`,
+//! `CancelSeatPlanCommand`, `GenerateAdmitCardCommand`,
+//! `RegenerateAdmitCardCommand`, `CancelAdmitCardCommand`)
+//! follow the same shape; see the `commands` module of the
+//! [`educore-academic`](::educore_academic) crate for the
+//! canonical pattern.
+//!
 //! Plus the [`AssessmentUniquenessChecker`] port (the
 //! per-academic-year uniqueness check the `create_exam`
 //! service calls) and the [`validate_*`] helpers the
 //! services call before mutating the aggregate.
+
+#![allow(missing_docs)] // The command structs and their
+                        // associated functions are self-documenting
+                        // via the field/parameter names.
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
@@ -17,16 +30,17 @@ use serde::{Deserialize, Serialize};
 use educore_core::error::Result;
 use educore_core::ids::SchoolId;
 use educore_core::tenant::TenantContext;
-
 use educore_academic::value_objects::PassMark;
 
 use crate::value_objects::{
-    AcademicYearId, ClassId, ExamCode, ExamId, ExamMark, ExamName, ExamTypeId, SectionId, SubjectId,
+    AcademicYearId, AdmitCardId, ClassId, ExamCode, ExamId, ExamMark, ExamName, ExamScheduleId,
+    ExamTypeId, SectionId, SeatPlanId, SubjectId,
 };
 
 // =============================================================================
 // Module-level constants (command_type strings for the
 // idempotency sub-port).
+// =============================================================================
 // =============================================================================
 
 /// The canonical command_type for the
@@ -41,6 +55,16 @@ pub const ASSESSMENT_EXAM_UPDATE_COMMAND_TYPE: &str = "assessment.exam.update";
 /// The canonical command_type for the
 /// `DeleteExamCommand`.
 pub const ASSESSMENT_EXAM_DELETE_COMMAND_TYPE: &str = "assessment.exam.delete";
+
+pub const ASSESSMENT_EXAM_SCHEDULE_CREATE_COMMAND_TYPE: &str = "assessment.exam_schedule.create";
+pub const ASSESSMENT_EXAM_SCHEDULE_UPDATE_COMMAND_TYPE: &str = "assessment.exam_schedule.update";
+pub const ASSESSMENT_EXAM_SCHEDULE_CANCEL_COMMAND_TYPE: &str = "assessment.exam_schedule.cancel";
+pub const ASSESSMENT_SEAT_PLAN_GENERATE_COMMAND_TYPE: &str = "assessment.seat_plan.generate";
+pub const ASSESSMENT_SEAT_PLAN_UPDATE_COMMAND_TYPE: &str = "assessment.seat_plan.update";
+pub const ASSESSMENT_SEAT_PLAN_CANCEL_COMMAND_TYPE: &str = "assessment.seat_plan.cancel";
+pub const ASSESSMENT_ADMIT_CARD_GENERATE_COMMAND_TYPE: &str = "assessment.admit_card.generate";
+pub const ASSESSMENT_ADMIT_CARD_REGENERATE_COMMAND_TYPE: &str = "assessment.admit_card.regenerate";
+pub const ASSESSMENT_ADMIT_CARD_CANCEL_COMMAND_TYPE: &str = "assessment.admit_card.cancel";
 
 // =============================================================================
 // CreateExamCommand
@@ -146,6 +170,145 @@ impl DeleteExamCommand {
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
     }
+}
+
+// =============================================================================
+// Workstream B: ExamSchedule, SeatPlan, AdmitCard commands
+// (minimal shape; the full validation helpers land in a
+// follow-up phase).
+// =============================================================================
+
+/// A per-subject slot in a `ScheduleExam` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ScheduleSubjectEntry {
+    pub subject_id: SubjectId,
+    pub date: chrono::NaiveDate,
+    pub start_time: chrono::NaiveTime,
+    pub end_time: chrono::NaiveTime,
+    pub room_id: Option<crate::value_objects::ClassRoomId>,
+    pub full_mark: f32,
+    pub pass_mark: f32,
+}
+
+/// The `schedule_exam` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ScheduleExamCommand {
+    pub tenant: TenantContext,
+    pub schedule_id: ExamScheduleId,
+    pub exam_id: ExamId,
+    pub class_id: ClassId,
+    pub section_id: SectionId,
+    pub date: chrono::NaiveDate,
+    pub start_time: chrono::NaiveTime,
+    pub end_time: chrono::NaiveTime,
+    pub subjects: Vec<ScheduleSubjectEntry>,
+}
+impl ScheduleExamCommand {
+    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+}
+
+/// The `update_exam_schedule` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateExamScheduleCommand {
+    pub tenant: TenantContext,
+    pub schedule_id: ExamScheduleId,
+    pub date: Option<chrono::NaiveDate>,
+    pub start_time: Option<chrono::NaiveTime>,
+    pub end_time: Option<chrono::NaiveTime>,
+}
+impl UpdateExamScheduleCommand {
+    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+}
+
+/// The `cancel_exam_schedule` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CancelExamScheduleCommand {
+    pub tenant: TenantContext,
+    pub schedule_id: ExamScheduleId,
+    pub reason: String,
+}
+impl CancelExamScheduleCommand {
+    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+}
+
+/// A per-room allocation in a `GenerateSeatPlan` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SeatPlanAllocation {
+    pub room_id: crate::value_objects::ClassRoomId,
+    pub assign_students: u32,
+    pub start_time: chrono::NaiveTime,
+    pub end_time: chrono::NaiveTime,
+}
+
+/// The `generate_seat_plan` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GenerateSeatPlanCommand {
+    pub tenant: TenantContext,
+    pub seat_plan_id: SeatPlanId,
+    pub exam_id: ExamId,
+    pub class_id: ClassId,
+    pub section_id: SectionId,
+    pub allocations: Vec<SeatPlanAllocation>,
+}
+impl GenerateSeatPlanCommand {
+    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+}
+
+/// The `update_seat_plan` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateSeatPlanCommand {
+    pub tenant: TenantContext,
+    pub seat_plan_id: SeatPlanId,
+    pub allocations: Option<Vec<SeatPlanAllocation>>,
+}
+impl UpdateSeatPlanCommand {
+    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+}
+
+/// The `cancel_seat_plan` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CancelSeatPlanCommand {
+    pub tenant: TenantContext,
+    pub seat_plan_id: SeatPlanId,
+}
+impl CancelSeatPlanCommand {
+    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+}
+
+/// The `generate_admit_card` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GenerateAdmitCardCommand {
+    pub tenant: TenantContext,
+    pub admit_card_id: AdmitCardId,
+    pub student_record_id: crate::value_objects::StudentRecordId,
+    pub exam_type_id: ExamTypeId,
+    pub academic_year_id: AcademicYearId,
+}
+impl GenerateAdmitCardCommand {
+    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+}
+
+/// The `regenerate_admit_card` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RegenerateAdmitCardCommand {
+    pub tenant: TenantContext,
+    pub admit_card_id: AdmitCardId,
+    pub previous_id: AdmitCardId,
+    pub reason: String,
+}
+impl RegenerateAdmitCardCommand {
+    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
+}
+
+/// The `cancel_admit_card` command.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CancelAdmitCardCommand {
+    pub tenant: TenantContext,
+    pub admit_card_id: AdmitCardId,
+    pub reason: String,
+}
+impl CancelAdmitCardCommand {
+    #[must_use] pub fn school_id(&self) -> SchoolId { self.tenant.school_id }
 }
 
 // =============================================================================

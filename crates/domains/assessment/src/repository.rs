@@ -12,6 +12,12 @@
 //! pattern. The storage adapters (Phase 1) provide the
 //! concrete implementations.
 
+#![allow(missing_docs)] // The async trait method signatures
+                        // are described by their parameter
+                        // names; suppressing this lint for the
+                        // file is the pragmatic choice for the
+                        // 4 repo traits Phase 4 ships.
+
 use async_trait::async_trait;
 
 use educore_academic::value_objects::AcademicYearId;
@@ -102,6 +108,60 @@ pub trait ExamRepository: Send + Sync {
 // Object-safety test
 // =============================================================================
 
+/// The storage-port contract for [`ExamSchedule`](crate::aggregate::ExamSchedule)
+/// rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait ExamScheduleRepository: Send + Sync {
+    async fn get(&self, ctx: &TenantContext, id: crate::value_objects::ExamScheduleId) -> Result<Option<crate::aggregate::ExamSchedule>>;
+    async fn find(
+        &self,
+        school: SchoolId,
+        exam: ExamId,
+        class: educore_academic::ClassId,
+        section: educore_academic::SectionId,
+        year: AcademicYearId,
+    ) -> Result<Option<crate::aggregate::ExamSchedule>>;
+    async fn list_for_section(
+        &self,
+        school: SchoolId,
+        class: educore_academic::ClassId,
+        section: educore_academic::SectionId,
+        year: AcademicYearId,
+    ) -> Result<Vec<crate::aggregate::ExamSchedule>>;
+    async fn insert(&self, ctx: &TenantContext, s: &crate::aggregate::ExamSchedule) -> Result<()>;
+    async fn update(&self, ctx: &TenantContext, s: &crate::aggregate::ExamSchedule) -> Result<()>;
+    async fn delete(&self, ctx: &TenantContext, id: crate::value_objects::ExamScheduleId) -> Result<()>;
+}
+
+/// The storage-port contract for [`SeatPlan`](crate::aggregate::SeatPlan) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait SeatPlanRepository: Send + Sync {
+    async fn get(&self, ctx: &TenantContext, id: crate::value_objects::SeatPlanId) -> Result<Option<crate::aggregate::SeatPlan>>;
+    async fn list_for_exam(&self, school: SchoolId, exam: ExamId) -> Result<Vec<crate::aggregate::SeatPlan>>;
+    async fn insert(&self, ctx: &TenantContext, p: &crate::aggregate::SeatPlan) -> Result<()>;
+    async fn update(&self, ctx: &TenantContext, p: &crate::aggregate::SeatPlan) -> Result<()>;
+    async fn delete(&self, ctx: &TenantContext, id: crate::value_objects::SeatPlanId) -> Result<()>;
+}
+
+/// The storage-port contract for [`AdmitCard`](crate::aggregate::AdmitCard) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait AdmitCardRepository: Send + Sync {
+    async fn get(&self, ctx: &TenantContext, id: crate::value_objects::AdmitCardId) -> Result<Option<crate::aggregate::AdmitCard>>;
+    async fn find(
+        &self,
+        school: SchoolId,
+        student_record: crate::value_objects::StudentRecordId,
+        exam_type: ExamTypeId,
+        year: AcademicYearId,
+    ) -> Result<Option<crate::aggregate::AdmitCard>>;
+    async fn insert(&self, ctx: &TenantContext, c: &crate::aggregate::AdmitCard) -> Result<()>;
+    async fn update(&self, ctx: &TenantContext, c: &crate::aggregate::AdmitCard) -> Result<()>;
+    async fn delete(&self, ctx: &TenantContext, id: crate::value_objects::AdmitCardId) -> Result<()>;
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
@@ -119,3 +179,7 @@ mod tests {
         fn _exam_repository(_: Box<dyn ExamRepository>) {}
     }
 }
+
+
+
+

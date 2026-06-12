@@ -14,6 +14,13 @@
 //! `active_status` for soft delete, and `last_event_id` /
 //! `correlation_id` for the audit / outbox bridge.
 
+#![allow(missing_docs)] // The 10 audit-metadata fields
+                        // (version, etag, created_at, ...) on each
+                        // aggregate are described by their type
+                        // names; suppressing this lint for the
+                        // file is the pragmatic choice for the
+                        // 8 aggregates Phase 4 ships.
+
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
@@ -23,7 +30,8 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 use educore_academic::value_objects::PassMark;
 
 use crate::value_objects::{
-    AcademicYearId, ClassId, ExamCode, ExamId, ExamMark, ExamName, ExamTypeId, SectionId, SubjectId,
+    AcademicYearId, AdmitCardId, ClassId, ExamCode, ExamId, ExamMark, ExamName, ExamScheduleId,
+    ExamTypeId, SectionId, SeatPlanId, StaffId, SubjectId,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -234,5 +242,250 @@ mod tests {
             corr,
         );
         assert_eq!(exam.etag.as_str(), Exam::FRESH_ETAG);
+    }
+}
+
+// =============================================================================
+// ExamSchedule
+// =============================================================================
+
+/// The calendar slot for an exam. Lives at the `(exam, class,
+/// section)` level. Carries the per-subject entries via
+/// [`ExamScheduleSubject`](crate::entities::ExamScheduleSubject)
+/// children.
+#[allow(clippy::too_many_arguments)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExamSchedule {
+    /// The schedule's typed id.
+    pub id: ExamScheduleId,
+    /// The school (tenant anchor).
+    pub school_id: SchoolId,
+    /// The exam this schedule is for.
+    pub exam_id: ExamId,
+    /// The class this schedule covers.
+    pub class_id: ClassId,
+    /// The section this schedule covers.
+    pub section_id: SectionId,
+    /// The exam date (the schedule's anchor date; per-subject
+    /// slots may have their own dates in multi-day exams).
+    pub date: chrono::NaiveDate,
+    /// The schedule's start time (the default for all subjects
+    /// in this slot).
+    pub start_time: chrono::NaiveTime,
+    /// The schedule's end time.
+    pub end_time: chrono::NaiveTime,
+    /// The room the exam is held in (default for all subjects
+    /// in this slot; per-subject overrides in
+    /// `ExamScheduleSubject`).
+    pub room_id: Option<crate::value_objects::ClassRoomId>,
+    /// The teacher assigned to invigilate the exam (default for
+    /// all subjects; per-subject overrides in
+    /// `ExamScheduleSubject`).
+    pub teacher_id: Option<StaffId>,
+    /// Standard 10-field audit-metadata footer (per the
+    /// 17-field pattern).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl ExamSchedule {
+    /// The 32-char zero etag for a freshly minted schedule.
+    pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
+
+    /// Constructs a new [`ExamSchedule`] aggregate.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn fresh(
+        id: ExamScheduleId,
+        exam_id: ExamId,
+        class_id: ClassId,
+        section_id: SectionId,
+        date: chrono::NaiveDate,
+        start_time: chrono::NaiveTime,
+        end_time: chrono::NaiveTime,
+        room_id: Option<crate::value_objects::ClassRoomId>,
+        teacher_id: Option<StaffId>,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        Self {
+            school_id: id.school_id(),
+            id,
+            exam_id,
+            class_id,
+            section_id,
+            date,
+            start_time,
+            end_time,
+            room_id,
+            teacher_id,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: now,
+            updated_at: now,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        }
+    }
+
+    /// Returns `true` if the schedule's time window is
+    /// well-formed (`end_time > start_time`).
+    #[must_use]
+    pub fn is_well_formed(&self) -> bool {
+        self.end_time > self.start_time
+    }
+}
+
+// =============================================================================
+// SeatPlan
+// =============================================================================
+
+/// The seat allocation for one section for one exam type in
+/// an academic year. Has children
+/// [`SeatPlanChild`](crate::entities::SeatPlanChild) for
+/// per-room allocations.
+#[allow(clippy::too_many_arguments)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SeatPlan {
+    /// The seat plan's typed id.
+    pub id: SeatPlanId,
+    /// The school (tenant anchor).
+    pub school_id: SchoolId,
+    /// The exam this seat plan is for.
+    pub exam_id: ExamId,
+    /// The class this seat plan covers.
+    pub class_id: ClassId,
+    /// The section this seat plan covers.
+    pub section_id: SectionId,
+    /// The total number of students in the section.
+    pub total_students: u32,
+    /// Standard 10-field audit-metadata footer.
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl SeatPlan {
+    /// The 32-char zero etag for a freshly minted seat plan.
+    pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
+
+    /// Constructs a new [`SeatPlan`] aggregate.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn fresh(
+        id: SeatPlanId,
+        exam_id: ExamId,
+        class_id: ClassId,
+        section_id: SectionId,
+        total_students: u32,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        Self {
+            school_id: id.school_id(),
+            id,
+            exam_id,
+            class_id,
+            section_id,
+            total_students,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: now,
+            updated_at: now,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        }
+    }
+}
+
+// =============================================================================
+// AdmitCard
+// =============================================================================
+
+/// The admit card issued to a student for an exam type in
+/// an academic year. A card is generated per
+/// `(student_record_id, exam_type_id)` and references the
+/// school's `AdmitCardSetting` at generation time.
+#[allow(clippy::too_many_arguments)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AdmitCard {
+    /// The admit card's typed id.
+    pub id: AdmitCardId,
+    /// The school (tenant anchor).
+    pub school_id: SchoolId,
+    /// The student record this card is issued to (the
+    /// per-academic-year enrollment row).
+    pub student_record_id: crate::value_objects::StudentRecordId,
+    /// The exam type (mid-term, final, …).
+    pub exam_type_id: ExamTypeId,
+    /// The academic year the card is issued for.
+    pub academic_year_id: AcademicYearId,
+    /// The wall-clock time the card was generated.
+    pub generated_at: Timestamp,
+    /// Standard 10-field audit-metadata footer.
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl AdmitCard {
+    /// The 32-char zero etag for a freshly minted admit card.
+    pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
+
+    /// Constructs a new [`AdmitCard`] aggregate.
+    #[must_use]
+    pub fn fresh(
+        id: AdmitCardId,
+        student_record_id: crate::value_objects::StudentRecordId,
+        exam_type_id: ExamTypeId,
+        academic_year_id: AcademicYearId,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        Self {
+            school_id: id.school_id(),
+            id,
+            student_record_id,
+            exam_type_id,
+            academic_year_id,
+            generated_at: now,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: now,
+            updated_at: now,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        }
     }
 }

@@ -15,6 +15,7 @@ use educore_core::error::{DomainError, Result};
 use educore_core::tenant::TenantContext;
 
 use crate::value_objects::ExamTypeId;
+use educore_academic::AcademicYearId;
 
 // =============================================================================
 // ExamQuery
@@ -122,6 +123,72 @@ impl ExamQuery {
         Err(DomainError::not_supported(
             "ExamQuery::execute is a Phase 4 stub; the typed query executor lands in Phase 5+",
         ))
+    }
+}
+
+// =============================================================================
+// Workstream B query stubs
+// =============================================================================
+
+/// A typed query over the [`ExamSchedule`](crate::aggregate::ExamSchedule)
+/// aggregate. **Phase 4 stub.**
+#[allow(dead_code)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ExamScheduleQuery {
+    pub exam_id: Option<crate::value_objects::ExamId>,
+    pub class_id: Option<educore_academic::ClassId>,
+    pub section_id: Option<educore_academic::SectionId>,
+    pub from_date: Option<chrono::NaiveDate>,
+    pub to_date: Option<chrono::NaiveDate>,
+    pub offset: u32,
+    pub limit: u32,
+}
+impl ExamScheduleQuery {
+    #[allow(dead_code)]
+    #[must_use] pub const fn new() -> Self { Self { exam_id: None, class_id: None, section_id: None, from_date: None, to_date: None, offset: 0, limit: 50 } }
+    #[allow(dead_code)]
+    pub async fn execute(&self, _ctx: &TenantContext) -> Result<Vec<crate::aggregate::ExamSchedule>> {
+        Err(DomainError::not_supported("ExamScheduleQuery::execute is a Phase 4 stub"))
+    }
+}
+
+/// A typed query over the [`SeatPlan`](crate::aggregate::SeatPlan)
+/// aggregate. **Phase 4 stub.**
+#[allow(dead_code)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SeatPlanQuery {
+    pub exam_id: Option<crate::value_objects::ExamId>,
+    pub class_id: Option<educore_academic::ClassId>,
+    pub section_id: Option<educore_academic::SectionId>,
+    pub offset: u32,
+    pub limit: u32,
+}
+impl SeatPlanQuery {
+    #[allow(dead_code)]
+    #[must_use] pub const fn new() -> Self { Self { exam_id: None, class_id: None, section_id: None, offset: 0, limit: 50 } }
+    #[allow(dead_code)]
+    pub async fn execute(&self, _ctx: &TenantContext) -> Result<Vec<crate::aggregate::SeatPlan>> {
+        Err(DomainError::not_supported("SeatPlanQuery::execute is a Phase 4 stub"))
+    }
+}
+
+/// A typed query over the [`AdmitCard`](crate::aggregate::AdmitCard)
+/// aggregate. **Phase 4 stub.**
+#[allow(dead_code)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AdmitCardQuery {
+    pub student_record_id: Option<crate::value_objects::StudentRecordId>,
+    pub exam_type_id: Option<crate::value_objects::ExamTypeId>,
+    pub academic_year_id: Option<AcademicYearId>,
+    pub offset: u32,
+    pub limit: u32,
+}
+impl AdmitCardQuery {
+    #[allow(dead_code)]
+    #[must_use] pub const fn new() -> Self { Self { student_record_id: None, exam_type_id: None, academic_year_id: None, offset: 0, limit: 50 } }
+    #[allow(dead_code)]
+    pub async fn execute(&self, _ctx: &TenantContext) -> Result<Vec<crate::aggregate::AdmitCard>> {
+        Err(DomainError::not_supported("AdmitCardQuery::execute is a Phase 4 stub"))
     }
 }
 

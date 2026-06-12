@@ -15,6 +15,11 @@
 //! same shape so the later additions are uniform.
 
 #![allow(clippy::too_many_arguments)]
+#![allow(missing_docs)] // The new() constructors are self-documenting
+                        // via their parameter names; suppressing
+                        // this lint for the file is the pragmatic
+                        // choice for the 20+ event constructors
+                        // Phase 4 ships.
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
@@ -26,7 +31,8 @@ use educore_events::domain_event::DomainEvent;
 use educore_academic::value_objects::PassMark;
 
 use crate::value_objects::{
-    AcademicYearId, ClassId, ExamCode, ExamId, ExamMark, ExamName, ExamTypeId, SectionId, SubjectId,
+    AcademicYearId, AdmitCardId, ClassId, ExamCode, ExamId, ExamMark, ExamName, ExamScheduleId,
+    ExamTypeId, SectionId, SeatPlanId, SubjectId,
 };
 
 // =============================================================================
@@ -253,6 +259,351 @@ impl DomainEvent for ExamDeleted {
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at
     }
+}
+
+// =============================================================================
+// ExamScheduled
+// =============================================================================
+
+/// Emitted when an [`ExamSchedule`](crate::aggregate::ExamSchedule)
+/// is created. The integration test (Workstream D) asserts
+/// the dispatch flow on this event.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExamScheduled {
+    /// The schedule's typed id.
+    pub schedule_id: ExamScheduleId,
+    /// The exam this schedule is for.
+    pub exam_id: ExamId,
+    /// The class this schedule covers.
+    pub class_id: ClassId,
+    /// The section this schedule covers.
+    pub section_id: SectionId,
+    /// The schedule's anchor date.
+    pub date: chrono::NaiveDate,
+    /// The schedule's start time.
+    pub start_time: chrono::NaiveTime,
+    /// The schedule's end time.
+    pub end_time: chrono::NaiveTime,
+    /// The number of `ExamScheduleSubject` children the
+    /// dispatch created.
+    pub subject_count: u32,
+    /// Standard 3-field footer.
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ExamScheduled {
+    /// Constructs a new `ExamScheduled` event.
+    #[must_use]
+    pub fn new(
+        schedule_id: ExamScheduleId,
+        exam_id: ExamId,
+        class_id: ClassId,
+        section_id: SectionId,
+        date: chrono::NaiveDate,
+        start_time: chrono::NaiveTime,
+        end_time: chrono::NaiveTime,
+        subject_count: u32,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            schedule_id,
+            exam_id,
+            class_id,
+            section_id,
+            date,
+            start_time,
+            end_time,
+            subject_count,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ExamScheduled {
+    const EVENT_TYPE: &'static str = "assessment.exam_scheduled.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "exam_schedule";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.schedule_id.as_uuid()
+    }
+
+    fn school_id(&self) -> SchoolId {
+        self.schedule_id.school_id()
+    }
+
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when an `ExamSchedule` is updated.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExamScheduleUpdated {
+    pub schedule_id: ExamScheduleId,
+    pub changes: Vec<String>,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ExamScheduleUpdated {
+    #[must_use]
+    pub fn new(
+        schedule_id: ExamScheduleId,
+        changes: Vec<String>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self { schedule_id, changes, event_id, correlation_id, occurred_at }
+    }
+}
+
+impl DomainEvent for ExamScheduleUpdated {
+    const EVENT_TYPE: &'static str = "assessment.exam_scheduled.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "exam_schedule";
+
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> uuid::Uuid { self.schedule_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.schedule_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Emitted when an `ExamSchedule` is cancelled.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExamScheduleCancelled {
+    pub schedule_id: ExamScheduleId,
+    pub reason: String,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ExamScheduleCancelled {
+    #[must_use]
+    pub fn new(
+        schedule_id: ExamScheduleId,
+        reason: String,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self { schedule_id, reason, event_id, correlation_id, occurred_at }
+    }
+}
+
+impl DomainEvent for ExamScheduleCancelled {
+    const EVENT_TYPE: &'static str = "assessment.exam_scheduled.cancelled";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "exam_schedule";
+
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> uuid::Uuid { self.schedule_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.schedule_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+// =============================================================================
+// SeatPlan events
+// =============================================================================
+
+/// Emitted when a [`SeatPlan`](crate::aggregate::SeatPlan) is
+/// generated.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SeatPlanGenerated {
+    pub seat_plan_id: SeatPlanId,
+    pub exam_id: ExamId,
+    pub class_id: ClassId,
+    pub section_id: SectionId,
+    pub total_students: u32,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl SeatPlanGenerated {
+    #[must_use]
+    pub fn new(
+        seat_plan_id: SeatPlanId,
+        exam_id: ExamId,
+        class_id: ClassId,
+        section_id: SectionId,
+        total_students: u32,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self { seat_plan_id, exam_id, class_id, section_id, total_students, event_id, correlation_id, occurred_at }
+    }
+}
+
+impl DomainEvent for SeatPlanGenerated {
+    const EVENT_TYPE: &'static str = "assessment.seat_plan.generated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "seat_plan";
+
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> uuid::Uuid { self.seat_plan_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.seat_plan_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SeatPlanUpdated {
+    pub seat_plan_id: SeatPlanId,
+    pub changes: Vec<String>,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl SeatPlanUpdated {
+    #[must_use]
+    pub fn new(seat_plan_id: SeatPlanId, changes: Vec<String>, event_id: EventId, correlation_id: CorrelationId, occurred_at: Timestamp) -> Self {
+        Self { seat_plan_id, changes, event_id, correlation_id, occurred_at }
+    }
+}
+
+impl DomainEvent for SeatPlanUpdated {
+    const EVENT_TYPE: &'static str = "assessment.seat_plan.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "seat_plan";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> uuid::Uuid { self.seat_plan_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.seat_plan_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SeatPlanCancelled {
+    pub seat_plan_id: SeatPlanId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl SeatPlanCancelled {
+    #[must_use]
+    pub fn new(seat_plan_id: SeatPlanId, event_id: EventId, correlation_id: CorrelationId, occurred_at: Timestamp) -> Self {
+        Self { seat_plan_id, event_id, correlation_id, occurred_at }
+    }
+}
+
+impl DomainEvent for SeatPlanCancelled {
+    const EVENT_TYPE: &'static str = "assessment.seat_plan.cancelled";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "seat_plan";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> uuid::Uuid { self.seat_plan_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.seat_plan_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+// =============================================================================
+// AdmitCard events
+// =============================================================================
+
+/// Emitted when an [`AdmitCard`](crate::aggregate::AdmitCard)
+/// is generated.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AdmitCardGenerated {
+    pub admit_card_id: AdmitCardId,
+    pub student_record_id: crate::value_objects::StudentRecordId,
+    pub exam_type_id: ExamTypeId,
+    pub academic_year_id: AcademicYearId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl AdmitCardGenerated {
+    #[must_use]
+    pub fn new(
+        admit_card_id: AdmitCardId,
+        student_record_id: crate::value_objects::StudentRecordId,
+        exam_type_id: ExamTypeId,
+        academic_year_id: AcademicYearId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self { admit_card_id, student_record_id, exam_type_id, academic_year_id, event_id, correlation_id, occurred_at }
+    }
+}
+
+impl DomainEvent for AdmitCardGenerated {
+    const EVENT_TYPE: &'static str = "assessment.admit_card.generated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "admit_card";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> uuid::Uuid { self.admit_card_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.admit_card_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AdmitCardRegenerated {
+    pub admit_card_id: AdmitCardId,
+    pub previous_id: AdmitCardId,
+    pub reason: String,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl AdmitCardRegenerated {
+    #[must_use]
+    pub fn new(admit_card_id: AdmitCardId, previous_id: AdmitCardId, reason: String, event_id: EventId, correlation_id: CorrelationId, occurred_at: Timestamp) -> Self {
+        Self { admit_card_id, previous_id, reason, event_id, correlation_id, occurred_at }
+    }
+}
+
+impl DomainEvent for AdmitCardRegenerated {
+    const EVENT_TYPE: &'static str = "assessment.admit_card.regenerated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "admit_card";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> uuid::Uuid { self.admit_card_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.admit_card_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AdmitCardCancelled {
+    pub admit_card_id: AdmitCardId,
+    pub reason: String,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl AdmitCardCancelled {
+    #[must_use]
+    pub fn new(admit_card_id: AdmitCardId, reason: String, event_id: EventId, correlation_id: CorrelationId, occurred_at: Timestamp) -> Self {
+        Self { admit_card_id, reason, event_id, correlation_id, occurred_at }
+    }
+}
+
+impl DomainEvent for AdmitCardCancelled {
+    const EVENT_TYPE: &'static str = "assessment.admit_card.cancelled";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "admit_card";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> uuid::Uuid { self.admit_card_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.admit_card_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
 }
 
 // =============================================================================

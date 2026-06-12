@@ -21,12 +21,20 @@ use educore_core::ids::{EventId, Identifier, SchoolId};
 use educore_core::tenant::TenantContext;
 use educore_core::value_objects::ActiveStatus;
 
-use crate::aggregate::Exam;
+use crate::aggregate::{AdmitCard, Exam, ExamSchedule, SeatPlan};
 use crate::commands::{
     validate_exam_code, validate_exam_mark, validate_exam_name, validate_pass_mark,
-    AssessmentUniquenessChecker, CreateExamCommand, DeleteExamCommand, UpdateExamCommand,
+    AssessmentUniquenessChecker, CancelAdmitCardCommand, CancelExamScheduleCommand,
+    CancelSeatPlanCommand, CreateExamCommand, DeleteExamCommand, GenerateAdmitCardCommand,
+    GenerateSeatPlanCommand, RegenerateAdmitCardCommand, ScheduleExamCommand, UpdateExamCommand,
+    UpdateExamScheduleCommand, UpdateSeatPlanCommand,
 };
-use crate::events::{ExamCreated, ExamDeleted, ExamUpdated};
+use crate::events::{
+    AdmitCardCancelled, AdmitCardGenerated, AdmitCardRegenerated, ExamCreated, ExamDeleted,
+    ExamScheduleCancelled, ExamScheduleUpdated, ExamScheduled, SeatPlanCancelled, SeatPlanGenerated,
+    SeatPlanUpdated, ExamUpdated,
+};
+
 
 // =============================================================================
 // File-level helpers
@@ -282,6 +290,274 @@ where
     let event_id = EventId::from_uuid(uuid::Uuid::now_v7());
     let event = ExamDeleted::new(exam.id, event_id, cmd.tenant.correlation_id, now);
     Ok(event)
+}
+
+// =============================================================================
+// Workstream B services: ExamSchedule, SeatPlan, AdmitCard
+//
+// These are minimal-shape pure factory functions. The full
+// validation logic (teacher/room conflict-free, no
+// overlapping time windows, AdmitCard pre-conditions) lands
+// in a follow-up phase. The integration test in Workstream D
+// only exercises `create_exam` (per the user-chosen scope).
+// =============================================================================
+
+/// Schedules an exam and returns the [`ExamScheduled`] event.
+pub fn schedule_exam<C, G>(
+    _cmd: ScheduleExamCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(ExamSchedule, ExamScheduled)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let schedule_id = _cmd.schedule_id;
+    let aggregate = ExamSchedule::fresh(
+        schedule_id,
+        _cmd.exam_id,
+        _cmd.class_id,
+        _cmd.section_id,
+        _cmd.date,
+        _cmd.start_time,
+        _cmd.end_time,
+        None,
+        None,
+        _cmd.tenant.actor_id,
+        now,
+        _cmd.tenant.correlation_id,
+    );
+    let event = ExamScheduled::new(
+        schedule_id,
+        _cmd.exam_id,
+        _cmd.class_id,
+        _cmd.section_id,
+        _cmd.date,
+        _cmd.start_time,
+        _cmd.end_time,
+        u32::try_from(_cmd.subjects.len()).unwrap_or(u32::MAX),
+        event_id,
+        _cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((aggregate, event))
+}
+
+/// Updates an exam schedule and returns the
+/// [`ExamScheduleUpdated`] event.
+pub fn update_exam_schedule<C, G>(
+    schedule: &mut ExamSchedule,
+    cmd: UpdateExamScheduleCommand,
+    clock: &C,
+    _ids: &G,
+) -> Result<ExamScheduleUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let mut changes: Vec<String> = Vec::new();
+    if let Some(d) = cmd.date { if d != schedule.date { schedule.date = d; changes.push("date".to_owned()); } }
+    if let Some(t) = cmd.start_time { if t != schedule.start_time { schedule.start_time = t; changes.push("start_time".to_owned()); } }
+    if let Some(t) = cmd.end_time { if t != schedule.end_time { schedule.end_time = t; changes.push("end_time".to_owned()); } }
+    if changes.is_empty() {
+        return Err(DomainError::validation("no changes supplied to update_exam_schedule"));
+    }
+    schedule.updated_at = now;
+    schedule.updated_by = cmd.tenant.actor_id;
+    schedule.version = schedule.version.next();
+    let event_id = EventId::from_uuid(uuid::Uuid::now_v7());
+    Ok(ExamScheduleUpdated::new(schedule.id, changes, event_id, cmd.tenant.correlation_id, now))
+}
+
+/// Cancels an exam schedule and returns the
+/// [`ExamScheduleCancelled`] event.
+pub fn cancel_exam_schedule<C, G>(
+    schedule: &mut ExamSchedule,
+    cmd: CancelExamScheduleCommand,
+    clock: &C,
+    _ids: &G,
+) -> Result<ExamScheduleCancelled>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    schedule.active_status = ActiveStatus::Retired;
+    schedule.updated_at = now;
+    schedule.updated_by = cmd.tenant.actor_id;
+    schedule.version = schedule.version.next();
+    let event_id = EventId::from_uuid(uuid::Uuid::now_v7());
+    Ok(ExamScheduleCancelled::new(schedule.id, cmd.reason, event_id, cmd.tenant.correlation_id, now))
+}
+
+/// Generates a seat plan and returns the [`SeatPlanGenerated`]
+/// event.
+pub fn generate_seat_plan<C, G>(
+    cmd: GenerateSeatPlanCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(SeatPlan, SeatPlanGenerated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let total: u32 = cmd.allocations.iter().map(|a| u64::from(a.assign_students)).sum::<u64>().try_into().unwrap_or(u32::MAX);
+    let aggregate = SeatPlan::fresh(
+        cmd.seat_plan_id,
+        cmd.exam_id,
+        cmd.class_id,
+        cmd.section_id,
+        total,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    );
+    let event = SeatPlanGenerated::new(
+        cmd.seat_plan_id,
+        cmd.exam_id,
+        cmd.class_id,
+        cmd.section_id,
+        total,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((aggregate, event))
+}
+
+/// Updates a seat plan and returns the [`SeatPlanUpdated`]
+/// event.
+pub fn update_seat_plan<C, G>(
+    plan: &mut SeatPlan,
+    cmd: UpdateSeatPlanCommand,
+    clock: &C,
+    _ids: &G,
+) -> Result<SeatPlanUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let mut changes: Vec<String> = Vec::new();
+    if let Some(allocations) = cmd.allocations {
+        let total: u32 = allocations.iter().map(|a| u64::from(a.assign_students)).sum::<u64>().try_into().unwrap_or(u32::MAX);
+        if total != plan.total_students {
+            plan.total_students = total;
+            changes.push("total_students".to_owned());
+        }
+    }
+    if changes.is_empty() {
+        return Err(DomainError::validation("no changes supplied to update_seat_plan"));
+    }
+    plan.updated_at = now;
+    plan.updated_by = cmd.tenant.actor_id;
+    plan.version = plan.version.next();
+    let event_id = EventId::from_uuid(uuid::Uuid::now_v7());
+    Ok(SeatPlanUpdated::new(plan.id, changes, event_id, cmd.tenant.correlation_id, now))
+}
+
+/// Cancels a seat plan and returns the [`SeatPlanCancelled`]
+/// event.
+pub fn cancel_seat_plan<C, G>(
+    plan: &mut SeatPlan,
+    cmd: CancelSeatPlanCommand,
+    clock: &C,
+    _ids: &G,
+) -> Result<SeatPlanCancelled>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    plan.active_status = ActiveStatus::Retired;
+    plan.updated_at = now;
+    plan.updated_by = cmd.tenant.actor_id;
+    plan.version = plan.version.next();
+    let event_id = EventId::from_uuid(uuid::Uuid::now_v7());
+    Ok(SeatPlanCancelled::new(plan.id, event_id, cmd.tenant.correlation_id, now))
+}
+
+/// Generates an admit card and returns the
+/// [`AdmitCardGenerated`] event.
+pub fn generate_admit_card<C, G>(
+    cmd: GenerateAdmitCardCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(AdmitCard, AdmitCardGenerated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let aggregate = AdmitCard::fresh(
+        cmd.admit_card_id,
+        cmd.student_record_id,
+        cmd.exam_type_id,
+        cmd.academic_year_id,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    );
+    let event = AdmitCardGenerated::new(
+        cmd.admit_card_id,
+        cmd.student_record_id,
+        cmd.exam_type_id,
+        cmd.academic_year_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((aggregate, event))
+}
+
+/// Regenerates an admit card and returns the
+/// [`AdmitCardRegenerated`] event.
+pub fn regenerate_admit_card<C, G>(
+    cmd: RegenerateAdmitCardCommand,
+    clock: &C,
+    _ids: &G,
+) -> Result<AdmitCardRegenerated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = EventId::from_uuid(uuid::Uuid::now_v7());
+    Ok(AdmitCardRegenerated::new(
+        cmd.admit_card_id,
+        cmd.previous_id,
+        cmd.reason,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Cancels an admit card and returns the
+/// [`AdmitCardCancelled`] event.
+pub fn cancel_admit_card<C, G>(
+    card: &mut AdmitCard,
+    cmd: CancelAdmitCardCommand,
+    clock: &C,
+    _ids: &G,
+) -> Result<AdmitCardCancelled>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    card.active_status = ActiveStatus::Retired;
+    card.updated_at = now;
+    card.updated_by = cmd.tenant.actor_id;
+    card.version = card.version.next();
+    let event_id = EventId::from_uuid(uuid::Uuid::now_v7());
+    Ok(AdmitCardCancelled::new(card.id, cmd.reason, event_id, cmd.tenant.correlation_id, now))
 }
 
 // =============================================================================

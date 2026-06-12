@@ -106,6 +106,59 @@ assessment_typed_id! {
     pub struct ExamTypeId;
 }
 
+assessment_typed_id! {
+    /// A typed id for an [`ExamSchedule`](crate::aggregate::ExamSchedule)
+    /// row. Owns the per-subject `ExamScheduleSubject` children.
+    pub struct ExamScheduleId;
+}
+
+assessment_typed_id! {
+    /// A typed id for an
+    /// [`ExamScheduleSubject`](crate::entities::ExamScheduleSubject)
+    /// child row.
+    pub struct ExamScheduleSubjectId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a [`SeatPlan`](crate::aggregate::SeatPlan)
+    /// row. Owns the per-room `SeatPlanChild` children.
+    pub struct SeatPlanId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a [`SeatPlanChild`](crate::entities::SeatPlanChild)
+    /// child row.
+    pub struct SeatPlanChildId;
+}
+
+assessment_typed_id! {
+    /// A typed id for an [`AdmitCard`](crate::aggregate::AdmitCard) row.
+    pub struct AdmitCardId;
+}
+
+// Placeholder typed ids for the academic crate's StaffId / ClassRoomId.
+// The full StaffId lands in the HR domain (Phase 6); the full
+// ClassRoomId lands in a future academic phase. The
+// assessment crate declares its own placeholder so the
+// foreign-key fields are typed; the academic crate's full
+// definition will be wired in via a re-export once it lands.
+assessment_typed_id! {
+    /// A typed id for a Staff aggregate (the invigilating
+    /// teacher for an exam). Placeholder until the HR domain
+    /// ships its `Staff` aggregate in Phase 6.
+    pub struct StaffId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a `ClassRoom` aggregate (a physical
+    /// room used as an exam venue). Placeholder until the
+    /// facilities domain ships its `Room` aggregate in
+    /// Phase 8 — or until the academic crate lifts its
+    /// own `ClassRoom` row to an aggregate in a future
+    /// phase.
+    pub struct ClassRoomId;
+}
+
 // =============================================================================
 // Names (1..=N chars, validated at construction)
 // =============================================================================
@@ -237,6 +290,38 @@ impl ExamMark {
         if v > 1000.0 {
             return Err(DomainError::validation(format!(
                 "exam mark must be <= 1000, got {v}"
+            )));
+        }
+        Ok(Self(v))
+    }
+
+    /// Returns the inner `f32`.
+    #[must_use]
+    pub const fn as_f32(self) -> f32 {
+        self.0
+    }
+}
+
+/// The full mark for a per-subject slot in a multi-subject
+/// exam. Same range as `ExamMark` (`f32` in `(0, 1000]`).
+/// Distinct newtype so the per-subject field path is explicit
+/// in serialised payloads.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct FullMark(f32);
+
+impl FullMark {
+    /// Constructs a `FullMark`, rejecting non-positive or
+    /// overlong values.
+    pub fn new(v: f32) -> Result<Self> {
+        if v <= 0.0 {
+            return Err(DomainError::validation(format!(
+                "full mark must be > 0, got {v}"
+            )));
+        }
+        if v > 1000.0 {
+            return Err(DomainError::validation(format!(
+                "full mark must be <= 1000, got {v}"
             )));
         }
         Ok(Self(v))
