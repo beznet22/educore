@@ -148,6 +148,15 @@ pub enum AuditTarget {
     // ---- Attendance domain ----------------------------------------------
     /// A daily student attendance row.
     StudentAttendance(Uuid),
+    /// A per-period (per-subject) student attendance row.
+    SubjectAttendance(Uuid),
+    /// A daily staff attendance row.
+    StaffAttendance(Uuid),
+    /// A bulk attendance import job (CSV / biometric / API).
+    BulkAttendanceImport(Uuid),
+    /// A per-(student, exam_type, academic_year) attendance summary
+    /// projection.
+    ClassAttendance(Uuid),
     // ---- HR domain -------------------------------------------------------
     /// A staff member.
     Staff(Uuid),
@@ -218,6 +227,10 @@ impl AuditTarget {
             Self::SeatPlan(_) => "seat_plan",
             Self::AdmitCard(_) => "admit_card",
             Self::StudentAttendance(_) => "student_attendance",
+            Self::SubjectAttendance(_) => "subject_attendance",
+            Self::StaffAttendance(_) => "staff_attendance",
+            Self::BulkAttendanceImport(_) => "bulk_attendance_import",
+            Self::ClassAttendance(_) => "class_attendance",
             Self::Staff(_) => "staff",
             Self::Payroll(_) => "payroll",
             Self::FeesInvoice(_) => "fees_invoice",
@@ -260,6 +273,10 @@ impl AuditTarget {
             | Self::SeatPlan(id)
             | Self::AdmitCard(id)
             | Self::StudentAttendance(id)
+            | Self::SubjectAttendance(id)
+            | Self::StaffAttendance(id)
+            | Self::BulkAttendanceImport(id)
+            | Self::ClassAttendance(id)
             | Self::Staff(id)
             | Self::Payroll(id)
             | Self::FeesInvoice(id)
@@ -519,6 +536,10 @@ mod tests {
             AuditTarget::SeatPlan(id),
             AuditTarget::AdmitCard(id),
             AuditTarget::StudentAttendance(id),
+            AuditTarget::SubjectAttendance(id),
+            AuditTarget::StaffAttendance(id),
+            AuditTarget::BulkAttendanceImport(id),
+            AuditTarget::ClassAttendance(id),
             AuditTarget::Staff(id),
             AuditTarget::Payroll(id),
             AuditTarget::FeesInvoice(id),
