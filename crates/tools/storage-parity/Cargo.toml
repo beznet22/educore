@@ -19,6 +19,7 @@ educore-platform = { workspace = true }
 educore-rbac = { workspace = true }
 educore-audit = { workspace = true }
 educore-academic = { workspace = true }
+educore-assessment = { workspace = true }
 async-trait = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
