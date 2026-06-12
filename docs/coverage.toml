@@ -623,13 +623,119 @@ status = "Tested"
 tests = "crates/tools/storage-parity/tests/assessment_integration.rs"
 
 # =============================================================================
-# Attendance domain (Phase 5)
+# Attendance domain (Phase 5) — 4 prompt-named aggregates + bulk + events
 # =============================================================================
 
 [[row]]
 id = "attendance_student_attendances_aggregate"
 item = "attendance_student_attendances aggregate"
 spec = "docs/specs/attendance/aggregates.md"
+crate = "educore-attendance"
+phase = 5
+status = "Pending"
+
+[[row]]
+id = "attendance_subject_attendances_aggregate"
+item = "attendance_subject_attendances aggregate"
+spec = "docs/specs/attendance/aggregates.md"
+crate = "educore-attendance"
+phase = 5
+status = "Pending"
+
+[[row]]
+id = "attendance_staff_attendances_aggregate"
+item = "attendance_staff_attendances aggregate"
+spec = "docs/specs/attendance/aggregates.md"
+crate = "educore-attendance"
+phase = 5
+status = "Pending"
+
+[[row]]
+id = "attendance_exam_attendances_aggregate"
+item = "attendance_exam_attendances aggregate"
+spec = "docs/specs/attendance/aggregates.md"
+crate = "educore-attendance"
+phase = 5
+status = "Pending"
+notes = "Owned by attendance crate in Phase 5 (spec says assessment). Follow-up phase may move it."
+
+[[row]]
+id = "attendance_bulk_attendance_imports_aggregate"
+item = "attendance_bulk_attendance_imports aggregate"
+spec = "docs/specs/attendance/aggregates.md"
+crate = "educore-attendance"
+phase = 5
+status = "Pending"
+
+[[row]]
+id = "attendance_student_attendance_imports_aggregate"
+item = "attendance_student_attendance_imports aggregate (staging row)"
+spec = "docs/specs/attendance/aggregates.md"
+crate = "educore-attendance"
+phase = 5
+status = "Pending"
+
+[[row]]
+id = "attendance_staff_attendance_imports_aggregate"
+item = "attendance_staff_attendance_imports aggregate (staging row)"
+spec = "docs/specs/attendance/aggregates.md"
+crate = "educore-attendance"
+phase = 5
+status = "Pending"
+
+[[row]]
+id = "attendance_class_attendances_aggregate"
+item = "attendance_class_attendances projection"
+spec = "docs/specs/attendance/aggregates.md"
+crate = "educore-attendance"
+phase = 5
+status = "Pending"
+notes = "Projection, out of Phase 5 scope. Stays Pending permanently."
+
+[[row]]
+id = "student_attendance_marked_event"
+item = "StudentAttendanceMarked event"
+spec = "docs/specs/attendance/events.md"
+crate = "educore-attendance"
+phase = 5
+status = "Pending"
+
+[[row]]
+id = "student_absent_for_day_event"
+item = "StudentAbsentForDay event"
+spec = "docs/specs/attendance/events.md"
+crate = "educore-attendance"
+phase = 5
+status = "Pending"
+
+[[row]]
+id = "subject_attendance_marked_event"
+item = "SubjectAttendanceMarked event"
+spec = "docs/specs/attendance/events.md"
+crate = "educore-attendance"
+phase = 5
+status = "Pending"
+
+[[row]]
+id = "staff_attendance_marked_event"
+item = "StaffAttendanceMarked event"
+spec = "docs/specs/attendance/events.md"
+crate = "educore-attendance"
+phase = 5
+status = "Pending"
+
+[[row]]
+id = "staff_absent_for_day_event"
+item = "StaffAbsentForDay event"
+spec = "docs/specs/attendance/events.md"
+crate = "educore-attendance"
+phase = 5
+status = "Pending"
+
+[[row]]
+id = "bulk_import_committed_event"
+item = "BulkImportCommitted event"
+spec = "docs/specs/attendance/events.md"
 crate = "educore-attendance"
 phase = 5
 status = "Pending"
