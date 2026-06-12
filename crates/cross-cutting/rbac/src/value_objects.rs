@@ -86,6 +86,70 @@ pub enum Capability {
     /// Delete a class / section.
     AcademicClassDelete,
 
+    // -- Assessment (Phase 4) -------------------------------------------
+    /// Create an exam definition.
+    AssessmentExamCreate,
+    /// Read an exam definition.
+    AssessmentExamRead,
+    /// Update an exam definition.
+    AssessmentExamUpdate,
+    /// Delete / retire an exam definition.
+    AssessmentExamDelete,
+    /// Create an exam schedule (per-section per-subject slot).
+    AssessmentExamScheduleCreate,
+    /// Read an exam schedule.
+    AssessmentExamScheduleRead,
+    /// Update an exam schedule.
+    AssessmentExamScheduleUpdate,
+    /// Delete / cancel an exam schedule.
+    AssessmentExamScheduleDelete,
+    /// Initialise a marks register.
+    AssessmentMarksRegisterCreate,
+    /// Read a marks register.
+    AssessmentMarksRegisterRead,
+    /// Enter / update a marks register child row.
+    AssessmentMarksRegisterUpdate,
+    /// Submit / cancel a marks register.
+    AssessmentMarksRegisterDelete,
+    /// Create / save a result store row.
+    AssessmentResultStoreCreate,
+    /// Read a result store row.
+    AssessmentResultStoreRead,
+    /// Update a result store row's teacher remarks.
+    AssessmentResultStoreUpdate,
+    /// Publish / re-publish a result store row.
+    AssessmentResultStoreDelete,
+    /// Materialise a report card payload for a published result.
+    AssessmentReportCardGenerate,
+    /// Read a previously generated report card.
+    AssessmentReportCardRead,
+    /// Download a previously generated report card (PDF / HTML).
+    AssessmentReportCardDownload,
+    /// Create an online exam.
+    AssessmentOnlineExamCreate,
+    /// Read an online exam.
+    AssessmentOnlineExamRead,
+    /// Update an online exam.
+    AssessmentOnlineExamUpdate,
+    /// Delete / close an online exam.
+    AssessmentOnlineExamDelete,
+    /// Generate a seat plan.
+    AssessmentSeatPlanCreate,
+    /// Read a seat plan.
+    AssessmentSeatPlanRead,
+    /// Update a seat plan.
+    AssessmentSeatPlanUpdate,
+    /// Cancel a seat plan.
+    AssessmentSeatPlanDelete,
+    /// Generate an admit card.
+    AssessmentAdmitCardCreate,
+    /// Read an admit card.
+    AssessmentAdmitCardRead,
+    /// Update an admit card.
+    AssessmentAdmitCardUpdate,
+    /// Cancel an admit card.
+    AssessmentAdmitCardDelete,
+
     // -- Finance (Phase 7 placeholders) ---------------------------------
     /// Create a finance invoice. Placeholder for the finance domain.
     FinanceInvoiceCreate,
@@ -195,6 +259,37 @@ impl Capability {
             | Self::AcademicClassRead
             | Self::AcademicClassUpdate
             | Self::AcademicClassDelete => CapabilityDomain::Academic,
+            Self::AssessmentExamCreate
+            | Self::AssessmentExamRead
+            | Self::AssessmentExamUpdate
+            | Self::AssessmentExamDelete
+            | Self::AssessmentExamScheduleCreate
+            | Self::AssessmentExamScheduleRead
+            | Self::AssessmentExamScheduleUpdate
+            | Self::AssessmentExamScheduleDelete
+            | Self::AssessmentMarksRegisterCreate
+            | Self::AssessmentMarksRegisterRead
+            | Self::AssessmentMarksRegisterUpdate
+            | Self::AssessmentMarksRegisterDelete
+            | Self::AssessmentResultStoreCreate
+            | Self::AssessmentResultStoreRead
+            | Self::AssessmentResultStoreUpdate
+            | Self::AssessmentResultStoreDelete
+            | Self::AssessmentReportCardGenerate
+            | Self::AssessmentReportCardRead
+            | Self::AssessmentReportCardDownload
+            | Self::AssessmentOnlineExamCreate
+            | Self::AssessmentOnlineExamRead
+            | Self::AssessmentOnlineExamUpdate
+            | Self::AssessmentOnlineExamDelete
+            | Self::AssessmentSeatPlanCreate
+            | Self::AssessmentSeatPlanRead
+            | Self::AssessmentSeatPlanUpdate
+            | Self::AssessmentSeatPlanDelete
+            | Self::AssessmentAdmitCardCreate
+            | Self::AssessmentAdmitCardRead
+            | Self::AssessmentAdmitCardUpdate
+            | Self::AssessmentAdmitCardDelete => CapabilityDomain::Assessment,
             Self::FinanceInvoiceCreate
             | Self::FinanceInvoiceRead
             | Self::FinanceInvoiceUpdate
@@ -262,6 +357,37 @@ impl Capability {
             | Self::AcademicClassRead
             | Self::AcademicClassUpdate
             | Self::AcademicClassDelete => "Class",
+            Self::AssessmentExamCreate
+            | Self::AssessmentExamRead
+            | Self::AssessmentExamUpdate
+            | Self::AssessmentExamDelete => "Exam",
+            Self::AssessmentExamScheduleCreate
+            | Self::AssessmentExamScheduleRead
+            | Self::AssessmentExamScheduleUpdate
+            | Self::AssessmentExamScheduleDelete => "ExamSchedule",
+            Self::AssessmentMarksRegisterCreate
+            | Self::AssessmentMarksRegisterRead
+            | Self::AssessmentMarksRegisterUpdate
+            | Self::AssessmentMarksRegisterDelete => "MarksRegister",
+            Self::AssessmentResultStoreCreate
+            | Self::AssessmentResultStoreRead
+            | Self::AssessmentResultStoreUpdate
+            | Self::AssessmentResultStoreDelete => "ResultStore",
+            Self::AssessmentReportCardGenerate
+            | Self::AssessmentReportCardRead
+            | Self::AssessmentReportCardDownload => "ReportCard",
+            Self::AssessmentOnlineExamCreate
+            | Self::AssessmentOnlineExamRead
+            | Self::AssessmentOnlineExamUpdate
+            | Self::AssessmentOnlineExamDelete => "OnlineExam",
+            Self::AssessmentSeatPlanCreate
+            | Self::AssessmentSeatPlanRead
+            | Self::AssessmentSeatPlanUpdate
+            | Self::AssessmentSeatPlanDelete => "SeatPlan",
+            Self::AssessmentAdmitCardCreate
+            | Self::AssessmentAdmitCardRead
+            | Self::AssessmentAdmitCardUpdate
+            | Self::AssessmentAdmitCardDelete => "AdmitCard",
             Self::FinanceInvoiceCreate
             | Self::FinanceInvoiceRead
             | Self::FinanceInvoiceUpdate
@@ -307,6 +433,13 @@ impl Capability {
             | Self::RbacRoleCreate
             | Self::AcademicStudentCreate
             | Self::AcademicClassCreate
+            | Self::AssessmentExamCreate
+            | Self::AssessmentExamScheduleCreate
+            | Self::AssessmentMarksRegisterCreate
+            | Self::AssessmentResultStoreCreate
+            | Self::AssessmentOnlineExamCreate
+            | Self::AssessmentSeatPlanCreate
+            | Self::AssessmentAdmitCardCreate
             | Self::FinanceInvoiceCreate
             | Self::HrStaffCreate
             | Self::LibraryBookCreate
@@ -321,6 +454,14 @@ impl Capability {
             | Self::RbacCapabilityRead
             | Self::AcademicStudentRead
             | Self::AcademicClassRead
+            | Self::AssessmentExamRead
+            | Self::AssessmentExamScheduleRead
+            | Self::AssessmentMarksRegisterRead
+            | Self::AssessmentResultStoreRead
+            | Self::AssessmentReportCardRead
+            | Self::AssessmentOnlineExamRead
+            | Self::AssessmentSeatPlanRead
+            | Self::AssessmentAdmitCardRead
             | Self::FinanceInvoiceRead
             | Self::HrStaffRead
             | Self::LibraryBookRead
@@ -335,6 +476,13 @@ impl Capability {
             | Self::RbacCapabilityUpdateMetadata
             | Self::AcademicStudentUpdate
             | Self::AcademicClassUpdate
+            | Self::AssessmentExamUpdate
+            | Self::AssessmentExamScheduleUpdate
+            | Self::AssessmentMarksRegisterUpdate
+            | Self::AssessmentResultStoreUpdate
+            | Self::AssessmentOnlineExamUpdate
+            | Self::AssessmentSeatPlanUpdate
+            | Self::AssessmentAdmitCardUpdate
             | Self::FinanceInvoiceUpdate
             | Self::HrStaffUpdate
             | Self::LibraryBookUpdate
@@ -348,6 +496,13 @@ impl Capability {
             | Self::RbacRoleDelete
             | Self::AcademicStudentDelete
             | Self::AcademicClassDelete
+            | Self::AssessmentExamDelete
+            | Self::AssessmentExamScheduleDelete
+            | Self::AssessmentMarksRegisterDelete
+            | Self::AssessmentResultStoreDelete
+            | Self::AssessmentOnlineExamDelete
+            | Self::AssessmentSeatPlanDelete
+            | Self::AssessmentAdmitCardDelete
             | Self::FinanceInvoiceDelete
             | Self::HrStaffDelete
             | Self::LibraryBookDelete
@@ -361,6 +516,8 @@ impl Capability {
             Self::RbacCapabilityAssign => "Assign",
             Self::RbacCapabilityRevoke => "Revoke",
             Self::RbacBootstrap => "Bootstrap",
+            Self::AssessmentReportCardGenerate => "Generate",
+            Self::AssessmentReportCardDownload => "Download",
             Self::SettingsManage => "Manage",
             Self::OperationsManage => "Manage",
         }
@@ -398,6 +555,37 @@ impl Capability {
             Self::AcademicClassRead => "Academic.Class.Read",
             Self::AcademicClassUpdate => "Academic.Class.Update",
             Self::AcademicClassDelete => "Academic.Class.Delete",
+            Self::AssessmentExamCreate => "Assessment.Exam.Create",
+            Self::AssessmentExamRead => "Assessment.Exam.Read",
+            Self::AssessmentExamUpdate => "Assessment.Exam.Update",
+            Self::AssessmentExamDelete => "Assessment.Exam.Delete",
+            Self::AssessmentExamScheduleCreate => "Assessment.ExamSchedule.Create",
+            Self::AssessmentExamScheduleRead => "Assessment.ExamSchedule.Read",
+            Self::AssessmentExamScheduleUpdate => "Assessment.ExamSchedule.Update",
+            Self::AssessmentExamScheduleDelete => "Assessment.ExamSchedule.Delete",
+            Self::AssessmentMarksRegisterCreate => "Assessment.MarksRegister.Create",
+            Self::AssessmentMarksRegisterRead => "Assessment.MarksRegister.Read",
+            Self::AssessmentMarksRegisterUpdate => "Assessment.MarksRegister.Update",
+            Self::AssessmentMarksRegisterDelete => "Assessment.MarksRegister.Delete",
+            Self::AssessmentResultStoreCreate => "Assessment.ResultStore.Create",
+            Self::AssessmentResultStoreRead => "Assessment.ResultStore.Read",
+            Self::AssessmentResultStoreUpdate => "Assessment.ResultStore.Update",
+            Self::AssessmentResultStoreDelete => "Assessment.ResultStore.Delete",
+            Self::AssessmentReportCardGenerate => "Assessment.ReportCard.Generate",
+            Self::AssessmentReportCardRead => "Assessment.ReportCard.Read",
+            Self::AssessmentReportCardDownload => "Assessment.ReportCard.Download",
+            Self::AssessmentOnlineExamCreate => "Assessment.OnlineExam.Create",
+            Self::AssessmentOnlineExamRead => "Assessment.OnlineExam.Read",
+            Self::AssessmentOnlineExamUpdate => "Assessment.OnlineExam.Update",
+            Self::AssessmentOnlineExamDelete => "Assessment.OnlineExam.Delete",
+            Self::AssessmentSeatPlanCreate => "Assessment.SeatPlan.Create",
+            Self::AssessmentSeatPlanRead => "Assessment.SeatPlan.Read",
+            Self::AssessmentSeatPlanUpdate => "Assessment.SeatPlan.Update",
+            Self::AssessmentSeatPlanDelete => "Assessment.SeatPlan.Delete",
+            Self::AssessmentAdmitCardCreate => "Assessment.AdmitCard.Create",
+            Self::AssessmentAdmitCardRead => "Assessment.AdmitCard.Read",
+            Self::AssessmentAdmitCardUpdate => "Assessment.AdmitCard.Update",
+            Self::AssessmentAdmitCardDelete => "Assessment.AdmitCard.Delete",
             Self::FinanceInvoiceCreate => "Finance.Invoice.Create",
             Self::FinanceInvoiceRead => "Finance.Invoice.Read",
             Self::FinanceInvoiceUpdate => "Finance.Invoice.Update",
@@ -468,6 +656,37 @@ impl Capability {
             Self::AcademicClassRead,
             Self::AcademicClassUpdate,
             Self::AcademicClassDelete,
+            Self::AssessmentExamCreate,
+            Self::AssessmentExamRead,
+            Self::AssessmentExamUpdate,
+            Self::AssessmentExamDelete,
+            Self::AssessmentExamScheduleCreate,
+            Self::AssessmentExamScheduleRead,
+            Self::AssessmentExamScheduleUpdate,
+            Self::AssessmentExamScheduleDelete,
+            Self::AssessmentMarksRegisterCreate,
+            Self::AssessmentMarksRegisterRead,
+            Self::AssessmentMarksRegisterUpdate,
+            Self::AssessmentMarksRegisterDelete,
+            Self::AssessmentResultStoreCreate,
+            Self::AssessmentResultStoreRead,
+            Self::AssessmentResultStoreUpdate,
+            Self::AssessmentResultStoreDelete,
+            Self::AssessmentReportCardGenerate,
+            Self::AssessmentReportCardRead,
+            Self::AssessmentReportCardDownload,
+            Self::AssessmentOnlineExamCreate,
+            Self::AssessmentOnlineExamRead,
+            Self::AssessmentOnlineExamUpdate,
+            Self::AssessmentOnlineExamDelete,
+            Self::AssessmentSeatPlanCreate,
+            Self::AssessmentSeatPlanRead,
+            Self::AssessmentSeatPlanUpdate,
+            Self::AssessmentSeatPlanDelete,
+            Self::AssessmentAdmitCardCreate,
+            Self::AssessmentAdmitCardRead,
+            Self::AssessmentAdmitCardUpdate,
+            Self::AssessmentAdmitCardDelete,
             Self::FinanceInvoiceCreate,
             Self::FinanceInvoiceRead,
             Self::FinanceInvoiceUpdate,
@@ -537,6 +756,37 @@ impl Capability {
             "Academic.Class.Read" => Some(Self::AcademicClassRead),
             "Academic.Class.Update" => Some(Self::AcademicClassUpdate),
             "Academic.Class.Delete" => Some(Self::AcademicClassDelete),
+            "Assessment.Exam.Create" => Some(Self::AssessmentExamCreate),
+            "Assessment.Exam.Read" => Some(Self::AssessmentExamRead),
+            "Assessment.Exam.Update" => Some(Self::AssessmentExamUpdate),
+            "Assessment.Exam.Delete" => Some(Self::AssessmentExamDelete),
+            "Assessment.ExamSchedule.Create" => Some(Self::AssessmentExamScheduleCreate),
+            "Assessment.ExamSchedule.Read" => Some(Self::AssessmentExamScheduleRead),
+            "Assessment.ExamSchedule.Update" => Some(Self::AssessmentExamScheduleUpdate),
+            "Assessment.ExamSchedule.Delete" => Some(Self::AssessmentExamScheduleDelete),
+            "Assessment.MarksRegister.Create" => Some(Self::AssessmentMarksRegisterCreate),
+            "Assessment.MarksRegister.Read" => Some(Self::AssessmentMarksRegisterRead),
+            "Assessment.MarksRegister.Update" => Some(Self::AssessmentMarksRegisterUpdate),
+            "Assessment.MarksRegister.Delete" => Some(Self::AssessmentMarksRegisterDelete),
+            "Assessment.ResultStore.Create" => Some(Self::AssessmentResultStoreCreate),
+            "Assessment.ResultStore.Read" => Some(Self::AssessmentResultStoreRead),
+            "Assessment.ResultStore.Update" => Some(Self::AssessmentResultStoreUpdate),
+            "Assessment.ResultStore.Delete" => Some(Self::AssessmentResultStoreDelete),
+            "Assessment.ReportCard.Generate" => Some(Self::AssessmentReportCardGenerate),
+            "Assessment.ReportCard.Read" => Some(Self::AssessmentReportCardRead),
+            "Assessment.ReportCard.Download" => Some(Self::AssessmentReportCardDownload),
+            "Assessment.OnlineExam.Create" => Some(Self::AssessmentOnlineExamCreate),
+            "Assessment.OnlineExam.Read" => Some(Self::AssessmentOnlineExamRead),
+            "Assessment.OnlineExam.Update" => Some(Self::AssessmentOnlineExamUpdate),
+            "Assessment.OnlineExam.Delete" => Some(Self::AssessmentOnlineExamDelete),
+            "Assessment.SeatPlan.Create" => Some(Self::AssessmentSeatPlanCreate),
+            "Assessment.SeatPlan.Read" => Some(Self::AssessmentSeatPlanRead),
+            "Assessment.SeatPlan.Update" => Some(Self::AssessmentSeatPlanUpdate),
+            "Assessment.SeatPlan.Delete" => Some(Self::AssessmentSeatPlanDelete),
+            "Assessment.AdmitCard.Create" => Some(Self::AssessmentAdmitCardCreate),
+            "Assessment.AdmitCard.Read" => Some(Self::AssessmentAdmitCardRead),
+            "Assessment.AdmitCard.Update" => Some(Self::AssessmentAdmitCardUpdate),
+            "Assessment.AdmitCard.Delete" => Some(Self::AssessmentAdmitCardDelete),
             "Finance.Invoice.Create" => Some(Self::FinanceInvoiceCreate),
             "Finance.Invoice.Read" => Some(Self::FinanceInvoiceRead),
             "Finance.Invoice.Update" => Some(Self::FinanceInvoiceUpdate),
@@ -944,6 +1194,21 @@ mod tests {
             let parsed = Capability::from_str(&s).unwrap();
             assert_eq!(parsed, *c);
         }
+    }
+
+    #[test]
+    fn assessment_capabilities_round_trip_and_resolve_to_assessment_domain() {
+        let mut count = 0u32;
+        for c in Capability::all() {
+            let s = c.as_str();
+            if s.starts_with("Assessment.") {
+                let parsed = Capability::from_str(s).unwrap();
+                assert_eq!(parsed, *c);
+                assert_eq!(c.domain(), CapabilityDomain::Assessment);
+                count += 1;
+            }
+        }
+        assert_eq!(count, 31, "expected 31 Assessment.* capabilities");
     }
 
     #[test]
