@@ -5,7 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Reference MySQL storage adapter."
+description = "Reference MySQL storage adapter (sqlx-driven, per Phase 1 design)."
 
 [lints]
 workspace = true
@@ -14,9 +14,13 @@ workspace = true
 educore-core = { workspace = true }
 educore-storage = { workspace = true }
 sqlx = { workspace = true }
-mysql_async = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-
+bytes = { workspace = true }
+chrono = { workspace = true }
+futures = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }

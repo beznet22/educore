@@ -10,9 +10,13 @@ description = "Educore core types: errors, identifiers, value objects, the query
 [lints]
 workspace = true
 
-[dependencies]
-educore-query-derive = { workspace = true }
+[features]
+# The `lint` feature pulls in the [`lint`](self::lint) sub-module
+# and its CLI binary (`src/bin/lint.rs`). It is opt-in: the release
+# build of `educore-core` does not include the runner.
+lint = []
 
+[dependencies]
 serde = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }

@@ -128,16 +128,21 @@ See `docs/library-docs.md` for the full consumer-facing walkthrough.
 
 ## Storage Adapters
 
-Three reference adapters ship with the engine:
+Four reference adapters ship with the engine:
 
-- **PostgreSQL** — primary target (`educore-storage-postgres`)
+- **SurrealDB** — primary embedded + server (`educore-storage-surrealdb`)
+- **PostgreSQL** — production target (`educore-storage-postgres`)
 - **MySQL** — production target, MySQL 8.0+ (`educore-storage-mysql`)
 - **SQLite** — embedded / offline mode (`educore-storage-sqlite`)
 
 **Deferred** to a future release (not shipped, consumer may implement
-in-tree on demand): SurrealDB, MongoDB. See
+in-tree on demand): MongoDB. See
 `docs/ports/storage.md#future-storage-backends-deferred` for the
 rationale.
+
+SurrealDB embedded enables single-binary deployment — the engine ships as one binary with the database in-process. See ADR-017-SurrealDBFirst.md.
+
+The engine ships an in-process sync engine (gated by the `sync` feature) so consumers can ship offline-first apps in 30 minutes without separate infrastructure. See ADR-018-SyncEngineArchitecture.md.
 
 ## Documentation
 

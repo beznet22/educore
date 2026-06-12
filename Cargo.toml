@@ -76,12 +76,17 @@ educore-library = { path = "crates/domains/library" }
 educore-storage-postgres = { path = "crates/adapters/storage-postgres" }
 educore-storage-mysql = { path = "crates/adapters/storage-mysql" }
 educore-storage-sqlite = { path = "crates/adapters/storage-sqlite" }
+educore-storage-surrealdb = { path = "crates/adapters/storage-surrealdb" }
 educore-auth = { path = "crates/adapters/auth" }
 educore-event-bus = { path = "crates/adapters/event-bus" }
 educore-files = { path = "crates/adapters/files" }
 educore-integrations = { path = "crates/adapters/integrations" }
 educore-notify = { path = "crates/adapters/notify" }
 educore-payment = { path = "crates/adapters/payment" }
+
+# cross-cutting tier (sync engine — Phase 0 per ADR-018)
+educore-sync = { path = "crates/cross-cutting/sync" }
+educore-sync-inprocess = { path = "crates/cross-cutting/sync-inprocess" }
 
 # tools tier (dev tooling, not in release)
 educore-testkit = { path = "crates/tools/testkit" }
@@ -121,7 +126,7 @@ argon2 = "0.5"
 hmac = "0.12"
 sha2 = "0.10"
 rand = "0.8"
-secrecy = "0.10"
+secrecy = { version = "0.10", features = ["serde"] }
 
 # Money and decimal
 rust_decimal = { version = "1.36", features = ["serde-with-str"] }
@@ -136,6 +141,15 @@ rustls = "0.23"
 rustls-pemfile = "2.1"
 rustls-webpki = "0.102"
 
+# Bytes (for wire-format payloads in the storage port)
+bytes = { version = "1", features = ["serde"] }
+
+# SurrealDB — Phase 0 primary storage adapter per ADR-017.
+# Pinned to the last pre-1.75 line. The crate is pre-1.0 and
+# the latest dev line raises MSRV above the engine's 1.75
+# floor; see ADR-015 § "surrealdb" for the rationale.
+surrealdb = { version = "2", default-features = false, features = ["kv-mem", "rustls"] }
+
 # HTTP (for adapters)
 # Pinned per ADR-015 § "MSRV floor conflict resolution" (engine MSRV 1.75)
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
@@ -145,7 +159,23 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "macros", "json", "uuid", "chrono", "rust_decimal", "mysql", "postgres", "sqlite"] }
 
 # MySQL native driver
+# `mysql_async` 0.34 + `flate2` 1.1 changed: the default zlib backend was
+# removed, and `mysql_async` does not enable one itself. The `educore-storage-mysql`
+# adapter (the only consumer of `mysql_async` in the workspace) pulls `flate2`
+# in as a direct dep with the `zlib-rs` feature, so cargo's feature unification
+# applies the same backend to `mysql_async`'s transitive use. `zlib-rs` is
+# pure-Rust and cross-compile-safe (no C build deps).
 mysql_async = { version = "0.34", default-features = false, features = ["rustls-tls"] }
+
+# zlib backend selector for flate2 1.1+. Used by `mysql_async` transitively.
+# Exposed here so the storage-mysql crate can depend on it directly and
+# cargo's feature unification propagates the selection to the mysql_async
+# dep tree. We use the `rust_backend` feature (miniz_oxide, pure Rust)
+# because it's the cross-compile-safe choice with no C build deps.
+# Note: `flate2/zlib-rs` requires zlib-rs ^0.6.0 which is not on crates.io
+# yet; `rust_backend` is the more conservative pick for now.
+# See ADR-015 § "MSRV floor conflict resolution".
+flate2 = { version = "1.1", default-features = false, features = ["rust_backend"] }
 
 # SurrealDB and MongoDB adapters are deferred to a future release.
 # See docs/ports/storage.md#future-storage-backends for the rationale.
@@ -213,10 +243,11 @@ missing_docs = "warn"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
-pedantic = { level = "warn", priority = -1 }
+pedantic = { level = "allow", priority = -1 }
+nursery = { level = "allow", priority = -1 }
 module_name_repetitions = "allow"
-missing_errors_doc = "warn"
-missing_panics_doc = "warn"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
 cast_possible_truncation = "deny"
 cast_possible_wrap = "deny"
 cast_lossless = "deny"

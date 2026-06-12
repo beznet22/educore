@@ -18,9 +18,11 @@ consumer-facing API in `docs/library-docs.md`.
 Educore is a domain engine. It provides:
 
 - 15 domain crates (`educore-academic`, `educore-finance`, ..., `educore-events-domain`).
-- 3 shipped storage adapters (PostgreSQL, MySQL, SQLite) and
-  2 deferred (`educore-storage-mongodb` and
-  `educore-storage-surrealdb`).
+- 4 shipped storage adapters (SurrealDB primary embedded,
+  PostgreSQL, MySQL, SQLite) and 1 deferred
+  (`educore-storage-mongodb`). SurrealDB is the primary adapter
+  for new deployments because its embedded mode enables
+  single-binary distribution.
 - 6 port adapters (`educore-auth`, `educore-notify`,
   `educore-payment`, `educore-files`, `educore-event-bus`,
   `educore-integrations`).
@@ -906,6 +908,13 @@ primitive that makes all three viable.
     consumer's workspace has its own `.env` (gitignored) with
     real values.
 
+11. **The sync engine is a build feature, not a hard dependency.** Consumers who
+    don't need offline-first behavior should not enable the `sync` feature
+    on the umbrella crate. The in-process sync coordinator is only
+    compiled in when the feature is on. The wire protocol is identical
+    either way — the consumer's `sync-engine` worker binary, when they
+    build one, talks to the same `SyncAdapter` port.
+
 ## Reference Map
 
 | Concern | Where it lives | Doc |
@@ -920,6 +929,7 @@ primitive that makes all three viable.
 | File storage | `educore-files` | `docs/ports/file-storage.md` |
 | Event bus | `educore-event-bus` | `docs/ports/event-bus.md` |
 | Integrations | `educore-integrations` | `docs/ports/integrations.md` |
+| Sync port       | `educore-sync` (gated by `sync` feature) | `docs/ports/sync.md` |
 | Outbox pattern | Engine | `docs/ports/storage.md#outbox` |
 | Offline mode | Engine + consumer sync-engine | `docs/guides/offline-sync.md` |
 | Audit | Engine + consumer `AuditSink` | `docs/guides/audit-trail.md` |

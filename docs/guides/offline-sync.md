@@ -8,6 +8,39 @@ area, and a clerk in a temporary office should all be able to operate
 the system. State changes are queued locally and reconciled with the
 central store on reconnect.
 
+## Sync implementation
+
+The offline-first behavior described in this guide is implemented in
+two places:
+
+1. The **engine-provided primitives** (outbox in
+   `StorageAdapter::Transaction`, idempotent commands, typed events with
+   version/etag). These are what the offline engine actually does.
+2. The **sync engine** (either the in-process reference impl in
+   `educore-sync` or the consumer's separate worker binary per
+   `docs/guides/saas-backend.md` line 464-573). The sync engine uses the
+   primitives to actually ship changes between local and central.
+
+Two ways to ship a working offline-first app:
+
+- **In-process (zero infrastructure)**:
+  `Engine::builder().sync(EducoreSyncAdapter::in_process())`. The
+  engine's own coordinator loop watches the outbox, applies remote
+  events, manages cursors. Default for local-first consumers.
+- **Worker binary (scale to N devices)**: consumer writes
+  `sync-engine/` binary per `docs/guides/saas-backend.md`. The client
+  uses `Engine::builder().sync(WorkerHttpSyncAdapter::connect(url, token))`.
+  For production.
+
+Both paths use the same wire protocol (`docs/ports/sync.md`); swap is
+one line in `Engine::builder()`.
+
+Without the `sync` feature on the umbrella crate, neither path is
+compiled in. The engine works in pure server mode (no outbox drain
+loop, no cursor tracking). This is the smallest binary.
+
+Reference `ADR-018-SyncEngineArchitecture.md` and `docs/ports/sync.md`.
+
 ## Offline Mode Triggers
 
 Offline mode is entered when:

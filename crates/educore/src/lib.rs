@@ -48,6 +48,11 @@ pub use educore_storage_mysql as storage_mysql;
 pub use educore_storage_parity as storage_parity;
 pub use educore_storage_postgres as storage_postgres;
 pub use educore_storage_sqlite as storage_sqlite;
+pub use educore_storage_surrealdb as storage_surrealdb;
+
+// ---- Sync engine (cross-cutting port, Phase 0 per ADR-018) ---------------
+pub use educore_sync as sync;
+pub use educore_sync_inprocess as sync_inprocess;
 
 // ---- Test infrastructure -------------------------------------------------
 pub use educore_audit as audit;
@@ -60,12 +65,18 @@ pub use educore_sdk as sdk;
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Prelude of common types consumers are expected to import.
+///
+/// The prelude's typed re-exports are wired in incrementally as the
+/// underlying crates are implemented in Phase 0 (PRs 3-8). At the
+/// scaffold stage the prelude is intentionally a thin re-export of
+/// crate-level paths so the workspace builds; richer re-exports land
+/// alongside the `DomainError`, `TenantContext`, `EventEnvelope`, and
+/// `Capability` types in the relevant PRs.
 pub mod prelude {
-    pub use educore_core::prelude::*;
-    pub use educore_core::{DomainError, Id, Result, SchoolId, TenantContext, UserId};
-    pub use educore_events::EventEnvelope;
-    pub use educore_platform::{School, User};
-    pub use educore_rbac::Capability;
+    pub use educore_core;
+    pub use educore_events;
+    pub use educore_platform;
+    pub use educore_rbac;
 }
 
 #[cfg(test)]

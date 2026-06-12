@@ -304,6 +304,24 @@ Quick pointer list; the full rules are in
   `--target wasm32-unknown-unknown`), (c) ADR update in the same
   commit. The MSRV-floor pinning policy is in
   § "MSRV floor conflict resolution".
+- **Sync engine rules.** The `educore-sync` cross-cutting crate and
+  its in-process adapter (`educore-sync-inprocess`) ship at Phase 0
+  and are gated by the `sync` feature on the umbrella crate. The
+  `educore-sync-http` worker client and `educore-sync-null` no-op
+  adapter are **deferred** to a later phase (per the minimum-viable
+  Phase 0 scope); when they land they will also be gated by the
+  `sync` feature. When modifying the sync surface, ensure the
+  feature flag is respected: the in-process coordinator should
+  only be compiled in when the feature is enabled. The
+  `SyncAdapter` port trait, the 4 storage port sync methods
+  (`watch_changes`, `apply_snapshot`, `cursor_for`, `advance_cursor`),
+  and the sync port types (`CommandEnvelope`, `EventFilter`,
+  `SchoolSnapshot`, `VersionCursor`) are always compiled in because
+  the type signatures are needed by the umbrella's
+  `Engine::builder()` API. See
+  [`docs/decisions/ADR-018-SyncEngine.md`](docs/decisions/ADR-018-SyncEngine.md)
+  for the full sync engine design decisions (this ADR is the
+  source of truth for sync).
 
 ## Test authoring rules
 

@@ -59,7 +59,7 @@ implement the engine's outbound ports for specific backends.
 
 | Crate | Purpose |
 | --- | --- |
-| `educore-storage-postgres` | PostgreSQL 14+ storage adapter; reference DDL emitter. |
+| `educore-storage-surrealdb` | SurrealDB storage adapter; Phase 0 primary; embedded + server. Reference DDL emitter. |
 | `educore-storage-mysql` | MySQL 8.0+ storage adapter; production target. |
 | `educore-storage-sqlite` | SQLite 3.x storage adapter; embedded and offline mode. |
 | `educore-event-bus` | In-process `EventBus` adapter implementing the `educore-events` port. |
@@ -142,6 +142,7 @@ graph TD
     academic & assessment & attendance & cms & communication & documents & facilities & finance & hr & library --> core & platform & rbac & events
     academic & assessment & attendance & cms & communication & documents & facilities & finance & hr & library --> audit
     %% adapters tier
+    storage_surrealdb["educore-storage-surrealdb"]:::adapter
     storage_postgres["educore-storage-postgres"]:::adapter
     storage_mysql["educore-storage-mysql"]:::adapter
     storage_sqlite["educore-storage-sqlite"]:::adapter
@@ -152,6 +153,7 @@ graph TD
     notify["educore-notify"]:::adapter
     payment["educore-payment"]:::adapter
     %% adapter internal edges
+    storage_surrealdb --> storage & core
     storage_postgres --> storage & core
     storage_mysql --> storage & core
     storage_sqlite --> storage & core
@@ -176,7 +178,7 @@ graph TD
     umbrella --> core & query_derive & storage
     umbrella --> platform & rbac & events & events_domain & audit & settings & operations
     umbrella --> academic & assessment & attendance & cms & communication & documents & facilities & finance & hr & library
-    umbrella --> storage_postgres & storage_mysql & storage_sqlite & storage_parity & event_bus
+    umbrella --> storage_surrealdb & storage_postgres & storage_mysql & storage_sqlite & storage_parity & event_bus
     umbrella --> auth & files & integrations & notify & payment
     umbrella --> testkit & sdk
 ```

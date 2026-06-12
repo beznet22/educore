@@ -33,8 +33,8 @@ must:
   not force them to pull in adapters, settings, or
   the entire umbrella.
 - **Keep compile-time iteration fast.** A change to
-  `educore-academic` should not trigger a rebuild
-  of `educore-storage-postgres` or
+  `educore-academic` should not trigger a rebuild of
+  `educore-storage-surrealdb` or
   `educore-notify`. The 34-crate granularity is
   already at the right level; the layout must
   preserve it.

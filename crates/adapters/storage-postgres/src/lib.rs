@@ -1,27 +1,62 @@
-//! # educore-storage-postgres
+//! `educore-storage-postgres` — the PostgreSQL storage adapter
+//! (Phase 1 primary target per the Educore build plan).
 //!
-//!  Reference PostgreSQL storage adapter.
+//! This crate implements the
+//! [`StorageAdapter`](educore_storage::port::StorageAdapter) port
+//! against PostgreSQL 14+. All four engine cross-cutting sub-ports
+//! (outbox, audit log, event log, idempotency) are implemented as
+//! real impls — the Phase 0 stub-on-`NotSupported` pattern from the
+//! SurrealDB adapter is **not** used here.
 //!
-//! This crate is a member of the Educore workspace. See
-//! `docs/architecture.md` and the domain spec in
-//! `docs/specs/` for behavioral details.
+//! ## Schema
+//!
+//! The DDL for the 6 engine cross-cutting tables (outbox, audit_log,
+//! idempotency, event_log, schema_registry, system_user) is
+//! `include_str!`'d from
+//! `migrations/engine/0000_engine_core.postgres.sql` at compile
+//! time. The DDL wraps the tables in the `engine` schema; the
+//! adapter sets `search_path = engine, public` on every new
+//! connection via a `sqlx` `after_connect` hook so unqualified
+//! table names in queries resolve to the `engine` namespace.
+//!
+//! ## Tenant isolation
+//!
+//! Per `docs/schemas/sql-dialects/postgresql.md`, tenant isolation
+//! is enforced via a `school_id` predicate on every query. Row-
+//! level security policies are Phase 2 work; the Phase 1 adapter
+//! relies on the application-level filter.
+//!
+//! ## Transactions
+//!
+//! The adapter follows the same design as `educore-storage-sqlite`:
+//! it does not hold a `sqlx::Transaction` (which would borrow the
+//! pool for the transaction's lifetime and conflict with the
+//! `&dyn SubPort` accessors on the `Transaction` trait). Each
+//! sub-port call runs its own short-lived transaction via
+//! `pool.begin()`. `commit` and `rollback` on the
+//! `PostgresTransaction` are no-ops; the engine's at-least-once
+//! semantics on the outbox ensure that a duplicate dispatch is
+//! idempotent at the storage layer (the `ON CONFLICT DO NOTHING`
+//! in `Idempotency::record` and the `event_id` primary key on the
+//! outbox are the safety net).
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
-/// Package name constant. Re-exported so consumers can assert they
-/// are using the right crate version at compile time.
-pub const PACKAGE_NAME: &str = "educore-storage-postgres";
+pub mod audit_log;
+pub mod connection;
+pub(crate) mod connection_helpers;
+pub mod error;
+pub mod event_log;
+pub mod idempotency;
+pub mod outbox;
+pub mod storage;
+pub mod transaction;
 
-/// Package version at compile time.
-pub const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn package_metadata_is_set() {
-        assert_eq!(PACKAGE_NAME, "educore-storage-postgres");
-        assert!(!PACKAGE_VERSION.is_empty());
-    }
-}
+pub use audit_log::PostgresAuditLog;
+pub use connection::PostgresConnection;
+pub use event_log::PostgresEventLog;
+pub use idempotency::PostgresIdempotency;
+pub use outbox::PostgresOutbox;
+pub use storage::PostgresStorageAdapter;
+pub use transaction::PostgresTransaction;

@@ -13,4 +13,10 @@ workspace = true
 [dependencies]
 educore-core = { workspace = true }
 educore-events = { workspace = true }
+async-trait = { workspace = true }
+bytes = { workspace = true }
+futures = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
 

@@ -48,11 +48,74 @@ pub trait StorageAdapter: Send + Sync + std::fmt::Debug {
     fn class_times(&self) -> Arc<dyn ClassTimeRepository>;
 
     // ... one handle per aggregate, across all 15 domains (~80+ total)
+
+    // --- Sync primitives (used by educore-sync, gated by the umbrella's `sync` feature) ---
+    //
+    // The sync engine uses these four methods to:
+    //   1. watch local outbox writes and push them to the server
+    //   2. bulk-apply a remote SchoolSnapshot for first-time hydration
+    //   3. track per-school version cursors for incremental replay
+    //   4. advance the cursor after a successful apply
+    //
+    // Default implementations return DomainError::NotSupported. Storage
+    // adapters that participate in sync override them. Adapters that
+    // don't override (e.g. consumer-supplied adapters that run in a
+    // pure-server topology with no client sync) get the error, which
+    // is the correct answer for that topology.
+    //
+    // See ADR-018-SyncEngineArchitecture.md and docs/ports/sync.md.
+
+    async fn watch_changes(
+        &self,
+        filter: ChangeFilter,
+    ) -> Result<ChangeStream>;
+
+    async fn apply_snapshot(
+        &self,
+        snapshot: SchoolSnapshot,
+    ) -> Result<()>;
+
+    async fn cursor_for(
+        &self,
+        school_id: SchoolId,
+    ) -> Result<VersionCursor>;
+
+    async fn advance_cursor(
+        &self,
+        school_id: SchoolId,
+        to: VersionCursor,
+    ) -> Result<()>;
 }
 ```
 
 The trait is object-safe. Consumers typically use it as
 `Arc<dyn StorageAdapter>`.
+
+## Sync Primitives
+
+The four methods above (`watch_changes`, `apply_snapshot`, `cursor_for`,
+`advance_cursor`) are how the engine's sync engine (in the
+`educore-sync` crate, gated by the `sync` feature on the umbrella)
+observes and bulk-mutates local state.
+
+- **`watch_changes`** — dialect-natural implementation:
+  - SurrealDB: `LIVE SELECT * FROM <outbox_table>`
+  - PostgreSQL: `LISTEN outbox_channel` + `pg_notify`
+  - MySQL / SQLite: poll the outbox table on a timer
+- **`apply_snapshot`** — the engine treats the snapshot as a
+  bulk `[InsertOrReplace]` of all aggregates in the snapshot. The receiving
+  adapter is responsible for transactionally applying them.
+- **`cursor_for` / `advance_cursor`** — the cursor is a per-school
+  monotonically increasing `version` (or `event_id`). It's stored in a
+  small engine-internal table; the adapter implements the read/write.
+
+Default impls on the trait return `DomainError::NotSupported("sync
+primitives require the sync feature and a sync-capable adapter")`. The
+sync engine, when it tries to subscribe on a non-sync adapter, fails
+loudly at startup — not silently at runtime — so consumers see the
+configuration problem immediately.
+
+See `docs/ports/sync.md` for the wire protocol these primitives enable.
 
 ## Trait: `Transaction`
 

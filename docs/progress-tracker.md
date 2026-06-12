@@ -35,7 +35,7 @@ keeps the `educore-` prefix (e.g. `educore-academic`). See
 | cross-cutting   | `educore-events`             | 2     | Yes    | Yes          | Yes    | Envelope crate; `DomainEvent`, `EventEnvelope`, `EventBus` port, 4 sync events (`SyncStarted`/`Paused`/`Resumed`/`Stopped`); 25 unit tests; 1 coverage row flipped |
 | adapters        | `educore-event-bus`          | 2     | Yes    | Yes          | Yes    | `InProcessEventBus` (default, MPMC broadcast) + `NatsEventBus` (feature `nats`) + `RedisEventBus` (feature `redis`) — both distributed adapters are Phase 2 stubs; 51 unit + 9 integration tests; 2 coverage rows flipped |
 | cross-cutting   | `educore-audit`              | 2     | Yes    | Yes          | Yes    | `AuditWriter` + `RetentionPolicy` + `RetentionSweepDue` event; partitioning strategy documented in `docs/schemas/audit-schema.md` § 13; 22 unit + 8 integration tests; 4 coverage rows flipped |
-| domains         | `educore-academic`           | 3     | Yes    | No           | No     | First vertical slice; 8 aggs   |
+| domains         | `educore-academic`           | 3     | Yes    | Yes          | Yes    | First vertical slice; 5 aggregates (Student, Class, Section, Subject, AcademicYear); 19 typed events, 23 typed commands, 19 pure factory services, 5 repository port traits, 5 typed query stubs, 66 unit + 3 integration tests; 5 coverage rows flipped |
 | domains         | `educore-assessment`         | 4     | Yes    | No           | No     | Exams, marks, results          |
 | domains         | `educore-attendance`         | 5     | Yes    | No           | No     | Student/staff/subject/exam     |
 | domains         | `educore-hr`                 | 6     | Yes    | No           | No     | Staff, leave, payroll          |
@@ -69,7 +69,7 @@ docs audit).
 | 0     | Foundation                         | `core`, `query-derive`, `storage`, `storage-surrealdb`, `sync`, `sync-inprocess` | Done     | 6 of 6 ✅ (PR 0 closed the clippy gap; PR A flipped the docs) |
 | 1     | Adapter parity (Postgres + MySQL + SQLite) | `storage-postgres`, `storage-mysql`, `storage-sqlite`                | Done     | 7 of 7 ✅ (15 coverage rows flipped, 124 tests pass; see `docs/handoff/PHASE-1-HANDOFF.md`) |
 | 2     | Cross-cutting foundations          | `platform`, `rbac`, `events`, `event-bus`, `audit`                     | Done     | 5 of 5 ✅ (310 tests pass, 12 coverage rows flipped, `educore-sync` refactored to depend on `educore_events::EventEnvelope` resolving Phase 0 OQ #2; see `docs/handoff/PHASE-2-HANDOFF.md`) |
-| 3     | Academic (first vertical slice)    | `academic`                                                             | Planned  | No                |
+| 3     | Academic (first vertical slice)    | `academic`                                                             | Done     | 5 of 5 ✅ (369 tests pass: 310 at Phase 2 + 59 net new in Phase 3; 8 coverage rows flipped — 3 `event_log_ddl_*` closed Phase 2 OQ #1 and 5 `academic_*_aggregate`; see `docs/handoff/PHASE-3-HANDOFF.md`) |
 | 4     | Assessment                         | `assessment`                                                           | Planned  | No                |
 | 5     | Attendance                         | `attendance`                                                           | Planned  | No                |
 | 6     | HR                                 | `hr`                                                                   | Planned  | No                |

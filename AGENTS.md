@@ -147,7 +147,7 @@ distinct purpose, dependency direction, and lifecycle.
 | `infra` | `crates/infra/` | 3 | Infrastructure: errors, identifiers, value objects, query AST, proc-macro, storage port | (none) |
 | `cross-cutting` | `crates/cross-cutting/` | 7 | Cross-domain foundations: platform, rbac, events, audit, settings, operations, calendar | `infra` |
 | `domains` | `crates/domains/` | 10 | The 10 domain bounded contexts (academic, finance, hr, ...) | `infra`, `cross-cutting` |
-| `adapters` | `crates/adapters/` | 9 | Port implementations: 3 storage adapters + 6 port adapters (auth, event-bus, files, integrations, notify, payment) | `infra`, `cross-cutting` |
+| `adapters` | `crates/adapters/` | 10 | Port implementations: 4 storage adapters + 6 port adapters (auth, event-bus, files, integrations, notify, payment) | `infra`, `cross-cutting` |
 | `tools` | `crates/tools/` | 4 | Dev tooling: testkit, storage-parity, cli (binary), sdk | `infra`, `cross-cutting`, `domains` |
 
 The umbrella crate `educore` re-exports the public surface of
@@ -413,7 +413,7 @@ implementation, never as an afterthought.
 
 Three reference adapters are shipped:
 
-- `educore-storage-postgres` (primary target)
+- `educore-storage-surrealdb` (primary target)
 - `educore-storage-mysql` (production target, MySQL 8.0+)
 - `educore-storage-sqlite` (embedded / offline mode)
 
@@ -445,7 +445,10 @@ retained as a research artefact only. AGENTS.md does not direct
 agents to it; it is not auto-rebuilt.
 
 See [`docs/decisions/ADR-016-EngineGraph.md`](docs/decisions/ADR-016-EngineGraph.md)
-for the full rationale.
+for the full rationale. The sync engine that powers the
+SurrealDB-first adapter strategy and the offline-client replication
+topology is documented in
+[`docs/decisions/ADR-018-SyncEngine.md`](docs/decisions/ADR-018-SyncEngine.md).
 
 ## Status
 
@@ -486,37 +489,38 @@ umbrella re-exports to determine phase assignment.
 | 1 | infra | `educore-core` | 0 | Foundation |
 | 2 | infra | `educore-query-derive` | 0 | Foundation (proc-macro) |
 | 3 | infra | `educore-storage` | 0 | Foundation (port trait) |
-| 4 | adapters | `educore-storage-postgres` | 0 | Foundation (PG adapter) |
+| 4 | adapters | `educore-storage-surrealdb` | 0 | Foundation (SurrealDB adapter, primary) |
 | 5 | tools | `educore-storage-parity` | 0 | Foundation (cross-adapter test suite) |
-| 6 | adapters | `educore-storage-mysql` | 1 | Adapter parity |
-| 7 | adapters | `educore-storage-sqlite` | 1 | Adapter parity |
-| 8 | cross-cutting | `educore-platform` | 2 | Cross-cutting foundations |
-| 9 | cross-cutting | `educore-rbac` | 2 | Cross-cutting foundations |
-| 10 | cross-cutting | `educore-events` | 2 | Cross-cutting foundations (envelope) |
-| 11 | adapters | `educore-event-bus` | 2 | Cross-cutting foundations (bus port) |
-| 12 | cross-cutting | `educore-audit` | 2 | Cross-cutting foundations (audit log) |
-| 13 | domains | `educore-academic` | 3 | Academic |
-| 14 | domains | `educore-assessment` | 4 | Assessment |
-| 15 | domains | `educore-attendance` | 5 | Attendance |
-| 16 | domains | `educore-hr` | 6 | HR |
-| 17 | domains | `educore-finance` | 7 | Finance |
-| 18 | domains | `educore-facilities` | 8 | Facilities |
-| 19 | domains | `educore-library` | 9 | Library |
-| 20 | domains | `educore-communication` | 10 | Communication |
-| 21 | domains | `educore-documents` | 11 | Documents |
-| 22 | domains | `educore-cms` | 12 | CMS |
-| 23 | domains | `educore-events-domain` | 13 | Events domain (calendar) |
-| 24 | cross-cutting | `educore-settings` | 14 | Settings + Operations |
-| 25 | cross-cutting | `educore-operations` | 14 | Settings + Operations |
-| 26 | adapters | `educore-auth` | 15 | Port adapters |
-| 27 | adapters | `educore-notify` | 15 | Port adapters |
-| 28 | adapters | `educore-payment` | 15 | Port adapters |
-| 29 | adapters | `educore-files` | 15 | Port adapters |
-| 30 | adapters | `educore-integrations` | 15 | Port adapters |
-| 31 | tools | `educore-testkit` | 16 | Test infrastructure + SDK |
-| 32 | tools | `educore-storage-parity` | 16 | (Test infrastructure + SDK) |
-| 33 | tools | `educore-sdk` | 16 | Test infrastructure + SDK |
-| 34 | tools | `educore-cli` | 16 | Test infrastructure + SDK |
+| 6 | adapters | `educore-storage-postgres` | 1 | Adapter parity |
+| 7 | adapters | `educore-storage-mysql` | 1 | Adapter parity |
+| 8 | adapters | `educore-storage-sqlite` | 1 | Adapter parity |
+| 9 | cross-cutting | `educore-platform` | 2 | Cross-cutting foundations |
+| 10 | cross-cutting | `educore-rbac` | 2 | Cross-cutting foundations |
+| 11 | cross-cutting | `educore-events` | 2 | Cross-cutting foundations (envelope) |
+| 12 | adapters | `educore-event-bus` | 2 | Cross-cutting foundations (bus port) |
+| 13 | cross-cutting | `educore-audit` | 2 | Cross-cutting foundations (audit log) |
+| 14 | domains | `educore-academic` | 3 | Academic |
+| 15 | domains | `educore-assessment` | 4 | Assessment |
+| 16 | domains | `educore-attendance` | 5 | Attendance |
+| 17 | domains | `educore-hr` | 6 | HR |
+| 18 | domains | `educore-finance` | 7 | Finance |
+| 19 | domains | `educore-facilities` | 8 | Facilities |
+| 20 | domains | `educore-library` | 9 | Library |
+| 21 | domains | `educore-communication` | 10 | Communication |
+| 22 | domains | `educore-documents` | 11 | Documents |
+| 23 | domains | `educore-cms` | 12 | CMS |
+| 24 | domains | `educore-events-domain` | 13 | Events domain (calendar) |
+| 25 | cross-cutting | `educore-settings` | 14 | Settings + Operations |
+| 26 | cross-cutting | `educore-operations` | 14 | Settings + Operations |
+| 27 | adapters | `educore-auth` | 15 | Port adapters |
+| 28 | adapters | `educore-notify` | 15 | Port adapters |
+| 29 | adapters | `educore-payment` | 15 | Port adapters |
+| 30 | adapters | `educore-files` | 15 | Port adapters |
+| 31 | adapters | `educore-integrations` | 15 | Port adapters |
+| 32 | tools | `educore-testkit` | 16 | Test infrastructure + SDK |
+| 33 | tools | `educore-storage-parity` | 16 | (Test infrastructure + SDK) |
+| 34 | tools | `educore-sdk` | 16 | Test infrastructure + SDK |
+| 35 | tools | `educore-cli` | 16 | Test infrastructure + SDK |
 | — | umbrella | `educore` | 0 | re-exports only; first usable at Phase 0+ |
 
 **Note on duplicates:** `educore-storage-parity` is listed at

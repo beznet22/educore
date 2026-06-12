@@ -252,3 +252,40 @@ publishes accumulated events to the distributed bus.
 Every publish and consume is recorded in the audit log. The audit
 record includes event id, event type, actor (publisher), consumer id,
 and timestamp.
+
+## Sync and the Event Bus
+
+The event bus port has two consumers in the Educore architecture,
+each backed by the same logical `EventBus` trait shape but a
+different physical transport:
+
+1. **The in-process event bus** — used by the domain core to publish
+   events from commands. It is consumed by event handlers,
+   projections, the audit sink, and the outbox. This is the default
+   `InProcessBus` described above; it runs in the same process as
+   the engine.
+
+2. **The central fan-out** — used by the central engine to publish
+   events to subscribed clients. Its physical transport is
+   typically NATS JetStream, Redis pub/sub, or an in-process
+   channel (single-node central), but the trait surface is
+   identical to the in-process bus. Distributed adapters
+   (NATS, Redis, Kafka, RabbitMQ) implement this transport.
+
+The **local client's** `EventBus` is the in-process one. It does
+**not** receive central events directly. Central events reach the
+local client via the **sync engine** — specifically via
+`SyncAdapter::subscribe`, which subscribes to the central `EventBus`
+and pulls events down to the local process. The local client then
+re-publishes the received events onto its own in-process bus for
+local handlers, projections, and the outbox relay.
+
+In other words, the sync engine is a bridge between two
+`EventBus` instances: the central distributed bus (the
+publishing/transport side) and the local in-process bus (the
+consuming/domain side). The `EventBus` trait itself is unaware of
+this bridge; the awareness lives in the sync adapter.
+
+See `docs/ports/sync.md` and
+[`docs/decisions/ADR-018-SyncEngineArchitecture.md`](docs/decisions/ADR-018-SyncEngineArchitecture.md)
+for the full picture.

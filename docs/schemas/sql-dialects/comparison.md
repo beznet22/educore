@@ -239,6 +239,21 @@ For production SaaS deployments:
   `STRICT` tables (3.37+) and `WITHOUT ROWID` (engine's preference
   for lookup tables) are required.
 
+## SurrealDB feature comparison
+
+| Feature | MySQL 8+ | SQLite 3.x | PostgreSQL 14+ | SurrealDB 3.x |
+| --- | --- | --- | --- | --- |
+| Identifier quoting | backticks | double-quotes | double-quotes | backticks |
+| DDL extensions | CHECK, INDEX, TRIGGER | CHECK, INDEX, TRIGGER | CHECK, INDEX, TRIGGER, POLICY | DEFINE FIELD, DEFINE INDEX, DEFINE EVENT |
+| Outbox | polling | polling | LISTEN/NOTIFY | LIVE SELECT |
+| Multi-tenancy | schema-per-DB | DB-file | schema-per-DB + RLS | namespace + DB + school_id |
+| Vector search | ❌ | sqlite-vss ext | pgvector ext | native `<|N,COSINE|>` |
+| Graph traversal | ❌ | ❌ | ❌ (or ltree) | native `->` |
+| Embedded mode | ❌ | ✅ (single file) | ❌ | ✅ (RocksDB or in-memory) |
+| Watch changes for sync | polling | polling | LISTEN/NOTIFY | LIVE SELECT |
+| Idempotency support | ✅ | ✅ | ✅ | ✅ (all support the engine's outbox pattern) |
+| ACID | ✅ | ✅ | ✅ | ✅ |
+
 ## See also
 
 - `mysql.md` — MySQL 8+ DDL conventions

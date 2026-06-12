@@ -1,27 +1,36 @@
-//! # educore-storage-sqlite
+//! `educore-storage-sqlite` — the SQLite storage adapter (Phase 1).
 //!
-//!  Reference SQLite storage adapter for embedded deployments.
+//! Implements the
+//! [`StorageAdapter`](educore_storage::port::StorageAdapter) port
+//! against SQLite 3.x. The adapter targets both embedded /
+//! offline deployments (Tauri, mobile, CLI) and single-process
+//! production deployments. Multi-writer scenarios are
+//! out-of-scope: SQLite is the engine's embedded / offline mode
+//! (per [`ADR-017`]).
 //!
-//! This crate is a member of the Educore workspace. See
-//! `docs/architecture.md` and the domain spec in
-//! `docs/specs/` for behavioral details.
+//! The DDL is `include_str!`'d from
+//! `migrations/engine/0000_engine_core.sqlite.sql` so the schema
+//! stays in lockstep with the engine's other SQL adapters.
+//!
+//! [`ADR-017`]: ../../docs/decisions/ADR-017-SurrealDBFirst.md
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
-/// Package name constant. Re-exported so consumers can assert they
-/// are using the right crate version at compile time.
-pub const PACKAGE_NAME: &str = "educore-storage-sqlite";
+pub mod audit_log;
+pub mod connection;
+pub(crate) mod error;
+pub mod event_log;
+pub mod idempotency;
+pub mod outbox;
+pub mod storage;
+pub mod transaction;
+pub(crate) mod util;
 
-/// Package version at compile time.
-pub const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn package_metadata_is_set() {
-        assert_eq!(PACKAGE_NAME, "educore-storage-sqlite");
-        assert!(!PACKAGE_VERSION.is_empty());
-    }
-}
+pub use audit_log::SqliteAuditLog;
+pub use connection::SqliteConnection;
+pub use event_log::SqliteEventLog;
+pub use idempotency::SqliteIdempotency;
+pub use outbox::SqliteOutbox;
+pub use storage::SqliteStorageAdapter;
+pub use transaction::SqliteTransaction;

@@ -261,10 +261,42 @@ engine
 
 ## Storage Strategy
 
-The storage port is a thin trait that repositories translate to. The default
-adapters target PostgreSQL, MySQL, and SQLite. SurrealDB and MongoDB adapters
-are deferred to a future release; they are admissible through the same trait
-when implemented in-tree by a consumer.
+The storage port is a thin trait that repositories translate to. The shipped
+adapters target four backends, in priority order:
+
+1. **SurrealDB** (primary, embedded + server modes) — single-binary
+   deployment. Implements `watch_changes` via `LIVE SELECT`. See
+   `ADR-017-SurrealDBFirst.md` and `docs/schemas/sql-dialects/surrealdb.md`.
+2. **PostgreSQL** — production-grade RDBMS. Implements `watch_changes` via
+   `LISTEN`/`NOTIFY`.
+3. **MySQL** — production-grade RDBMS. Implements `watch_changes` via polling
+   the outbox.
+4. **SQLite** — embedded / file-backed. Implements `watch_changes` via polling
+   the outbox. Same code path as MySQL.
+
+All four ship at GA. The SurrealDB adapter is the recommended default for new
+deployments because its embedded mode enables single-binary distribution and
+the engine is embeddable by design. The other three remain first-class
+production targets.
+
+### Sync primitives on the storage port
+
+The storage port has four methods that are required by the sync engine
+(see `ADR-018-SyncEngineArchitecture.md` and `docs/ports/sync.md`):
+
+- `watch_changes(filter) -> ChangeStream` — observe local changes (the
+  sync engine's input for the outbox drain loop)
+- `apply_snapshot(snapshot) -> Result<()>` — bulk-apply a remote snapshot
+  for first-time hydration
+- `cursor_for(school_id) -> VersionCursor` — per-school "what have I seen"
+  pointer
+- `advance_cursor(school_id, to) -> Result<()>` — advance the cursor
+
+Default implementations return `DomainError::NotSupported`. Storage adapters
+that participate in sync override them. The sync engine (in the
+`educore-sync` cross-cutting crate, gated by the umbrella's `sync` feature)
+uses these methods. See `docs/ports/storage.md` for the full trait
+specification.
 
 The engine assumes:
 
@@ -290,6 +322,46 @@ The engine emits DDL **at schema-creation time** (once per process
 lifetime, via `storage.create_schema().await`) from a typed macro
 AST and the `include_str!`-embedded canonical SQL for the 6
 engine cross-cutting tables.
+
+## Sync Strategy
+
+Educore is embeddable. The same engine library runs in two contexts:
+- **Server context**: cloud deployment serving many schools
+- **Client context**: embedded in mobile/desktop/WASM apps for a single school
+
+Sync between the two is a **consumer concern** with engine-provided
+primitives. The architecture follows three deployment topologies (see
+`docs/guides/saas-backend.md` for the full deployment story):
+
+- **Topology A — Pure Server**: no local DB. Thin client. Stateless API servers.
+- **Topology B — Hybrid**: small local cache + server sync. Office staff desktop.
+- **Topology C — Local-First**: full local SurrealDB + sync. Teacher tablets,
+  field workers, low-connectivity schools.
+
+The engine provides:
+- The **outbox primitive** in `StorageAdapter::Transaction::outbox()`
+- **Idempotent commands** (per `ADR-014-Idempotency.md`) with `idempotency_key`
+- **Typed events** with `event_id`, `school_id`, `version`, `etag`, `correlation_id`
+  (per `ADR-008-OfflineFirst.md`)
+- The **audit log** via the `AuditSink` port
+- The **4 sync methods** on `StorageAdapter` (see Storage Strategy above)
+
+The consumer writes:
+- The **`sync-engine` worker binary** (a separate process per
+  `docs/guides/saas-backend.md` line 899-902)
+- The **`/v1/sync` HTTP endpoint** in their backend
+- The **conflict resolution UI**
+
+The engine also ships an **in-process reference implementation** of the sync
+engine (`educore-sync` cross-cutting crate + `educore-sync-inprocess`
+adapter) so consumers can ship a working offline-first app in 30 minutes
+without infrastructure. Both implementations share the same wire protocol
+documented in `docs/ports/sync.md`. Swap from in-process to worker is a
+one-line change in `Engine::builder().sync(...)`.
+
+The `sync` feature on the umbrella crate (`educore`) gates the in-process
+coordinator. Consumers who want a pure server-side engine disable the
+feature and use no sync adapter. The wire protocol is identical either way.
 
 ## Query Layer
 
@@ -384,9 +456,9 @@ infra  <-  cross-cutting  <-  domains  <-  tools
 ```
 
 Internal crate directories are named without the `educore-`
-prefix (e.g. `crates/domains/academic/`, `crates/adapters/storage-postgres/`),
+prefix (e.g. `crates/domains/academic/`, `crates/adapters/storage-surrealdb/`),
 while the published package name keeps the prefix
-(`educore-academic`, `educore-storage-postgres`). The umbrella
+(`educore-academic`, `educore-storage-surrealdb`). The umbrella
 re-exports each internal crate under its short name, so consumers
 write `educore::academic::commands::*` and never need to know the
 internal `educore-` prefix on the package name.

@@ -131,13 +131,18 @@ status = "Tested"
 tests = "crates/adapters/storage-sqlite/tests/outbox_e2e.rs"
 
 # event_log — event-sourced projection history; lives in educore-events
+# Phase 2 OQ #1: the rows were Pending because the `EventLog` port
+# wasn't exercised end-to-end. Phase 3 flips them to Tested using
+# the cross-cutting integration test, which now exercises
+# `event_log` on the Student flow.
 [[row]]
 id = "event_log_ddl_pg"
 item = "event_log table DDL (PostgreSQL)"
 spec = "migrations/engine/0000_engine_core.postgres.sql"
 crate = "educore-events"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/cross_cutting_integration.rs"
 
 [[row]]
 id = "event_log_ddl_mysql"
@@ -145,7 +150,8 @@ item = "event_log table DDL (MySQL)"
 spec = "migrations/engine/0000_engine_core.mysql.sql"
 crate = "educore-events"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/cross_cutting_integration.rs"
 
 [[row]]
 id = "event_log_ddl_sqlite"
@@ -153,7 +159,8 @@ item = "event_log table DDL (SQLite)"
 spec = "migrations/engine/0000_engine_core.sqlite.sql"
 crate = "educore-events"
 phase = 2
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/cross_cutting_integration.rs"
 
 # schema_registry — adapter version tracking; lives in storage port
 # Phase 1: PG, MySQL, and SQLite adapters. The MySQL and SQLite
@@ -441,6 +448,10 @@ tests = "crates/cross-cutting/audit/tests/audit_e2e.rs"
 # =============================================================================
 # Academic domain (Phase 3 — first vertical slice)
 # =============================================================================
+# Phase 3 ships the prompt-named subset: Student, Class, Section,
+# Subject, AcademicYear. Each row below is flipped to Tested
+# against the academic vertical-slice integration test at
+# `crates/tools/storage-parity/tests/academic_integration.rs`.
 
 [[row]]
 id = "academic_students_aggregate"
@@ -448,7 +459,8 @@ item = "academic_students aggregate"
 spec = "docs/specs/academic/aggregates.md"
 crate = "educore-academic"
 phase = 3
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/academic_integration.rs"
 
 [[row]]
 id = "academic_classes_aggregate"
@@ -456,7 +468,8 @@ item = "academic_classes aggregate"
 spec = "docs/specs/academic/aggregates.md"
 crate = "educore-academic"
 phase = 3
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/academic_integration.rs"
 
 [[row]]
 id = "academic_sections_aggregate"
@@ -464,7 +477,8 @@ item = "academic_sections aggregate"
 spec = "docs/specs/academic/aggregates.md"
 crate = "educore-academic"
 phase = 3
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/academic_integration.rs"
 
 [[row]]
 id = "academic_subjects_aggregate"
@@ -472,7 +486,8 @@ item = "academic_subjects aggregate"
 spec = "docs/specs/academic/aggregates.md"
 crate = "educore-academic"
 phase = 3
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/academic_integration.rs"
 
 [[row]]
 id = "academic_academic_years_aggregate"
@@ -480,7 +495,8 @@ item = "academic_academic_years aggregate"
 spec = "docs/specs/academic/aggregates.md"
 crate = "educore-academic"
 phase = 3
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/academic_integration.rs"
 
 [[row]]
 id = "academic_enrollments_aggregate"
