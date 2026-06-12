@@ -133,6 +133,18 @@ pub enum AuditTarget {
     Exam(Uuid),
     /// A marks register (one exam's marks for one section).
     MarksRegister(Uuid),
+    /// An exam schedule (the calendar slot for an exam).
+    ExamSchedule(Uuid),
+    /// A result store (a published per-student per-subject result row).
+    ResultStore(Uuid),
+    /// A report card projection (materialised on demand from a result).
+    ReportCard(Uuid),
+    /// An online exam session.
+    OnlineExam(Uuid),
+    /// A seat plan (per-section seating arrangement).
+    SeatPlan(Uuid),
+    /// An admit card (per-student printable admit card).
+    AdmitCard(Uuid),
     // ---- Attendance domain ----------------------------------------------
     /// A daily student attendance row.
     StudentAttendance(Uuid),
@@ -199,6 +211,12 @@ impl AuditTarget {
             Self::Enrollment(_) => "enrollment",
             Self::Exam(_) => "exam",
             Self::MarksRegister(_) => "marks_register",
+            Self::ExamSchedule(_) => "exam_schedule",
+            Self::ResultStore(_) => "result_store",
+            Self::ReportCard(_) => "report_card",
+            Self::OnlineExam(_) => "online_exam",
+            Self::SeatPlan(_) => "seat_plan",
+            Self::AdmitCard(_) => "admit_card",
             Self::StudentAttendance(_) => "student_attendance",
             Self::Staff(_) => "staff",
             Self::Payroll(_) => "payroll",
@@ -235,6 +253,12 @@ impl AuditTarget {
             | Self::Enrollment(id)
             | Self::Exam(id)
             | Self::MarksRegister(id)
+            | Self::ExamSchedule(id)
+            | Self::ResultStore(id)
+            | Self::ReportCard(id)
+            | Self::OnlineExam(id)
+            | Self::SeatPlan(id)
+            | Self::AdmitCard(id)
             | Self::StudentAttendance(id)
             | Self::Staff(id)
             | Self::Payroll(id)
@@ -488,6 +512,12 @@ mod tests {
             AuditTarget::Enrollment(id),
             AuditTarget::Exam(id),
             AuditTarget::MarksRegister(id),
+            AuditTarget::ExamSchedule(id),
+            AuditTarget::ResultStore(id),
+            AuditTarget::ReportCard(id),
+            AuditTarget::OnlineExam(id),
+            AuditTarget::SeatPlan(id),
+            AuditTarget::AdmitCard(id),
             AuditTarget::StudentAttendance(id),
             AuditTarget::Staff(id),
             AuditTarget::Payroll(id),
