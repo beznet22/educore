@@ -75,50 +75,68 @@ authoritative spec for this convention.
 
 ### Template — what a good phase prompt contains
 
-Following the [`phase-1-prompt.md`](phase-1-prompt.md)
-template, a per-phase prompt should contain these seven
-sections in this order:
+A per-phase prompt **MUST** contain these eight
+sections in this order. The **Required Reading** section
+is mandatory and must list every file the receiving
+agent must read for full docs context (spec,
+hand-off, build-plan, ports, schemas, ADRs, template
+crates, integration tests, `AGENTS.md`, `docs_guidlines/`).
 
 1. **Mission** — one paragraph: what the phase delivers,
    which prior phases it depends on, whether this is
    implementation or design.
-2. **Required Reading** (priority order) — the prior
-   hand-off, the build-plan phase section, the relevant
-   port contracts, the relevant specs, `AGENTS.md`, the
-   guidelines.
-3. **Working With Subagents** — a hard instruction to
+2. **Required Reading** (priority order) — **MANDATORY**.
+   List every file the receiving agent must read for
+   full docs context: the prior hand-off, the
+   build-plan phase section, the relevant port
+   contracts, every file in the relevant spec dir
+   (`docs/specs/<domain>/`), the relevant schemas
+   (`docs/schemas/*.md`), the relevant ADRs
+   (`docs/decisions/ADR-*.md`), the template crates
+   (`crates/cross-cutting/...`, `crates/domains/...`),
+   the integration-test template
+   (`crates/tools/storage-parity/tests/..._*_integration.rs`),
+   `AGENTS.md`, the engineering guidelines
+   (`docs_guidlines/system.md` +
+   `docs_guidlines/execution_guidlines.md`). This section
+   is the most important: the receiving agent cannot
+   act correctly without reading these files.
+3. **Deliverables** — the crate(s) + their scope, the
+   vertical-slice test mirror, the docs deliverables at
+   close.
+4. **Working With Subagents** — a hard instruction to
    the agent to spawn parallel subagents via the task
    tool for the phase's independent workstreams, plus
    a per-phase "workstreams" callout that names the
-   subagent scopes (e.g., "Phase 1 workstreams: PG,
-   MySQL, SQLite are three independent subagent
-   scopes; spawn them in a single batch."). See
+   subagent scopes. See
    [§ "Working With Subagents" rationale](#working-with-subagents-rationale)
    below for why this is universal.
-4. **Starting Point** — the template crate / file to
+5. **Starting Point** — the template crate / file to
    copy from, the pre-written DDL / spec to lean on, the
    integration-test template to mirror.
-5. **Per-Deliverable Gotchas** — the dialect-specific
+6. **Per-Deliverable Gotchas** — the dialect-specific
    traps, the floor versions, the API gotchas, the
    workspace lint consequences. (Storage-adapter phases
    call this "Per-Dialect Gotchas"; non-storage phases
    call it "Per-Deliverable Gotchas" and adapt the
    structure.)
-6. **Exit Criteria** — the bullet list of
+7. **Exit Criteria** — the bullet list of
    `cargo test ...`, `cargo clippy ...`, etc. that the
    phase must close green.
-7. **When You Are Stuck** — the no-gaps gate command
+8. **When You Are Stuck** — the no-gaps gate command
    (`cargo run -p educore-core --bin lint --features lint`),
    the hand-off doc, and the policy on opening issues
    vs asking the user.
 
-**Length: ≤50 lines.** The prompt is a digest, not a
-replacement for the spec, the hand-off, the build-plan
-§ "Phase N", or `AGENTS.md`. Long-form context lives
-there — the prompt just points at it. Each of the 7
-sections above is typically 3–6 lines. The build plan
-`§ "Phase N"` carries the canonical 50-line rule (added
-in Phase 5 close-out).
+**Length: ≤50 lines. MANDATORY.** The prompt is a
+digest, not a replacement for the spec, the hand-off,
+the build-plan § "Phase N", or `AGENTS.md`. Long-form
+context lives there — the prompt just points at it.
+Each of the 8 sections above is typically 3–6 lines.
+The build plan `§ "Phase N"` carries the canonical
+50-line rule (added in Phase 5 close-out); every
+subsequent phase's "Phase completion documentation"
+task inherits the rule via a 1-line pointer.
 
 #### "Working With Subagents" rationale
 

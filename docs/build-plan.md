@@ -345,6 +345,7 @@ in all four adapters.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-2-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
    **The `phase-(N+1)-prompt.md` MUST be ≤50 lines.** The
    prompt is a digest; long-form context lives in the spec,
    the hand-off, the build-plan § "Phase N", and `AGENTS.md`.
@@ -579,6 +580,7 @@ section management, subject assignment, academic year rollover).
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-4-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.**
 
@@ -644,6 +646,7 @@ online exams, seat plans, admit cards, report cards.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-5-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.**
 
@@ -731,6 +734,7 @@ exam attendance.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-6-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.** As Phases 3–4, plus a bulk-insert benchmark
 (200 rows in <100 ms on PG).
@@ -856,6 +860,7 @@ leave, payroll.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-7-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.** As Phases 3–4. The payroll test uses a mocked
 finance port; real wiring is Phase 15.
@@ -902,6 +907,7 @@ income, wallet, payroll accounting.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-8-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.**
 
@@ -948,6 +954,7 @@ sell), supplier.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-9-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.** As Phases 3–4, plus the conservation invariant
 test.
@@ -984,6 +991,7 @@ member, book issue, book return, fine.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-10-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.** As Phases 3–4.
 
@@ -1017,6 +1025,7 @@ chat message, email log, SMS log, notification setting.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-11-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.** As Phases 3–4.
 
@@ -1048,6 +1057,7 @@ dispatch, postal receive.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-12-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.** As Phases 3–4.
 
@@ -1079,6 +1089,7 @@ from `educore-communication`'s `Notice`), testimonial.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-13-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.** As Phases 3–4, plus the public-read test.
 
@@ -1115,6 +1126,7 @@ calendar domain: `CalendarEvent`, `Holiday`, `Incident`, `Weekend`.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-14-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.** As Phases 3–4, plus the RRULE test.
 
@@ -1151,6 +1163,7 @@ this explicitly in both `lib.rs` headers and in `AGENTS.md`.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-15-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.** As Phases 3–4, for both crates.
 
@@ -1192,6 +1205,7 @@ Port trait **plus** one reference impl per port.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-16-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.**
 
@@ -1253,6 +1267,7 @@ port`. Plus all reference-impl test rows.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-17-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **Phase prompt ≤50 lines** with mandatory Required Reading section (see Phase 1's task for the canonical rule; the prompt MUST be a digest that points at the spec, hand-off, build-plan § "Phase N", and AGENTS.md for full context).
 
 **Exit criteria.**
 
