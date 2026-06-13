@@ -763,7 +763,143 @@ item = "hr_staff aggregate"
 spec = "docs/specs/hr/aggregates.md"
 crate = "educore-hr"
 phase = 6
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+
+[[row]]
+id = "hr_department_aggregate"
+item = "hr_department aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+
+[[row]]
+id = "hr_designation_aggregate"
+item = "hr_designation aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+
+[[row]]
+id = "hr_leave_type_aggregate"
+item = "hr_leave_type aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+
+[[row]]
+id = "hr_leave_define_aggregate"
+item = "hr_leave_define aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/aggregate.rs"
+
+[[row]]
+id = "hr_leave_request_aggregate"
+item = "hr_leave_request aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/aggregate.rs"
+
+[[row]]
+id = "hr_staff_attendance_aggregate"
+item = "hr_staff_attendance aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/aggregate.rs"
+
+[[row]]
+id = "hr_staff_attendance_import_aggregate"
+item = "hr_staff_attendance_import aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/aggregate.rs"
+
+[[row]]
+id = "hr_assign_class_teacher_aggregate"
+item = "hr_assign_class_teacher aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/aggregate.rs"
+
+[[row]]
+id = "hr_hourly_rate_aggregate"
+item = "hr_hourly_rate aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/aggregate.rs"
+
+[[row]]
+id = "hr_salary_template_aggregate"
+item = "hr_salary_template aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/aggregate.rs"
+
+[[row]]
+id = "hr_payroll_generate_aggregate"
+item = "hr_payroll_generate aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+
+[[row]]
+id = "hr_payroll_earn_deduc_aggregate"
+item = "hr_payroll_earn_deduc aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/aggregate.rs"
+
+[[row]]
+id = "hr_leave_deduction_info_aggregate"
+item = "hr_leave_deduction_info aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/aggregate.rs"
+
+[[row]]
+id = "hr_staff_registration_field_aggregate"
+item = "hr_staff_registration_field aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/aggregate.rs"
+
+[[row]]
+id = "hr_staff_import_bulk_temporary_aggregate"
+item = "hr_staff_import_bulk_temporary aggregate"
+spec = "docs/specs/hr/aggregates.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/aggregate.rs"
 
 [[row]]
 id = "hr_payrolls_aggregate"
@@ -771,10 +907,157 @@ item = "hr_payrolls aggregate"
 spec = "docs/specs/hr/aggregates.md"
 crate = "educore-hr"
 phase = 6
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+
+# -- HR events (one per aggregate headline event) --
+
+[[row]]
+id = "staff_registered_event"
+item = "staff.registered event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+
+[[row]]
+id = "staff_deleted_event"
+item = "staff.deleted event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/events.rs"
+
+[[row]]
+id = "department_created_event"
+item = "department.created event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+
+[[row]]
+id = "designation_created_event"
+item = "designation.created event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/events.rs"
+
+[[row]]
+id = "leave_type_created_event"
+item = "leave_type.created event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+
+[[row]]
+id = "leave_policy_defined_event"
+item = "leave_policy.defined event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/events.rs"
+
+[[row]]
+id = "leave_requested_event"
+item = "leave.requested event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+
+[[row]]
+id = "leave_approved_event"
+item = "leave.approved event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/events.rs"
+
+[[row]]
+id = "staff_attendance_marked_event"
+item = "staff_attendance.marked event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/events.rs"
+
+[[row]]
+id = "class_teacher_assigned_event"
+item = "class_teacher.assigned event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/events.rs"
+
+[[row]]
+id = "hourly_rate_set_event"
+item = "hourly_rate.set event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/events.rs"
+
+[[row]]
+id = "salary_template_created_event"
+item = "salary_template.created event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/events.rs"
+
+[[row]]
+id = "payroll_generated_event"
+item = "payroll.generated event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+
+[[row]]
+id = "payroll_approved_event"
+item = "payroll.approved event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/events.rs"
+
+[[row]]
+id = "payroll_paid_event"
+item = "payroll.paid event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/events.rs"
+
+[[row]]
+id = "staff_bulk_imported_event"
+item = "staff.bulk_imported event"
+spec = "docs/specs/hr/events.md"
+crate = "educore-hr"
+phase = 6
+status = "Tested"
+tests = "crates/domains/hr/src/events.rs"
 
 # =============================================================================
-# Finance domain (Phase 7) — largest spec
+# Finance domain (Phase 7) — largest spec (44 aggregates, ~150 events)
 # =============================================================================
 
 [[row]]
@@ -798,6 +1081,138 @@ id = "finance_double_entry_invariant"
 item = "Double-entry journal invariant (property test)"
 spec = "docs/specs/finance/services.md"
 crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+# Headline 6 aggregates (per Phase 7 prompt)
+[[row]]
+id = "finance_fees_invoice_aggregate"
+item = "fees_invoice aggregate (the classic invoice numbering scheme)"
+spec = "docs/specs/finance/aggregates.md#feesinvoice"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+[[row]]
+id = "finance_fees_payment_aggregate"
+item = "fees_payment aggregate"
+spec = "docs/specs/finance/aggregates.md#feespayment"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+[[row]]
+id = "finance_refund_wallet_transaction_aggregate"
+item = "refund-as-wallet-transaction (wallet_type=Refund)"
+spec = "docs/specs/finance/aggregates.md#wallettransaction"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+[[row]]
+id = "finance_expense_aggregate"
+item = "expense aggregate"
+spec = "docs/specs/finance/aggregates.md#expense"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+[[row]]
+id = "finance_wallet_aggregate"
+item = "wallet aggregate (new — user balance projection)"
+spec = "docs/specs/finance/aggregates.md"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+[[row]]
+id = "finance_wallet_transaction_aggregate"
+item = "wallet_transaction aggregate"
+spec = "docs/specs/finance/aggregates.md#wallettransaction"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+# Headline 6 events
+[[row]]
+id = "finance_invoice_numbering_configured_event"
+item = "InvoiceNumberingConfigured event"
+spec = "docs/specs/finance/events.md"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+[[row]]
+id = "finance_payment_received_event"
+item = "PaymentReceived event"
+spec = "docs/specs/finance/events.md"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+[[row]]
+id = "finance_wallet_credited_event"
+item = "WalletCredited event"
+spec = "docs/specs/finance/events.md"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+[[row]]
+id = "finance_wallet_refund_requested_event"
+item = "WalletRefundRequested event"
+spec = "docs/specs/finance/events.md"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+[[row]]
+id = "finance_expense_recorded_event"
+item = "ExpenseRecorded event"
+spec = "docs/specs/finance/events.md"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+[[row]]
+id = "finance_payroll_payment_recorded_event"
+item = "PayrollPaymentRecorded event (HR→finance bridge)"
+spec = "docs/specs/finance/events.md"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+# Carry-forward + late-fee services
+[[row]]
+id = "finance_carry_forward_service"
+item = "CarryForwardService (4 carry-forward rules)"
+spec = "docs/specs/finance/services.md#carryforwardservice"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+[[row]]
+id = "finance_late_fee_service"
+item = "LateFeeService::compute_late_fee (table-driven fixtures)"
+spec = "docs/specs/finance/services.md"
+crate = "educore-finance"
+phase = 7
+status = "Pending"
+
+# Capability / audit surface
+[[row]]
+id = "finance_capability_variants"
+item = "~110 Finance.* Capability variants in educore-rbac"
+spec = "docs/specs/finance/permissions.md"
+crate = "educore-rbac"
+phase = 7
+status = "Pending"
+
+[[row]]
+id = "finance_audit_target_variants"
+item = "13 Finance AuditTarget variants in educore-audit"
+spec = "docs/specs/finance/aggregates.md"
+crate = "educore-audit"
 phase = 7
 status = "Pending"
 
