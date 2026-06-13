@@ -33,6 +33,12 @@ pub mod repository;
 /// The `Transaction` sub-port.
 pub mod transaction;
 
+/// The bulk-insert row type for `StudentAttendance`. Wire format
+/// for the `StorageAdapter::bulk_insert_student_attendances` and
+/// `Transaction::bulk_insert_student_attendances` port methods
+/// (Phase 5 Workstream A).
+pub mod student_attendance_row;
+
 /// The `StorageAdapter` port itself.
 pub mod port;
 
@@ -46,6 +52,7 @@ pub use idempotency::{Idempotency, IdempotencyCompositeKey, IdempotencyRecord};
 pub use outbox::{Outbox, SerializedEnvelope};
 pub use port::StorageAdapter;
 pub use repository::Repository;
+pub use student_attendance_row::StudentAttendanceRow;
 pub use transaction::Transaction;
 
 // Re-export the `educore_core::error::Result` alias for convenience.

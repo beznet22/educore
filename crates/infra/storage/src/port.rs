@@ -17,10 +17,12 @@ use async_trait::async_trait;
 
 use educore_core::error::Result;
 use educore_core::ids::SchoolId;
+use educore_core::tenant::TenantContext;
 
 use super::change_stream::{
     ChangeFilter, ChangeStream, MigrationReport, SchoolSnapshot, VersionCursor,
 };
+use super::student_attendance_row::StudentAttendanceRow;
 use super::transaction::Transaction;
 
 /// The engine's sole entry point for persistence.
@@ -49,6 +51,45 @@ pub trait StorageAdapter: Send + Sync + fmt::Debug {
     /// connections. After `close`, any further call returns
     /// `Err(Infrastructure)`.
     async fn close(self: Box<Self>) -> Result<()>;
+
+    /// Bulk-inserts N `StudentAttendance` rows in a single
+    /// multi-row `INSERT` (PostgreSQL / MySQL) or
+    /// transaction-grouped inserts (SQLite). The implementation
+    /// MUST validate that every row's `school_id` matches
+    /// `ctx.school_id` and reject the call with a
+    /// `DomainError::Validation` otherwise. The implementation
+    /// MUST reject duplicate
+    /// `(school_id, student_id, attendance_date)` tuples with a
+    /// `DomainError::Conflict`.
+    ///
+    /// This is the storage-port entry point for the Phase 5
+    /// bulk-marking service. Per the build-plan § Phase 5 exit
+    /// criteria, the path is required to insert 200 rows in
+    /// under 100 ms on PostgreSQL.
+    ///
+    /// The default implementation returns
+    /// `DomainError::NotSupported`. Adapters that participate
+    /// in the bulk-marking flow override this; adapters that
+    /// don't (e.g. the Phase 0 SurrealDB stub) get the
+    /// unsupported error, which is the correct answer for
+    /// that topology.
+    ///
+    /// # Errors
+    /// - `Validation` if any row's `school_id` does not match
+    ///   `ctx.school_id`.
+    /// - `Conflict` on a unique-key violation of
+    ///   `(school_id, student_id, attendance_date)`.
+    /// - `Infrastructure` for any underlying storage error.
+    async fn bulk_insert_student_attendances(
+        &self,
+        ctx: &TenantContext,
+        rows: &[StudentAttendanceRow],
+    ) -> Result<()> {
+        let _ = (ctx, rows);
+        Err(educore_core::error::DomainError::not_supported(
+            "StorageAdapter::bulk_insert_student_attendances is not supported by this adapter",
+        ))
+    }
 
     // --- Sync primitives (ADR-017 / ADR-018) ---
     //

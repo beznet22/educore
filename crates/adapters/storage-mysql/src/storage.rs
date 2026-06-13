@@ -46,12 +46,15 @@ use tracing::instrument;
 
 use educore_core::error::{DomainError, Result};
 use educore_core::ids::SchoolId;
+use educore_core::tenant::TenantContext;
 use educore_storage::change_stream::{
     ChangeFilter, ChangeStream, MigrationReport, SchoolSnapshot, VersionCursor,
 };
 use educore_storage::port::StorageAdapter;
 use educore_storage::transaction::Transaction;
+use educore_storage::StudentAttendanceRow;
 
+use crate::bulk_attendance::MysqlBulkAttendance;
 use crate::connection::MysqlConnection;
 use crate::transaction::MysqlTransaction;
 
@@ -147,6 +150,13 @@ impl StorageAdapter for MysqlStorageAdapter {
             .execute(self.conn.db())
             .await
             .map_err(DomainError::infrastructure)?;
+        // The bulk-attendance table is the storage-port
+        // target for the Phase 5 bulk-marking service; the
+        // DDL is embedded in the `bulk_attendance` module so
+        // it lives next to the implementation that owns it.
+        MysqlBulkAttendance::new(self.conn.db().clone(), self.conn.school())
+            .ensure_schema()
+            .await?;
         let duration = start.elapsed();
         // Count statements by counting top-level `;` separators
         // plus one. The number is a coarse lower bound (it
@@ -244,5 +254,20 @@ impl StorageAdapter for MysqlStorageAdapter {
         }
         // Phase 1 stub.
         Ok(())
+    }
+
+    #[instrument(skip(self, ctx, rows), fields(n = rows.len(), school = %ctx.school_id))]
+    async fn bulk_insert_student_attendances(
+        &self,
+        ctx: &TenantContext,
+        rows: &[StudentAttendanceRow],
+    ) -> Result<()> {
+        if self.closed.load(Ordering::SeqCst) {
+            return Err(DomainError::conflict(
+                "StorageAdapter::bulk_insert_student_attendances called on a closed adapter",
+            ));
+        }
+        let handle = MysqlBulkAttendance::new(self.conn.db().clone(), self.conn.school());
+        handle.bulk_insert(ctx.school_id, rows).await
     }
 }

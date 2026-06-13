@@ -336,7 +336,7 @@ impl Capability {
             | Self::AssessmentSeatPlanRead
             | Self::AssessmentSeatPlanUpdate
             | Self::AssessmentSeatPlanDelete
-            |             Self::AssessmentAdmitCardCreate
+            | Self::AssessmentAdmitCardCreate
             | Self::AssessmentAdmitCardRead
             | Self::AssessmentAdmitCardUpdate
             | Self::AssessmentAdmitCardDelete => CapabilityDomain::Assessment,
@@ -1413,11 +1413,18 @@ mod tests {
             if s.starts_with("Attendance.") {
                 let parsed = Capability::from_str(s).unwrap();
                 assert_eq!(parsed, *c, "round-trip failed for {s}");
-                assert_eq!(c.domain(), CapabilityDomain::Attendance, "domain mismatch for {s}");
+                assert_eq!(
+                    c.domain(),
+                    CapabilityDomain::Attendance,
+                    "domain mismatch for {s}"
+                );
                 count += 1;
             }
         }
-        assert_eq!(count, 24, "expected 24 Attendance.* capabilities (got {count})");
+        assert_eq!(
+            count, 24,
+            "expected 24 Attendance.* capabilities (got {count})"
+        );
     }
 
     #[test]

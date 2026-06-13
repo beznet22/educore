@@ -25,6 +25,7 @@ use super::audit::AuditLog;
 use super::event_log::EventLog;
 use super::idempotency::Idempotency;
 use super::outbox::Outbox;
+use super::student_attendance_row::StudentAttendanceRow;
 
 /// The transactional unit of work. Object-safe (one trait
 /// object per transaction).
@@ -61,6 +62,33 @@ pub trait Transaction: Send + Sync + std::fmt::Debug {
     /// Returns a handle to the event log. The relay drains the
     /// outbox into the event log via this method.
     fn event_log(&self) -> &dyn EventLog;
+
+    /// Bulk-inserts N `StudentAttendance` rows within the
+    /// current transaction. Same invariants as
+    /// [`StorageAdapter::bulk_insert_student_attendances`](super::port::StorageAdapter::bulk_insert_student_attendances):
+    /// the row's `school_id` MUST equal the transaction's
+    /// scoped school (enforced by the adapter) and a duplicate
+    /// `(school_id, student_id, attendance_date)` is rejected
+    /// with `DomainError::Conflict`. The default implementation
+    /// returns `NotSupported`; SQL adapters override.
+    ///
+    /// The bulk-marking service uses this method (it is
+    /// running inside a transaction so the outbox appends, the
+    /// idempotency record, the audit row, and the
+    /// `StudentAttendance` rows all commit atomically).
+    ///
+    /// # Errors
+    /// - `Validation` if any row's `school_id` does not match
+    ///   the transaction's scoped school.
+    /// - `Conflict` on a unique-key violation of
+    ///   `(school_id, student_id, attendance_date)`.
+    /// - `Infrastructure` for any underlying storage error.
+    async fn bulk_insert_student_attendances(&self, rows: &[StudentAttendanceRow]) -> Result<()> {
+        let _ = rows;
+        Err(educore_core::error::DomainError::not_supported(
+            "Transaction::bulk_insert_student_attendances is not supported by this adapter",
+        ))
+    }
 }
 
 #[cfg(test)]

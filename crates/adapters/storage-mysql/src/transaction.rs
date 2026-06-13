@@ -39,15 +39,17 @@ use async_trait::async_trait;
 use sqlx::MySqlPool;
 use tracing::instrument;
 
-use educore_core::error::Result;
+use educore_core::error::{DomainError, Result};
 use educore_core::ids::SchoolId;
 use educore_storage::audit::AuditLog;
 use educore_storage::event_log::EventLog;
 use educore_storage::idempotency::Idempotency;
 use educore_storage::outbox::Outbox;
 use educore_storage::transaction::Transaction;
+use educore_storage::StudentAttendanceRow;
 
 use crate::audit_log::MysqlAuditLog;
+use crate::bulk_attendance::MysqlBulkAttendance;
 use crate::event_log::MysqlEventLog;
 use crate::idempotency::MysqlIdempotency;
 use crate::outbox::MysqlOutbox;
@@ -65,6 +67,11 @@ pub struct MysqlTransaction {
     event: MysqlEventLog,
     /// The idempotency handle.
     idem: MysqlIdempotency,
+    /// The bulk-attendance handle. The bulk-insert path opens
+    /// its own short-lived transaction on every call (matching
+    /// the design of the other sub-ports), so the handle is
+    /// effectively a `&MySqlPool` + `SchoolId` pair.
+    bulk: MysqlBulkAttendance,
     /// `true` once the transaction has been committed or rolled
     /// back. Re-used as a guard against double-commit /
     /// double-rollback.
@@ -97,11 +104,13 @@ impl MysqlTransaction {
         let audit = MysqlAuditLog::new(pool.clone(), school);
         let event = MysqlEventLog::new(pool.clone(), school);
         let idem = MysqlIdempotency::new(pool.clone(), school);
+        let bulk = MysqlBulkAttendance::new(pool.clone(), school);
         Self {
             outbox,
             audit,
             event,
             idem,
+            bulk,
             done: AtomicBool::new(false),
             rolled_back: AtomicBool::new(false),
             _pool: pool,
@@ -142,5 +151,19 @@ impl Transaction for MysqlTransaction {
 
     fn event_log(&self) -> &dyn EventLog {
         &self.event
+    }
+
+    #[instrument(skip(self, rows), fields(n = rows.len()))]
+    async fn bulk_insert_student_attendances(&self, rows: &[StudentAttendanceRow]) -> Result<()> {
+        if self.done.load(Ordering::SeqCst) {
+            return Err(DomainError::conflict(
+                "Transaction::bulk_insert_student_attendances called on a completed transaction",
+            ));
+        }
+        // The transaction is scoped to `self.bulk.school()`; the
+        // per-row school_id check is delegated to
+        // `MysqlBulkAttendance::bulk_insert` which compares
+        // every row's `school_id` against the scoped school.
+        self.bulk.bulk_insert(self.bulk.school(), rows).await
     }
 }

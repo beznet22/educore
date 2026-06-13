@@ -67,6 +67,7 @@
 #![deny(missing_docs)]
 
 pub mod audit_log;
+pub mod bulk_attendance;
 pub mod connection;
 pub(crate) mod connection_helpers;
 pub mod error;
@@ -77,6 +78,7 @@ pub mod storage;
 pub mod transaction;
 
 pub use audit_log::MysqlAuditLog;
+pub use bulk_attendance::MysqlBulkAttendance;
 pub use connection::MysqlConnection;
 pub use event_log::MysqlEventLog;
 pub use idempotency::MysqlIdempotency;

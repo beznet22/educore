@@ -30,15 +30,17 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use async_trait::async_trait;
 use sqlx::SqlitePool;
 
-use educore_core::error::Result;
+use educore_core::error::{DomainError, Result};
 use educore_core::ids::SchoolId;
 use educore_storage::audit::AuditLog;
 use educore_storage::event_log::EventLog;
 use educore_storage::idempotency::Idempotency;
 use educore_storage::outbox::Outbox;
 use educore_storage::transaction::Transaction;
+use educore_storage::StudentAttendanceRow;
 
 use crate::audit_log::SqliteAuditLog;
+use crate::bulk_attendance::SqliteBulkAttendance;
 use crate::event_log::SqliteEventLog;
 use crate::idempotency::SqliteIdempotency;
 use crate::outbox::SqliteOutbox;
@@ -52,6 +54,13 @@ pub struct SqliteTransaction {
     audit: SqliteAuditLog,
     event: SqliteEventLog,
     idem: SqliteIdempotency,
+    /// The bulk-attendance handle. The bulk-insert path opens
+    /// its own real `BEGIN` / `COMMIT` transaction on every
+    /// call so a failure in one batched `INSERT` rolls back
+    /// the work of the prior batches (matching the engine's
+    /// all-or-nothing invariant for the bulk-marking
+    /// service).
+    bulk: SqliteBulkAttendance,
     /// `true` once the transaction has been committed or
     /// rolled back. Matches the SurrealDB flag-based pattern.
     done: AtomicBool,
@@ -79,11 +88,13 @@ impl SqliteTransaction {
         let audit = SqliteAuditLog::new(pool.clone(), school);
         let event = SqliteEventLog::new(pool.clone(), school);
         let idem = SqliteIdempotency::new(pool.clone(), school);
+        let bulk = SqliteBulkAttendance::new(pool.clone(), school);
         Self {
             outbox,
             audit,
             event,
             idem,
+            bulk,
             done: AtomicBool::new(false),
             rolled_back: AtomicBool::new(false),
             _pool: pool,
@@ -118,5 +129,21 @@ impl Transaction for SqliteTransaction {
 
     fn event_log(&self) -> &dyn EventLog {
         &self.event
+    }
+
+    async fn bulk_insert_student_attendances(&self, rows: &[StudentAttendanceRow]) -> Result<()> {
+        if self.done.load(Ordering::SeqCst) {
+            return Err(DomainError::conflict(
+                "Transaction::bulk_insert_student_attendances called on a completed transaction",
+            ));
+        }
+        // The transaction is scoped to `self.bulk.school()`; the
+        // per-row school_id check is delegated to
+        // `SqliteBulkAttendance::bulk_insert` which compares
+        // every row's `school_id` against the scoped school.
+        // The internal helper opens a real `BEGIN` / `COMMIT`
+        // transaction so a failure in one batched `INSERT`
+        // rolls back the whole bulk insert.
+        self.bulk.bulk_insert(self.bulk.school(), rows).await
     }
 }

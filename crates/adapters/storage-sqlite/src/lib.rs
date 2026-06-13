@@ -18,6 +18,7 @@
 #![deny(missing_docs)]
 
 pub mod audit_log;
+pub mod bulk_attendance;
 pub mod connection;
 pub(crate) mod error;
 pub mod event_log;
@@ -28,6 +29,7 @@ pub mod transaction;
 pub(crate) mod util;
 
 pub use audit_log::SqliteAuditLog;
+pub use bulk_attendance::SqliteBulkAttendance;
 pub use connection::SqliteConnection;
 pub use event_log::SqliteEventLog;
 pub use idempotency::SqliteIdempotency;

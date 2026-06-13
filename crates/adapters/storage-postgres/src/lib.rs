@@ -44,6 +44,7 @@
 #![deny(missing_docs)]
 
 pub mod audit_log;
+pub mod bulk_attendance;
 pub mod connection;
 pub(crate) mod connection_helpers;
 pub mod error;
@@ -54,6 +55,7 @@ pub mod storage;
 pub mod transaction;
 
 pub use audit_log::PostgresAuditLog;
+pub use bulk_attendance::PostgresBulkAttendance;
 pub use connection::PostgresConnection;
 pub use event_log::PostgresEventLog;
 pub use idempotency::PostgresIdempotency;
