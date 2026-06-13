@@ -200,8 +200,12 @@ pub enum Capability {
     /// Request a guardian absence notification.
     AttendanceNotify,
 
-    // -- Finance (Phase 7 placeholders) ---------------------------------
-    /// Create a finance invoice. Placeholder for the finance domain.
+    // -- Finance (Phase 7) -----------------------------------------------
+    // The 4 legacy `FinanceInvoice*` placeholders (Create/Read/Update/Delete)
+    // are retained for backward compat with the Phase 2 catalog; the
+    // newer `FinanceFeesInvoice*` variants below are the spec-aligned
+    // surface (per `docs/specs/finance/permissions.md`).
+    /// Create a finance invoice. Placeholder from Phase 2.
     FinanceInvoiceCreate,
     /// Read a finance invoice.
     FinanceInvoiceRead,
@@ -209,9 +213,234 @@ pub enum Capability {
     FinanceInvoiceUpdate,
     /// Delete / void a finance invoice.
     FinanceInvoiceDelete,
+    // -- Fees catalog --
+    /// Create a fees group.
+    FinanceFeesGroupCreate,
+    /// Read a fees group.
+    FinanceFeesGroupRead,
+    /// Update a fees group.
+    FinanceFeesGroupUpdate,
+    /// Delete a fees group.
+    FinanceFeesGroupDelete,
+    /// Create a fees type (within a fees group).
+    FinanceFeesTypeCreate,
+    /// Read a fees type.
+    FinanceFeesTypeRead,
+    /// Update a fees type.
+    FinanceFeesTypeUpdate,
+    /// Delete a fees type.
+    FinanceFeesTypeDelete,
+    /// Create a fees master (per-class per-fees-type).
+    FinanceFeesMasterCreate,
+    /// Read a fees master.
+    FinanceFeesMasterRead,
+    /// Update a fees master (amount / due date).
+    FinanceFeesMasterUpdate,
+    /// Delete a fees master.
+    FinanceFeesMasterDelete,
+    /// Create a fees discount.
+    FinanceFeesDiscountCreate,
+    /// Read a fees discount.
+    FinanceFeesDiscountRead,
+    /// Update a fees discount.
+    FinanceFeesDiscountUpdate,
+    /// Delete a fees discount.
+    FinanceFeesDiscountDelete,
+    // -- Assignment + installments --
+    /// Create a per-student fees assignment.
+    FinanceFeesAssignCreate,
+    /// Read a per-student fees assignment.
+    FinanceFeesAssignRead,
+    /// Update a per-student fees assignment.
+    FinanceFeesAssignUpdate,
+    /// Close a per-student fees assignment.
+    FinanceFeesAssignClose,
+    /// Create a fees installment plan.
+    FinanceFeesInstallmentCreate,
+    /// Read a fees installment plan.
+    FinanceFeesInstallmentRead,
+    /// Update a fees installment plan.
+    FinanceFeesInstallmentUpdate,
+    /// Delete a fees installment plan.
+    FinanceFeesInstallmentDelete,
+    /// Assign a fees installment to a student.
+    FinanceFeesInstallmentAssign,
+    /// Create a direct (custom-percent) fees installment.
+    FinanceDirectFeesInstallmentCreate,
+    /// Read a direct fees installment.
+    FinanceDirectFeesInstallmentRead,
+    /// Update a direct fees installment.
+    FinanceDirectFeesInstallmentUpdate,
+    /// Delete a direct fees installment.
+    FinanceDirectFeesInstallmentDelete,
+    /// Assign a direct fees installment to a student.
+    FinanceDirectFeesInstallmentAssign,
+    /// Record payment against a direct fees installment.
+    FinanceDirectFeesInstallmentPay,
+    // -- Invoice + payment --
+    /// Generate a fees invoice.
+    FinanceFeesInvoiceGenerate,
+    /// Read a fees invoice.
+    FinanceFeesInvoiceRead,
+    /// Update a fees invoice.
+    FinanceFeesInvoiceUpdate,
+    /// Cancel a fees invoice.
+    FinanceFeesInvoiceCancel,
+    /// Configure a fees invoice (numbering / layout).
+    FinanceFeesInvoiceConfigure,
+    /// Print a fees invoice.
+    FinanceFeesInvoicePrint,
+    /// Collect a fees payment (cashier / portal).
+    FinancePaymentCollect,
+    /// Read a fees payment.
+    FinancePaymentRead,
+    /// Reverse a fees payment.
+    FinancePaymentReverse,
+    /// Refund a fees payment (per the spec's `Refund` headline).
+    FinancePaymentRefund,
+    /// Create a payment method (cash / bank / gateway).
+    FinancePaymentMethodCreate,
+    /// Read a payment method.
+    FinancePaymentMethodRead,
+    /// Update a payment method.
+    FinancePaymentMethodUpdate,
+    /// Delete a payment method.
+    FinancePaymentMethodDelete,
+    /// Configure a payment gateway.
+    FinancePaymentGatewayConfigure,
+    /// Read a payment gateway configuration.
+    FinancePaymentGatewayRead,
+    /// Update a payment gateway configuration.
+    FinancePaymentGatewayUpdate,
+    /// Disable a payment gateway.
+    FinancePaymentGatewayDisable,
+    // -- Expense + Income --
+    /// Create an expense.
+    FinanceExpenseCreate,
+    /// Read an expense.
+    FinanceExpenseRead,
+    /// Update an expense.
+    FinanceExpenseUpdate,
+    /// Delete an expense.
+    FinanceExpenseDelete,
+    /// Approve an expense.
+    FinanceExpenseApprove,
+    /// Create an expense head (category).
+    FinanceExpenseHeadCreate,
+    /// Read an expense head.
+    FinanceExpenseHeadRead,
+    /// Update an expense head.
+    FinanceExpenseHeadUpdate,
+    /// Delete an expense head.
+    FinanceExpenseHeadDelete,
+    /// Create an income.
+    FinanceIncomeCreate,
+    /// Read an income.
+    FinanceIncomeRead,
+    /// Update an income.
+    FinanceIncomeUpdate,
+    /// Delete an income.
+    FinanceIncomeDelete,
+    /// Approve an income.
+    FinanceIncomeApprove,
+    /// Create an income head (category).
+    FinanceIncomeHeadCreate,
+    /// Read an income head.
+    FinanceIncomeHeadRead,
+    /// Update an income head.
+    FinanceIncomeHeadUpdate,
+    /// Delete an income head.
+    FinanceIncomeHeadDelete,
+    // -- Banking --
+    /// Open a bank / cash account.
+    FinanceBankOpen,
+    /// Read a bank / cash account.
+    FinanceBankRead,
+    /// Update a bank / cash account.
+    FinanceBankUpdate,
+    /// Close a bank / cash account.
+    FinanceBankClose,
+    /// Record a bank statement (debit / credit).
+    FinanceBankStatementRecord,
+    /// Reverse a bank statement.
+    FinanceBankStatementReverse,
+    /// Transfer funds between two bank accounts.
+    FinanceBankTransfer,
+    // -- Bank slip --
+    /// Generate a bank payment slip.
+    FinanceBankSlipGenerate,
+    /// Read a bank payment slip.
+    FinanceBankSlipRead,
+    /// Approve a bank payment slip.
+    FinanceBankSlipApprove,
+    /// Reject a bank payment slip.
+    FinanceBankSlipReject,
+    // -- Payroll accounting (finance-side; distinct from HR's `Hr.Payroll.*`) --
+    /// Read a payroll payment (cross-domain visibility for finance).
+    FinancePayrollPaymentRead,
+    /// Record a payroll payment (the HR→finance bridge entry point).
+    FinancePayrollPaymentRecord,
+    // -- Wallet --
+    /// Credit a user's wallet (pending until approved).
+    FinanceWalletCredit,
+    /// Debit a user's wallet (pending until approved).
+    FinanceWalletDebit,
+    /// Read a wallet and its transactions.
+    FinanceWalletRead,
+    /// Approve a pending wallet transaction.
+    FinanceWalletApprove,
+    /// Reject a pending wallet transaction.
+    FinanceWalletReject,
+    // -- Carry forward --
+    /// Execute a fees carry-forward (move balance to next academic year).
+    FinanceFeesCarryForwardExecute,
+    /// Read a fees carry-forward row.
+    FinanceFeesCarryForwardRead,
+    /// Configure a fees carry-forward rule.
+    FinanceFeesCarryForwardConfigure,
+    // -- Due fees login prevention --
+    /// Block a user's login for overdue fees.
+    FinanceDueFeesBlock,
+    /// Unblock a user's login (balance cleared).
+    FinanceDueFeesUnblock,
+    /// Read the due-fees login-prevention list.
+    FinanceDueFeesRead,
+    // -- Fees reminder --
+    /// Configure a fees reminder rule.
+    FinanceFeesReminderConfigure,
+    /// Read a fees reminder rule.
+    FinanceFeesReminderRead,
+    /// Update a fees reminder rule.
+    FinanceFeesReminderUpdate,
+    /// Delete a fees reminder rule.
+    FinanceFeesReminderDelete,
+    // -- Chart of accounts --
+    /// Create a chart-of-account category.
+    FinanceChartOfAccountCreate,
+    /// Read a chart-of-account category.
+    FinanceChartOfAccountRead,
+    /// Update a chart-of-account category.
+    FinanceChartOfAccountUpdate,
+    /// Delete a chart-of-account category.
+    FinanceChartOfAccountDelete,
+    // -- Reports (read-only; finance) --
+    /// Read the fees-collected report.
+    FinanceReportFeesCollected,
+    /// Read the fees-outstanding report.
+    FinanceReportFeesOutstanding,
+    /// Read the daily-collection report.
+    FinanceReportDailyCollection,
+    /// Read the expense report.
+    FinanceReportExpense,
+    /// Read the bank-reconciliation report.
+    FinanceReportBankReconciliation,
+    /// Read the wallet-ledger report.
+    FinanceReportWalletLedger,
+    /// Read the umbrella finance report (covers everything above).
+    FinanceReportRead,
 
-    // -- HR (Phase 6 placeholders) --------------------------------------
-    /// Create a staff member. Placeholder for the HR domain.
+    // -- HR (Phase 6) -----------------------------------------------------
+    /// Create a staff member.
     HrStaffCreate,
     /// Read a staff member.
     HrStaffRead,
@@ -219,6 +448,182 @@ pub enum Capability {
     HrStaffUpdate,
     /// Delete / deactivate a staff member.
     HrStaffDelete,
+    /// Suspend a staff member.
+    HrStaffSuspend,
+    /// Reinstate a suspended staff member.
+    HrStaffReinstate,
+    /// Resign a staff member (lifecycle).
+    HrStaffResign,
+    /// Terminate a staff member (lifecycle).
+    HrStaffTerminate,
+    /// Retire a staff member (lifecycle).
+    HrStaffRetire,
+    /// Change a staff member's department.
+    HrStaffChangeDepartment,
+    /// Change a staff member's designation.
+    HrStaffChangeDesignation,
+    /// Change a staff member's role.
+    HrStaffChangeRole,
+    /// Assign a subject teacher to a class-section.
+    HrStaffAssignSubjectTeacher,
+    /// Create a class-teacher assignment.
+    HrStaffAssignClassTeacherCreate,
+    /// Update a class-teacher assignment.
+    HrStaffAssignClassTeacherUpdate,
+    /// Delete a class-teacher assignment.
+    HrStaffAssignClassTeacherDelete,
+    /// Initiate a bulk-staff-import.
+    HrStaffImportBulk,
+    /// Promote a staged bulk-import row to a `Staff` aggregate.
+    HrStaffImportBulkPromote,
+    /// Reject a staged bulk-import row.
+    HrStaffImportBulkReject,
+    /// Upload a staff document.
+    HrStaffDocumentUpload,
+    /// Download a staff document.
+    HrStaffDocumentDownload,
+    /// Create a department.
+    HrDepartmentCreate,
+    /// Read a department.
+    HrDepartmentRead,
+    /// Update a department.
+    HrDepartmentUpdate,
+    /// Delete a department.
+    HrDepartmentDelete,
+    /// Create a designation.
+    HrDesignationCreate,
+    /// Read a designation.
+    HrDesignationRead,
+    /// Update a designation.
+    HrDesignationUpdate,
+    /// Delete a designation.
+    HrDesignationDelete,
+    /// Create a leave type.
+    HrLeaveTypeCreate,
+    /// Read a leave type.
+    HrLeaveTypeRead,
+    /// Update a leave type.
+    HrLeaveTypeUpdate,
+    /// Delete a leave type.
+    HrLeaveTypeDelete,
+    /// Create a leave-entitlement policy (`LeaveDefine`).
+    HrLeaveDefineCreate,
+    /// Read a leave-entitlement policy.
+    HrLeaveDefineRead,
+    /// Update a leave-entitlement policy.
+    HrLeaveDefineUpdate,
+    /// Delete a leave-entitlement policy.
+    HrLeaveDefineDelete,
+    /// Request a leave period.
+    HrLeaveRequest,
+    /// Approve a leave request.
+    HrLeaveApprove,
+    /// Reject a leave request.
+    HrLeaveReject,
+    /// Cancel a leave request (pending or within grace window).
+    HrLeaveCancel,
+    /// Read leave requests and balances.
+    HrLeaveRead,
+    /// Mark daily staff attendance.
+    HrAttendanceStaffMark,
+    /// Update a staff-attendance record.
+    HrAttendanceStaffUpdate,
+    /// Delete a staff-attendance record.
+    HrAttendanceStaffDelete,
+    /// Read a staff-attendance record.
+    HrAttendanceStaffRead,
+    /// Initiate a bulk staff-attendance import.
+    HrAttendanceStaffImport,
+    /// Promote a staged staff-attendance import row.
+    HrAttendanceStaffImportPromote,
+    /// Reject a staged staff-attendance import row.
+    HrAttendanceStaffImportReject,
+    /// Generate a monthly payroll run.
+    HrPayrollGenerate,
+    /// Update a payroll run's amounts.
+    HrPayrollUpdate,
+    /// Approve a payroll run (segregation of duties).
+    HrPayrollApprove,
+    /// Mark a payroll run as paid (HR-side acknowledgement).
+    HrPayrollMarkPaid,
+    /// Read a payroll run.
+    HrPayrollRead,
+    /// Add a payroll earning line.
+    HrPayrollEarningAdd,
+    /// Update a payroll earning line.
+    HrPayrollEarningUpdate,
+    /// Delete a payroll earning line.
+    HrPayrollEarningDelete,
+    /// Add a payroll deduction line.
+    HrPayrollDeductionAdd,
+    /// Update a payroll deduction line.
+    HrPayrollDeductionUpdate,
+    /// Delete a payroll deduction line.
+    HrPayrollDeductionDelete,
+    /// Add a leave-deduction info row to a payroll run.
+    HrPayrollLeaveDeductionAdd,
+    /// Update a leave-deduction info row.
+    HrPayrollLeaveDeductionUpdate,
+    /// Delete a leave-deduction info row.
+    HrPayrollLeaveDeductionDelete,
+    /// Read a payroll-payment row (cross-domain visibility for HR).
+    HrPayrollPaymentRead,
+    /// Create a salary template (grade-based structure).
+    HrSalaryTemplateCreate,
+    /// Read a salary template.
+    HrSalaryTemplateRead,
+    /// Update a salary template.
+    HrSalaryTemplateUpdate,
+    /// Delete a salary template.
+    HrSalaryTemplateDelete,
+    /// Set a per-grade hourly rate.
+    HrHourlyRateSet,
+    /// Read an hourly-rate row.
+    HrHourlyRateRead,
+    /// Update an hourly-rate row.
+    HrHourlyRateUpdate,
+    /// Delete an hourly-rate row.
+    HrHourlyRateDelete,
+    /// Create a custom staff-registration field.
+    HrStaffRegistrationFieldCreate,
+    /// Read a custom staff-registration field.
+    HrStaffRegistrationFieldRead,
+    /// Update a custom staff-registration field.
+    HrStaffRegistrationFieldUpdate,
+    /// Delete a custom staff-registration field.
+    HrStaffRegistrationFieldDelete,
+    /// Read a staff roster report.
+    HrReportStaffRoster,
+    /// Read a staff-by-department report.
+    HrReportStaffByDepartment,
+    /// Read a staff-by-designation report.
+    HrReportStaffByDesignation,
+    /// Read a leave-usage report.
+    HrReportLeaveUsage,
+    /// Read a leave-balance report.
+    HrReportLeaveBalance,
+    /// Read a daily staff-attendance report.
+    HrReportAttendanceDaily,
+    /// Read a monthly staff-attendance report.
+    HrReportAttendanceMonthly,
+    /// Read a per-staff attendance report.
+    HrReportAttendanceByStaff,
+    /// Read a payroll register report.
+    HrReportPayrollRegister,
+    /// Read a per-staff payroll report.
+    HrReportPayrollByStaff,
+    /// Read a per-department payroll report.
+    HrReportPayrollByDepartment,
+    /// Read a payroll tax report.
+    HrReportPayrollTax,
+    /// Read a salary-structure report.
+    HrReportSalaryStructure,
+    /// Read an hourly-earnings report.
+    HrReportHourlyEarnings,
+    /// Read a leave-deduction report.
+    HrReportLeaveDeduction,
+    /// Read the umbrella HR report (covers everything above).
+    HrReportRead,
 
     // -- Library, Communication, Documents, CMS, Facilities, Events ----
     /// Create a library book. Placeholder for the library domain.
@@ -367,10 +772,205 @@ impl Capability {
             Self::FinanceInvoiceCreate
             | Self::FinanceInvoiceRead
             | Self::FinanceInvoiceUpdate
-            | Self::FinanceInvoiceDelete => CapabilityDomain::Finance,
-            Self::HrStaffCreate | Self::HrStaffRead | Self::HrStaffUpdate | Self::HrStaffDelete => {
-                CapabilityDomain::Hr
-            }
+            | Self::FinanceInvoiceDelete
+            | Self::FinanceFeesGroupCreate
+            | Self::FinanceFeesGroupRead
+            | Self::FinanceFeesGroupUpdate
+            | Self::FinanceFeesGroupDelete
+            | Self::FinanceFeesTypeCreate
+            | Self::FinanceFeesTypeRead
+            | Self::FinanceFeesTypeUpdate
+            | Self::FinanceFeesTypeDelete
+            | Self::FinanceFeesMasterCreate
+            | Self::FinanceFeesMasterRead
+            | Self::FinanceFeesMasterUpdate
+            | Self::FinanceFeesMasterDelete
+            | Self::FinanceFeesDiscountCreate
+            | Self::FinanceFeesDiscountRead
+            | Self::FinanceFeesDiscountUpdate
+            | Self::FinanceFeesDiscountDelete
+            | Self::FinanceFeesAssignCreate
+            | Self::FinanceFeesAssignRead
+            | Self::FinanceFeesAssignUpdate
+            | Self::FinanceFeesAssignClose
+            | Self::FinanceFeesInstallmentCreate
+            | Self::FinanceFeesInstallmentRead
+            | Self::FinanceFeesInstallmentUpdate
+            | Self::FinanceFeesInstallmentDelete
+            | Self::FinanceFeesInstallmentAssign
+            | Self::FinanceDirectFeesInstallmentCreate
+            | Self::FinanceDirectFeesInstallmentRead
+            | Self::FinanceDirectFeesInstallmentUpdate
+            | Self::FinanceDirectFeesInstallmentDelete
+            | Self::FinanceDirectFeesInstallmentAssign
+            | Self::FinanceDirectFeesInstallmentPay
+            | Self::FinanceFeesInvoiceGenerate
+            | Self::FinanceFeesInvoiceRead
+            | Self::FinanceFeesInvoiceUpdate
+            | Self::FinanceFeesInvoiceCancel
+            | Self::FinanceFeesInvoiceConfigure
+            | Self::FinanceFeesInvoicePrint
+            | Self::FinancePaymentCollect
+            | Self::FinancePaymentRead
+            | Self::FinancePaymentReverse
+            | Self::FinancePaymentRefund
+            | Self::FinancePaymentMethodCreate
+            | Self::FinancePaymentMethodRead
+            | Self::FinancePaymentMethodUpdate
+            | Self::FinancePaymentMethodDelete
+            | Self::FinancePaymentGatewayConfigure
+            | Self::FinancePaymentGatewayRead
+            | Self::FinancePaymentGatewayUpdate
+            | Self::FinancePaymentGatewayDisable
+            | Self::FinanceExpenseCreate
+            | Self::FinanceExpenseRead
+            | Self::FinanceExpenseUpdate
+            | Self::FinanceExpenseDelete
+            | Self::FinanceExpenseApprove
+            | Self::FinanceExpenseHeadCreate
+            | Self::FinanceExpenseHeadRead
+            | Self::FinanceExpenseHeadUpdate
+            | Self::FinanceExpenseHeadDelete
+            | Self::FinanceIncomeCreate
+            | Self::FinanceIncomeRead
+            | Self::FinanceIncomeUpdate
+            | Self::FinanceIncomeDelete
+            | Self::FinanceIncomeApprove
+            | Self::FinanceIncomeHeadCreate
+            | Self::FinanceIncomeHeadRead
+            | Self::FinanceIncomeHeadUpdate
+            | Self::FinanceIncomeHeadDelete
+            | Self::FinanceBankOpen
+            | Self::FinanceBankRead
+            | Self::FinanceBankUpdate
+            | Self::FinanceBankClose
+            | Self::FinanceBankStatementRecord
+            | Self::FinanceBankStatementReverse
+            | Self::FinanceBankTransfer
+            | Self::FinanceBankSlipGenerate
+            | Self::FinanceBankSlipRead
+            | Self::FinanceBankSlipApprove
+            | Self::FinanceBankSlipReject
+            | Self::FinancePayrollPaymentRead
+            | Self::FinancePayrollPaymentRecord
+            | Self::FinanceWalletCredit
+            | Self::FinanceWalletDebit
+            | Self::FinanceWalletRead
+            | Self::FinanceWalletApprove
+            | Self::FinanceWalletReject
+            | Self::FinanceFeesCarryForwardExecute
+            | Self::FinanceFeesCarryForwardRead
+            | Self::FinanceFeesCarryForwardConfigure
+            | Self::FinanceDueFeesBlock
+            | Self::FinanceDueFeesUnblock
+            | Self::FinanceDueFeesRead
+            | Self::FinanceFeesReminderConfigure
+            | Self::FinanceFeesReminderRead
+            | Self::FinanceFeesReminderUpdate
+            | Self::FinanceFeesReminderDelete
+            | Self::FinanceChartOfAccountCreate
+            | Self::FinanceChartOfAccountRead
+            | Self::FinanceChartOfAccountUpdate
+            | Self::FinanceChartOfAccountDelete
+            | Self::FinanceReportFeesCollected
+            | Self::FinanceReportFeesOutstanding
+            | Self::FinanceReportDailyCollection
+            | Self::FinanceReportExpense
+            | Self::FinanceReportBankReconciliation
+            | Self::FinanceReportWalletLedger
+            | Self::FinanceReportRead => CapabilityDomain::Finance,
+            Self::HrStaffCreate
+            | Self::HrStaffRead
+            | Self::HrStaffUpdate
+            | Self::HrStaffDelete
+            | Self::HrStaffSuspend
+            | Self::HrStaffReinstate
+            | Self::HrStaffResign
+            | Self::HrStaffTerminate
+            | Self::HrStaffRetire
+            | Self::HrStaffChangeDepartment
+            | Self::HrStaffChangeDesignation
+            | Self::HrStaffChangeRole
+            | Self::HrStaffAssignSubjectTeacher
+            | Self::HrStaffAssignClassTeacherCreate
+            | Self::HrStaffAssignClassTeacherUpdate
+            | Self::HrStaffAssignClassTeacherDelete
+            | Self::HrStaffImportBulk
+            | Self::HrStaffImportBulkPromote
+            | Self::HrStaffImportBulkReject
+            | Self::HrStaffDocumentUpload
+            | Self::HrStaffDocumentDownload
+            | Self::HrDepartmentCreate
+            | Self::HrDepartmentRead
+            | Self::HrDepartmentUpdate
+            | Self::HrDepartmentDelete
+            | Self::HrDesignationCreate
+            | Self::HrDesignationRead
+            | Self::HrDesignationUpdate
+            | Self::HrDesignationDelete
+            | Self::HrLeaveTypeCreate
+            | Self::HrLeaveTypeRead
+            | Self::HrLeaveTypeUpdate
+            | Self::HrLeaveTypeDelete
+            | Self::HrLeaveDefineCreate
+            | Self::HrLeaveDefineRead
+            | Self::HrLeaveDefineUpdate
+            | Self::HrLeaveDefineDelete
+            | Self::HrLeaveRequest
+            | Self::HrLeaveApprove
+            | Self::HrLeaveReject
+            | Self::HrLeaveCancel
+            | Self::HrLeaveRead
+            | Self::HrAttendanceStaffMark
+            | Self::HrAttendanceStaffUpdate
+            | Self::HrAttendanceStaffDelete
+            | Self::HrAttendanceStaffRead
+            | Self::HrAttendanceStaffImport
+            | Self::HrAttendanceStaffImportPromote
+            | Self::HrAttendanceStaffImportReject
+            | Self::HrPayrollGenerate
+            | Self::HrPayrollUpdate
+            | Self::HrPayrollApprove
+            | Self::HrPayrollMarkPaid
+            | Self::HrPayrollRead
+            | Self::HrPayrollEarningAdd
+            | Self::HrPayrollEarningUpdate
+            | Self::HrPayrollEarningDelete
+            | Self::HrPayrollDeductionAdd
+            | Self::HrPayrollDeductionUpdate
+            | Self::HrPayrollDeductionDelete
+            | Self::HrPayrollLeaveDeductionAdd
+            | Self::HrPayrollLeaveDeductionUpdate
+            | Self::HrPayrollLeaveDeductionDelete
+            | Self::HrPayrollPaymentRead
+            | Self::HrSalaryTemplateCreate
+            | Self::HrSalaryTemplateRead
+            | Self::HrSalaryTemplateUpdate
+            | Self::HrSalaryTemplateDelete
+            | Self::HrHourlyRateSet
+            | Self::HrHourlyRateRead
+            | Self::HrHourlyRateUpdate
+            | Self::HrHourlyRateDelete
+            | Self::HrStaffRegistrationFieldCreate
+            | Self::HrStaffRegistrationFieldRead
+            | Self::HrStaffRegistrationFieldUpdate
+            | Self::HrStaffRegistrationFieldDelete
+            | Self::HrReportStaffRoster
+            | Self::HrReportStaffByDepartment
+            | Self::HrReportStaffByDesignation
+            | Self::HrReportLeaveUsage
+            | Self::HrReportLeaveBalance
+            | Self::HrReportAttendanceDaily
+            | Self::HrReportAttendanceMonthly
+            | Self::HrReportAttendanceByStaff
+            | Self::HrReportPayrollRegister
+            | Self::HrReportPayrollByStaff
+            | Self::HrReportPayrollByDepartment
+            | Self::HrReportPayrollTax
+            | Self::HrReportSalaryStructure
+            | Self::HrReportHourlyEarnings
+            | Self::HrReportLeaveDeduction
+            | Self::HrReportRead => CapabilityDomain::Hr,
             Self::LibraryBookCreate
             | Self::LibraryBookRead
             | Self::LibraryBookUpdate
@@ -490,9 +1090,203 @@ impl Capability {
             | Self::FinanceInvoiceRead
             | Self::FinanceInvoiceUpdate
             | Self::FinanceInvoiceDelete => "Invoice",
-            Self::HrStaffCreate | Self::HrStaffRead | Self::HrStaffUpdate | Self::HrStaffDelete => {
-                "Staff"
+            Self::FinanceFeesGroupCreate
+            | Self::FinanceFeesGroupRead
+            | Self::FinanceFeesGroupUpdate
+            | Self::FinanceFeesGroupDelete => "FeesGroup",
+            Self::FinanceFeesTypeCreate
+            | Self::FinanceFeesTypeRead
+            | Self::FinanceFeesTypeUpdate
+            | Self::FinanceFeesTypeDelete => "FeesType",
+            Self::FinanceFeesMasterCreate
+            | Self::FinanceFeesMasterRead
+            | Self::FinanceFeesMasterUpdate
+            | Self::FinanceFeesMasterDelete => "FeesMaster",
+            Self::FinanceFeesDiscountCreate
+            | Self::FinanceFeesDiscountRead
+            | Self::FinanceFeesDiscountUpdate
+            | Self::FinanceFeesDiscountDelete => "FeesDiscount",
+            Self::FinanceFeesAssignCreate
+            | Self::FinanceFeesAssignRead
+            | Self::FinanceFeesAssignUpdate
+            | Self::FinanceFeesAssignClose => "FeesAssign",
+            Self::FinanceFeesInstallmentCreate
+            | Self::FinanceFeesInstallmentRead
+            | Self::FinanceFeesInstallmentUpdate
+            | Self::FinanceFeesInstallmentDelete
+            | Self::FinanceFeesInstallmentAssign => "FeesInstallment",
+            Self::FinanceDirectFeesInstallmentCreate
+            | Self::FinanceDirectFeesInstallmentRead
+            | Self::FinanceDirectFeesInstallmentUpdate
+            | Self::FinanceDirectFeesInstallmentDelete
+            | Self::FinanceDirectFeesInstallmentAssign
+            | Self::FinanceDirectFeesInstallmentPay => "DirectFeesInstallment",
+            Self::FinanceFeesInvoiceGenerate
+            | Self::FinanceFeesInvoiceRead
+            | Self::FinanceFeesInvoiceUpdate
+            | Self::FinanceFeesInvoiceCancel
+            | Self::FinanceFeesInvoiceConfigure
+            | Self::FinanceFeesInvoicePrint => "FeesInvoice",
+            Self::FinancePaymentCollect
+            | Self::FinancePaymentRead
+            | Self::FinancePaymentReverse
+            | Self::FinancePaymentRefund => "Payment",
+            Self::FinancePaymentMethodCreate
+            | Self::FinancePaymentMethodRead
+            | Self::FinancePaymentMethodUpdate
+            | Self::FinancePaymentMethodDelete => "PaymentMethod",
+            Self::FinancePaymentGatewayConfigure
+            | Self::FinancePaymentGatewayRead
+            | Self::FinancePaymentGatewayUpdate
+            | Self::FinancePaymentGatewayDisable => "PaymentGateway",
+            Self::FinanceExpenseCreate
+            | Self::FinanceExpenseRead
+            | Self::FinanceExpenseUpdate
+            | Self::FinanceExpenseDelete
+            | Self::FinanceExpenseApprove => "Expense",
+            Self::FinanceExpenseHeadCreate
+            | Self::FinanceExpenseHeadRead
+            | Self::FinanceExpenseHeadUpdate
+            | Self::FinanceExpenseHeadDelete => "ExpenseHead",
+            Self::FinanceIncomeCreate
+            | Self::FinanceIncomeRead
+            | Self::FinanceIncomeUpdate
+            | Self::FinanceIncomeDelete
+            | Self::FinanceIncomeApprove => "Income",
+            Self::FinanceIncomeHeadCreate
+            | Self::FinanceIncomeHeadRead
+            | Self::FinanceIncomeHeadUpdate
+            | Self::FinanceIncomeHeadDelete => "IncomeHead",
+            Self::FinanceBankOpen
+            | Self::FinanceBankRead
+            | Self::FinanceBankUpdate
+            | Self::FinanceBankClose
+            | Self::FinanceBankStatementRecord
+            | Self::FinanceBankStatementReverse
+            | Self::FinanceBankTransfer => "Bank",
+            Self::FinanceBankSlipGenerate
+            | Self::FinanceBankSlipRead
+            | Self::FinanceBankSlipApprove
+            | Self::FinanceBankSlipReject => "BankSlip",
+            Self::FinancePayrollPaymentRead | Self::FinancePayrollPaymentRecord => "PayrollPayment",
+            Self::FinanceWalletCredit
+            | Self::FinanceWalletDebit
+            | Self::FinanceWalletRead
+            | Self::FinanceWalletApprove
+            | Self::FinanceWalletReject => "Wallet",
+            Self::FinanceFeesCarryForwardExecute
+            | Self::FinanceFeesCarryForwardRead
+            | Self::FinanceFeesCarryForwardConfigure => "FeesCarryForward",
+            Self::FinanceDueFeesBlock | Self::FinanceDueFeesUnblock | Self::FinanceDueFeesRead => {
+                "DueFees"
             }
+            Self::FinanceFeesReminderConfigure
+            | Self::FinanceFeesReminderRead
+            | Self::FinanceFeesReminderUpdate
+            | Self::FinanceFeesReminderDelete => "FeesReminder",
+            Self::FinanceChartOfAccountCreate
+            | Self::FinanceChartOfAccountRead
+            | Self::FinanceChartOfAccountUpdate
+            | Self::FinanceChartOfAccountDelete => "ChartOfAccount",
+            Self::FinanceReportFeesCollected
+            | Self::FinanceReportFeesOutstanding
+            | Self::FinanceReportDailyCollection
+            | Self::FinanceReportExpense
+            | Self::FinanceReportBankReconciliation
+            | Self::FinanceReportWalletLedger
+            | Self::FinanceReportRead => "Report",
+            Self::HrStaffCreate
+            | Self::HrStaffRead
+            | Self::HrStaffUpdate
+            | Self::HrStaffDelete
+            | Self::HrStaffSuspend
+            | Self::HrStaffReinstate
+            | Self::HrStaffResign
+            | Self::HrStaffTerminate
+            | Self::HrStaffRetire
+            | Self::HrStaffChangeDepartment
+            | Self::HrStaffChangeDesignation
+            | Self::HrStaffChangeRole
+            | Self::HrStaffAssignSubjectTeacher
+            | Self::HrStaffImportBulk
+            | Self::HrStaffImportBulkPromote
+            | Self::HrStaffImportBulkReject
+            | Self::HrStaffDocumentUpload
+            | Self::HrStaffDocumentDownload => "Staff",
+            Self::HrStaffAssignClassTeacherCreate
+            | Self::HrStaffAssignClassTeacherUpdate
+            | Self::HrStaffAssignClassTeacherDelete => "AssignClassTeacher",
+            Self::HrDepartmentCreate
+            | Self::HrDepartmentRead
+            | Self::HrDepartmentUpdate
+            | Self::HrDepartmentDelete => "Department",
+            Self::HrDesignationCreate
+            | Self::HrDesignationRead
+            | Self::HrDesignationUpdate
+            | Self::HrDesignationDelete => "Designation",
+            Self::HrLeaveTypeCreate
+            | Self::HrLeaveTypeRead
+            | Self::HrLeaveTypeUpdate
+            | Self::HrLeaveTypeDelete => "LeaveType",
+            Self::HrLeaveDefineCreate
+            | Self::HrLeaveDefineRead
+            | Self::HrLeaveDefineUpdate
+            | Self::HrLeaveDefineDelete => "LeaveDefine",
+            Self::HrLeaveRequest
+            | Self::HrLeaveApprove
+            | Self::HrLeaveReject
+            | Self::HrLeaveCancel
+            | Self::HrLeaveRead => "LeaveRequest",
+            Self::HrAttendanceStaffMark
+            | Self::HrAttendanceStaffUpdate
+            | Self::HrAttendanceStaffDelete
+            | Self::HrAttendanceStaffRead => "StaffAttendance",
+            Self::HrAttendanceStaffImport
+            | Self::HrAttendanceStaffImportPromote
+            | Self::HrAttendanceStaffImportReject => "StaffAttendanceImport",
+            Self::HrPayrollGenerate
+            | Self::HrPayrollUpdate
+            | Self::HrPayrollApprove
+            | Self::HrPayrollMarkPaid
+            | Self::HrPayrollRead
+            | Self::HrPayrollPaymentRead => "Payroll",
+            Self::HrPayrollEarningAdd
+            | Self::HrPayrollEarningUpdate
+            | Self::HrPayrollEarningDelete => "PayrollEarning",
+            Self::HrPayrollDeductionAdd
+            | Self::HrPayrollDeductionUpdate
+            | Self::HrPayrollDeductionDelete => "PayrollDeduction",
+            Self::HrPayrollLeaveDeductionAdd
+            | Self::HrPayrollLeaveDeductionUpdate
+            | Self::HrPayrollLeaveDeductionDelete => "LeaveDeduction",
+            Self::HrSalaryTemplateCreate
+            | Self::HrSalaryTemplateRead
+            | Self::HrSalaryTemplateUpdate
+            | Self::HrSalaryTemplateDelete => "SalaryTemplate",
+            Self::HrHourlyRateSet
+            | Self::HrHourlyRateRead
+            | Self::HrHourlyRateUpdate
+            | Self::HrHourlyRateDelete => "HourlyRate",
+            Self::HrStaffRegistrationFieldCreate
+            | Self::HrStaffRegistrationFieldRead
+            | Self::HrStaffRegistrationFieldUpdate
+            | Self::HrStaffRegistrationFieldDelete => "StaffRegistrationField",
+            Self::HrReportStaffRoster
+            | Self::HrReportStaffByDepartment
+            | Self::HrReportStaffByDesignation
+            | Self::HrReportLeaveUsage
+            | Self::HrReportLeaveBalance
+            | Self::HrReportAttendanceDaily
+            | Self::HrReportAttendanceMonthly
+            | Self::HrReportAttendanceByStaff
+            | Self::HrReportPayrollRegister
+            | Self::HrReportPayrollByStaff
+            | Self::HrReportPayrollByDepartment
+            | Self::HrReportPayrollTax
+            | Self::HrReportSalaryStructure
+            | Self::HrReportHourlyEarnings
+            | Self::HrReportLeaveDeduction
+            | Self::HrReportRead => "Report",
             Self::LibraryBookCreate
             | Self::LibraryBookRead
             | Self::LibraryBookUpdate
@@ -540,6 +1334,13 @@ impl Capability {
             | Self::AssessmentAdmitCardCreate
             | Self::FinanceInvoiceCreate
             | Self::HrStaffCreate
+            | Self::HrDepartmentCreate
+            | Self::HrDesignationCreate
+            | Self::HrLeaveTypeCreate
+            | Self::HrLeaveDefineCreate
+            | Self::HrStaffAssignClassTeacherCreate
+            | Self::HrSalaryTemplateCreate
+            | Self::HrStaffRegistrationFieldCreate
             | Self::LibraryBookCreate
             | Self::CommunicationMessageCreate
             | Self::DocumentsFolderCreate
@@ -567,6 +1368,33 @@ impl Capability {
             | Self::AssessmentAdmitCardRead
             | Self::FinanceInvoiceRead
             | Self::HrStaffRead
+            | Self::HrDepartmentRead
+            | Self::HrDesignationRead
+            | Self::HrLeaveTypeRead
+            | Self::HrLeaveDefineRead
+            | Self::HrLeaveRead
+            | Self::HrAttendanceStaffRead
+            | Self::HrPayrollRead
+            | Self::HrPayrollPaymentRead
+            | Self::HrSalaryTemplateRead
+            | Self::HrHourlyRateRead
+            | Self::HrStaffRegistrationFieldRead
+            | Self::HrReportStaffRoster
+            | Self::HrReportStaffByDepartment
+            | Self::HrReportStaffByDesignation
+            | Self::HrReportLeaveUsage
+            | Self::HrReportLeaveBalance
+            | Self::HrReportAttendanceDaily
+            | Self::HrReportAttendanceMonthly
+            | Self::HrReportAttendanceByStaff
+            | Self::HrReportPayrollRegister
+            | Self::HrReportPayrollByStaff
+            | Self::HrReportPayrollByDepartment
+            | Self::HrReportPayrollTax
+            | Self::HrReportSalaryStructure
+            | Self::HrReportHourlyEarnings
+            | Self::HrReportLeaveDeduction
+            | Self::HrReportRead
             | Self::LibraryBookRead
             | Self::CommunicationMessageRead
             | Self::DocumentsFolderRead
@@ -594,6 +1422,19 @@ impl Capability {
             | Self::AssessmentAdmitCardUpdate
             | Self::FinanceInvoiceUpdate
             | Self::HrStaffUpdate
+            | Self::HrDepartmentUpdate
+            | Self::HrDesignationUpdate
+            | Self::HrLeaveTypeUpdate
+            | Self::HrLeaveDefineUpdate
+            | Self::HrAttendanceStaffUpdate
+            | Self::HrPayrollUpdate
+            | Self::HrPayrollEarningUpdate
+            | Self::HrPayrollDeductionUpdate
+            | Self::HrPayrollLeaveDeductionUpdate
+            | Self::HrSalaryTemplateUpdate
+            | Self::HrHourlyRateUpdate
+            | Self::HrStaffRegistrationFieldUpdate
+            | Self::HrStaffAssignClassTeacherUpdate
             | Self::LibraryBookUpdate
             | Self::CommunicationMessageUpdate
             | Self::DocumentsFolderUpdate
@@ -619,6 +1460,18 @@ impl Capability {
             | Self::AssessmentAdmitCardDelete
             | Self::FinanceInvoiceDelete
             | Self::HrStaffDelete
+            | Self::HrDepartmentDelete
+            | Self::HrDesignationDelete
+            | Self::HrLeaveTypeDelete
+            | Self::HrLeaveDefineDelete
+            | Self::HrAttendanceStaffDelete
+            | Self::HrPayrollEarningDelete
+            | Self::HrPayrollDeductionDelete
+            | Self::HrPayrollLeaveDeductionDelete
+            | Self::HrSalaryTemplateDelete
+            | Self::HrHourlyRateDelete
+            | Self::HrStaffRegistrationFieldDelete
+            | Self::HrStaffAssignClassTeacherDelete
             | Self::LibraryBookDelete
             | Self::CommunicationMessageDelete
             | Self::DocumentsFolderDelete
@@ -642,6 +1495,141 @@ impl Capability {
             Self::AttendanceNotify => "Notify",
             Self::SettingsManage => "Manage",
             Self::OperationsManage => "Manage",
+            Self::HrStaffSuspend => "Suspend",
+            Self::HrStaffReinstate => "Reinstate",
+            Self::HrStaffResign => "Resign",
+            Self::HrStaffTerminate => "Terminate",
+            Self::HrStaffRetire => "Retire",
+            Self::HrStaffChangeDepartment => "ChangeDepartment",
+            Self::HrStaffChangeDesignation => "ChangeDesignation",
+            Self::HrStaffChangeRole => "ChangeRole",
+            Self::HrStaffAssignSubjectTeacher => "AssignSubjectTeacher",
+            Self::HrStaffImportBulk => "ImportBulk",
+            Self::HrStaffImportBulkPromote => "Promote",
+            Self::HrStaffImportBulkReject => "Reject",
+            Self::HrStaffDocumentUpload => "Upload",
+            Self::HrStaffDocumentDownload => "Download",
+            Self::HrLeaveRequest => "Request",
+            Self::HrLeaveApprove => "Approve",
+            Self::HrLeaveReject => "Reject",
+            Self::HrLeaveCancel => "Cancel",
+            Self::HrAttendanceStaffMark => "Mark",
+            Self::HrAttendanceStaffImport => "Import",
+            Self::HrAttendanceStaffImportPromote => "Promote",
+            Self::HrAttendanceStaffImportReject => "Reject",
+            Self::HrPayrollGenerate => "Generate",
+            Self::HrPayrollApprove => "Approve",
+            Self::HrPayrollMarkPaid => "MarkPaid",
+            Self::HrPayrollEarningAdd => "Add",
+            Self::HrPayrollDeductionAdd => "Add",
+            Self::HrPayrollLeaveDeductionAdd => "Add",
+            Self::HrHourlyRateSet => "Set",
+            Self::FinanceFeesGroupCreate
+            | Self::FinanceFeesTypeCreate
+            | Self::FinanceFeesMasterCreate
+            | Self::FinanceFeesDiscountCreate
+            | Self::FinanceFeesAssignCreate
+            | Self::FinanceFeesInstallmentCreate
+            | Self::FinanceDirectFeesInstallmentCreate
+            | Self::FinancePaymentMethodCreate
+            | Self::FinanceExpenseCreate
+            | Self::FinanceExpenseHeadCreate
+            | Self::FinanceIncomeCreate
+            | Self::FinanceIncomeHeadCreate
+            | Self::FinanceChartOfAccountCreate => "Create",
+            Self::FinanceFeesGroupRead
+            | Self::FinanceFeesTypeRead
+            | Self::FinanceFeesMasterRead
+            | Self::FinanceFeesDiscountRead
+            | Self::FinanceFeesAssignRead
+            | Self::FinanceFeesInstallmentRead
+            | Self::FinanceDirectFeesInstallmentRead
+            | Self::FinanceFeesInvoiceRead
+            | Self::FinancePaymentRead
+            | Self::FinancePaymentMethodRead
+            | Self::FinancePaymentGatewayRead
+            | Self::FinanceExpenseRead
+            | Self::FinanceExpenseHeadRead
+            | Self::FinanceIncomeRead
+            | Self::FinanceIncomeHeadRead
+            | Self::FinanceBankRead
+            | Self::FinanceBankSlipRead
+            | Self::FinancePayrollPaymentRead
+            | Self::FinanceWalletRead
+            | Self::FinanceFeesCarryForwardRead
+            | Self::FinanceDueFeesRead
+            | Self::FinanceFeesReminderRead
+            | Self::FinanceChartOfAccountRead
+            | Self::FinanceReportFeesCollected
+            | Self::FinanceReportFeesOutstanding
+            | Self::FinanceReportDailyCollection
+            | Self::FinanceReportExpense
+            | Self::FinanceReportBankReconciliation
+            | Self::FinanceReportWalletLedger
+            | Self::FinanceReportRead => "Read",
+            Self::FinanceFeesGroupUpdate
+            | Self::FinanceFeesTypeUpdate
+            | Self::FinanceFeesMasterUpdate
+            | Self::FinanceFeesDiscountUpdate
+            | Self::FinanceFeesAssignUpdate
+            | Self::FinanceFeesInstallmentUpdate
+            | Self::FinanceDirectFeesInstallmentUpdate
+            | Self::FinanceFeesInvoiceUpdate
+            | Self::FinancePaymentMethodUpdate
+            | Self::FinancePaymentGatewayUpdate
+            | Self::FinanceExpenseUpdate
+            | Self::FinanceExpenseHeadUpdate
+            | Self::FinanceIncomeUpdate
+            | Self::FinanceIncomeHeadUpdate
+            | Self::FinanceBankUpdate
+            | Self::FinanceFeesReminderUpdate
+            | Self::FinanceChartOfAccountUpdate => "Update",
+            Self::FinanceFeesGroupDelete
+            | Self::FinanceFeesTypeDelete
+            | Self::FinanceFeesMasterDelete
+            | Self::FinanceFeesDiscountDelete
+            | Self::FinanceFeesInstallmentDelete
+            | Self::FinanceDirectFeesInstallmentDelete
+            | Self::FinancePaymentMethodDelete
+            | Self::FinanceExpenseDelete
+            | Self::FinanceExpenseHeadDelete
+            | Self::FinanceIncomeDelete
+            | Self::FinanceIncomeHeadDelete
+            | Self::FinanceFeesReminderDelete
+            | Self::FinanceChartOfAccountDelete => "Delete",
+            Self::FinanceFeesInvoiceGenerate => "Generate",
+            Self::FinanceFeesInvoiceCancel => "Cancel",
+            Self::FinanceFeesInvoiceConfigure => "Configure",
+            Self::FinanceFeesInvoicePrint => "Print",
+            Self::FinancePaymentCollect => "Collect",
+            Self::FinancePaymentReverse => "Reverse",
+            Self::FinancePaymentRefund => "Refund",
+            Self::FinancePaymentGatewayConfigure => "Configure",
+            Self::FinancePaymentGatewayDisable => "Disable",
+            Self::FinanceExpenseApprove => "Approve",
+            Self::FinanceIncomeApprove => "Approve",
+            Self::FinanceBankOpen => "Open",
+            Self::FinanceBankClose => "Close",
+            Self::FinanceBankStatementRecord => "Record",
+            Self::FinanceBankStatementReverse => "Reverse",
+            Self::FinanceBankTransfer => "Transfer",
+            Self::FinanceBankSlipGenerate => "Generate",
+            Self::FinanceBankSlipApprove => "Approve",
+            Self::FinanceBankSlipReject => "Reject",
+            Self::FinancePayrollPaymentRecord => "Record",
+            Self::FinanceWalletCredit => "Credit",
+            Self::FinanceWalletDebit => "Debit",
+            Self::FinanceWalletApprove => "Approve",
+            Self::FinanceWalletReject => "Reject",
+            Self::FinanceFeesCarryForwardExecute => "Execute",
+            Self::FinanceFeesCarryForwardConfigure => "Configure",
+            Self::FinanceDueFeesBlock => "Block",
+            Self::FinanceDueFeesUnblock => "Unblock",
+            Self::FinanceFeesReminderConfigure => "Configure",
+            Self::FinanceFeesAssignClose => "Close",
+            Self::FinanceDirectFeesInstallmentAssign => "Assign",
+            Self::FinanceDirectFeesInstallmentPay => "Pay",
+            Self::FinanceFeesInstallmentAssign => "Assign",
         }
     }
 
@@ -716,6 +1704,200 @@ impl Capability {
             Self::HrStaffRead => "Hr.Staff.Read",
             Self::HrStaffUpdate => "Hr.Staff.Update",
             Self::HrStaffDelete => "Hr.Staff.Delete",
+            Self::HrStaffSuspend => "Hr.Staff.Suspend",
+            Self::HrStaffReinstate => "Hr.Staff.Reinstate",
+            Self::HrStaffResign => "Hr.Staff.Resign",
+            Self::HrStaffTerminate => "Hr.Staff.Terminate",
+            Self::HrStaffRetire => "Hr.Staff.Retire",
+            Self::HrStaffChangeDepartment => "Hr.Staff.ChangeDepartment",
+            Self::HrStaffChangeDesignation => "Hr.Staff.ChangeDesignation",
+            Self::HrStaffChangeRole => "Hr.Staff.ChangeRole",
+            Self::HrStaffAssignSubjectTeacher => "Hr.Staff.AssignSubjectTeacher",
+            Self::HrStaffAssignClassTeacherCreate => "Hr.AssignClassTeacher.Create",
+            Self::HrStaffAssignClassTeacherUpdate => "Hr.AssignClassTeacher.Update",
+            Self::HrStaffAssignClassTeacherDelete => "Hr.AssignClassTeacher.Delete",
+            Self::HrStaffImportBulk => "Hr.Staff.ImportBulk",
+            Self::HrStaffImportBulkPromote => "Hr.Staff.ImportBulk.Promote",
+            Self::HrStaffImportBulkReject => "Hr.Staff.ImportBulk.Reject",
+            Self::HrStaffDocumentUpload => "Hr.Staff.Document.Upload",
+            Self::HrStaffDocumentDownload => "Hr.Staff.Document.Download",
+            Self::HrDepartmentCreate => "Hr.Department.Create",
+            Self::HrDepartmentRead => "Hr.Department.Read",
+            Self::HrDepartmentUpdate => "Hr.Department.Update",
+            Self::HrDepartmentDelete => "Hr.Department.Delete",
+            Self::HrDesignationCreate => "Hr.Designation.Create",
+            Self::HrDesignationRead => "Hr.Designation.Read",
+            Self::HrDesignationUpdate => "Hr.Designation.Update",
+            Self::HrDesignationDelete => "Hr.Designation.Delete",
+            Self::HrLeaveTypeCreate => "Hr.LeaveType.Create",
+            Self::HrLeaveTypeRead => "Hr.LeaveType.Read",
+            Self::HrLeaveTypeUpdate => "Hr.LeaveType.Update",
+            Self::HrLeaveTypeDelete => "Hr.LeaveType.Delete",
+            Self::HrLeaveDefineCreate => "Hr.LeaveDefine.Create",
+            Self::HrLeaveDefineRead => "Hr.LeaveDefine.Read",
+            Self::HrLeaveDefineUpdate => "Hr.LeaveDefine.Update",
+            Self::HrLeaveDefineDelete => "Hr.LeaveDefine.Delete",
+            Self::HrLeaveRequest => "Hr.Leave.Request",
+            Self::HrLeaveApprove => "Hr.Leave.Approve",
+            Self::HrLeaveReject => "Hr.Leave.Reject",
+            Self::HrLeaveCancel => "Hr.Leave.Cancel",
+            Self::HrLeaveRead => "Hr.Leave.Read",
+            Self::HrAttendanceStaffMark => "Hr.Attendance.Staff.Mark",
+            Self::HrAttendanceStaffUpdate => "Hr.Attendance.Staff.Update",
+            Self::HrAttendanceStaffDelete => "Hr.Attendance.Staff.Delete",
+            Self::HrAttendanceStaffRead => "Hr.Attendance.Staff.Read",
+            Self::HrAttendanceStaffImport => "Hr.Attendance.Staff.Import",
+            Self::HrAttendanceStaffImportPromote => "Hr.Attendance.Staff.Import.Promote",
+            Self::HrAttendanceStaffImportReject => "Hr.Attendance.Staff.Import.Reject",
+            Self::HrPayrollGenerate => "Hr.Payroll.Generate",
+            Self::HrPayrollUpdate => "Hr.Payroll.Update",
+            Self::HrPayrollApprove => "Hr.Payroll.Approve",
+            Self::HrPayrollMarkPaid => "Hr.Payroll.MarkPaid",
+            Self::HrPayrollRead => "Hr.Payroll.Read",
+            Self::HrPayrollEarningAdd => "Hr.Payroll.Earning.Add",
+            Self::HrPayrollEarningUpdate => "Hr.Payroll.Earning.Update",
+            Self::HrPayrollEarningDelete => "Hr.Payroll.Earning.Delete",
+            Self::HrPayrollDeductionAdd => "Hr.Payroll.Deduction.Add",
+            Self::HrPayrollDeductionUpdate => "Hr.Payroll.Deduction.Update",
+            Self::HrPayrollDeductionDelete => "Hr.Payroll.Deduction.Delete",
+            Self::HrPayrollLeaveDeductionAdd => "Hr.Payroll.LeaveDeduction.Add",
+            Self::HrPayrollLeaveDeductionUpdate => "Hr.Payroll.LeaveDeduction.Update",
+            Self::HrPayrollLeaveDeductionDelete => "Hr.Payroll.LeaveDeduction.Delete",
+            Self::HrPayrollPaymentRead => "Hr.PayrollPayment.Read",
+            Self::HrSalaryTemplateCreate => "Hr.SalaryTemplate.Create",
+            Self::HrSalaryTemplateRead => "Hr.SalaryTemplate.Read",
+            Self::HrSalaryTemplateUpdate => "Hr.SalaryTemplate.Update",
+            Self::HrSalaryTemplateDelete => "Hr.SalaryTemplate.Delete",
+            Self::HrHourlyRateSet => "Hr.HourlyRate.Set",
+            Self::FinanceFeesGroupCreate => "Finance.FeesGroup.Create",
+            Self::FinanceFeesGroupRead => "Finance.FeesGroup.Read",
+            Self::FinanceFeesGroupUpdate => "Finance.FeesGroup.Update",
+            Self::FinanceFeesGroupDelete => "Finance.FeesGroup.Delete",
+            Self::FinanceFeesTypeCreate => "Finance.FeesType.Create",
+            Self::FinanceFeesTypeRead => "Finance.FeesType.Read",
+            Self::FinanceFeesTypeUpdate => "Finance.FeesType.Update",
+            Self::FinanceFeesTypeDelete => "Finance.FeesType.Delete",
+            Self::FinanceFeesMasterCreate => "Finance.FeesMaster.Create",
+            Self::FinanceFeesMasterRead => "Finance.FeesMaster.Read",
+            Self::FinanceFeesMasterUpdate => "Finance.FeesMaster.Update",
+            Self::FinanceFeesMasterDelete => "Finance.FeesMaster.Delete",
+            Self::FinanceFeesDiscountCreate => "Finance.FeesDiscount.Create",
+            Self::FinanceFeesDiscountRead => "Finance.FeesDiscount.Read",
+            Self::FinanceFeesDiscountUpdate => "Finance.FeesDiscount.Update",
+            Self::FinanceFeesDiscountDelete => "Finance.FeesDiscount.Delete",
+            Self::FinanceFeesAssignCreate => "Finance.FeesAssign.Create",
+            Self::FinanceFeesAssignRead => "Finance.FeesAssign.Read",
+            Self::FinanceFeesAssignUpdate => "Finance.FeesAssign.Update",
+            Self::FinanceFeesAssignClose => "Finance.FeesAssign.Close",
+            Self::FinanceFeesInstallmentCreate => "Finance.FeesInstallment.Create",
+            Self::FinanceFeesInstallmentRead => "Finance.FeesInstallment.Read",
+            Self::FinanceFeesInstallmentUpdate => "Finance.FeesInstallment.Update",
+            Self::FinanceFeesInstallmentDelete => "Finance.FeesInstallment.Delete",
+            Self::FinanceFeesInstallmentAssign => "Finance.FeesInstallment.Assign",
+            Self::FinanceDirectFeesInstallmentCreate => "Finance.DirectFeesInstallment.Create",
+            Self::FinanceDirectFeesInstallmentRead => "Finance.DirectFeesInstallment.Read",
+            Self::FinanceDirectFeesInstallmentUpdate => "Finance.DirectFeesInstallment.Update",
+            Self::FinanceDirectFeesInstallmentDelete => "Finance.DirectFeesInstallment.Delete",
+            Self::FinanceDirectFeesInstallmentAssign => "Finance.DirectFeesInstallment.Assign",
+            Self::FinanceDirectFeesInstallmentPay => "Finance.DirectFeesInstallment.Pay",
+            Self::FinanceFeesInvoiceGenerate => "Finance.FeesInvoice.Generate",
+            Self::FinanceFeesInvoiceRead => "Finance.FeesInvoice.Read",
+            Self::FinanceFeesInvoiceUpdate => "Finance.FeesInvoice.Update",
+            Self::FinanceFeesInvoiceCancel => "Finance.FeesInvoice.Cancel",
+            Self::FinanceFeesInvoiceConfigure => "Finance.FeesInvoice.Configure",
+            Self::FinanceFeesInvoicePrint => "Finance.FeesInvoice.Print",
+            Self::FinancePaymentCollect => "Finance.Payment.Collect",
+            Self::FinancePaymentRead => "Finance.Payment.Read",
+            Self::FinancePaymentReverse => "Finance.Payment.Reverse",
+            Self::FinancePaymentRefund => "Finance.Payment.Refund",
+            Self::FinancePaymentMethodCreate => "Finance.PaymentMethod.Create",
+            Self::FinancePaymentMethodRead => "Finance.PaymentMethod.Read",
+            Self::FinancePaymentMethodUpdate => "Finance.PaymentMethod.Update",
+            Self::FinancePaymentMethodDelete => "Finance.PaymentMethod.Delete",
+            Self::FinancePaymentGatewayConfigure => "Finance.PaymentGateway.Configure",
+            Self::FinancePaymentGatewayRead => "Finance.PaymentGateway.Read",
+            Self::FinancePaymentGatewayUpdate => "Finance.PaymentGateway.Update",
+            Self::FinancePaymentGatewayDisable => "Finance.PaymentGateway.Disable",
+            Self::FinanceExpenseCreate => "Finance.Expense.Create",
+            Self::FinanceExpenseRead => "Finance.Expense.Read",
+            Self::FinanceExpenseUpdate => "Finance.Expense.Update",
+            Self::FinanceExpenseDelete => "Finance.Expense.Delete",
+            Self::FinanceExpenseApprove => "Finance.Expense.Approve",
+            Self::FinanceExpenseHeadCreate => "Finance.ExpenseHead.Create",
+            Self::FinanceExpenseHeadRead => "Finance.ExpenseHead.Read",
+            Self::FinanceExpenseHeadUpdate => "Finance.ExpenseHead.Update",
+            Self::FinanceExpenseHeadDelete => "Finance.ExpenseHead.Delete",
+            Self::FinanceIncomeCreate => "Finance.Income.Create",
+            Self::FinanceIncomeRead => "Finance.Income.Read",
+            Self::FinanceIncomeUpdate => "Finance.Income.Update",
+            Self::FinanceIncomeDelete => "Finance.Income.Delete",
+            Self::FinanceIncomeApprove => "Finance.Income.Approve",
+            Self::FinanceIncomeHeadCreate => "Finance.IncomeHead.Create",
+            Self::FinanceIncomeHeadRead => "Finance.IncomeHead.Read",
+            Self::FinanceIncomeHeadUpdate => "Finance.IncomeHead.Update",
+            Self::FinanceIncomeHeadDelete => "Finance.IncomeHead.Delete",
+            Self::FinanceBankOpen => "Finance.Bank.Open",
+            Self::FinanceBankRead => "Finance.Bank.Read",
+            Self::FinanceBankUpdate => "Finance.Bank.Update",
+            Self::FinanceBankClose => "Finance.Bank.Close",
+            Self::FinanceBankStatementRecord => "Finance.Bank.Statement.Record",
+            Self::FinanceBankStatementReverse => "Finance.Bank.Statement.Reverse",
+            Self::FinanceBankTransfer => "Finance.Bank.Transfer",
+            Self::FinanceBankSlipGenerate => "Finance.BankSlip.Generate",
+            Self::FinanceBankSlipRead => "Finance.BankSlip.Read",
+            Self::FinanceBankSlipApprove => "Finance.BankSlip.Approve",
+            Self::FinanceBankSlipReject => "Finance.BankSlip.Reject",
+            Self::FinancePayrollPaymentRead => "Finance.PayrollPayment.Read",
+            Self::FinancePayrollPaymentRecord => "Finance.PayrollPayment.Record",
+            Self::FinanceWalletCredit => "Finance.Wallet.Credit",
+            Self::FinanceWalletDebit => "Finance.Wallet.Debit",
+            Self::FinanceWalletRead => "Finance.Wallet.Read",
+            Self::FinanceWalletApprove => "Finance.Wallet.Approve",
+            Self::FinanceWalletReject => "Finance.Wallet.Reject",
+            Self::FinanceFeesCarryForwardExecute => "Finance.FeesCarryForward.Execute",
+            Self::FinanceFeesCarryForwardRead => "Finance.FeesCarryForward.Read",
+            Self::FinanceFeesCarryForwardConfigure => "Finance.FeesCarryForward.Configure",
+            Self::FinanceDueFeesBlock => "Finance.DueFees.Block",
+            Self::FinanceDueFeesUnblock => "Finance.DueFees.Unblock",
+            Self::FinanceDueFeesRead => "Finance.DueFees.Read",
+            Self::FinanceFeesReminderConfigure => "Finance.FeesReminder.Configure",
+            Self::FinanceFeesReminderRead => "Finance.FeesReminder.Read",
+            Self::FinanceFeesReminderUpdate => "Finance.FeesReminder.Update",
+            Self::FinanceFeesReminderDelete => "Finance.FeesReminder.Delete",
+            Self::FinanceChartOfAccountCreate => "Finance.ChartOfAccount.Create",
+            Self::FinanceChartOfAccountRead => "Finance.ChartOfAccount.Read",
+            Self::FinanceChartOfAccountUpdate => "Finance.ChartOfAccount.Update",
+            Self::FinanceChartOfAccountDelete => "Finance.ChartOfAccount.Delete",
+            Self::FinanceReportFeesCollected => "Finance.Report.Read.FeesCollected",
+            Self::FinanceReportFeesOutstanding => "Finance.Report.Read.FeesOutstanding",
+            Self::FinanceReportDailyCollection => "Finance.Report.Read.DailyCollection",
+            Self::FinanceReportExpense => "Finance.Report.Read.Expense",
+            Self::FinanceReportBankReconciliation => "Finance.Report.Read.BankReconciliation",
+            Self::FinanceReportWalletLedger => "Finance.Report.Read.WalletLedger",
+            Self::FinanceReportRead => "Finance.Report.Read.Finance",
+            Self::HrHourlyRateRead => "Hr.HourlyRate.Read",
+            Self::HrHourlyRateUpdate => "Hr.HourlyRate.Update",
+            Self::HrHourlyRateDelete => "Hr.HourlyRate.Delete",
+            Self::HrStaffRegistrationFieldCreate => "Hr.StaffRegistrationField.Create",
+            Self::HrStaffRegistrationFieldRead => "Hr.StaffRegistrationField.Read",
+            Self::HrStaffRegistrationFieldUpdate => "Hr.StaffRegistrationField.Update",
+            Self::HrStaffRegistrationFieldDelete => "Hr.StaffRegistrationField.Delete",
+            Self::HrReportStaffRoster => "Hr.Report.Read.StaffRoster",
+            Self::HrReportStaffByDepartment => "Hr.Report.Read.StaffByDepartment",
+            Self::HrReportStaffByDesignation => "Hr.Report.Read.StaffByDesignation",
+            Self::HrReportLeaveUsage => "Hr.Report.Read.LeaveUsage",
+            Self::HrReportLeaveBalance => "Hr.Report.Read.LeaveBalance",
+            Self::HrReportAttendanceDaily => "Hr.Report.Read.AttendanceDaily",
+            Self::HrReportAttendanceMonthly => "Hr.Report.Read.AttendanceMonthly",
+            Self::HrReportAttendanceByStaff => "Hr.Report.Read.AttendanceByStaff",
+            Self::HrReportPayrollRegister => "Hr.Report.Read.PayrollRegister",
+            Self::HrReportPayrollByStaff => "Hr.Report.Read.PayrollByStaff",
+            Self::HrReportPayrollByDepartment => "Hr.Report.Read.PayrollByDepartment",
+            Self::HrReportPayrollTax => "Hr.Report.Read.PayrollTax",
+            Self::HrReportSalaryStructure => "Hr.Report.Read.SalaryStructure",
+            Self::HrReportHourlyEarnings => "Hr.Report.Read.HourlyEarnings",
+            Self::HrReportLeaveDeduction => "Hr.Report.Read.LeaveDeduction",
+            Self::HrReportRead => "Hr.Report.Read.HR",
             Self::LibraryBookCreate => "Library.Book.Create",
             Self::LibraryBookRead => "Library.Book.Read",
             Self::LibraryBookUpdate => "Library.Book.Update",
@@ -841,6 +2023,204 @@ impl Capability {
             Self::HrStaffRead,
             Self::HrStaffUpdate,
             Self::HrStaffDelete,
+            Self::HrStaffSuspend,
+            Self::HrStaffReinstate,
+            Self::HrStaffResign,
+            Self::HrStaffTerminate,
+            Self::HrStaffRetire,
+            Self::HrStaffChangeDepartment,
+            Self::HrStaffChangeDesignation,
+            Self::HrStaffChangeRole,
+            Self::HrStaffAssignSubjectTeacher,
+            Self::HrStaffAssignClassTeacherCreate,
+            Self::HrStaffAssignClassTeacherUpdate,
+            Self::HrStaffAssignClassTeacherDelete,
+            Self::HrStaffImportBulk,
+            Self::HrStaffImportBulkPromote,
+            Self::HrStaffImportBulkReject,
+            Self::HrStaffDocumentUpload,
+            Self::HrStaffDocumentDownload,
+            Self::HrDepartmentCreate,
+            Self::HrDepartmentRead,
+            Self::HrDepartmentUpdate,
+            Self::HrDepartmentDelete,
+            Self::HrDesignationCreate,
+            Self::HrDesignationRead,
+            Self::HrDesignationUpdate,
+            Self::HrDesignationDelete,
+            Self::HrLeaveTypeCreate,
+            Self::HrLeaveTypeRead,
+            Self::HrLeaveTypeUpdate,
+            Self::HrLeaveTypeDelete,
+            Self::HrLeaveDefineCreate,
+            Self::HrLeaveDefineRead,
+            Self::HrLeaveDefineUpdate,
+            Self::HrLeaveDefineDelete,
+            Self::HrLeaveRequest,
+            Self::HrLeaveApprove,
+            Self::HrLeaveReject,
+            Self::HrLeaveCancel,
+            Self::HrLeaveRead,
+            Self::HrAttendanceStaffMark,
+            Self::HrAttendanceStaffUpdate,
+            Self::HrAttendanceStaffDelete,
+            Self::HrAttendanceStaffRead,
+            Self::HrAttendanceStaffImport,
+            Self::HrAttendanceStaffImportPromote,
+            Self::HrAttendanceStaffImportReject,
+            Self::HrPayrollGenerate,
+            Self::HrPayrollUpdate,
+            Self::HrPayrollApprove,
+            Self::HrPayrollMarkPaid,
+            Self::HrPayrollRead,
+            Self::HrPayrollEarningAdd,
+            Self::HrPayrollEarningUpdate,
+            Self::HrPayrollEarningDelete,
+            Self::HrPayrollDeductionAdd,
+            Self::HrPayrollDeductionUpdate,
+            Self::HrPayrollDeductionDelete,
+            Self::HrPayrollLeaveDeductionAdd,
+            Self::HrPayrollLeaveDeductionUpdate,
+            Self::HrPayrollLeaveDeductionDelete,
+            Self::HrPayrollPaymentRead,
+            Self::HrSalaryTemplateCreate,
+            Self::HrSalaryTemplateRead,
+            Self::HrSalaryTemplateUpdate,
+            Self::HrSalaryTemplateDelete,
+            Self::HrHourlyRateSet,
+            Self::HrHourlyRateRead,
+            Self::HrHourlyRateUpdate,
+            Self::HrHourlyRateDelete,
+            Self::FinanceInvoiceCreate,
+            Self::FinanceInvoiceRead,
+            Self::FinanceInvoiceUpdate,
+            Self::FinanceInvoiceDelete,
+            Self::FinanceFeesGroupCreate,
+            Self::FinanceFeesGroupRead,
+            Self::FinanceFeesGroupUpdate,
+            Self::FinanceFeesGroupDelete,
+            Self::FinanceFeesTypeCreate,
+            Self::FinanceFeesTypeRead,
+            Self::FinanceFeesTypeUpdate,
+            Self::FinanceFeesTypeDelete,
+            Self::FinanceFeesMasterCreate,
+            Self::FinanceFeesMasterRead,
+            Self::FinanceFeesMasterUpdate,
+            Self::FinanceFeesMasterDelete,
+            Self::FinanceFeesDiscountCreate,
+            Self::FinanceFeesDiscountRead,
+            Self::FinanceFeesDiscountUpdate,
+            Self::FinanceFeesDiscountDelete,
+            Self::FinanceFeesAssignCreate,
+            Self::FinanceFeesAssignRead,
+            Self::FinanceFeesAssignUpdate,
+            Self::FinanceFeesAssignClose,
+            Self::FinanceFeesInstallmentCreate,
+            Self::FinanceFeesInstallmentRead,
+            Self::FinanceFeesInstallmentUpdate,
+            Self::FinanceFeesInstallmentDelete,
+            Self::FinanceFeesInstallmentAssign,
+            Self::FinanceDirectFeesInstallmentCreate,
+            Self::FinanceDirectFeesInstallmentRead,
+            Self::FinanceDirectFeesInstallmentUpdate,
+            Self::FinanceDirectFeesInstallmentDelete,
+            Self::FinanceDirectFeesInstallmentAssign,
+            Self::FinanceDirectFeesInstallmentPay,
+            Self::FinanceFeesInvoiceGenerate,
+            Self::FinanceFeesInvoiceRead,
+            Self::FinanceFeesInvoiceUpdate,
+            Self::FinanceFeesInvoiceCancel,
+            Self::FinanceFeesInvoiceConfigure,
+            Self::FinanceFeesInvoicePrint,
+            Self::FinancePaymentCollect,
+            Self::FinancePaymentRead,
+            Self::FinancePaymentReverse,
+            Self::FinancePaymentRefund,
+            Self::FinancePaymentMethodCreate,
+            Self::FinancePaymentMethodRead,
+            Self::FinancePaymentMethodUpdate,
+            Self::FinancePaymentMethodDelete,
+            Self::FinancePaymentGatewayConfigure,
+            Self::FinancePaymentGatewayRead,
+            Self::FinancePaymentGatewayUpdate,
+            Self::FinancePaymentGatewayDisable,
+            Self::FinanceExpenseCreate,
+            Self::FinanceExpenseRead,
+            Self::FinanceExpenseUpdate,
+            Self::FinanceExpenseDelete,
+            Self::FinanceExpenseApprove,
+            Self::FinanceExpenseHeadCreate,
+            Self::FinanceExpenseHeadRead,
+            Self::FinanceExpenseHeadUpdate,
+            Self::FinanceExpenseHeadDelete,
+            Self::FinanceIncomeCreate,
+            Self::FinanceIncomeRead,
+            Self::FinanceIncomeUpdate,
+            Self::FinanceIncomeDelete,
+            Self::FinanceIncomeApprove,
+            Self::FinanceIncomeHeadCreate,
+            Self::FinanceIncomeHeadRead,
+            Self::FinanceIncomeHeadUpdate,
+            Self::FinanceIncomeHeadDelete,
+            Self::FinanceBankOpen,
+            Self::FinanceBankRead,
+            Self::FinanceBankUpdate,
+            Self::FinanceBankClose,
+            Self::FinanceBankStatementRecord,
+            Self::FinanceBankStatementReverse,
+            Self::FinanceBankTransfer,
+            Self::FinanceBankSlipGenerate,
+            Self::FinanceBankSlipRead,
+            Self::FinanceBankSlipApprove,
+            Self::FinanceBankSlipReject,
+            Self::FinancePayrollPaymentRead,
+            Self::FinancePayrollPaymentRecord,
+            Self::FinanceWalletCredit,
+            Self::FinanceWalletDebit,
+            Self::FinanceWalletRead,
+            Self::FinanceWalletApprove,
+            Self::FinanceWalletReject,
+            Self::FinanceFeesCarryForwardExecute,
+            Self::FinanceFeesCarryForwardRead,
+            Self::FinanceFeesCarryForwardConfigure,
+            Self::FinanceDueFeesBlock,
+            Self::FinanceDueFeesUnblock,
+            Self::FinanceDueFeesRead,
+            Self::FinanceFeesReminderConfigure,
+            Self::FinanceFeesReminderRead,
+            Self::FinanceFeesReminderUpdate,
+            Self::FinanceFeesReminderDelete,
+            Self::FinanceChartOfAccountCreate,
+            Self::FinanceChartOfAccountRead,
+            Self::FinanceChartOfAccountUpdate,
+            Self::FinanceChartOfAccountDelete,
+            Self::FinanceReportFeesCollected,
+            Self::FinanceReportFeesOutstanding,
+            Self::FinanceReportDailyCollection,
+            Self::FinanceReportExpense,
+            Self::FinanceReportBankReconciliation,
+            Self::FinanceReportWalletLedger,
+            Self::FinanceReportRead,
+            Self::HrStaffRegistrationFieldCreate,
+            Self::HrStaffRegistrationFieldRead,
+            Self::HrStaffRegistrationFieldUpdate,
+            Self::HrStaffRegistrationFieldDelete,
+            Self::HrReportStaffRoster,
+            Self::HrReportStaffByDepartment,
+            Self::HrReportStaffByDesignation,
+            Self::HrReportLeaveUsage,
+            Self::HrReportLeaveBalance,
+            Self::HrReportAttendanceDaily,
+            Self::HrReportAttendanceMonthly,
+            Self::HrReportAttendanceByStaff,
+            Self::HrReportPayrollRegister,
+            Self::HrReportPayrollByStaff,
+            Self::HrReportPayrollByDepartment,
+            Self::HrReportPayrollTax,
+            Self::HrReportSalaryStructure,
+            Self::HrReportHourlyEarnings,
+            Self::HrReportLeaveDeduction,
+            Self::HrReportRead,
             Self::LibraryBookCreate,
             Self::LibraryBookRead,
             Self::LibraryBookUpdate,
@@ -965,6 +2345,208 @@ impl Capability {
             "Hr.Staff.Read" => Some(Self::HrStaffRead),
             "Hr.Staff.Update" => Some(Self::HrStaffUpdate),
             "Hr.Staff.Delete" => Some(Self::HrStaffDelete),
+            "Hr.Staff.Suspend" => Some(Self::HrStaffSuspend),
+            "Hr.Staff.Reinstate" => Some(Self::HrStaffReinstate),
+            "Hr.Staff.Resign" => Some(Self::HrStaffResign),
+            "Hr.Staff.Terminate" => Some(Self::HrStaffTerminate),
+            "Hr.Staff.Retire" => Some(Self::HrStaffRetire),
+            "Hr.Staff.ChangeDepartment" => Some(Self::HrStaffChangeDepartment),
+            "Hr.Staff.ChangeDesignation" => Some(Self::HrStaffChangeDesignation),
+            "Hr.Staff.ChangeRole" => Some(Self::HrStaffChangeRole),
+            "Hr.Staff.AssignSubjectTeacher" => Some(Self::HrStaffAssignSubjectTeacher),
+            "Hr.AssignClassTeacher.Create" => Some(Self::HrStaffAssignClassTeacherCreate),
+            "Hr.AssignClassTeacher.Update" => Some(Self::HrStaffAssignClassTeacherUpdate),
+            "Hr.AssignClassTeacher.Delete" => Some(Self::HrStaffAssignClassTeacherDelete),
+            "Hr.Staff.ImportBulk" => Some(Self::HrStaffImportBulk),
+            "Hr.Staff.ImportBulk.Promote" => Some(Self::HrStaffImportBulkPromote),
+            "Hr.Staff.ImportBulk.Reject" => Some(Self::HrStaffImportBulkReject),
+            "Hr.Staff.Document.Upload" => Some(Self::HrStaffDocumentUpload),
+            "Hr.Staff.Document.Download" => Some(Self::HrStaffDocumentDownload),
+            "Hr.Department.Create" => Some(Self::HrDepartmentCreate),
+            "Hr.Department.Read" => Some(Self::HrDepartmentRead),
+            "Hr.Department.Update" => Some(Self::HrDepartmentUpdate),
+            "Hr.Department.Delete" => Some(Self::HrDepartmentDelete),
+            "Hr.Designation.Create" => Some(Self::HrDesignationCreate),
+            "Hr.Designation.Read" => Some(Self::HrDesignationRead),
+            "Hr.Designation.Update" => Some(Self::HrDesignationUpdate),
+            "Hr.Designation.Delete" => Some(Self::HrDesignationDelete),
+            "Hr.LeaveType.Create" => Some(Self::HrLeaveTypeCreate),
+            "Hr.LeaveType.Read" => Some(Self::HrLeaveTypeRead),
+            "Hr.LeaveType.Update" => Some(Self::HrLeaveTypeUpdate),
+            "Hr.LeaveType.Delete" => Some(Self::HrLeaveTypeDelete),
+            "Hr.LeaveDefine.Create" => Some(Self::HrLeaveDefineCreate),
+            "Hr.LeaveDefine.Read" => Some(Self::HrLeaveDefineRead),
+            "Hr.LeaveDefine.Update" => Some(Self::HrLeaveDefineUpdate),
+            "Hr.LeaveDefine.Delete" => Some(Self::HrLeaveDefineDelete),
+            "Hr.Leave.Request" => Some(Self::HrLeaveRequest),
+            "Hr.Leave.Approve" => Some(Self::HrLeaveApprove),
+            "Hr.Leave.Reject" => Some(Self::HrLeaveReject),
+            "Hr.Leave.Cancel" => Some(Self::HrLeaveCancel),
+            "Hr.Leave.Read" => Some(Self::HrLeaveRead),
+            "Hr.Attendance.Staff.Mark" => Some(Self::HrAttendanceStaffMark),
+            "Hr.Attendance.Staff.Update" => Some(Self::HrAttendanceStaffUpdate),
+            "Hr.Attendance.Staff.Delete" => Some(Self::HrAttendanceStaffDelete),
+            "Hr.Attendance.Staff.Read" => Some(Self::HrAttendanceStaffRead),
+            "Hr.Attendance.Staff.Import" => Some(Self::HrAttendanceStaffImport),
+            "Hr.Attendance.Staff.Import.Promote" => Some(Self::HrAttendanceStaffImportPromote),
+            "Hr.Attendance.Staff.Import.Reject" => Some(Self::HrAttendanceStaffImportReject),
+            "Hr.Payroll.Generate" => Some(Self::HrPayrollGenerate),
+            "Hr.Payroll.Update" => Some(Self::HrPayrollUpdate),
+            "Hr.Payroll.Approve" => Some(Self::HrPayrollApprove),
+            "Hr.Payroll.MarkPaid" => Some(Self::HrPayrollMarkPaid),
+            "Hr.Payroll.Read" => Some(Self::HrPayrollRead),
+            "Hr.Payroll.Earning.Add" => Some(Self::HrPayrollEarningAdd),
+            "Hr.Payroll.Earning.Update" => Some(Self::HrPayrollEarningUpdate),
+            "Hr.Payroll.Earning.Delete" => Some(Self::HrPayrollEarningDelete),
+            "Hr.Payroll.Deduction.Add" => Some(Self::HrPayrollDeductionAdd),
+            "Hr.Payroll.Deduction.Update" => Some(Self::HrPayrollDeductionUpdate),
+            "Hr.Payroll.Deduction.Delete" => Some(Self::HrPayrollDeductionDelete),
+            "Hr.Payroll.LeaveDeduction.Add" => Some(Self::HrPayrollLeaveDeductionAdd),
+            "Hr.Payroll.LeaveDeduction.Update" => Some(Self::HrPayrollLeaveDeductionUpdate),
+            "Hr.Payroll.LeaveDeduction.Delete" => Some(Self::HrPayrollLeaveDeductionDelete),
+            "Hr.PayrollPayment.Read" => Some(Self::HrPayrollPaymentRead),
+            "Hr.SalaryTemplate.Create" => Some(Self::HrSalaryTemplateCreate),
+            "Hr.SalaryTemplate.Read" => Some(Self::HrSalaryTemplateRead),
+            "Hr.SalaryTemplate.Update" => Some(Self::HrSalaryTemplateUpdate),
+            "Hr.SalaryTemplate.Delete" => Some(Self::HrSalaryTemplateDelete),
+            "Hr.HourlyRate.Set" => Some(Self::HrHourlyRateSet),
+            "Finance.FeesGroup.Create" => Some(Self::FinanceFeesGroupCreate),
+            "Finance.FeesGroup.Read" => Some(Self::FinanceFeesGroupRead),
+            "Finance.FeesGroup.Update" => Some(Self::FinanceFeesGroupUpdate),
+            "Finance.FeesGroup.Delete" => Some(Self::FinanceFeesGroupDelete),
+            "Finance.FeesType.Create" => Some(Self::FinanceFeesTypeCreate),
+            "Finance.FeesType.Read" => Some(Self::FinanceFeesTypeRead),
+            "Finance.FeesType.Update" => Some(Self::FinanceFeesTypeUpdate),
+            "Finance.FeesType.Delete" => Some(Self::FinanceFeesTypeDelete),
+            "Finance.FeesMaster.Create" => Some(Self::FinanceFeesMasterCreate),
+            "Finance.FeesMaster.Read" => Some(Self::FinanceFeesMasterRead),
+            "Finance.FeesMaster.Update" => Some(Self::FinanceFeesMasterUpdate),
+            "Finance.FeesMaster.Delete" => Some(Self::FinanceFeesMasterDelete),
+            "Finance.FeesDiscount.Create" => Some(Self::FinanceFeesDiscountCreate),
+            "Finance.FeesDiscount.Read" => Some(Self::FinanceFeesDiscountRead),
+            "Finance.FeesDiscount.Update" => Some(Self::FinanceFeesDiscountUpdate),
+            "Finance.FeesDiscount.Delete" => Some(Self::FinanceFeesDiscountDelete),
+            "Finance.FeesAssign.Create" => Some(Self::FinanceFeesAssignCreate),
+            "Finance.FeesAssign.Read" => Some(Self::FinanceFeesAssignRead),
+            "Finance.FeesAssign.Update" => Some(Self::FinanceFeesAssignUpdate),
+            "Finance.FeesAssign.Close" => Some(Self::FinanceFeesAssignClose),
+            "Finance.FeesInstallment.Create" => Some(Self::FinanceFeesInstallmentCreate),
+            "Finance.FeesInstallment.Read" => Some(Self::FinanceFeesInstallmentRead),
+            "Finance.FeesInstallment.Update" => Some(Self::FinanceFeesInstallmentUpdate),
+            "Finance.FeesInstallment.Delete" => Some(Self::FinanceFeesInstallmentDelete),
+            "Finance.FeesInstallment.Assign" => Some(Self::FinanceFeesInstallmentAssign),
+            "Finance.DirectFeesInstallment.Create" => {
+                Some(Self::FinanceDirectFeesInstallmentCreate)
+            }
+            "Finance.DirectFeesInstallment.Read" => Some(Self::FinanceDirectFeesInstallmentRead),
+            "Finance.DirectFeesInstallment.Update" => {
+                Some(Self::FinanceDirectFeesInstallmentUpdate)
+            }
+            "Finance.DirectFeesInstallment.Delete" => {
+                Some(Self::FinanceDirectFeesInstallmentDelete)
+            }
+            "Finance.DirectFeesInstallment.Assign" => {
+                Some(Self::FinanceDirectFeesInstallmentAssign)
+            }
+            "Finance.DirectFeesInstallment.Pay" => Some(Self::FinanceDirectFeesInstallmentPay),
+            "Finance.FeesInvoice.Generate" => Some(Self::FinanceFeesInvoiceGenerate),
+            "Finance.FeesInvoice.Read" => Some(Self::FinanceFeesInvoiceRead),
+            "Finance.FeesInvoice.Update" => Some(Self::FinanceFeesInvoiceUpdate),
+            "Finance.FeesInvoice.Cancel" => Some(Self::FinanceFeesInvoiceCancel),
+            "Finance.FeesInvoice.Configure" => Some(Self::FinanceFeesInvoiceConfigure),
+            "Finance.FeesInvoice.Print" => Some(Self::FinanceFeesInvoicePrint),
+            "Finance.Payment.Collect" => Some(Self::FinancePaymentCollect),
+            "Finance.Payment.Read" => Some(Self::FinancePaymentRead),
+            "Finance.Payment.Reverse" => Some(Self::FinancePaymentReverse),
+            "Finance.Payment.Refund" => Some(Self::FinancePaymentRefund),
+            "Finance.PaymentMethod.Create" => Some(Self::FinancePaymentMethodCreate),
+            "Finance.PaymentMethod.Read" => Some(Self::FinancePaymentMethodRead),
+            "Finance.PaymentMethod.Update" => Some(Self::FinancePaymentMethodUpdate),
+            "Finance.PaymentMethod.Delete" => Some(Self::FinancePaymentMethodDelete),
+            "Finance.PaymentGateway.Configure" => Some(Self::FinancePaymentGatewayConfigure),
+            "Finance.PaymentGateway.Read" => Some(Self::FinancePaymentGatewayRead),
+            "Finance.PaymentGateway.Update" => Some(Self::FinancePaymentGatewayUpdate),
+            "Finance.PaymentGateway.Disable" => Some(Self::FinancePaymentGatewayDisable),
+            "Finance.Expense.Create" => Some(Self::FinanceExpenseCreate),
+            "Finance.Expense.Read" => Some(Self::FinanceExpenseRead),
+            "Finance.Expense.Update" => Some(Self::FinanceExpenseUpdate),
+            "Finance.Expense.Delete" => Some(Self::FinanceExpenseDelete),
+            "Finance.Expense.Approve" => Some(Self::FinanceExpenseApprove),
+            "Finance.ExpenseHead.Create" => Some(Self::FinanceExpenseHeadCreate),
+            "Finance.ExpenseHead.Read" => Some(Self::FinanceExpenseHeadRead),
+            "Finance.ExpenseHead.Update" => Some(Self::FinanceExpenseHeadUpdate),
+            "Finance.ExpenseHead.Delete" => Some(Self::FinanceExpenseHeadDelete),
+            "Finance.Income.Create" => Some(Self::FinanceIncomeCreate),
+            "Finance.Income.Read" => Some(Self::FinanceIncomeRead),
+            "Finance.Income.Update" => Some(Self::FinanceIncomeUpdate),
+            "Finance.Income.Delete" => Some(Self::FinanceIncomeDelete),
+            "Finance.Income.Approve" => Some(Self::FinanceIncomeApprove),
+            "Finance.IncomeHead.Create" => Some(Self::FinanceIncomeHeadCreate),
+            "Finance.IncomeHead.Read" => Some(Self::FinanceIncomeHeadRead),
+            "Finance.IncomeHead.Update" => Some(Self::FinanceIncomeHeadUpdate),
+            "Finance.IncomeHead.Delete" => Some(Self::FinanceIncomeHeadDelete),
+            "Finance.Bank.Open" => Some(Self::FinanceBankOpen),
+            "Finance.Bank.Read" => Some(Self::FinanceBankRead),
+            "Finance.Bank.Update" => Some(Self::FinanceBankUpdate),
+            "Finance.Bank.Close" => Some(Self::FinanceBankClose),
+            "Finance.Bank.Statement.Record" => Some(Self::FinanceBankStatementRecord),
+            "Finance.Bank.Statement.Reverse" => Some(Self::FinanceBankStatementReverse),
+            "Finance.Bank.Transfer" => Some(Self::FinanceBankTransfer),
+            "Finance.BankSlip.Generate" => Some(Self::FinanceBankSlipGenerate),
+            "Finance.BankSlip.Read" => Some(Self::FinanceBankSlipRead),
+            "Finance.BankSlip.Approve" => Some(Self::FinanceBankSlipApprove),
+            "Finance.BankSlip.Reject" => Some(Self::FinanceBankSlipReject),
+            "Finance.PayrollPayment.Read" => Some(Self::FinancePayrollPaymentRead),
+            "Finance.PayrollPayment.Record" => Some(Self::FinancePayrollPaymentRecord),
+            "Finance.Wallet.Credit" => Some(Self::FinanceWalletCredit),
+            "Finance.Wallet.Debit" => Some(Self::FinanceWalletDebit),
+            "Finance.Wallet.Read" => Some(Self::FinanceWalletRead),
+            "Finance.Wallet.Approve" => Some(Self::FinanceWalletApprove),
+            "Finance.Wallet.Reject" => Some(Self::FinanceWalletReject),
+            "Finance.FeesCarryForward.Execute" => Some(Self::FinanceFeesCarryForwardExecute),
+            "Finance.FeesCarryForward.Read" => Some(Self::FinanceFeesCarryForwardRead),
+            "Finance.FeesCarryForward.Configure" => Some(Self::FinanceFeesCarryForwardConfigure),
+            "Finance.DueFees.Block" => Some(Self::FinanceDueFeesBlock),
+            "Finance.DueFees.Unblock" => Some(Self::FinanceDueFeesUnblock),
+            "Finance.DueFees.Read" => Some(Self::FinanceDueFeesRead),
+            "Finance.FeesReminder.Configure" => Some(Self::FinanceFeesReminderConfigure),
+            "Finance.FeesReminder.Read" => Some(Self::FinanceFeesReminderRead),
+            "Finance.FeesReminder.Update" => Some(Self::FinanceFeesReminderUpdate),
+            "Finance.FeesReminder.Delete" => Some(Self::FinanceFeesReminderDelete),
+            "Finance.ChartOfAccount.Create" => Some(Self::FinanceChartOfAccountCreate),
+            "Finance.ChartOfAccount.Read" => Some(Self::FinanceChartOfAccountRead),
+            "Finance.ChartOfAccount.Update" => Some(Self::FinanceChartOfAccountUpdate),
+            "Finance.ChartOfAccount.Delete" => Some(Self::FinanceChartOfAccountDelete),
+            "Finance.Report.Read.FeesCollected" => Some(Self::FinanceReportFeesCollected),
+            "Finance.Report.Read.FeesOutstanding" => Some(Self::FinanceReportFeesOutstanding),
+            "Finance.Report.Read.DailyCollection" => Some(Self::FinanceReportDailyCollection),
+            "Finance.Report.Read.Expense" => Some(Self::FinanceReportExpense),
+            "Finance.Report.Read.BankReconciliation" => Some(Self::FinanceReportBankReconciliation),
+            "Finance.Report.Read.WalletLedger" => Some(Self::FinanceReportWalletLedger),
+            "Finance.Report.Read.Finance" => Some(Self::FinanceReportRead),
+            "Hr.HourlyRate.Read" => Some(Self::HrHourlyRateRead),
+            "Hr.HourlyRate.Update" => Some(Self::HrHourlyRateUpdate),
+            "Hr.HourlyRate.Delete" => Some(Self::HrHourlyRateDelete),
+            "Hr.StaffRegistrationField.Create" => Some(Self::HrStaffRegistrationFieldCreate),
+            "Hr.StaffRegistrationField.Read" => Some(Self::HrStaffRegistrationFieldRead),
+            "Hr.StaffRegistrationField.Update" => Some(Self::HrStaffRegistrationFieldUpdate),
+            "Hr.StaffRegistrationField.Delete" => Some(Self::HrStaffRegistrationFieldDelete),
+            "Hr.Report.Read.StaffRoster" => Some(Self::HrReportStaffRoster),
+            "Hr.Report.Read.StaffByDepartment" => Some(Self::HrReportStaffByDepartment),
+            "Hr.Report.Read.StaffByDesignation" => Some(Self::HrReportStaffByDesignation),
+            "Hr.Report.Read.LeaveUsage" => Some(Self::HrReportLeaveUsage),
+            "Hr.Report.Read.LeaveBalance" => Some(Self::HrReportLeaveBalance),
+            "Hr.Report.Read.AttendanceDaily" => Some(Self::HrReportAttendanceDaily),
+            "Hr.Report.Read.AttendanceMonthly" => Some(Self::HrReportAttendanceMonthly),
+            "Hr.Report.Read.AttendanceByStaff" => Some(Self::HrReportAttendanceByStaff),
+            "Hr.Report.Read.PayrollRegister" => Some(Self::HrReportPayrollRegister),
+            "Hr.Report.Read.PayrollByStaff" => Some(Self::HrReportPayrollByStaff),
+            "Hr.Report.Read.PayrollByDepartment" => Some(Self::HrReportPayrollByDepartment),
+            "Hr.Report.Read.PayrollTax" => Some(Self::HrReportPayrollTax),
+            "Hr.Report.Read.SalaryStructure" => Some(Self::HrReportSalaryStructure),
+            "Hr.Report.Read.HourlyEarnings" => Some(Self::HrReportHourlyEarnings),
+            "Hr.Report.Read.LeaveDeduction" => Some(Self::HrReportLeaveDeduction),
+            "Hr.Report.Read.HR" => Some(Self::HrReportRead),
             "Library.Book.Create" => Some(Self::LibraryBookCreate),
             "Library.Book.Read" => Some(Self::LibraryBookRead),
             "Library.Book.Update" => Some(Self::LibraryBookUpdate),
@@ -1428,6 +3010,43 @@ mod tests {
     }
 
     #[test]
+    fn hr_capabilities_round_trip_and_resolve_to_hr_domain() {
+        let mut count = 0u32;
+        for c in Capability::all() {
+            let s = c.as_str();
+            if s.starts_with("Hr.") {
+                let parsed = Capability::from_str(s).unwrap();
+                assert_eq!(parsed, *c, "round-trip failed for {s}");
+                assert_eq!(c.domain(), CapabilityDomain::Hr, "domain mismatch for {s}");
+                count += 1;
+            }
+        }
+        assert_eq!(count, 92, "expected 92 Hr.* capabilities (got {count})");
+    }
+
+    #[test]
+    fn finance_capabilities_round_trip_and_resolve_to_finance_domain() {
+        let mut count = 0u32;
+        for c in Capability::all() {
+            let s = c.as_str();
+            if s.starts_with("Finance.") {
+                let parsed = Capability::from_str(s).unwrap();
+                assert_eq!(parsed, *c, "round-trip failed for {s}");
+                assert_eq!(
+                    c.domain(),
+                    CapabilityDomain::Finance,
+                    "domain mismatch for {s}"
+                );
+                count += 1;
+            }
+        }
+        assert_eq!(
+            count, 114,
+            "expected 114 Finance.* capabilities (4 legacy placeholders + 110 Phase 7; got {count})"
+        );
+    }
+
+    #[test]
     fn capability_from_str_unknown_returns_err() {
         let err = Capability::from_str("Foo.Bar.Baz").unwrap_err();
         assert!(matches!(err, DomainError::Validation(_)));
@@ -1455,20 +3074,32 @@ mod tests {
             // Two-segment exceptions: `Rbac.Bootstrap`,
             // `Settings.Manage`, `Operations.Manage`. Every other
             // capability uses the three-segment form
-            // `<Domain>.<Aggregate>.<Action>`.
+            // `<Domain>.<Aggregate>.<Action>` (or the four-segment
+            // `<Domain>.<Aggregate>.<Action>.<Subject>` for
+            // read-only report capabilities, e.g.
+            // `Hr.Report.Read.StaffRoster`, and for compound
+            // sub-aggregate capabilities like
+            // `Hr.Staff.AssignClassTeacher.Create` or
+            // `Hr.Staff.Document.Upload`).
             assert!(
                 parts.len() >= 2,
                 "expected at least 2 segments for {c:?}, got {s:?}"
             );
-            let last = parts[parts.len() - 1];
             let action = c.action();
+            let last_two = if parts.len() >= 2 {
+                format!("{}.{}", parts[parts.len() - 2], parts[parts.len() - 1])
+            } else {
+                String::new()
+            };
+            let last = parts[parts.len() - 1];
             assert!(
                 last == action
                     || last.starts_with(action)
+                    || last_two.starts_with(action)
                     || s == "Rbac.Bootstrap"
                     || s == "Settings.Manage"
                     || s == "Operations.Manage",
-                "action mismatch for {c:?}: wire={last:?} action={action:?}"
+                "action mismatch for {c:?}: wire={s:?} action={action:?}"
             );
         }
     }
