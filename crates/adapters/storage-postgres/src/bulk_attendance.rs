@@ -150,7 +150,7 @@ pub async fn bulk_insert_into(
             attendance_date, attendance_type, in_time, out_time, notes, is_absent, \
             marked_by, marked_at, marked_from, version, etag, created_at, updated_at, \
             created_by, updated_by, active_status, last_event_id, correlation_id\
-         ) VALUES ",
+        ) ", // trailing space; push_values() appends ` VALUES (...)` itself
     );
     qb.push_values(rows.iter(), |mut b, r| {
         b.push_bind(r.school_id_bytes())
