@@ -21,6 +21,8 @@ educore-audit = { workspace = true }
 educore-academic = { workspace = true }
 educore-assessment = { workspace = true }
 educore-attendance = { workspace = true }
+educore-hr = { workspace = true }
+educore-finance = { workspace = true }
 async-trait = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }

@@ -11,10 +11,20 @@ description = "Staff lifecycle, leave, payroll, staff attendance, designations, 
 workspace = true
 
 [dependencies]
+educore-academic = { workspace = true }
+educore-audit = { workspace = true }
 educore-core = { workspace = true }
+educore-event-bus = { workspace = true }
+educore-events = { workspace = true }
 educore-platform = { workspace = true }
 educore-rbac = { workspace = true }
-educore-events = { workspace = true }
-educore-academic = { workspace = true }
-educore-settings = { workspace = true }
+educore-storage = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
 
+[dev-dependencies]
+tokio = { workspace = true }
