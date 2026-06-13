@@ -1311,6 +1311,8 @@ dependencies = [
 name = "educore-attendance"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "chrono",
  "educore-academic",
  "educore-assessment",
  "educore-core",
@@ -1318,6 +1320,11 @@ dependencies = [
  "educore-events",
  "educore-platform",
  "educore-rbac",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
