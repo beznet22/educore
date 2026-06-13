@@ -732,6 +732,93 @@ exam attendance.
 multi-row `INSERT` (PG) or transaction-grouped inserts (SQLite);
 add a benchmark in `tests/benches/`.
 
+**Phase 5 outcome.** `educore-attendance` is the third domain
+crate and ships the full prompt-named subset: 5 aggregates
+(`StudentAttendance`, `StaffAttendance`, `SubjectAttendance`,
+`ExamAttendance`, `BulkAttendanceImport`), 21 typed events
+implementing `DomainEvent`, 14 typed commands + 14
+`*_COMMAND_TYPE` constants, 14 pure factory services
+(including the `bulk_mark_student_attendance` service that
+processes 200 students in a single command), 5 repository
+port traits (with the new `StudentAttendanceRepository::bulk_insert`
+wired into the storage port), 5 typed query stubs, 1
+`AttendanceUniquenessChecker` port trait, 2 child entities
+(`StudentAttendanceImport`, `StaffAttendanceImport`), and the
+9-file module layout per `AGENTS.md`.
+
+**Validation gates (all green at close):**
+
+- `cargo build --workspace` — clean
+- `cargo test --workspace` — 530 pass, 0 fail, 14 ignored
+  (was 433 at Phase 4 close-out; +97 net new in Phase 5:
+  93 unit tests in `educore-attendance` + 4 always-on
+  integration tests in
+  `crates/tools/storage-parity/tests/attendance_integration.rs`
+  + 3 env-gated PG/MySQL/PG-100ms variants)
+- `cargo clippy --workspace --all-targets -- -D warnings` —
+  clean
+- `cargo fmt --all -- --check` — clean
+- `cargo run -p educore-core --bin lint --features lint` —
+  clean
+- 13 `docs/coverage.toml` rows flipped `Pending` → `Tested`
+  (7 `attendance_*_aggregate` + 6 `*_event`)
+
+**Prereq layer (5 commits):**
+
+- Prereq 1 (`122a451`): 24 new `Attendance.*` `Capability`
+  variants in `educore-rbac` (Student × 4 + Subject × 5 +
+  Staff × 4 + Import × 4 + Exam × 4 + BulkMark × 1 +
+  Notify × 1 + Report × 1 = 24)
+- Prereq 2 (`b089db5`): 4 new `AuditTarget` variants in
+  `educore-audit` (`SubjectAttendance`, `StaffAttendance`,
+  `BulkAttendanceImport`, `ClassAttendance`)
+- Prereq 3 (`233638b`): `educore-attendance` Cargo.toml gains
+  `educore-assessment` (justified cross-crate dep for
+  `ExamAttendance::exam_id`) + `educore-event-bus` (for the
+  storage-parity integration test); drops the unused
+  `educore-settings` dep
+- Prereq 4 (`013cd7c`): 13 new `attendance_*` rows in
+  `docs/coverage.toml` (all `Pending` at the time; 13 flip
+  to `Tested` in Workstream D)
+- Prereq 5 (`7a3cee1`): new `bulk_insert_student_attendances`
+  method on the storage port + 3 SQL adapters (PG: single
+  multi-row `INSERT` via `QueryBuilder::push_values`; MySQL:
+  same shape with `?` placeholders; SQLite: transaction-
+  grouped inserts at 40 rows/batch); bugfix commit
+  `14752c4` corrects the trailing-`VALUES` SQL syntax error
+  in all 3 adapters
+
+**Workstream layer (2 commits):**
+
+- Workstream A (`abe8077`): the entire `educore-attendance`
+  crate — 9-file layout, 5 aggregates, 21 events, 14
+  commands, 14 services, 5 repos, 2 entities, 5 query
+  stubs, `AttendanceUniquenessChecker` port, 93 unit tests
+- Workstream D (`3c073d3`): the vertical-slice integration
+  test + the 200-row bulk-mark bench + 13 coverage row
+  flips; 4 always-on tests + 3 env-gated PG/MySQL/PG-100ms
+  variants; SQLite bench under 1 second for 200 students
+  (PG target: <100ms when `EDUCORE_PG_URL` is set)
+
+**Scope expansions vs the prompt (documented in
+`PHASE-5-HANDOFF.md` § Open questions):**
+
+1. **`ExamAttendance` location** — the spec says assessment
+   owns it; Phase 5 ships it in the attendance crate via a
+   cross-crate dep. The assessment-side consumption
+   (`ResultStore::publish` reading `ExamAttendanceRepository`)
+   is deferred to a follow-up phase.
+2. **`bulk_insert` scope expansion** — the prompt forbade
+   "modifying the Phase 1 storage adapters' flag-based
+   transaction model"; Prereq 5 adds a new `bulk_insert`
+   method as a non-breaking additive change. The transaction
+   model is preserved (one outbox + one audit + one
+   idempotency per command); only the storage row writes
+   within a transaction are batched.
+3. **Capability count** — the prompt's gotchas said "~16
+   new variants (4 aggregates × 4 CRUD)"; the spec defines
+   ~24. Phase 5 ships the full 24 per spec.
+
 ---
 
 ## Phase 6 — HR

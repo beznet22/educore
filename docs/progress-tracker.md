@@ -37,7 +37,7 @@ keeps the `educore-` prefix (e.g. `educore-academic`). See
 | cross-cutting   | `educore-audit`              | 2     | Yes    | Yes          | Yes    | `AuditWriter` + `RetentionPolicy` + `RetentionSweepDue` event; partitioning strategy documented in `docs/schemas/audit-schema.md` § 13; 22 unit + 8 integration tests; 4 coverage rows flipped |
 | domains         | `educore-academic`           | 3     | Yes    | Yes          | Yes    | First vertical slice; 5 aggregates (Student, Class, Section, Subject, AcademicYear); 19 typed events, 23 typed commands, 19 pure factory services, 5 repository port traits, 5 typed query stubs, 66 unit + 3 integration tests; 5 coverage rows flipped |
 | domains         | `educore-assessment`         | 4     | Yes    | Yes          | Yes    | Second domain crate; 8 aggregates (Exam, ExamSchedule, MarksRegister, ResultStore, ReportCard projection, OnlineExam, SeatPlan, AdmitCard); 28 typed events, 28 typed commands, 25+ pure factory services + 10-fn ResultService grading module, 8 repository port traits, 8 typed query stubs; 67 unit tests in crate + 3 new integration tests in `crates/tools/storage-parity/tests/assessment_integration.rs`; 8 coverage rows flipped |
-| domains         | `educore-attendance`         | 5     | Yes    | No           | No     | Student/staff/subject/exam     |
+| domains         | `educore-attendance`         | 5     | Yes    | Yes          | Yes    | Third domain crate; 5 aggregates (StudentAttendance, StaffAttendance, SubjectAttendance, ExamAttendance, BulkAttendanceImport); 21 typed events, 14 typed commands, 14 pure factory services, 5 repository port traits (with `bulk_insert`), 5 typed query stubs, 1 `AttendanceUniquenessChecker` port; 93 unit tests in crate + 4 new integration tests in `crates/tools/storage-parity/tests/attendance_integration.rs`; 13 coverage rows flipped; 530 workspace tests pass (was 433 at Phase 4 close-out) |
 | domains         | `educore-hr`                 | 6     | Yes    | No           | No     | Staff, leave, payroll          |
 | domains         | `educore-finance`            | 7     | Yes    | No           | No     | Largest spec; double-entry     |
 | domains         | `educore-facilities`         | 8     | Yes    | No           | No     | Dorm, transport, inventory     |
@@ -71,7 +71,7 @@ docs audit).
 | 2     | Cross-cutting foundations          | `platform`, `rbac`, `events`, `event-bus`, `audit`                     | Done     | 5 of 5 ✅ (310 tests pass, 12 coverage rows flipped, `educore-sync` refactored to depend on `educore_events::EventEnvelope` resolving Phase 0 OQ #2; see `docs/handoff/PHASE-2-HANDOFF.md`) |
 | 3     | Academic (first vertical slice)    | `academic`                                                             | Done     | 5 of 5 ✅ (369 tests pass: 310 at Phase 2 + 59 net new in Phase 3; 8 coverage rows flipped — 3 `event_log_ddl_*` closed Phase 2 OQ #1 and 5 `academic_*_aggregate`; see `docs/handoff/PHASE-3-HANDOFF.md`) |
 | 4     | Assessment (second domain crate) | `assessment`                          | Done     | 11 of 11 ✅ (433 tests pass: 380 at Phase 3 close-out + 53 net new in Phase 4: 51 unit tests in `educore-assessment` + 1 SQLite integration test + 1 capability-check test + 1 event-type round-trip test; +2 ignored for the new PG/MySQL integration variants; 8 coverage rows flipped) |
-| 5     | Attendance                         | `attendance`                                                           | Planned  | No                |
+| 5     | Attendance                       | `attendance`                                                           | Done     | 11 of 11 ✅ (530 tests pass: 433 at Phase 4 close-out + 97 net new in Phase 5: 93 unit tests in `educore-attendance` + 4 new always-on integration tests in `attendance_integration.rs` including the 200-row bulk-mark bench proxy; +3 ignored for the PG/MySQL/PG-100ms env-gated variants; 13 coverage rows flipped — 7 `attendance_*_aggregate` + 6 `*_event`; see `docs/handoff/PHASE-5-HANDOFF.md`) |
 | 6     | HR                                 | `hr`                                                                   | Planned  | No                |
 | 7     | Finance (largest spec)             | `finance`                                                              | Planned  | No                |
 | 8     | Facilities                         | `facilities`                                                           | Planned  | No                |
@@ -125,9 +125,9 @@ PR. The summary below rolls it up to the bucket level. The
 | Sync engine (port + inprocess impl)                     | 2     | 2      | 2           | 2      |
 | Engine graph (graphify)                                | 1     | 1      | 1           | 1      |
 | Port traits (remaining 5: platform, rbac, events, event-bus, auth/notify/payment/files/integrations) | 12    | 12     | 0           | 0      |
-| Domain aggregates                                       | ~310  | ~310   | 0           | 0      |
-| Domain commands                                         | ~225  | ~225   | 0           | 0      |
-| Domain events                                           | ~280  | ~280   | 0           | 0      |
+| Domain aggregates                                       | ~310  | ~310   | 13          | 13     |
+| Domain commands                                         | ~225  | ~225   | 14          | 14     |
+| Domain events                                           | ~280  | ~280   | 21          | 21     |
 | SQL-dialect parity adapters (PG, MySQL, SQLite)         | 3     | 3      | 3           | 3      |
 | Cross-adapter parity test suite                         | 1     | 1      | 0           | 0      |
 | Port adapters (5 ports + 1 cli binary)                  | 6     | 6      | 0           | 0      |
