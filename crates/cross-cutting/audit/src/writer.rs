@@ -162,11 +162,70 @@ pub enum AuditTarget {
     Staff(Uuid),
     /// A payroll run.
     Payroll(Uuid),
+    /// A department (HR reference data).
+    Department(Uuid),
+    /// A designation (HR reference data).
+    Designation(Uuid),
+    /// A leave type (HR reference data).
+    LeaveType(Uuid),
+    /// A leave-entitlement policy (`LeaveDefine`).
+    LeaveDefine(Uuid),
+    /// A leave request.
+    LeaveRequest(Uuid),
+    /// A daily HR-side staff attendance row.
+    ///
+    /// Disambiguated from the attendance-domain
+    /// [`AuditTarget::StaffAttendance`] by the `Hr` prefix in
+    /// the variant name; the wire form is `hr_staff_attendance`.
+    /// The two rows serve different concerns: the attendance
+    /// crate tracks per-staff per-day rows in service of the
+    /// school's student-attendance flow, while the HR crate
+    /// tracks per-staff per-day rows in service of the
+    /// payroll + leave flow.
+    HrStaffAttendance(Uuid),
+    /// A bulk HR staff-attendance import row (staging).
+    HrStaffAttendanceImport(Uuid),
+    /// A class-teacher assignment.
+    AssignClassTeacher(Uuid),
+    /// A per-grade hourly rate.
+    HourlyRate(Uuid),
+    /// A salary-template row.
+    SalaryTemplate(Uuid),
+    /// A single payroll earning/deduction line.
+    PayrollEarnDeduc(Uuid),
+    /// A leave-deduction info row on a payroll.
+    LeaveDeductionInfo(Uuid),
+    /// A custom staff-registration field.
+    StaffRegistrationField(Uuid),
+    /// A bulk-staff-import staging row.
+    StaffImportBulk(Uuid),
     // ---- Finance domain -------------------------------------------------
     /// A fees invoice.
     FeesInvoice(Uuid),
     /// A fees payment.
     FeesPayment(Uuid),
+    /// A bank account (or cash drawer).
+    BankAccount(Uuid),
+    /// A bank statement (one entry in the bank ledger).
+    BankStatement(Uuid),
+    /// A recorded expense.
+    Expense(Uuid),
+    /// A recorded income.
+    Income(Uuid),
+    /// A donor profile.
+    Donor(Uuid),
+    /// An expense head (category).
+    ExpenseHead(Uuid),
+    /// An income head (category).
+    IncomeHead(Uuid),
+    /// A user's wallet balance.
+    Wallet(Uuid),
+    /// A wallet transaction (credit / debit / refund).
+    WalletTransaction(Uuid),
+    /// A finance-side payroll payment (the HR→finance bridge).
+    PayrollPayment(Uuid),
+    /// A double-entry journal line.
+    Transaction(Uuid),
     // ---- Facilities domain ---------------------------------------------
     /// A facilities inventory item.
     Item(Uuid),
@@ -233,8 +292,33 @@ impl AuditTarget {
             Self::ClassAttendance(_) => "class_attendance",
             Self::Staff(_) => "staff",
             Self::Payroll(_) => "payroll",
+            Self::Department(_) => "department",
+            Self::Designation(_) => "designation",
+            Self::LeaveType(_) => "leave_type",
+            Self::LeaveDefine(_) => "leave_define",
+            Self::LeaveRequest(_) => "leave_request",
+            Self::HrStaffAttendance(_) => "hr_staff_attendance",
+            Self::HrStaffAttendanceImport(_) => "hr_staff_attendance_import",
+            Self::AssignClassTeacher(_) => "assign_class_teacher",
+            Self::HourlyRate(_) => "hourly_rate",
+            Self::SalaryTemplate(_) => "salary_template",
+            Self::PayrollEarnDeduc(_) => "payroll_earn_deduc",
+            Self::LeaveDeductionInfo(_) => "leave_deduction_info",
+            Self::StaffRegistrationField(_) => "staff_registration_field",
+            Self::StaffImportBulk(_) => "staff_import_bulk",
             Self::FeesInvoice(_) => "fees_invoice",
             Self::FeesPayment(_) => "fees_payment",
+            Self::BankAccount(_) => "bank_account",
+            Self::BankStatement(_) => "bank_statement",
+            Self::Expense(_) => "expense",
+            Self::Income(_) => "income",
+            Self::Donor(_) => "donor",
+            Self::ExpenseHead(_) => "expense_head",
+            Self::IncomeHead(_) => "income_head",
+            Self::Wallet(_) => "wallet",
+            Self::WalletTransaction(_) => "wallet_transaction",
+            Self::PayrollPayment(_) => "payroll_payment",
+            Self::Transaction(_) => "transaction",
             Self::Item(_) => "item",
             Self::Book(_) => "book",
             Self::Notice(_) => "notice",
@@ -279,8 +363,33 @@ impl AuditTarget {
             | Self::ClassAttendance(id)
             | Self::Staff(id)
             | Self::Payroll(id)
+            | Self::Department(id)
+            | Self::Designation(id)
+            | Self::LeaveType(id)
+            | Self::LeaveDefine(id)
+            | Self::LeaveRequest(id)
+            | Self::HrStaffAttendance(id)
+            | Self::HrStaffAttendanceImport(id)
+            | Self::AssignClassTeacher(id)
+            | Self::HourlyRate(id)
+            | Self::SalaryTemplate(id)
+            | Self::PayrollEarnDeduc(id)
+            | Self::LeaveDeductionInfo(id)
+            | Self::StaffRegistrationField(id)
+            | Self::StaffImportBulk(id)
             | Self::FeesInvoice(id)
             | Self::FeesPayment(id)
+            | Self::BankAccount(id)
+            | Self::BankStatement(id)
+            | Self::Expense(id)
+            | Self::Income(id)
+            | Self::Donor(id)
+            | Self::ExpenseHead(id)
+            | Self::IncomeHead(id)
+            | Self::Wallet(id)
+            | Self::WalletTransaction(id)
+            | Self::PayrollPayment(id)
+            | Self::Transaction(id)
             | Self::Item(id)
             | Self::Book(id)
             | Self::Notice(id)
@@ -542,8 +651,33 @@ mod tests {
             AuditTarget::ClassAttendance(id),
             AuditTarget::Staff(id),
             AuditTarget::Payroll(id),
+            AuditTarget::Department(id),
+            AuditTarget::Designation(id),
+            AuditTarget::LeaveType(id),
+            AuditTarget::LeaveDefine(id),
+            AuditTarget::LeaveRequest(id),
+            AuditTarget::HrStaffAttendance(id),
+            AuditTarget::HrStaffAttendanceImport(id),
+            AuditTarget::AssignClassTeacher(id),
+            AuditTarget::HourlyRate(id),
+            AuditTarget::SalaryTemplate(id),
+            AuditTarget::PayrollEarnDeduc(id),
+            AuditTarget::LeaveDeductionInfo(id),
+            AuditTarget::StaffRegistrationField(id),
+            AuditTarget::StaffImportBulk(id),
             AuditTarget::FeesInvoice(id),
             AuditTarget::FeesPayment(id),
+            AuditTarget::BankAccount(id),
+            AuditTarget::BankStatement(id),
+            AuditTarget::Expense(id),
+            AuditTarget::Income(id),
+            AuditTarget::Donor(id),
+            AuditTarget::ExpenseHead(id),
+            AuditTarget::IncomeHead(id),
+            AuditTarget::Wallet(id),
+            AuditTarget::WalletTransaction(id),
+            AuditTarget::PayrollPayment(id),
+            AuditTarget::Transaction(id),
             AuditTarget::Item(id),
             AuditTarget::Book(id),
             AuditTarget::Notice(id),
@@ -558,6 +692,33 @@ mod tests {
         for v in &variants {
             assert!(!v.target_type().is_empty());
             assert_eq!(v.target_id(), id);
+        }
+    }
+
+    #[test]
+    fn finance_audit_target_type_is_snake_case_and_nonempty() {
+        // Phase 7: assert the 13 finance `AuditTarget` variants
+        // resolve to snake_case wire strings, distinct from each
+        // other and from any other domain's `target_type`.
+        let id = Uuid::now_v7();
+        let cases: Vec<(AuditTarget, &str)> = vec![
+            (AuditTarget::FeesInvoice(id), "fees_invoice"),
+            (AuditTarget::FeesPayment(id), "fees_payment"),
+            (AuditTarget::BankAccount(id), "bank_account"),
+            (AuditTarget::BankStatement(id), "bank_statement"),
+            (AuditTarget::Expense(id), "expense"),
+            (AuditTarget::Income(id), "income"),
+            (AuditTarget::Donor(id), "donor"),
+            (AuditTarget::ExpenseHead(id), "expense_head"),
+            (AuditTarget::IncomeHead(id), "income_head"),
+            (AuditTarget::Wallet(id), "wallet"),
+            (AuditTarget::WalletTransaction(id), "wallet_transaction"),
+            (AuditTarget::PayrollPayment(id), "payroll_payment"),
+            (AuditTarget::Transaction(id), "transaction"),
+        ];
+        for (target, expected) in cases {
+            assert_eq!(target.target_type(), expected);
+            assert_eq!(target.target_id(), id);
         }
     }
 
