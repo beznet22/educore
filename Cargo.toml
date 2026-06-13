@@ -128,6 +128,11 @@ sha2 = "0.10"
 rand = "0.8"
 secrecy = { version = "0.10", features = ["serde"] }
 
+# Property-based testing
+# Pinned to the same line as educore-core's dev-dep (1.5.x).
+# Phase 7 uses it for the finance double-entry property test.
+proptest = "1.5"
+
 # Money and decimal
 rust_decimal = { version = "1.36", features = ["serde-with-str"] }
 rust_decimal_macros = "1.36"
