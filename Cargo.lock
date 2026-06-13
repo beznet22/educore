@@ -1668,6 +1668,7 @@ dependencies = [
  "chrono",
  "educore-academic",
  "educore-assessment",
+ "educore-attendance",
  "educore-audit",
  "educore-core",
  "educore-event-bus",
