@@ -112,6 +112,14 @@ sections in this order:
    the hand-off doc, and the policy on opening issues
    vs asking the user.
 
+**Length: ≤50 lines.** The prompt is a digest, not a
+replacement for the spec, the hand-off, the build-plan
+§ "Phase N", or `AGENTS.md`. Long-form context lives
+there — the prompt just points at it. Each of the 7
+sections above is typically 3–6 lines. The build plan
+`§ "Phase N"` carries the canonical 50-line rule (added
+in Phase 5 close-out).
+
 #### "Working With Subagents" rationale
 
 Every phase of the build plan has multiple independent

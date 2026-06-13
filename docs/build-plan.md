@@ -345,6 +345,15 @@ in all four adapters.
    (between `**Risks.**` and the trailing `---`). Create
    `docs/phase_prompt/phase-2-prompt.md` for the next-phase
    agent (per the convention in `docs/phase_prompt/README.md`).
+   **The `phase-(N+1)-prompt.md` MUST be ≤50 lines.** The
+   prompt is a digest; long-form context lives in the spec,
+   the hand-off, the build-plan § "Phase N", and `AGENTS.md`.
+   Each of the 7 required sections (Mission, Deliverables,
+   Required Reading, Starting Point, Working With Subagents,
+   Per-Deliverable Gotchas, Exit Criteria, When You Are Stuck)
+   is typically 3–6 lines. The rule is canonical; every
+   subsequent phase's "Phase completion documentation" task
+   inherits it via a 1-line pointer.
    ✅ Already produced for Phase 1 (see
    `docs/handoff/PHASE-1-HANDOFF.md` and
    `docs/phase_prompt/phase-2-prompt.md`).
