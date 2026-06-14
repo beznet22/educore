@@ -983,4 +983,34 @@ mod tests {
             educore_core::error::DomainError::Validation(_)
         ));
     }
+
+    // -------------------------------------------------------------------------
+    // SECTION: banking-expense-income-donor tests (placeholder aggregates)
+    //
+    // The 33 placeholder aggregates in this file (BankAccount,
+    // BankStatement, BankPaymentSlip, AmountTransfer, ChartOfAccount,
+    // ExpenseHead, Income, IncomeHead, Donor, ProductPurchase,
+    // FeesGroup, FeesType, FeesMaster, FeesDiscount, FeesAssign,
+    // FeesAssignDiscount, FeesInstallment, FeesInstallmentAssign,
+    // FmFeesGroup, FmFeesType, FmFeesInvoice, FmFeesInvoiceChild,
+    // FmFeesInvoiceSetting, FmFeesTransaction, FmFeesTransactionChild,
+    // FmFeesWeaver, DirectFeesInstallment, DirectFeesInstallmentAssign,
+    // DirectFeesInstallmentChildPayment, DirectFeesSetting,
+    // DirectFeesReminder, Transaction, PayrollPayment, SalaryTemplate,
+    // InventoryPayment, QuestionBankFee, PaymentGatewaySetting,
+    // PaymentMethod, DueFeesLoginPrevent, FeesCarryForward,
+    // FeesCarryForwardLog, FeesCarryForwardSetting,
+    // FeesInstallmentCredit) are intentionally left as 1-field
+    // placeholder stubs. They will be filled in by Workstreams
+    // D/E/F/G/H/I/J/K/L/M. The acceptance tests for these
+    // aggregates will be added when each is implemented.
+    // -------------------------------------------------------------------------
+
+    #[test]
+    #[ignore = "backlog: 33 placeholder aggregates need Workstreams D-M"]
+    fn unimplemented_placeholder_aggregates_backlog() {
+        // Documents the 33 placeholder aggregates above. When
+        // each is implemented, the corresponding test is added
+        // and this ignore attribute is removed.
+    }
 }
