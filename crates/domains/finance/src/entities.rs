@@ -369,7 +369,12 @@ mod tests {
         let school = g.next_school_id();
         let user = g.next_user_id();
         let id = WalletTransactionId::new(school, g.next_uuid());
-        let row = WalletTransactionApproval::fresh(id, user, Timestamp::now(), CorrelationId(g.next_uuid()));
+        let row = WalletTransactionApproval::fresh(
+            id,
+            user,
+            Timestamp::now(),
+            CorrelationId(g.next_uuid()),
+        );
         assert!(row.approver_id.is_none());
         assert!(row.rejecter_id.is_none());
     }
@@ -398,12 +403,8 @@ mod tests {
         let school = g.next_school_id();
         let user = g.next_user_id();
         let id = PayrollPaymentId::new(school, g.next_uuid());
-        let row = PayrollPaymentApproval::fresh(
-            id,
-            user,
-            Timestamp::now(),
-            CorrelationId(g.next_uuid()),
-        );
+        let row =
+            PayrollPaymentApproval::fresh(id, user, Timestamp::now(), CorrelationId(g.next_uuid()));
         assert!(row.approver_id.is_none());
         assert!(row.rejection_reason.is_none());
     }

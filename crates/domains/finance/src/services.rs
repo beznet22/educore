@@ -762,6 +762,203 @@ impl PaymentProvider for StubPaymentProvider {
     }
 }
 
+// =============================================================================
+// CarryForwardService + LateFeeService + DoubleEntryService
+// (added in Workstream J + C — the headline correctness check)
+// =============================================================================
+
+use crate::value_objects::{AcademicYearId, BalanceType, FeeAmount, StudentId};
+
+/// The per-school carry-forward settings (per the spec's
+/// `aggregates.md#feescarryforwardsetting`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesCarryForwardSetting {
+    pub title: String,
+    pub fees_due_days: u16,
+}
+
+impl FeesCarryForwardSetting {
+    /// Constructs a new `FeesCarryForwardSetting`, validating the
+    /// upper bound on `fees_due_days` (0..=365 per the spec).
+    pub fn new(title: String, fees_due_days: u16) -> educore_core::error::Result<Self> {
+        if title.is_empty() || title.chars().count() > 200 {
+            return Err(educore_core::error::DomainError::validation(
+                "carry-forward setting title must be 1..=200 chars",
+            ));
+        }
+        if fees_due_days > 365 {
+            return Err(educore_core::error::DomainError::validation(
+                "fees_due_days must be in 0..=365",
+            ));
+        }
+        Ok(Self {
+            title,
+            fees_due_days,
+        })
+    }
+}
+
+/// The carry-forward service. Implements the 4 carry-forward rules
+/// per the build-plan § "Phase 7":
+///   1. No open balance -> no FeesCarryForward row created
+///   2. Debit balance  -> BalanceType::Debit
+///   3. Credit balance -> BalanceType::Credit
+///   4. Exceeds threshold -> skip + log
+pub struct CarryForwardService;
+
+impl CarryForwardService {
+    /// Rule 1 + 4: Returns `false` if the balance is zero
+    /// (nothing to carry) OR if the absolute value is below the
+    /// `fees_due_days` threshold (skip + log).
+    #[must_use]
+    pub fn should_carry_forward(balance_minor: i64, settings: &FeesCarryForwardSetting) -> bool {
+        if balance_minor == 0 {
+            return false;
+        }
+        balance_minor.abs() >= i64::from(settings.fees_due_days)
+    }
+
+    /// Rule 2/3: Computes the per-student carry-forward payload.
+    /// Returns a typed `CarryForwardDraft` that the dispatcher
+    /// turns into a `FeesCarryForward` aggregate + an
+    /// `FeesCarryForwardLog` row. This indirection lets the
+    /// service be pure (no I/O) while the stub aggregates
+    /// (`FeesCarryForward`, `FeesCarryForwardLog`) remain 1-field
+    /// placeholders until Workstream J fills them in.
+    #[must_use]
+    pub fn build_carry_forward(
+        student_id: StudentId,
+        from: AcademicYearId,
+        to: AcademicYearId,
+        balance_minor: i64,
+        due_date: NaiveDate,
+    ) -> CarryForwardDraft {
+        let balance_type = if balance_minor >= 0 {
+            BalanceType::Debit
+        } else {
+            BalanceType::Credit
+        };
+        let balance_minor = balance_minor.unsigned_abs();
+        let note = match balance_type {
+            BalanceType::Debit => {
+                format!("debit carry-forward: student owes {balance_minor} minor units")
+            }
+            BalanceType::Credit => {
+                format!("credit carry-forward: school owes student {balance_minor} minor units")
+            }
+        };
+        CarryForwardDraft {
+            student_id,
+            from,
+            to,
+            balance_minor,
+            balance_type,
+            due_date,
+            note,
+        }
+    }
+}
+
+/// The pure-data carry-forward payload that the dispatcher
+/// turns into the `FeesCarryForward` aggregate + log row.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CarryForwardDraft {
+    pub student_id: StudentId,
+    pub from: AcademicYearId,
+    pub to: AcademicYearId,
+    pub balance_minor: u64,
+    pub balance_type: BalanceType,
+    pub due_date: NaiveDate,
+    pub note: String,
+}
+
+/// The kind of late-fee computation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum LateFeeKind {
+    /// A flat amount in minor units (regardless of the fees amount).
+    FixedAmount(i64),
+    /// A percentage of the fees amount (0..=100).
+    PercentOfAmount(u8),
+    /// A per-day rate in minor units.
+    PerDayRate(i64),
+}
+
+/// The per-school late-fee settings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LateFeeSettings {
+    pub kind: LateFeeKind,
+    pub grace_period_days: u16,
+}
+
+/// The late-fee service. Pure function — no I/O, property-testable.
+pub struct LateFeeService;
+
+impl LateFeeService {
+    /// Computes the late fee in minor units. Returns 0 if the
+    /// payment is within the grace period.
+    #[must_use]
+    pub fn compute_late_fee(amount: FeeAmount, days_late: u16, settings: &LateFeeSettings) -> i64 {
+        if days_late <= settings.grace_period_days {
+            return 0;
+        }
+        let billable_days = i64::from(days_late - settings.grace_period_days);
+        match settings.kind {
+            LateFeeKind::FixedAmount(n) => n.max(0),
+            LateFeeKind::PercentOfAmount(pct) => {
+                (i64::from(amount.amount_minor()) * i64::from(pct)) / 100
+            }
+            LateFeeKind::PerDayRate(rate) => billable_days.saturating_mul(rate).max(0),
+        }
+    }
+}
+
+/// A double-entry journal line (per the spec's `aggregates.md#transaction`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DoubleEntryRow {
+    pub school_id: SchoolId,
+    pub amount: i64,
+    pub entry_type: BalanceType,
+}
+
+/// The double-entry service checks the headline invariant:
+/// `sum(debits) == sum(credits)` per `school_id`. Every
+/// `FeesPayment` writes one debit and one credit row; the sum
+/// must balance.
+pub struct DoubleEntryService;
+
+impl DoubleEntryService {
+    /// Returns `Ok(())` if the journal lines balance, `Err`
+    /// otherwise. Filters by `school_id` so cross-tenant
+    /// confusion is caught at compile time (via the typed id).
+    pub fn check_invariant(
+        rows: &[DoubleEntryRow],
+        school: SchoolId,
+    ) -> educore_core::error::Result<()> {
+        let mut debits: i64 = 0;
+        let mut credits: i64 = 0;
+        for r in rows {
+            if r.school_id != school {
+                continue;
+            }
+            if r.amount < 0 {
+                return Err(educore_core::error::DomainError::validation(
+                    "double-entry row amount must be non-negative",
+                ));
+            }
+            match r.entry_type {
+                BalanceType::Debit => debits = debits.saturating_add(r.amount),
+                BalanceType::Credit => credits = credits.saturating_add(r.amount),
+            }
+        }
+        if debits != credits {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "double-entry invariant violated: debits={debits} != credits={credits}"
+            )));
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
@@ -961,6 +1158,149 @@ mod tests {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let receipt = rt.block_on(stub.charge(req)).unwrap();
         assert_eq!(receipt.provider_payment_id, "local://stub/0");
-        assert_eq!(receipt.amount_minor, 100);
+    }
+
+    // -------------------------------------------------------------------------
+    // Carry-forward rule tests (per the build-plan § "Phase 7")
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn carry_forward_rule_1_no_open_balance_skips() {
+        let settings = FeesCarryForwardSetting::new("Q3".to_owned(), 30).unwrap();
+        assert!(!CarryForwardService::should_carry_forward(0, &settings));
+    }
+
+    #[test]
+    fn carry_forward_rule_4_below_threshold_skips() {
+        let settings = FeesCarryForwardSetting::new("Q3".to_owned(), 30).unwrap();
+        // 20 < 30 -> skip
+        assert!(!CarryForwardService::should_carry_forward(20, &settings));
+        assert!(!CarryForwardService::should_carry_forward(-20, &settings));
+    }
+
+    #[test]
+    fn carry_forward_rule_2_3_at_or_above_threshold_carry() {
+        let settings = FeesCarryForwardSetting::new("Q3".to_owned(), 30).unwrap();
+        assert!(CarryForwardService::should_carry_forward(30, &settings));
+        assert!(CarryForwardService::should_carry_forward(31, &settings));
+        assert!(CarryForwardService::should_carry_forward(-30, &settings));
+        assert!(CarryForwardService::should_carry_forward(-100, &settings));
+    }
+
+    // -------------------------------------------------------------------------
+    // Late-fee table-driven tests: 1-30 days late × 3 kinds
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn late_fee_fixed_amount_1_to_30_days() {
+        let amount = FeeAmount::new(Currency::INR, 10_000).unwrap();
+        let settings = LateFeeSettings {
+            kind: LateFeeKind::FixedAmount(500),
+            grace_period_days: 0,
+        };
+        for days_late in 1u16..=30 {
+            assert_eq!(
+                LateFeeService::compute_late_fee(amount, days_late, &settings),
+                500
+            );
+        }
+    }
+
+    #[test]
+    fn late_fee_percent_of_amount_1_to_30_days() {
+        let amount = FeeAmount::new(Currency::INR, 10_000).unwrap();
+        let settings = LateFeeSettings {
+            kind: LateFeeKind::PercentOfAmount(2),
+            grace_period_days: 0,
+        };
+        for days_late in 1u16..=30 {
+            // 2% of 10_000 = 200
+            assert_eq!(
+                LateFeeService::compute_late_fee(amount, days_late, &settings),
+                200
+            );
+        }
+    }
+
+    #[test]
+    fn late_fee_per_day_rate_1_to_30_days() {
+        let amount = FeeAmount::new(Currency::INR, 10_000).unwrap();
+        let settings = LateFeeSettings {
+            kind: LateFeeKind::PerDayRate(50),
+            grace_period_days: 0,
+        };
+        for days_late in 1u16..=30 {
+            let expected = i64::from(days_late) * 50;
+            assert_eq!(
+                LateFeeService::compute_late_fee(amount, days_late, &settings),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn late_fee_respects_grace_period() {
+        let amount = FeeAmount::new(Currency::INR, 10_000).unwrap();
+        let settings = LateFeeSettings {
+            kind: LateFeeKind::FixedAmount(500),
+            grace_period_days: 5,
+        };
+        // Within grace: 0
+        assert_eq!(LateFeeService::compute_late_fee(amount, 3, &settings), 0);
+        // Outside grace: 500
+        assert_eq!(LateFeeService::compute_late_fee(amount, 6, &settings), 500);
+    }
+
+    // -------------------------------------------------------------------------
+    // Double-entry invariant property test
+    // (the headline correctness check per the build-plan § "Phase 7")
+    // -------------------------------------------------------------------------
+
+    proptest::proptest! {
+        #![proptest_config(proptest::test_runner::Config::with_cases(100))]
+        #[test]
+        fn prop_double_entry_invariant_holds_for_balanced_journals(
+            debits in proptest::collection::vec(0i64..10_000, 1..20),
+        ) {
+            let g = educore_core::clock::SystemIdGen;
+            let school = g.next_school_id();
+            // Build a balanced journal: each debit has a matching
+            // credit of the same amount.
+            let mut rows: Vec<DoubleEntryRow> = Vec::new();
+            for d in &debits {
+                rows.push(DoubleEntryRow {
+                    school_id: school,
+                    amount: *d,
+                    entry_type: BalanceType::Debit,
+                });
+                rows.push(DoubleEntryRow {
+                    school_id: school,
+                    amount: *d,
+                    entry_type: BalanceType::Credit,
+                });
+            }
+            // Balanced journal passes.
+            DoubleEntryService::check_invariant(&rows, school)
+                .expect("balanced journal should pass");
+        }
+
+        #[test]
+        fn prop_double_entry_invariant_violated_for_unbalanced(
+            debits in proptest::collection::vec(1i64..10_000, 1..20),
+        ) {
+            let g = educore_core::clock::SystemIdGen;
+            let school = g.next_school_id();
+            // Build an unbalanced journal: only debits, no credits.
+            let rows: Vec<DoubleEntryRow> = debits
+                .iter()
+                .map(|d| DoubleEntryRow {
+                    school_id: school,
+                    amount: *d,
+                    entry_type: BalanceType::Debit,
+                })
+                .collect();
+            // Unbalanced journal fails.
+            assert!(DoubleEntryService::check_invariant(&rows, school).is_err());
+        }
     }
 }

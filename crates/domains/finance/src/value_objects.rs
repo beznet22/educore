@@ -502,6 +502,12 @@ impl FeeAmount {
     pub const fn amount(&self) -> Amount {
         self.0
     }
+
+    /// Returns the amount in minor units.
+    #[must_use]
+    pub const fn amount_minor(&self) -> i64 {
+        self.0.amount_minor()
+    }
 }
 
 /// A `FineAmount` is constrained to `0..=100_000.00` (per
