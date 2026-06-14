@@ -1066,7 +1066,8 @@ item = "finance_fees_invoices aggregate"
 spec = "docs/specs/finance/aggregates.md"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs"
 
 [[row]]
 id = "finance_fees_payments_aggregate"
@@ -1074,7 +1075,8 @@ item = "finance_fees_payments aggregate"
 spec = "docs/specs/finance/aggregates.md"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs"
 
 [[row]]
 id = "finance_double_entry_invariant"
@@ -1082,7 +1084,8 @@ item = "Double-entry journal invariant (property test)"
 spec = "docs/specs/finance/services.md"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/domains/finance/src/services.rs"
 
 # Headline 6 aggregates (per Phase 7 prompt)
 [[row]]
@@ -1091,7 +1094,8 @@ item = "fees_invoice aggregate (the classic invoice numbering scheme)"
 spec = "docs/specs/finance/aggregates.md#feesinvoice"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs"
 
 [[row]]
 id = "finance_fees_payment_aggregate"
@@ -1099,7 +1103,8 @@ item = "fees_payment aggregate"
 spec = "docs/specs/finance/aggregates.md#feespayment"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs"
 
 [[row]]
 id = "finance_refund_wallet_transaction_aggregate"
@@ -1107,7 +1112,8 @@ item = "refund-as-wallet-transaction (wallet_type=Refund)"
 spec = "docs/specs/finance/aggregates.md#wallettransaction"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs"
 
 [[row]]
 id = "finance_expense_aggregate"
@@ -1115,7 +1121,8 @@ item = "expense aggregate"
 spec = "docs/specs/finance/aggregates.md#expense"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs"
 
 [[row]]
 id = "finance_wallet_aggregate"
@@ -1123,7 +1130,8 @@ item = "wallet aggregate (new — user balance projection)"
 spec = "docs/specs/finance/aggregates.md"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs"
 
 [[row]]
 id = "finance_wallet_transaction_aggregate"
@@ -1131,7 +1139,8 @@ item = "wallet_transaction aggregate"
 spec = "docs/specs/finance/aggregates.md#wallettransaction"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs"
 
 # Headline 6 events
 [[row]]
@@ -1140,7 +1149,8 @@ item = "InvoiceNumberingConfigured event"
 spec = "docs/specs/finance/events.md"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs"
 
 [[row]]
 id = "finance_payment_received_event"
@@ -1148,7 +1158,8 @@ item = "PaymentReceived event"
 spec = "docs/specs/finance/events.md"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs"
 
 [[row]]
 id = "finance_wallet_credited_event"
@@ -1156,7 +1167,8 @@ item = "WalletCredited event"
 spec = "docs/specs/finance/events.md"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs"
 
 [[row]]
 id = "finance_wallet_refund_requested_event"
@@ -1164,7 +1176,8 @@ item = "WalletRefundRequested event"
 spec = "docs/specs/finance/events.md"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs"
 
 [[row]]
 id = "finance_expense_recorded_event"
@@ -1172,7 +1185,8 @@ item = "ExpenseRecorded event"
 spec = "docs/specs/finance/events.md"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs"
 
 [[row]]
 id = "finance_payroll_payment_recorded_event"
@@ -1180,7 +1194,8 @@ item = "PayrollPaymentRecorded event (HR→finance bridge)"
 spec = "docs/specs/finance/events.md"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/domains/finance/src/events.rs"
 
 # Carry-forward + late-fee services
 [[row]]
@@ -1189,7 +1204,8 @@ item = "CarryForwardService (4 carry-forward rules)"
 spec = "docs/specs/finance/services.md#carryforwardservice"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/domains/finance/src/services.rs"
 
 [[row]]
 id = "finance_late_fee_service"
@@ -1197,7 +1213,8 @@ item = "LateFeeService::compute_late_fee (table-driven fixtures)"
 spec = "docs/specs/finance/services.md"
 crate = "educore-finance"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/domains/finance/src/services.rs"
 
 # Capability / audit surface
 [[row]]
@@ -1206,7 +1223,8 @@ item = "~110 Finance.* Capability variants in educore-rbac"
 spec = "docs/specs/finance/permissions.md"
 crate = "educore-rbac"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/rbac/src/value_objects.rs"
 
 [[row]]
 id = "finance_audit_target_variants"
@@ -1214,7 +1232,8 @@ item = "13 Finance AuditTarget variants in educore-audit"
 spec = "docs/specs/finance/aggregates.md"
 crate = "educore-audit"
 phase = 7
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/audit/src/writer.rs"
 
 # =============================================================================
 # Facilities domain (Phase 8)
