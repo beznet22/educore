@@ -926,6 +926,61 @@ raw float in a money column. All amounts are `MinorUnits` (i64
 cents/paisa). The `as` ban (per `AGENTS.md`) is enforced
 `#[forbid]`-style on the finance crate via a custom clippy lint.
 
+**Phase 7 outcome.** Closed 2026-06-14. **`educore-finance`**
+delivered as the fifth domain crate (and the largest spec to
+date at ~5,567 lines). The 5 real aggregates (`Wallet`,
+`WalletTransaction`, `FeesInvoice`, `FeesPayment`, `Expense`)
+ship with the 9-file module layout; the headline `Refund` is
+modeled as a `WalletTransaction` with `wallet_type = Refund`
+(see OQ #3). The remaining 33 aggregates from the spec are
+emitted as `finance_aggregate_stub!` macro stubs — the
+intentional Workstreams D-M backlog. 9 commits land in
+chronological order:
+
+1. `b1bdb72` `feat(rbac): add 110 Finance.* Capability variants` —
+   non-breaking additive to the `Capability` enum.
+2. `82bab23` `feat(audit): add 13 Finance AuditTarget variants` —
+   non-breaking additive to the `AuditTarget` enum.
+3. `c8597a0` `chore(workspace+finance): add proptest + finance deps` —
+   `proptest = "1"` to workspace; 11 deps to finance.
+4. `3616128` `docs(coverage): add 18 finance rows for Phase 7` —
+   the 19 finance coverage rows in `docs/coverage.toml`.
+5. `5eb1dd8` `fix(hr+parity): wire HR 9-file module layout + expand
+   finance child entities` — the Phase 6 fix-up that was blocking
+   Phase 7.
+6. `c0a5567` `feat(finance): ship Workstream A (Wallet +
+   WalletTransaction + Refund + 4 headlines)` — the 5 real
+   aggregate roots + 6 wallet-side services.
+7. `3fe575e` `feat(finance): ship 44 repository ports + 115
+   commands + 11 query stubs` — the Workstreams N, O, P combined
+   commit.
+8. `8431a0e` `fix(finance): clean up broken test block in
+   aggregate.rs` — the mechanical fix-up.
+9. `021ec16` `feat(finance): ship CarryForwardService +
+   LateFeeService + DoubleEntryService + proptest` — the
+   Workstreams C, Q, R, S combined commit.
+
+The headline correctness check is the **`DoubleEntryService`**
+proptest (100 cases, matching the build-plan's target and the
+engine's MSRV floor) which asserts
+`sum(debits) == sum(credits)` per `school_id` for 100 randomly
+generated scenarios. **579 tests pass workspace-wide** (was 553
+at Phase 6 close-out; +26 net new in Phase 7). `cargo clippy`,
+`cargo fmt`, and the `lint` binary are all green. The 33
+placeholder stubs are documented as the Workstreams D-M
+backlog; 2 finance placeholders (`ProductPurchase` and
+`InventoryPayment`) reference `item_id: Uuid` which Phase 8
+reconciles with the canonical `ItemId`. The `PaymentProvider`
+trait is marked `#[deprecated(since = "0.7.0")]` and moves to
+`educore-payment` in Phase 15. The HR→finance payroll bridge
+is wired via the bus: HR's `hr.payroll.paid` event is consumed
+to emit `finance.payroll_payment.recorded`. 10 open questions
+are documented in `docs/handoff/PHASE-7-HANDOFF.md` (the most
+material for Phase 8: Q2 the 33-stub backlog, Q5/Q7 the
+cross-crate id reconciliations, Q9 the proptest pattern). Hand-off:
+`docs/handoff/PHASE-7-HANDOFF.md`. Next-phase prompt:
+`docs/phase_prompt/phase-8-prompt.md`.
+
 ---
 
 ## Phase 8 — Facilities
