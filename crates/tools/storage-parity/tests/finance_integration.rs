@@ -31,7 +31,7 @@ use educore_storage::StorageAdapter;
 
 use educore_finance::prelude::*;
 use educore_finance::services::{
-    ConfigureInvoiceNumberingCommand, CreditWalletCommand, CreateWalletCommand,
+    ConfigureInvoiceNumberingCommand, CreateWalletCommand, CreditWalletCommand,
     RecordExpenseCommand, RecordPaymentCommand, StubPaymentProvider, WalletService,
 };
 
@@ -139,8 +139,8 @@ async fn finance_integration_sqlite_vertical_slice() {
         note: Some("test payment".to_owned()),
         payment_date: chrono::NaiveDate::from_ymd_opt(2026, 6, 13).unwrap(),
     };
-    let (payment, payment_event) = record_payment(payment_cmd, &clock, &ids)
-        .expect("record_payment");
+    let (payment, payment_event) =
+        record_payment(payment_cmd, &clock, &ids).expect("record_payment");
     assert_eq!(payment.amount_minor, 10_000_00);
     assert_eq!(payment.net_minor(), 10_000_00); // no discount
     assert_eq!(
@@ -164,8 +164,8 @@ async fn finance_integration_sqlite_vertical_slice() {
         description: Some("test expense".to_owned()),
         payroll_payment_id: None,
     };
-    let (expense, expense_event) = record_expense(expense_cmd, &clock, &ids)
-        .expect("record_expense");
+    let (expense, expense_event) =
+        record_expense(expense_cmd, &clock, &ids).expect("record_expense");
     assert_eq!(expense.amount_minor, 2_000_00);
     assert_eq!(expense.name, "Office supplies");
     assert_eq!(
@@ -278,7 +278,10 @@ fn finance_event_type_round_trip_for_all_headline_aggregates() {
         CorrelationId(g.next_uuid()),
         Timestamp::now(),
     );
-    assert_eq!(<WalletCreated as DomainEvent>::EVENT_TYPE, "finance.wallet.created");
+    assert_eq!(
+        <WalletCreated as DomainEvent>::EVENT_TYPE,
+        "finance.wallet.created"
+    );
     assert_eq!(<WalletCreated as DomainEvent>::AGGREGATE_TYPE, "wallet");
 
     // 2. WalletCredited
@@ -293,7 +296,10 @@ fn finance_event_type_round_trip_for_all_headline_aggregates() {
         CorrelationId(g.next_uuid()),
         Timestamp::now(),
     );
-    assert_eq!(<WalletCredited as DomainEvent>::EVENT_TYPE, "finance.wallet.credited");
+    assert_eq!(
+        <WalletCredited as DomainEvent>::EVENT_TYPE,
+        "finance.wallet.credited"
+    );
 
     // 3. WalletRefundRequested
     let ev = WalletRefundRequested::new(
@@ -360,7 +366,10 @@ fn finance_event_type_round_trip_for_all_headline_aggregates() {
         CorrelationId(g.next_uuid()),
         Timestamp::now(),
     );
-    assert_eq!(<ExpenseRecorded as DomainEvent>::EVENT_TYPE, "finance.expense.recorded");
+    assert_eq!(
+        <ExpenseRecorded as DomainEvent>::EVENT_TYPE,
+        "finance.expense.recorded"
+    );
     assert_eq!(<ExpenseRecorded as DomainEvent>::AGGREGATE_TYPE, "expense");
 }
 
