@@ -11,9 +11,32 @@ description = "Form downloads, postal dispatch, postal receive."
 workspace = true
 
 [dependencies]
+# Core engine types and cross-cutting foundations
 educore-core = { workspace = true }
 educore-platform = { workspace = true }
 educore-rbac = { workspace = true }
 educore-events = { workspace = true }
-educore-settings = { workspace = true }
 
+# Port implementations (storage, event bus, audit)
+educore-storage = { workspace = true }
+educore-event-bus = { workspace = true }
+educore-audit = { workspace = true }
+
+# Async traits, time, identifiers
+async-trait = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+
+# Serialization and error handling
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+# Property-based testing
+proptest = { workspace = true }
+
+# Wire-format byte payloads
+bytes = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
