@@ -1200,9 +1200,7 @@ impl EmailSubject {
     pub fn new(raw: impl Into<String>) -> Result<Self> {
         let s: String = raw.into();
         if s.is_empty() {
-            return Err(DomainError::validation(
-                "email subject must not be empty",
-            ));
+            return Err(DomainError::validation("email subject must not be empty"));
         }
         if s.chars().count() > Self::MAX_LEN {
             return Err(DomainError::validation(format!(
@@ -1402,9 +1400,7 @@ impl FileReference {
     pub fn new(raw: impl Into<String>) -> Result<Self> {
         let s: String = raw.into();
         if s.is_empty() {
-            return Err(DomainError::validation(
-                "file reference must be non-empty",
-            ));
+            return Err(DomainError::validation("file reference must be non-empty"));
         }
         Ok(Self(s))
     }
@@ -1466,9 +1462,7 @@ impl TemplateKey {
     pub fn new(raw: impl Into<String>) -> Result<Self> {
         let s: String = raw.into();
         if s.is_empty() {
-            return Err(DomainError::validation(
-                "template key must not be empty",
-            ));
+            return Err(DomainError::validation("template key must not be empty"));
         }
         if s.chars().count() > Self::MAX_LEN {
             return Err(DomainError::validation(format!(
@@ -1735,10 +1729,14 @@ impl Url {
     pub fn new(raw: impl Into<String>) -> Result<Self> {
         let s: String = raw.into();
         if s.chars().count() > Self::MAX_LEN {
-            return Err(DomainError::validation("url must be valid and <= 2048 chars"));
+            return Err(DomainError::validation(
+                "url must be valid and <= 2048 chars",
+            ));
         }
         if !is_plausible_url(&s) {
-            return Err(DomainError::validation("url must be valid and <= 2048 chars"));
+            return Err(DomainError::validation(
+                "url must be valid and <= 2048 chars",
+            ));
         }
         Ok(Self(s))
     }
@@ -2431,9 +2429,9 @@ mod tests {
         let a = TimeOfDay::new("09:00").unwrap();
         let b = TimeOfDay::new("17:00").unwrap();
         let c = TimeOfDay::new("09:00").unwrap();
-        assert!(TimeWindow::new(a, b).is_ok());
-        assert!(TimeWindow::new(b, a).is_err());
-        assert!(TimeWindow::new(a, c).is_err());
+        assert!(TimeWindow::new(a.clone(), b.clone()).is_ok());
+        assert!(TimeWindow::new(b.clone(), a.clone()).is_err());
+        assert!(TimeWindow::new(a.clone(), c.clone()).is_err());
     }
 
     #[test]

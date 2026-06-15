@@ -1300,7 +1300,10 @@ mod tests {
             ChatConversationQuery::query_type(),
             "communication.chat_conversation.query"
         );
-        assert_eq!(ChatGroupQuery::query_type(), "communication.chat_group.query");
+        assert_eq!(
+            ChatGroupQuery::query_type(),
+            "communication.chat_group.query"
+        );
         assert_eq!(
             ChatGroupUserQuery::query_type(),
             "communication.chat_group_user.query"
@@ -1325,7 +1328,10 @@ mod tests {
             ChatInvitationTypeQuery::query_type(),
             "communication.chat_invitation_type.query"
         );
-        assert_eq!(ChatStatusQuery::query_type(), "communication.chat_status.query");
+        assert_eq!(
+            ChatStatusQuery::query_type(),
+            "communication.chat_status.query"
+        );
         assert_eq!(
             SendMessageQuery::query_type(),
             "communication.send_message.query"

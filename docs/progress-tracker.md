@@ -42,7 +42,7 @@ keeps the `educore-` prefix (e.g. `educore-academic`). See
 | domains         | `educore-finance`            | 7     | Yes    | Yes          | Yes    | Largest spec (~5,567 lines); 5 real aggregates (Wallet, WalletTransaction, FeesInvoice, FeesPayment, Expense) + 33 placeholder stubs; 10 events, 115 commands + 125 shapes, 44 repos, 11 query stubs, 5 child entities, 6 services + CarryForwardService (4 rules) + LateFeeService (90 fixtures) + DoubleEntryService (proptest); PaymentProvider deprecated (moves to Phase 15); double-entry invariant (sum debits == sum credits per school_id) |
 | domains         | `educore-facilities`         | 8     | Yes    | No           | No     | Dorm, transport, inventory     |
 | domains         | `educore-library`            | 9     | Yes    | No           | No     | Books, issues, fines           |
-| domains         | `educore-communication`      | 10    | Yes    | No           | No     | Notices, complaints, logs      |
+| domains         | `educore-communication`      | 10    | Yes    | Yes          | Yes    | Eighth domain crate; spec-faithful interpretation (all 26 root aggregates); 9-file layout; 73 events; 72 commands; 70 factory service fns + 7 headline + 7 service structs; 26 repos (3 append-only); CommunicationDispatchService is events-only (no `educore-notify` dep); 100-case proptest of TemplateService::render; 60 unit tests in crate + 6-scenario integration test in storage-parity; 13 coverage rows flipped |
 | domains         | `educore-documents`          | 11    | Yes    | No           | No     | Forms, postal                  |
 | domains         | `educore-cms`                | 12    | Yes    | No           | No     | Pages, news, testimonial       |
 | domains         | `educore-events-domain`      | 13    | Yes    | No           | No     | Calendar (distinct from envelope) |
@@ -76,7 +76,7 @@ docs audit).
 | 7     | Finance (largest spec)             | `finance`                                                              | Done     | Yes (9 new commits + 1 Phase 6 fix-up; 579 tests pass; 33 placeholder aggregates documented as backlog for Workstreams D-M; see `docs/handoff/PHASE-7-HANDOFF.md`) |
 | 8     | Facilities                         | `facilities`                                                           | Planned  | No                |
 | 9     | Library                            | `library`                                                              | Planned  | No                |
-| 10    | Communication                      | `communication`                                                        | Planned  | No                |
+| 10    | Communication                      | `communication`                                                        | Done     | 5 of 5 ✅; 13 coverage rows flipped; ~770 tests pass (was ~692 at Phase 9 close-out; +78 net new: 60 unit + 6 integration + 2 cross-crate + 10 fixups); see `docs/handoff/PHASE-10-HANDOFF.md` |
 | 11    | Documents                          | `documents`                                                            | Planned  | No                |
 | 12    | CMS                                | `cms`                                                                  | Planned  | No                |
 | 13    | Events domain (calendar)           | `events-domain`                                                        | Planned  | No                |
@@ -125,9 +125,9 @@ PR. The summary below rolls it up to the bucket level. The
 | Sync engine (port + inprocess impl)                     | 2     | 2      | 2           | 2      |
 | Engine graph (graphify)                                | 1     | 1      | 1           | 1      |
 | Port traits (remaining 5: platform, rbac, events, event-bus, auth/notify/payment/files/integrations) | 12    | 12     | 0           | 0      |
-| Domain aggregates                                       | ~310  | ~310   | 13          | 13     |
-| Domain commands                                         | ~225  | ~225   | 14          | 14     |
-| Domain events                                           | ~280  | ~280   | 21          | 21     |
+| Domain aggregates                                       | ~310  | ~310   | 39          | 39     |
+| Domain commands                                         | ~225  | ~225   | 86          | 86     |
+| Domain events                                           | ~280  | ~280   | 94          | 94     |
 | SQL-dialect parity adapters (PG, MySQL, SQLite)         | 3     | 3      | 3           | 3      |
 | Cross-adapter parity test suite                         | 1     | 1      | 0           | 0      |
 | Port adapters (5 ports + 1 cli binary)                  | 6     | 6      | 0           | 0      |

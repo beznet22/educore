@@ -61,12 +61,7 @@ pub trait NoticeRepository: Send + Sync {
     /// Count notices for a school.
     async fn count(&self, school: SchoolId) -> Result<u64>;
     /// Page notices for a school, ordered most-recent first.
-    async fn page(
-        &self,
-        school: SchoolId,
-        limit: u32,
-        offset: u32,
-    ) -> Result<Vec<Notice>>;
+    async fn page(&self, school: SchoolId, limit: u32, offset: u32) -> Result<Vec<Notice>>;
     /// List notices published within the inclusive date range
     /// `[from, to]`.
     async fn published_between(
@@ -103,8 +98,7 @@ pub trait ComplaintRepository: Send + Sync {
     /// List all in-progress complaints for a school.
     async fn in_progress(&self, school: SchoolId) -> Result<Vec<Complaint>>;
     /// List complaints assigned to a given user.
-    async fn by_assignee(&self, school: SchoolId, assignee: UserId)
-        -> Result<Vec<Complaint>>;
+    async fn by_assignee(&self, school: SchoolId, assignee: UserId) -> Result<Vec<Complaint>>;
     /// List complaints of a given complaint type.
     async fn by_type(
         &self,
@@ -126,11 +120,7 @@ pub trait ComplaintTypeRepository: Send + Sync {
     /// List all complaint types for a school.
     async fn list(&self, school: SchoolId) -> Result<Vec<ComplaintType>>;
     /// Find a complaint type by its display name within a school.
-    async fn find_by_name(
-        &self,
-        school: SchoolId,
-        name: &str,
-    ) -> Result<Option<ComplaintType>>;
+    async fn find_by_name(&self, school: SchoolId, name: &str) -> Result<Option<ComplaintType>>;
     /// Insert a new complaint type.
     async fn insert(&self, t: &ComplaintType) -> Result<()>;
     /// Update an existing complaint type.
@@ -153,11 +143,7 @@ pub trait NotificationRepository: Send + Sync {
     /// List unread notifications addressed to a given user.
     async fn unread_for_user(&self, user: UserId) -> Result<Vec<Notification>>;
     /// List notifications for a school matching the typed query.
-    async fn list(
-        &self,
-        school: SchoolId,
-        q: NotificationQuery,
-    ) -> Result<Vec<Notification>>;
+    async fn list(&self, school: SchoolId, q: NotificationQuery) -> Result<Vec<Notification>>;
     /// Insert a new notification.
     async fn insert(&self, n: &Notification) -> Result<()>;
     /// Update an existing notification.
@@ -219,11 +205,7 @@ pub trait SmsLogRepository: Send + Sync {
     /// Append a new SMS log entry.
     async fn insert(&self, s: &SmsLog) -> Result<()>;
     /// List SMS log entries sent to a given recipient phone number.
-    async fn by_recipient(
-        &self,
-        school: SchoolId,
-        recipient: PhoneNumber,
-    ) -> Result<Vec<SmsLog>>;
+    async fn by_recipient(&self, school: SchoolId, recipient: PhoneNumber) -> Result<Vec<SmsLog>>;
     /// List SMS log entries sent within the inclusive date
     /// range `[from, to]`.
     async fn sent_between(
@@ -352,15 +334,9 @@ pub trait NotificationSettingRepository: Send + Sync {
 pub trait AbsentNotificationTimeSetupRepository: Send + Sync {
     /// Fetch the currently-active absent-notification time
     /// setup for a school. At most one is active per school.
-    async fn active(
-        &self,
-        school: SchoolId,
-    ) -> Result<Option<AbsentNotificationTimeSetup>>;
+    async fn active(&self, school: SchoolId) -> Result<Option<AbsentNotificationTimeSetup>>;
     /// List all absent-notification time setups for a school.
-    async fn list(
-        &self,
-        school: SchoolId,
-    ) -> Result<Vec<AbsentNotificationTimeSetup>>;
+    async fn list(&self, school: SchoolId) -> Result<Vec<AbsentNotificationTimeSetup>>;
     /// Fetch an absent-notification time setup by its typed id.
     async fn get(
         &self,
@@ -467,20 +443,11 @@ pub trait ChatGroupUserRepository: Send + Sync {
     /// List all members of a chat group.
     async fn list_for_group(&self, group: ChatGroupId) -> Result<Vec<ChatGroupUser>>;
     /// Find the membership row for the (group, user) pair.
-    async fn find(
-        &self,
-        group: ChatGroupId,
-        user: UserId,
-    ) -> Result<Option<ChatGroupUser>>;
+    async fn find(&self, group: ChatGroupId, user: UserId) -> Result<Option<ChatGroupUser>>;
     /// Insert a new chat group membership.
     async fn insert(&self, m: &ChatGroupUser) -> Result<()>;
     /// Set the role of a user within a chat group.
-    async fn set_role(
-        &self,
-        group: ChatGroupId,
-        user: UserId,
-        role: ChatGroupRole,
-    ) -> Result<()>;
+    async fn set_role(&self, group: ChatGroupId, user: UserId, role: ChatGroupRole) -> Result<()>;
     /// Remove a user from a chat group.
     async fn remove(&self, group: ChatGroupId, user: UserId) -> Result<()>;
 }
@@ -504,10 +471,7 @@ pub trait ChatGroupMessageRecipientRepository: Send + Sync {
         message: ChatMessageId,
     ) -> Result<Vec<ChatGroupMessageRecipient>>;
     /// List all delivery records addressed to a given user.
-    async fn list_for_user(
-        &self,
-        user: UserId,
-    ) -> Result<Vec<ChatGroupMessageRecipient>>;
+    async fn list_for_user(&self, user: UserId) -> Result<Vec<ChatGroupMessageRecipient>>;
     /// Insert a new delivery record.
     async fn insert(&self, r: &ChatGroupMessageRecipient) -> Result<()>;
     /// Mark a delivery record as read.
@@ -524,15 +488,9 @@ pub trait ChatGroupMessageRecipientRepository: Send + Sync {
 #[async_trait]
 pub trait ChatGroupMessageRemoveRepository: Send + Sync {
     /// Fetch a remove-record by its typed id.
-    async fn get(
-        &self,
-        id: ChatGroupMessageRemoveId,
-    ) -> Result<Option<ChatGroupMessageRemove>>;
+    async fn get(&self, id: ChatGroupMessageRemoveId) -> Result<Option<ChatGroupMessageRemove>>;
     /// List all remove-records affecting a given user.
-    async fn list_for_user(
-        &self,
-        user: UserId,
-    ) -> Result<Vec<ChatGroupMessageRemove>>;
+    async fn list_for_user(&self, user: UserId) -> Result<Vec<ChatGroupMessageRemove>>;
     /// Insert a new remove-record.
     async fn insert(&self, r: &ChatGroupMessageRemove) -> Result<()>;
 }
@@ -549,11 +507,7 @@ pub trait ChatBlockUserRepository: Send + Sync {
     /// blocker or blockee).
     async fn list_for(&self, user: UserId) -> Result<Vec<ChatBlockUser>>;
     /// Find the block placed by `block_by` against `block_to`.
-    async fn find(
-        &self,
-        block_by: UserId,
-        block_to: UserId,
-    ) -> Result<Option<ChatBlockUser>>;
+    async fn find(&self, block_by: UserId, block_to: UserId) -> Result<Option<ChatBlockUser>>;
     /// Insert a new block.
     async fn insert(&self, b: &ChatBlockUser) -> Result<()>;
     /// Remove a block by its typed id.
@@ -574,11 +528,7 @@ pub trait ChatInvitationRepository: Send + Sync {
     /// List all chat invitations for a school.
     async fn list(&self, school: SchoolId) -> Result<Vec<ChatInvitation>>;
     /// Find the chat invitation sent by `from` to `to`.
-    async fn find(
-        &self,
-        from: UserId,
-        to: UserId,
-    ) -> Result<Option<ChatInvitation>>;
+    async fn find(&self, from: UserId, to: UserId) -> Result<Option<ChatInvitation>>;
     /// Insert a new chat invitation.
     async fn insert(&self, i: &ChatInvitation) -> Result<()>;
     /// Update an existing chat invitation (e.g. on accept /
@@ -598,10 +548,7 @@ pub trait ChatInvitationRepository: Send + Sync {
 #[async_trait]
 pub trait ChatInvitationTypeRepository: Send + Sync {
     /// Fetch a chat invitation type by its typed id.
-    async fn get(
-        &self,
-        id: ChatInvitationTypeId,
-    ) -> Result<Option<ChatInvitationType>>;
+    async fn get(&self, id: ChatInvitationTypeId) -> Result<Option<ChatInvitationType>>;
     /// List all chat invitation types for a school.
     async fn list(&self, school: SchoolId) -> Result<Vec<ChatInvitationType>>;
     /// Find the chat invitation type classification row for
@@ -648,11 +595,7 @@ pub trait SendMessageRepository: Send + Sync {
     /// Fetch a send message by its typed id.
     async fn get(&self, id: SendMessageId) -> Result<Option<SendMessage>>;
     /// List send messages for a school matching the typed query.
-    async fn list(
-        &self,
-        school: SchoolId,
-        q: SendMessageQuery,
-    ) -> Result<Vec<SendMessage>>;
+    async fn list(&self, school: SchoolId, q: SendMessageQuery) -> Result<Vec<SendMessage>>;
     /// Insert a new send message.
     async fn insert(&self, m: &SendMessage) -> Result<()>;
     /// Update an existing send message.
@@ -679,11 +622,7 @@ pub trait ContactMessageRepository: Send + Sync {
     async fn get(&self, id: ContactMessageId) -> Result<Option<ContactMessage>>;
     /// List contact messages for a school matching the typed
     /// query.
-    async fn list(
-        &self,
-        school: SchoolId,
-        q: ContactMessageQuery,
-    ) -> Result<Vec<ContactMessage>>;
+    async fn list(&self, school: SchoolId, q: ContactMessageQuery) -> Result<Vec<ContactMessage>>;
     /// List contact messages that have not yet been replied to.
     async fn unreplied(&self, school: SchoolId) -> Result<Vec<ContactMessage>>;
     /// Insert a new contact message.
@@ -728,18 +667,11 @@ pub trait PhoneCallLogRepository: Send + Sync {
     /// Fetch a phone call log by its typed id.
     async fn get(&self, id: PhoneCallLogId) -> Result<Option<PhoneCallLog>>;
     /// List phone call logs for a school matching the typed query.
-    async fn list(
-        &self,
-        school: SchoolId,
-        q: PhoneCallLogQuery,
-    ) -> Result<Vec<PhoneCallLog>>;
+    async fn list(&self, school: SchoolId, q: PhoneCallLogQuery) -> Result<Vec<PhoneCallLog>>;
     /// List phone call logs whose `next_follow_up_date` is on
     /// or before `as_of`.
-    async fn follow_ups_due(
-        &self,
-        school: SchoolId,
-        as_of: NaiveDate,
-    ) -> Result<Vec<PhoneCallLog>>;
+    async fn follow_ups_due(&self, school: SchoolId, as_of: NaiveDate)
+        -> Result<Vec<PhoneCallLog>>;
     /// Append a new phone call log.
     async fn insert(&self, c: &PhoneCallLog) -> Result<()>;
     /// Bump the `next_follow_up_date` on an existing phone
@@ -757,15 +689,9 @@ pub trait PhoneCallLogRepository: Send + Sync {
 #[async_trait]
 pub trait CustomSmsSettingRepository: Send + Sync {
     /// Fetch a custom SMS setting by its typed id.
-    async fn get(
-        &self,
-        id: CustomSmsSettingId,
-    ) -> Result<Option<CustomSmsSetting>>;
+    async fn get(&self, id: CustomSmsSettingId) -> Result<Option<CustomSmsSetting>>;
     /// List all custom SMS settings bound to a given SMS gateway.
-    async fn for_gateway(
-        &self,
-        gateway: SmsGatewayId,
-    ) -> Result<Vec<CustomSmsSetting>>;
+    async fn for_gateway(&self, gateway: SmsGatewayId) -> Result<Vec<CustomSmsSetting>>;
     /// List all custom SMS settings for a school.
     async fn list(&self, school: SchoolId) -> Result<Vec<CustomSmsSetting>>;
     /// Insert a new custom SMS setting.
@@ -852,11 +778,7 @@ mod tests {
             async fn get(&self, _id: ComplaintId) -> Result<Option<Complaint>> {
                 unreachable!()
             }
-            async fn list(
-                &self,
-                _school: SchoolId,
-                _q: ComplaintQuery,
-            ) -> Result<Vec<Complaint>> {
+            async fn list(&self, _school: SchoolId, _q: ComplaintQuery) -> Result<Vec<Complaint>> {
                 unreachable!()
             }
             async fn insert(&self, _c: &Complaint) -> Result<()> {
@@ -962,11 +884,7 @@ mod tests {
             async fn get(&self, _id: EmailLogId) -> Result<Option<EmailLog>> {
                 unreachable!()
             }
-            async fn list(
-                &self,
-                _school: SchoolId,
-                _q: EmailLogQuery,
-            ) -> Result<Vec<EmailLog>> {
+            async fn list(&self, _school: SchoolId, _q: EmailLogQuery) -> Result<Vec<EmailLog>> {
                 unreachable!()
             }
             async fn insert(&self, _e: &EmailLog) -> Result<()> {
@@ -998,11 +916,7 @@ mod tests {
             async fn get(&self, _id: SmsLogId) -> Result<Option<SmsLog>> {
                 unreachable!()
             }
-            async fn list(
-                &self,
-                _school: SchoolId,
-                _q: SmsLogQuery,
-            ) -> Result<Vec<SmsLog>> {
+            async fn list(&self, _school: SchoolId, _q: SmsLogQuery) -> Result<Vec<SmsLog>> {
                 unreachable!()
             }
             async fn insert(&self, _s: &SmsLog) -> Result<()> {
@@ -1121,16 +1035,10 @@ mod tests {
         struct Impl;
         #[async_trait]
         impl NotificationSettingRepository for Impl {
-            async fn get(
-                &self,
-                _id: NotificationSettingId,
-            ) -> Result<Option<NotificationSetting>> {
+            async fn get(&self, _id: NotificationSettingId) -> Result<Option<NotificationSetting>> {
                 unreachable!()
             }
-            async fn list(
-                &self,
-                _school: SchoolId,
-            ) -> Result<Vec<NotificationSetting>> {
+            async fn list(&self, _school: SchoolId) -> Result<Vec<NotificationSetting>> {
                 unreachable!()
             }
             async fn find(
@@ -1165,10 +1073,7 @@ mod tests {
             ) -> Result<Option<AbsentNotificationTimeSetup>> {
                 unreachable!()
             }
-            async fn list(
-                &self,
-                _school: SchoolId,
-            ) -> Result<Vec<AbsentNotificationTimeSetup>> {
+            async fn list(&self, _school: SchoolId) -> Result<Vec<AbsentNotificationTimeSetup>> {
                 unreachable!()
             }
             async fn get(
@@ -1220,10 +1125,7 @@ mod tests {
         struct Impl;
         #[async_trait]
         impl ChatConversationRepository for Impl {
-            async fn get(
-                &self,
-                _id: ChatConversationId,
-            ) -> Result<Option<ChatConversation>> {
+            async fn get(&self, _id: ChatConversationId) -> Result<Option<ChatConversation>> {
                 unreachable!()
             }
             async fn find(
@@ -1234,10 +1136,7 @@ mod tests {
             ) -> Result<Option<ChatConversation>> {
                 unreachable!()
             }
-            async fn list_for_user(
-                &self,
-                _user: UserId,
-            ) -> Result<Vec<ChatConversation>> {
+            async fn list_for_user(&self, _user: UserId) -> Result<Vec<ChatConversation>> {
                 unreachable!()
             }
             async fn insert(&self, _c: &ChatConversation) -> Result<()> {
@@ -1291,10 +1190,7 @@ mod tests {
             async fn get(&self, _id: ChatGroupUserId) -> Result<Option<ChatGroupUser>> {
                 unreachable!()
             }
-            async fn list_for_group(
-                &self,
-                _group: ChatGroupId,
-            ) -> Result<Vec<ChatGroupUser>> {
+            async fn list_for_group(&self, _group: ChatGroupId) -> Result<Vec<ChatGroupUser>> {
                 unreachable!()
             }
             async fn find(
@@ -1339,10 +1235,7 @@ mod tests {
             ) -> Result<Vec<ChatGroupMessageRecipient>> {
                 unreachable!()
             }
-            async fn list_for_user(
-                &self,
-                _user: UserId,
-            ) -> Result<Vec<ChatGroupMessageRecipient>> {
+            async fn list_for_user(&self, _user: UserId) -> Result<Vec<ChatGroupMessageRecipient>> {
                 unreachable!()
             }
             async fn insert(&self, _r: &ChatGroupMessageRecipient) -> Result<()> {
@@ -1355,8 +1248,8 @@ mod tests {
         Box::new(Impl)
     }
 
-    fn _object_safety_check_chat_group_message_remove(
-    ) -> Box<dyn ChatGroupMessageRemoveRepository> {
+    fn _object_safety_check_chat_group_message_remove() -> Box<dyn ChatGroupMessageRemoveRepository>
+    {
         struct Impl;
         #[async_trait]
         impl ChatGroupMessageRemoveRepository for Impl {
@@ -1366,10 +1259,7 @@ mod tests {
             ) -> Result<Option<ChatGroupMessageRemove>> {
                 unreachable!()
             }
-            async fn list_for_user(
-                &self,
-                _user: UserId,
-            ) -> Result<Vec<ChatGroupMessageRemove>> {
+            async fn list_for_user(&self, _user: UserId) -> Result<Vec<ChatGroupMessageRemove>> {
                 unreachable!()
             }
             async fn insert(&self, _r: &ChatGroupMessageRemove) -> Result<()> {
@@ -1413,11 +1303,7 @@ mod tests {
             async fn list(&self, _school: SchoolId) -> Result<Vec<ChatInvitation>> {
                 unreachable!()
             }
-            async fn find(
-                &self,
-                _from: UserId,
-                _to: UserId,
-            ) -> Result<Option<ChatInvitation>> {
+            async fn find(&self, _from: UserId, _to: UserId) -> Result<Option<ChatInvitation>> {
                 unreachable!()
             }
             async fn insert(&self, _i: &ChatInvitation) -> Result<()> {
@@ -1433,15 +1319,11 @@ mod tests {
         Box::new(Impl)
     }
 
-    fn _object_safety_check_chat_invitation_type(
-    ) -> Box<dyn ChatInvitationTypeRepository> {
+    fn _object_safety_check_chat_invitation_type() -> Box<dyn ChatInvitationTypeRepository> {
         struct Impl;
         #[async_trait]
         impl ChatInvitationTypeRepository for Impl {
-            async fn get(
-                &self,
-                _id: ChatInvitationTypeId,
-            ) -> Result<Option<ChatInvitationType>> {
+            async fn get(&self, _id: ChatInvitationTypeId) -> Result<Option<ChatInvitationType>> {
                 unreachable!()
             }
             async fn list(&self, _school: SchoolId) -> Result<Vec<ChatInvitationType>> {
@@ -1516,10 +1398,7 @@ mod tests {
         struct Impl;
         #[async_trait]
         impl ContactMessageRepository for Impl {
-            async fn get(
-                &self,
-                _id: ContactMessageId,
-            ) -> Result<Option<ContactMessage>> {
+            async fn get(&self, _id: ContactMessageId) -> Result<Option<ContactMessage>> {
                 unreachable!()
             }
             async fn list(
@@ -1589,11 +1468,7 @@ mod tests {
             async fn insert(&self, _c: &PhoneCallLog) -> Result<()> {
                 unreachable!()
             }
-            async fn update_follow_up(
-                &self,
-                _id: PhoneCallLogId,
-                _next: NaiveDate,
-            ) -> Result<()> {
+            async fn update_follow_up(&self, _id: PhoneCallLogId, _next: NaiveDate) -> Result<()> {
                 unreachable!()
             }
         }
@@ -1604,16 +1479,10 @@ mod tests {
         struct Impl;
         #[async_trait]
         impl CustomSmsSettingRepository for Impl {
-            async fn get(
-                &self,
-                _id: CustomSmsSettingId,
-            ) -> Result<Option<CustomSmsSetting>> {
+            async fn get(&self, _id: CustomSmsSettingId) -> Result<Option<CustomSmsSetting>> {
                 unreachable!()
             }
-            async fn for_gateway(
-                &self,
-                _gateway: SmsGatewayId,
-            ) -> Result<Vec<CustomSmsSetting>> {
+            async fn for_gateway(&self, _gateway: SmsGatewayId) -> Result<Vec<CustomSmsSetting>> {
                 unreachable!()
             }
             async fn list(&self, _school: SchoolId) -> Result<Vec<CustomSmsSetting>> {
@@ -1650,8 +1519,7 @@ mod tests {
         let _k: Box<dyn AbsentNotificationTimeSetupRepository> =
             _object_safety_check_absent_notification_time_setup();
         let _l: Box<dyn ChatMessageRepository> = _object_safety_check_chat_message();
-        let _m: Box<dyn ChatConversationRepository> =
-            _object_safety_check_chat_conversation();
+        let _m: Box<dyn ChatConversationRepository> = _object_safety_check_chat_conversation();
         let _n: Box<dyn ChatGroupRepository> = _object_safety_check_chat_group();
         let _o: Box<dyn ChatGroupUserRepository> = _object_safety_check_chat_group_user();
         let _p: Box<dyn ChatGroupMessageRecipientRepository> =
@@ -1660,14 +1528,12 @@ mod tests {
             _object_safety_check_chat_group_message_remove();
         let _r: Box<dyn ChatBlockUserRepository> = _object_safety_check_chat_block_user();
         let _s: Box<dyn ChatInvitationRepository> = _object_safety_check_chat_invitation();
-        let _t: Box<dyn ChatInvitationTypeRepository> =
-            _object_safety_check_chat_invitation_type();
+        let _t: Box<dyn ChatInvitationTypeRepository> = _object_safety_check_chat_invitation_type();
         let _u: Box<dyn ChatStatusRepository> = _object_safety_check_chat_status();
         let _v: Box<dyn SendMessageRepository> = _object_safety_check_send_message();
         let _w: Box<dyn ContactMessageRepository> = _object_safety_check_contact_message();
         let _x: Box<dyn SpeechSliderRepository> = _object_safety_check_speech_slider();
         let _y: Box<dyn PhoneCallLogRepository> = _object_safety_check_phone_call_log();
-        let _z: Box<dyn CustomSmsSettingRepository> =
-            _object_safety_check_custom_sms_setting();
+        let _z: Box<dyn CustomSmsSettingRepository> = _object_safety_check_custom_sms_setting();
     }
 }

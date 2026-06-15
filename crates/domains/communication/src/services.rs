@@ -115,7 +115,10 @@ pub fn update_notice<C: Clock, G: IdGenerator>(
     );
     Ok(NoticeUpdated::new(
         notice.id,
-        changes.into_iter().map(String::from).collect::<Vec<String>>(),
+        changes
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<String>>(),
         event_id,
         cmd.tenant.correlation_id,
         now,
@@ -277,12 +280,7 @@ pub fn resolve_complaint<C: Clock, G: IdGenerator>(
     let now = clock.now();
     let event_id = ids.next_event_id();
     let resolved_at = now;
-    complaint.resolve(
-        cmd.action_taken.clone(),
-        cmd.tenant.actor_id,
-        now,
-        event_id,
-    );
+    complaint.resolve(cmd.action_taken.clone(), cmd.tenant.actor_id, now, event_id);
     Ok(ComplaintResolved::new(
         complaint.id,
         cmd.action_taken,
@@ -349,13 +347,7 @@ pub fn create_complaint_type<C: Clock, G: IdGenerator>(
         cmd.tenant.correlation_id,
     );
     ct.last_event_id = Some(event_id);
-    let event = ComplaintTypeCreated::new(
-        id,
-        cmd.name,
-        event_id,
-        cmd.tenant.correlation_id,
-        now,
-    );
+    let event = ComplaintTypeCreated::new(id, cmd.name, event_id, cmd.tenant.correlation_id, now);
     Ok((ct, event))
 }
 
@@ -378,7 +370,10 @@ pub fn update_complaint_type<C: Clock, G: IdGenerator>(
     );
     Ok(ComplaintTypeUpdated::new(
         ct.id,
-        changes.into_iter().map(String::from).collect::<Vec<String>>(),
+        changes
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<String>>(),
         event_id,
         cmd.tenant.correlation_id,
         now,
@@ -476,12 +471,7 @@ pub fn withdraw_notification<C: Clock, G: IdGenerator>(
 ) -> Result<NotificationWithdrawn> {
     let now = clock.now();
     let event_id = ids.next_event_id();
-    n.withdraw(
-        cmd.reason.clone(),
-        cmd.tenant.actor_id,
-        now,
-        event_id,
-    );
+    n.withdraw(cmd.reason.clone(), cmd.tenant.actor_id, now, event_id);
     Ok(NotificationWithdrawn::new(
         n.id,
         cmd.reason,
@@ -637,7 +627,10 @@ pub fn update_sms_template<C: Clock, G: IdGenerator>(
     );
     Ok(SmsTemplateUpdated::new(
         t.id,
-        changes.into_iter().map(String::from).collect::<Vec<String>>(),
+        changes
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<String>>(),
         event_id,
         cmd.tenant.correlation_id,
         now,
@@ -922,7 +915,10 @@ pub fn update_custom_sms_setting<C: Clock, G: IdGenerator>(
     );
     Ok(CustomSmsSettingUpdated::new(
         s.id,
-        changes.into_iter().map(String::from).collect::<Vec<String>>(),
+        changes
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<String>>(),
         event_id,
         cmd.tenant.correlation_id,
         now,
@@ -1009,7 +1005,10 @@ pub fn update_notification_setting<C: Clock, G: IdGenerator>(
     );
     Ok(NotificationSettingUpdated::new(
         ns.id,
-        changes.into_iter().map(String::from).collect::<Vec<String>>(),
+        changes
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<String>>(),
         event_id,
         cmd.tenant.correlation_id,
         now,
@@ -1193,9 +1192,9 @@ pub fn send_chat_message<C: Clock, G: IdGenerator>(
     let event_id = ids.next_event_id();
     let school = cmd.tenant.school_id;
     let id = ChatMessageId::new(school, event_id_to_uuid(event_id));
-    let conversation_id = cmd.conversation_id.unwrap_or_else(|| {
-        ChatConversationId::new(school, event_id_to_uuid(ids.next_event_id()))
-    });
+    let conversation_id = cmd
+        .conversation_id
+        .unwrap_or_else(|| ChatConversationId::new(school, event_id_to_uuid(ids.next_event_id())));
     let mut m = ChatMessage::fresh(
         id,
         conversation_id,
@@ -1332,7 +1331,10 @@ pub fn update_chat_group<C: Clock, G: IdGenerator>(
     );
     Ok(ChatGroupUpdated::new(
         g.id,
-        changes.into_iter().map(String::from).collect::<Vec<String>>(),
+        changes
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<String>>(),
         event_id,
         cmd.tenant.correlation_id,
         now,
@@ -1349,12 +1351,7 @@ pub fn set_chat_group_read_only<C: Clock, G: IdGenerator>(
 ) -> Result<ChatGroupReadOnlySet> {
     let now = clock.now();
     let event_id = ids.next_event_id();
-    g.set_read_only(
-        cmd.read_only,
-        cmd.tenant.actor_id,
-        now,
-        event_id,
-    );
+    g.set_read_only(cmd.read_only, cmd.tenant.actor_id, now, event_id);
     Ok(ChatGroupReadOnlySet::new(
         g.id,
         cmd.read_only,
@@ -1544,13 +1541,8 @@ pub fn remove_group_message_for_user<C: Clock, G: IdGenerator>(
         cmd.tenant.correlation_id,
     );
     rm.last_event_id = Some(event_id);
-    let event = GroupMessageRemovedForUser::new(
-        id,
-        cmd.user_id,
-        event_id,
-        cmd.tenant.correlation_id,
-        now,
-    );
+    let event =
+        GroupMessageRemovedForUser::new(id, cmd.user_id, event_id, cmd.tenant.correlation_id, now);
     Ok((rm, event))
 }
 
@@ -1987,7 +1979,10 @@ pub fn update_speech_slider<C: Clock, G: IdGenerator>(
     );
     Ok(SpeechSliderUpdated::new(
         s.id,
-        changes.into_iter().map(String::from).collect::<Vec<String>>(),
+        changes
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<String>>(),
         event_id,
         cmd.tenant.correlation_id,
         now,
@@ -2066,12 +2061,7 @@ pub fn update_phone_call_follow_up<C: Clock, G: IdGenerator>(
 ) -> Result<PhoneCallFollowUpUpdated> {
     let now = clock.now();
     let event_id = ids.next_event_id();
-    pcl.update_follow_up(
-        cmd.next_follow_up_date,
-        cmd.tenant.actor_id,
-        now,
-        event_id,
-    );
+    pcl.update_follow_up(cmd.next_follow_up_date, cmd.tenant.actor_id, now, event_id);
     Ok(PhoneCallFollowUpUpdated::new(
         pcl.id,
         cmd.next_follow_up_date,
@@ -2184,10 +2174,7 @@ impl NotificationService {
     /// Renders the notification body for the given template and
     /// substitution map. Pure wrapper around
     /// [`TemplateService::render`].
-    pub fn render(
-        template: &SmsTemplate,
-        vars: &BTreeMap<String, String>,
-    ) -> Result<RenderedBody> {
+    pub fn render(template: &SmsTemplate, vars: &BTreeMap<String, String>) -> Result<RenderedBody> {
         TemplateService::render(template, vars)
     }
 
@@ -2205,9 +2192,7 @@ impl NotificationService {
     /// re-export; the dispatcher is responsible for actually
     /// scheduling the dispatch.
     #[must_use]
-    pub fn next_window(
-        setup: &AbsentNotificationTimeSetup,
-    ) -> (TimeOfDay, TimeOfDay) {
+    pub fn next_window(setup: &AbsentNotificationTimeSetup) -> (TimeOfDay, TimeOfDay) {
         (setup.time_from.clone(), setup.time_to.clone())
     }
 }
@@ -2224,10 +2209,7 @@ impl ChatService {
     /// Returns `true` if `from` is blocked by `to` according to
     /// the supplied [`ChatBlockUser`] set.
     #[must_use]
-    pub fn is_blocked(
-        from: UserId,
-        blocks: &[ChatBlockUser],
-    ) -> bool {
+    pub fn is_blocked(from: UserId, blocks: &[ChatBlockUser]) -> bool {
         blocks.iter().any(|b| b.block_by == from && b.is_active())
     }
 
@@ -2240,18 +2222,16 @@ impl ChatService {
         b: UserId,
         conversations: &[ChatConversation],
     ) -> Option<&ChatConversation> {
-        conversations.iter().find(|c| {
-            (c.from_id == a && c.to_id == b) || (c.from_id == b && c.to_id == a)
-        })
+        conversations
+            .iter()
+            .find(|c| (c.from_id == a && c.to_id == b) || (c.from_id == b && c.to_id == a))
     }
 
     /// Fans out a group message to the group's user set,
     /// returning the set of [`UserId`]s who should receive a
     /// [`ChatGroupMessageRecipient`] record.
     #[must_use]
-    pub fn fan_out_group_recipients(
-        members: &[ChatGroupUser],
-    ) -> Vec<UserId> {
+    pub fn fan_out_group_recipients(members: &[ChatGroupUser]) -> Vec<UserId> {
         members.iter().map(|m| m.user_id).collect()
     }
 
@@ -2259,11 +2239,7 @@ impl ChatService {
     /// given [`ChatGroup`]. A user can post when the group is
     /// not read-only, or when the user is an admin.
     #[must_use]
-    pub fn can_post(
-        group: &ChatGroup,
-        user: UserId,
-        membership: Option<&ChatGroupUser>,
-    ) -> bool {
+    pub fn can_post(group: &ChatGroup, user: UserId, membership: Option<&ChatGroupUser>) -> bool {
         if !group.read_only {
             return true;
         }
@@ -2288,10 +2264,7 @@ impl ComplaintService {
     /// the type's name, or "Uncategorised" if the type id is
     /// not in the supplied slice.
     #[must_use]
-    pub fn categorize(
-        complaint: &Complaint,
-        types: &[ComplaintType],
-    ) -> String {
+    pub fn categorize(complaint: &Complaint, types: &[ComplaintType]) -> String {
         types
             .iter()
             .find(|t| t.id == complaint.complaint_type_id)
@@ -2308,24 +2281,13 @@ impl ComplaintService {
     /// Returns the next [`ComplaintStatus`] for a complaint
     /// given the current status and the requested action.
     #[must_use]
-    pub fn next_status(
-        current: ComplaintStatus,
-        action: ComplaintAction,
-    ) -> ComplaintStatus {
+    pub fn next_status(current: ComplaintStatus, action: ComplaintAction) -> ComplaintStatus {
         match (current, action) {
-            (ComplaintStatus::Open, ComplaintAction::InProgress) => {
-                ComplaintStatus::InProgress
-            }
-            (ComplaintStatus::InProgress, ComplaintAction::Resolve) => {
-                ComplaintStatus::Resolved
-            }
-            (ComplaintStatus::Open, ComplaintAction::Resolve) => {
-                ComplaintStatus::Resolved
-            }
+            (ComplaintStatus::Open, ComplaintAction::InProgress) => ComplaintStatus::InProgress,
+            (ComplaintStatus::InProgress, ComplaintAction::Resolve) => ComplaintStatus::Resolved,
+            (ComplaintStatus::Open, ComplaintAction::Resolve) => ComplaintStatus::Resolved,
             (ComplaintStatus::Open, ComplaintAction::Open) => ComplaintStatus::Open,
-            (ComplaintStatus::InProgress, ComplaintAction::Open) => {
-                ComplaintStatus::Open
-            }
+            (ComplaintStatus::InProgress, ComplaintAction::Open) => ComplaintStatus::Open,
             (ComplaintStatus::InProgress, ComplaintAction::InProgress) => {
                 ComplaintStatus::InProgress
             }
@@ -2344,10 +2306,9 @@ impl ComplaintService {
                 ComplaintStatus::InProgress,
                 ComplaintStatus::Resolved,
             ],
-            ComplaintStatus::InProgress => vec![
-                ComplaintStatus::InProgress,
-                ComplaintStatus::Resolved,
-            ],
+            ComplaintStatus::InProgress => {
+                vec![ComplaintStatus::InProgress, ComplaintStatus::Resolved]
+            }
             ComplaintStatus::Resolved => vec![ComplaintStatus::Resolved],
         }
     }
@@ -2375,12 +2336,8 @@ impl AbsentNotificationService {
     /// dispatch: enabled AND the wall clock is inside the
     /// configured window.
     #[must_use]
-    pub fn should_dispatch(
-        at: TimeOfDay,
-        setup: &AbsentNotificationTimeSetup,
-    ) -> bool {
-        matches!(setup.status, AbsentNotificationStatus::Enabled)
-            && Self::in_window(at, setup)
+    pub fn should_dispatch(at: TimeOfDay, setup: &AbsentNotificationTimeSetup) -> bool {
+        matches!(setup.status, AbsentNotificationStatus::Enabled) && Self::in_window(at, setup)
     }
 
     /// Builds a [`AbsentNotificationDispatch`] child entity for
@@ -2418,10 +2375,7 @@ impl AbsentNotificationService {
     /// Renders the absent-notification body for the given
     /// template and substitution map. Pure wrapper around
     /// [`TemplateService::render`].
-    pub fn render(
-        template: &SmsTemplate,
-        vars: &BTreeMap<String, String>,
-    ) -> Result<RenderedBody> {
+    pub fn render(template: &SmsTemplate, vars: &BTreeMap<String, String>) -> Result<RenderedBody> {
         TemplateService::render(template, vars)
     }
 }
@@ -2440,10 +2394,7 @@ impl TemplateService {
     /// variables. Returns `Ok(())` if the body is well-formed
     /// and every declared variable appears in the declaration
     /// list. Returns `Err(DomainError::Validation)` otherwise.
-    pub fn validate_body(
-        body: &str,
-        variables: &[TemplateVariable],
-    ) -> Result<()> {
+    pub fn validate_body(body: &str, variables: &[TemplateVariable]) -> Result<()> {
         let declared = Self::declared(body);
         for var in variables {
             if !declared.iter().any(|n| n == var.name.as_str()) {
@@ -2487,10 +2438,7 @@ impl TemplateService {
     /// the corresponding value from `vars`. Returns `Err` if a
     /// placeholder references a variable that is not present
     /// in `vars`.
-    pub fn substitute(
-        body: &str,
-        vars: &BTreeMap<String, String>,
-    ) -> Result<String> {
+    pub fn substitute(body: &str, vars: &BTreeMap<String, String>) -> Result<String> {
         let mut out = String::with_capacity(body.len());
         let bytes = body.as_bytes();
         let mut i = 0;
@@ -2529,10 +2477,7 @@ impl TemplateService {
     /// Renders the body of a [`SmsTemplate`] by substituting
     /// every declared variable. Returns the rendered
     /// [`RenderedBody`].
-    pub fn render(
-        template: &SmsTemplate,
-        vars: &BTreeMap<String, String>,
-    ) -> Result<RenderedBody> {
+    pub fn render(template: &SmsTemplate, vars: &BTreeMap<String, String>) -> Result<RenderedBody> {
         let body = template.body.as_str();
         let declared = Self::declared(body);
         for name in &declared {
@@ -2560,11 +2505,14 @@ impl TemplateService {
                 body: body.to_owned(),
             });
         }
-        if body.contains('<') && body.contains('>') {
-            warnings.push(RenderWarning::HtmlInSms {
-                html: body.to_owned(),
-                sms_body: body.to_owned(),
-            });
+        if let (Some(start), Some(end)) = (body.find('<'), body.rfind('>')) {
+            if start < end {
+                let html = body[start..=end].to_owned();
+                warnings.push(RenderWarning::HtmlInSms {
+                    html,
+                    sms_body: body.to_owned(),
+                });
+            }
         }
         warnings
     }
@@ -2585,11 +2533,7 @@ impl SmsDispatchPolicy {
     /// - The message status is `Draft`.
     /// - `publish_on` is `None` (immediate) or in the past.
     /// - The audience is non-empty.
-    pub fn check(
-        cmd: &DispatchSendMessageCommand,
-        sm: &SendMessage,
-        now: NaiveDate,
-    ) -> Result<()> {
+    pub fn check(cmd: &DispatchSendMessageCommand, sm: &SendMessage, now: NaiveDate) -> Result<()> {
         if !matches!(sm.status, SendMessageStatus::Draft) {
             return Err(DomainError::conflict(
                 "send message is not in a dispatchable status",
@@ -2603,9 +2547,7 @@ impl SmsDispatchPolicy {
             }
         }
         if sm.audience.is_empty() {
-            return Err(DomainError::validation(
-                "send message audience is empty",
-            ));
+            return Err(DomainError::validation("send message audience is empty"));
         }
         let _ = cmd;
         Ok(())
@@ -2647,11 +2589,7 @@ impl NoticesPublishedInRange {
     /// Returns `true` if the notice is `Published` and its
     /// `notice_date` is in the inclusive range.
     #[must_use]
-    pub fn is_satisfied_by(
-        notice: &Notice,
-        from: NaiveDate,
-        to: NaiveDate,
-    ) -> bool {
+    pub fn is_satisfied_by(notice: &Notice, from: NaiveDate, to: NaiveDate) -> bool {
         matches!(notice.status, NoticeStatus::Published)
             && notice.notice_date >= from
             && notice.notice_date <= to
@@ -2688,9 +2626,7 @@ impl ChatInvitePolicy {
             .iter()
             .any(|b| b.block_by == cmd.tenant.actor_id && b.block_to == cmd.to)
         {
-            return Err(DomainError::forbidden(
-                "actor has blocked the recipient",
-            ));
+            return Err(DomainError::forbidden("actor has blocked the recipient"));
         }
         if open_invitations.iter().any(|inv| {
             inv.from == cmd.tenant.actor_id
@@ -2791,18 +2727,17 @@ mod tests {
             tenant,
             channel: Channel::Sms,
             purpose: "absent".to_owned(),
-            subject: "Subject".to_owned(),
+            subject: EmailSubject::new("Subject").unwrap(),
             body: TemplateBody::new("Hello {{name}}, your child {{child}} is absent on {{date}}.")
                 .unwrap(),
             module: "attendance".to_owned(),
             variables: vec![
-                TemplateVariable::new("name").unwrap(),
-                TemplateVariable::new("child").unwrap(),
-                TemplateVariable::new("date").unwrap(),
+                TemplateVariable::new("name", "name").unwrap(),
+                TemplateVariable::new("child", "child").unwrap(),
+                TemplateVariable::new("date", "date").unwrap(),
             ],
         };
-        let (template, _event) =
-            create_sms_template(cmd, &SystemClock, &SystemIdGen).unwrap();
+        let (template, _event) = create_sms_template(cmd, &SystemClock, &SystemIdGen).unwrap();
         let mut vars = BTreeMap::new();
         vars.insert("name".to_owned(), "Alice".to_owned());
         vars.insert("child".to_owned(), "Bob".to_owned());
@@ -2821,13 +2756,12 @@ mod tests {
             tenant,
             channel: Channel::Sms,
             purpose: "absent".to_owned(),
-            subject: "Subject".to_owned(),
+            subject: EmailSubject::new("Subject").unwrap(),
             body: TemplateBody::new("Hello {{name}}").unwrap(),
             module: "attendance".to_owned(),
-            variables: vec![TemplateVariable::new("name").unwrap()],
+            variables: vec![TemplateVariable::new("name", "name").unwrap()],
         };
-        let (template, _event) =
-            create_sms_template(cmd, &SystemClock, &SystemIdGen).unwrap();
+        let (template, _event) = create_sms_template(cmd, &SystemClock, &SystemIdGen).unwrap();
         let empty: BTreeMap<String, String> = BTreeMap::new();
         let err = TemplateService::render(&template, &empty).unwrap_err();
         assert!(matches!(err, DomainError::Validation(_)));
@@ -2844,7 +2778,10 @@ mod tests {
     fn template_service_lint_detects_html() {
         let body = "Hello <b>name</b>";
         let warnings = TemplateService::lint(body);
-        assert!(warnings.contains(&RenderWarning::HtmlInSms));
+        assert!(warnings.contains(&RenderWarning::HtmlInSms {
+            html: "<b>name</b>".to_owned(),
+            sms_body: body.to_owned(),
+        }));
     }
 
     // -------------------------------------------------------------------------
@@ -2860,12 +2797,12 @@ mod tests {
         /// `render` returns `Err`).
         #[test]
         fn prop_template_render_resolves_all_declared_vars(
-            body in ".*",
+            body in "[^{}]+",
             var_count in 0usize..8,
         ) {
             let (_school, _user, _at, _corr, tenant) = ctx();
             let variables: Vec<TemplateVariable> = (0..var_count)
-                .map(|i| TemplateVariable::new(format!("v{i}")).unwrap())
+                .map(|i| TemplateVariable::new(format!("v{i}"), format!("v{i}")).unwrap())
                 .collect();
             let mut body_str = body.clone();
             // Declare each variable in the body.
@@ -2876,7 +2813,7 @@ mod tests {
                 tenant,
                 channel: Channel::Sms,
                 purpose: "test".to_owned(),
-                subject: "Subject".to_owned(),
+                subject: EmailSubject::new("Subject").unwrap(),
                 body: TemplateBody::new(body_str.clone()).unwrap(),
                 module: "test".to_owned(),
                 variables: variables.clone(),
@@ -2920,14 +2857,14 @@ mod tests {
         /// succeeds.
         #[test]
         fn prop_template_render_with_empty_vars_and_no_placeholders(
-            body in "[^{}]*",
+            body in "[^{}]+",
         ) {
             let (_school, _user, _at, _corr, tenant) = ctx();
             let cmd = CreateSmsTemplateCommand {
                 tenant,
                 channel: Channel::Sms,
                 purpose: "test".to_owned(),
-                subject: "Subject".to_owned(),
+                subject: EmailSubject::new("Subject").unwrap(),
                 body: TemplateBody::new(body.clone()).unwrap(),
                 module: "test".to_owned(),
                 variables: Vec::new(),

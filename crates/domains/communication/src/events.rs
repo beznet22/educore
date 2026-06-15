@@ -28,16 +28,16 @@ use educore_events::domain_event::DomainEvent;
 use educore_academic::StudentId;
 
 use crate::value_objects::{
-    AbsentNotificationTimeSetupId, AudienceDescriptor, CallType, Channel,
-    ChatConversationId, ChatGroupId, ChatGroupMessageRecipientId,
-    ChatGroupMessageRemoveId, ChatGroupPrivacy, ChatGroupRole, ChatGroupType,
-    ChatInvitationId, ChatInvitationStatus, ChatInvitationTypeEnum, ChatInvitationTypeId,
-    ChatMessageId, ChatMessageStatus, ChatStatus, ComplaintId, ComplaintSource, ComplaintStatus,
-    ComplaintTypeId, ContactMessageId, CustomSmsSettingId, Destination, EmailAddress, EmailLogId,
-    EmailSettingId, EmailSubject, GatewayType, MailDriver, MessageId, MessageType, NoticeDate,
-    NoticeId, NoticeTitle, NotificationId, NotificationSettingId, NotificationType, PersonName,
-    PhoneCallLogId, PhoneNumber, RequestMethod, SendMessageId, SmsGatewayId, SmsLogId,
-    SmsTemplateId, SpeechSliderId, TemplateKey, TimeOfDay, Url,
+    AbsentNotificationTimeSetupId, AudienceDescriptor, CallType, Channel, ChatConversationId,
+    ChatGroupId, ChatGroupMessageRecipientId, ChatGroupMessageRemoveId, ChatGroupPrivacy,
+    ChatGroupRole, ChatGroupType, ChatInvitationId, ChatInvitationStatus, ChatInvitationTypeEnum,
+    ChatInvitationTypeId, ChatMessageId, ChatMessageStatus, ChatStatus, ComplaintId,
+    ComplaintSource, ComplaintStatus, ComplaintTypeId, ContactMessageId, CustomSmsSettingId,
+    Destination, EmailAddress, EmailLogId, EmailSettingId, EmailSubject, GatewayType, MailDriver,
+    MessageId, MessageType, NoticeDate, NoticeId, NoticeTitle, NotificationId,
+    NotificationSettingId, NotificationType, PersonName, PhoneCallLogId, PhoneNumber,
+    RequestMethod, SendMessageId, SmsGatewayId, SmsLogId, SmsTemplateId, SpeechSliderId,
+    TemplateKey, TimeOfDay, Url,
 };
 
 /// Stable UUID namespace used to derive `aggregate_id()` for the

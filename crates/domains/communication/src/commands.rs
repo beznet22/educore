@@ -35,14 +35,14 @@ use crate::value_objects::{
     AbsentNotificationTimeSetupId, AudienceDescriptor, CallDescription, CallDuration, CallType,
     Channel, ChatConversationId, ChatGroupId, ChatGroupMessageRecipientId, ChatGroupPrivacy,
     ChatGroupRole, ChatGroupType, ChatInvitationId, ChatInvitationTypeEnum, ChatMessageBody,
-    ChatMessageId, ChatStatus, ComplaintDescription, ComplaintId, ComplaintSource,
-    ComplaintStatus, ComplaintTypeId, ContactMessageId, CustomSmsSettingId, Destination,
-    EmailAddress, EmailSettingId, EmailSubject, FileReference, GatewayName, GatewayType,
-    MailDriver, MailEncryption, MessageId, MessageType, NotificationId, NotificationMessage,
-    NotificationSettingId, NotificationType, NoticeBody, NoticeId, NoticeTitle, PersonName,
-    PhoneNumber, PhoneCallLogId, RequestMethod, SecretReference, SendMessageId,
-    SmsGatewayCredentials, SmsGatewayId, SmsTemplateId, SpeechSliderId, SpeechText,
-    TemplateBody, TemplateVariable, TimeOfDay, Url,
+    ChatMessageId, ChatStatus, ComplaintDescription, ComplaintId, ComplaintSource, ComplaintStatus,
+    ComplaintTypeId, ContactMessageId, CustomSmsSettingId, Destination, EmailAddress,
+    EmailSettingId, EmailSubject, FileReference, GatewayName, GatewayType, MailDriver,
+    MailEncryption, MessageId, MessageType, NoticeBody, NoticeId, NoticeTitle, NotificationId,
+    NotificationMessage, NotificationSettingId, NotificationType, PersonName, PhoneCallLogId,
+    PhoneNumber, RequestMethod, SecretReference, SendMessageId, SmsGatewayCredentials,
+    SmsGatewayId, SmsTemplateId, SpeechSliderId, SpeechText, TemplateBody, TemplateVariable,
+    TimeOfDay, Url,
 };
 
 // =============================================================================
@@ -97,16 +97,20 @@ pub const COMMUNICATION_EMAIL_LOG_LOG_COMMAND_TYPE: &str = "communication.email_
 pub const COMMUNICATION_SMS_LOG_LOG_COMMAND_TYPE: &str = "communication.sms_log.log";
 
 /// Create-sms-template command type.
-pub const COMMUNICATION_SMS_TEMPLATE_CREATE_COMMAND_TYPE: &str = "communication.sms_template.create";
+pub const COMMUNICATION_SMS_TEMPLATE_CREATE_COMMAND_TYPE: &str =
+    "communication.sms_template.create";
 /// Update-sms-template command type.
-pub const COMMUNICATION_SMS_TEMPLATE_UPDATE_COMMAND_TYPE: &str = "communication.sms_template.update";
+pub const COMMUNICATION_SMS_TEMPLATE_UPDATE_COMMAND_TYPE: &str =
+    "communication.sms_template.update";
 /// Enable-sms-template command type.
-pub const COMMUNICATION_SMS_TEMPLATE_ENABLE_COMMAND_TYPE: &str = "communication.sms_template.enable";
+pub const COMMUNICATION_SMS_TEMPLATE_ENABLE_COMMAND_TYPE: &str =
+    "communication.sms_template.enable";
 /// Disable-sms-template command type.
 pub const COMMUNICATION_SMS_TEMPLATE_DISABLE_COMMAND_TYPE: &str =
     "communication.sms_template.disable";
 /// Delete-sms-template command type.
-pub const COMMUNICATION_SMS_TEMPLATE_DELETE_COMMAND_TYPE: &str = "communication.sms_template.delete";
+pub const COMMUNICATION_SMS_TEMPLATE_DELETE_COMMAND_TYPE: &str =
+    "communication.sms_template.delete";
 
 /// Configure-email-setting command type.
 pub const COMMUNICATION_EMAIL_SETTING_CONFIGURE_COMMAND_TYPE: &str =
@@ -171,7 +175,8 @@ pub const COMMUNICATION_CHAT_MESSAGE_SEND_COMMAND_TYPE: &str = "communication.ch
 /// Mark-chat-message-seen command type.
 pub const COMMUNICATION_CHAT_MESSAGE_SEEN_COMMAND_TYPE: &str = "communication.chat_message.seen";
 /// Delete-chat-message command type.
-pub const COMMUNICATION_CHAT_MESSAGE_DELETE_COMMAND_TYPE: &str = "communication.chat_message.delete";
+pub const COMMUNICATION_CHAT_MESSAGE_DELETE_COMMAND_TYPE: &str =
+    "communication.chat_message.delete";
 
 /// Create-chat-group command type.
 pub const COMMUNICATION_CHAT_GROUP_CREATE_COMMAND_TYPE: &str = "communication.chat_group.create";
@@ -184,7 +189,8 @@ pub const COMMUNICATION_CHAT_GROUP_READ_ONLY_SET_COMMAND_TYPE: &str =
 pub const COMMUNICATION_CHAT_GROUP_DELETE_COMMAND_TYPE: &str = "communication.chat_group.delete";
 
 /// Add-user-to-chat-group command type.
-pub const COMMUNICATION_CHAT_GROUP_USER_ADD_COMMAND_TYPE: &str = "communication.chat_group_user.add";
+pub const COMMUNICATION_CHAT_GROUP_USER_ADD_COMMAND_TYPE: &str =
+    "communication.chat_group_user.add";
 /// Set-chat-group-user-role command type.
 pub const COMMUNICATION_CHAT_GROUP_USER_SET_ROLE_COMMAND_TYPE: &str =
     "communication.chat_group_user.set_role";
@@ -204,13 +210,15 @@ pub const COMMUNICATION_CHAT_GROUP_MESSAGE_REMOVE_REMOVE_COMMAND_TYPE: &str =
     "communication.chat_group_message_remove.remove";
 
 /// Block-user command type.
-pub const COMMUNICATION_CHAT_BLOCK_USER_BLOCK_COMMAND_TYPE: &str = "communication.chat_block_user.block";
+pub const COMMUNICATION_CHAT_BLOCK_USER_BLOCK_COMMAND_TYPE: &str =
+    "communication.chat_block_user.block";
 /// Unblock-user command type.
 pub const COMMUNICATION_CHAT_BLOCK_USER_UNBLOCK_COMMAND_TYPE: &str =
     "communication.chat_block_user.unblock";
 
 /// Send-chat-invitation command type.
-pub const COMMUNICATION_CHAT_INVITATION_SEND_COMMAND_TYPE: &str = "communication.chat_invitation.send";
+pub const COMMUNICATION_CHAT_INVITATION_SEND_COMMAND_TYPE: &str =
+    "communication.chat_invitation.send";
 /// Accept-chat-invitation command type.
 pub const COMMUNICATION_CHAT_INVITATION_ACCEPT_COMMAND_TYPE: &str =
     "communication.chat_invitation.accept";
@@ -225,28 +233,34 @@ pub const COMMUNICATION_CHAT_INVITATION_TYPE_CLASSIFY_COMMAND_TYPE: &str =
 pub const COMMUNICATION_CHAT_STATUS_SET_COMMAND_TYPE: &str = "communication.chat_status.set";
 
 /// Create-send-message command type.
-pub const COMMUNICATION_SEND_MESSAGE_CREATE_COMMAND_TYPE: &str = "communication.send_message.create";
+pub const COMMUNICATION_SEND_MESSAGE_CREATE_COMMAND_TYPE: &str =
+    "communication.send_message.create";
 /// Dispatch-send-message command type.
 pub const COMMUNICATION_SEND_MESSAGE_DISPATCH_COMMAND_TYPE: &str =
     "communication.send_message.dispatch";
 /// Cancel-send-message command type.
-pub const COMMUNICATION_SEND_MESSAGE_CANCEL_COMMAND_TYPE: &str = "communication.send_message.cancel";
+pub const COMMUNICATION_SEND_MESSAGE_CANCEL_COMMAND_TYPE: &str =
+    "communication.send_message.cancel";
 
 /// Receive-contact-message command type.
 pub const COMMUNICATION_CONTACT_MESSAGE_RECEIVE_COMMAND_TYPE: &str =
     "communication.contact_message.receive";
 /// Mark-contact-message-viewed command type.
-pub const COMMUNICATION_CONTACT_MESSAGE_VIEW_COMMAND_TYPE: &str = "communication.contact_message.view";
+pub const COMMUNICATION_CONTACT_MESSAGE_VIEW_COMMAND_TYPE: &str =
+    "communication.contact_message.view";
 /// Reply-to-contact-message command type.
 pub const COMMUNICATION_CONTACT_MESSAGE_REPLY_COMMAND_TYPE: &str =
     "communication.contact_message.reply";
 
 /// Create-speech-slider command type.
-pub const COMMUNICATION_SPEECH_SLIDER_CREATE_COMMAND_TYPE: &str = "communication.speech_slider.create";
+pub const COMMUNICATION_SPEECH_SLIDER_CREATE_COMMAND_TYPE: &str =
+    "communication.speech_slider.create";
 /// Update-speech-slider command type.
-pub const COMMUNICATION_SPEECH_SLIDER_UPDATE_COMMAND_TYPE: &str = "communication.speech_slider.update";
+pub const COMMUNICATION_SPEECH_SLIDER_UPDATE_COMMAND_TYPE: &str =
+    "communication.speech_slider.update";
 /// Delete-speech-slider command type.
-pub const COMMUNICATION_SPEECH_SLIDER_DELETE_COMMAND_TYPE: &str = "communication.speech_slider.delete";
+pub const COMMUNICATION_SPEECH_SLIDER_DELETE_COMMAND_TYPE: &str =
+    "communication.speech_slider.delete";
 
 /// Log-phone-call command type.
 pub const COMMUNICATION_PHONE_CALL_LOG_LOG_COMMAND_TYPE: &str = "communication.phone_call_log.log";
@@ -1404,8 +1418,7 @@ pub struct ClassifyChatInvitationCommand {
 
 impl ClassifyChatInvitationCommand {
     /// The wire-form command type.
-    pub const COMMAND_TYPE: &'static str =
-        COMMUNICATION_CHAT_INVITATION_TYPE_CLASSIFY_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_INVITATION_TYPE_CLASSIFY_COMMAND_TYPE;
 }
 
 // =============================================================================

@@ -53,12 +53,12 @@ use educore_academic::{ClassId, SectionId, StudentId};
 use educore_hr::value_objects::RoleId;
 
 use crate::value_objects::{
-    AbsentNotificationDispatchId, AbsentNotificationTimeSetupId, ChatConversationId,
+    AbsentNotificationDispatchId, AbsentNotificationTimeSetupId, Channel, ChatConversationId,
     ChatConversationLastReadId, ChatGroupAvatarId, ChatGroupId, ChatGroupMessageId,
-    ChatMessageBody, ChatMessageId, Channel, ComplaintId, ComplaintNoteId, ContactMessageId,
+    ChatMessageBody, ChatMessageId, ComplaintId, ComplaintNoteId, ContactMessageId,
     ContactMessageReplyId, EmailSettingId, EmailSettingSecretId, FileReference, MessageType,
-    NoticeAttachmentId, NoticeId, NotificationDeliveryAttemptId, NotificationId,
-    SecretReference, SendMessageId, SendMessageRecipientId, SmsGatewayCredentialId, SmsGatewayId,
+    NoticeAttachmentId, NoticeId, NotificationDeliveryAttemptId, NotificationId, SecretReference,
+    SendMessageId, SendMessageRecipientId, SmsGatewayCredentialId, SmsGatewayId,
 };
 
 // =============================================================================
@@ -702,9 +702,7 @@ impl NoticeAudience {
     /// Constructs a new `NoticeAudience`, enforcing non-empty.
     pub fn new(roles: Vec<RoleId>) -> Result<Self, DomainError> {
         if roles.is_empty() {
-            return Err(DomainError::validation(
-                "notice audience must be non-empty",
-            ));
+            return Err(DomainError::validation("notice audience must be non-empty"));
         }
         Ok(Self(roles))
     }

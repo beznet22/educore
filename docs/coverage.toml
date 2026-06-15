@@ -1374,7 +1374,141 @@ item = "communication_notices aggregate"
 spec = "docs/specs/communication/aggregates.md"
 crate = "educore-communication"
 phase = 10
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+
+[[row]]
+id = "communication_complaints_aggregate"
+item = "communication_complaints aggregate"
+spec = "docs/specs/communication/aggregates.md"
+crate = "educore-communication"
+phase = 10
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+
+[[row]]
+id = "communication_complaint_types_aggregate"
+item = "communication_complaint_types aggregate"
+spec = "docs/specs/communication/aggregates.md"
+crate = "educore-communication"
+phase = 10
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+
+[[row]]
+id = "communication_notifications_aggregate"
+item = "communication_notifications aggregate"
+spec = "docs/specs/communication/aggregates.md"
+crate = "educore-communication"
+phase = 10
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+
+[[row]]
+id = "communication_email_logs_aggregate"
+item = "communication_email_logs aggregate"
+spec = "docs/specs/communication/aggregates.md"
+crate = "educore-communication"
+phase = 10
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+notes = "Append-only; no update() method on repository."
+
+[[row]]
+id = "communication_sms_logs_aggregate"
+item = "communication_sms_logs aggregate"
+spec = "docs/specs/communication/aggregates.md"
+crate = "educore-communication"
+phase = 10
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+notes = "Append-only; no update() method on repository."
+
+[[row]]
+id = "communication_sms_templates_aggregate"
+item = "communication_sms_templates aggregate"
+spec = "docs/specs/communication/aggregates.md"
+crate = "educore-communication"
+phase = 10
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+
+[[row]]
+id = "communication_notification_settings_aggregate"
+item = "communication_notification_settings aggregate"
+spec = "docs/specs/communication/aggregates.md"
+crate = "educore-communication"
+phase = 10
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+
+[[row]]
+id = "communication_send_messages_aggregate"
+item = "communication_send_messages aggregate"
+spec = "docs/specs/communication/aggregates.md"
+crate = "educore-communication"
+phase = 10
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+
+[[row]]
+id = "communication_chat_messages_aggregate"
+item = "communication_chat_messages aggregate"
+spec = "docs/specs/communication/aggregates.md"
+crate = "educore-communication"
+phase = 10
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+
+[[row]]
+id = "communication_phone_call_logs_aggregate"
+item = "communication_phone_call_logs aggregate"
+spec = "docs/specs/communication/aggregates.md"
+crate = "educore-communication"
+phase = 10
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+
+[[row]]
+id = "communication_custom_sms_settings_aggregate"
+item = "communication_custom_sms_settings aggregate"
+spec = "docs/specs/communication/aggregates.md"
+crate = "educore-communication"
+phase = 10
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+
+# Capability / audit surface
+[[row]]
+id = "communication_capability_variants"
+item = "87 Communication.* Capability variants in educore-rbac (4 Phase 2 placeholders retained; 83 Phase 10 net-new)"
+spec = "docs/specs/communication/permissions.md"
+crate = "educore-rbac"
+phase = 10
+status = "Tested"
+tests = "crates/cross-cutting/rbac/src/value_objects.rs"
+notes = "83 net-new Communication.* Capability variants + 4 retained Phase 2 placeholders = 87 total; tested via educore-rbac's communication_capabilities_round_trip_and_resolve_to_communication_domain"
+
+[[row]]
+id = "communication_audit_target_variants"
+item = "26 Communication AuditTarget variants in educore-audit (1 Phase 2 Notice placeholder retained; 25 Phase 10 net-new)"
+spec = "docs/specs/communication/aggregates.md"
+crate = "educore-audit"
+phase = 10
+status = "Tested"
+tests = "crates/cross-cutting/audit/src/writer.rs"
+notes = "25 net-new + 1 retained Notice = 26 Communication-domain audit targets; tested via educore-audit's communication_audit_target_round_trip_for_all_aggregates"
+
+# Headline correctness check (the 100-case template-rendering proptest)
+[[row]]
+id = "communication_template_service_proptest"
+item = "TemplateService::render property test (100 cases, 2 case-generators)"
+spec = "docs/specs/communication/services.md"
+crate = "educore-communication"
+phase = 10
+status = "Tested"
+tests = "crates/domains/communication/src/services.rs"
+notes = "100-case proptest of TemplateService::render (template rendering invariant)"
 
 # =============================================================================
 # Documents domain (Phase 11)

@@ -289,13 +289,7 @@ impl Complaint {
     }
 
     /// Assigns the complaint to a user.
-    pub fn assign(
-        &mut self,
-        assignee: UserId,
-        actor: UserId,
-        at: Timestamp,
-        event_id: EventId,
-    ) {
+    pub fn assign(&mut self, assignee: UserId, actor: UserId, at: Timestamp, event_id: EventId) {
         self.assignee_user_id = Some(assignee);
         self.updated_at = at;
         self.updated_by = actor;
@@ -534,13 +528,7 @@ impl Notification {
     }
 
     /// Withdraws the notification. Records the reason.
-    pub fn withdraw(
-        &mut self,
-        reason: String,
-        actor: UserId,
-        at: Timestamp,
-        event_id: EventId,
-    ) {
+    pub fn withdraw(&mut self, reason: String, actor: UserId, at: Timestamp, event_id: EventId) {
         self.status = NotificationStatus::Withdrawn;
         self.withdrawn_at = Some(at);
         self.withdrawn_reason = Some(reason);
@@ -1669,12 +1657,7 @@ impl ChatGroupUser {
 
     /// Marks the membership as removed. Records the remover and
     /// the removal timestamp.
-    pub fn mark_removed(
-        &mut self,
-        actor: UserId,
-        at: Timestamp,
-        event_id: EventId,
-    ) {
+    pub fn mark_removed(&mut self, actor: UserId, at: Timestamp, event_id: EventId) {
         self.removed_by = Some(actor);
         self.deleted_at = Some(at);
         self.active_status = ActiveStatus::Retired;
@@ -1878,12 +1861,7 @@ impl ChatBlockUser {
 
     /// Soft-deletes the block (unblock). Retires the active
     /// status; the underlying block record is preserved.
-    pub fn mark_unblocked(
-        &mut self,
-        actor: UserId,
-        at: Timestamp,
-        event_id: EventId,
-    ) {
+    pub fn mark_unblocked(&mut self, actor: UserId, at: Timestamp, event_id: EventId) {
         self.active_status = ActiveStatus::Retired;
         self.updated_at = at;
         self.updated_by = actor;
@@ -2228,12 +2206,7 @@ impl SendMessage {
     /// Dispatches the message. Sets `status = Dispatched`,
     /// records the dispatch timestamp, and computes the
     /// recipient count. Returns the computed recipient count.
-    pub fn dispatch(
-        &mut self,
-        actor: UserId,
-        at: Timestamp,
-        event_id: EventId,
-    ) -> u32 {
+    pub fn dispatch(&mut self, actor: UserId, at: Timestamp, event_id: EventId) -> u32 {
         let count = self.audience.len() as u32;
         self.status = SendMessageStatus::Dispatched;
         self.recipient_count = Some(count);
@@ -2707,8 +2680,4 @@ impl CustomSmsSetting {
 // the "unused import" lints without changing the module's
 // behaviour.
 #[allow(dead_code)]
-fn _unused_imports(
-    _: StudentId,
-    _: BTreeMap<String, String>,
-) {
-}
+fn _unused_imports(_: StudentId, _: BTreeMap<String, String>) {}

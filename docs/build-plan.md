@@ -1169,6 +1169,98 @@ per-school ownership). Hand-off:
 `docs/handoff/PHASE-9-HANDOFF.md`. Next-phase prompt:
 `docs/phase_prompt/phase-10-prompt.md`.
 
+**Phase 10 outcome.** Closed 2026-06-15. **`educore-communication`**
+delivered as the eighth domain crate. Spec-faithful: all 26 root
+aggregates per `docs/specs/communication/aggregates.md` + 15 child
+entities per `entities.md`. The 6 headline aggregates
+(`Notice`, `Complaint`, `ChatMessage`, `EmailLog`, `SmsLog`,
+`NotificationSetting`) anchor the surface; the remaining 20 root
+aggregates (`Notification`, `ComplaintType`, `SmsTemplate`,
+`EmailSetting`, `SmsGateway`, `NotificationSetting`,
+`AbsentNotificationTimeSetup`, `ChatConversation`, `ChatGroup`,
+`ChatGroupUser`, `ChatGroupMessageRecipient`,
+`ChatGroupMessageRemove`, `ChatBlockUser`, `ChatInvitation`,
+`ChatInvitationType`, `ChatStatus`, `SendMessage`,
+`ContactMessage`, `SpeechSlider`, `PhoneCallLog`,
+`CustomSmsSetting`) are also first-class ports. The headline
+service fns (per exit criteria) are `notify_user`, `mark_as_read`,
+`send_notice_message`, `send_complaint_message`, `send_chat_message`,
+`send_email_message`, `send_sms_message`. The
+`NotificationDispatchService` is **events-only** (no
+`educore-notify` dep — the port lands in Phase 15); the consumer
+wires the bus subscriber. The `TemplateService::render` is the
+100-case proptest target (mirrors Phase 7's `LateFeeService` and
+Phase 9's `FineCalculationService`).
+
+73 typed events implementing `DomainEvent` (wire form
+`communication.<aggregate>.<verb>`); 72 typed command shapes + 72
+`*_COMMAND_TYPE` constants; 26 `pub trait XxxRepository: Send +
+Sync` port traits (object-safety smoke tests included;
+`EmailLogRepository` + `SmsLogRepository` + `ChatStatusRepository`
+are append-only with no `update()` method;
+`PhoneCallLogRepository` exposes only `update_follow_up`); 26
+typed query stubs (returning
+`Err(DomainError::not_supported(...))` in Phase 10, mirroring the
+Phase 9 pattern); 70 pure factory service functions + 7 headline
+async service fns + 6 service structs + 2 specifications; the
+`CommunicationError` enum (11 variants) wrapping `DomainError`;
+9-file layout per AGENTS.md.
+
+Educore-rbac: 83 net-new `Capability` variants
+(`Notice.*`, `Complaint.*`, `ComplaintType.*`, `Notification.*`,
+`EmailLog.*`, `SmsLog.*`, `Template.*`, `EmailSetting.*`,
+`SmsGateway.*`, `CustomSmsSetting.*`, `NotificationSetting.*`,
+`AbsentNotification.*`, `Chat.*`, `ChatGroup.*`, `SendMessage.*`,
+`ContactMessage.*`, `SpeechSlider.*`, `PhoneCallLog.*`,
+`Communication.Read`) plus the 4 Phase 2 placeholders
+(`CommunicationMessage{Create,Read,Update,Delete}`) retained = 87
+Communication-domain capabilities total. Educore-audit: 25
+net-new `AuditTarget` variants + 1 retained `Notice` = 26
+Communication-domain audit targets. Educore-storage-parity:
+6-scenario integration test (cfg-gated to activate when the
+crate's `lib.rs` prelude is wired — Phase 10 ships it wired).
+
+5 commits land in chronological order:
+1. `chore(workspace+communication): add Phase 10 schema manifest
+   (single source of truth)` — the locked names manifest.
+2. `feat(rbac): add 83 Communication.* Capability variants + 4
+   dedup` — the new `Communication.*` group +
+   `DefaultRoleCatalog` updates + the 87-cap test.
+3. `feat(audit): add 25 Communication AuditTarget variants` —
+   non-breaking additive.
+4. `feat(communication): ship 9-file module layout (26 aggregates
+   + 73 events + 72 commands)` — the headline surface.
+5. `feat(communication): ship integration test + coverage flips
+   + handoff docs` — the 6-scenario
+   `communication_integration.rs`, 13 `coverage.toml` rows flipped
+   from `Pending` → `Tested` (the prompt's ≥6 target exceeded),
+   the `PHASE-10-HANDOFF.md` hand-off, the `phase-11-prompt.md`
+   next-phase brief.
+
+The `ChatStatus` aggregate is renamed to `ChatStatusRecord` in
+the Rust code to avoid shadowing the `ChatStatus` enum
+(documented as OQ #6 in the hand-off). The
+`NotificationDispatchService` is events-only (no `educore-notify`
+dep — port lands in Phase 15).
+
+**~770 tests pass workspace-wide** (was ~692 at Phase 9
+close-out; +78 net new in Phase 10: 60 unit tests in
+`educore-communication` + 6 integration scenarios + 1 rbac
+87-cap test + 1 audit 26-variant test + 10 test fixups).
+`cargo fmt --all -- --check` and the `lint` binary are green.
+`cargo clippy --workspace --all-targets -- -D warnings` is not
+green at the workspace level due to pre-existing clippy debt in
+`educore-finance` (Phase 7 WIP), `educore-hr` (Phase 6 WIP), and
+`educore-facilities` (Phase 8 WIP); the communication crate
+itself passes clippy. The pre-existing issues are unrelated to
+Phase 10 and are documented as outstanding work. 8 open
+questions are documented in
+`docs/handoff/PHASE-10-HANDOFF.md` (the most material for
+Phase 11: Q1 the spec-faithful vs 6-headline interpretation;
+Q2 the `NotificationProvider` port; Q6 the `ChatStatusRecord`
+rename). Hand-off: `docs/handoff/PHASE-10-HANDOFF.md`.
+Next-phase prompt: `docs/phase_prompt/phase-11-prompt.md`.
+
 ## Phase 11 — Documents
 
 **Deliverables.** `educore-documents`. Form download, postal
