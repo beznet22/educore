@@ -296,8 +296,12 @@ pub enum AuditTarget {
     /// A custom-SMS-setting row (HTTP gateway integration config).
     CustomSmsSetting(Uuid),
     // ---- Documents domain ----------------------------------------------
+    /// A form download.
+    FormDownload(Uuid),
     /// A postal dispatch record.
     PostalDispatch(Uuid),
+    /// A postal receive record.
+    PostalReceive(Uuid),
     // ---- CMS domain -----------------------------------------------------
     /// A CMS page.
     Page(Uuid),
@@ -412,7 +416,9 @@ impl AuditTarget {
             Self::SpeechSlider(_) => "speech_slider",
             Self::PhoneCallLog(_) => "phone_call_log",
             Self::CustomSmsSetting(_) => "custom_sms_setting",
+            Self::FormDownload(_) => "form_download",
             Self::PostalDispatch(_) => "postal_dispatch",
+            Self::PostalReceive(_) => "postal_receive",
             Self::Page(_) => "page",
             Self::CalendarEvent(_) => "calendar_event",
             Self::Holiday(_) => "holiday",
@@ -513,7 +519,9 @@ impl AuditTarget {
             | Self::SpeechSlider(id)
             | Self::PhoneCallLog(id)
             | Self::CustomSmsSetting(id)
+            | Self::FormDownload(id)
             | Self::PostalDispatch(id)
+            | Self::PostalReceive(id)
             | Self::Page(id)
             | Self::CalendarEvent(id)
             | Self::Holiday(id)
@@ -831,7 +839,9 @@ mod tests {
             AuditTarget::SpeechSlider(id),
             AuditTarget::PhoneCallLog(id),
             AuditTarget::CustomSmsSetting(id),
+            AuditTarget::FormDownload(id),
             AuditTarget::PostalDispatch(id),
+            AuditTarget::PostalReceive(id),
             AuditTarget::Page(id),
             AuditTarget::CalendarEvent(id),
             AuditTarget::Holiday(id),
@@ -940,6 +950,25 @@ mod tests {
                 "duplicate target_type() wire string: {wire:?}"
             );
         }
+    }
+
+    #[test]
+    fn documents_audit_target_round_trip_for_all_aggregates() {
+        let form_id = Uuid::new_v4();
+        let dispatch_id = Uuid::new_v4();
+        let receive_id = Uuid::new_v4();
+
+        let form_target = AuditTarget::FormDownload(form_id);
+        assert_eq!(form_target.target_type(), "form_download");
+        assert_eq!(form_target.target_id(), form_id);
+
+        let dispatch_target = AuditTarget::PostalDispatch(dispatch_id);
+        assert_eq!(dispatch_target.target_type(), "postal_dispatch");
+        assert_eq!(dispatch_target.target_id(), dispatch_id);
+
+        let receive_target = AuditTarget::PostalReceive(receive_id);
+        assert_eq!(receive_target.target_type(), "postal_receive");
+        assert_eq!(receive_target.target_id(), receive_id);
     }
 
     #[test]

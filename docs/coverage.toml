@@ -1516,11 +1516,33 @@ notes = "100-case proptest of TemplateService::render (template rendering invari
 
 [[row]]
 id = "documents_postal_dispatches_aggregate"
-item = "documents_postal_dispatches aggregate"
-spec = "docs/specs/documents/aggregates.md"
+item = "PostalDispatch aggregate root"
+spec = "docs/specs/documents/aggregates.md#postaldispatch"
 crate = "educore-documents"
 phase = 11
 status = "Pending"
+tests = ""
+notes = "Phase 11: spec-faithful; owns PostalDispatchAttachment child; 3 commands, 3 events, reference_no unique within (school_id, academic_id), reference_no immutable once set, soft-delete only."
+
+[[row]]
+id = "documents_form_downloads_aggregate"
+item = "FormDownload aggregate root"
+spec = "docs/specs/documents/aggregates.md#formdownload"
+crate = "educore-documents"
+phase = 11
+status = "Pending"
+tests = ""
+notes = "Phase 11: spec-faithful; owns FormDownloadFile + FormDownloadLink children; 3 commands, 3 events, soft-delete only."
+
+[[row]]
+id = "documents_postal_receives_aggregate"
+item = "PostalReceive aggregate root"
+spec = "docs/specs/documents/aggregates.md#postalreceive"
+crate = "educore-documents"
+phase = 11
+status = "Pending"
+tests = ""
+notes = "Phase 11: spec-faithful; owns PostalReceiveAttachment child; 3 commands, 3 events, reference_no unique within (school_id, academic_id), reference_no immutable once set, soft-delete only."
 
 # =============================================================================
 # CMS domain (Phase 12)
