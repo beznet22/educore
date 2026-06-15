@@ -109,7 +109,7 @@ anyhow = "1.0"
 
 # Identifiers and time
 # Pinned per ADR-015 § "MSRV floor conflict resolution" (engine MSRV 1.75)
-uuid = { version = ">=1.10, <1.23", features = ["v4", "v7", "serde"] }
+uuid = { version = ">=1.10, <1.23", features = ["v4", "v5", "v7", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 # NOTE: the `time` crate is intentionally not declared here.
 # Per ADR-015 § "MSRV floor conflict resolution", the engine uses `chrono`

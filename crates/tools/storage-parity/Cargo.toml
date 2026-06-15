@@ -25,6 +25,7 @@ educore-hr = { workspace = true }
 educore-finance = { workspace = true }
 educore-facilities = { workspace = true }
 educore-library = { workspace = true }
+educore-communication = { workspace = true }
 async-trait = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }

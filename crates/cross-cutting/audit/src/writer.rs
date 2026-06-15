@@ -245,6 +245,56 @@ pub enum AuditTarget {
     // ---- Communication domain ------------------------------------------
     /// A notice / announcement.
     Notice(Uuid),
+    /// A complaint (a logged grievance from a stakeholder).
+    Complaint(Uuid),
+    /// A complaint type (categorisation for complaints).
+    ComplaintType(Uuid),
+    /// A notification (an in-app message sent to a user).
+    Notification(Uuid),
+    /// A log row for a sent email.
+    EmailLog(Uuid),
+    /// A log row for a sent SMS.
+    SmsLog(Uuid),
+    /// An SMS template (reusable body with variables).
+    SmsTemplate(Uuid),
+    /// An email-setting row (SMTP/host/port/credentials config).
+    EmailSetting(Uuid),
+    /// An SMS-gateway row (provider credentials + activation).
+    SmsGateway(Uuid),
+    /// A notification-setting row (event→destination mapping).
+    NotificationSetting(Uuid),
+    /// An absent-notification time-setup row (dispatch window).
+    AbsentNotificationTimeSetup(Uuid),
+    /// A 1-to-1 chat message.
+    ChatMessage(Uuid),
+    /// A 1-to-1 chat conversation.
+    ChatConversation(Uuid),
+    /// A chat group.
+    ChatGroup(Uuid),
+    /// A chat-group membership row.
+    ChatGroupUser(Uuid),
+    /// A chat-group message delivery row (one per recipient).
+    ChatGroupMessageRecipient(Uuid),
+    /// A chat-group message remove row (per-user removal log).
+    ChatGroupMessageRemove(Uuid),
+    /// A chat block (one user blocking another).
+    ChatBlockUser(Uuid),
+    /// A chat invitation.
+    ChatInvitation(Uuid),
+    /// A chat-invitation type (classification).
+    ChatInvitationType(Uuid),
+    /// A chat status row (per-user online/away/busy state).
+    ChatStatus(Uuid),
+    /// A send-message (bulk broadcast) row.
+    SendMessage(Uuid),
+    /// A contact-message row (a public web form submission).
+    ContactMessage(Uuid),
+    /// A speech-slider row (homepage carousel entry).
+    SpeechSlider(Uuid),
+    /// A phone-call-log row.
+    PhoneCallLog(Uuid),
+    /// A custom-SMS-setting row (HTTP gateway integration config).
+    CustomSmsSetting(Uuid),
     // ---- Documents domain ----------------------------------------------
     /// A postal dispatch record.
     PostalDispatch(Uuid),
@@ -337,6 +387,31 @@ impl AuditTarget {
             Self::BookReturn(_) => "book_return",
             Self::Fine(_) => "fine",
             Self::Notice(_) => "notice",
+            Self::Complaint(_) => "complaint",
+            Self::ComplaintType(_) => "complaint_type",
+            Self::Notification(_) => "notification",
+            Self::EmailLog(_) => "email_log",
+            Self::SmsLog(_) => "sms_log",
+            Self::SmsTemplate(_) => "sms_template",
+            Self::EmailSetting(_) => "email_setting",
+            Self::SmsGateway(_) => "sms_gateway",
+            Self::NotificationSetting(_) => "notification_setting",
+            Self::AbsentNotificationTimeSetup(_) => "absent_notification_time_setup",
+            Self::ChatMessage(_) => "chat_message",
+            Self::ChatConversation(_) => "chat_conversation",
+            Self::ChatGroup(_) => "chat_group",
+            Self::ChatGroupUser(_) => "chat_group_user",
+            Self::ChatGroupMessageRecipient(_) => "chat_group_message_recipient",
+            Self::ChatGroupMessageRemove(_) => "chat_group_message_remove",
+            Self::ChatBlockUser(_) => "chat_block_user",
+            Self::ChatInvitation(_) => "chat_invitation",
+            Self::ChatInvitationType(_) => "chat_invitation_type",
+            Self::ChatStatus(_) => "chat_status",
+            Self::SendMessage(_) => "send_message",
+            Self::ContactMessage(_) => "contact_message",
+            Self::SpeechSlider(_) => "speech_slider",
+            Self::PhoneCallLog(_) => "phone_call_log",
+            Self::CustomSmsSetting(_) => "custom_sms_setting",
             Self::PostalDispatch(_) => "postal_dispatch",
             Self::Page(_) => "page",
             Self::CalendarEvent(_) => "calendar_event",
@@ -413,6 +488,31 @@ impl AuditTarget {
             | Self::BookReturn(id)
             | Self::Fine(id)
             | Self::Notice(id)
+            | Self::Complaint(id)
+            | Self::ComplaintType(id)
+            | Self::Notification(id)
+            | Self::EmailLog(id)
+            | Self::SmsLog(id)
+            | Self::SmsTemplate(id)
+            | Self::EmailSetting(id)
+            | Self::SmsGateway(id)
+            | Self::NotificationSetting(id)
+            | Self::AbsentNotificationTimeSetup(id)
+            | Self::ChatMessage(id)
+            | Self::ChatConversation(id)
+            | Self::ChatGroup(id)
+            | Self::ChatGroupUser(id)
+            | Self::ChatGroupMessageRecipient(id)
+            | Self::ChatGroupMessageRemove(id)
+            | Self::ChatBlockUser(id)
+            | Self::ChatInvitation(id)
+            | Self::ChatInvitationType(id)
+            | Self::ChatStatus(id)
+            | Self::SendMessage(id)
+            | Self::ContactMessage(id)
+            | Self::SpeechSlider(id)
+            | Self::PhoneCallLog(id)
+            | Self::CustomSmsSetting(id)
             | Self::PostalDispatch(id)
             | Self::Page(id)
             | Self::CalendarEvent(id)
@@ -706,6 +806,31 @@ mod tests {
             AuditTarget::BookReturn(id),
             AuditTarget::Fine(id),
             AuditTarget::Notice(id),
+            AuditTarget::Complaint(id),
+            AuditTarget::ComplaintType(id),
+            AuditTarget::Notification(id),
+            AuditTarget::EmailLog(id),
+            AuditTarget::SmsLog(id),
+            AuditTarget::SmsTemplate(id),
+            AuditTarget::EmailSetting(id),
+            AuditTarget::SmsGateway(id),
+            AuditTarget::NotificationSetting(id),
+            AuditTarget::AbsentNotificationTimeSetup(id),
+            AuditTarget::ChatMessage(id),
+            AuditTarget::ChatConversation(id),
+            AuditTarget::ChatGroup(id),
+            AuditTarget::ChatGroupUser(id),
+            AuditTarget::ChatGroupMessageRecipient(id),
+            AuditTarget::ChatGroupMessageRemove(id),
+            AuditTarget::ChatBlockUser(id),
+            AuditTarget::ChatInvitation(id),
+            AuditTarget::ChatInvitationType(id),
+            AuditTarget::ChatStatus(id),
+            AuditTarget::SendMessage(id),
+            AuditTarget::ContactMessage(id),
+            AuditTarget::SpeechSlider(id),
+            AuditTarget::PhoneCallLog(id),
+            AuditTarget::CustomSmsSetting(id),
             AuditTarget::PostalDispatch(id),
             AuditTarget::Page(id),
             AuditTarget::CalendarEvent(id),
@@ -744,6 +869,76 @@ mod tests {
         for (target, expected) in cases {
             assert_eq!(target.target_type(), expected);
             assert_eq!(target.target_id(), id);
+        }
+    }
+
+    #[test]
+    fn communication_audit_target_round_trip_for_all_aggregates() {
+        // Phase 10: assert all 26 communication `AuditTarget`
+        // variants resolve to non-empty snake_case wire strings
+        // and that `target_id()` round-trips the inner `Uuid`.
+        let id = Uuid::now_v7();
+        let cases: Vec<(AuditTarget, &str)> = vec![
+            (AuditTarget::Notice(id), "notice"),
+            (AuditTarget::Complaint(id), "complaint"),
+            (AuditTarget::ComplaintType(id), "complaint_type"),
+            (AuditTarget::Notification(id), "notification"),
+            (AuditTarget::EmailLog(id), "email_log"),
+            (AuditTarget::SmsLog(id), "sms_log"),
+            (AuditTarget::SmsTemplate(id), "sms_template"),
+            (AuditTarget::EmailSetting(id), "email_setting"),
+            (AuditTarget::SmsGateway(id), "sms_gateway"),
+            (AuditTarget::NotificationSetting(id), "notification_setting"),
+            (
+                AuditTarget::AbsentNotificationTimeSetup(id),
+                "absent_notification_time_setup",
+            ),
+            (AuditTarget::ChatMessage(id), "chat_message"),
+            (AuditTarget::ChatConversation(id), "chat_conversation"),
+            (AuditTarget::ChatGroup(id), "chat_group"),
+            (AuditTarget::ChatGroupUser(id), "chat_group_user"),
+            (
+                AuditTarget::ChatGroupMessageRecipient(id),
+                "chat_group_message_recipient",
+            ),
+            (
+                AuditTarget::ChatGroupMessageRemove(id),
+                "chat_group_message_remove",
+            ),
+            (AuditTarget::ChatBlockUser(id), "chat_block_user"),
+            (AuditTarget::ChatInvitation(id), "chat_invitation"),
+            (AuditTarget::ChatInvitationType(id), "chat_invitation_type"),
+            (AuditTarget::ChatStatus(id), "chat_status"),
+            (AuditTarget::SendMessage(id), "send_message"),
+            (AuditTarget::ContactMessage(id), "contact_message"),
+            (AuditTarget::SpeechSlider(id), "speech_slider"),
+            (AuditTarget::PhoneCallLog(id), "phone_call_log"),
+            (AuditTarget::CustomSmsSetting(id), "custom_sms_setting"),
+        ];
+        assert_eq!(cases.len(), 26);
+        let mut seen_types: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for (target, expected) in cases {
+            let wire = target.target_type();
+            assert!(!wire.is_empty(), "target_type() returned empty string");
+            assert_eq!(wire, expected);
+            assert!(
+                wire.chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_'),
+                "target_type() {wire:?} is not snake_case ASCII"
+            );
+            assert!(
+                !wire.starts_with('_') && !wire.ends_with('_'),
+                "target_type() {wire:?} has a leading or trailing underscore"
+            );
+            assert!(
+                !wire.contains("__"),
+                "target_type() {wire:?} contains a double underscore"
+            );
+            assert_eq!(target.target_id(), id);
+            assert!(
+                seen_types.insert(wire.to_owned()),
+                "duplicate target_type() wire string: {wire:?}"
+            );
         }
     }
 

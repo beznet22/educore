@@ -5,15 +5,28 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Notices, complaints, chat, email/SMS logs, notifications, contact messages."
+description = "Notices, complaints, chat, email/SMS dispatch, notifications, contact forms, speech sliders, phone-call logs."
 
 [lints]
 workspace = true
 
 [dependencies]
-educore-core = { workspace = true }
-educore-platform = { workspace = true }
-educore-rbac = { workspace = true }
-educore-events = { workspace = true }
-educore-settings = { workspace = true }
+educore-core         = { workspace = true }
+educore-platform     = { workspace = true }
+educore-rbac         = { workspace = true }
+educore-events       = { workspace = true }
+educore-audit        = { workspace = true }
+educore-event-bus    = { workspace = true }
+educore-academic     = { workspace = true }
+educore-hr           = { workspace = true }
+educore-storage      = { workspace = true }
+async-trait          = { workspace = true }
+chrono               = { workspace = true }
+proptest             = { workspace = true }
+serde                = { workspace = true }
+serde_json           = { workspace = true }
+thiserror            = { workspace = true }
+uuid                 = { workspace = true }
 
+[dev-dependencies]
+tokio                = { workspace = true }
