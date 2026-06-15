@@ -6,6 +6,7 @@
 //! repository).
 
 #![allow(missing_docs)]
+#![allow(unused_imports)]
 #![allow(dead_code)]
 
 use serde::{Deserialize, Serialize};

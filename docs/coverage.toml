@@ -1257,7 +1257,112 @@ item = "library_books aggregate"
 spec = "docs/specs/library/aggregates.md"
 crate = "educore-library"
 phase = 9
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/library_integration.rs"
+
+[[row]]
+id = "library_book_categories_aggregate"
+item = "library_book_categories aggregate"
+spec = "docs/specs/library/aggregates.md"
+crate = "educore-library"
+phase = 9
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/library_integration.rs"
+
+[[row]]
+id = "library_members_aggregate"
+item = "library_members aggregate"
+spec = "docs/specs/library/aggregates.md"
+crate = "educore-library"
+phase = 9
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/library_integration.rs"
+
+[[row]]
+id = "library_book_issues_aggregate"
+item = "library_book_issues aggregate"
+spec = "docs/specs/library/aggregates.md"
+crate = "educore-library"
+phase = 9
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/library_integration.rs"
+
+[[row]]
+id = "library_book_returns_aggregate"
+item = "library_book_returns aggregate (return history log)"
+spec = "docs/specs/library/aggregates.md"
+crate = "educore-library"
+phase = 9
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/library_integration.rs"
+notes = "Phase 9 ships BookReturn as a first-class root aggregate (prompt's 6-aggregate interpretation). The spec's 4-root view treats BookReturn as a status transition; the 6-aggregate interpretation is documented in PHASE-9-HANDOFF.md OQ #2."
+
+[[row]]
+id = "library_fines_aggregate"
+item = "library_fines aggregate (fine history log)"
+spec = "docs/specs/library/aggregates.md"
+crate = "educore-library"
+phase = 9
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/library_integration.rs"
+notes = "Phase 9 ships Fine as a first-class root aggregate (prompt's 6-aggregate interpretation). The spec's 4-root view treats Fine as a child entity BookIssueFine; the 6-aggregate interpretation is documented in PHASE-9-HANDOFF.md OQ #2."
+
+# Headline 3 events
+[[row]]
+id = "library_book_issued_event"
+item = "BookIssued event"
+spec = "docs/specs/library/events.md"
+crate = "educore-library"
+phase = 9
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/library_integration.rs"
+
+[[row]]
+id = "library_book_returned_event"
+item = "BookReturned event"
+spec = "docs/specs/library/events.md"
+crate = "educore-library"
+phase = 9
+status = "Tested"
+tests = "crates/domains/library/src/events.rs"
+
+[[row]]
+id = "library_fine_calculated_event"
+item = "FineCalculated event"
+spec = "docs/specs/library/events.md"
+crate = "educore-library"
+phase = 9
+status = "Tested"
+tests = "crates/domains/library/src/events.rs"
+
+# Capability / audit surface
+[[row]]
+id = "library_capability_variants"
+item = "26 Library.* Capability variants in educore-rbac (4 Phase 2 placeholders deduplicated; 26 Phase 9 net-new)"
+spec = "docs/specs/library/permissions.md"
+crate = "educore-rbac"
+phase = 9
+status = "Tested"
+tests = "crates/cross-cutting/rbac/src/value_objects.rs"
+
+[[row]]
+id = "library_audit_target_variants"
+item = "6 Library AuditTarget variants in educore-audit (1 Phase 2 placeholder + 5 Phase 9 net-new)"
+spec = "docs/specs/library/aggregates.md"
+crate = "educore-audit"
+phase = 9
+status = "Tested"
+tests = "crates/cross-cutting/audit/src/writer.rs"
+
+# Headline correctness check (the late-fine service)
+[[row]]
+id = "library_fine_calculation_service"
+item = "FineCalculationService property test (100 cases, 2 case-generators)"
+spec = "docs/specs/library/services.md"
+crate = "educore-library"
+phase = 9
+status = "Tested"
+tests = "crates/domains/library/src/services.rs"
 
 # =============================================================================
 # Communication domain (Phase 10)

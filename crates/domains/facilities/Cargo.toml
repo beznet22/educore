@@ -15,6 +15,21 @@ educore-core = { workspace = true }
 educore-platform = { workspace = true }
 educore-rbac = { workspace = true }
 educore-events = { workspace = true }
+educore-event-bus = { workspace = true }
+educore-audit = { workspace = true }
+educore-storage = { workspace = true }
 educore-academic = { workspace = true }
-educore-settings = { workspace = true }
+educore-hr = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+proptest = { workspace = true }
+rust_decimal = { workspace = true }
+rust_decimal_macros = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
 

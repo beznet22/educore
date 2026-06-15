@@ -6,6 +6,7 @@
 //! translation.
 
 #![allow(missing_docs)]
+#![allow(unused_imports)]
 #![allow(dead_code)]
 
 use educore_core::error::{DomainError, Result};

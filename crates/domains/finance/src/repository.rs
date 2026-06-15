@@ -17,6 +17,7 @@
 //! the indices the domain services reach for most often.
 
 #![allow(missing_docs)]
+#![allow(unused_imports)]
 #![allow(dead_code)]
 
 use async_trait::async_trait;

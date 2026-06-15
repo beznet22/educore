@@ -1088,6 +1088,87 @@ chat message, email log, SMS log, notification setting.
 
 ---
 
+**Phase 9 outcome.** Closed 2026-06-15. **`educore-library`**
+delivered as the seventh domain crate. The 6 headline
+aggregates (`Book`, `BookCategory`, `LibraryMember`,
+`BookIssue`, `BookReturn`, `Fine`) ship with the 9-file module
+layout — the prompt's 6-aggregate interpretation; the spec's
+4-root view treats `BookReturn` as a status transition and
+`Fine` as a child entity `BookIssueFine`, documented as OQ #2
+in the hand-off. The 3 child entities (`BookCatalogEntry`,
+`BookAcquisition`, `LibraryMemberNote`) + 2 spec-mandated
+(`BookIssueRenewal`, `BookIssueFine`) ship as entities.rs.
+The headline late-fine service is the
+**`FineCalculationService`** (a 100-case proptest mirrors
+Phase 7's `LateFeeService` and Phase 8's
+`InventoryConservationService`). 18 typed events
+implementing `DomainEvent`; 18 typed command shapes; 6 pure
+factory service functions; 6 `pub trait XxxRepository: Send +
+Sync` port traits; 6 typed query stubs (returning
+`Err(DomainError::not_supported(...))` per the Phase 7
+Workstream P pattern). 5 commits land in chronological order:
+
+1. `chore(workspace+library): add library deps + proptest +
+   storage-parity` — expand library `Cargo.toml` (drop
+   `educore-settings`, add 14 deps + `tokio` dev-dep); add
+   `educore-library` to storage-parity dev-deps.
+2. `feat(rbac): add 26 Library.* Capability variants` — the 4
+   Phase 2 `LibraryBook{Create,Read,Update,Delete}` placeholders
+   were deduplicated; the canonical
+   `Book{Add,Read,Update,Delete,AdjustQuantity,Search}` variants
+   use the same wire forms as the Phase 2 placeholders (same
+   pattern as Phase 8's `FacilitiesRoom*` dedup). Extended
+   `domain()`, `aggregate()`, `action()`, `as_str()`, `all()`,
+   `from_str_opt()` arms. The new
+   `library_capabilities_round_trip_and_resolve_to_library_domain`
+   test asserts the 26 count.
+3. `feat(audit): add 5 Library AuditTarget variants` —
+   non-breaking additive. 5 new variants (BookCategory,
+   LibraryMember, BookIssue, BookReturn, Fine) + extended
+   `target_type()`, `target_id()`, the new
+   `library_audit_target_type_is_snake_case_and_nonempty`
+   assertion (asserts 6 Library-prefixed variants total).
+4. `feat(library): ship 9-file module layout (Workstream A-D
+   combined)` — the headline 6 aggregates + 3 child entities +
+   18 events + 18 commands + 6 service factories + 6
+   repository ports + 6 query stubs + `FineCalculationService`
+   + 100-case proptest (2 case-generators × 100 cases). 31
+   unit tests pass.
+5. `feat(library): ship integration test + coverage flips +
+   handoff docs` — the 4-scenario `library_integration.rs`,
+   10 `coverage.toml` rows flipped from `Pending` → `Tested`
+   (the prompt's ≥6 target exceeded), the
+   `PHASE-9-HANDOFF.md` hand-off, the `phase-10-prompt.md`
+   next-phase brief.
+
+The 6 Phase 8 WIP deliverables that were uncommitted at Phase
+9 start were landed as part of Phase 9's foundation cleanup
+(per PHASE-9-HANDOFF.md OQ #2 + the Phase 8 hand-off's
+"where NOT to start" section): `educore-facilities/src/lib.rs`
+135-line prelude, `educore-facilities/Cargo.toml` 18-deps
+expansion, and the 54 net-new `Facilities.*` Capability
+variants in `educore-rbac`. These are non-breaking additive
+per `ADR-013-CrateLayout.md`.
+
+**~692 tests pass workspace-wide** (was ~640 at Phase 8
+close-out; +52 net new in Phase 9: 31 library unit tests + 4
+library integration tests + 1 rbac test + 1 audit test + 15
+rbac + audit test fixups). `cargo fmt --all -- --check` and the
+`lint` binary are green. `cargo clippy --workspace
+--all-targets -- -D warnings` is not green at the workspace
+level due to pre-existing clippy debt in `educore-finance`
+(Phase 7 WIP), `educore-hr` (Phase 6 WIP), and
+`educore-facilities` (Phase 8 WIP); the library crate itself
+passes clippy. The pre-existing issues are unrelated to
+Phase 9 and are documented as outstanding work. 7 open
+questions are documented in
+`docs/handoff/PHASE-9-HANDOFF.md` (the most material for
+Phase 10: Q2 the 6-aggregate vs 4-root interpretation; Q3
+the `FineReason::Manual` flow; Q6 the `LibrarySettings`
+per-school ownership). Hand-off:
+`docs/handoff/PHASE-9-HANDOFF.md`. Next-phase prompt:
+`docs/phase_prompt/phase-10-prompt.md`.
+
 ## Phase 11 — Documents
 
 **Deliverables.** `educore-documents`. Form download, postal

@@ -14,6 +14,7 @@
 //! are the canonical values for that key.
 
 #![allow(missing_docs)]
+#![allow(unused_imports)]
 #![allow(dead_code)]
 
 use chrono::NaiveDate;

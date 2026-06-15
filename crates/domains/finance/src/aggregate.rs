@@ -17,6 +17,7 @@
 //! from the caller.
 
 #![allow(missing_docs)]
+#![allow(unused_imports)]
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};

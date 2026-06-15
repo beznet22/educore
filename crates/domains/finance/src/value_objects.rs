@@ -21,6 +21,7 @@
 //! and the `Money` value object.
 
 #![allow(missing_docs)]
+#![allow(unused_imports)]
 
 use std::fmt;
 

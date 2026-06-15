@@ -625,15 +625,67 @@ pub enum Capability {
     /// Read the umbrella HR report (covers everything above).
     HrReportRead,
 
-    // -- Library, Communication, Documents, CMS, Facilities, Events ----
-    /// Create a library book. Placeholder for the library domain.
-    LibraryBookCreate,
-    /// Read a library book.
-    LibraryBookRead,
-    /// Update a library book.
-    LibraryBookUpdate,
-    /// Delete a library book.
-    LibraryBookDelete,
+    // -- Library (Phase 9) -----------------------------------------------
+    // The 4 Phase 2 placeholders (`LibraryBook{Create,Read,Update,Delete}`)
+    // were deduplicated during implementation; the canonical
+    // `Book{Add,Read,Update,Delete}` variants below use the same wire
+    // forms (`Library.Book.{Add,Read,Update,Delete}`) as the Phase 2
+    // placeholders. Consumers that referenced the placeholders by name
+    // (only `DefaultRoleCatalog::librarian()` in this workspace) were
+    // updated to the new names. This matches the Phase 8
+    // `FacilitiesRoom*` dedup pattern.
+    /// Read library-wide aggregate reports (overdue, stock, fine roll-up).
+    LibraryRead,
+    /// Configure the per-school `LibrarySettings` in the settings domain.
+    LibraryConfigure,
+    /// Run aggregate reports across the library domain.
+    LibraryReport,
+    /// Create a book category.
+    BookCategoryCreate,
+    /// Read a book category.
+    BookCategoryRead,
+    /// Update a book category.
+    BookCategoryUpdate,
+    /// Delete a book category.
+    BookCategoryDelete,
+    /// Add a book to the catalog.
+    BookAdd,
+    /// Read a book.
+    BookRead,
+    /// Update a book's bibliographic metadata.
+    BookUpdate,
+    /// Delete a book from the catalog.
+    BookDelete,
+    /// Adjust a book's stock count (acquisition or write-off).
+    BookAdjustQuantity,
+    /// Search the book catalog.
+    BookSearch,
+    /// Register a library member.
+    MemberRegister,
+    /// Read a library member.
+    MemberRead,
+    /// Update a library member.
+    MemberUpdate,
+    /// Delete a library member.
+    MemberDelete,
+    /// Deactivate a library member.
+    MemberDeactivate,
+    /// Reactivate a library member.
+    MemberReactivate,
+    /// Issue a book to a library member.
+    BookIssueIssue,
+    /// Read a book issue.
+    BookIssueRead,
+    /// Return a book that was issued.
+    BookIssueReturn,
+    /// Renew a book issue (extend due date).
+    BookIssueRenew,
+    /// Mark a book issue as lost.
+    BookIssueMarkLost,
+    /// Calculate the late-fine for a book issue.
+    BookIssueCalculateFine,
+    /// Waive a fine for a book issue.
+    BookIssueWaiveFine,
     /// Create a communication message.
     CommunicationMessageCreate,
     /// Read a communication message.
@@ -658,6 +710,18 @@ pub enum Capability {
     CmsPageUpdate,
     /// Delete a CMS page.
     CmsPageDelete,
+
+    // -- Facilities (Phase 8) ---------------------------------------------
+    // The 4 Phase 2 `FacilitiesRoom{Create,Read,Update,Delete}`
+    // placeholders were deduplicated during implementation;
+    // the canonical `FacilitiesRoom{Create,Read,Update,Delete}`
+    // variants below use the same wire forms
+    // (`Facilities.Room.{Create,Read,Update,Delete}`) as the
+    // Phase 2 placeholders. Consumers that referenced the
+    // placeholders by name (only
+    // `DefaultRoleCatalog::{school_admin,driver}` in this
+    // workspace) were updated to the new names. This matches
+    // the Phase 8 `FacilitiesRoom*` dedup pattern.
     /// Create a facilities room.
     FacilitiesRoomCreate,
     /// Read a facilities room.
@@ -666,6 +730,118 @@ pub enum Capability {
     FacilitiesRoomUpdate,
     /// Delete a facilities room.
     FacilitiesRoomDelete,
+    /// Create a facilities vehicle.
+    FacilitiesVehicleCreate,
+    /// Read a facilities vehicle.
+    FacilitiesVehicleRead,
+    /// Update a facilities vehicle.
+    FacilitiesVehicleUpdate,
+    /// Delete a facilities vehicle.
+    FacilitiesVehicleDelete,
+    /// Assign a driver to a vehicle.
+    FacilitiesVehicleAssignDriver,
+    /// Deactivate a facilities vehicle.
+    FacilitiesVehicleDeactivate,
+    /// Create a transport route.
+    FacilitiesRouteCreate,
+    /// Read a transport route.
+    FacilitiesRouteRead,
+    /// Update a transport route.
+    FacilitiesRouteUpdate,
+    /// Delete a transport route.
+    FacilitiesRouteDelete,
+    /// Add a stop to a route.
+    FacilitiesRouteAddStop,
+    /// Update a stop on a route.
+    FacilitiesRouteUpdateStop,
+    /// Remove a stop from a route.
+    FacilitiesRouteRemoveStop,
+    /// Assign a vehicle to a route in an academic year.
+    FacilitiesTransportAssignVehicle,
+    /// Unassign a vehicle from a route.
+    FacilitiesTransportUnassignVehicle,
+    /// Assign a student to a vehicle-route pair.
+    FacilitiesTransportAssignStudent,
+    /// Unassign a student from a vehicle-route pair.
+    FacilitiesTransportUnassignStudent,
+    /// Read transport assignments.
+    FacilitiesTransportRead,
+    /// Create a dormitory.
+    FacilitiesDormitoryCreate,
+    /// Read a dormitory.
+    FacilitiesDormitoryRead,
+    /// Update a dormitory.
+    FacilitiesDormitoryUpdate,
+    /// Delete a dormitory.
+    FacilitiesDormitoryDelete,
+    /// Assign a student to a room.
+    FacilitiesRoomAssignStudent,
+    /// Unassign a student from a room.
+    FacilitiesRoomUnassignStudent,
+    /// Create a room type.
+    FacilitiesRoomTypeCreate,
+    /// Read a room type.
+    FacilitiesRoomTypeRead,
+    /// Update a room type.
+    FacilitiesRoomTypeUpdate,
+    /// Delete a room type.
+    FacilitiesRoomTypeDelete,
+    /// Create an item category.
+    FacilitiesItemCategoryCreate,
+    /// Read an item category.
+    FacilitiesItemCategoryRead,
+    /// Update an item category.
+    FacilitiesItemCategoryUpdate,
+    /// Delete an item category.
+    FacilitiesItemCategoryDelete,
+    /// Create an inventory item.
+    FacilitiesItemCreate,
+    /// Read an inventory item.
+    FacilitiesItemRead,
+    /// Update an inventory item.
+    FacilitiesItemUpdate,
+    /// Delete an inventory item.
+    FacilitiesItemDelete,
+    /// Create an item store.
+    FacilitiesItemStoreCreate,
+    /// Read an item store.
+    FacilitiesItemStoreRead,
+    /// Update an item store.
+    FacilitiesItemStoreUpdate,
+    /// Delete an item store.
+    FacilitiesItemStoreDelete,
+    /// Receive inventory into a store.
+    FacilitiesInventoryReceive,
+    /// Update a goods-receive note.
+    FacilitiesInventoryUpdateReceive,
+    /// Cancel a goods-receive note.
+    FacilitiesInventoryCancelReceive,
+    /// Issue inventory from a store.
+    FacilitiesInventoryIssue,
+    /// Update a goods-issue note.
+    FacilitiesInventoryUpdateIssue,
+    /// Return an issued item.
+    FacilitiesInventoryReturnIssued,
+    /// Sell inventory.
+    FacilitiesInventorySell,
+    /// Update a sale.
+    FacilitiesInventoryUpdateSell,
+    /// Cancel a sale.
+    FacilitiesInventoryCancelSell,
+    /// Refund a sale.
+    FacilitiesInventoryRefundSell,
+    /// Read inventory.
+    FacilitiesInventoryRead,
+    /// Create a supplier.
+    FacilitiesSupplierCreate,
+    /// Read a supplier.
+    FacilitiesSupplierRead,
+    /// Update a supplier.
+    FacilitiesSupplierUpdate,
+    /// Delete a supplier.
+    FacilitiesSupplierDelete,
+    /// Deactivate a supplier.
+    FacilitiesSupplierDeactivate,
     /// Create an events-domain calendar entry.
     EventsCalendarCreate,
     /// Read an events-domain calendar entry.
@@ -971,10 +1147,32 @@ impl Capability {
             | Self::HrReportHourlyEarnings
             | Self::HrReportLeaveDeduction
             | Self::HrReportRead => CapabilityDomain::Hr,
-            Self::LibraryBookCreate
-            | Self::LibraryBookRead
-            | Self::LibraryBookUpdate
-            | Self::LibraryBookDelete => CapabilityDomain::Library,
+            Self::LibraryRead
+            | Self::LibraryConfigure
+            | Self::LibraryReport
+            | Self::BookCategoryCreate
+            | Self::BookCategoryRead
+            | Self::BookCategoryUpdate
+            | Self::BookCategoryDelete
+            | Self::BookAdd
+            | Self::BookRead
+            | Self::BookUpdate
+            | Self::BookDelete
+            | Self::BookAdjustQuantity
+            | Self::BookSearch
+            | Self::MemberRegister
+            | Self::MemberRead
+            | Self::MemberUpdate
+            | Self::MemberDelete
+            | Self::MemberDeactivate
+            | Self::MemberReactivate
+            | Self::BookIssueIssue
+            | Self::BookIssueRead
+            | Self::BookIssueReturn
+            | Self::BookIssueRenew
+            | Self::BookIssueMarkLost
+            | Self::BookIssueCalculateFine
+            | Self::BookIssueWaiveFine => CapabilityDomain::Library,
             Self::CommunicationMessageCreate
             | Self::CommunicationMessageRead
             | Self::CommunicationMessageUpdate
@@ -989,7 +1187,63 @@ impl Capability {
             Self::FacilitiesRoomCreate
             | Self::FacilitiesRoomRead
             | Self::FacilitiesRoomUpdate
-            | Self::FacilitiesRoomDelete => CapabilityDomain::Facilities,
+            | Self::FacilitiesRoomDelete
+            | Self::FacilitiesVehicleCreate
+            | Self::FacilitiesVehicleRead
+            | Self::FacilitiesVehicleUpdate
+            | Self::FacilitiesVehicleDelete
+            | Self::FacilitiesVehicleAssignDriver
+            | Self::FacilitiesVehicleDeactivate
+            | Self::FacilitiesRouteCreate
+            | Self::FacilitiesRouteRead
+            | Self::FacilitiesRouteUpdate
+            | Self::FacilitiesRouteDelete
+            | Self::FacilitiesRouteAddStop
+            | Self::FacilitiesRouteUpdateStop
+            | Self::FacilitiesRouteRemoveStop
+            | Self::FacilitiesTransportAssignVehicle
+            | Self::FacilitiesTransportUnassignVehicle
+            | Self::FacilitiesTransportAssignStudent
+            | Self::FacilitiesTransportUnassignStudent
+            | Self::FacilitiesTransportRead
+            | Self::FacilitiesDormitoryCreate
+            | Self::FacilitiesDormitoryRead
+            | Self::FacilitiesDormitoryUpdate
+            | Self::FacilitiesDormitoryDelete
+            | Self::FacilitiesRoomAssignStudent
+            | Self::FacilitiesRoomUnassignStudent
+            | Self::FacilitiesRoomTypeCreate
+            | Self::FacilitiesRoomTypeRead
+            | Self::FacilitiesRoomTypeUpdate
+            | Self::FacilitiesRoomTypeDelete
+            | Self::FacilitiesItemCategoryCreate
+            | Self::FacilitiesItemCategoryRead
+            | Self::FacilitiesItemCategoryUpdate
+            | Self::FacilitiesItemCategoryDelete
+            | Self::FacilitiesItemCreate
+            | Self::FacilitiesItemRead
+            | Self::FacilitiesItemUpdate
+            | Self::FacilitiesItemDelete
+            | Self::FacilitiesItemStoreCreate
+            | Self::FacilitiesItemStoreRead
+            | Self::FacilitiesItemStoreUpdate
+            | Self::FacilitiesItemStoreDelete
+            | Self::FacilitiesInventoryReceive
+            | Self::FacilitiesInventoryUpdateReceive
+            | Self::FacilitiesInventoryCancelReceive
+            | Self::FacilitiesInventoryIssue
+            | Self::FacilitiesInventoryUpdateIssue
+            | Self::FacilitiesInventoryReturnIssued
+            | Self::FacilitiesInventorySell
+            | Self::FacilitiesInventoryUpdateSell
+            | Self::FacilitiesInventoryCancelSell
+            | Self::FacilitiesInventoryRefundSell
+            | Self::FacilitiesInventoryRead
+            | Self::FacilitiesSupplierCreate
+            | Self::FacilitiesSupplierRead
+            | Self::FacilitiesSupplierUpdate
+            | Self::FacilitiesSupplierDelete
+            | Self::FacilitiesSupplierDeactivate => CapabilityDomain::Facilities,
             Self::EventsCalendarCreate
             | Self::EventsCalendarRead
             | Self::EventsCalendarUpdate
@@ -1287,10 +1541,30 @@ impl Capability {
             | Self::HrReportHourlyEarnings
             | Self::HrReportLeaveDeduction
             | Self::HrReportRead => "Report",
-            Self::LibraryBookCreate
-            | Self::LibraryBookRead
-            | Self::LibraryBookUpdate
-            | Self::LibraryBookDelete => "Book",
+            Self::BookAdd
+            | Self::BookRead
+            | Self::BookUpdate
+            | Self::BookDelete
+            | Self::BookAdjustQuantity
+            | Self::BookSearch => "Book",
+            Self::LibraryRead | Self::LibraryConfigure | Self::LibraryReport => "Library",
+            Self::BookCategoryCreate
+            | Self::BookCategoryRead
+            | Self::BookCategoryUpdate
+            | Self::BookCategoryDelete => "BookCategory",
+            Self::MemberRegister
+            | Self::MemberRead
+            | Self::MemberUpdate
+            | Self::MemberDelete
+            | Self::MemberDeactivate
+            | Self::MemberReactivate => "Member",
+            Self::BookIssueIssue
+            | Self::BookIssueRead
+            | Self::BookIssueReturn
+            | Self::BookIssueRenew
+            | Self::BookIssueMarkLost
+            | Self::BookIssueCalculateFine
+            | Self::BookIssueWaiveFine => "BookIssue",
             Self::CommunicationMessageCreate
             | Self::CommunicationMessageRead
             | Self::CommunicationMessageUpdate
@@ -1305,7 +1579,63 @@ impl Capability {
             Self::FacilitiesRoomCreate
             | Self::FacilitiesRoomRead
             | Self::FacilitiesRoomUpdate
-            | Self::FacilitiesRoomDelete => "Room",
+            | Self::FacilitiesRoomDelete
+            | Self::FacilitiesRoomAssignStudent
+            | Self::FacilitiesRoomUnassignStudent => "Room",
+            Self::FacilitiesVehicleCreate
+            | Self::FacilitiesVehicleRead
+            | Self::FacilitiesVehicleUpdate
+            | Self::FacilitiesVehicleDelete
+            | Self::FacilitiesVehicleAssignDriver
+            | Self::FacilitiesVehicleDeactivate => "Vehicle",
+            Self::FacilitiesRouteCreate
+            | Self::FacilitiesRouteRead
+            | Self::FacilitiesRouteUpdate
+            | Self::FacilitiesRouteDelete
+            | Self::FacilitiesRouteAddStop
+            | Self::FacilitiesRouteUpdateStop
+            | Self::FacilitiesRouteRemoveStop => "Route",
+            Self::FacilitiesTransportAssignVehicle
+            | Self::FacilitiesTransportUnassignVehicle
+            | Self::FacilitiesTransportAssignStudent
+            | Self::FacilitiesTransportUnassignStudent
+            | Self::FacilitiesTransportRead => "Transport",
+            Self::FacilitiesDormitoryCreate
+            | Self::FacilitiesDormitoryRead
+            | Self::FacilitiesDormitoryUpdate
+            | Self::FacilitiesDormitoryDelete => "Dormitory",
+            Self::FacilitiesRoomTypeCreate
+            | Self::FacilitiesRoomTypeRead
+            | Self::FacilitiesRoomTypeUpdate
+            | Self::FacilitiesRoomTypeDelete => "RoomType",
+            Self::FacilitiesItemCategoryCreate
+            | Self::FacilitiesItemCategoryRead
+            | Self::FacilitiesItemCategoryUpdate
+            | Self::FacilitiesItemCategoryDelete => "ItemCategory",
+            Self::FacilitiesItemCreate
+            | Self::FacilitiesItemRead
+            | Self::FacilitiesItemUpdate
+            | Self::FacilitiesItemDelete => "Item",
+            Self::FacilitiesItemStoreCreate
+            | Self::FacilitiesItemStoreRead
+            | Self::FacilitiesItemStoreUpdate
+            | Self::FacilitiesItemStoreDelete => "ItemStore",
+            Self::FacilitiesInventoryReceive
+            | Self::FacilitiesInventoryUpdateReceive
+            | Self::FacilitiesInventoryCancelReceive
+            | Self::FacilitiesInventoryIssue
+            | Self::FacilitiesInventoryUpdateIssue
+            | Self::FacilitiesInventoryReturnIssued
+            | Self::FacilitiesInventorySell
+            | Self::FacilitiesInventoryUpdateSell
+            | Self::FacilitiesInventoryCancelSell
+            | Self::FacilitiesInventoryRefundSell
+            | Self::FacilitiesInventoryRead => "Inventory",
+            Self::FacilitiesSupplierCreate
+            | Self::FacilitiesSupplierRead
+            | Self::FacilitiesSupplierUpdate
+            | Self::FacilitiesSupplierDelete
+            | Self::FacilitiesSupplierDeactivate => "Supplier",
             Self::EventsCalendarCreate
             | Self::EventsCalendarRead
             | Self::EventsCalendarUpdate
@@ -1341,7 +1671,6 @@ impl Capability {
             | Self::HrStaffAssignClassTeacherCreate
             | Self::HrSalaryTemplateCreate
             | Self::HrStaffRegistrationFieldCreate
-            | Self::LibraryBookCreate
             | Self::CommunicationMessageCreate
             | Self::DocumentsFolderCreate
             | Self::CmsPageCreate
@@ -1395,7 +1724,10 @@ impl Capability {
             | Self::HrReportHourlyEarnings
             | Self::HrReportLeaveDeduction
             | Self::HrReportRead
-            | Self::LibraryBookRead
+            | Self::BookRead
+            | Self::BookCategoryRead
+            | Self::MemberRead
+            | Self::BookIssueRead
             | Self::CommunicationMessageRead
             | Self::DocumentsFolderRead
             | Self::CmsPageRead
@@ -1421,6 +1753,9 @@ impl Capability {
             | Self::AssessmentSeatPlanUpdate
             | Self::AssessmentAdmitCardUpdate
             | Self::FinanceInvoiceUpdate
+            | Self::BookUpdate
+            | Self::BookCategoryUpdate
+            | Self::MemberUpdate
             | Self::HrStaffUpdate
             | Self::HrDepartmentUpdate
             | Self::HrDesignationUpdate
@@ -1435,7 +1770,6 @@ impl Capability {
             | Self::HrHourlyRateUpdate
             | Self::HrStaffRegistrationFieldUpdate
             | Self::HrStaffAssignClassTeacherUpdate
-            | Self::LibraryBookUpdate
             | Self::CommunicationMessageUpdate
             | Self::DocumentsFolderUpdate
             | Self::CmsPageUpdate
@@ -1472,7 +1806,6 @@ impl Capability {
             | Self::HrHourlyRateDelete
             | Self::HrStaffRegistrationFieldDelete
             | Self::HrStaffAssignClassTeacherDelete
-            | Self::LibraryBookDelete
             | Self::CommunicationMessageDelete
             | Self::DocumentsFolderDelete
             | Self::CmsPageDelete
@@ -1482,7 +1815,10 @@ impl Capability {
             | Self::AttendanceSubjectDelete
             | Self::AttendanceStaffDelete
             | Self::AttendanceExamDelete
-            | Self::AttendanceImportDelete => "Delete",
+            | Self::AttendanceImportDelete
+            | Self::BookDelete
+            | Self::BookCategoryDelete
+            | Self::MemberDelete => "Delete",
             Self::RbacRoleManage => "Manage",
             Self::RbacRoleClone => "Clone",
             Self::RbacCapabilityAssign => "Assign",
@@ -1630,6 +1966,81 @@ impl Capability {
             Self::FinanceDirectFeesInstallmentAssign => "Assign",
             Self::FinanceDirectFeesInstallmentPay => "Pay",
             Self::FinanceFeesInstallmentAssign => "Assign",
+            // -- Library (Phase 9) specific action mappings --
+            Self::LibraryConfigure => "Configure",
+            Self::LibraryReport => "Report",
+            Self::BookAdd => "Add",
+            Self::BookSearch => "Search",
+            Self::BookAdjustQuantity => "AdjustQuantity",
+            Self::BookCategoryCreate => "Create",
+            Self::MemberRegister => "Register",
+            Self::MemberDeactivate => "Deactivate",
+            Self::MemberReactivate => "Reactivate",
+            Self::BookIssueIssue => "Issue",
+            Self::BookIssueReturn => "Return",
+            Self::BookIssueRenew => "Renew",
+            Self::BookIssueMarkLost => "MarkLost",
+            Self::BookIssueCalculateFine => "CalculateFine",
+            Self::BookIssueWaiveFine => "WaiveFine",
+            Self::LibraryRead => "Read",
+            // -- Facilities (Phase 8) -- generic Create/Read/Update/Delete
+            Self::FacilitiesVehicleCreate
+            | Self::FacilitiesRouteCreate
+            | Self::FacilitiesDormitoryCreate
+            | Self::FacilitiesRoomTypeCreate
+            | Self::FacilitiesItemCategoryCreate
+            | Self::FacilitiesItemCreate
+            | Self::FacilitiesItemStoreCreate
+            | Self::FacilitiesSupplierCreate => "Create",
+            Self::FacilitiesVehicleRead
+            | Self::FacilitiesRouteRead
+            | Self::FacilitiesTransportRead
+            | Self::FacilitiesDormitoryRead
+            | Self::FacilitiesRoomTypeRead
+            | Self::FacilitiesItemCategoryRead
+            | Self::FacilitiesItemRead
+            | Self::FacilitiesItemStoreRead
+            | Self::FacilitiesInventoryRead
+            | Self::FacilitiesSupplierRead => "Read",
+            Self::FacilitiesVehicleUpdate
+            | Self::FacilitiesRouteUpdate
+            | Self::FacilitiesDormitoryUpdate
+            | Self::FacilitiesRoomTypeUpdate
+            | Self::FacilitiesItemCategoryUpdate
+            | Self::FacilitiesItemUpdate
+            | Self::FacilitiesItemStoreUpdate
+            | Self::FacilitiesSupplierUpdate => "Update",
+            Self::FacilitiesVehicleDelete
+            | Self::FacilitiesRouteDelete
+            | Self::FacilitiesDormitoryDelete
+            | Self::FacilitiesRoomTypeDelete
+            | Self::FacilitiesItemCategoryDelete
+            | Self::FacilitiesItemDelete
+            | Self::FacilitiesItemStoreDelete
+            | Self::FacilitiesSupplierDelete => "Delete",
+            // -- Facilities specific verbs --
+            Self::FacilitiesVehicleAssignDriver => "AssignDriver",
+            Self::FacilitiesVehicleDeactivate => "Deactivate",
+            Self::FacilitiesRouteAddStop => "AddStop",
+            Self::FacilitiesRouteUpdateStop => "UpdateStop",
+            Self::FacilitiesRouteRemoveStop => "RemoveStop",
+            Self::FacilitiesTransportAssignVehicle => "AssignVehicle",
+            Self::FacilitiesTransportUnassignVehicle => "UnassignVehicle",
+            Self::FacilitiesTransportAssignStudent => "AssignStudent",
+            Self::FacilitiesTransportUnassignStudent => "UnassignStudent",
+            Self::FacilitiesRoomAssignStudent => "AssignStudent",
+            Self::FacilitiesRoomUnassignStudent => "UnassignStudent",
+            Self::FacilitiesInventoryReceive => "Receive",
+            Self::FacilitiesInventoryUpdateReceive => "UpdateReceive",
+            Self::FacilitiesInventoryCancelReceive => "CancelReceive",
+            Self::FacilitiesInventoryIssue => "Issue",
+            Self::FacilitiesInventoryUpdateIssue => "UpdateIssue",
+            Self::FacilitiesInventoryReturnIssued => "ReturnIssued",
+            Self::FacilitiesInventorySell => "Sell",
+            Self::FacilitiesInventoryUpdateSell => "UpdateSell",
+            Self::FacilitiesInventoryCancelSell => "CancelSell",
+            Self::FacilitiesInventoryRefundSell => "RefundSell",
+            Self::FacilitiesSupplierDeactivate => "Deactivate",
         }
     }
 
@@ -1898,10 +2309,32 @@ impl Capability {
             Self::HrReportHourlyEarnings => "Hr.Report.Read.HourlyEarnings",
             Self::HrReportLeaveDeduction => "Hr.Report.Read.LeaveDeduction",
             Self::HrReportRead => "Hr.Report.Read.HR",
-            Self::LibraryBookCreate => "Library.Book.Create",
-            Self::LibraryBookRead => "Library.Book.Read",
-            Self::LibraryBookUpdate => "Library.Book.Update",
-            Self::LibraryBookDelete => "Library.Book.Delete",
+            Self::LibraryRead => "Library.Library.Read",
+            Self::LibraryConfigure => "Library.Library.Configure",
+            Self::LibraryReport => "Library.Library.Report",
+            Self::BookCategoryCreate => "Library.BookCategory.Create",
+            Self::BookCategoryRead => "Library.BookCategory.Read",
+            Self::BookCategoryUpdate => "Library.BookCategory.Update",
+            Self::BookCategoryDelete => "Library.BookCategory.Delete",
+            Self::BookAdd => "Library.Book.Add",
+            Self::BookRead => "Library.Book.Read",
+            Self::BookUpdate => "Library.Book.Update",
+            Self::BookDelete => "Library.Book.Delete",
+            Self::BookAdjustQuantity => "Library.Book.AdjustQuantity",
+            Self::BookSearch => "Library.Book.Search",
+            Self::MemberRegister => "Library.Member.Register",
+            Self::MemberRead => "Library.Member.Read",
+            Self::MemberUpdate => "Library.Member.Update",
+            Self::MemberDelete => "Library.Member.Delete",
+            Self::MemberDeactivate => "Library.Member.Deactivate",
+            Self::MemberReactivate => "Library.Member.Reactivate",
+            Self::BookIssueIssue => "Library.BookIssue.Issue",
+            Self::BookIssueRead => "Library.BookIssue.Read",
+            Self::BookIssueReturn => "Library.BookIssue.Return",
+            Self::BookIssueRenew => "Library.BookIssue.Renew",
+            Self::BookIssueMarkLost => "Library.BookIssue.MarkLost",
+            Self::BookIssueCalculateFine => "Library.BookIssue.CalculateFine",
+            Self::BookIssueWaiveFine => "Library.BookIssue.WaiveFine",
             Self::CommunicationMessageCreate => "Communication.Message.Create",
             Self::CommunicationMessageRead => "Communication.Message.Read",
             Self::CommunicationMessageUpdate => "Communication.Message.Update",
@@ -1918,6 +2351,62 @@ impl Capability {
             Self::FacilitiesRoomRead => "Facilities.Room.Read",
             Self::FacilitiesRoomUpdate => "Facilities.Room.Update",
             Self::FacilitiesRoomDelete => "Facilities.Room.Delete",
+            Self::FacilitiesRoomAssignStudent => "Facilities.Room.AssignStudent",
+            Self::FacilitiesRoomUnassignStudent => "Facilities.Room.UnassignStudent",
+            Self::FacilitiesVehicleCreate => "Facilities.Vehicle.Create",
+            Self::FacilitiesVehicleRead => "Facilities.Vehicle.Read",
+            Self::FacilitiesVehicleUpdate => "Facilities.Vehicle.Update",
+            Self::FacilitiesVehicleDelete => "Facilities.Vehicle.Delete",
+            Self::FacilitiesVehicleAssignDriver => "Facilities.Vehicle.AssignDriver",
+            Self::FacilitiesVehicleDeactivate => "Facilities.Vehicle.Deactivate",
+            Self::FacilitiesRouteCreate => "Facilities.Route.Create",
+            Self::FacilitiesRouteRead => "Facilities.Route.Read",
+            Self::FacilitiesRouteUpdate => "Facilities.Route.Update",
+            Self::FacilitiesRouteDelete => "Facilities.Route.Delete",
+            Self::FacilitiesRouteAddStop => "Facilities.Route.AddStop",
+            Self::FacilitiesRouteUpdateStop => "Facilities.Route.UpdateStop",
+            Self::FacilitiesRouteRemoveStop => "Facilities.Route.RemoveStop",
+            Self::FacilitiesTransportAssignVehicle => "Facilities.Transport.AssignVehicle",
+            Self::FacilitiesTransportUnassignVehicle => "Facilities.Transport.UnassignVehicle",
+            Self::FacilitiesTransportAssignStudent => "Facilities.Transport.AssignStudent",
+            Self::FacilitiesTransportUnassignStudent => "Facilities.Transport.UnassignStudent",
+            Self::FacilitiesTransportRead => "Facilities.Transport.Read",
+            Self::FacilitiesDormitoryCreate => "Facilities.Dormitory.Create",
+            Self::FacilitiesDormitoryRead => "Facilities.Dormitory.Read",
+            Self::FacilitiesDormitoryUpdate => "Facilities.Dormitory.Update",
+            Self::FacilitiesDormitoryDelete => "Facilities.Dormitory.Delete",
+            Self::FacilitiesRoomTypeCreate => "Facilities.RoomType.Create",
+            Self::FacilitiesRoomTypeRead => "Facilities.RoomType.Read",
+            Self::FacilitiesRoomTypeUpdate => "Facilities.RoomType.Update",
+            Self::FacilitiesRoomTypeDelete => "Facilities.RoomType.Delete",
+            Self::FacilitiesItemCategoryCreate => "Facilities.ItemCategory.Create",
+            Self::FacilitiesItemCategoryRead => "Facilities.ItemCategory.Read",
+            Self::FacilitiesItemCategoryUpdate => "Facilities.ItemCategory.Update",
+            Self::FacilitiesItemCategoryDelete => "Facilities.ItemCategory.Delete",
+            Self::FacilitiesItemCreate => "Facilities.Item.Create",
+            Self::FacilitiesItemRead => "Facilities.Item.Read",
+            Self::FacilitiesItemUpdate => "Facilities.Item.Update",
+            Self::FacilitiesItemDelete => "Facilities.Item.Delete",
+            Self::FacilitiesItemStoreCreate => "Facilities.ItemStore.Create",
+            Self::FacilitiesItemStoreRead => "Facilities.ItemStore.Read",
+            Self::FacilitiesItemStoreUpdate => "Facilities.ItemStore.Update",
+            Self::FacilitiesItemStoreDelete => "Facilities.ItemStore.Delete",
+            Self::FacilitiesInventoryReceive => "Facilities.Inventory.Receive",
+            Self::FacilitiesInventoryUpdateReceive => "Facilities.Inventory.UpdateReceive",
+            Self::FacilitiesInventoryCancelReceive => "Facilities.Inventory.CancelReceive",
+            Self::FacilitiesInventoryIssue => "Facilities.Inventory.Issue",
+            Self::FacilitiesInventoryUpdateIssue => "Facilities.Inventory.UpdateIssue",
+            Self::FacilitiesInventoryReturnIssued => "Facilities.Inventory.ReturnIssued",
+            Self::FacilitiesInventorySell => "Facilities.Inventory.Sell",
+            Self::FacilitiesInventoryUpdateSell => "Facilities.Inventory.UpdateSell",
+            Self::FacilitiesInventoryCancelSell => "Facilities.Inventory.CancelSell",
+            Self::FacilitiesInventoryRefundSell => "Facilities.Inventory.RefundSell",
+            Self::FacilitiesInventoryRead => "Facilities.Inventory.Read",
+            Self::FacilitiesSupplierCreate => "Facilities.Supplier.Create",
+            Self::FacilitiesSupplierRead => "Facilities.Supplier.Read",
+            Self::FacilitiesSupplierUpdate => "Facilities.Supplier.Update",
+            Self::FacilitiesSupplierDelete => "Facilities.Supplier.Delete",
+            Self::FacilitiesSupplierDeactivate => "Facilities.Supplier.Deactivate",
             Self::EventsCalendarCreate => "Events.Calendar.Create",
             Self::EventsCalendarRead => "Events.Calendar.Read",
             Self::EventsCalendarUpdate => "Events.Calendar.Update",
@@ -2221,10 +2710,32 @@ impl Capability {
             Self::HrReportHourlyEarnings,
             Self::HrReportLeaveDeduction,
             Self::HrReportRead,
-            Self::LibraryBookCreate,
-            Self::LibraryBookRead,
-            Self::LibraryBookUpdate,
-            Self::LibraryBookDelete,
+            Self::LibraryRead,
+            Self::LibraryConfigure,
+            Self::LibraryReport,
+            Self::BookCategoryCreate,
+            Self::BookCategoryRead,
+            Self::BookCategoryUpdate,
+            Self::BookCategoryDelete,
+            Self::BookAdd,
+            Self::BookRead,
+            Self::BookUpdate,
+            Self::BookDelete,
+            Self::BookAdjustQuantity,
+            Self::BookSearch,
+            Self::MemberRegister,
+            Self::MemberRead,
+            Self::MemberUpdate,
+            Self::MemberDelete,
+            Self::MemberDeactivate,
+            Self::MemberReactivate,
+            Self::BookIssueIssue,
+            Self::BookIssueRead,
+            Self::BookIssueReturn,
+            Self::BookIssueRenew,
+            Self::BookIssueMarkLost,
+            Self::BookIssueCalculateFine,
+            Self::BookIssueWaiveFine,
             Self::CommunicationMessageCreate,
             Self::CommunicationMessageRead,
             Self::CommunicationMessageUpdate,
@@ -2241,6 +2752,66 @@ impl Capability {
             Self::FacilitiesRoomRead,
             Self::FacilitiesRoomUpdate,
             Self::FacilitiesRoomDelete,
+            Self::FacilitiesVehicleCreate,
+            Self::FacilitiesVehicleRead,
+            Self::FacilitiesVehicleUpdate,
+            Self::FacilitiesVehicleDelete,
+            Self::FacilitiesVehicleAssignDriver,
+            Self::FacilitiesVehicleDeactivate,
+            Self::FacilitiesRouteCreate,
+            Self::FacilitiesRouteRead,
+            Self::FacilitiesRouteUpdate,
+            Self::FacilitiesRouteDelete,
+            Self::FacilitiesRouteAddStop,
+            Self::FacilitiesRouteUpdateStop,
+            Self::FacilitiesRouteRemoveStop,
+            Self::FacilitiesTransportAssignVehicle,
+            Self::FacilitiesTransportUnassignVehicle,
+            Self::FacilitiesTransportAssignStudent,
+            Self::FacilitiesTransportUnassignStudent,
+            Self::FacilitiesTransportRead,
+            Self::FacilitiesDormitoryCreate,
+            Self::FacilitiesDormitoryRead,
+            Self::FacilitiesDormitoryUpdate,
+            Self::FacilitiesDormitoryDelete,
+            Self::FacilitiesRoomCreate,
+            Self::FacilitiesRoomRead,
+            Self::FacilitiesRoomUpdate,
+            Self::FacilitiesRoomDelete,
+            Self::FacilitiesRoomAssignStudent,
+            Self::FacilitiesRoomUnassignStudent,
+            Self::FacilitiesRoomTypeCreate,
+            Self::FacilitiesRoomTypeRead,
+            Self::FacilitiesRoomTypeUpdate,
+            Self::FacilitiesRoomTypeDelete,
+            Self::FacilitiesItemCategoryCreate,
+            Self::FacilitiesItemCategoryRead,
+            Self::FacilitiesItemCategoryUpdate,
+            Self::FacilitiesItemCategoryDelete,
+            Self::FacilitiesItemCreate,
+            Self::FacilitiesItemRead,
+            Self::FacilitiesItemUpdate,
+            Self::FacilitiesItemDelete,
+            Self::FacilitiesItemStoreCreate,
+            Self::FacilitiesItemStoreRead,
+            Self::FacilitiesItemStoreUpdate,
+            Self::FacilitiesItemStoreDelete,
+            Self::FacilitiesInventoryReceive,
+            Self::FacilitiesInventoryUpdateReceive,
+            Self::FacilitiesInventoryCancelReceive,
+            Self::FacilitiesInventoryIssue,
+            Self::FacilitiesInventoryUpdateIssue,
+            Self::FacilitiesInventoryReturnIssued,
+            Self::FacilitiesInventorySell,
+            Self::FacilitiesInventoryUpdateSell,
+            Self::FacilitiesInventoryCancelSell,
+            Self::FacilitiesInventoryRefundSell,
+            Self::FacilitiesInventoryRead,
+            Self::FacilitiesSupplierCreate,
+            Self::FacilitiesSupplierRead,
+            Self::FacilitiesSupplierUpdate,
+            Self::FacilitiesSupplierDelete,
+            Self::FacilitiesSupplierDeactivate,
             Self::EventsCalendarCreate,
             Self::EventsCalendarRead,
             Self::EventsCalendarUpdate,
@@ -2547,10 +3118,32 @@ impl Capability {
             "Hr.Report.Read.HourlyEarnings" => Some(Self::HrReportHourlyEarnings),
             "Hr.Report.Read.LeaveDeduction" => Some(Self::HrReportLeaveDeduction),
             "Hr.Report.Read.HR" => Some(Self::HrReportRead),
-            "Library.Book.Create" => Some(Self::LibraryBookCreate),
-            "Library.Book.Read" => Some(Self::LibraryBookRead),
-            "Library.Book.Update" => Some(Self::LibraryBookUpdate),
-            "Library.Book.Delete" => Some(Self::LibraryBookDelete),
+            "Library.Library.Read" => Some(Self::LibraryRead),
+            "Library.Library.Configure" => Some(Self::LibraryConfigure),
+            "Library.Library.Report" => Some(Self::LibraryReport),
+            "Library.BookCategory.Create" => Some(Self::BookCategoryCreate),
+            "Library.BookCategory.Read" => Some(Self::BookCategoryRead),
+            "Library.BookCategory.Update" => Some(Self::BookCategoryUpdate),
+            "Library.BookCategory.Delete" => Some(Self::BookCategoryDelete),
+            "Library.Book.Add" => Some(Self::BookAdd),
+            "Library.Book.Read" => Some(Self::BookRead),
+            "Library.Book.Update" => Some(Self::BookUpdate),
+            "Library.Book.Delete" => Some(Self::BookDelete),
+            "Library.Book.AdjustQuantity" => Some(Self::BookAdjustQuantity),
+            "Library.Book.Search" => Some(Self::BookSearch),
+            "Library.Member.Register" => Some(Self::MemberRegister),
+            "Library.Member.Read" => Some(Self::MemberRead),
+            "Library.Member.Update" => Some(Self::MemberUpdate),
+            "Library.Member.Delete" => Some(Self::MemberDelete),
+            "Library.Member.Deactivate" => Some(Self::MemberDeactivate),
+            "Library.Member.Reactivate" => Some(Self::MemberReactivate),
+            "Library.BookIssue.Issue" => Some(Self::BookIssueIssue),
+            "Library.BookIssue.Read" => Some(Self::BookIssueRead),
+            "Library.BookIssue.Return" => Some(Self::BookIssueReturn),
+            "Library.BookIssue.Renew" => Some(Self::BookIssueRenew),
+            "Library.BookIssue.MarkLost" => Some(Self::BookIssueMarkLost),
+            "Library.BookIssue.CalculateFine" => Some(Self::BookIssueCalculateFine),
+            "Library.BookIssue.WaiveFine" => Some(Self::BookIssueWaiveFine),
             "Communication.Message.Create" => Some(Self::CommunicationMessageCreate),
             "Communication.Message.Read" => Some(Self::CommunicationMessageRead),
             "Communication.Message.Update" => Some(Self::CommunicationMessageUpdate),
@@ -2567,6 +3160,66 @@ impl Capability {
             "Facilities.Room.Read" => Some(Self::FacilitiesRoomRead),
             "Facilities.Room.Update" => Some(Self::FacilitiesRoomUpdate),
             "Facilities.Room.Delete" => Some(Self::FacilitiesRoomDelete),
+            "Facilities.Room.AssignStudent" => Some(Self::FacilitiesRoomAssignStudent),
+            "Facilities.Room.UnassignStudent" => Some(Self::FacilitiesRoomUnassignStudent),
+            "Facilities.Vehicle.Create" => Some(Self::FacilitiesVehicleCreate),
+            "Facilities.Vehicle.Read" => Some(Self::FacilitiesVehicleRead),
+            "Facilities.Vehicle.Update" => Some(Self::FacilitiesVehicleUpdate),
+            "Facilities.Vehicle.Delete" => Some(Self::FacilitiesVehicleDelete),
+            "Facilities.Vehicle.AssignDriver" => Some(Self::FacilitiesVehicleAssignDriver),
+            "Facilities.Vehicle.Deactivate" => Some(Self::FacilitiesVehicleDeactivate),
+            "Facilities.Route.Create" => Some(Self::FacilitiesRouteCreate),
+            "Facilities.Route.Read" => Some(Self::FacilitiesRouteRead),
+            "Facilities.Route.Update" => Some(Self::FacilitiesRouteUpdate),
+            "Facilities.Route.Delete" => Some(Self::FacilitiesRouteDelete),
+            "Facilities.Route.AddStop" => Some(Self::FacilitiesRouteAddStop),
+            "Facilities.Route.UpdateStop" => Some(Self::FacilitiesRouteUpdateStop),
+            "Facilities.Route.RemoveStop" => Some(Self::FacilitiesRouteRemoveStop),
+            "Facilities.Transport.AssignVehicle" => Some(Self::FacilitiesTransportAssignVehicle),
+            "Facilities.Transport.UnassignVehicle" => {
+                Some(Self::FacilitiesTransportUnassignVehicle)
+            }
+            "Facilities.Transport.AssignStudent" => Some(Self::FacilitiesTransportAssignStudent),
+            "Facilities.Transport.UnassignStudent" => {
+                Some(Self::FacilitiesTransportUnassignStudent)
+            }
+            "Facilities.Transport.Read" => Some(Self::FacilitiesTransportRead),
+            "Facilities.Dormitory.Create" => Some(Self::FacilitiesDormitoryCreate),
+            "Facilities.Dormitory.Read" => Some(Self::FacilitiesDormitoryRead),
+            "Facilities.Dormitory.Update" => Some(Self::FacilitiesDormitoryUpdate),
+            "Facilities.Dormitory.Delete" => Some(Self::FacilitiesDormitoryDelete),
+            "Facilities.RoomType.Create" => Some(Self::FacilitiesRoomTypeCreate),
+            "Facilities.RoomType.Read" => Some(Self::FacilitiesRoomTypeRead),
+            "Facilities.RoomType.Update" => Some(Self::FacilitiesRoomTypeUpdate),
+            "Facilities.RoomType.Delete" => Some(Self::FacilitiesRoomTypeDelete),
+            "Facilities.ItemCategory.Create" => Some(Self::FacilitiesItemCategoryCreate),
+            "Facilities.ItemCategory.Read" => Some(Self::FacilitiesItemCategoryRead),
+            "Facilities.ItemCategory.Update" => Some(Self::FacilitiesItemCategoryUpdate),
+            "Facilities.ItemCategory.Delete" => Some(Self::FacilitiesItemCategoryDelete),
+            "Facilities.Item.Create" => Some(Self::FacilitiesItemCreate),
+            "Facilities.Item.Read" => Some(Self::FacilitiesItemRead),
+            "Facilities.Item.Update" => Some(Self::FacilitiesItemUpdate),
+            "Facilities.Item.Delete" => Some(Self::FacilitiesItemDelete),
+            "Facilities.ItemStore.Create" => Some(Self::FacilitiesItemStoreCreate),
+            "Facilities.ItemStore.Read" => Some(Self::FacilitiesItemStoreRead),
+            "Facilities.ItemStore.Update" => Some(Self::FacilitiesItemStoreUpdate),
+            "Facilities.ItemStore.Delete" => Some(Self::FacilitiesItemStoreDelete),
+            "Facilities.Inventory.Receive" => Some(Self::FacilitiesInventoryReceive),
+            "Facilities.Inventory.UpdateReceive" => Some(Self::FacilitiesInventoryUpdateReceive),
+            "Facilities.Inventory.CancelReceive" => Some(Self::FacilitiesInventoryCancelReceive),
+            "Facilities.Inventory.Issue" => Some(Self::FacilitiesInventoryIssue),
+            "Facilities.Inventory.UpdateIssue" => Some(Self::FacilitiesInventoryUpdateIssue),
+            "Facilities.Inventory.ReturnIssued" => Some(Self::FacilitiesInventoryReturnIssued),
+            "Facilities.Inventory.Sell" => Some(Self::FacilitiesInventorySell),
+            "Facilities.Inventory.UpdateSell" => Some(Self::FacilitiesInventoryUpdateSell),
+            "Facilities.Inventory.CancelSell" => Some(Self::FacilitiesInventoryCancelSell),
+            "Facilities.Inventory.RefundSell" => Some(Self::FacilitiesInventoryRefundSell),
+            "Facilities.Inventory.Read" => Some(Self::FacilitiesInventoryRead),
+            "Facilities.Supplier.Create" => Some(Self::FacilitiesSupplierCreate),
+            "Facilities.Supplier.Read" => Some(Self::FacilitiesSupplierRead),
+            "Facilities.Supplier.Update" => Some(Self::FacilitiesSupplierUpdate),
+            "Facilities.Supplier.Delete" => Some(Self::FacilitiesSupplierDelete),
+            "Facilities.Supplier.Deactivate" => Some(Self::FacilitiesSupplierDeactivate),
             "Events.Calendar.Create" => Some(Self::EventsCalendarCreate),
             "Events.Calendar.Read" => Some(Self::EventsCalendarRead),
             "Events.Calendar.Update" => Some(Self::EventsCalendarUpdate),
@@ -3043,6 +3696,28 @@ mod tests {
         assert_eq!(
             count, 114,
             "expected 114 Finance.* capabilities (4 legacy placeholders + 110 Phase 7; got {count})"
+        );
+    }
+
+    #[test]
+    fn library_capabilities_round_trip_and_resolve_to_library_domain() {
+        let mut count = 0u32;
+        for c in Capability::all() {
+            let s = c.as_str();
+            if s.starts_with("Library.") {
+                let parsed = Capability::from_str(s).unwrap();
+                assert_eq!(parsed, *c, "round-trip failed for {s}");
+                assert_eq!(
+                    c.domain(),
+                    CapabilityDomain::Library,
+                    "domain mismatch for {s}"
+                );
+                count += 1;
+            }
+        }
+        assert_eq!(
+            count, 26,
+            "expected 26 Library.* capabilities (4 Phase 2 placeholders deduplicated during implementation; got {count})"
         );
     }
 

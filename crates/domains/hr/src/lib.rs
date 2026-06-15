@@ -8,6 +8,7 @@
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
+#![allow(unused_imports)]
 
 /// Package name constant. Re-exported so consumers can assert they
 /// are using the right crate version at compile time.

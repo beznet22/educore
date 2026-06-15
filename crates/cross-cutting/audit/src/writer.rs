@@ -232,6 +232,16 @@ pub enum AuditTarget {
     // ---- Library domain ------------------------------------------------
     /// A library book.
     Book(Uuid),
+    /// A library book category.
+    BookCategory(Uuid),
+    /// A library member (a registered borrower).
+    LibraryMember(Uuid),
+    /// A book issue (an instance of a member borrowing a book).
+    BookIssue(Uuid),
+    /// A book return (a historical log of a return action).
+    BookReturn(Uuid),
+    /// A library fine (a calculated or waived late-fine).
+    Fine(Uuid),
     // ---- Communication domain ------------------------------------------
     /// A notice / announcement.
     Notice(Uuid),
@@ -321,6 +331,11 @@ impl AuditTarget {
             Self::Transaction(_) => "transaction",
             Self::Item(_) => "item",
             Self::Book(_) => "book",
+            Self::BookCategory(_) => "book_category",
+            Self::LibraryMember(_) => "library_member",
+            Self::BookIssue(_) => "book_issue",
+            Self::BookReturn(_) => "book_return",
+            Self::Fine(_) => "fine",
             Self::Notice(_) => "notice",
             Self::PostalDispatch(_) => "postal_dispatch",
             Self::Page(_) => "page",
@@ -392,6 +407,11 @@ impl AuditTarget {
             | Self::Transaction(id)
             | Self::Item(id)
             | Self::Book(id)
+            | Self::BookCategory(id)
+            | Self::LibraryMember(id)
+            | Self::BookIssue(id)
+            | Self::BookReturn(id)
+            | Self::Fine(id)
             | Self::Notice(id)
             | Self::PostalDispatch(id)
             | Self::Page(id)
@@ -680,6 +700,11 @@ mod tests {
             AuditTarget::Transaction(id),
             AuditTarget::Item(id),
             AuditTarget::Book(id),
+            AuditTarget::BookCategory(id),
+            AuditTarget::LibraryMember(id),
+            AuditTarget::BookIssue(id),
+            AuditTarget::BookReturn(id),
+            AuditTarget::Fine(id),
             AuditTarget::Notice(id),
             AuditTarget::PostalDispatch(id),
             AuditTarget::Page(id),

@@ -288,8 +288,8 @@ fn default_role_catalogs_cover_distinct_responsibility_zones() {
     // Cross-domain separation: only accountant touches finance,
     // only librarian touches library writes.
     assert!(!teacher.contains(&Capability::FinanceInvoiceCreate));
-    assert!(!student.contains(&Capability::LibraryBookCreate));
-    assert!(!accountant.contains(&Capability::LibraryBookCreate));
+    assert!(!student.contains(&Capability::BookAdd));
+    assert!(!accountant.contains(&Capability::BookAdd));
     assert!(!librarian.contains(&Capability::FinanceInvoiceCreate));
 
     // The driver has no create/update on the platform user.

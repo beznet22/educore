@@ -5,6 +5,7 @@
 //! is for consumer code that prefers the domain-scoped name.
 
 #![allow(missing_docs)]
+#![allow(unused_imports)]
 
 pub use educore_core::error::DomainError as FinanceError;
 pub use educore_core::error::Result;

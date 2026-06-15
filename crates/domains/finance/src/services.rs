@@ -19,6 +19,7 @@
 //!   impl (moves to `educore-payment` in Phase 15 per the plan)
 
 #![allow(missing_docs)]
+#![allow(unused_imports)]
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};

@@ -1463,12 +1463,25 @@ dependencies = [
 name = "educore-facilities"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "chrono",
  "educore-academic",
+ "educore-audit",
  "educore-core",
+ "educore-event-bus",
  "educore-events",
+ "educore-hr",
  "educore-platform",
  "educore-rbac",
- "educore-settings",
+ "educore-storage",
+ "proptest",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -1486,24 +1499,45 @@ dependencies = [
 name = "educore-finance"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "chrono",
  "educore-academic",
+ "educore-audit",
  "educore-core",
+ "educore-event-bus",
  "educore-events",
+ "educore-hr",
  "educore-platform",
  "educore-rbac",
- "educore-settings",
+ "educore-storage",
+ "proptest",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
 name = "educore-hr"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "chrono",
  "educore-academic",
+ "educore-audit",
  "educore-core",
+ "educore-event-bus",
  "educore-events",
  "educore-platform",
  "educore-rbac",
- "educore-settings",
+ "educore-storage",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -1522,12 +1556,25 @@ dependencies = [
 name = "educore-library"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "chrono",
  "educore-academic",
+ "educore-audit",
  "educore-core",
+ "educore-event-bus",
  "educore-events",
+ "educore-hr",
  "educore-platform",
  "educore-rbac",
- "educore-settings",
+ "educore-storage",
+ "proptest",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -1673,6 +1720,10 @@ dependencies = [
  "educore-core",
  "educore-event-bus",
  "educore-events",
+ "educore-facilities",
+ "educore-finance",
+ "educore-hr",
+ "educore-library",
  "educore-platform",
  "educore-rbac",
  "educore-storage",
@@ -1680,6 +1731,7 @@ dependencies = [
  "educore-storage-postgres",
  "educore-storage-sqlite",
  "futures",
+ "rust_decimal",
  "serde",
  "serde_json",
  "sqlx",
@@ -4221,6 +4273,16 @@ dependencies = [
  "serde",
  "serde_json",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "rust_decimal_macros"
+version = "1.40.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74a5a6f027e892c7a035c6fddb50435a1fbf5a734ffc0c2a9fed4d0221440519"
+dependencies = [
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]

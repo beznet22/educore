@@ -23,9 +23,12 @@ educore-assessment = { workspace = true }
 educore-attendance = { workspace = true }
 educore-hr = { workspace = true }
 educore-finance = { workspace = true }
+educore-facilities = { workspace = true }
+educore-library = { workspace = true }
 async-trait = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
+rust_decimal = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

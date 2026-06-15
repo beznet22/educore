@@ -10,6 +10,7 @@
 //! `docs/specs/finance/` for behavioral details.
 
 #![forbid(unsafe_code)]
+#![allow(unused_imports)]
 #![deny(missing_docs)]
 
 /// Package name constant. Re-exported so consumers can assert they

@@ -14,6 +14,7 @@
 //! `ExpenseRecorded` (the expense headline).
 
 #![allow(missing_docs)]
+#![allow(unused_imports)]
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
