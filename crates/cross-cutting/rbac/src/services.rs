@@ -651,6 +651,17 @@ impl DefaultRoleCatalog {
             Capability::DocumentsFolderRead,
             Capability::DocumentsFolderUpdate,
             Capability::DocumentsFolderDelete,
+            Capability::FormDownloadUpload,
+            Capability::FormDownloadUpdate,
+            Capability::FormDownloadDelete,
+            Capability::FormDownloadRead,
+            Capability::PostalDispatchCreate,
+            Capability::PostalDispatchUpdate,
+            Capability::PostalDispatchDelete,
+            Capability::PostalReceiveCreate,
+            Capability::PostalReceiveUpdate,
+            Capability::PostalReceiveDelete,
+            Capability::PostalRead,
             Capability::CmsPageCreate,
             Capability::CmsPageRead,
             Capability::CmsPageUpdate,
@@ -745,8 +756,9 @@ impl DefaultRoleCatalog {
         s
     }
 
-    /// Receptionist: front-office communication + limited platform
-    /// access.
+    /// Receptionist: front-office communication + Documents
+    /// front-office (form downloads, postal dispatch/receive, read)
+    /// + limited platform access.
     #[must_use]
     pub fn receptionist() -> BTreeSet<Capability> {
         let mut s: BTreeSet<Capability> = BTreeSet::new();
@@ -757,6 +769,17 @@ impl DefaultRoleCatalog {
             Capability::CommunicationMessageRead,
             Capability::CommunicationMessageUpdate,
             Capability::EventsCalendarRead,
+            Capability::FormDownloadUpload,
+            Capability::FormDownloadUpdate,
+            Capability::FormDownloadDelete,
+            Capability::FormDownloadRead,
+            Capability::PostalDispatchCreate,
+            Capability::PostalDispatchUpdate,
+            Capability::PostalDispatchDelete,
+            Capability::PostalReceiveCreate,
+            Capability::PostalReceiveUpdate,
+            Capability::PostalReceiveDelete,
+            Capability::PostalRead,
         ]);
         s
     }

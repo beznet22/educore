@@ -702,6 +702,36 @@ pub enum Capability {
     DocumentsFolderUpdate,
     /// Delete a documents folder.
     DocumentsFolderDelete,
+    // -- Documents domain (Phase 11 net-new) -----------------------------
+    // The 4 Phase 2 `DocumentsFolder*` placeholders above were
+    // retained during the Phase 11 implementation (per
+    // `docs/handoff/PHASE-11-HANDOFF.md`); they keep the same wire
+    // forms (`Documents.Folder.*`) and are part of the
+    // `DefaultRoleCatalog::school_admin` set. The 11 net-new variants
+    // below extend the Documents catalog with FormDownload and
+    // Postal* aggregates.
+    /// Upload a form download.
+    FormDownloadUpload,
+    /// Update a form download.
+    FormDownloadUpdate,
+    /// Delete (soft-delete) a form download.
+    FormDownloadDelete,
+    /// Read a form download (staff scope).
+    FormDownloadRead,
+    /// Create a postal dispatch.
+    PostalDispatchCreate,
+    /// Update a postal dispatch (reference_no is immutable).
+    PostalDispatchUpdate,
+    /// Delete (soft-delete) a postal dispatch.
+    PostalDispatchDelete,
+    /// Create a postal receive.
+    PostalReceiveCreate,
+    /// Update a postal receive (reference_no is immutable).
+    PostalReceiveUpdate,
+    /// Delete (soft-delete) a postal receive.
+    PostalReceiveDelete,
+    /// Read postal dispatch/receive (used by TrackPostal).
+    PostalRead,
     /// Create a CMS page.
     CmsPageCreate,
     /// Read a CMS page.
@@ -1180,7 +1210,18 @@ impl Capability {
             Self::DocumentsFolderCreate
             | Self::DocumentsFolderRead
             | Self::DocumentsFolderUpdate
-            | Self::DocumentsFolderDelete => CapabilityDomain::Documents,
+            | Self::DocumentsFolderDelete
+            | Self::FormDownloadUpload
+            | Self::FormDownloadUpdate
+            | Self::FormDownloadDelete
+            | Self::FormDownloadRead
+            | Self::PostalDispatchCreate
+            | Self::PostalDispatchUpdate
+            | Self::PostalDispatchDelete
+            | Self::PostalReceiveCreate
+            | Self::PostalReceiveUpdate
+            | Self::PostalReceiveDelete
+            | Self::PostalRead => CapabilityDomain::Documents,
             Self::CmsPageCreate | Self::CmsPageRead | Self::CmsPageUpdate | Self::CmsPageDelete => {
                 CapabilityDomain::Cms
             }
@@ -1573,6 +1614,17 @@ impl Capability {
             | Self::DocumentsFolderRead
             | Self::DocumentsFolderUpdate
             | Self::DocumentsFolderDelete => "Folder",
+            Self::FormDownloadUpload
+            | Self::FormDownloadUpdate
+            | Self::FormDownloadDelete
+            | Self::FormDownloadRead => "FormDownload",
+            Self::PostalDispatchCreate
+            | Self::PostalDispatchUpdate
+            | Self::PostalDispatchDelete => "PostalDispatch",
+            Self::PostalReceiveCreate
+            | Self::PostalReceiveUpdate
+            | Self::PostalReceiveDelete => "PostalReceive",
+            Self::PostalRead => "Postal",
             Self::CmsPageCreate | Self::CmsPageRead | Self::CmsPageUpdate | Self::CmsPageDelete => {
                 "Page"
             }
@@ -1673,6 +1725,8 @@ impl Capability {
             | Self::HrStaffRegistrationFieldCreate
             | Self::CommunicationMessageCreate
             | Self::DocumentsFolderCreate
+            | Self::PostalDispatchCreate
+            | Self::PostalReceiveCreate
             | Self::CmsPageCreate
             | Self::FacilitiesRoomCreate
             | Self::EventsCalendarCreate
@@ -1730,6 +1784,8 @@ impl Capability {
             | Self::BookIssueRead
             | Self::CommunicationMessageRead
             | Self::DocumentsFolderRead
+            | Self::FormDownloadRead
+            | Self::PostalRead
             | Self::CmsPageRead
             | Self::FacilitiesRoomRead
             | Self::EventsCalendarRead
@@ -1772,6 +1828,9 @@ impl Capability {
             | Self::HrStaffAssignClassTeacherUpdate
             | Self::CommunicationMessageUpdate
             | Self::DocumentsFolderUpdate
+            | Self::FormDownloadUpdate
+            | Self::PostalDispatchUpdate
+            | Self::PostalReceiveUpdate
             | Self::CmsPageUpdate
             | Self::FacilitiesRoomUpdate
             | Self::EventsCalendarUpdate
@@ -1808,6 +1867,9 @@ impl Capability {
             | Self::HrStaffAssignClassTeacherDelete
             | Self::CommunicationMessageDelete
             | Self::DocumentsFolderDelete
+            | Self::FormDownloadDelete
+            | Self::PostalDispatchDelete
+            | Self::PostalReceiveDelete
             | Self::CmsPageDelete
             | Self::FacilitiesRoomDelete
             | Self::EventsCalendarDelete
@@ -1844,6 +1906,7 @@ impl Capability {
             Self::HrStaffImportBulkPromote => "Promote",
             Self::HrStaffImportBulkReject => "Reject",
             Self::HrStaffDocumentUpload => "Upload",
+            Self::FormDownloadUpload => "Upload",
             Self::HrStaffDocumentDownload => "Download",
             Self::HrLeaveRequest => "Request",
             Self::HrLeaveApprove => "Approve",
@@ -2343,6 +2406,17 @@ impl Capability {
             Self::DocumentsFolderRead => "Documents.Folder.Read",
             Self::DocumentsFolderUpdate => "Documents.Folder.Update",
             Self::DocumentsFolderDelete => "Documents.Folder.Delete",
+            Self::FormDownloadUpload => "Documents.FormDownload.Upload",
+            Self::FormDownloadUpdate => "Documents.FormDownload.Update",
+            Self::FormDownloadDelete => "Documents.FormDownload.Delete",
+            Self::FormDownloadRead => "Documents.FormDownload.Read",
+            Self::PostalDispatchCreate => "Documents.PostalDispatch.Create",
+            Self::PostalDispatchUpdate => "Documents.PostalDispatch.Update",
+            Self::PostalDispatchDelete => "Documents.PostalDispatch.Delete",
+            Self::PostalReceiveCreate => "Documents.PostalReceive.Create",
+            Self::PostalReceiveUpdate => "Documents.PostalReceive.Update",
+            Self::PostalReceiveDelete => "Documents.PostalReceive.Delete",
+            Self::PostalRead => "Documents.Postal.Read",
             Self::CmsPageCreate => "Cms.Page.Create",
             Self::CmsPageRead => "Cms.Page.Read",
             Self::CmsPageUpdate => "Cms.Page.Update",
@@ -2744,6 +2818,17 @@ impl Capability {
             Self::DocumentsFolderRead,
             Self::DocumentsFolderUpdate,
             Self::DocumentsFolderDelete,
+            Self::FormDownloadUpload,
+            Self::FormDownloadUpdate,
+            Self::FormDownloadDelete,
+            Self::FormDownloadRead,
+            Self::PostalDispatchCreate,
+            Self::PostalDispatchUpdate,
+            Self::PostalDispatchDelete,
+            Self::PostalReceiveCreate,
+            Self::PostalReceiveUpdate,
+            Self::PostalReceiveDelete,
+            Self::PostalRead,
             Self::CmsPageCreate,
             Self::CmsPageRead,
             Self::CmsPageUpdate,
@@ -3152,6 +3237,17 @@ impl Capability {
             "Documents.Folder.Read" => Some(Self::DocumentsFolderRead),
             "Documents.Folder.Update" => Some(Self::DocumentsFolderUpdate),
             "Documents.Folder.Delete" => Some(Self::DocumentsFolderDelete),
+            "Documents.FormDownload.Upload" => Some(Self::FormDownloadUpload),
+            "Documents.FormDownload.Update" => Some(Self::FormDownloadUpdate),
+            "Documents.FormDownload.Delete" => Some(Self::FormDownloadDelete),
+            "Documents.FormDownload.Read" => Some(Self::FormDownloadRead),
+            "Documents.PostalDispatch.Create" => Some(Self::PostalDispatchCreate),
+            "Documents.PostalDispatch.Update" => Some(Self::PostalDispatchUpdate),
+            "Documents.PostalDispatch.Delete" => Some(Self::PostalDispatchDelete),
+            "Documents.PostalReceive.Create" => Some(Self::PostalReceiveCreate),
+            "Documents.PostalReceive.Update" => Some(Self::PostalReceiveUpdate),
+            "Documents.PostalReceive.Delete" => Some(Self::PostalReceiveDelete),
+            "Documents.Postal.Read" => Some(Self::PostalRead),
             "Cms.Page.Create" => Some(Self::CmsPageCreate),
             "Cms.Page.Read" => Some(Self::CmsPageRead),
             "Cms.Page.Update" => Some(Self::CmsPageUpdate),
@@ -3718,6 +3814,28 @@ mod tests {
         assert_eq!(
             count, 26,
             "expected 26 Library.* capabilities (4 Phase 2 placeholders deduplicated during implementation; got {count})"
+        );
+    }
+
+    #[test]
+    fn documents_capabilities_round_trip_and_resolve_to_documents_domain() {
+        let mut count = 0u32;
+        for c in Capability::all() {
+            let s = c.as_str();
+            if s.starts_with("Documents.") {
+                let parsed = Capability::from_str(s).unwrap();
+                assert_eq!(parsed, *c, "round-trip failed for {s}");
+                assert_eq!(
+                    c.domain(),
+                    CapabilityDomain::Documents,
+                    "domain mismatch for {s}"
+                );
+                count += 1;
+            }
+        }
+        assert_eq!(
+            count, 15,
+            "expected 15 Documents.* capabilities (4 Phase 2 placeholders + 11 Phase 11 net-new; got {count})"
         );
     }
 
