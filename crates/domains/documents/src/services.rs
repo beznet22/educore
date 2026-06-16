@@ -27,6 +27,31 @@ use crate::events::{FormDeleted, FormUpdated, FormUploaded};
 use crate::repository::FormDownloadRepository;
 use crate::value_objects::{FileReference, Url};
 
+/// Authorize a single capability. Returns
+/// [`DocumentsError::Forbidden`] when the actor does not hold
+/// the capability. The error message includes the wire-form
+/// capability name so audit rows are self-describing.
+///
+/// Note: `CapabilityCheck::has` returns
+/// `Result<bool, DomainError>` — the `Ok(false)` case is NOT
+/// an error and must be checked explicitly. This helper
+/// centralises the check so every service factory enforces
+/// the capability gate identically.
+async fn require_capability(
+    cap: &dyn CapabilityCheck,
+    tenant: &educore_core::tenant::TenantContext,
+    capability: Capability,
+) -> Result<(), DocumentsError> {
+    if cap.has(tenant, capability).await? {
+        Ok(())
+    } else {
+        Err(DocumentsError::Forbidden(format!(
+            "missing capability {}",
+            capability.as_str()
+        )))
+    }
+}
+
 /// Pure helpers (no I/O) for the `FormDownload` aggregate.
 pub struct FormService;
 
@@ -119,7 +144,7 @@ where
     R: FormDownloadRepository + 'static,
     B: EventBus + 'static,
 {
-    cap.has(&cmd.tenant, Capability::FormDownloadUpload).await?;
+    require_capability(cap, &cmd.tenant, Capability::FormDownloadUpload).await?;
     let tenant = cmd.tenant.clone();
     let new: NewFormDownload = cmd.into_new_form_download();
     let form = FormDownload::new(new)?;
@@ -161,7 +186,7 @@ where
     R: FormDownloadRepository + 'static,
     B: EventBus + 'static,
 {
-    cap.has(&cmd.tenant, Capability::FormDownloadUpdate).await?;
+    require_capability(cap, &cmd.tenant, Capability::FormDownloadUpdate).await?;
     let mut form = repo
         .get(cmd.form_id)
         .await?
@@ -231,7 +256,7 @@ where
     R: FormDownloadRepository + 'static,
     B: EventBus + 'static,
 {
-    cap.has(&cmd.tenant, Capability::FormDownloadDelete).await?;
+    require_capability(cap, &cmd.tenant, Capability::FormDownloadDelete).await?;
     let mut form = repo
         .get(cmd.form_id)
         .await?
@@ -464,7 +489,7 @@ where
     R: PostalDispatchRepository + 'static,
     B: EventBus + 'static,
 {
-    cap.has(&cmd.tenant, Capability::PostalDispatchCreate).await?;
+    require_capability(cap, &cmd.tenant, Capability::PostalDispatchCreate).await?;
     let tenant = cmd.tenant.clone();
     let id = PostalDispatchId::new(tenant.school_id, Uuid::now_v7());
     let new: NewPostalDispatch = cmd.into_new_postal_dispatch(id, academic_id);
@@ -508,7 +533,7 @@ where
     R: PostalDispatchRepository + 'static,
     B: EventBus + 'static,
 {
-    cap.has(&cmd.tenant, Capability::PostalDispatchUpdate).await?;
+    require_capability(cap, &cmd.tenant, Capability::PostalDispatchUpdate).await?;
     let mut dispatch = repo
         .get(cmd.postal_dispatch_id)
         .await?
@@ -581,7 +606,7 @@ where
     R: PostalDispatchRepository + 'static,
     B: EventBus + 'static,
 {
-    cap.has(&cmd.tenant, Capability::PostalDispatchDelete).await?;
+    require_capability(cap, &cmd.tenant, Capability::PostalDispatchDelete).await?;
     let mut dispatch = repo
         .get(cmd.postal_dispatch_id)
         .await?
@@ -677,7 +702,7 @@ where
     R: PostalReceiveRepository + 'static,
     B: EventBus + 'static,
 {
-    cap.has(&cmd.tenant, Capability::PostalReceiveCreate).await?;
+    require_capability(cap, &cmd.tenant, Capability::PostalReceiveCreate).await?;
     let tenant = cmd.tenant.clone();
     let id = PostalReceiveId::new(tenant.school_id, Uuid::now_v7());
     let new: NewPostalReceive = cmd.into_new_postal_receive(id, academic_id);
@@ -720,7 +745,7 @@ where
     R: PostalReceiveRepository + 'static,
     B: EventBus + 'static,
 {
-    cap.has(&cmd.tenant, Capability::PostalReceiveUpdate).await?;
+    require_capability(cap, &cmd.tenant, Capability::PostalReceiveUpdate).await?;
     let mut receive = repo
         .get(cmd.postal_receive_id)
         .await?
@@ -792,7 +817,7 @@ where
     R: PostalReceiveRepository + 'static,
     B: EventBus + 'static,
 {
-    cap.has(&cmd.tenant, Capability::PostalReceiveDelete).await?;
+    require_capability(cap, &cmd.tenant, Capability::PostalReceiveDelete).await?;
     let mut receive = repo
         .get(cmd.postal_receive_id)
         .await?
@@ -844,7 +869,7 @@ where
     DRepo: PostalDispatchRepository + 'static,
     RRepo: PostalReceiveRepository + 'static,
 {
-    cap.has(&cmd.tenant, Capability::PostalRead).await?;
+    require_capability(cap, &cmd.tenant, Capability::PostalRead).await?;
     let _ = dispatch_repo;
     let receives = receive_repo
         .find_by_reference(cmd.tenant.school_id, &cmd.reference_no)
@@ -1269,5 +1294,600 @@ mod tests {
                 &[candidate.clone(), other.clone()],
             ));
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 11 / 4-tests — service-factory scenario tests.
+    //
+    // The service factories (`upload_form_service`,
+    // `dispatch_postal_service`, `receive_postal_service`,
+    // `delete_form_service`, `track_postal_service`) are exercised
+    // with in-memory mocks. The mocks live in the test module
+    // (not in the integration test crate) so the service layer's
+    // own tests cover the headline path without taking a
+    // dependency on the integration test crate.
+    // -------------------------------------------------------------------------
+
+    use std::sync::Mutex as StdMutex;
+
+    use async_trait::async_trait;
+    use educore_audit::prelude::{AuditWriter, RetentionPolicy};
+    use educore_event_bus::InProcessEventBus;
+    use educore_events::event_bus::EventBus;
+    use educore_rbac::services::InMemoryCapabilityCheck;
+    use educore_storage::audit::AuditLogEntry;
+
+    /// In-memory `AuditLog` for the service-factory unit tests.
+    #[derive(Debug, Default)]
+    struct FactoryTestAuditLog {
+        entries: StdMutex<Vec<AuditLogEntry>>,
+    }
+
+    #[async_trait]
+    impl educore_storage::audit::AuditLog for FactoryTestAuditLog {
+        async fn append(&self, entry: AuditLogEntry) -> educore_core::error::Result<()> {
+            self.entries.lock().unwrap().push(entry);
+            Ok(())
+        }
+        async fn read_for_target(
+            &self,
+            _school_id: educore_core::ids::SchoolId,
+            _target_id: uuid::Uuid,
+            _limit: u32,
+        ) -> educore_core::error::Result<Vec<AuditLogEntry>> {
+            Ok(self.entries.lock().unwrap().clone())
+        }
+    }
+
+    /// In-memory `FormDownloadRepository` for the service-factory
+    /// unit tests.
+    #[derive(Debug, Default)]
+    struct FactoryTestFormRepo {
+        rows: StdMutex<Vec<crate::aggregate::FormDownload>>,
+    }
+
+    #[async_trait]
+    impl crate::repository::FormDownloadRepository for FactoryTestFormRepo {
+        async fn get(
+            &self,
+            id: crate::value_objects::FormDownloadId,
+        ) -> educore_core::error::Result<Option<crate::aggregate::FormDownload>> {
+            Ok(self.rows.lock().unwrap().iter().find(|f| f.id == id).cloned())
+        }
+        async fn list(
+            &self,
+            _school: educore_core::ids::SchoolId,
+            _q: crate::query::FormDownloadQuery,
+        ) -> educore_core::error::Result<Vec<crate::aggregate::FormDownload>> {
+            Ok(self.rows.lock().unwrap().clone())
+        }
+        async fn list_public(
+            &self,
+            _school: educore_core::ids::SchoolId,
+        ) -> educore_core::error::Result<Vec<crate::aggregate::FormDownload>> {
+            Ok(self.rows.lock().unwrap().clone())
+        }
+        async fn insert(
+            &self,
+            form: &crate::aggregate::FormDownload,
+        ) -> educore_core::error::Result<()> {
+            self.rows.lock().unwrap().push(form.clone());
+            Ok(())
+        }
+        async fn update(
+            &self,
+            form: &crate::aggregate::FormDownload,
+        ) -> educore_core::error::Result<()> {
+            let mut rows = self.rows.lock().unwrap();
+            if let Some(e) = rows.iter_mut().find(|f| f.id == form.id) {
+                *e = form.clone();
+                Ok(())
+            } else {
+                Err(educore_core::error::DomainError::NotFound(format!(
+                    "form {} not found",
+                    form.id.as_uuid()
+                )))
+            }
+        }
+        async fn by_publish_date(
+            &self,
+            _school: educore_core::ids::SchoolId,
+            _from: chrono::NaiveDate,
+            _to: chrono::NaiveDate,
+        ) -> educore_core::error::Result<Vec<crate::aggregate::FormDownload>> {
+            Ok(self.rows.lock().unwrap().clone())
+        }
+        async fn count(
+            &self,
+            _school: educore_core::ids::SchoolId,
+            _q: crate::query::FormDownloadQuery,
+        ) -> educore_core::error::Result<u64> {
+            Ok(self.rows.lock().unwrap().len() as u64)
+        }
+        async fn page(
+            &self,
+            _school: educore_core::ids::SchoolId,
+            _q: crate::query::FormDownloadQuery,
+            _offset: u32,
+            _limit: u32,
+        ) -> educore_core::error::Result<Vec<crate::aggregate::FormDownload>> {
+            Ok(self.rows.lock().unwrap().clone())
+        }
+    }
+
+    /// In-memory `PostalDispatchRepository` for the service-factory
+    /// unit tests (enforces the `(school, academic_id,
+    /// reference_no)` uniqueness invariant).
+    #[derive(Debug, Default)]
+    struct FactoryTestDispatchRepo {
+        rows: StdMutex<Vec<crate::aggregate::PostalDispatch>>,
+    }
+
+    #[async_trait]
+    impl crate::repository::PostalDispatchRepository for FactoryTestDispatchRepo {
+        async fn get(
+            &self,
+            id: crate::value_objects::PostalDispatchId,
+        ) -> educore_core::error::Result<Option<crate::aggregate::PostalDispatch>> {
+            Ok(self.rows.lock().unwrap().iter().find(|d| d.id == id).cloned())
+        }
+        async fn list(
+            &self,
+            _school: educore_core::ids::SchoolId,
+            _q: crate::query::PostalDispatchQuery,
+        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalDispatch>> {
+            Ok(self.rows.lock().unwrap().clone())
+        }
+        async fn insert(
+            &self,
+            dispatch: &crate::aggregate::PostalDispatch,
+        ) -> educore_core::error::Result<()> {
+            let rows = self.rows.lock().unwrap();
+            if let Some(r) = &dispatch.reference_no {
+                if rows
+                    .iter()
+                    .any(|d| d.academic_id == dispatch.academic_id && d.reference_no.as_ref() == Some(r))
+                {
+                    return Err(educore_core::error::DomainError::Conflict(format!(
+                        "duplicate reference_no: {}",
+                        r.as_str()
+                    )));
+                }
+            }
+            drop(rows);
+            self.rows.lock().unwrap().push(dispatch.clone());
+            Ok(())
+        }
+        async fn update(
+            &self,
+            dispatch: &crate::aggregate::PostalDispatch,
+        ) -> educore_core::error::Result<()> {
+            let mut rows = self.rows.lock().unwrap();
+            if let Some(e) = rows.iter_mut().find(|d| d.id == dispatch.id) {
+                *e = dispatch.clone();
+                Ok(())
+            } else {
+                Err(educore_core::error::DomainError::NotFound(format!(
+                    "dispatch {} not found",
+                    dispatch.id.as_uuid()
+                )))
+            }
+        }
+        async fn find_by_reference(
+            &self,
+            _school: educore_core::ids::SchoolId,
+            reference: &crate::value_objects::PostalReferenceNo,
+        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalDispatch>> {
+            Ok(self
+                .rows
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|d| d.reference_no.as_ref() == Some(reference))
+                .cloned()
+                .collect())
+        }
+        async fn between(
+            &self,
+            _school: educore_core::ids::SchoolId,
+            _from: chrono::NaiveDate,
+            _to: chrono::NaiveDate,
+        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalDispatch>> {
+            Ok(self.rows.lock().unwrap().clone())
+        }
+        async fn by_academic_year(
+            &self,
+            _school: educore_core::ids::SchoolId,
+            _year: crate::aggregate::AcademicYearId,
+        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalDispatch>> {
+            Ok(self.rows.lock().unwrap().clone())
+        }
+    }
+
+    /// In-memory `PostalReceiveRepository` for the
+    /// service-factory unit tests.
+    #[derive(Debug, Default)]
+    struct FactoryTestReceiveRepo {
+        rows: StdMutex<Vec<crate::aggregate::PostalReceive>>,
+    }
+
+    #[async_trait]
+    impl crate::repository::PostalReceiveRepository for FactoryTestReceiveRepo {
+        async fn get(
+            &self,
+            id: crate::value_objects::PostalReceiveId,
+        ) -> educore_core::error::Result<Option<crate::aggregate::PostalReceive>> {
+            Ok(self.rows.lock().unwrap().iter().find(|r| r.id == id).cloned())
+        }
+        async fn list(
+            &self,
+            _school: educore_core::ids::SchoolId,
+            _q: crate::query::PostalReceiveQuery,
+        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalReceive>> {
+            Ok(self.rows.lock().unwrap().clone())
+        }
+        async fn insert(
+            &self,
+            receive: &crate::aggregate::PostalReceive,
+        ) -> educore_core::error::Result<()> {
+            let rows = self.rows.lock().unwrap();
+            if let Some(r) = &receive.reference_no {
+                if rows
+                    .iter()
+                    .any(|x| x.academic_id == receive.academic_id && x.reference_no.as_ref() == Some(r))
+                {
+                    return Err(educore_core::error::DomainError::Conflict(format!(
+                        "duplicate reference_no: {}",
+                        r.as_str()
+                    )));
+                }
+            }
+            drop(rows);
+            self.rows.lock().unwrap().push(receive.clone());
+            Ok(())
+        }
+        async fn update(
+            &self,
+            receive: &crate::aggregate::PostalReceive,
+        ) -> educore_core::error::Result<()> {
+            let mut rows = self.rows.lock().unwrap();
+            if let Some(e) = rows.iter_mut().find(|r| r.id == receive.id) {
+                *e = receive.clone();
+                Ok(())
+            } else {
+                Err(educore_core::error::DomainError::NotFound(format!(
+                    "receive {} not found",
+                    receive.id.as_uuid()
+                )))
+            }
+        }
+        async fn find_by_reference(
+            &self,
+            _school: educore_core::ids::SchoolId,
+            reference: &crate::value_objects::PostalReferenceNo,
+        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalReceive>> {
+            Ok(self
+                .rows
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|r| r.reference_no.as_ref() == Some(reference))
+                .cloned()
+                .collect())
+        }
+        async fn between(
+            &self,
+            _school: educore_core::ids::SchoolId,
+            _from: chrono::NaiveDate,
+            _to: chrono::NaiveDate,
+        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalReceive>> {
+            Ok(self.rows.lock().unwrap().clone())
+        }
+        async fn by_academic_year(
+            &self,
+            _school: educore_core::ids::SchoolId,
+            _year: crate::aggregate::AcademicYearId,
+        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalReceive>> {
+            Ok(self.rows.lock().unwrap().clone())
+        }
+    }
+
+    /// Construct an in-memory test environment for the
+    /// service-factory tests.
+    async fn factory_test_env() -> (
+        Arc<InProcessEventBus>,
+        Arc<AuditWriter>,
+        Arc<InMemoryCapabilityCheck>,
+        Arc<FactoryTestFormRepo>,
+        Arc<FactoryTestDispatchRepo>,
+        Arc<FactoryTestReceiveRepo>,
+        educore_core::ids::SchoolId,
+        educore_core::ids::UserId,
+        educore_core::ids::CorrelationId,
+    ) {
+        let bus: Arc<InProcessEventBus> = Arc::new(InProcessEventBus::new());
+        let bus_dyn: Arc<dyn EventBus> = bus.clone();
+        let g = educore_core::clock::SystemIdGen;
+        let school = g.next_school_id();
+        let actor = g.next_user_id();
+        let corr = g.next_correlation_id();
+        let clock = Arc::new(educore_core::clock::TestClock::at(
+            educore_core::value_objects::Timestamp::now(),
+        ));
+        let audit_log: Arc<dyn educore_storage::audit::AuditLog> =
+            Arc::new(FactoryTestAuditLog::default());
+        let audit = Arc::new(AuditWriter::new(
+            audit_log,
+            bus_dyn,
+            clock,
+            RetentionPolicy::default(),
+        ));
+        let cap = Arc::new(InMemoryCapabilityCheck::new());
+        let form_repo = Arc::new(FactoryTestFormRepo::default());
+        let dispatch_repo = Arc::new(FactoryTestDispatchRepo::default());
+        let receive_repo = Arc::new(FactoryTestReceiveRepo::default());
+        (bus, audit, cap, form_repo, dispatch_repo, receive_repo, school, actor, corr)
+    }
+
+    fn grant(school: educore_core::ids::SchoolId, cap: &InMemoryCapabilityCheck, c: educore_rbac::value_objects::Capability) {
+        let role = educore_rbac::ids::RoleId::new(school, uuid::Uuid::now_v7());
+        cap.grant(school, role, c);
+    }
+
+    fn ctx(school: educore_core::ids::SchoolId, actor: educore_core::ids::UserId, corr: educore_core::ids::CorrelationId) -> educore_core::tenant::TenantContext {
+        educore_core::tenant::TenantContext::for_user(
+            school,
+            actor,
+            corr,
+            educore_core::tenant::UserType::SchoolAdmin,
+        )
+    }
+
+    fn upload_cmd_v(
+        school: educore_core::ids::SchoolId,
+        actor: educore_core::ids::UserId,
+        corr: educore_core::ids::CorrelationId,
+    ) -> UploadFormCommand {
+        UploadFormCommand {
+            tenant: ctx(school, actor, corr),
+            title: crate::value_objects::FormTitle::new("Factory Test Form").unwrap(),
+            short_description: None,
+            publish_date: crate::value_objects::PublishDate::new(
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            ),
+            link: Some(crate::value_objects::Url::new("https://example.com/factory.pdf").unwrap()),
+            file: None,
+            show_public: crate::value_objects::ShowPublic::new(true),
+        }
+    }
+
+    fn dispatch_cmd_v(
+        school: educore_core::ids::SchoolId,
+        actor: educore_core::ids::UserId,
+        corr: educore_core::ids::CorrelationId,
+        ref_no: &str,
+    ) -> DispatchPostalCommand {
+        DispatchPostalCommand {
+            tenant: ctx(school, actor, corr),
+            to_title: crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("Mr Factory").unwrap(),
+            ),
+            from_title: crate::value_objects::FromTitle::new(
+                crate::value_objects::PostalTitle::new("Acme School").unwrap(),
+            ),
+            reference_no: Some(crate::value_objects::PostalReferenceNo::new(ref_no).unwrap()),
+            address: crate::value_objects::ToAddress::new(
+                crate::value_objects::PostalAddress::new("1 Main St").unwrap(),
+            ),
+            date: crate::value_objects::DispatchDate::new(
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            ),
+            note: None,
+            file: None,
+        }
+    }
+
+    fn receive_cmd_v(
+        school: educore_core::ids::SchoolId,
+        actor: educore_core::ids::UserId,
+        corr: educore_core::ids::CorrelationId,
+        ref_no: &str,
+    ) -> ReceivePostalCommand {
+        ReceivePostalCommand {
+            tenant: ctx(school, actor, corr),
+            from_title: crate::value_objects::FromTitle::new(
+                crate::value_objects::PostalTitle::new("Acme Vendor").unwrap(),
+            ),
+            to_title: crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("Acme School").unwrap(),
+            ),
+            reference_no: Some(crate::value_objects::PostalReferenceNo::new(ref_no).unwrap()),
+            address: crate::value_objects::FromAddress::new(
+                crate::value_objects::PostalAddress::new("5 Vendor Rd").unwrap(),
+            ),
+            date: crate::value_objects::ReceiveDate::new(
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            ),
+            note: None,
+            file: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn factory_upload_form_service_succeeds_with_capability() {
+        let (bus, audit, cap, form_repo, _d, _r, s, u, c) = factory_test_env().await;
+        grant(s, &cap, Capability::FormDownloadUpload);
+        let form = upload_form_service(
+            upload_cmd_v(s, u, c),
+            form_repo.clone(),
+            bus,
+            audit,
+            cap.as_ref(),
+        )
+        .await
+        .expect("upload_form_service ok");
+        assert!(form.is_active());
+        assert!(form.is_public());
+    }
+
+    #[tokio::test]
+    async fn factory_upload_form_service_returns_forbidden_without_capability() {
+        let (bus, audit, cap, form_repo, _d, _r, s, u, c) = factory_test_env().await;
+        // No grant -> Forbidden.
+        let err = upload_form_service(
+            upload_cmd_v(s, u, c),
+            form_repo,
+            bus,
+            audit,
+            cap.as_ref(),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, DocumentsError::Forbidden(_)));
+    }
+
+    #[tokio::test]
+    async fn factory_upload_form_service_returns_form_has_no_content_when_both_none() {
+        let (bus, audit, cap, form_repo, _d, _r, s, u, c) = factory_test_env().await;
+        grant(s, &cap, Capability::FormDownloadUpload);
+        let mut cmd = upload_cmd_v(s, u, c);
+        cmd.link = None;
+        cmd.file = None;
+        let err = upload_form_service(cmd, form_repo, bus, audit, cap.as_ref())
+            .await
+            .unwrap_err();
+        assert!(matches!(err, DocumentsError::FormHasNoContent));
+    }
+
+    #[tokio::test]
+    async fn factory_dispatch_postal_service_succeeds_with_capability() {
+        let (bus, audit, cap, _f, dispatch_repo, _r, s, u, c) = factory_test_env().await;
+        grant(s, &cap, Capability::PostalDispatchCreate);
+        let d = dispatch_postal_service(
+            dispatch_cmd_v(s, u, c, "REF-FAC-001"),
+            uuid::Uuid::now_v7(),
+            dispatch_repo,
+            bus,
+            audit,
+            cap.as_ref(),
+        )
+        .await
+        .expect("dispatch_postal_service ok");
+        assert!(d.is_active());
+        assert_eq!(d.reference_no.as_ref().unwrap().as_str(), "REF-FAC-001");
+    }
+
+    #[tokio::test]
+    async fn factory_dispatch_postal_service_returns_forbidden_without_capability() {
+        let (bus, audit, cap, _f, dispatch_repo, _r, s, u, c) = factory_test_env().await;
+        let err = dispatch_postal_service(
+            dispatch_cmd_v(s, u, c, "REF-FAC-002"),
+            uuid::Uuid::now_v7(),
+            dispatch_repo,
+            bus,
+            audit,
+            cap.as_ref(),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, DocumentsError::Forbidden(_)));
+    }
+
+    #[tokio::test]
+    async fn factory_receive_postal_service_succeeds_with_capability() {
+        let (bus, audit, cap, _f, _d, receive_repo, s, u, c) = factory_test_env().await;
+        grant(s, &cap, Capability::PostalReceiveCreate);
+        let r = receive_postal_service(
+            receive_cmd_v(s, u, c, "REF-FAC-IN-001"),
+            uuid::Uuid::now_v7(),
+            receive_repo,
+            bus,
+            audit,
+            cap.as_ref(),
+        )
+        .await
+        .expect("receive_postal_service ok");
+        assert!(r.is_active());
+        assert_eq!(
+            r.reference_no.as_ref().unwrap().as_str(),
+            "REF-FAC-IN-001"
+        );
+    }
+
+    #[tokio::test]
+    async fn factory_receive_postal_service_returns_forbidden_without_capability() {
+        let (bus, audit, cap, _f, _d, receive_repo, s, u, c) = factory_test_env().await;
+        let err = receive_postal_service(
+            receive_cmd_v(s, u, c, "REF-FAC-IN-002"),
+            uuid::Uuid::now_v7(),
+            receive_repo,
+            bus,
+            audit,
+            cap.as_ref(),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, DocumentsError::Forbidden(_)));
+    }
+
+    #[tokio::test]
+    async fn factory_delete_form_service_succeeds_with_capability() {
+        let (bus, audit, cap, form_repo, _d, _r, s, u, c) = factory_test_env().await;
+        grant(s, &cap, Capability::FormDownloadUpload);
+        grant(s, &cap, Capability::FormDownloadDelete);
+        let form = upload_form_service(
+            upload_cmd_v(s, u, c),
+            form_repo.clone(),
+            bus.clone(),
+            audit.clone(),
+            cap.as_ref(),
+        )
+        .await
+        .expect("upload");
+        let form_id = form.id;
+        delete_form_service(
+            DeleteFormCommand {
+                tenant: ctx(s, u, c),
+                form_id,
+            },
+            form_repo.clone(),
+            bus,
+            audit,
+            cap.as_ref(),
+        )
+        .await
+        .expect("delete_form_service ok");
+        // The form is still queryable but is_active() is false.
+        let fetched = form_repo.get(form_id).await.expect("get").expect("still there");
+        assert!(!fetched.is_active());
+    }
+
+    #[tokio::test]
+    async fn factory_delete_form_service_returns_forbidden_without_capability() {
+        let (bus, audit, cap, form_repo, _d, _r, s, u, c) = factory_test_env().await;
+        grant(s, &cap, Capability::FormDownloadUpload);
+        let form = upload_form_service(
+            upload_cmd_v(s, u, c),
+            form_repo.clone(),
+            bus.clone(),
+            audit.clone(),
+            cap.as_ref(),
+        )
+        .await
+        .expect("upload");
+        let form_id = form.id;
+        let err = delete_form_service(
+            DeleteFormCommand {
+                tenant: ctx(s, u, c),
+                form_id,
+            },
+            form_repo,
+            bus,
+            audit,
+            cap.as_ref(),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, DocumentsError::Forbidden(_)));
     }
 }
