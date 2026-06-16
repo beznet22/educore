@@ -433,7 +433,210 @@ impl DomainEvent for PostalDispatchDeleted {
 // === PostalDispatch events section end ===
 
 // === PostalReceive events section begin (owner: 2C) ===
-pub struct PostalReceived;
-pub struct PostalReceiveUpdated;
-pub struct PostalReceiveDeleted;
+
+use crate::aggregate::PostalReceive;
+use crate::value_objects::{PostalReceiveId, ReceiveDate};
+
+// =============================================================================
+// PostalReceive lifecycle events (3)
+// =============================================================================
+
+/// Emitted when a new [`PostalReceive`] is recorded.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PostalReceived {
+    /// The receive id.
+    pub postal_receive_id: PostalReceiveId,
+    /// The school anchor.
+    pub school_id: SchoolId,
+    /// The sender's title (1..=191 chars).
+    pub from_title: FromTitle,
+    /// The recipient's title (1..=191 chars).
+    pub to_title: ToTitle,
+    /// The optional reference number (unique within
+    /// `(school_id, academic_id)`; immutable once set).
+    pub reference_no: Option<PostalReferenceNo>,
+    /// The receive date (may be in the past for back-filling).
+    pub date: ReceiveDate,
+    /// The user who recorded the receive.
+    pub received_by: UserId,
+    /// The unique event id.
+    pub event_id: EventId,
+    /// The correlation id of the originating request.
+    pub correlation_id: CorrelationId,
+    /// The clock time the event occurred.
+    pub occurred_at: Timestamp,
+}
+
+impl PostalReceived {
+    /// Constructs a `PostalReceived` from a just-built
+    /// [`PostalReceive`] aggregate, the acting user (used as
+    /// `received_by`), the `occurred_at` timestamp, and the
+    /// originating request's `correlation_id`. The `event_id` is
+    /// minted as a fresh UUIDv7.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn new(
+        receive: &PostalReceive,
+        actor: UserId,
+        at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        Self {
+            postal_receive_id: receive.id,
+            school_id: receive.school_id,
+            from_title: receive.from_title.clone(),
+            to_title: receive.to_title.clone(),
+            reference_no: receive.reference_no.clone(),
+            date: receive.date,
+            received_by: actor,
+            event_id: EventId(Uuid::now_v7()),
+            correlation_id,
+            occurred_at: at,
+        }
+    }
+}
+
+impl DomainEvent for PostalReceived {
+    const EVENT_TYPE: &'static str = "documents.postal_receive.received";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "postal_receive";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.postal_receive_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a [`PostalReceive`] is updated.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PostalReceiveUpdated {
+    /// The receive id.
+    pub postal_receive_id: PostalReceiveId,
+    /// The school anchor.
+    pub school_id: SchoolId,
+    /// The list of changed field names (e.g. `["from_title",
+    /// "to_title"]`).
+    pub changes: Vec<String>,
+    /// The user who updated the receive.
+    pub updated_by: UserId,
+    /// The unique event id.
+    pub event_id: EventId,
+    /// The correlation id of the originating request.
+    pub correlation_id: CorrelationId,
+    /// The clock time the event occurred.
+    pub occurred_at: Timestamp,
+}
+
+impl PostalReceiveUpdated {
+    /// Constructs a `PostalReceiveUpdated` from the target
+    /// [`PostalReceive`] aggregate, the list of changed field
+    /// names, the acting user, the `occurred_at` timestamp, and
+    /// the originating request's `correlation_id`. The
+    /// `event_id` is minted as a fresh UUIDv7.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn new(
+        receive: &PostalReceive,
+        changes: Vec<String>,
+        actor: UserId,
+        at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        Self {
+            postal_receive_id: receive.id,
+            school_id: receive.school_id,
+            changes,
+            updated_by: actor,
+            event_id: EventId(Uuid::now_v7()),
+            correlation_id,
+            occurred_at: at,
+        }
+    }
+}
+
+impl DomainEvent for PostalReceiveUpdated {
+    const EVENT_TYPE: &'static str = "documents.postal_receive.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "postal_receive";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.postal_receive_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a [`PostalReceive`] is soft-deleted.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PostalReceiveDeleted {
+    /// The receive id.
+    pub postal_receive_id: PostalReceiveId,
+    /// The school anchor.
+    pub school_id: SchoolId,
+    /// The user who soft-deleted the receive.
+    pub deleted_by: UserId,
+    /// The unique event id.
+    pub event_id: EventId,
+    /// The correlation id of the originating request.
+    pub correlation_id: CorrelationId,
+    /// The clock time the event occurred.
+    pub occurred_at: Timestamp,
+}
+
+impl PostalReceiveDeleted {
+    /// Constructs a `PostalReceiveDeleted` from the target
+    /// [`PostalReceive`] aggregate, the acting user, the
+    /// `occurred_at` timestamp, and the originating request's
+    /// `correlation_id`. The `event_id` is minted as a fresh
+    /// UUIDv7.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn new(
+        receive: &PostalReceive,
+        actor: UserId,
+        at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        Self {
+            postal_receive_id: receive.id,
+            school_id: receive.school_id,
+            deleted_by: actor,
+            event_id: EventId(Uuid::now_v7()),
+            correlation_id,
+            occurred_at: at,
+        }
+    }
+}
+
+impl DomainEvent for PostalReceiveDeleted {
+    const EVENT_TYPE: &'static str = "documents.postal_receive.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "postal_receive";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.postal_receive_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 // === PostalReceive events section end ===
