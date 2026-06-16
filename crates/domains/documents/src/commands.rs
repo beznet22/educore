@@ -327,8 +327,200 @@ impl DeletePostalDispatchCommand {
 // === PostalDispatch commands section end ===
 
 // === PostalReceive commands section begin (owner: 2C) ===
-pub struct ReceivePostalCommand;
-pub struct UpdatePostalReceiveCommand;
-pub struct DeletePostalReceiveCommand;
-pub struct TrackPostalCommand;
+
+// 2A above already imports `serde::{Deserialize, Serialize}`,
+// `uuid::Uuid`, `educore_core::ids::EventId`,
+// `educore_core::tenant::TenantContext`, and
+// `educore_core::value_objects::Timestamp` at the file scope.
+// 2B above already imports `FileReference` (via 2A), `FromTitle`,
+// `PostalNote`, `PostalReferenceNo`, `ToTitle` (from
+// `crate::value_objects`), and `AcademicYearId` (from
+// `crate::aggregate`). Re-importing them here is an E0252
+// duplicate. We add only the new types.
+
+use crate::aggregate::{NewPostalReceive, UpdatePostalReceive};
+use crate::value_objects::{FromAddress, PostalReceiveId, ReceiveDate};
+
+// =============================================================================
+// Command type constants (one per command shape; matches the wire form
+// `documents.postal_receive.<verb>` and `documents.postal.track`).
+// =============================================================================
+
+/// Receive-postal command type.
+const DOCUMENTS_POSTAL_RECEIVE_RECEIVE_COMMAND_TYPE: &str =
+    "documents.postal_receive.receive";
+/// Update-postal-receive command type.
+const DOCUMENTS_POSTAL_RECEIVE_UPDATE_COMMAND_TYPE: &str =
+    "documents.postal_receive.update";
+/// Delete-postal-receive command type.
+const DOCUMENTS_POSTAL_RECEIVE_DELETE_COMMAND_TYPE: &str =
+    "documents.postal_receive.delete";
+/// Track-postal command type (query command; no event emitted).
+const DOCUMENTS_POSTAL_TRACK_COMMAND_TYPE: &str = "documents.postal.track";
+
+// =============================================================================
+// PostalReceive commands
+// =============================================================================
+
+/// Record a new incoming
+/// [`PostalReceive`](crate::aggregate::PostalReceive).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReceivePostalCommand {
+    /// Tenant context (school, actor, correlation).
+    pub tenant: TenantContext,
+    /// The sender's title (1..=191 chars).
+    pub from_title: FromTitle,
+    /// The recipient's title (1..=191 chars).
+    pub to_title: ToTitle,
+    /// The optional reference number (unique within
+    /// `(school_id, academic_id)`; immutable once set).
+    pub reference_no: Option<PostalReferenceNo>,
+    /// The sender's address (1..=191 chars).
+    pub address: FromAddress,
+    /// The receive date (may be in the past for back-filling).
+    pub date: ReceiveDate,
+    /// The optional note (1..=5000 chars).
+    pub note: Option<PostalNote>,
+    /// The optional file attachment (scanned copy of the
+    /// letter or its envelope).
+    pub file: Option<FileReference>,
+}
+
+impl ReceivePostalCommand {
+    /// The wire-form command type.
+    pub const COMMAND_TYPE: &'static str = DOCUMENTS_POSTAL_RECEIVE_RECEIVE_COMMAND_TYPE;
+
+    /// Converts the wire-level command into the aggregate-local
+    /// [`NewPostalReceive`] input expected by
+    /// [`PostalReceive::new`](crate::aggregate::PostalReceive::new).
+    /// The `id` is supplied by the dispatcher; `academic_id` is
+    /// the active academic-year scope. `created_by` is the
+    /// tenant's actor; `created_at` is `Timestamp::now()`.
+    #[must_use]
+    pub fn into_new_postal_receive(
+        self,
+        id: PostalReceiveId,
+        academic_id: AcademicYearId,
+    ) -> NewPostalReceive {
+        NewPostalReceive {
+            id,
+            academic_id,
+            from_title: self.from_title,
+            to_title: self.to_title,
+            reference_no: self.reference_no,
+            address: self.address,
+            date: self.date,
+            note: self.note,
+            file: self.file,
+            created_by: self.tenant.actor_id,
+            created_at: Timestamp::now(),
+            correlation_id: self.tenant.correlation_id,
+        }
+    }
+}
+
+/// Update an existing
+/// [`PostalReceive`](crate::aggregate::PostalReceive).
+///
+/// The `note` and `file` fields use the `Option<Option<T>>`
+/// 3-state pattern: outer `None` means "no change",
+/// `Some(None)` means "clear the field", and `Some(Some(_))`
+/// means "set the field". The other optional fields
+/// (`from_title`, `to_title`, `address`, `date`) are 2-state:
+/// `None` = no change; `Some(_)` = set.
+///
+/// The `reference_no` is **immutable** once set; it is
+/// intentionally absent from this command. There is no
+/// `reference_no` field — adding one would be a wire-level
+/// spec deviation.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdatePostalReceiveCommand {
+    /// Tenant context.
+    pub tenant: TenantContext,
+    /// The receive id.
+    pub postal_receive_id: PostalReceiveId,
+    /// The new sender title, if changing.
+    pub from_title: Option<FromTitle>,
+    /// The new recipient title, if changing.
+    pub to_title: Option<ToTitle>,
+    /// The new sender address, if changing.
+    pub address: Option<FromAddress>,
+    /// The new receive date, if changing.
+    pub date: Option<ReceiveDate>,
+    /// The new note, if changing or clearing.
+    pub note: Option<Option<PostalNote>>,
+    /// The new file attachment, if changing or clearing.
+    pub file: Option<Option<FileReference>>,
+}
+
+impl UpdatePostalReceiveCommand {
+    /// The wire-form command type.
+    pub const COMMAND_TYPE: &'static str = DOCUMENTS_POSTAL_RECEIVE_UPDATE_COMMAND_TYPE;
+
+    /// Converts the wire-level command into the aggregate-local
+    /// [`UpdatePostalReceive`] input expected by
+    /// [`PostalReceive::update`](crate::aggregate::PostalReceive::update).
+    /// The `event_id` is the caller's pre-minted event id (the
+    /// dispatcher is responsible for minting it before
+    /// dispatch). `actor` is the tenant's actor; `at` is
+    /// `Timestamp::now()`. `academic_id` and `reference_no` are
+    /// not exposed on the wire (the former is dispatcher-set,
+    /// the latter is immutable once set) and are set to `None`
+    /// here.
+    #[must_use]
+    pub fn into_update_postal_receive(self, event_id: EventId) -> UpdatePostalReceive {
+        UpdatePostalReceive {
+            academic_id: None,
+            from_title: self.from_title,
+            to_title: self.to_title,
+            reference_no: None,
+            address: self.address,
+            date: self.date,
+            note: self.note,
+            file: self.file,
+            actor: self.tenant.actor_id,
+            at: Timestamp::now(),
+            event_id,
+        }
+    }
+}
+
+/// Soft-delete a [`PostalReceive`](crate::aggregate::PostalReceive).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeletePostalReceiveCommand {
+    /// Tenant context.
+    pub tenant: TenantContext,
+    /// The receive id.
+    pub postal_receive_id: PostalReceiveId,
+}
+
+impl DeletePostalReceiveCommand {
+    /// The wire-form command type.
+    pub const COMMAND_TYPE: &'static str = DOCUMENTS_POSTAL_RECEIVE_DELETE_COMMAND_TYPE;
+}
+
+/// Look up dispatch and receive records sharing a
+/// [`PostalReferenceNo`].
+///
+/// This is a **query command** (per spec § "TrackPostal"): it
+/// surfaces a list of dispatch and receive records matching the
+/// reference number within the school. It emits **no** domain
+/// event. There is no `into_*` method on this command — the
+/// dispatcher returns a read-only [`PostalTrackResult`](
+/// crate::services::PostalTrackResult) (or equivalent) directly
+/// without going through the aggregate write path.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TrackPostalCommand {
+    /// Tenant context.
+    pub tenant: TenantContext,
+    /// The reference number to track (unique within
+    /// `(school_id, academic_id)`).
+    pub reference_no: PostalReferenceNo,
+}
+
+impl TrackPostalCommand {
+    /// The wire-form command type.
+    pub const COMMAND_TYPE: &'static str = DOCUMENTS_POSTAL_TRACK_COMMAND_TYPE;
+}
+
 // === PostalReceive commands section end ===
