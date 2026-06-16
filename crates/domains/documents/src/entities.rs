@@ -161,6 +161,7 @@ documents_child_typed_id! {
 )]
 mod tests {
     use super::*;
+    use educore_core::ids::Identifier;
 
     #[test]
     fn child_id_display_and_accessors() {

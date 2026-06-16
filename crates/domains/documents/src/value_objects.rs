@@ -913,6 +913,7 @@ fn is_plausible_url(s: &str) -> bool {
 )]
 mod tests {
     use super::*;
+    use educore_core::ids::Identifier;
 
     #[test]
     fn typed_id_display_and_accessors() {
@@ -1001,7 +1002,7 @@ mod tests {
         assert!(Url::new("example.com").is_err());
         assert!(Url::new("https://").is_err());
         assert!(Url::new("").is_err());
-        assert!(Url::new(&"https://example.com/".to_string() + &"a".repeat(2_050)).is_err());
+        assert!(Url::new("https://example.com/".to_string() + &"a".repeat(2_050)).is_err());
     }
 
     #[test]
