@@ -1291,6 +1291,73 @@ dispatch, postal receive.
 
 **Coverage matrix updates.** All `documents_*` rows.
 
+**Phase 11 outcome.** Closed 2026-06-16. **`educore-documents`**
+delivered as the ninth domain crate. Spec-faithful: all 3 root
+aggregates per `docs/specs/documents/aggregates.md`
+(`FormDownload`, `PostalDispatch`, `PostalReceive`) + 4 child
+entities (`FormDownloadFile`, `FormDownloadLink`,
+`PostalDispatchAttachment`, `PostalReceiveAttachment`). 9 typed
+events implementing `DomainEvent` (wire form
+`documents.<aggregate>.<verb>`); 10 typed command shapes + 10
+`*_COMMAND_TYPE` constants (incl. the `TrackPostal` query
+command); 3 `pub trait XxxRepository: Send + Sync` port traits
+(object-safety smoke tests included); 3 typed query stubs
+(returning `Err(DomainError::not_supported(...))` in Phase 11,
+mirroring the Phase 9 / Phase 10 pattern); 10 async service
+factory functions + 2 service structs (`FormService`,
+`PostalService`); the `DocumentsError` enum (11 variants)
+wrapping `DomainError`; 9-file layout per AGENTS.md. The
+`reference_no` immutability invariant is enforced at the
+aggregate `update()` level (the `ReferenceNoImmutable` variant
+of `DocumentsError` is returned if a future code path attempts
+to mutate `reference_no`); corrections require a new record
+(supersede pattern). The `TrackPostal` service is events-free
+(pure read; queries the 2 postal repos directly and pairs by
+`reference_no`).
+
+Educore-rbac: 11 net-new `Capability` variants
+(`FormDownload{Upload,Update,Delete,Read}`,
+`PostalDispatch{Create,Update,Delete}`,
+`PostalReceive{Create,Update,Delete}`, `PostalRead`) plus the
+4 Phase 2 placeholders (`DocumentsFolder{Create,Read,Update,Delete}`)
+retained = 15 Documents-domain capabilities total.
+Educore-audit: 2 net-new `AuditTarget` variants
+(`FormDownload`, `PostalReceive`) + 1 retained `PostalDispatch`
+= 3 Documents-domain audit targets. Educore-storage-parity:
+6-scenario integration test (cfg-gated to activate when the
+crate's `lib.rs` prelude is wired — Phase 11 ships it wired)
++ 2 env-gated `#[tokio::test]` PG/MySQL variants.
+
+27 commits land in chronological order: 5 prep-phase commits
+(deps + value objects + child entities + AuditTarget + rbac
+caps + storage-parity dep) + 3 form workstream commits (root
++ children, events, commands) + 3 dispatch workstream commits
+(root + child, events, commands) + 3 receive workstream
+commits (root + child, events, commands + TrackPostal) + 3
+port wiring commits (Form/PostalDispatch/PostalReceive
+repository ports) + 3 service wiring commits
+(Form/PostalDispatch/PostalReceive services) + 3 query-stub
+commits (Form/PostalDispatch/PostalReceive) + 2 fix-up commits
+(prep test errors + rustdoc on DocumentsError variants) + 2
+test commits (inline unit tests + proptest) + 1
+storage-parity integration test commit.
+
+`FormUploaded` will be consumed by `educore-cms` in Phase 12
+(bus subscriber — no `educore-cms` dep in Phase 11; mirrors
+Phase 10 OQ #5's `AbsentNotificationService` pattern). The
+`FileStorage` port is Phase 15 (`educore-files`); Phase 11
+uses the `FileReference` value object only. The
+`AcademicYearId` is a local `pub type` alias in `aggregate.rs`;
+a follow-up PR will add `educore-academic` to
+`educore-documents` deps and replace both aliases (Phase 11
+OQ #1). Hand-off: `docs/handoff/PHASE-11-HANDOFF.md`.
+Next-phase prompt: `docs/phase_prompt/phase-12-prompt.md`.
+
+**~915 tests pass workspace-wide** (was ~770 at Phase 10
+close-out; +145 net new in Phase 11: 145 unit tests in
+`educore-documents` + 6 integration scenarios + 1 rbac
+15-cap test + 1 audit 3-variant test + test fixups).
+
 ---
 
 ## Phase 12 — CMS
