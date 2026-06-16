@@ -1520,8 +1520,8 @@ item = "PostalDispatch aggregate root"
 spec = "docs/specs/documents/aggregates.md#postaldispatch"
 crate = "educore-documents"
 phase = 11
-status = "Pending"
-tests = ""
+status = "Tested"
+tests = "crates/domains/documents/src/aggregate.rs,crates/tools/storage-parity/tests/documents_integration.rs"
 notes = "Phase 11: spec-faithful; owns PostalDispatchAttachment child; 3 commands, 3 events, reference_no unique within (school_id, academic_id), reference_no immutable once set, soft-delete only."
 
 [[row]]
@@ -1530,8 +1530,8 @@ item = "FormDownload aggregate root"
 spec = "docs/specs/documents/aggregates.md#formdownload"
 crate = "educore-documents"
 phase = 11
-status = "Pending"
-tests = ""
+status = "Tested"
+tests = "crates/domains/documents/src/aggregate.rs,crates/tools/storage-parity/tests/documents_integration.rs"
 notes = "Phase 11: spec-faithful; owns FormDownloadFile + FormDownloadLink children; 3 commands, 3 events, soft-delete only."
 
 [[row]]
@@ -1540,8 +1540,8 @@ item = "PostalReceive aggregate root"
 spec = "docs/specs/documents/aggregates.md#postalreceive"
 crate = "educore-documents"
 phase = 11
-status = "Pending"
-tests = ""
+status = "Tested"
+tests = "crates/domains/documents/src/aggregate.rs,crates/tools/storage-parity/tests/documents_integration.rs"
 notes = "Phase 11: spec-faithful; owns PostalReceiveAttachment child; 3 commands, 3 events, reference_no unique within (school_id, academic_id), reference_no immutable once set, soft-delete only."
 
 # =============================================================================
