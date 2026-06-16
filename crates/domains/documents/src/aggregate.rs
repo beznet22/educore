@@ -365,8 +365,331 @@ impl FormDownloadLink {
 // === FormDownload section end ===
 
 // === PostalDispatch section begin (owner: 1B) ===
-pub struct PostalDispatch;
-pub struct PostalDispatchAttachment;
+
+// The cross-cutting imports (`serde`, `uuid`, the
+// `educore_core::ids` and `educore_core::value_objects`
+// prelude, plus `DocumentsError`, `ActiveStatus`,
+// `FileReference`, `FromTitle`, `PostalNote`,
+// `PostalReferenceNo`, `ToTitle`, and the documents' typed
+// ids) are already pulled in by the FormDownload section
+// above. The `PostalReceive` section below us (1C owner)
+// also pulls in `FromTitle`, `PostalNote`,
+// `PostalReferenceNo`, and `ToTitle` for its own code;
+// re-importing those names at file scope is an `E0252` error.
+// This section therefore imports only the **unique-to-1B**
+// value-object types and uses fully-qualified paths for the
+// shared ones. (`crate::entities::PostalDispatchAttachmentId`
+// is also already pulled in by FormDownload.)
+use crate::value_objects::{DispatchDate, PostalDispatchId, ToAddress};
+
+// NOTE: `AcademicYearId` is defined in the 1C section below
+// (the only other `documents` section that needs it for the
+// same reason). We don't redeclare the type alias here to
+// avoid an `E0428` duplicate-definition error; we use the
+// 1C definition by name. A follow-up PR should add an
+// `educore-academic` dependency on `educore-documents` and
+// replace both aliases with
+// `educore_academic::value_objects::AcademicYearId`.
+
+// =============================================================================
+// PostalDispatch — root aggregate (owner 1B)
+// =============================================================================
+
+/// Aggregate-local input for [`PostalDispatch::new`]. The
+/// wire-level command lives in
+/// `commands::DispatchPostalCommand` and `From`-converts into
+/// this shape.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NewPostalDispatch {
+    /// The typed id.
+    pub id: PostalDispatchId,
+    /// The academic year scope (per `(school_id, academic_id)`
+    /// uniqueness for `reference_no`).
+    pub academic_id: AcademicYearId,
+    /// The recipient's name/title (1..=191 chars).
+    pub to_title: crate::value_objects::ToTitle,
+    /// The sender's name/title (1..=191 chars).
+    pub from_title: crate::value_objects::FromTitle,
+    /// The optional reference number (unique within
+    /// `(school_id, academic_id)`; immutable once set).
+    pub reference_no: Option<crate::value_objects::PostalReferenceNo>,
+    /// The recipient's address (1..=191 chars).
+    pub address: ToAddress,
+    /// The dispatch date (may be in the past for back-filling).
+    pub date: DispatchDate,
+    /// The optional note (1..=5000 chars).
+    pub note: Option<crate::value_objects::PostalNote>,
+    /// The optional file attachment (scanned copy of the
+    /// letter or its envelope).
+    pub file: Option<FileReference>,
+    /// The creating user.
+    pub created_by: UserId,
+    /// The creation timestamp.
+    pub created_at: Timestamp,
+    /// The correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+/// Aggregate-local input for [`PostalDispatch::update`]. The
+/// wire-level command lives in
+/// `commands::UpdatePostalDispatchCommand` and `From`-converts
+/// into this shape. The `reference_no`, `note`, and `file`
+/// fields use the `Option<Option<T>>` pattern: outer `None`
+/// means "no change", `Some(None)` means "clear the field",
+/// and `Some(Some(_))` means "set the field". The
+/// `reference_no` field carries an extra invariant enforced
+/// inside [`PostalDispatch::update`]: the reference number is
+/// **immutable once set**; an attempt to change or clear it
+/// returns [`DocumentsError::ReferenceNoImmutable`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdatePostalDispatch {
+    /// The new academic year scope, if changing.
+    pub academic_id: Option<AcademicYearId>,
+    /// The new recipient name/title, if changing.
+    pub to_title: Option<crate::value_objects::ToTitle>,
+    /// The new sender name/title, if changing.
+    pub from_title: Option<crate::value_objects::FromTitle>,
+    /// The new reference number, if changing or clearing.
+    /// See type-level docs for the immutability rule.
+    pub reference_no: Option<Option<crate::value_objects::PostalReferenceNo>>,
+    /// The new recipient address, if changing.
+    pub address: Option<ToAddress>,
+    /// The new dispatch date, if changing.
+    pub date: Option<DispatchDate>,
+    /// The new note, if changing or clearing.
+    pub note: Option<Option<crate::value_objects::PostalNote>>,
+    /// The new file attachment, if changing or clearing.
+    pub file: Option<Option<FileReference>>,
+    /// The acting user.
+    pub actor: UserId,
+    /// The update timestamp.
+    pub at: Timestamp,
+    /// The event id for the update.
+    pub event_id: EventId,
+}
+
+/// A postal item dispatched by the school. The dispatch is
+/// recorded with a `to_title`, `from_title`, an optional
+/// reference number, an address, a date, an optional note, and
+/// an optional attachment. The `reference_no` is **unique
+/// within `(school_id, academic_id)` when set** (per
+/// `docs/specs/documents/aggregates.md` § "PostalDispatch"
+/// invariant 2) and is **immutable once set** (per the Postal
+/// Dispatch Tracking workflow, step 3). The aggregate is
+/// anchored to a school and an academic year and is never
+/// hard-deleted (invariant 5): the soft-delete path is the
+/// only delete.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PostalDispatch {
+    /// The typed id.
+    pub id: PostalDispatchId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The academic year scope (per `(school_id, academic_id)`
+    /// uniqueness for `reference_no`).
+    pub academic_id: AcademicYearId,
+    /// The recipient's name/title (1..=191 chars).
+    pub to_title: crate::value_objects::ToTitle,
+    /// The sender's name/title (1..=191 chars).
+    pub from_title: crate::value_objects::FromTitle,
+    /// The optional reference number (unique within
+    /// `(school_id, academic_id)`; immutable once set).
+    pub reference_no: Option<crate::value_objects::PostalReferenceNo>,
+    /// The recipient's address (1..=191 chars).
+    pub address: ToAddress,
+    /// The dispatch date (may be in the past for back-filling).
+    pub date: DispatchDate,
+    /// The optional note (1..=5000 chars).
+    pub note: Option<crate::value_objects::PostalNote>,
+    /// The optional file attachment (scanned copy of the
+    /// letter or its envelope).
+    pub file: Option<FileReference>,
+    /// The soft-delete flag (`true` = active, `false` =
+    /// archived).
+    pub active_status: ActiveStatus,
+    // ---- Audit footer (8 fields, mirrors the engine standard) ----
+    /// The optimistic-concurrency version.
+    pub version: Version,
+    /// The content hash for conflict resolution.
+    pub etag: Etag,
+    /// The creation timestamp.
+    pub created_at: Timestamp,
+    /// The last-update timestamp.
+    pub updated_at: Timestamp,
+    /// The creating user.
+    pub created_by: UserId,
+    /// The last-updating user.
+    pub updated_by: UserId,
+    /// The id of the last event that mutated this aggregate.
+    pub last_event_id: Option<EventId>,
+    /// The correlation id for the request that created the row.
+    pub correlation_id: CorrelationId,
+}
+
+impl PostalDispatch {
+    /// Constructs a new `PostalDispatch` in the active state.
+    /// `school_id` is **derived from `id.school_id()`** and is
+    /// never taken from the caller.
+    pub fn new(cmd: NewPostalDispatch) -> Result<Self, DocumentsError> {
+        Ok(Self {
+            school_id: cmd.id.school_id(),
+            id: cmd.id,
+            academic_id: cmd.academic_id,
+            to_title: cmd.to_title,
+            from_title: cmd.from_title,
+            reference_no: cmd.reference_no,
+            address: cmd.address,
+            date: cmd.date,
+            note: cmd.note,
+            file: cmd.file,
+            active_status: ActiveStatus::new(true),
+            version: Version::initial(),
+            etag: Etag::placeholder(),
+            created_at: cmd.created_at,
+            updated_at: cmd.created_at,
+            created_by: cmd.created_by,
+            updated_by: cmd.created_by,
+            last_event_id: None,
+            correlation_id: cmd.correlation_id,
+        })
+    }
+
+    /// Applies changes to the dispatch. Rejects updates on
+    /// soft-deleted records. **Rejects any attempt to change
+    /// the `reference_no`** — the reference number is
+    /// immutable once set; setting or clearing it returns
+    /// [`DocumentsError::ReferenceNoImmutable`]. The check is
+    /// strict (any new value different from the existing one
+    /// is rejected) and tolerates idempotent no-op calls
+    /// where the caller resends the existing value.
+    pub fn update(&mut self, cmd: UpdatePostalDispatch) -> Result<(), DocumentsError> {
+        if !self.active_status.is_active() {
+            return Err(DocumentsError::Conflict(
+                "cannot update a soft-deleted postal dispatch".to_owned(),
+            ));
+        }
+        if let Some(rid) = cmd.academic_id {
+            self.academic_id = rid;
+        }
+        if let Some(t) = cmd.to_title {
+            self.to_title = t;
+        }
+        if let Some(t) = cmd.from_title {
+            self.from_title = t;
+        }
+        if let Some(rn) = cmd.reference_no {
+            if rn != self.reference_no {
+                return Err(DocumentsError::ReferenceNoImmutable);
+            }
+        }
+        if let Some(a) = cmd.address {
+            self.address = a;
+        }
+        if let Some(d) = cmd.date {
+            self.date = d;
+        }
+        if let Some(n) = cmd.note {
+            self.note = n;
+        }
+        if let Some(f) = cmd.file {
+            self.file = f;
+        }
+        self.updated_at = cmd.at;
+        self.updated_by = cmd.actor;
+        self.version = self.version.next();
+        self.last_event_id = Some(cmd.event_id);
+        Ok(())
+    }
+
+    /// Soft-deletes the dispatch. Sets `active_status = false`
+    /// and bumps the version. Returns [`DocumentsError::Conflict`]
+    /// when the dispatch is already soft-deleted.
+    pub fn soft_delete(
+        &mut self,
+        actor: UserId,
+        at: Timestamp,
+    ) -> Result<(), DocumentsError> {
+        if !self.active_status.is_active() {
+            return Err(DocumentsError::Conflict(
+                "postal dispatch is already soft-deleted".to_owned(),
+            ));
+        }
+        self.active_status = ActiveStatus::new(false);
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Returns `true` if the dispatch is active (not
+    /// soft-deleted).
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+}
+
+// =============================================================================
+// PostalDispatchAttachment — child entity (owner 1B)
+// =============================================================================
+
+/// An optional `FileReference` attached to a
+/// [`PostalDispatch`], typically a scanned copy of the letter
+/// or its envelope. The child entity has its own typed id
+/// (`PostalDispatchAttachmentId`) but is loaded and persisted
+/// only through its aggregate root. The 1:1 cardinality is
+/// enforced at the aggregate level.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PostalDispatchAttachment {
+    /// The typed id.
+    pub id: crate::entities::PostalDispatchAttachmentId,
+    /// The owning dispatch id (FK to the parent aggregate).
+    pub dispatch_id: PostalDispatchId,
+    /// The owning school (immutable, equals
+    /// `id.school_id()` and `dispatch_id.school_id()`).
+    pub school_id: SchoolId,
+    /// The scanned file reference.
+    pub file: FileReference,
+    /// The creation timestamp.
+    pub created_at: Timestamp,
+    /// The last-update timestamp.
+    pub updated_at: Timestamp,
+    /// The creating user.
+    pub created_by: UserId,
+    /// The last-updating user.
+    pub updated_by: UserId,
+}
+
+impl PostalDispatchAttachment {
+    /// Constructs a new `PostalDispatchAttachment` in the
+    /// initial state. The id is generated as a UUIDv7 via
+    /// [`Uuid::now_v7`]. The tenant-invariant
+    /// (`school_id == dispatch_id.school_id()`) is checked via
+    /// `debug_assert_eq!`; passing mismatched ids is a
+    /// dispatcher bug, not a user error.
+    #[allow(clippy::missing_const_for_fn)]
+    pub fn new(
+        school_id: SchoolId,
+        dispatch_id: PostalDispatchId,
+        file: FileReference,
+        at: Timestamp,
+        actor: UserId,
+    ) -> Self {
+        debug_assert_eq!(school_id, dispatch_id.school_id());
+        let id = crate::entities::PostalDispatchAttachmentId::new(school_id, Uuid::now_v7());
+        Self {
+            id,
+            dispatch_id,
+            school_id,
+            file,
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+        }
+    }
+}
+
 // === PostalDispatch section end ===
 
 // === PostalReceive section begin (owner: 1C) ===
