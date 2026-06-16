@@ -370,6 +370,320 @@ pub struct PostalDispatchAttachment;
 // === PostalDispatch section end ===
 
 // === PostalReceive section begin (owner: 1C) ===
-pub struct PostalReceive;
-pub struct PostalReceiveAttachment;
+
+use crate::entities::PostalReceiveAttachmentId;
+use crate::value_objects::{
+    FromAddress, FromTitle, PostalNote, PostalReceiveId, PostalReferenceNo, ReceiveDate, ToTitle,
+};
+
+// TODO(phase-11/1C): replace this local alias with
+// `educore_academic::value_objects::AcademicYearId` once the
+// `educore-documents` crate gains the `educore-academic`
+// dependency in its `Cargo.toml`. The local alias keeps this
+// section self-contained for the Phase 11 / 1C slice; the
+// academic crate already publishes `AcademicYearId` as a typed
+// id wrapper of the form `Id<AcademicYear>` (see
+// `crates/domains/academic/src/value_objects.rs:113`).
+pub type AcademicYearId = Uuid;
+
+// =============================================================================
+// PostalReceive — root aggregate (owner 1C)
+// =============================================================================
+
+/// Aggregate-local input for [`PostalReceive::new`]. The
+/// wire-level command lives in
+/// `commands::ReceivePostalCommand` and `From`-converts into
+/// this shape.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NewPostalReceive {
+    /// The typed id.
+    pub id: PostalReceiveId,
+    /// The academic year scope (per `(school_id, academic_id)`
+    /// uniqueness for `reference_no`).
+    pub academic_id: AcademicYearId,
+    /// The sender's name/title (1..=191 chars).
+    pub from_title: FromTitle,
+    /// The recipient's name/title (1..=191 chars).
+    pub to_title: ToTitle,
+    /// The optional reference number (unique within
+    /// `(school_id, academic_id)`; immutable once set).
+    pub reference_no: Option<PostalReferenceNo>,
+    /// The sender's address (1..=191 chars).
+    pub address: FromAddress,
+    /// The receive date (may be in the past for back-filling).
+    pub date: ReceiveDate,
+    /// The optional note (1..=5000 chars).
+    pub note: Option<PostalNote>,
+    /// The optional file attachment (scanned copy of the
+    /// letter or its envelope).
+    pub file: Option<FileReference>,
+    /// The creating user.
+    pub created_by: UserId,
+    /// The creation timestamp.
+    pub created_at: Timestamp,
+    /// The correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+/// Aggregate-local input for [`PostalReceive::update`]. The
+/// wire-level command lives in
+/// `commands::UpdatePostalReceiveCommand` and `From`-converts
+/// into this shape. The `reference_no`, `note`, and `file`
+/// fields use the `Option<Option<T>>` pattern: outer `None`
+/// means "no change", `Some(None)` means "clear the field",
+/// and `Some(Some(_))` means "set the field". The
+/// `reference_no` field carries an extra invariant enforced
+/// inside [`PostalReceive::update`]: the reference number is
+/// **immutable once set**; an attempt to change or clear it
+/// returns [`DocumentsError::ReferenceNoImmutable`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdatePostalReceive {
+    /// The new academic year scope, if changing.
+    pub academic_id: Option<AcademicYearId>,
+    /// The new sender name/title, if changing.
+    pub from_title: Option<FromTitle>,
+    /// The new recipient name/title, if changing.
+    pub to_title: Option<ToTitle>,
+    /// The new reference number, if changing or clearing.
+    /// See type-level docs for the immutability rule.
+    pub reference_no: Option<Option<PostalReferenceNo>>,
+    /// The new sender address, if changing.
+    pub address: Option<FromAddress>,
+    /// The new receive date, if changing.
+    pub date: Option<ReceiveDate>,
+    /// The new note, if changing or clearing.
+    pub note: Option<Option<PostalNote>>,
+    /// The new file attachment, if changing or clearing.
+    pub file: Option<Option<FileReference>>,
+    /// The acting user.
+    pub actor: UserId,
+    /// The update timestamp.
+    pub at: Timestamp,
+    /// The event id for the update.
+    pub event_id: EventId,
+}
+
+/// A postal item received by the school. The receive is
+/// recorded with a `from_title`, `to_title`, an optional
+/// reference number, an address, a date, an optional note, and
+/// an optional attachment. The `reference_no` is **unique
+/// within `(school_id, academic_id)` when set** (per
+/// `docs/specs/documents/aggregates.md` § "PostalReceive"
+/// invariant 2) and is **immutable once set** (per the Postal
+/// Receive Tracking workflow, step 3). The aggregate is
+/// anchored to a school and an academic year and is never
+/// hard-deleted (invariant 5): the soft-delete path is the
+/// only delete.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PostalReceive {
+    /// The typed id.
+    pub id: PostalReceiveId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The academic year scope (per `(school_id, academic_id)`
+    /// uniqueness for `reference_no`).
+    pub academic_id: AcademicYearId,
+    /// The sender's name/title (1..=191 chars).
+    pub from_title: FromTitle,
+    /// The recipient's name/title (1..=191 chars).
+    pub to_title: ToTitle,
+    /// The optional reference number (unique within
+    /// `(school_id, academic_id)`; immutable once set).
+    pub reference_no: Option<PostalReferenceNo>,
+    /// The sender's address (1..=191 chars).
+    pub address: FromAddress,
+    /// The receive date (may be in the past for back-filling).
+    pub date: ReceiveDate,
+    /// The optional note (1..=5000 chars).
+    pub note: Option<PostalNote>,
+    /// The optional file attachment (scanned copy of the
+    /// letter or its envelope).
+    pub file: Option<FileReference>,
+    /// The soft-delete flag (`true` = active, `false` =
+    /// archived).
+    pub active_status: ActiveStatus,
+    // ---- Audit footer (8 fields, mirrors the engine standard) ----
+    /// The optimistic-concurrency version.
+    pub version: Version,
+    /// The content hash for conflict resolution.
+    pub etag: Etag,
+    /// The creation timestamp.
+    pub created_at: Timestamp,
+    /// The last-update timestamp.
+    pub updated_at: Timestamp,
+    /// The creating user.
+    pub created_by: UserId,
+    /// The last-updating user.
+    pub updated_by: UserId,
+    /// The id of the last event that mutated this aggregate.
+    pub last_event_id: Option<EventId>,
+    /// The correlation id for the request that created the row.
+    pub correlation_id: CorrelationId,
+}
+
+impl PostalReceive {
+    /// Constructs a new `PostalReceive` in the active state.
+    /// `school_id` is **derived from `id.school_id()`** and is
+    /// never taken from the caller.
+    pub fn new(cmd: NewPostalReceive) -> Result<Self, DocumentsError> {
+        Ok(Self {
+            school_id: cmd.id.school_id(),
+            id: cmd.id,
+            academic_id: cmd.academic_id,
+            from_title: cmd.from_title,
+            to_title: cmd.to_title,
+            reference_no: cmd.reference_no,
+            address: cmd.address,
+            date: cmd.date,
+            note: cmd.note,
+            file: cmd.file,
+            active_status: ActiveStatus::new(true),
+            version: Version::initial(),
+            etag: Etag::placeholder(),
+            created_at: cmd.created_at,
+            updated_at: cmd.created_at,
+            created_by: cmd.created_by,
+            updated_by: cmd.created_by,
+            last_event_id: None,
+            correlation_id: cmd.correlation_id,
+        })
+    }
+
+    /// Applies changes to the receive. Rejects updates on
+    /// soft-deleted records. **Rejects any attempt to change
+    /// the `reference_no`** — the reference number is
+    /// immutable once set; setting or clearing it returns
+    /// [`DocumentsError::ReferenceNoImmutable`]. The check is
+    /// strict (any new value different from the existing one
+    /// is rejected) and tolerates idempotent no-op calls
+    /// where the caller resends the existing value.
+    pub fn update(&mut self, cmd: UpdatePostalReceive) -> Result<(), DocumentsError> {
+        if !self.active_status.is_active() {
+            return Err(DocumentsError::Conflict(
+                "cannot update a soft-deleted postal receive".to_owned(),
+            ));
+        }
+        if let Some(rid) = cmd.academic_id {
+            self.academic_id = rid;
+        }
+        if let Some(t) = cmd.from_title {
+            self.from_title = t;
+        }
+        if let Some(t) = cmd.to_title {
+            self.to_title = t;
+        }
+        if let Some(rn) = cmd.reference_no {
+            if rn != self.reference_no {
+                return Err(DocumentsError::ReferenceNoImmutable);
+            }
+        }
+        if let Some(a) = cmd.address {
+            self.address = a;
+        }
+        if let Some(d) = cmd.date {
+            self.date = d;
+        }
+        if let Some(n) = cmd.note {
+            self.note = n;
+        }
+        if let Some(f) = cmd.file {
+            self.file = f;
+        }
+        self.updated_at = cmd.at;
+        self.updated_by = cmd.actor;
+        self.version = self.version.next();
+        self.last_event_id = Some(cmd.event_id);
+        Ok(())
+    }
+
+    /// Soft-deletes the receive. Sets `active_status = false`
+    /// and bumps the version. Returns [`DocumentsError::Conflict`]
+    /// when the receive is already soft-deleted.
+    pub fn soft_delete(
+        &mut self,
+        actor: UserId,
+        at: Timestamp,
+    ) -> Result<(), DocumentsError> {
+        if !self.active_status.is_active() {
+            return Err(DocumentsError::Conflict(
+                "postal receive is already soft-deleted".to_owned(),
+            ));
+        }
+        self.active_status = ActiveStatus::new(false);
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Returns `true` if the receive is active (not
+    /// soft-deleted).
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+}
+
+// =============================================================================
+// PostalReceiveAttachment — child entity (owner 1C)
+// =============================================================================
+
+/// An optional `FileReference` attached to a
+/// [`PostalReceive`], typically a scanned copy of the letter
+/// or its envelope. The child entity has its own typed id
+/// (`PostalReceiveAttachmentId`) but is loaded and persisted
+/// only through its aggregate root. The 1:1 cardinality is
+/// enforced at the aggregate level.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PostalReceiveAttachment {
+    /// The typed id.
+    pub id: PostalReceiveAttachmentId,
+    /// The owning receive id (FK to the parent aggregate).
+    pub receive_id: PostalReceiveId,
+    /// The owning school (immutable, equals `id.school_id()` and
+    /// `receive_id.school_id()`).
+    pub school_id: SchoolId,
+    /// The scanned file reference.
+    pub file: FileReference,
+    /// The creation timestamp.
+    pub created_at: Timestamp,
+    /// The last-update timestamp.
+    pub updated_at: Timestamp,
+    /// The creating user.
+    pub created_by: UserId,
+    /// The last-updating user.
+    pub updated_by: UserId,
+}
+
+impl PostalReceiveAttachment {
+    /// Constructs a new `PostalReceiveAttachment` in the
+    /// initial state. The id is generated as a UUIDv7 via
+    /// [`Uuid::now_v7`]. The tenant-invariant
+    /// (`school_id == receive_id.school_id()`) is checked via
+    /// `debug_assert_eq!`; passing mismatched ids is a
+    /// dispatcher bug, not a user error.
+    #[allow(clippy::missing_const_for_fn)]
+    pub fn new(
+        school_id: SchoolId,
+        receive_id: PostalReceiveId,
+        file: FileReference,
+        at: Timestamp,
+        actor: UserId,
+    ) -> Self {
+        debug_assert_eq!(school_id, receive_id.school_id());
+        let id = PostalReceiveAttachmentId::new(school_id, Uuid::now_v7());
+        Self {
+            id,
+            receive_id,
+            school_id,
+            file,
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+        }
+    }
+}
+
 // === PostalReceive section end ===
+
