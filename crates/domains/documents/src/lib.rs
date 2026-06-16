@@ -67,6 +67,24 @@ pub mod prelude {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prelude::{
+        DeleteFormCommand, DeletePostalDispatchCommand, DeletePostalReceiveCommand,
+        DispatchPostalCommand, FormDeleted, FormDownloadFile, FormDownloadFileId,
+        FormDownloadLink, FormDownloadLinkId, FormDownloadQuery, FormDownloadRepository,
+        FormUpdated, FormUploaded, PostalDispatchAttachment, PostalDispatchAttachmentId,
+        PostalDispatchDeleted, PostalDispatchQuery, PostalDispatchRepository,
+        PostalDispatchUpdated, PostalDispatched, PostalReceiveAttachment,
+        PostalReceiveAttachmentId, PostalReceiveDeleted, PostalReceiveQuery,
+        PostalReceiveRepository, PostalReceiveUpdated, PostalReceived, ReceivePostalCommand,
+        TrackPostalCommand, UpdateFormCommand, UpdatePostalDispatchCommand,
+        UpdatePostalReceiveCommand, UploadFormCommand,
+    };
+    use crate::value_objects::{
+        ActiveStatus, DispatchDate, DocumentType, DocumentVisibility, FileReference,
+        FormDescription, FormDownloadId, FormTitle, FromAddress, FromTitle, PostalAddress,
+        PostalDispatchId, PostalNote, PostalReceiveId, PostalReferenceNo, PostalTitle,
+        PublishDate, ReceiveDate, ShowPublic, ToAddress, ToTitle, Url,
+    };
     #[test]
     fn package_metadata_is_set() {
         assert_eq!(PACKAGE_NAME, "educore-documents");
@@ -80,5 +98,103 @@ mod tests {
         let _: fn() -> FormDownload = || unreachable!();
         let _: fn() -> PostalDispatch = || unreachable!();
         let _: fn() -> PostalReceive = || unreachable!();
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 11 / 4-tests — extended prelude re-export smoke tests.
+    //
+    // The body of each function is `unreachable!()`; the test passes if
+    // and only if the type path resolves. This is the engine's
+    // compile-time proof that the prelude is intact.
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn prelude_commands_resolve() {
+        let _: fn() -> DeleteFormCommand = || unreachable!();
+        let _: fn() -> DeletePostalDispatchCommand = || unreachable!();
+        let _: fn() -> DeletePostalReceiveCommand = || unreachable!();
+        let _: fn() -> DispatchPostalCommand = || unreachable!();
+        let _: fn() -> ReceivePostalCommand = || unreachable!();
+        let _: fn() -> TrackPostalCommand = || unreachable!();
+        let _: fn() -> UpdateFormCommand = || unreachable!();
+        let _: fn() -> UpdatePostalDispatchCommand = || unreachable!();
+        let _: fn() -> UpdatePostalReceiveCommand = || unreachable!();
+        let _: fn() -> UploadFormCommand = || unreachable!();
+    }
+
+    #[test]
+    fn prelude_events_resolve() {
+        let _: fn() -> FormDeleted = || unreachable!();
+        let _: fn() -> FormUpdated = || unreachable!();
+        let _: fn() -> FormUploaded = || unreachable!();
+        let _: fn() -> PostalDispatchDeleted = || unreachable!();
+        let _: fn() -> PostalDispatchUpdated = || unreachable!();
+        let _: fn() -> PostalDispatched = || unreachable!();
+        let _: fn() -> PostalReceiveDeleted = || unreachable!();
+        let _: fn() -> PostalReceiveUpdated = || unreachable!();
+        let _: fn() -> PostalReceived = || unreachable!();
+    }
+
+    #[test]
+    fn prelude_entities_resolve() {
+        let _: fn() -> FormDownloadFileId = || unreachable!();
+        let _: fn() -> FormDownloadLinkId = || unreachable!();
+        let _: fn() -> PostalDispatchAttachmentId = || unreachable!();
+        let _: fn() -> PostalReceiveAttachmentId = || unreachable!();
+    }
+
+    #[test]
+    fn prelude_value_objects_resolve() {
+        let _: fn() -> ActiveStatus = || unreachable!();
+        let _: fn() -> DispatchDate = || unreachable!();
+        let _: fn() -> DocumentType = || unreachable!();
+        let _: fn() -> DocumentVisibility = || unreachable!();
+        let _: fn() -> FileReference = || unreachable!();
+        let _: fn() -> FormDescription = || unreachable!();
+        let _: fn() -> FormDownloadId = || unreachable!();
+        let _: fn() -> FormTitle = || unreachable!();
+        let _: fn() -> FromAddress = || unreachable!();
+        let _: fn() -> FromTitle = || unreachable!();
+        let _: fn() -> PostalAddress = || unreachable!();
+        let _: fn() -> PostalDispatchId = || unreachable!();
+        let _: fn() -> PostalNote = || unreachable!();
+        let _: fn() -> PostalReceiveId = || unreachable!();
+        let _: fn() -> PostalReferenceNo = || unreachable!();
+        let _: fn() -> PostalTitle = || unreachable!();
+        let _: fn() -> PublishDate = || unreachable!();
+        let _: fn() -> ReceiveDate = || unreachable!();
+        let _: fn() -> ShowPublic = || unreachable!();
+        let _: fn() -> ToAddress = || unreachable!();
+        let _: fn() -> ToTitle = || unreachable!();
+        let _: fn() -> Url = || unreachable!();
+    }
+
+    #[test]
+    fn prelude_aggregate_children_resolve() {
+        let _: fn() -> FormDownloadFile = || unreachable!();
+        let _: fn() -> FormDownloadLink = || unreachable!();
+        let _: fn() -> PostalDispatchAttachment = || unreachable!();
+        let _: fn() -> PostalReceiveAttachment = || unreachable!();
+    }
+
+    #[test]
+    fn prelude_repositories_resolve() {
+        // The traits are object-safe (their existence as
+        // `Box<dyn ...>` is proven in the `repository.rs` test
+        // block). The compile-time check here is that the
+        // trait re-exports are reachable. We use
+        // `std::any::TypeId::of` on a `dyn Trait` reference;
+        // the reference requires the trait name to resolve
+        // and to be object-safe.
+        let _ = std::any::TypeId::of::<dyn FormDownloadRepository>();
+        let _ = std::any::TypeId::of::<dyn PostalDispatchRepository>();
+        let _ = std::any::TypeId::of::<dyn PostalReceiveRepository>();
+    }
+
+    #[test]
+    fn prelude_query_structs_resolve() {
+        let _: fn() -> FormDownloadQuery = || unreachable!();
+        let _: fn() -> PostalDispatchQuery = || unreachable!();
+        let _: fn() -> PostalReceiveQuery = || unreachable!();
     }
 }

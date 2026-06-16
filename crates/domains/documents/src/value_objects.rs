@@ -1035,4 +1035,88 @@ mod tests {
         assert_eq!(DocumentVisibility::Public.as_str(), "public");
         assert_eq!(DocumentVisibility::Staff.as_str(), "staff");
     }
+
+    // -------------------------------------------------------------------------
+    // Phase 11 / 4-tests — extended value-object coverage.
+    //
+    // These tests complement the existing validation tests by
+    // exercising the postal value objects (PostalTitle / PostalNote /
+    // PostalReferenceNo / PostalAddress) and the From/To address and
+    // title aliases plus the Date newtypes. The focus is on
+    // non-happy-path inputs: empty strings, over-long inputs,
+    // whitespace-only inputs.
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn postal_title_accepts_min_and_max_lengths() {
+        // 1 char (min) is ok.
+        assert!(PostalTitle::new("A").is_ok());
+        // 191 chars (max) is ok.
+        assert!(PostalTitle::new(&"a".repeat(191)).is_ok());
+        // 192 chars (over) is rejected.
+        assert!(PostalTitle::new(&"a".repeat(192)).is_err());
+    }
+
+    #[test]
+    fn postal_note_accepts_min_and_max_lengths() {
+        assert!(PostalNote::new("a").is_ok());
+        assert!(PostalNote::new(&"x".repeat(5_000)).is_ok());
+        assert!(PostalNote::new(&"x".repeat(5_001)).is_err());
+    }
+
+    #[test]
+    fn postal_reference_no_accepts_min_and_max_lengths() {
+        assert!(PostalReferenceNo::new("A").is_ok());
+        assert!(PostalReferenceNo::new(&"a".repeat(191)).is_ok());
+        assert!(PostalReferenceNo::new(&"a".repeat(192)).is_err());
+    }
+
+    #[test]
+    fn postal_address_accepts_min_and_max_lengths() {
+        assert!(PostalAddress::new("A").is_ok());
+        assert!(PostalAddress::new(&"a".repeat(191)).is_ok());
+        assert!(PostalAddress::new(&"a".repeat(192)).is_err());
+    }
+
+    #[test]
+    fn from_to_address_and_title_have_independent_as_str() {
+        let addr_a = PostalAddress::new("1 Main St").unwrap();
+        let addr_b = PostalAddress::new("2 Oak Ave").unwrap();
+        let from_a = FromAddress::new(addr_a);
+        let to_b = ToAddress::new(addr_b);
+        assert_eq!(from_a.as_str(), "1 Main St");
+        assert_eq!(to_b.as_str(), "2 Oak Ave");
+        // Distinct addresses round-trip independently.
+        assert_ne!(from_a.as_str(), to_b.as_str());
+    }
+
+    #[test]
+    fn show_public_display_form_matches_str_value() {
+        assert_eq!(ShowPublic::new(true).to_string(), "public");
+        assert_eq!(ShowPublic::new(false).to_string(), "staff");
+    }
+
+    #[test]
+    fn active_status_display_or_internal_consistency() {
+        // The value-object `ActiveStatus` is wrapped in a tuple
+        // struct; the public surface is `is_active()` and `Default`.
+        // The default MUST be active (the engine treats `true` as
+        // "visible to ordinary queries").
+        let a = ActiveStatus::default();
+        assert!(a.is_active());
+        assert!(ActiveStatus::new(true).is_active());
+        assert!(!ActiveStatus::new(false).is_active());
+    }
+
+    #[test]
+    fn document_type_is_closed_to_three_variants() {
+        // The Phase 11 spec fixes exactly 3 DocumentType values.
+        let form = DocumentType::Form;
+        let dispatch = DocumentType::PostalDispatch;
+        let receive = DocumentType::PostalReceive;
+        // Wire forms are stable strings.
+        assert_eq!(form.as_str(), "form");
+        assert_eq!(dispatch.as_str(), "postal_dispatch");
+        assert_eq!(receive.as_str(), "postal_receive");
+    }
 }

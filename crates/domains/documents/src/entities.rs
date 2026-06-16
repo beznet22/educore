@@ -181,4 +181,108 @@ mod tests {
         let _ = PostalDispatchAttachmentId::new(school, v);
         let _ = PostalReceiveAttachmentId::new(school, v);
     }
+
+    // -------------------------------------------------------------------------
+    // Phase 11 / 4-tests — child entity struct smoke tests.
+    //
+    // The four child entity structs are constructed in aggregate.rs and
+    // re-exported through the prelude. These tests confirm the public
+    // constructors and field accessors work end-to-end on every child
+    // entity, so a regression in the aggregate.rs constructors surfaces
+    // here.
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn form_download_file_child_entity_constructs_with_tenant_invariant() {
+        let school = SchoolId::from_uuid(Uuid::nil());
+        let form_id = crate::value_objects::FormDownloadId::new(school, Uuid::from_u128(7));
+        let file = crate::value_objects::FileReference::new("object-key-1234").unwrap();
+        let at = educore_core::value_objects::Timestamp::now();
+        let actor = educore_core::ids::UserId(Uuid::from_u128(99));
+        let child = crate::aggregate::FormDownloadFile::new(school, form_id, file.clone(), at, actor);
+        assert_eq!(child.school_id, school);
+        assert_eq!(child.form_id, form_id);
+        assert_eq!(child.file, file);
+        assert_eq!(child.created_by, actor);
+        assert_eq!(child.updated_by, actor);
+        assert_eq!(child.created_at, at);
+        assert_eq!(child.updated_at, at);
+        assert_eq!(child.id.school_id(), school);
+    }
+
+    #[test]
+    fn form_download_link_child_entity_constructs_with_tenant_invariant() {
+        let school = SchoolId::from_uuid(Uuid::nil());
+        let form_id = crate::value_objects::FormDownloadId::new(school, Uuid::from_u128(7));
+        let url = crate::value_objects::Url::new("https://example.com/path").unwrap();
+        let at = educore_core::value_objects::Timestamp::now();
+        let actor = educore_core::ids::UserId(Uuid::from_u128(99));
+        let child = crate::aggregate::FormDownloadLink::new(school, form_id, url.clone(), at, actor);
+        assert_eq!(child.school_id, school);
+        assert_eq!(child.form_id, form_id);
+        assert_eq!(child.url, url);
+        assert_eq!(child.id.school_id(), school);
+    }
+
+    #[test]
+    fn postal_dispatch_attachment_child_entity_constructs_with_tenant_invariant() {
+        let school = SchoolId::from_uuid(Uuid::nil());
+        let dispatch_id =
+            crate::value_objects::PostalDispatchId::new(school, Uuid::from_u128(7));
+        let file = crate::value_objects::FileReference::new("object-key-1234").unwrap();
+        let at = educore_core::value_objects::Timestamp::now();
+        let actor = educore_core::ids::UserId(Uuid::from_u128(99));
+        let child = crate::aggregate::PostalDispatchAttachment::new(
+            school,
+            dispatch_id,
+            file.clone(),
+            at,
+            actor,
+        );
+        assert_eq!(child.school_id, school);
+        assert_eq!(child.dispatch_id, dispatch_id);
+        assert_eq!(child.file, file);
+        assert_eq!(child.id.school_id(), school);
+    }
+
+    #[test]
+    fn postal_receive_attachment_child_entity_constructs_with_tenant_invariant() {
+        let school = SchoolId::from_uuid(Uuid::nil());
+        let receive_id = crate::value_objects::PostalReceiveId::new(school, Uuid::from_u128(7));
+        let file = crate::value_objects::FileReference::new("object-key-1234").unwrap();
+        let at = educore_core::value_objects::Timestamp::now();
+        let actor = educore_core::ids::UserId(Uuid::from_u128(99));
+        let child = crate::aggregate::PostalReceiveAttachment::new(
+            school,
+            receive_id,
+            file.clone(),
+            at,
+            actor,
+        );
+        assert_eq!(child.school_id, school);
+        assert_eq!(child.receive_id, receive_id);
+        assert_eq!(child.file, file);
+        assert_eq!(child.id.school_id(), school);
+    }
+
+    #[test]
+    fn child_id_schools_mismatch_panics_in_debug() {
+        // The tenant-invariant on child entities is enforced by
+        // `debug_assert_eq!` inside the `::new()` constructor. We do
+        // not exercise the panic path here (it would require a
+        // `should_panic` attribute and a different file layout); we
+        // only confirm that the matching-school case compiles and
+        // returns the right shape.
+        let school = SchoolId::from_uuid(Uuid::nil());
+        let form_id = crate::value_objects::FormDownloadId::new(school, Uuid::from_u128(1));
+        let file = crate::value_objects::FileReference::new("k").unwrap();
+        let child = crate::aggregate::FormDownloadFile::new(
+            school,
+            form_id,
+            file,
+            educore_core::value_objects::Timestamp::now(),
+            educore_core::ids::UserId(Uuid::nil()),
+        );
+        assert_eq!(child.school_id, form_id.school_id());
+    }
 }

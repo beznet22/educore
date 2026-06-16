@@ -1010,3 +1010,646 @@ impl PostalReceiveAttachment {
 
 // === PostalReceive section end ===
 
+// =============================================================================
+// Tests
+// =============================================================================
+
+#[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::dbg_macro
+)]
+mod tests {
+    use super::*;
+    use educore_core::clock::IdGenerator as _;
+
+    fn ids() -> (
+        educore_core::ids::SchoolId,
+        educore_core::ids::UserId,
+        educore_core::ids::EventId,
+        educore_core::ids::CorrelationId,
+        educore_core::value_objects::Timestamp,
+    ) {
+        let g = educore_core::clock::SystemIdGen;
+        let s = g.next_school_id();
+        let u = g.next_user_id();
+        let e = g.next_event_id();
+        let c = g.next_correlation_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        (s, u, e, c, t)
+    }
+
+    fn publish_date() -> crate::value_objects::PublishDate {
+        crate::value_objects::PublishDate::new(
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+        )
+    }
+
+    fn file_ref() -> crate::value_objects::FileReference {
+        crate::value_objects::FileReference::new("object-key-1234").unwrap()
+    }
+
+    fn url() -> crate::value_objects::Url {
+        crate::value_objects::Url::new("https://example.com/form.pdf").unwrap()
+    }
+
+    // ---- FormDownload aggregate ----
+
+    #[test]
+    fn form_download_new_with_link_succeeds() {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = NewFormDownload {
+            id,
+            title: crate::value_objects::FormTitle::new("Consent Form").unwrap(),
+            short_description: None,
+            publish_date: publish_date(),
+            link: Some(url()),
+            file: None,
+            show_public: crate::value_objects::ShowPublic::new(false),
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let form = FormDownload::new(cmd).expect("ok");
+        assert!(form.is_active());
+        assert!(!form.is_public());
+        assert!(form.is_deliverable());
+        assert_eq!(form.school_id, s);
+        assert_eq!(form.version, educore_core::value_objects::Version::initial());
+    }
+
+    #[test]
+    fn form_download_new_with_file_succeeds() {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = NewFormDownload {
+            id,
+            title: crate::value_objects::FormTitle::new("Download Form").unwrap(),
+            short_description: Some(
+                crate::value_objects::FormDescription::new("Please download").unwrap(),
+            ),
+            publish_date: publish_date(),
+            link: None,
+            file: Some(file_ref()),
+            show_public: crate::value_objects::ShowPublic::new(true),
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let form = FormDownload::new(cmd).expect("ok");
+        assert!(form.is_active());
+        assert!(form.is_public());
+        assert!(form.is_deliverable());
+    }
+
+    #[test]
+    fn form_download_new_with_both_link_and_file_succeeds() {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = NewFormDownload {
+            id,
+            title: crate::value_objects::FormTitle::new("Both").unwrap(),
+            short_description: None,
+            publish_date: publish_date(),
+            link: Some(url()),
+            file: Some(file_ref()),
+            show_public: crate::value_objects::ShowPublic::default(),
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let form = FormDownload::new(cmd).expect("ok");
+        assert!(form.is_deliverable());
+    }
+
+    #[test]
+    fn form_download_new_without_link_or_file_returns_form_has_no_content() {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = NewFormDownload {
+            id,
+            title: crate::value_objects::FormTitle::new("Empty").unwrap(),
+            short_description: None,
+            publish_date: publish_date(),
+            link: None,
+            file: None,
+            show_public: crate::value_objects::ShowPublic::default(),
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let err = FormDownload::new(cmd).unwrap_err();
+        assert!(matches!(err, DocumentsError::FormHasNoContent));
+    }
+
+    #[test]
+    fn form_download_update_increments_version_and_persists_changes() {
+        let (s, u, e, c, t) = ids();
+        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = NewFormDownload {
+            id,
+            title: crate::value_objects::FormTitle::new("Original").unwrap(),
+            short_description: None,
+            publish_date: publish_date(),
+            link: Some(url()),
+            file: None,
+            show_public: crate::value_objects::ShowPublic::default(),
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let mut form = FormDownload::new(cmd).expect("ok");
+        let v0 = form.version;
+        let u2 = educore_core::clock::SystemIdGen.next_user_id();
+        let t2 = educore_core::value_objects::Timestamp::now();
+        let update = UpdateFormDownload {
+            title: Some(crate::value_objects::FormTitle::new("Updated").unwrap()),
+            short_description: None,
+            publish_date: None,
+            link: None,
+            file: None,
+            show_public: None,
+            actor: u2,
+            at: t2,
+            event_id: e,
+        };
+        form.update(update).expect("update ok");
+        assert_eq!(form.title.as_str(), "Updated");
+        assert_eq!(form.version, v0.next());
+        assert_eq!(form.updated_by, u2);
+        assert_eq!(form.last_event_id, Some(e));
+    }
+
+    #[test]
+    fn form_download_update_on_soft_deleted_returns_conflict() {
+        let (s, u, e, c, t) = ids();
+        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = NewFormDownload {
+            id,
+            title: crate::value_objects::FormTitle::new("X").unwrap(),
+            short_description: None,
+            publish_date: publish_date(),
+            link: Some(url()),
+            file: None,
+            show_public: crate::value_objects::ShowPublic::default(),
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let mut form = FormDownload::new(cmd).expect("ok");
+        form.soft_delete(u, t).expect("soft-delete ok");
+        let update = UpdateFormDownload {
+            title: Some(crate::value_objects::FormTitle::new("Y").unwrap()),
+            short_description: None,
+            publish_date: None,
+            link: None,
+            file: None,
+            show_public: None,
+            actor: u,
+            at: t,
+            event_id: e,
+        };
+        let err = form.update(update).unwrap_err();
+        assert!(matches!(err, DocumentsError::Conflict(_)));
+    }
+
+    #[test]
+    fn form_download_soft_delete_succeeds_then_double_delete_returns_conflict() {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = NewFormDownload {
+            id,
+            title: crate::value_objects::FormTitle::new("X").unwrap(),
+            short_description: None,
+            publish_date: publish_date(),
+            link: Some(url()),
+            file: None,
+            show_public: crate::value_objects::ShowPublic::default(),
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let mut form = FormDownload::new(cmd).expect("ok");
+        let v0 = form.version;
+        form.soft_delete(u, t).expect("first soft-delete ok");
+        assert!(!form.is_active());
+        assert_eq!(form.version, v0.next());
+        let err = form.soft_delete(u, t).unwrap_err();
+        assert!(matches!(err, DocumentsError::Conflict(_)));
+    }
+
+    // ---- PostalDispatch aggregate ----
+
+    fn new_postal_dispatch() -> (PostalDispatch, educore_core::ids::SchoolId) {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::PostalDispatchId::new(s, uuid::Uuid::now_v7());
+        let cmd = NewPostalDispatch {
+            id,
+            academic_id: uuid::Uuid::now_v7(),
+            to_title: crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("Mr Smith").unwrap(),
+            ),
+            from_title: crate::value_objects::FromTitle::new(
+                crate::value_objects::PostalTitle::new("Acme School").unwrap(),
+            ),
+            reference_no: Some(
+                crate::value_objects::PostalReferenceNo::new("REF-2026-0001").unwrap(),
+            ),
+            address: crate::value_objects::ToAddress::new(
+                crate::value_objects::PostalAddress::new("1 Main St").unwrap(),
+            ),
+            date: crate::value_objects::DispatchDate::new(
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            ),
+            note: None,
+            file: None,
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let d = PostalDispatch::new(cmd).expect("new ok");
+        (d, s)
+    }
+
+    #[test]
+    fn postal_dispatch_new_with_valid_state_succeeds() {
+        let (d, s) = new_postal_dispatch();
+        assert_eq!(d.school_id, s);
+        assert!(d.is_active());
+        assert!(d.reference_no.is_some());
+        assert_eq!(
+            d.reference_no.as_ref().unwrap().as_str(),
+            "REF-2026-0001"
+        );
+    }
+
+    #[test]
+    fn postal_dispatch_new_with_no_reference_no_succeeds() {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::PostalDispatchId::new(s, uuid::Uuid::now_v7());
+        let cmd = NewPostalDispatch {
+            id,
+            academic_id: uuid::Uuid::now_v7(),
+            to_title: crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("Mr Jones").unwrap(),
+            ),
+            from_title: crate::value_objects::FromTitle::new(
+                crate::value_objects::PostalTitle::new("Acme School").unwrap(),
+            ),
+            reference_no: None,
+            address: crate::value_objects::ToAddress::new(
+                crate::value_objects::PostalAddress::new("2 Oak Ave").unwrap(),
+            ),
+            date: crate::value_objects::DispatchDate::new(
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            ),
+            note: None,
+            file: None,
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let d = PostalDispatch::new(cmd).expect("ok");
+        assert!(d.reference_no.is_none());
+    }
+
+    #[test]
+    fn postal_dispatch_update_with_reference_no_change_returns_reference_no_immutable() {
+        let (mut d, _s) = new_postal_dispatch();
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let e = educore_core::clock::SystemIdGen.next_event_id();
+        let update = UpdatePostalDispatch {
+            academic_id: None,
+            to_title: None,
+            from_title: None,
+            reference_no: Some(Some(
+                crate::value_objects::PostalReferenceNo::new("REF-OTHER").unwrap(),
+            )),
+            address: None,
+            date: None,
+            note: None,
+            file: None,
+            actor: u,
+            at: t,
+            event_id: e,
+        };
+        let err = d.update(update).unwrap_err();
+        assert!(matches!(err, DocumentsError::ReferenceNoImmutable));
+    }
+
+    #[test]
+    fn postal_dispatch_update_clearing_reference_no_returns_reference_no_immutable() {
+        let (mut d, _s) = new_postal_dispatch();
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let e = educore_core::clock::SystemIdGen.next_event_id();
+        // Setting reference_no to Some(None) attempts to clear it,
+        // which is also rejected (immutable once set).
+        let update = UpdatePostalDispatch {
+            academic_id: None,
+            to_title: None,
+            from_title: None,
+            reference_no: Some(None),
+            address: None,
+            date: None,
+            note: None,
+            file: None,
+            actor: u,
+            at: t,
+            event_id: e,
+        };
+        let err = d.update(update).unwrap_err();
+        assert!(matches!(err, DocumentsError::ReferenceNoImmutable));
+    }
+
+    #[test]
+    fn postal_dispatch_update_with_idempotent_reference_no_succeeds() {
+        let (mut d, _s) = new_postal_dispatch();
+        let v0 = d.version;
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let e = educore_core::clock::SystemIdGen.next_event_id();
+        let update = UpdatePostalDispatch {
+            academic_id: None,
+            to_title: None,
+            from_title: None,
+            reference_no: Some(Some(
+                crate::value_objects::PostalReferenceNo::new("REF-2026-0001").unwrap(),
+            )),
+            address: None,
+            date: None,
+            note: None,
+            file: None,
+            actor: u,
+            at: t,
+            event_id: e,
+        };
+        d.update(update).expect("idempotent re-send ok");
+        assert_eq!(d.version, v0.next());
+    }
+
+    #[test]
+    fn postal_dispatch_update_without_reference_no_change_succeeds() {
+        let (mut d, _s) = new_postal_dispatch();
+        let v0 = d.version;
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let e = educore_core::clock::SystemIdGen.next_event_id();
+        let update = UpdatePostalDispatch {
+            academic_id: None,
+            to_title: Some(crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("Mr Jones").unwrap(),
+            )),
+            from_title: None,
+            reference_no: None,
+            address: None,
+            date: None,
+            note: None,
+            file: None,
+            actor: u,
+            at: t,
+            event_id: e,
+        };
+        d.update(update).expect("ok");
+        assert_eq!(d.version, v0.next());
+        assert_eq!(d.to_title.as_str(), "Mr Jones");
+    }
+
+    #[test]
+    fn postal_dispatch_update_on_soft_deleted_returns_conflict() {
+        let (mut d, _s) = new_postal_dispatch();
+        d.soft_delete(d.created_by, d.created_at)
+            .expect("soft-delete ok");
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let e = educore_core::clock::SystemIdGen.next_event_id();
+        let update = UpdatePostalDispatch {
+            academic_id: None,
+            to_title: Some(crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("X").unwrap(),
+            )),
+            from_title: None,
+            reference_no: None,
+            address: None,
+            date: None,
+            note: None,
+            file: None,
+            actor: u,
+            at: t,
+            event_id: e,
+        };
+        let err = d.update(update).unwrap_err();
+        assert!(matches!(err, DocumentsError::Conflict(_)));
+    }
+
+    #[test]
+    fn postal_dispatch_soft_delete_double_call_returns_conflict() {
+        let (mut d, _s) = new_postal_dispatch();
+        d.soft_delete(d.created_by, d.created_at)
+            .expect("first ok");
+        let err = d.soft_delete(d.created_by, d.created_at).unwrap_err();
+        assert!(matches!(err, DocumentsError::Conflict(_)));
+    }
+
+    // ---- PostalReceive aggregate ----
+
+    fn new_postal_receive() -> (PostalReceive, educore_core::ids::SchoolId) {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::PostalReceiveId::new(s, uuid::Uuid::now_v7());
+        let cmd = NewPostalReceive {
+            id,
+            academic_id: uuid::Uuid::now_v7(),
+            from_title: crate::value_objects::FromTitle::new(
+                crate::value_objects::PostalTitle::new("Acme Vendor").unwrap(),
+            ),
+            to_title: crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("Acme School").unwrap(),
+            ),
+            reference_no: Some(
+                crate::value_objects::PostalReferenceNo::new("REF-IN-0001").unwrap(),
+            ),
+            address: crate::value_objects::FromAddress::new(
+                crate::value_objects::PostalAddress::new("5 Vendor Rd").unwrap(),
+            ),
+            date: crate::value_objects::ReceiveDate::new(
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            ),
+            note: None,
+            file: None,
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let r = PostalReceive::new(cmd).expect("ok");
+        (r, s)
+    }
+
+    #[test]
+    fn postal_receive_new_with_valid_state_succeeds() {
+        let (r, s) = new_postal_receive();
+        assert_eq!(r.school_id, s);
+        assert!(r.is_active());
+        assert!(r.reference_no.is_some());
+    }
+
+    #[test]
+    fn postal_receive_update_with_reference_no_change_returns_reference_no_immutable() {
+        let (mut r, _s) = new_postal_receive();
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let e = educore_core::clock::SystemIdGen.next_event_id();
+        let update = UpdatePostalReceive {
+            academic_id: None,
+            from_title: None,
+            to_title: None,
+            reference_no: Some(Some(
+                crate::value_objects::PostalReferenceNo::new("OTHER").unwrap(),
+            )),
+            address: None,
+            date: None,
+            note: None,
+            file: None,
+            actor: u,
+            at: t,
+            event_id: e,
+        };
+        let err = r.update(update).unwrap_err();
+        assert!(matches!(err, DocumentsError::ReferenceNoImmutable));
+    }
+
+    #[test]
+    fn postal_receive_update_without_reference_no_change_succeeds() {
+        let (mut r, _s) = new_postal_receive();
+        let v0 = r.version;
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let e = educore_core::clock::SystemIdGen.next_event_id();
+        let update = UpdatePostalReceive {
+            academic_id: None,
+            from_title: None,
+            to_title: None,
+            reference_no: None,
+            address: Some(crate::value_objects::FromAddress::new(
+                crate::value_objects::PostalAddress::new("6 New St").unwrap(),
+            )),
+            date: None,
+            note: None,
+            file: None,
+            actor: u,
+            at: t,
+            event_id: e,
+        };
+        r.update(update).expect("ok");
+        assert_eq!(r.version, v0.next());
+        assert_eq!(r.address.as_str(), "6 New St");
+    }
+
+    #[test]
+    fn postal_receive_soft_delete_then_update_returns_conflict() {
+        let (mut r, _s) = new_postal_receive();
+        r.soft_delete(r.created_by, r.created_at)
+            .expect("soft-delete ok");
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let e = educore_core::clock::SystemIdGen.next_event_id();
+        let update = UpdatePostalReceive {
+            academic_id: None,
+            from_title: None,
+            to_title: None,
+            reference_no: None,
+            address: None,
+            date: None,
+            note: None,
+            file: None,
+            actor: u,
+            at: t,
+            event_id: e,
+        };
+        let err = r.update(update).unwrap_err();
+        assert!(matches!(err, DocumentsError::Conflict(_)));
+    }
+
+    #[test]
+    fn postal_receive_soft_delete_double_call_returns_conflict() {
+        let (mut r, _s) = new_postal_receive();
+        r.soft_delete(r.created_by, r.created_at)
+            .expect("first ok");
+        let err = r.soft_delete(r.created_by, r.created_at).unwrap_err();
+        assert!(matches!(err, DocumentsError::Conflict(_)));
+    }
+
+    // ---- is_deliverable / is_public accessors ----
+
+    #[test]
+    fn form_download_is_deliverable_iff_link_or_file_set() {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = NewFormDownload {
+            id,
+            title: crate::value_objects::FormTitle::new("X").unwrap(),
+            short_description: None,
+            publish_date: publish_date(),
+            link: Some(url()),
+            file: None,
+            show_public: crate::value_objects::ShowPublic::default(),
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let form = FormDownload::new(cmd).expect("ok");
+        assert!(form.is_deliverable());
+
+        // Clear the link, set the file, expect deliverable.
+        let mut f2 = form.clone();
+        f2.link = None;
+        f2.file = Some(file_ref());
+        assert!(f2.is_deliverable());
+
+        // Both cleared -> not deliverable. (We bypass the
+        // invariant-checking `update` here and just mutate the
+        // field to assert the accessor — the invariant
+        // enforcement is exercised by the
+        // `update_without_content` test below.)
+        let mut f3 = form.clone();
+        f3.link = None;
+        f3.file = None;
+        assert!(!f3.is_deliverable());
+    }
+
+    #[test]
+    fn form_download_update_clearing_content_returns_form_has_no_content() {
+        let (s, u, e, c, t) = ids();
+        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = NewFormDownload {
+            id,
+            title: crate::value_objects::FormTitle::new("X").unwrap(),
+            short_description: None,
+            publish_date: publish_date(),
+            link: Some(url()),
+            file: None,
+            show_public: crate::value_objects::ShowPublic::default(),
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let mut form = FormDownload::new(cmd).expect("ok");
+        let update = UpdateFormDownload {
+            title: None,
+            short_description: None,
+            publish_date: None,
+            link: Some(None),
+            file: None,
+            show_public: None,
+            actor: u,
+            at: t,
+            event_id: e,
+        };
+        let err = form.update(update).unwrap_err();
+        assert!(matches!(err, DocumentsError::FormHasNoContent));
+    }
+}
+

@@ -249,3 +249,226 @@ impl PostalReceiveQuery {
 }
 
 // === PostalReceive query section end ===
+
+// =============================================================================
+// Tests
+// =============================================================================
+
+#[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::dbg_macro
+)]
+mod tests {
+    use super::*;
+
+    // ---- FormDownloadQuery ----
+
+    #[test]
+    fn form_download_query_default_is_empty() {
+        let q = FormDownloadQuery::default();
+        assert!(q.title.is_none());
+        assert!(q.show_public.is_none());
+        assert!(q.publish_from.is_none());
+        assert!(q.publish_to.is_none());
+        assert!(q.active_status.is_none());
+    }
+
+    #[test]
+    fn form_download_query_new_is_equivalent_to_default() {
+        let a = FormDownloadQuery::new();
+        let b = FormDownloadQuery::default();
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn form_download_query_with_title_accumulates_filter() {
+        let q = FormDownloadQuery::new().with_title(
+            crate::value_objects::FormTitle::new("Consent Form").unwrap(),
+        );
+        assert!(q.title.is_some());
+        assert_eq!(q.title.as_ref().unwrap().as_str(), "Consent Form");
+    }
+
+    #[test]
+    fn form_download_query_with_show_public_accumulates_filter() {
+        let q = FormDownloadQuery::new()
+            .with_show_public(crate::value_objects::ShowPublic::new(true));
+        assert!(q.show_public.is_some());
+        assert!(q.show_public.unwrap().is_public());
+    }
+
+    #[test]
+    fn form_download_query_with_publish_range_accumulates_filters() {
+        let from = crate::value_objects::PublishDate::new(
+            chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        );
+        let to = crate::value_objects::PublishDate::new(
+            chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
+        );
+        let q = FormDownloadQuery::new().with_publish_range(from, to);
+        assert!(q.publish_from.is_some());
+        assert!(q.publish_to.is_some());
+    }
+
+    #[test]
+    fn form_download_query_with_active_accumulates_filter() {
+        let q = FormDownloadQuery::new()
+            .with_active(crate::value_objects::ActiveStatus::new(false));
+        assert!(q.active_status.is_some());
+        assert!(!q.active_status.unwrap().is_active());
+    }
+
+    #[test]
+    fn form_download_query_chained_builders_accumulate_all_filters() {
+        let q = FormDownloadQuery::new()
+            .with_title(crate::value_objects::FormTitle::new("X").unwrap())
+            .with_show_public(crate::value_objects::ShowPublic::new(true))
+            .with_publish_range(
+                crate::value_objects::PublishDate::new(
+                    chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+                ),
+                crate::value_objects::PublishDate::new(
+                    chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
+                ),
+            )
+            .with_active(crate::value_objects::ActiveStatus::new(true));
+        assert!(q.title.is_some());
+        assert!(q.show_public.is_some());
+        assert!(q.publish_from.is_some());
+        assert!(q.publish_to.is_some());
+        assert!(q.active_status.is_some());
+    }
+
+    // ---- PostalDispatchQuery ----
+
+    #[test]
+    fn postal_dispatch_query_default_is_empty() {
+        let q = PostalDispatchQuery::default();
+        assert!(q.to_title.is_none());
+        assert!(q.from_title.is_none());
+        assert!(q.reference_no.is_none());
+        assert!(q.date_from.is_none());
+        assert!(q.date_to.is_none());
+        assert!(q.academic_id.is_none());
+        assert!(q.active_status.is_none());
+    }
+
+    #[test]
+    fn postal_dispatch_query_with_to_title_accumulates_filter() {
+        let q = PostalDispatchQuery::new().with_to_title(
+            crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("X").unwrap(),
+            ),
+        );
+        assert!(q.to_title.is_some());
+    }
+
+    #[test]
+    fn postal_dispatch_query_with_reference_accumulates_filter() {
+        let q = PostalDispatchQuery::new().with_reference(
+            crate::value_objects::PostalReferenceNo::new("REF-001").unwrap(),
+        );
+        assert!(q.reference_no.is_some());
+    }
+
+    #[test]
+    fn postal_dispatch_query_with_date_range_accumulates_filters() {
+        let from = crate::value_objects::DispatchDate::new(
+            chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        );
+        let to = crate::value_objects::DispatchDate::new(
+            chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
+        );
+        let q = PostalDispatchQuery::new().with_date_range(from, to);
+        assert!(q.date_from.is_some());
+        assert!(q.date_to.is_some());
+    }
+
+    #[test]
+    fn postal_dispatch_query_with_academic_year_accumulates_filter() {
+        let year = uuid::Uuid::now_v7();
+        let q = PostalDispatchQuery::new().with_academic_year(year);
+        assert_eq!(q.academic_id, Some(year));
+    }
+
+    #[test]
+    fn postal_dispatch_query_with_active_accumulates_filter() {
+        let q = PostalDispatchQuery::new()
+            .with_active(crate::value_objects::ActiveStatus::new(false));
+        assert!(q.active_status.is_some());
+        assert!(!q.active_status.unwrap().is_active());
+    }
+
+    // ---- PostalReceiveQuery ----
+
+    #[test]
+    fn postal_receive_query_default_is_empty() {
+        let q = PostalReceiveQuery::default();
+        assert!(q.from_title.is_none());
+        assert!(q.to_title.is_none());
+        assert!(q.reference_no.is_none());
+        assert!(q.date_from.is_none());
+        assert!(q.date_to.is_none());
+        assert!(q.academic_id.is_none());
+        assert!(q.active_status.is_none());
+    }
+
+    #[test]
+    fn postal_receive_query_with_from_title_accumulates_filter() {
+        let q = PostalReceiveQuery::new().with_from_title(
+            crate::value_objects::FromTitle::new(
+                crate::value_objects::PostalTitle::new("X").unwrap(),
+            ),
+        );
+        assert!(q.from_title.is_some());
+    }
+
+    #[test]
+    fn postal_receive_query_with_to_title_accumulates_filter() {
+        let q = PostalReceiveQuery::new().with_to_title(
+            crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("Y").unwrap(),
+            ),
+        );
+        assert!(q.to_title.is_some());
+    }
+
+    #[test]
+    fn postal_receive_query_with_reference_accumulates_filter() {
+        let q = PostalReceiveQuery::new().with_reference(
+            crate::value_objects::PostalReferenceNo::new("REF-001").unwrap(),
+        );
+        assert!(q.reference_no.is_some());
+    }
+
+    #[test]
+    fn postal_receive_query_with_date_range_accumulates_filters() {
+        let from = crate::value_objects::ReceiveDate::new(
+            chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        );
+        let to = crate::value_objects::ReceiveDate::new(
+            chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
+        );
+        let q = PostalReceiveQuery::new().with_date_range(from, to);
+        assert!(q.date_from.is_some());
+        assert!(q.date_to.is_some());
+    }
+
+    #[test]
+    fn postal_receive_query_with_academic_year_accumulates_filter() {
+        let year = uuid::Uuid::now_v7();
+        let q = PostalReceiveQuery::new().with_academic_year(year);
+        assert_eq!(q.academic_id, Some(year));
+    }
+
+    #[test]
+    fn postal_receive_query_with_active_accumulates_filter() {
+        let q = PostalReceiveQuery::new()
+            .with_active(crate::value_objects::ActiveStatus::new(false));
+        assert!(q.active_status.is_some());
+        assert!(!q.active_status.unwrap().is_active());
+    }
+}

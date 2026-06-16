@@ -241,3 +241,143 @@ fn _assert_postal_receive_repo_object_safe() {
 }
 
 // === PostalReceive repository section end ===
+
+// =============================================================================
+// Tests
+// =============================================================================
+
+#[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::dbg_macro
+)]
+mod tests {
+    use super::*;
+
+    // Compile-time object-safety smoke tests. Each block forces
+    // the trait to be coerced into a `Box<dyn ...>`; if the trait
+    // loses object safety (e.g. gains an associated type or a
+    // `Self: Sized` bound), the coercion fails to compile.
+
+    fn _assert_object_safe() {
+        fn _f(_: Box<dyn FormDownloadRepository>) {}
+        fn _g(_: Box<dyn PostalDispatchRepository>) {}
+        fn _h(_: Box<dyn PostalReceiveRepository>) {}
+    }
+
+    // Send + Sync smoke tests. The trait is declared as
+    // `Send + Sync`; the assertions below force the compiler to
+    // verify the bound at the test site.
+
+    fn _assert_send_sync<T: Send + Sync + ?Sized>() {}
+
+    #[test]
+    fn form_download_repository_is_send_and_sync() {
+        _assert_send_sync::<dyn FormDownloadRepository>();
+    }
+
+    #[test]
+    fn postal_dispatch_repository_is_send_and_sync() {
+        _assert_send_sync::<dyn PostalDispatchRepository>();
+    }
+
+    #[test]
+    fn postal_receive_repository_is_send_and_sync() {
+        _assert_send_sync::<dyn PostalReceiveRepository>();
+    }
+
+    // Trait-method compile-time proofs. Each helper function
+    // exercises the trait method (the body never runs because
+    // the async block is never polled in this sync test). If a
+    // method is removed or its signature changes, the body of
+    // this function will fail to compile.
+
+    #[allow(dead_code, unused_variables)]
+    fn _form_repo_methods(r: &dyn FormDownloadRepository) {
+        // We call the trait methods inside an `async move`
+        // block, which is a future we never poll. The block
+        // forces the compiler to type-check every method call.
+        // Using owned arguments (no borrowed references) avoids
+        // the lifetime capture issue.
+        let _f1 = async move {
+            let _ = r
+                .get(crate::value_objects::FormDownloadId::new(
+                    educore_core::ids::SchoolId(uuid::Uuid::nil()),
+                    uuid::Uuid::nil(),
+                ))
+                .await;
+        };
+        let _f2 = async move {
+            let _ = r
+                .list(
+                    educore_core::ids::SchoolId(uuid::Uuid::nil()),
+                    crate::query::FormDownloadQuery::default(),
+                )
+                .await;
+        };
+        let _f3 = async move {
+            let _ = r
+                .list_public(educore_core::ids::SchoolId(uuid::Uuid::nil()))
+                .await;
+        };
+        let _f4 = async move {
+            // `insert` and `update` take `&FormDownload`. The
+            // form is constructed inline as proof of the trait
+            // signature; the body never runs.
+            let s = educore_core::ids::SchoolId(uuid::Uuid::nil());
+            let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::nil());
+            let form = crate::aggregate::FormDownload {
+                id,
+                school_id: s,
+                title: crate::value_objects::FormTitle::new("X").unwrap(),
+                short_description: None,
+                publish_date: crate::value_objects::PublishDate::new(
+                    chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+                ),
+                link: None,
+                file: None,
+                show_public: crate::value_objects::ShowPublic::default(),
+                active_status: crate::value_objects::ActiveStatus::new(true),
+                version: educore_core::value_objects::Version::initial(),
+                etag: educore_core::value_objects::Etag::placeholder(),
+                created_at: educore_core::value_objects::Timestamp::now(),
+                updated_at: educore_core::value_objects::Timestamp::now(),
+                created_by: educore_core::ids::UserId(uuid::Uuid::nil()),
+                updated_by: educore_core::ids::UserId(uuid::Uuid::nil()),
+                last_event_id: None,
+                correlation_id: educore_core::ids::CorrelationId(uuid::Uuid::nil()),
+            };
+            let _ = r.insert(&form).await;
+            let _ = r.update(&form).await;
+        };
+        let _f5 = async move {
+            let _ = r
+                .by_publish_date(
+                    educore_core::ids::SchoolId(uuid::Uuid::nil()),
+                    chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+                    chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
+                )
+                .await;
+        };
+        let _f6 = async move {
+            let _ = r
+                .count(
+                    educore_core::ids::SchoolId(uuid::Uuid::nil()),
+                    crate::query::FormDownloadQuery::default(),
+                )
+                .await;
+        };
+        let _f7 = async move {
+            let _ = r
+                .page(
+                    educore_core::ids::SchoolId(uuid::Uuid::nil()),
+                    crate::query::FormDownloadQuery::default(),
+                    0,
+                    10,
+                )
+                .await;
+        };
+    }
+}

@@ -640,3 +640,397 @@ impl DomainEvent for PostalReceiveDeleted {
 }
 
 // === PostalReceive events section end ===
+
+// =============================================================================
+// Tests
+// =============================================================================
+
+#[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::dbg_macro
+)]
+mod tests {
+    use super::*;
+    use educore_core::clock::IdGenerator as _;
+
+    fn ids() -> (
+        educore_core::ids::SchoolId,
+        educore_core::ids::UserId,
+        educore_core::ids::EventId,
+        educore_core::ids::CorrelationId,
+        educore_core::value_objects::Timestamp,
+    ) {
+        let g = educore_core::clock::SystemIdGen;
+        let s = g.next_school_id();
+        let u = g.next_user_id();
+        let e = g.next_event_id();
+        let c = g.next_correlation_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        (s, u, e, c, t)
+    }
+
+    fn title() -> crate::value_objects::FormTitle {
+        crate::value_objects::FormTitle::new("Consent Form").unwrap()
+    }
+
+    fn publish_date() -> crate::value_objects::PublishDate {
+        crate::value_objects::PublishDate::new(
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+        )
+    }
+
+    fn url() -> crate::value_objects::Url {
+        crate::value_objects::Url::new("https://example.com/form.pdf").unwrap()
+    }
+
+    fn file_ref() -> crate::value_objects::FileReference {
+        crate::value_objects::FileReference::new("object-key-1234").unwrap()
+    }
+
+    fn make_form() -> crate::aggregate::FormDownload {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = crate::aggregate::NewFormDownload {
+            id,
+            title: title(),
+            short_description: None,
+            publish_date: publish_date(),
+            link: Some(url()),
+            file: None,
+            show_public: crate::value_objects::ShowPublic::default(),
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        crate::aggregate::FormDownload::new(cmd).expect("ok")
+    }
+
+    fn make_dispatch() -> crate::aggregate::PostalDispatch {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::PostalDispatchId::new(s, uuid::Uuid::now_v7());
+        let cmd = crate::aggregate::NewPostalDispatch {
+            id,
+            academic_id: uuid::Uuid::now_v7(),
+            to_title: crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("Mr Smith").unwrap(),
+            ),
+            from_title: crate::value_objects::FromTitle::new(
+                crate::value_objects::PostalTitle::new("Acme School").unwrap(),
+            ),
+            reference_no: Some(
+                crate::value_objects::PostalReferenceNo::new("REF-2026-0001").unwrap(),
+            ),
+            address: crate::value_objects::ToAddress::new(
+                crate::value_objects::PostalAddress::new("1 Main St").unwrap(),
+            ),
+            date: crate::value_objects::DispatchDate::new(
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            ),
+            note: None,
+            file: None,
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        crate::aggregate::PostalDispatch::new(cmd).expect("ok")
+    }
+
+    fn make_receive() -> crate::aggregate::PostalReceive {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::PostalReceiveId::new(s, uuid::Uuid::now_v7());
+        let cmd = crate::aggregate::NewPostalReceive {
+            id,
+            academic_id: uuid::Uuid::now_v7(),
+            from_title: crate::value_objects::FromTitle::new(
+                crate::value_objects::PostalTitle::new("Acme Vendor").unwrap(),
+            ),
+            to_title: crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("Acme School").unwrap(),
+            ),
+            reference_no: Some(
+                crate::value_objects::PostalReferenceNo::new("REF-IN-0001").unwrap(),
+            ),
+            address: crate::value_objects::FromAddress::new(
+                crate::value_objects::PostalAddress::new("5 Vendor Rd").unwrap(),
+            ),
+            date: crate::value_objects::ReceiveDate::new(
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            ),
+            note: None,
+            file: None,
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        crate::aggregate::PostalReceive::new(cmd).expect("ok")
+    }
+
+    // ---- FormDownload events ----
+
+    #[test]
+    fn form_uploaded_event_metadata_round_trip() {
+        let form = make_form();
+        let s = form.school_id;
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let c = educore_core::clock::SystemIdGen.next_correlation_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let event = FormUploaded::new(&form, u, t, c);
+        assert_eq!(
+            <FormUploaded as DomainEvent>::EVENT_TYPE,
+            "documents.form_download.uploaded"
+        );
+        assert_eq!(<FormUploaded as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(<FormUploaded as DomainEvent>::AGGREGATE_TYPE, "form_download");
+        assert_eq!(event.form_id, form.id);
+        assert_eq!(event.school_id, s);
+        assert_eq!(event.title, form.title);
+        assert_eq!(event.uploaded_by, u);
+        assert_eq!(event.occurred_at, t);
+        assert_eq!(event.correlation_id, c);
+    }
+
+    #[test]
+    fn form_updated_event_metadata_round_trip() {
+        let form = make_form();
+        let s = form.school_id;
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let c = educore_core::clock::SystemIdGen.next_correlation_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let event = FormUpdated::new(
+            &form,
+            vec!["title".to_owned(), "link".to_owned()],
+            u,
+            t,
+            c,
+        );
+        assert_eq!(
+            <FormUpdated as DomainEvent>::EVENT_TYPE,
+            "documents.form_download.updated"
+        );
+        assert_eq!(<FormUpdated as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(<FormUpdated as DomainEvent>::AGGREGATE_TYPE, "form_download");
+        assert_eq!(event.form_id, form.id);
+        assert_eq!(event.school_id, s);
+        assert_eq!(event.changes, vec!["title".to_owned(), "link".to_owned()]);
+    }
+
+    #[test]
+    fn form_deleted_event_metadata_round_trip() {
+        let form = make_form();
+        let s = form.school_id;
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let c = educore_core::clock::SystemIdGen.next_correlation_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let event = FormDeleted::new(&form, u, t, c);
+        assert_eq!(
+            <FormDeleted as DomainEvent>::EVENT_TYPE,
+            "documents.form_download.deleted"
+        );
+        assert_eq!(<FormDeleted as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(<FormDeleted as DomainEvent>::AGGREGATE_TYPE, "form_download");
+        assert_eq!(event.form_id, form.id);
+        assert_eq!(event.school_id, s);
+        assert_eq!(event.deleted_by, u);
+    }
+
+    // ---- PostalDispatch events ----
+
+    #[test]
+    fn postal_dispatched_event_metadata_round_trip() {
+        let dispatch = make_dispatch();
+        let s = dispatch.school_id;
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let c = educore_core::clock::SystemIdGen.next_correlation_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let event = PostalDispatched::new(&dispatch, u, t, c);
+        assert_eq!(
+            <PostalDispatched as DomainEvent>::EVENT_TYPE,
+            "documents.postal_dispatch.dispatched"
+        );
+        assert_eq!(<PostalDispatched as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(
+            <PostalDispatched as DomainEvent>::AGGREGATE_TYPE,
+            "postal_dispatch"
+        );
+        assert_eq!(event.postal_dispatch_id, dispatch.id);
+        assert_eq!(event.school_id, s);
+        assert_eq!(event.reference_no, dispatch.reference_no);
+    }
+
+    #[test]
+    fn postal_dispatch_updated_event_metadata_round_trip() {
+        let dispatch = make_dispatch();
+        let s = dispatch.school_id;
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let c = educore_core::clock::SystemIdGen.next_correlation_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let event = PostalDispatchUpdated::new(
+            &dispatch,
+            vec!["to_title".to_owned()],
+            u,
+            t,
+            c,
+        );
+        assert_eq!(
+            <PostalDispatchUpdated as DomainEvent>::EVENT_TYPE,
+            "documents.postal_dispatch.updated"
+        );
+        assert_eq!(<PostalDispatchUpdated as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(
+            <PostalDispatchUpdated as DomainEvent>::AGGREGATE_TYPE,
+            "postal_dispatch"
+        );
+        assert_eq!(event.postal_dispatch_id, dispatch.id);
+        assert_eq!(event.school_id, s);
+    }
+
+    #[test]
+    fn postal_dispatch_deleted_event_metadata_round_trip() {
+        let dispatch = make_dispatch();
+        let s = dispatch.school_id;
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let c = educore_core::clock::SystemIdGen.next_correlation_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let event = PostalDispatchDeleted::new(&dispatch, u, t, c);
+        assert_eq!(
+            <PostalDispatchDeleted as DomainEvent>::EVENT_TYPE,
+            "documents.postal_dispatch.deleted"
+        );
+        assert_eq!(<PostalDispatchDeleted as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(
+            <PostalDispatchDeleted as DomainEvent>::AGGREGATE_TYPE,
+            "postal_dispatch"
+        );
+        assert_eq!(event.postal_dispatch_id, dispatch.id);
+        assert_eq!(event.school_id, s);
+        assert_eq!(event.deleted_by, u);
+    }
+
+    // ---- PostalReceive events ----
+
+    #[test]
+    fn postal_received_event_metadata_round_trip() {
+        let receive = make_receive();
+        let s = receive.school_id;
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let c = educore_core::clock::SystemIdGen.next_correlation_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let event = PostalReceived::new(&receive, u, t, c);
+        assert_eq!(
+            <PostalReceived as DomainEvent>::EVENT_TYPE,
+            "documents.postal_receive.received"
+        );
+        assert_eq!(<PostalReceived as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(
+            <PostalReceived as DomainEvent>::AGGREGATE_TYPE,
+            "postal_receive"
+        );
+        assert_eq!(event.postal_receive_id, receive.id);
+        assert_eq!(event.school_id, s);
+        assert_eq!(event.reference_no, receive.reference_no);
+    }
+
+    #[test]
+    fn postal_receive_updated_event_metadata_round_trip() {
+        let receive = make_receive();
+        let s = receive.school_id;
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let c = educore_core::clock::SystemIdGen.next_correlation_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let event =
+            PostalReceiveUpdated::new(&receive, vec!["from_title".to_owned()], u, t, c);
+        assert_eq!(
+            <PostalReceiveUpdated as DomainEvent>::EVENT_TYPE,
+            "documents.postal_receive.updated"
+        );
+        assert_eq!(<PostalReceiveUpdated as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(
+            <PostalReceiveUpdated as DomainEvent>::AGGREGATE_TYPE,
+            "postal_receive"
+        );
+        assert_eq!(event.postal_receive_id, receive.id);
+        assert_eq!(event.school_id, s);
+    }
+
+    #[test]
+    fn postal_receive_deleted_event_metadata_round_trip() {
+        let receive = make_receive();
+        let s = receive.school_id;
+        let u = educore_core::clock::SystemIdGen.next_user_id();
+        let c = educore_core::clock::SystemIdGen.next_correlation_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        let event = PostalReceiveDeleted::new(&receive, u, t, c);
+        assert_eq!(
+            <PostalReceiveDeleted as DomainEvent>::EVENT_TYPE,
+            "documents.postal_receive.deleted"
+        );
+        assert_eq!(<PostalReceiveDeleted as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(
+            <PostalReceiveDeleted as DomainEvent>::AGGREGATE_TYPE,
+            "postal_receive"
+        );
+        assert_eq!(event.postal_receive_id, receive.id);
+        assert_eq!(event.school_id, s);
+        assert_eq!(event.deleted_by, u);
+    }
+
+    // ---- Cross-event wire-form coverage ----
+
+    #[test]
+    fn all_nine_event_types_resolve_to_documents_domain_wire_form() {
+        // Smoke test: the EVENT_TYPE for every event matches
+        // the `documents.<aggregate>.<verb>` pattern.
+        assert_eq!(
+            <FormUploaded as DomainEvent>::EVENT_TYPE,
+            "documents.form_download.uploaded"
+        );
+        assert_eq!(
+            <FormUpdated as DomainEvent>::EVENT_TYPE,
+            "documents.form_download.updated"
+        );
+        assert_eq!(
+            <FormDeleted as DomainEvent>::EVENT_TYPE,
+            "documents.form_download.deleted"
+        );
+        assert_eq!(
+            <PostalDispatched as DomainEvent>::EVENT_TYPE,
+            "documents.postal_dispatch.dispatched"
+        );
+        assert_eq!(
+            <PostalDispatchUpdated as DomainEvent>::EVENT_TYPE,
+            "documents.postal_dispatch.updated"
+        );
+        assert_eq!(
+            <PostalDispatchDeleted as DomainEvent>::EVENT_TYPE,
+            "documents.postal_dispatch.deleted"
+        );
+        assert_eq!(
+            <PostalReceived as DomainEvent>::EVENT_TYPE,
+            "documents.postal_receive.received"
+        );
+        assert_eq!(
+            <PostalReceiveUpdated as DomainEvent>::EVENT_TYPE,
+            "documents.postal_receive.updated"
+        );
+        assert_eq!(
+            <PostalReceiveDeleted as DomainEvent>::EVENT_TYPE,
+            "documents.postal_receive.deleted"
+        );
+    }
+
+    #[test]
+    fn all_nine_event_schemas_are_at_version_1() {
+        assert_eq!(<FormUploaded as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(<FormUpdated as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(<FormDeleted as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(<PostalDispatched as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(<PostalDispatchUpdated as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(<PostalDispatchDeleted as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(<PostalReceived as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(<PostalReceiveUpdated as DomainEvent>::SCHEMA_VERSION, 1);
+        assert_eq!(<PostalReceiveDeleted as DomainEvent>::SCHEMA_VERSION, 1);
+    }
+}

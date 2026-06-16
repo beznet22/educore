@@ -524,3 +524,282 @@ impl TrackPostalCommand {
 }
 
 // === PostalReceive commands section end ===
+
+// =============================================================================
+// Tests
+// =============================================================================
+
+#[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::dbg_macro
+)]
+mod tests {
+    use super::*;
+    use educore_core::clock::IdGenerator as _;
+
+    fn ctx() -> (
+        educore_core::tenant::TenantContext,
+        educore_core::ids::SchoolId,
+    ) {
+        let g = educore_core::clock::SystemIdGen;
+        let s = g.next_school_id();
+        let u = g.next_user_id();
+        let c = g.next_correlation_id();
+        let tenant = educore_core::tenant::TenantContext::for_user(
+            s,
+            u,
+            c,
+            educore_core::tenant::UserType::SchoolAdmin,
+        );
+        (tenant, s)
+    }
+
+    fn title() -> crate::value_objects::FormTitle {
+        crate::value_objects::FormTitle::new("Form Title").unwrap()
+    }
+
+    fn url() -> crate::value_objects::Url {
+        crate::value_objects::Url::new("https://example.com/x.pdf").unwrap()
+    }
+
+    fn file_ref() -> crate::value_objects::FileReference {
+        crate::value_objects::FileReference::new("k1").unwrap()
+    }
+
+    fn publish_date() -> crate::value_objects::PublishDate {
+        crate::value_objects::PublishDate::new(
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+        )
+    }
+
+    // ---- Form commands ----
+
+    #[test]
+    fn upload_form_command_into_new_form_download_has_id_and_actor() {
+        let (tenant, s) = ctx();
+        let cmd = UploadFormCommand {
+            tenant: tenant.clone(),
+            title: title(),
+            short_description: None,
+            publish_date: publish_date(),
+            link: Some(url()),
+            file: None,
+            show_public: crate::value_objects::ShowPublic::new(true),
+        };
+        assert_eq!(UploadFormCommand::COMMAND_TYPE, "documents.form_download.upload");
+        let new = cmd.into_new_form_download();
+        assert_eq!(new.id.school_id(), s);
+        assert_eq!(new.created_by, tenant.actor_id);
+        assert_eq!(new.correlation_id, tenant.correlation_id);
+        assert_eq!(new.show_public.is_public(), true);
+    }
+
+    #[test]
+    fn update_form_command_into_update_form_download_carries_fields() {
+        let (tenant, s) = ctx();
+        let form_id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = UpdateFormCommand {
+            tenant: tenant.clone(),
+            form_id,
+            title: Some(title()),
+            short_description: Some(None),
+            publish_date: None,
+            link: None,
+            file: None,
+            show_public: None,
+        };
+        assert_eq!(UpdateFormCommand::COMMAND_TYPE, "documents.form_download.update");
+        let eid = educore_core::clock::SystemIdGen.next_event_id();
+        let u = cmd.into_update_form_download(eid);
+        assert_eq!(u.actor, tenant.actor_id);
+        assert_eq!(u.event_id, eid);
+    }
+
+    #[test]
+    fn delete_form_command_carries_tenant_and_form_id() {
+        let (tenant, s) = ctx();
+        let form_id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = DeleteFormCommand {
+            tenant: tenant.clone(),
+            form_id,
+        };
+        assert_eq!(DeleteFormCommand::COMMAND_TYPE, "documents.form_download.delete");
+        assert_eq!(cmd.form_id, form_id);
+        assert_eq!(cmd.tenant.school_id, s);
+    }
+
+    // ---- PostalDispatch commands ----
+
+    #[test]
+    fn dispatch_postal_command_into_new_postal_dispatch_carries_fields() {
+        let (tenant, s) = ctx();
+        let cmd = DispatchPostalCommand {
+            tenant: tenant.clone(),
+            to_title: crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("Mr Smith").unwrap(),
+            ),
+            from_title: crate::value_objects::FromTitle::new(
+                crate::value_objects::PostalTitle::new("Acme School").unwrap(),
+            ),
+            reference_no: Some(
+                crate::value_objects::PostalReferenceNo::new("REF-2026-0001").unwrap(),
+            ),
+            address: crate::value_objects::ToAddress::new(
+                crate::value_objects::PostalAddress::new("1 Main St").unwrap(),
+            ),
+            date: crate::value_objects::DispatchDate::new(
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            ),
+            note: None,
+            file: None,
+        };
+        assert_eq!(
+            DispatchPostalCommand::COMMAND_TYPE,
+            "documents.postal_dispatch.dispatch"
+        );
+        let id = crate::value_objects::PostalDispatchId::new(s, uuid::Uuid::now_v7());
+        let academic_id = uuid::Uuid::now_v7();
+        let new = cmd.into_new_postal_dispatch(id, academic_id);
+        assert_eq!(new.id, id);
+        assert_eq!(new.academic_id, academic_id);
+        assert_eq!(new.created_by, tenant.actor_id);
+        assert_eq!(new.correlation_id, tenant.correlation_id);
+    }
+
+    #[test]
+    fn update_postal_dispatch_command_into_update_carries_no_reference_no() {
+        let (tenant, s) = ctx();
+        let dispatch_id = crate::value_objects::PostalDispatchId::new(s, uuid::Uuid::now_v7());
+        let cmd = UpdatePostalDispatchCommand {
+            tenant: tenant.clone(),
+            postal_dispatch_id: dispatch_id,
+            to_title: Some(crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("X").unwrap(),
+            )),
+            from_title: None,
+            address: None,
+            date: None,
+            note: None,
+            file: None,
+        };
+        assert_eq!(
+            UpdatePostalDispatchCommand::COMMAND_TYPE,
+            "documents.postal_dispatch.update"
+        );
+        let eid = educore_core::clock::SystemIdGen.next_event_id();
+        let u = cmd.into_update_postal_dispatch(eid);
+        // The aggregate-local `reference_no` MUST be `None` on
+        // the update (the field is immutable; a change is
+        // rejected at the aggregate level).
+        assert!(u.reference_no.is_none());
+        assert!(u.academic_id.is_none());
+        assert_eq!(u.event_id, eid);
+    }
+
+    #[test]
+    fn delete_postal_dispatch_command_carries_tenant_and_id() {
+        let (tenant, s) = ctx();
+        let dispatch_id = crate::value_objects::PostalDispatchId::new(s, uuid::Uuid::now_v7());
+        let cmd = DeletePostalDispatchCommand {
+            tenant: tenant.clone(),
+            postal_dispatch_id: dispatch_id,
+        };
+        assert_eq!(
+            DeletePostalDispatchCommand::COMMAND_TYPE,
+            "documents.postal_dispatch.delete"
+        );
+        assert_eq!(cmd.postal_dispatch_id, dispatch_id);
+    }
+
+    // ---- PostalReceive commands ----
+
+    #[test]
+    fn receive_postal_command_into_new_postal_receive_carries_fields() {
+        let (tenant, s) = ctx();
+        let cmd = ReceivePostalCommand {
+            tenant: tenant.clone(),
+            from_title: crate::value_objects::FromTitle::new(
+                crate::value_objects::PostalTitle::new("Acme Vendor").unwrap(),
+            ),
+            to_title: crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("Acme School").unwrap(),
+            ),
+            reference_no: Some(
+                crate::value_objects::PostalReferenceNo::new("REF-IN-0001").unwrap(),
+            ),
+            address: crate::value_objects::FromAddress::new(
+                crate::value_objects::PostalAddress::new("5 Vendor Rd").unwrap(),
+            ),
+            date: crate::value_objects::ReceiveDate::new(
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            ),
+            note: None,
+            file: None,
+        };
+        assert_eq!(
+            ReceivePostalCommand::COMMAND_TYPE,
+            "documents.postal_receive.receive"
+        );
+        let id = crate::value_objects::PostalReceiveId::new(s, uuid::Uuid::now_v7());
+        let academic_id = uuid::Uuid::now_v7();
+        let new = cmd.into_new_postal_receive(id, academic_id);
+        assert_eq!(new.id, id);
+        assert_eq!(new.academic_id, academic_id);
+        assert_eq!(new.created_by, tenant.actor_id);
+    }
+
+    #[test]
+    fn update_postal_receive_command_into_update_carries_no_reference_no() {
+        let (tenant, s) = ctx();
+        let receive_id = crate::value_objects::PostalReceiveId::new(s, uuid::Uuid::now_v7());
+        let cmd = UpdatePostalReceiveCommand {
+            tenant: tenant.clone(),
+            postal_receive_id: receive_id,
+            from_title: None,
+            to_title: None,
+            address: None,
+            date: None,
+            note: None,
+            file: None,
+        };
+        assert_eq!(
+            UpdatePostalReceiveCommand::COMMAND_TYPE,
+            "documents.postal_receive.update"
+        );
+        let eid = educore_core::clock::SystemIdGen.next_event_id();
+        let u = cmd.into_update_postal_receive(eid);
+        assert!(u.reference_no.is_none());
+        assert!(u.academic_id.is_none());
+        assert_eq!(u.event_id, eid);
+    }
+
+    #[test]
+    fn delete_postal_receive_command_carries_tenant_and_id() {
+        let (tenant, s) = ctx();
+        let receive_id = crate::value_objects::PostalReceiveId::new(s, uuid::Uuid::now_v7());
+        let cmd = DeletePostalReceiveCommand {
+            tenant: tenant.clone(),
+            postal_receive_id: receive_id,
+        };
+        assert_eq!(
+            DeletePostalReceiveCommand::COMMAND_TYPE,
+            "documents.postal_receive.delete"
+        );
+        assert_eq!(cmd.postal_receive_id, receive_id);
+    }
+
+    #[test]
+    fn track_postal_command_carries_reference_no() {
+        let (tenant, s) = ctx();
+        let cmd = TrackPostalCommand {
+            tenant: tenant.clone(),
+            reference_no: crate::value_objects::PostalReferenceNo::new("REF-2026-0001").unwrap(),
+        };
+        assert_eq!(TrackPostalCommand::COMMAND_TYPE, "documents.postal.track");
+        assert_eq!(cmd.reference_no.as_str(), "REF-2026-0001");
+        assert_eq!(cmd.tenant.school_id, s);
+    }
+}

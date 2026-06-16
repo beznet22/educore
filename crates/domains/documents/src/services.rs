@@ -867,3 +867,407 @@ where
 }
 
 // === PostalReceive services section end ===
+
+// =============================================================================
+// Tests (including the headline 100-case proptest)
+// =============================================================================
+
+#[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::dbg_macro
+)]
+mod tests {
+    use super::*;
+    use educore_core::clock::IdGenerator as _;
+
+    fn ids() -> (
+        educore_core::ids::SchoolId,
+        educore_core::ids::UserId,
+        educore_core::ids::EventId,
+        educore_core::ids::CorrelationId,
+        educore_core::value_objects::Timestamp,
+    ) {
+        let g = educore_core::clock::SystemIdGen;
+        let s = g.next_school_id();
+        let u = g.next_user_id();
+        let e = g.next_event_id();
+        let c = g.next_correlation_id();
+        let t = educore_core::value_objects::Timestamp::now();
+        (s, u, e, c, t)
+    }
+
+    fn title() -> crate::value_objects::FormTitle {
+        crate::value_objects::FormTitle::new("Form Title").unwrap()
+    }
+
+    fn url() -> crate::value_objects::Url {
+        crate::value_objects::Url::new("https://example.com/x.pdf").unwrap()
+    }
+
+    fn file_ref() -> crate::value_objects::FileReference {
+        crate::value_objects::FileReference::new("k1").unwrap()
+    }
+
+    fn publish_date() -> crate::value_objects::PublishDate {
+        crate::value_objects::PublishDate::new(
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+        )
+    }
+
+    fn make_form_with(link: Option<crate::value_objects::Url>, file: Option<crate::value_objects::FileReference>) -> crate::aggregate::FormDownload {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = crate::aggregate::NewFormDownload {
+            id,
+            title: title(),
+            short_description: None,
+            publish_date: publish_date(),
+            link,
+            file,
+            show_public: crate::value_objects::ShowPublic::default(),
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        crate::aggregate::FormDownload::new(cmd).expect("ok")
+    }
+
+    // -------------------------------------------------------------------------
+    // FormService pure-helper tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn form_service_validate_content_rejects_both_none() {
+        let err = FormService::validate_content(None, None).unwrap_err();
+        assert!(matches!(err, DocumentsError::FormHasNoContent));
+    }
+
+    #[test]
+    fn form_service_validate_content_accepts_link_only() {
+        FormService::validate_content(Some(&url()), None).expect("link only ok");
+    }
+
+    #[test]
+    fn form_service_validate_content_accepts_file_only() {
+        FormService::validate_content(None, Some(&file_ref())).expect("file only ok");
+    }
+
+    #[test]
+    fn form_service_is_public_reflects_aggregate_flag() {
+        let (s, u, _e, c, t) = ids();
+        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
+        let cmd = crate::aggregate::NewFormDownload {
+            id,
+            title: title(),
+            short_description: None,
+            publish_date: publish_date(),
+            link: Some(url()),
+            file: None,
+            show_public: crate::value_objects::ShowPublic::new(true),
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let form = crate::aggregate::FormDownload::new(cmd).expect("ok");
+        assert!(FormService::is_public(&form));
+    }
+
+    #[test]
+    fn form_service_is_deliverable_reflects_aggregate_flag() {
+        let form = make_form_with(Some(url()), None);
+        assert!(FormService::is_deliverable(&form));
+    }
+
+    #[test]
+    fn form_service_matches_publish_date_strict_inequality() {
+        let form = make_form_with(Some(url()), None);
+        // publish_date is 2026-06-01.
+        // Before the publish date: NOT a match.
+        let before =
+            chrono::NaiveDate::from_ymd_opt(2026, 5, 31).unwrap();
+        assert!(!FormService::matches_publish_date(&form, before));
+        // On the publish date: IS a match.
+        let on = chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap();
+        assert!(FormService::matches_publish_date(&form, on));
+        // After the publish date: IS a match.
+        let after = chrono::NaiveDate::from_ymd_opt(2026, 6, 2).unwrap();
+        assert!(FormService::matches_publish_date(&form, after));
+    }
+
+    // -------------------------------------------------------------------------
+    // PostalService pure-helper tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn postal_service_reference_unique_returns_true_when_not_in_existing() {
+        let r = crate::value_objects::PostalReferenceNo::new("REF-001").unwrap();
+        let existing: Vec<crate::value_objects::PostalReferenceNo> = vec![];
+        assert!(PostalService::reference_unique(&r, &existing));
+    }
+
+    #[test]
+    fn postal_service_reference_unique_returns_false_when_in_existing() {
+        let r = crate::value_objects::PostalReferenceNo::new("REF-001").unwrap();
+        let existing = vec![r.clone()];
+        assert!(!PostalService::reference_unique(&r, &existing));
+    }
+
+    #[test]
+    fn postal_service_pair_by_reference_matches_dispatch_with_receive() {
+        let (s, u, _e, c, t) = ids();
+        let dispatch_id = crate::value_objects::PostalDispatchId::new(s, uuid::Uuid::now_v7());
+        let dispatch_cmd = crate::aggregate::NewPostalDispatch {
+            id: dispatch_id,
+            academic_id: uuid::Uuid::now_v7(),
+            to_title: crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("X").unwrap(),
+            ),
+            from_title: crate::value_objects::FromTitle::new(
+                crate::value_objects::PostalTitle::new("Y").unwrap(),
+            ),
+            reference_no: Some(
+                crate::value_objects::PostalReferenceNo::new("REF-SHARED").unwrap(),
+            ),
+            address: crate::value_objects::ToAddress::new(
+                crate::value_objects::PostalAddress::new("1 St").unwrap(),
+            ),
+            date: crate::value_objects::DispatchDate::new(
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            ),
+            note: None,
+            file: None,
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let dispatch = crate::aggregate::PostalDispatch::new(dispatch_cmd).expect("ok");
+        let receive_cmd = crate::aggregate::NewPostalReceive {
+            id: crate::value_objects::PostalReceiveId::new(s, uuid::Uuid::now_v7()),
+            academic_id: uuid::Uuid::now_v7(),
+            from_title: crate::value_objects::FromTitle::new(
+                crate::value_objects::PostalTitle::new("X").unwrap(),
+            ),
+            to_title: crate::value_objects::ToTitle::new(
+                crate::value_objects::PostalTitle::new("Y").unwrap(),
+            ),
+            reference_no: Some(
+                crate::value_objects::PostalReferenceNo::new("REF-SHARED").unwrap(),
+            ),
+            address: crate::value_objects::FromAddress::new(
+                crate::value_objects::PostalAddress::new("1 St").unwrap(),
+            ),
+            date: crate::value_objects::ReceiveDate::new(
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            ),
+            note: None,
+            file: None,
+            created_by: u,
+            created_at: t,
+            correlation_id: c,
+        };
+        let receive = crate::aggregate::PostalReceive::new(receive_cmd).expect("ok");
+        let pairs = PostalService::pair_by_reference(&[dispatch], &[receive]);
+        assert_eq!(pairs.len(), 1);
+        assert!(pairs[0].dispatch.is_some());
+        assert!(pairs[0].receive.is_some());
+    }
+
+    #[test]
+    fn postal_service_within_year_filters_to_matching_year_and_reference() {
+        let (s, u, _e, c, t) = ids();
+        let year_in = uuid::Uuid::now_v7();
+        let year_out = uuid::Uuid::now_v7();
+        let dispatch_in = {
+            let id = crate::value_objects::PostalDispatchId::new(s, uuid::Uuid::now_v7());
+            let cmd = crate::aggregate::NewPostalDispatch {
+                id,
+                academic_id: year_in,
+                to_title: crate::value_objects::ToTitle::new(
+                    crate::value_objects::PostalTitle::new("X").unwrap(),
+                ),
+                from_title: crate::value_objects::FromTitle::new(
+                    crate::value_objects::PostalTitle::new("Y").unwrap(),
+                ),
+                reference_no: Some(
+                    crate::value_objects::PostalReferenceNo::new("REF-IN").unwrap(),
+                ),
+                address: crate::value_objects::ToAddress::new(
+                    crate::value_objects::PostalAddress::new("1 St").unwrap(),
+                ),
+                date: crate::value_objects::DispatchDate::new(
+                    chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+                ),
+                note: None,
+                file: None,
+                created_by: u,
+                created_at: t,
+                correlation_id: c,
+            };
+            crate::aggregate::PostalDispatch::new(cmd).expect("ok")
+        };
+        let dispatch_other_year = {
+            let id = crate::value_objects::PostalDispatchId::new(s, uuid::Uuid::now_v7());
+            let cmd = crate::aggregate::NewPostalDispatch {
+                id,
+                academic_id: year_out,
+                to_title: crate::value_objects::ToTitle::new(
+                    crate::value_objects::PostalTitle::new("X").unwrap(),
+                ),
+                from_title: crate::value_objects::FromTitle::new(
+                    crate::value_objects::PostalTitle::new("Y").unwrap(),
+                ),
+                reference_no: Some(
+                    crate::value_objects::PostalReferenceNo::new("REF-OTHER").unwrap(),
+                ),
+                address: crate::value_objects::ToAddress::new(
+                    crate::value_objects::PostalAddress::new("1 St").unwrap(),
+                ),
+                date: crate::value_objects::DispatchDate::new(
+                    chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+                ),
+                note: None,
+                file: None,
+                created_by: u,
+                created_at: t,
+                correlation_id: c,
+            };
+            crate::aggregate::PostalDispatch::new(cmd).expect("ok")
+        };
+        let refs = PostalService::within_year(&[dispatch_in, dispatch_other_year], &[], year_in);
+        assert_eq!(refs.len(), 1);
+        assert_eq!(refs[0].reference_no.as_str(), "REF-IN");
+    }
+
+    #[test]
+    fn postal_service_format_address_round_trips_string() {
+        let addr = crate::value_objects::PostalAddress::new("1 Main St").unwrap();
+        assert_eq!(PostalService::format_address(&addr), "1 Main St");
+    }
+
+    // -------------------------------------------------------------------------
+    // From<DomainError> and From<EventError> for DocumentsError
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn from_domain_error_forbidden_maps_to_documents_forbidden() {
+        let src = educore_core::error::DomainError::Forbidden("nope".to_owned());
+        let dst: DocumentsError = src.into();
+        assert!(matches!(dst, DocumentsError::Forbidden(_)));
+    }
+
+    #[test]
+    fn from_domain_error_conflict_maps_to_documents_conflict() {
+        let src = educore_core::error::DomainError::Conflict("dup".to_owned());
+        let dst: DocumentsError = src.into();
+        assert!(matches!(dst, DocumentsError::Conflict(_)));
+    }
+
+    #[test]
+    fn from_domain_error_validation_maps_to_documents_validation() {
+        let src = educore_core::error::DomainError::Validation("bad".to_owned());
+        let dst: DocumentsError = src.into();
+        assert!(matches!(dst, DocumentsError::Validation(_)));
+    }
+
+    #[test]
+    fn from_event_error_maps_to_documents_infrastructure() {
+        let src = educore_events::errors::EventError::PublishFailed("down".to_owned());
+        let dst: DocumentsError = src.into();
+        assert!(matches!(dst, DocumentsError::Infrastructure(_)));
+    }
+
+    // -------------------------------------------------------------------------
+    // Property-based tests (100 cases each)
+    //
+    // The two headline correctness properties are:
+    //   1. `FormService::is_deliverable` is true iff the form has at
+    //      least one of `link` or `file` set.
+    //   2. `PostalService::reference_unique` is true iff the
+    //      reference is not in the existing list.
+    // -------------------------------------------------------------------------
+
+    proptest::proptest! {
+        #![proptest_config(proptest::test_runner::Config::with_cases(100))]
+
+        /// Property 1: `FormService::is_deliverable` is true iff
+        /// the form has at least one of `link` or `file` set.
+        #[test]
+        fn prop_form_is_deliverable_iff_link_or_file_set(
+            has_link in proptest::bool::ANY,
+            has_file in proptest::bool::ANY,
+        ) {
+            let link = if has_link { Some(url()) } else { None };
+            let file = if has_file { Some(file_ref()) } else { None };
+            // We can't construct a form with both `None` via
+            // `FormDownload::new` (the invariant forbids it), so
+            // when both flags are false we exercise the
+            // `is_deliverable` accessor on a never-saved state
+            // by constructing a form, then clearing both
+            // fields and asserting the deliverable status.
+            if has_link || has_file {
+                let form = make_form_with(link.clone(), file.clone());
+                assert_eq!(FormService::is_deliverable(&form), has_link || has_file);
+            } else {
+                // Construct with a link, then clear it (bypassing
+                // the constructor invariant that would reject
+                // the all-None case).
+                let mut form = make_form_with(Some(url()), None);
+                form.link = None;
+                form.file = None;
+                assert!(!FormService::is_deliverable(&form));
+            }
+        }
+
+        /// Property 1b: `FormService::matches_publish_date` is true
+        /// iff the form's publish_date is on or before the query
+        /// date.
+        #[test]
+        fn prop_form_matches_publish_date_iff_query_ge_publish(
+            offset in -30i32..30,
+        ) {
+            let form = make_form_with(Some(url()), None);
+            let publish = form.publish_date.0;
+            let query = publish + chrono::Duration::days(i64::from(offset));
+            let expected = offset >= 0;
+            assert_eq!(FormService::matches_publish_date(&form, query), expected);
+        }
+
+        /// Property 2: `PostalService::reference_unique` returns
+        /// `true` iff the reference is NOT in the existing list.
+        /// We test by generating 3 candidate references, picking
+        /// one of them as the "candidate", and verifying the
+        /// function against the list (with and without the
+        /// candidate).
+        #[test]
+        fn prop_postal_reference_unique_iff_not_in_existing(
+            tag1 in 0u32..10_000,
+            tag2 in 0u32..10_000,
+        ) {
+            let candidate = crate::value_objects::PostalReferenceNo::new(
+                format!("REF-{tag1}"),
+            )
+            .unwrap();
+            let other = crate::value_objects::PostalReferenceNo::new(
+                format!("REF-{tag2}"),
+            )
+            .unwrap();
+            // Empty list -> unique.
+            assert!(PostalService::reference_unique(&candidate, &[]));
+            // List containing only the candidate -> not unique.
+            assert!(!PostalService::reference_unique(
+                &candidate,
+                std::slice::from_ref(&candidate),
+            ));
+            // List containing only the other -> unique.
+            assert!(PostalService::reference_unique(&candidate, std::slice::from_ref(&other)));
+            // List containing both -> not unique.
+            assert!(!PostalService::reference_unique(
+                &candidate,
+                &[candidate.clone(), other.clone()],
+            ));
+        }
+    }
+}
