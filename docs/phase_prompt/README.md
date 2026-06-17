@@ -182,6 +182,31 @@ context lives elsewhere:
 
 ---
 
+## Closing-Agent Verification Checklist
+
+At the close of every build-plan phase N (N ≥ 0), the closing agent creates `docs/phase_prompt/phase-(N+1)-prompt.md` to brief the next-phase agent. Before committing the next-phase prompt, the closing agent must verify all 8 items below. A failed check is a blocker — fix the prompt, not the check.
+
+- [ ] **Mission** mentions "implementation, not design" and declares the spec-faithful scope (or explicitly notes the headline-N interpretation with OQ #1 carried forward).
+- [ ] **Required Reading** lists the prior handoff, build plan § "Phase N", every file in `docs/specs/<domain>/` (all 11 per AGENTS.md), the relevant port contracts, schemas, ADRs, the most recent 9-file domain template, the storage-parity integration test, `AGENTS.md`, and `docs_guidlines/`. Required Reading is **mandatory** — the prompt is a digest, not a replacement for the spec.
+- [ ] **Aggregate names** in the prompt match `docs/specs/<domain>/aggregates.md` exactly (e.g. `NoticeBoard` not `Notice` if the spec says `NoticeBoard`). Cross-reference with the spec before committing.
+- [ ] **"Do NOT" carry-forward rules** are present in Per-Deliverable Gotchas (e.g. no `educore-finance` dep, no `educore-notify` dep — both per Phase 8/10 OQs; verify against the prior handoff's "Where NOT to start" section).
+- [ ] **Workstreams** are named with letter notation (`A=`, `B=`, `C=`, etc.) and the last workstream is `reconcile` (cross-crate placeholders + integration test + coverage flips + handoff docs).
+- [ ] **Exit Criteria** names the close-time deliverables: `PHASE-N-HANDOFF.md` + `phase-(N+1)-prompt.md` + `progress-tracker.md` + `build-plan.md § "Phase N outcome."`.
+- [ ] **Coverage target** reflects the chosen scope (spec-faithful = full aggregate count, headline-N = N rows). Verify against `docs/coverage.toml` Pending count.
+- [ ] **Total line count ≤ 50** (run `wc -l docs/phase_prompt/phase-N-prompt.md` to verify; the prompt is a digest, not a replacement for the spec).
+
+## Subagent Orchestration
+
+To prevent two or more subagents from being given the same work, every phase must enforce the following 5-layer guarantees. These are the rules that closed Phases 8–11 successfully (the first phase to break these rules will produce a duplicate-work collision and a non-mergeable state).
+
+1. **File-level ownership.** Every file in the owned crate is assigned to exactly one subagent. No two subagents open the same file. The orchestrator maintains a file-ownership map in the phase plan and embeds the list of forbidden files in every parallel-subagent prompt.
+2. **Section-level pre-allocation.** For files that must be touched by multiple workstreams (e.g. `aggregate.rs` for 3+ root aggregates), the prep subagent pre-creates the file with named section markers (`// === <Aggregate> section begin (owner: <WorkstreamLetter>) ===` / `// === <Aggregate> section end ===`). Each workstream subagent's `Edit` anchors fall strictly inside its assigned range. A subagent that crosses a marker aborts and reports to the orchestrator.
+3. **Sequential phase gates.** The phase advances through fixed stages: `P0 prep` (single subagent, scaffolds shared files + cross-crate extensions) → `R1 reconcile-prep` (read-only verifier) → `wave 1/2/3` parallel workstreams → `R2 reconcile-impl` → `4-tests` → `5-docs` → `R3 final-validation` (9-command gate). A phase does not start until the prior phase's gate passes.
+4. **Atomic commits per microtask.** Every subagent produces exactly one commit with a `Phase N: <scope> (<workstream>)` message + `Co-Authored-By: Antigravity <antigravity@google.com>` trailer. The orchestrator inspects `git log --stat` after every phase to detect any out-of-scope file. A "do not run cargo test" rule applies to the parallel phase — the orchestrator runs the gate, not the subagents.
+5. **Reconciler subagents are read-only.** `R1`, `R2`, `R3` are dedicated reconciler subagents. They verify section boundaries + duplicate detection + stub-replacement but never write code. A reconciler that finds a violation halts the phase.
+
+---
+
 ## Versioning
 
 The per-phase prompts in this directory are part of the
