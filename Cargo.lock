@@ -1365,11 +1365,20 @@ version = "0.1.0"
 name = "educore-cms"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "bytes",
+ "chrono",
+ "educore-academic",
+ "educore-audit",
  "educore-core",
  "educore-events",
  "educore-platform",
  "educore-rbac",
  "educore-settings",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "uuid",
 ]
 
 [[package]]
@@ -1740,6 +1749,7 @@ dependencies = [
  "educore-assessment",
  "educore-attendance",
  "educore-audit",
+ "educore-cms",
  "educore-communication",
  "educore-core",
  "educore-documents",

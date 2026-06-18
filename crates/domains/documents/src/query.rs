@@ -285,17 +285,16 @@ mod tests {
 
     #[test]
     fn form_download_query_with_title_accumulates_filter() {
-        let q = FormDownloadQuery::new().with_title(
-            crate::value_objects::FormTitle::new("Consent Form").unwrap(),
-        );
+        let q = FormDownloadQuery::new()
+            .with_title(crate::value_objects::FormTitle::new("Consent Form").unwrap());
         assert!(q.title.is_some());
         assert_eq!(q.title.as_ref().unwrap().as_str(), "Consent Form");
     }
 
     #[test]
     fn form_download_query_with_show_public_accumulates_filter() {
-        let q = FormDownloadQuery::new()
-            .with_show_public(crate::value_objects::ShowPublic::new(true));
+        let q =
+            FormDownloadQuery::new().with_show_public(crate::value_objects::ShowPublic::new(true));
         assert!(q.show_public.is_some());
         assert!(q.show_public.unwrap().is_public());
     }
@@ -315,8 +314,8 @@ mod tests {
 
     #[test]
     fn form_download_query_with_active_accumulates_filter() {
-        let q = FormDownloadQuery::new()
-            .with_active(crate::value_objects::ActiveStatus::new(false));
+        let q =
+            FormDownloadQuery::new().with_active(crate::value_objects::ActiveStatus::new(false));
         assert!(q.active_status.is_some());
         assert!(!q.active_status.unwrap().is_active());
     }
@@ -358,19 +357,16 @@ mod tests {
 
     #[test]
     fn postal_dispatch_query_with_to_title_accumulates_filter() {
-        let q = PostalDispatchQuery::new().with_to_title(
-            crate::value_objects::ToTitle::new(
-                crate::value_objects::PostalTitle::new("X").unwrap(),
-            ),
-        );
+        let q = PostalDispatchQuery::new().with_to_title(crate::value_objects::ToTitle::new(
+            crate::value_objects::PostalTitle::new("X").unwrap(),
+        ));
         assert!(q.to_title.is_some());
     }
 
     #[test]
     fn postal_dispatch_query_with_reference_accumulates_filter() {
-        let q = PostalDispatchQuery::new().with_reference(
-            crate::value_objects::PostalReferenceNo::new("REF-001").unwrap(),
-        );
+        let q = PostalDispatchQuery::new()
+            .with_reference(crate::value_objects::PostalReferenceNo::new("REF-001").unwrap());
         assert!(q.reference_no.is_some());
     }
 
@@ -396,8 +392,8 @@ mod tests {
 
     #[test]
     fn postal_dispatch_query_with_active_accumulates_filter() {
-        let q = PostalDispatchQuery::new()
-            .with_active(crate::value_objects::ActiveStatus::new(false));
+        let q =
+            PostalDispatchQuery::new().with_active(crate::value_objects::ActiveStatus::new(false));
         assert!(q.active_status.is_some());
         assert!(!q.active_status.unwrap().is_active());
     }
@@ -418,29 +414,24 @@ mod tests {
 
     #[test]
     fn postal_receive_query_with_from_title_accumulates_filter() {
-        let q = PostalReceiveQuery::new().with_from_title(
-            crate::value_objects::FromTitle::new(
-                crate::value_objects::PostalTitle::new("X").unwrap(),
-            ),
-        );
+        let q = PostalReceiveQuery::new().with_from_title(crate::value_objects::FromTitle::new(
+            crate::value_objects::PostalTitle::new("X").unwrap(),
+        ));
         assert!(q.from_title.is_some());
     }
 
     #[test]
     fn postal_receive_query_with_to_title_accumulates_filter() {
-        let q = PostalReceiveQuery::new().with_to_title(
-            crate::value_objects::ToTitle::new(
-                crate::value_objects::PostalTitle::new("Y").unwrap(),
-            ),
-        );
+        let q = PostalReceiveQuery::new().with_to_title(crate::value_objects::ToTitle::new(
+            crate::value_objects::PostalTitle::new("Y").unwrap(),
+        ));
         assert!(q.to_title.is_some());
     }
 
     #[test]
     fn postal_receive_query_with_reference_accumulates_filter() {
-        let q = PostalReceiveQuery::new().with_reference(
-            crate::value_objects::PostalReferenceNo::new("REF-001").unwrap(),
-        );
+        let q = PostalReceiveQuery::new()
+            .with_reference(crate::value_objects::PostalReferenceNo::new("REF-001").unwrap());
         assert!(q.reference_no.is_some());
     }
 
@@ -466,8 +457,8 @@ mod tests {
 
     #[test]
     fn postal_receive_query_with_active_accumulates_filter() {
-        let q = PostalReceiveQuery::new()
-            .with_active(crate::value_objects::ActiveStatus::new(false));
+        let q =
+            PostalReceiveQuery::new().with_active(crate::value_objects::ActiveStatus::new(false));
         assert!(q.active_status.is_some());
         assert!(!q.active_status.unwrap().is_active());
     }

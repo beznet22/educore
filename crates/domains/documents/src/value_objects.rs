@@ -447,9 +447,7 @@ impl PostalAddress {
     pub fn new(raw: impl Into<String>) -> Result<Self> {
         let s: String = raw.into();
         if s.is_empty() {
-            return Err(DomainError::validation(
-                "postal address must not be empty",
-            ));
+            return Err(DomainError::validation("postal address must not be empty"));
         }
         if s.chars().count() > Self::MAX_LEN {
             return Err(DomainError::validation(format!(
@@ -689,9 +687,7 @@ impl FileReference {
     pub fn new(raw: impl Into<String>) -> Result<Self> {
         let s: String = raw.into();
         if s.is_empty() {
-            return Err(DomainError::validation(
-                "file reference must be non-empty",
-            ));
+            return Err(DomainError::validation("file reference must be non-empty"));
         }
         Ok(Self(s))
     }

@@ -305,6 +305,44 @@ pub enum AuditTarget {
     // ---- CMS domain -----------------------------------------------------
     /// A CMS page.
     Page(Uuid),
+    /// A CMS news entry.
+    News(Uuid),
+    /// A CMS news category.
+    NewsCategory(Uuid),
+    /// A CMS news comment.
+    NewsComment(Uuid),
+    /// A CMS news landing-page configuration.
+    NewsPage(Uuid),
+    /// A public-site notice board.
+    NoticeBoard(Uuid),
+    /// A testimonial surfaced on the public site.
+    Testimonial(Uuid),
+    /// A home-page slider entry.
+    HomeSlider(Uuid),
+    /// An uploaded content item.
+    Content(Uuid),
+    /// A content type taxonomy entry.
+    ContentType(Uuid),
+    /// A bulk-share list of content items.
+    ContentShareList(Uuid),
+    /// A teacher-uploaded content item (per class-section).
+    TeacherUploadContent(Uuid),
+    /// An admin-uploaded content item (per role/class).
+    UploadContent(Uuid),
+    /// An about-page configuration.
+    AboutPage(Uuid),
+    /// A contact-page configuration.
+    ContactPage(Uuid),
+    /// A course landing page.
+    CoursePage(Uuid),
+    /// A home-page setting.
+    HomePageSetting(Uuid),
+    /// A front-end page record.
+    FrontendPage(Uuid),
+    /// A page revision (historical snapshot).
+    PageRevision(Uuid),
+    /// A news revision (historical snapshot).
+    NewsRevision(Uuid),
     // ---- Events domain (calendar) --------------------------------------
     /// A calendar event.
     CalendarEvent(Uuid),
@@ -420,6 +458,25 @@ impl AuditTarget {
             Self::PostalDispatch(_) => "postal_dispatch",
             Self::PostalReceive(_) => "postal_receive",
             Self::Page(_) => "page",
+            Self::News(_) => "news",
+            Self::NewsCategory(_) => "news_category",
+            Self::NewsComment(_) => "news_comment",
+            Self::NewsPage(_) => "news_page",
+            Self::NoticeBoard(_) => "notice_board",
+            Self::Testimonial(_) => "testimonial",
+            Self::HomeSlider(_) => "home_slider",
+            Self::Content(_) => "content",
+            Self::ContentType(_) => "content_type",
+            Self::ContentShareList(_) => "content_share_list",
+            Self::TeacherUploadContent(_) => "teacher_upload_content",
+            Self::UploadContent(_) => "upload_content",
+            Self::AboutPage(_) => "about_page",
+            Self::ContactPage(_) => "contact_page",
+            Self::CoursePage(_) => "course_page",
+            Self::HomePageSetting(_) => "home_page_setting",
+            Self::FrontendPage(_) => "frontend_page",
+            Self::PageRevision(_) => "page_revision",
+            Self::NewsRevision(_) => "news_revision",
             Self::CalendarEvent(_) => "calendar_event",
             Self::Holiday(_) => "holiday",
             Self::Incident(_) => "incident",
@@ -523,6 +580,25 @@ impl AuditTarget {
             | Self::PostalDispatch(id)
             | Self::PostalReceive(id)
             | Self::Page(id)
+            | Self::News(id)
+            | Self::NewsCategory(id)
+            | Self::NewsComment(id)
+            | Self::NewsPage(id)
+            | Self::NoticeBoard(id)
+            | Self::Testimonial(id)
+            | Self::HomeSlider(id)
+            | Self::Content(id)
+            | Self::ContentType(id)
+            | Self::ContentShareList(id)
+            | Self::TeacherUploadContent(id)
+            | Self::UploadContent(id)
+            | Self::AboutPage(id)
+            | Self::ContactPage(id)
+            | Self::CoursePage(id)
+            | Self::HomePageSetting(id)
+            | Self::FrontendPage(id)
+            | Self::PageRevision(id)
+            | Self::NewsRevision(id)
             | Self::CalendarEvent(id)
             | Self::Holiday(id)
             | Self::Incident(id)
@@ -843,6 +919,25 @@ mod tests {
             AuditTarget::PostalDispatch(id),
             AuditTarget::PostalReceive(id),
             AuditTarget::Page(id),
+            AuditTarget::News(id),
+            AuditTarget::NewsCategory(id),
+            AuditTarget::NewsComment(id),
+            AuditTarget::NewsPage(id),
+            AuditTarget::NoticeBoard(id),
+            AuditTarget::Testimonial(id),
+            AuditTarget::HomeSlider(id),
+            AuditTarget::Content(id),
+            AuditTarget::ContentType(id),
+            AuditTarget::ContentShareList(id),
+            AuditTarget::TeacherUploadContent(id),
+            AuditTarget::UploadContent(id),
+            AuditTarget::AboutPage(id),
+            AuditTarget::ContactPage(id),
+            AuditTarget::CoursePage(id),
+            AuditTarget::HomePageSetting(id),
+            AuditTarget::FrontendPage(id),
+            AuditTarget::PageRevision(id),
+            AuditTarget::NewsRevision(id),
             AuditTarget::CalendarEvent(id),
             AuditTarget::Holiday(id),
             AuditTarget::Incident(id),
@@ -969,6 +1064,47 @@ mod tests {
         let receive_target = AuditTarget::PostalReceive(receive_id);
         assert_eq!(receive_target.target_type(), "postal_receive");
         assert_eq!(receive_target.target_id(), receive_id);
+    }
+
+    #[test]
+    fn cms_audit_target_round_trip_for_all_aggregates() {
+        let id = Uuid::new_v4();
+        let cases: Vec<(AuditTarget, &str)> = vec![
+            (AuditTarget::Page(id), "page"),
+            (AuditTarget::News(id), "news"),
+            (AuditTarget::NewsCategory(id), "news_category"),
+            (AuditTarget::NewsComment(id), "news_comment"),
+            (AuditTarget::NewsPage(id), "news_page"),
+            (AuditTarget::NoticeBoard(id), "notice_board"),
+            (AuditTarget::Testimonial(id), "testimonial"),
+            (AuditTarget::HomeSlider(id), "home_slider"),
+            (AuditTarget::Content(id), "content"),
+            (AuditTarget::ContentType(id), "content_type"),
+            (AuditTarget::ContentShareList(id), "content_share_list"),
+            (
+                AuditTarget::TeacherUploadContent(id),
+                "teacher_upload_content",
+            ),
+            (AuditTarget::UploadContent(id), "upload_content"),
+            (AuditTarget::AboutPage(id), "about_page"),
+            (AuditTarget::ContactPage(id), "contact_page"),
+            (AuditTarget::CoursePage(id), "course_page"),
+            (AuditTarget::HomePageSetting(id), "home_page_setting"),
+            (AuditTarget::FrontendPage(id), "frontend_page"),
+            (AuditTarget::PageRevision(id), "page_revision"),
+            (AuditTarget::NewsRevision(id), "news_revision"),
+        ];
+        let mut seen_types: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for (target, expected) in cases {
+            let wire = target.target_type();
+            assert_eq!(wire, expected);
+            assert!(!wire.is_empty(), "target_type() returned empty string");
+            assert_eq!(target.target_id(), id);
+            assert!(
+                seen_types.insert(wire.to_owned()),
+                "duplicate target_type() wire string: {wire:?}"
+            );
+        }
     }
 
     #[test]

@@ -44,3 +44,8 @@ Workstreams: A=`Page` (the headline; 5 events + 6 commands + 10-method repo); B=
 
 ## Subagent Orchestration
 To prevent duplicate work, every phase must enforce: (1) **File-level ownership** — every file in the owned crate is assigned to exactly one subagent; no two subagents open the same file. (2) **Section-level pre-allocation** — for files that must be touched by multiple workstreams (e.g. `aggregate.rs` for 20 root aggregates), the prep subagent pre-creates the file with named section markers (`// === <Aggregate> section begin (owner: <WorkstreamLetter>) ===` / `// === <Aggregate> section end ===`); each workstream subagent's Edit anchors fall strictly inside its assigned range. (3) **Sequential phase gates** — `P0 prep` (single subagent, scaffolds shared files + cross-crate extensions) → `R1 reconcile-prep` (read-only verifier) → `wave 1/2/3` parallel workstreams → `R2 reconcile-impl` → `4-tests` → `5-docs` → `R3 final-validation` (9-command gate). A phase does not start until the prior phase's gate passes. (4) **Atomic commits per microtask** — every subagent produces exactly one commit with a `Phase N: <scope> (<workstream>)` message + `Co-Authored-By: Antigravity <antigravity@google.com>` trailer; the orchestrator inspects `git log --stat` to detect any out-of-scope file. (5) **Reconciler subagents are read-only** — they verify section boundaries + duplicate detection but never write code.
+
+for the remaining tasks we need to plan
+subagents orchestration such that two or more agents are not given the same work to avoid duplicate work.
+DO NOT handle any work yourself always use subagents.
+subagent tasks should be microtask to ensure accuracy

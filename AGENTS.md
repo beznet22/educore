@@ -508,7 +508,7 @@ umbrella re-exports to determine phase assignment.
 | 20 | domains | `educore-library` | 9 | Library |
 | 21 | domains | `educore-communication` | 10 | Communication |
 | 22 | domains | `educore-documents` | 11 | Documents |
-| 23 | domains | `educore-cms` | 12 | CMS |
+| 23 | domains | `educore-cms` | 12 | CMS — spec-faithful (20 root aggregates per `docs/specs/cms/aggregates.md`); 9-file layout; ~67 events, ~67 commands, 86 Cms caps (4 retained Phase 2 placeholders + 82 net-new), 21 Cms audit targets, 19 repos, 19 query stubs, 6 service factory fns + 6 service structs (PageService, NewsService, ContentService, TestimonialService, HomeSliderService, ContentShareListService); `form_uploaded_public_indexing_subscriber` for `documents.form_download.uploaded` (Phase 11 OQ #6); `educore-academic` dep for `ClassId`/`SectionId`/`AcademicYearId`; 183 unit tests in crate + 7-scenario integration test in `storage-parity` (2 env-gated PG/MySQL variants); `SchoolId::PUBLIC` constant added to `educore-core`; 20 `coverage.toml` rows flipped; see `PHASE-12-HANDOFF.md` |
 | 24 | domains | `educore-events-domain` | 13 | Events domain (calendar) |
 | 25 | cross-cutting | `educore-settings` | 14 | Settings + Operations |
 | 26 | cross-cutting | `educore-operations` | 14 | Settings + Operations |

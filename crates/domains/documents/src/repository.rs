@@ -23,10 +23,7 @@ use crate::value_objects::FormDownloadId;
 pub trait FormDownloadRepository: Send + Sync {
     /// Fetch a form by its typed id. Returns `Ok(None)` if the
     /// row does not exist or is soft-deleted.
-    async fn get(
-        &self,
-        id: FormDownloadId,
-    ) -> StorageResult<Option<FormDownload>>;
+    async fn get(&self, id: FormDownloadId) -> StorageResult<Option<FormDownload>>;
     /// List forms for a school matching the typed query.
     async fn list(
         &self,
@@ -48,11 +45,7 @@ pub trait FormDownloadRepository: Send + Sync {
         to: NaiveDate,
     ) -> StorageResult<Vec<FormDownload>>;
     /// Count forms for a school matching the typed query.
-    async fn count(
-        &self,
-        school: SchoolId,
-        q: FormDownloadQuery,
-    ) -> StorageResult<u64>;
+    async fn count(&self, school: SchoolId, q: FormDownloadQuery) -> StorageResult<u64>;
     /// Page forms for a school, oldest-first by `publish_date`.
     /// Returns a `Vec<FormDownload>` of length `<= limit`,
     /// starting at `offset`. Returns an empty `Vec` if there
@@ -183,10 +176,7 @@ use crate::value_objects::PostalReceiveId;
 pub trait PostalReceiveRepository: Send + Sync {
     /// Fetch a postal receive by its typed id. Returns
     /// `Ok(None)` if the row does not exist or is soft-deleted.
-    async fn get(
-        &self,
-        id: PostalReceiveId,
-    ) -> StorageResult<Option<PostalReceive>>;
+    async fn get(&self, id: PostalReceiveId) -> StorageResult<Option<PostalReceive>>;
     /// List postal receives for a school matching the typed
     /// query.
     async fn list(
@@ -196,15 +186,9 @@ pub trait PostalReceiveRepository: Send + Sync {
     ) -> StorageResult<Vec<PostalReceive>>;
     /// Insert a new postal receive (or upsert on a soft-delete
     /// update).
-    async fn insert(
-        &self,
-        receive: &PostalReceive,
-    ) -> StorageResult<()>;
+    async fn insert(&self, receive: &PostalReceive) -> StorageResult<()>;
     /// Update an existing postal receive.
-    async fn update(
-        &self,
-        receive: &PostalReceive,
-    ) -> StorageResult<()>;
+    async fn update(&self, receive: &PostalReceive) -> StorageResult<()>;
     /// List postal receives whose `reference_no` matches the
     /// given value (within a school). Used by the
     /// [`TrackPostalCommand`](crate::commands::TrackPostalCommand)

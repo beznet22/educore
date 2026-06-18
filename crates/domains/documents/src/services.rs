@@ -105,9 +105,7 @@ impl From<DomainError> for DocumentsError {
                 DocumentsError::Validation(msg)
             }
             DomainError::NotSupported(msg) => DocumentsError::Validation(msg),
-            DomainError::Infrastructure(src) => {
-                DocumentsError::Infrastructure(src.to_string())
-            }
+            DomainError::Infrastructure(src) => DocumentsError::Infrastructure(src.to_string()),
         }
     }
 }
@@ -349,10 +347,7 @@ impl PostalService {
     /// the DB level (via a composite unique index on
     /// `(school_id, academic_id, reference_no)`).
     #[must_use]
-    pub fn reference_unique(
-        reference: &PostalReferenceNo,
-        existing: &[PostalReferenceNo],
-    ) -> bool {
+    pub fn reference_unique(reference: &PostalReferenceNo, existing: &[PostalReferenceNo]) -> bool {
         !existing.iter().any(|r| r == reference)
     }
 
@@ -534,12 +529,12 @@ where
     B: EventBus + 'static,
 {
     require_capability(cap, &cmd.tenant, Capability::PostalDispatchUpdate).await?;
-    let mut dispatch = repo
-        .get(cmd.postal_dispatch_id)
-        .await?
-        .ok_or(DocumentsError::PostalDispatchNotFound(
-            cmd.postal_dispatch_id.as_uuid(),
-        ))?;
+    let mut dispatch =
+        repo.get(cmd.postal_dispatch_id)
+            .await?
+            .ok_or(DocumentsError::PostalDispatchNotFound(
+                cmd.postal_dispatch_id.as_uuid(),
+            ))?;
     let before = snapshot_dispatch(&dispatch);
 
     let mut changes: Vec<String> = Vec::new();
@@ -607,12 +602,12 @@ where
     B: EventBus + 'static,
 {
     require_capability(cap, &cmd.tenant, Capability::PostalDispatchDelete).await?;
-    let mut dispatch = repo
-        .get(cmd.postal_dispatch_id)
-        .await?
-        .ok_or(DocumentsError::PostalDispatchNotFound(
-            cmd.postal_dispatch_id.as_uuid(),
-        ))?;
+    let mut dispatch =
+        repo.get(cmd.postal_dispatch_id)
+            .await?
+            .ok_or(DocumentsError::PostalDispatchNotFound(
+                cmd.postal_dispatch_id.as_uuid(),
+            ))?;
     let before = snapshot_dispatch(&dispatch);
     let tenant = cmd.tenant.clone();
     dispatch.soft_delete(tenant.actor_id, Timestamp::now())?;
@@ -746,12 +741,12 @@ where
     B: EventBus + 'static,
 {
     require_capability(cap, &cmd.tenant, Capability::PostalReceiveUpdate).await?;
-    let mut receive = repo
-        .get(cmd.postal_receive_id)
-        .await?
-        .ok_or(DocumentsError::PostalReceiveNotFound(
-            cmd.postal_receive_id.as_uuid(),
-        ))?;
+    let mut receive =
+        repo.get(cmd.postal_receive_id)
+            .await?
+            .ok_or(DocumentsError::PostalReceiveNotFound(
+                cmd.postal_receive_id.as_uuid(),
+            ))?;
     let before = snapshot_receive(&receive);
 
     let mut changes: Vec<String> = Vec::new();
@@ -818,12 +813,12 @@ where
     B: EventBus + 'static,
 {
     require_capability(cap, &cmd.tenant, Capability::PostalReceiveDelete).await?;
-    let mut receive = repo
-        .get(cmd.postal_receive_id)
-        .await?
-        .ok_or(DocumentsError::PostalReceiveNotFound(
-            cmd.postal_receive_id.as_uuid(),
-        ))?;
+    let mut receive =
+        repo.get(cmd.postal_receive_id)
+            .await?
+            .ok_or(DocumentsError::PostalReceiveNotFound(
+                cmd.postal_receive_id.as_uuid(),
+            ))?;
     let before = snapshot_receive(&receive);
     let tenant = cmd.tenant.clone();
     receive.soft_delete(tenant.actor_id, Timestamp::now())?;
@@ -937,12 +932,13 @@ mod tests {
     }
 
     fn publish_date() -> crate::value_objects::PublishDate {
-        crate::value_objects::PublishDate::new(
-            chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-        )
+        crate::value_objects::PublishDate::new(chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap())
     }
 
-    fn make_form_with(link: Option<crate::value_objects::Url>, file: Option<crate::value_objects::FileReference>) -> crate::aggregate::FormDownload {
+    fn make_form_with(
+        link: Option<crate::value_objects::Url>,
+        file: Option<crate::value_objects::FileReference>,
+    ) -> crate::aggregate::FormDownload {
         let (s, u, _e, c, t) = ids();
         let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
         let cmd = crate::aggregate::NewFormDownload {
@@ -1011,8 +1007,7 @@ mod tests {
         let form = make_form_with(Some(url()), None);
         // publish_date is 2026-06-01.
         // Before the publish date: NOT a match.
-        let before =
-            chrono::NaiveDate::from_ymd_opt(2026, 5, 31).unwrap();
+        let before = chrono::NaiveDate::from_ymd_opt(2026, 5, 31).unwrap();
         assert!(!FormService::matches_publish_date(&form, before));
         // On the publish date: IS a match.
         let on = chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap();
@@ -1053,9 +1048,7 @@ mod tests {
             from_title: crate::value_objects::FromTitle::new(
                 crate::value_objects::PostalTitle::new("Y").unwrap(),
             ),
-            reference_no: Some(
-                crate::value_objects::PostalReferenceNo::new("REF-SHARED").unwrap(),
-            ),
+            reference_no: Some(crate::value_objects::PostalReferenceNo::new("REF-SHARED").unwrap()),
             address: crate::value_objects::ToAddress::new(
                 crate::value_objects::PostalAddress::new("1 St").unwrap(),
             ),
@@ -1078,9 +1071,7 @@ mod tests {
             to_title: crate::value_objects::ToTitle::new(
                 crate::value_objects::PostalTitle::new("Y").unwrap(),
             ),
-            reference_no: Some(
-                crate::value_objects::PostalReferenceNo::new("REF-SHARED").unwrap(),
-            ),
+            reference_no: Some(crate::value_objects::PostalReferenceNo::new("REF-SHARED").unwrap()),
             address: crate::value_objects::FromAddress::new(
                 crate::value_objects::PostalAddress::new("1 St").unwrap(),
             ),
@@ -1116,9 +1107,7 @@ mod tests {
                 from_title: crate::value_objects::FromTitle::new(
                     crate::value_objects::PostalTitle::new("Y").unwrap(),
                 ),
-                reference_no: Some(
-                    crate::value_objects::PostalReferenceNo::new("REF-IN").unwrap(),
-                ),
+                reference_no: Some(crate::value_objects::PostalReferenceNo::new("REF-IN").unwrap()),
                 address: crate::value_objects::ToAddress::new(
                     crate::value_objects::PostalAddress::new("1 St").unwrap(),
                 ),
@@ -1352,7 +1341,13 @@ mod tests {
             &self,
             id: crate::value_objects::FormDownloadId,
         ) -> educore_core::error::Result<Option<crate::aggregate::FormDownload>> {
-            Ok(self.rows.lock().unwrap().iter().find(|f| f.id == id).cloned())
+            Ok(self
+                .rows
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|f| f.id == id)
+                .cloned())
         }
         async fn list(
             &self,
@@ -1429,7 +1424,13 @@ mod tests {
             &self,
             id: crate::value_objects::PostalDispatchId,
         ) -> educore_core::error::Result<Option<crate::aggregate::PostalDispatch>> {
-            Ok(self.rows.lock().unwrap().iter().find(|d| d.id == id).cloned())
+            Ok(self
+                .rows
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|d| d.id == id)
+                .cloned())
         }
         async fn list(
             &self,
@@ -1444,10 +1445,9 @@ mod tests {
         ) -> educore_core::error::Result<()> {
             let rows = self.rows.lock().unwrap();
             if let Some(r) = &dispatch.reference_no {
-                if rows
-                    .iter()
-                    .any(|d| d.academic_id == dispatch.academic_id && d.reference_no.as_ref() == Some(r))
-                {
+                if rows.iter().any(|d| {
+                    d.academic_id == dispatch.academic_id && d.reference_no.as_ref() == Some(r)
+                }) {
                     return Err(educore_core::error::DomainError::Conflict(format!(
                         "duplicate reference_no: {}",
                         r.as_str()
@@ -1517,7 +1517,13 @@ mod tests {
             &self,
             id: crate::value_objects::PostalReceiveId,
         ) -> educore_core::error::Result<Option<crate::aggregate::PostalReceive>> {
-            Ok(self.rows.lock().unwrap().iter().find(|r| r.id == id).cloned())
+            Ok(self
+                .rows
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|r| r.id == id)
+                .cloned())
         }
         async fn list(
             &self,
@@ -1532,10 +1538,9 @@ mod tests {
         ) -> educore_core::error::Result<()> {
             let rows = self.rows.lock().unwrap();
             if let Some(r) = &receive.reference_no {
-                if rows
-                    .iter()
-                    .any(|x| x.academic_id == receive.academic_id && x.reference_no.as_ref() == Some(r))
-                {
+                if rows.iter().any(|x| {
+                    x.academic_id == receive.academic_id && x.reference_no.as_ref() == Some(r)
+                }) {
                     return Err(educore_core::error::DomainError::Conflict(format!(
                         "duplicate reference_no: {}",
                         r.as_str()
@@ -1626,15 +1631,33 @@ mod tests {
         let form_repo = Arc::new(FactoryTestFormRepo::default());
         let dispatch_repo = Arc::new(FactoryTestDispatchRepo::default());
         let receive_repo = Arc::new(FactoryTestReceiveRepo::default());
-        (bus, audit, cap, form_repo, dispatch_repo, receive_repo, school, actor, corr)
+        (
+            bus,
+            audit,
+            cap,
+            form_repo,
+            dispatch_repo,
+            receive_repo,
+            school,
+            actor,
+            corr,
+        )
     }
 
-    fn grant(school: educore_core::ids::SchoolId, cap: &InMemoryCapabilityCheck, c: educore_rbac::value_objects::Capability) {
+    fn grant(
+        school: educore_core::ids::SchoolId,
+        cap: &InMemoryCapabilityCheck,
+        c: educore_rbac::value_objects::Capability,
+    ) {
         let role = educore_rbac::ids::RoleId::new(school, uuid::Uuid::now_v7());
         cap.grant(school, role, c);
     }
 
-    fn ctx(school: educore_core::ids::SchoolId, actor: educore_core::ids::UserId, corr: educore_core::ids::CorrelationId) -> educore_core::tenant::TenantContext {
+    fn ctx(
+        school: educore_core::ids::SchoolId,
+        actor: educore_core::ids::UserId,
+        corr: educore_core::ids::CorrelationId,
+    ) -> educore_core::tenant::TenantContext {
         educore_core::tenant::TenantContext::for_user(
             school,
             actor,
@@ -1734,15 +1757,9 @@ mod tests {
     async fn factory_upload_form_service_returns_forbidden_without_capability() {
         let (bus, audit, cap, form_repo, _d, _r, s, u, c) = factory_test_env().await;
         // No grant -> Forbidden.
-        let err = upload_form_service(
-            upload_cmd_v(s, u, c),
-            form_repo,
-            bus,
-            audit,
-            cap.as_ref(),
-        )
-        .await
-        .unwrap_err();
+        let err = upload_form_service(upload_cmd_v(s, u, c), form_repo, bus, audit, cap.as_ref())
+            .await
+            .unwrap_err();
         assert!(matches!(err, DocumentsError::Forbidden(_)));
     }
 
@@ -1808,10 +1825,7 @@ mod tests {
         .await
         .expect("receive_postal_service ok");
         assert!(r.is_active());
-        assert_eq!(
-            r.reference_no.as_ref().unwrap().as_str(),
-            "REF-FAC-IN-001"
-        );
+        assert_eq!(r.reference_no.as_ref().unwrap().as_str(), "REF-FAC-IN-001");
     }
 
     #[tokio::test]
@@ -1858,7 +1872,11 @@ mod tests {
         .await
         .expect("delete_form_service ok");
         // The form is still queryable but is_active() is false.
-        let fetched = form_repo.get(form_id).await.expect("get").expect("still there");
+        let fetched = form_repo
+            .get(form_id)
+            .await
+            .expect("get")
+            .expect("still there");
         assert!(!fetched.is_active());
     }
 

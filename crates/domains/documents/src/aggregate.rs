@@ -207,11 +207,7 @@ impl FormDownload {
     /// bumps the version. Returns
     /// [`DocumentsError::Conflict`] when the form is already
     /// soft-deleted.
-    pub fn soft_delete(
-        &mut self,
-        actor: UserId,
-        at: Timestamp,
-    ) -> Result<(), DocumentsError> {
+    pub fn soft_delete(&mut self, actor: UserId, at: Timestamp) -> Result<(), DocumentsError> {
         if !self.active_status.is_active() {
             return Err(DocumentsError::Conflict(
                 "form is already soft-deleted".to_owned(),
@@ -604,11 +600,7 @@ impl PostalDispatch {
     /// Soft-deletes the dispatch. Sets `active_status = false`
     /// and bumps the version. Returns [`DocumentsError::Conflict`]
     /// when the dispatch is already soft-deleted.
-    pub fn soft_delete(
-        &mut self,
-        actor: UserId,
-        at: Timestamp,
-    ) -> Result<(), DocumentsError> {
+    pub fn soft_delete(&mut self, actor: UserId, at: Timestamp) -> Result<(), DocumentsError> {
         if !self.active_status.is_active() {
             return Err(DocumentsError::Conflict(
                 "postal dispatch is already soft-deleted".to_owned(),
@@ -922,11 +914,7 @@ impl PostalReceive {
     /// Soft-deletes the receive. Sets `active_status = false`
     /// and bumps the version. Returns [`DocumentsError::Conflict`]
     /// when the receive is already soft-deleted.
-    pub fn soft_delete(
-        &mut self,
-        actor: UserId,
-        at: Timestamp,
-    ) -> Result<(), DocumentsError> {
+    pub fn soft_delete(&mut self, actor: UserId, at: Timestamp) -> Result<(), DocumentsError> {
         if !self.active_status.is_active() {
             return Err(DocumentsError::Conflict(
                 "postal receive is already soft-deleted".to_owned(),
@@ -1042,9 +1030,7 @@ mod tests {
     }
 
     fn publish_date() -> crate::value_objects::PublishDate {
-        crate::value_objects::PublishDate::new(
-            chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-        )
+        crate::value_objects::PublishDate::new(chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap())
     }
 
     fn file_ref() -> crate::value_objects::FileReference {
@@ -1078,7 +1064,10 @@ mod tests {
         assert!(!form.is_public());
         assert!(form.is_deliverable());
         assert_eq!(form.school_id, s);
-        assert_eq!(form.version, educore_core::value_objects::Version::initial());
+        assert_eq!(
+            form.version,
+            educore_core::value_objects::Version::initial()
+        );
     }
 
     #[test]
@@ -1280,10 +1269,7 @@ mod tests {
         assert_eq!(d.school_id, s);
         assert!(d.is_active());
         assert!(d.reference_no.is_some());
-        assert_eq!(
-            d.reference_no.as_ref().unwrap().as_str(),
-            "REF-2026-0001"
-        );
+        assert_eq!(d.reference_no.as_ref().unwrap().as_str(), "REF-2026-0001");
     }
 
     #[test]
@@ -1449,8 +1435,7 @@ mod tests {
     #[test]
     fn postal_dispatch_soft_delete_double_call_returns_conflict() {
         let (mut d, _s) = new_postal_dispatch();
-        d.soft_delete(d.created_by, d.created_at)
-            .expect("first ok");
+        d.soft_delete(d.created_by, d.created_at).expect("first ok");
         let err = d.soft_delete(d.created_by, d.created_at).unwrap_err();
         assert!(matches!(err, DocumentsError::Conflict(_)));
     }
@@ -1576,8 +1561,7 @@ mod tests {
     #[test]
     fn postal_receive_soft_delete_double_call_returns_conflict() {
         let (mut r, _s) = new_postal_receive();
-        r.soft_delete(r.created_by, r.created_at)
-            .expect("first ok");
+        r.soft_delete(r.created_by, r.created_at).expect("first ok");
         let err = r.soft_delete(r.created_by, r.created_at).unwrap_err();
         assert!(matches!(err, DocumentsError::Conflict(_)));
     }
@@ -1652,4 +1636,3 @@ mod tests {
         assert!(matches!(err, DocumentsError::FormHasNoContent));
     }
 }
-

@@ -141,8 +141,7 @@ mod tests {
 
     #[test]
     fn other_wraps_arbitrary_error() {
-        let inner: Box<dyn std::error::Error + Send + Sync> =
-            std::io::Error::other("disk").into();
+        let inner: Box<dyn std::error::Error + Send + Sync> = std::io::Error::other("disk").into();
         let err: DocumentsError = inner.into();
         assert!(matches!(err, DocumentsError::Other(_)));
     }

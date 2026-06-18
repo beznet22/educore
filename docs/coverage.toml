@@ -1550,11 +1550,215 @@ notes = "Phase 11: spec-faithful; owns PostalReceiveAttachment child; 3 commands
 
 [[row]]
 id = "cms_pages_aggregate"
-item = "cms_pages aggregate"
-spec = "docs/specs/cms/aggregates.md"
+item = "Page aggregate root"
+spec = "docs/specs/cms/aggregates.md#page"
 crate = "educore-cms"
 phase = 12
-status = "Pending"
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs,crates/tools/storage-parity/tests/cms_integration.rs"
+notes = "Phase 12: spec-faithful; 5 events (PageCreated/Updated/Published/Archived/Deleted) + 5 commands (Create/Update/Publish/Archive/Delete); 10-method PageRepository; PageService + create_page_service factory fn; non-empty title, slug-uniqueness, at-most-one home_page, is_default immutability, soft-delete invariants; bus subscriber for documents.form_download.uploaded (Phase 11 OQ #6)."
+
+[[row]]
+id = "cms_news_aggregate"
+item = "News aggregate root"
+spec = "docs/specs/cms/aggregates.md#news"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs,crates/tools/storage-parity/tests/cms_integration.rs"
+notes = "Phase 12: spec-faithful; 6 events + 6 commands; non-empty title, news anchor + category anchor, is_global visibility, auto_approve/is_comment flags, non-decreasing view_count, soft-delete; NewsService + create_news_service factory fn."
+
+[[row]]
+id = "cms_news_categories_aggregate"
+item = "NewsCategory aggregate root"
+spec = "docs/specs/cms/aggregates.md#newscategory"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 3 events (Created/Updated/Deleted) + 3 commands; non-empty name, unique-by-name within school, soft-delete."
+
+[[row]]
+id = "cms_news_comments_aggregate"
+item = "NewsComment aggregate root"
+spec = "docs/specs/cms/aggregates.md#newscomment"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 4 events (Added/Approved/Hidden/Deleted) + 4 commands; non-empty message, append-only, status field (Pending/Approved/Hidden); NewsCommentPolicy gates commenting per spec invariant 6."
+
+[[row]]
+id = "cms_news_pages_aggregate"
+item = "NewsPage aggregate root"
+spec = "docs/specs/cms/aggregates.md#newspage"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 3 events + 3 commands; public news landing-page configuration (unique-per-school)."
+
+[[row]]
+id = "cms_notice_boards_aggregate"
+item = "NoticeBoard aggregate root (CMS-side; distinct from Notice in communication domain)"
+spec = "docs/specs/cms/aggregates.md#noticeboard"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 5 events (Created/Updated/Published/Unpublished/Deleted) + 5 commands; non-empty title, audience descriptor (comma-separated role ids)."
+
+[[row]]
+id = "cms_testimonials_aggregate"
+item = "Testimonial aggregate root"
+spec = "docs/specs/cms/aggregates.md#testimonial"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 3 events + 3 commands; star_rating in 1..=5, non-empty name/designation/institution; TestimonialService + create_testimonial_service factory fn."
+
+[[row]]
+id = "cms_home_sliders_aggregate"
+item = "HomeSlider aggregate root"
+spec = "docs/specs/cms/aggregates.md#homeslider"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 3 events + 3 commands; non-empty image, optional link/url; HomeSliderService + create_home_slider_service factory fn."
+
+[[row]]
+id = "cms_speech_sliders_aggregate"
+item = "SpeechSlider aggregate root (CMS-side)"
+spec = "docs/specs/cms/aggregates.md#speechslider"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 3 events + 3 commands; speech body 1..=5000 chars; CMS owns the public-page rendering reference (the Communication domain has its own SpeechSlider variant)."
+
+[[row]]
+id = "cms_contents_aggregate"
+item = "Content aggregate root"
+spec = "docs/specs/cms/aggregates.md#content"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 3 events + 3 commands; ContentService + content_service factory fn; references educore_academic::{ClassId, SectionId, AcademicYearId} per Phase 12 spec."
+
+[[row]]
+id = "cms_content_types_aggregate"
+item = "ContentType aggregate root"
+spec = "docs/specs/cms/aggregates.md#contenttype"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 3 events + 3 commands; unique-by-name within school."
+
+[[row]]
+id = "cms_content_share_lists_aggregate"
+item = "ContentShareList aggregate root"
+spec = "docs/specs/cms/aggregates.md#contentsharelist"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs,crates/tools/storage-parity/tests/cms_integration.rs"
+notes = "Phase 12: spec-faithful; 5 events (Created/Dispatched/Cancelled/Updated/Deleted) + 4 commands; send_type G/C/I/P; valid_upto >= share_date invariant; ContentShareListService + content_share_list_service factory fn."
+
+[[row]]
+id = "cms_teacher_upload_contents_aggregate"
+item = "TeacherUploadContent aggregate root (per class-section)"
+spec = "docs/specs/cms/aggregates.md#teacheruploadcontent"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 3 events + 3 commands; class_id + section_id + academic_id scope (educore-academic); content_type in {assignment, study_material, syllabus, other_download}; available_for_all_classes suppresses class filter."
+
+[[row]]
+id = "cms_upload_contents_aggregate"
+item = "UploadContent aggregate root (admin-uploaded, per role/class)"
+spec = "docs/specs/cms/aggregates.md#uploadcontent"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 3 events + 3 commands; raw i32 content_type FK to ContentType taxonomy; role/class/section availability scope."
+
+[[row]]
+id = "cms_about_pages_aggregate"
+item = "AboutPage aggregate root (per-page template)"
+spec = "docs/specs/cms/aggregates.md#aboutpage"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 3 events + 3 commands; unique-per-school (at most one active)."
+
+[[row]]
+id = "cms_contact_pages_aggregate"
+item = "ContactPage aggregate root (per-page template)"
+spec = "docs/specs/cms/aggregates.md#contactpage"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 3 events + 3 commands; address + phone + email + lat/lon/zoom/GoogleMap; unique-per-school."
+
+[[row]]
+id = "cms_course_pages_aggregate"
+item = "CoursePage aggregate root (per-page template)"
+spec = "docs/specs/cms/aggregates.md#coursepage"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 3 events + 3 commands; parent/child hierarchy via parent_id."
+
+[[row]]
+id = "cms_home_page_settings_aggregate"
+item = "HomePageSetting aggregate root (per-page template)"
+spec = "docs/specs/cms/aggregates.md#homepagesetting"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs,crates/tools/storage-parity/tests/cms_integration.rs"
+notes = "Phase 12: spec-faithful; 3 events (Configured/Updated/Deleted) + 3 commands (Configure/Update/Delete); create-or-update semantics; configure_home_page_service factory fn."
+
+[[row]]
+id = "cms_frontend_pages_aggregate"
+item = "FrontendPage aggregate root"
+spec = "docs/specs/cms/aggregates.md#frontendpage"
+crate = "educore-cms"
+phase = 12
+status = "Tested"
+tests = "crates/domains/cms/src/aggregate.rs"
+notes = "Phase 12: spec-faithful; 3 events + 3 commands; sub_title unique within school; optional slug unique within school; is_dynamic flag."
+
+# Capability / audit surface (Phase 12)
+
+[[row]]
+id = "cms_capability_variants"
+item = "80+ Cms.* Capability variants in educore-rbac"
+spec = "docs/specs/cms/permissions.md"
+crate = "educore-rbac"
+phase = 12
+status = "Tested"
+tests = "crates/cross-cutting/rbac/src/value_objects.rs"
+notes = "Phase 12: 4 retained Phase 2 placeholders (CmsPage{Create,Read,Update,Delete}) + 80+ net-new across 20 aggregates; tested via cms_capabilities_round_trip_and_resolve_to_cms_domain."
+
+[[row]]
+id = "cms_audit_target_variants"
+item = "21 CMS AuditTarget variants in educore-audit"
+spec = "docs/specs/cms/aggregates.md"
+crate = "educore-audit"
+phase = 12
+status = "Tested"
+tests = "crates/cross-cutting/audit/src/writer.rs"
+notes = "Phase 12: 20 net-new CMS audit targets + 1 retained Page placeholder; tested via cms_audit_target_round_trip_for_all_aggregates."
 
 # =============================================================================
 # Events domain (Phase 13 — calendar)

@@ -16,4 +16,16 @@ educore-platform = { workspace = true }
 educore-rbac = { workspace = true }
 educore-events = { workspace = true }
 educore-settings = { workspace = true }
+educore-audit = { workspace = true }
+# Phase 12: `Content` + `ContentShareList` + `TeacherUploadContent` aggregates
+# reference `ClassId`, `SectionId`, and `AcademicYearId` from the academic
+# domain. Per `docs/specs/cms/overview.md` § Dependencies.
+educore-academic = { workspace = true }
+async-trait = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
 

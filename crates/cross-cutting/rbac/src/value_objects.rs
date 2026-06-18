@@ -740,6 +740,182 @@ pub enum Capability {
     CmsPageUpdate,
     /// Delete a CMS page.
     CmsPageDelete,
+    /// Publish a CMS page (state transition to `PageStatus::Published`).
+    CmsPagePublish,
+    /// Archive a CMS page (state transition back to `PageStatus::Draft`).
+    CmsPageArchive,
+    // -- CMS domain (Phase 12 net-new) --------------------------------------
+    // The 6 Phase 2 `CmsPage{Create,Read,Update,Delete,Publish,Archive}`
+    // placeholders above are the start point for the CMS catalog.
+    // The 95+ net-new variants below extend the CMS catalog with
+    // News, NewsCategory, NewsComment, NewsPage, NoticeBoard,
+    // Testimonial, HomeSlider, SpeechSlider, Content, ContentType,
+    // ContentShareList, TeacherUploadContent, UploadContent,
+    // AboutPage, ContactPage, CoursePage, HomePageSetting, and
+    // FrontendPage. Wire form per `docs/specs/cms/permissions.md`:
+    // `<Domain>.<Aggregate>.<Action>` (e.g. `Cms.News.Create`).
+    // The CMS-side `SpeechSlider` is distinct from the
+    // Communication-domain `SpeechSlider`; both are surfaced under
+    // the `Cms.*` namespace per the spec.
+    /// Create a news entry.
+    CmsNewsCreate,
+    /// Read a news entry.
+    CmsNewsRead,
+    /// Update a news entry.
+    CmsNewsUpdate,
+    /// Delete (soft-delete) a news entry.
+    CmsNewsDelete,
+    /// Publish a news entry.
+    CmsNewsPublish,
+    /// Unpublish a news entry.
+    CmsNewsUnpublish,
+    /// Increment a news entry's view count.
+    CmsNewsIncrementView,
+    /// Create a news category.
+    CmsNewsCategoryCreate,
+    /// Read a news category.
+    CmsNewsCategoryRead,
+    /// Update a news category.
+    CmsNewsCategoryUpdate,
+    /// Delete a news category.
+    CmsNewsCategoryDelete,
+    /// Comment on a news entry.
+    CmsNewsCommentCreate,
+    /// Moderate a news comment (approve / hide).
+    CmsNewsCommentModerate,
+    /// Delete a news comment.
+    CmsNewsCommentDelete,
+    /// Read news comments.
+    CmsNewsCommentRead,
+    /// Create a news landing-page configuration.
+    CmsNewsPageCreate,
+    /// Read a news landing-page configuration.
+    CmsNewsPageRead,
+    /// Update a news landing-page configuration.
+    CmsNewsPageUpdate,
+    /// Delete a news landing-page configuration.
+    CmsNewsPageDelete,
+    /// Create a public-site notice board.
+    CmsNoticeBoardCreate,
+    /// Read a public-site notice board.
+    CmsNoticeBoardRead,
+    /// Update a public-site notice board.
+    CmsNoticeBoardUpdate,
+    /// Delete a public-site notice board.
+    CmsNoticeBoardDelete,
+    /// Publish a public-site notice board.
+    CmsNoticeBoardPublish,
+    /// Unpublish a public-site notice board.
+    CmsNoticeBoardUnpublish,
+    /// Create a testimonial.
+    CmsTestimonialCreate,
+    /// Read a testimonial.
+    CmsTestimonialRead,
+    /// Update a testimonial.
+    CmsTestimonialUpdate,
+    /// Delete a testimonial.
+    CmsTestimonialDelete,
+    /// Create a home-slider entry.
+    CmsHomeSliderCreate,
+    /// Read a home-slider entry.
+    CmsHomeSliderRead,
+    /// Update a home-slider entry.
+    CmsHomeSliderUpdate,
+    /// Delete a home-slider entry.
+    CmsHomeSliderDelete,
+    /// Create a speech-slider entry (CMS-side).
+    CmsSpeechSliderCreate,
+    /// Read a speech-slider entry (CMS-side).
+    CmsSpeechSliderRead,
+    /// Update a speech-slider entry (CMS-side).
+    CmsSpeechSliderUpdate,
+    /// Delete a speech-slider entry (CMS-side).
+    CmsSpeechSliderDelete,
+    /// Create a content item.
+    CmsContentCreate,
+    /// Read a content item.
+    CmsContentRead,
+    /// Update a content item.
+    CmsContentUpdate,
+    /// Delete a content item.
+    CmsContentDelete,
+    /// Create a content type (taxonomy).
+    CmsContentTypeCreate,
+    /// Read a content type (taxonomy).
+    CmsContentTypeRead,
+    /// Update a content type (taxonomy).
+    CmsContentTypeUpdate,
+    /// Delete a content type (taxonomy).
+    CmsContentTypeDelete,
+    /// Create a content share list.
+    CmsContentShareListCreate,
+    /// Read a content share list.
+    CmsContentShareListRead,
+    /// Update a content share list.
+    CmsContentShareListUpdate,
+    /// Delete a content share list.
+    CmsContentShareListDelete,
+    /// Dispatch a content share list.
+    CmsContentShareListDispatch,
+    /// Cancel a content share list.
+    CmsContentShareListCancel,
+    /// Create a teacher-uploaded content item.
+    CmsTeacherUploadContentCreate,
+    /// Read a teacher-uploaded content item.
+    CmsTeacherUploadContentRead,
+    /// Update a teacher-uploaded content item.
+    CmsTeacherUploadContentUpdate,
+    /// Delete a teacher-uploaded content item.
+    CmsTeacherUploadContentDelete,
+    /// Create an admin-uploaded content item.
+    CmsUploadContentCreate,
+    /// Read an admin-uploaded content item.
+    CmsUploadContentRead,
+    /// Update an admin-uploaded content item.
+    CmsUploadContentUpdate,
+    /// Delete an admin-uploaded content item.
+    CmsUploadContentDelete,
+    /// Create an about-page configuration.
+    CmsAboutPageCreate,
+    /// Read an about-page configuration.
+    CmsAboutPageRead,
+    /// Update an about-page configuration.
+    CmsAboutPageUpdate,
+    /// Delete an about-page configuration.
+    CmsAboutPageDelete,
+    /// Create a contact-page configuration.
+    CmsContactPageCreate,
+    /// Read a contact-page configuration.
+    CmsContactPageRead,
+    /// Update a contact-page configuration.
+    CmsContactPageUpdate,
+    /// Delete a contact-page configuration.
+    CmsContactPageDelete,
+    /// Create a course landing page.
+    CmsCoursePageCreate,
+    /// Read a course landing page.
+    CmsCoursePageRead,
+    /// Update a course landing page.
+    CmsCoursePageUpdate,
+    /// Delete a course landing page.
+    CmsCoursePageDelete,
+    /// Configure the home-page setting.
+    CmsHomePageSettingConfigure,
+    /// Read the home-page setting.
+    CmsHomePageSettingRead,
+    /// Delete the home-page setting.
+    CmsHomePageSettingDelete,
+    /// Create a front-end page record.
+    CmsFrontendPageCreate,
+    /// Read a front-end page record.
+    CmsFrontendPageRead,
+    /// Update a front-end page record.
+    CmsFrontendPageUpdate,
+    /// Delete a front-end page record.
+    CmsFrontendPageDelete,
+    /// Cross-cutting read capability for the CMS domain (the public
+    /// site surface).
+    CmsRead,
 
     // -- Facilities (Phase 8) ---------------------------------------------
     // The 4 Phase 2 `FacilitiesRoom{Create,Read,Update,Delete}`
@@ -1222,9 +1398,91 @@ impl Capability {
             | Self::PostalReceiveUpdate
             | Self::PostalReceiveDelete
             | Self::PostalRead => CapabilityDomain::Documents,
-            Self::CmsPageCreate | Self::CmsPageRead | Self::CmsPageUpdate | Self::CmsPageDelete => {
-                CapabilityDomain::Cms
-            }
+            Self::CmsPageCreate
+            | Self::CmsPageRead
+            | Self::CmsPageUpdate
+            | Self::CmsPageDelete
+            | Self::CmsPagePublish
+            | Self::CmsPageArchive
+            | Self::CmsNewsCreate
+            | Self::CmsNewsRead
+            | Self::CmsNewsUpdate
+            | Self::CmsNewsDelete
+            | Self::CmsNewsPublish
+            | Self::CmsNewsUnpublish
+            | Self::CmsNewsIncrementView
+            | Self::CmsNewsCategoryCreate
+            | Self::CmsNewsCategoryRead
+            | Self::CmsNewsCategoryUpdate
+            | Self::CmsNewsCategoryDelete
+            | Self::CmsNewsCommentCreate
+            | Self::CmsNewsCommentModerate
+            | Self::CmsNewsCommentDelete
+            | Self::CmsNewsCommentRead
+            | Self::CmsNewsPageCreate
+            | Self::CmsNewsPageRead
+            | Self::CmsNewsPageUpdate
+            | Self::CmsNewsPageDelete
+            | Self::CmsNoticeBoardCreate
+            | Self::CmsNoticeBoardRead
+            | Self::CmsNoticeBoardUpdate
+            | Self::CmsNoticeBoardDelete
+            | Self::CmsNoticeBoardPublish
+            | Self::CmsNoticeBoardUnpublish
+            | Self::CmsTestimonialCreate
+            | Self::CmsTestimonialRead
+            | Self::CmsTestimonialUpdate
+            | Self::CmsTestimonialDelete
+            | Self::CmsHomeSliderCreate
+            | Self::CmsHomeSliderRead
+            | Self::CmsHomeSliderUpdate
+            | Self::CmsHomeSliderDelete
+            | Self::CmsSpeechSliderCreate
+            | Self::CmsSpeechSliderRead
+            | Self::CmsSpeechSliderUpdate
+            | Self::CmsSpeechSliderDelete
+            | Self::CmsContentCreate
+            | Self::CmsContentRead
+            | Self::CmsContentUpdate
+            | Self::CmsContentDelete
+            | Self::CmsContentTypeCreate
+            | Self::CmsContentTypeRead
+            | Self::CmsContentTypeUpdate
+            | Self::CmsContentTypeDelete
+            | Self::CmsContentShareListCreate
+            | Self::CmsContentShareListRead
+            | Self::CmsContentShareListUpdate
+            | Self::CmsContentShareListDelete
+            | Self::CmsContentShareListDispatch
+            | Self::CmsContentShareListCancel
+            | Self::CmsTeacherUploadContentCreate
+            | Self::CmsTeacherUploadContentRead
+            | Self::CmsTeacherUploadContentUpdate
+            | Self::CmsTeacherUploadContentDelete
+            | Self::CmsUploadContentCreate
+            | Self::CmsUploadContentRead
+            | Self::CmsUploadContentUpdate
+            | Self::CmsUploadContentDelete
+            | Self::CmsAboutPageCreate
+            | Self::CmsAboutPageRead
+            | Self::CmsAboutPageUpdate
+            | Self::CmsAboutPageDelete
+            | Self::CmsContactPageCreate
+            | Self::CmsContactPageRead
+            | Self::CmsContactPageUpdate
+            | Self::CmsContactPageDelete
+            | Self::CmsCoursePageCreate
+            | Self::CmsCoursePageRead
+            | Self::CmsCoursePageUpdate
+            | Self::CmsCoursePageDelete
+            | Self::CmsHomePageSettingConfigure
+            | Self::CmsHomePageSettingRead
+            | Self::CmsHomePageSettingDelete
+            | Self::CmsFrontendPageCreate
+            | Self::CmsFrontendPageRead
+            | Self::CmsFrontendPageUpdate
+            | Self::CmsFrontendPageDelete
+            | Self::CmsRead => CapabilityDomain::Cms,
             Self::FacilitiesRoomCreate
             | Self::FacilitiesRoomRead
             | Self::FacilitiesRoomUpdate
@@ -1621,13 +1879,95 @@ impl Capability {
             Self::PostalDispatchCreate
             | Self::PostalDispatchUpdate
             | Self::PostalDispatchDelete => "PostalDispatch",
-            Self::PostalReceiveCreate
-            | Self::PostalReceiveUpdate
-            | Self::PostalReceiveDelete => "PostalReceive",
-            Self::PostalRead => "Postal",
-            Self::CmsPageCreate | Self::CmsPageRead | Self::CmsPageUpdate | Self::CmsPageDelete => {
-                "Page"
+            Self::PostalReceiveCreate | Self::PostalReceiveUpdate | Self::PostalReceiveDelete => {
+                "PostalReceive"
             }
+            Self::PostalRead => "Postal",
+            Self::CmsPageCreate
+            | Self::CmsPageRead
+            | Self::CmsPageUpdate
+            | Self::CmsPageDelete
+            | Self::CmsPagePublish
+            | Self::CmsPageArchive => "Page",
+            Self::CmsNewsCreate
+            | Self::CmsNewsRead
+            | Self::CmsNewsUpdate
+            | Self::CmsNewsDelete
+            | Self::CmsNewsPublish
+            | Self::CmsNewsUnpublish
+            | Self::CmsNewsIncrementView => "News",
+            Self::CmsNewsCategoryCreate
+            | Self::CmsNewsCategoryRead
+            | Self::CmsNewsCategoryUpdate
+            | Self::CmsNewsCategoryDelete => "NewsCategory",
+            Self::CmsNewsCommentCreate
+            | Self::CmsNewsCommentModerate
+            | Self::CmsNewsCommentDelete
+            | Self::CmsNewsCommentRead => "NewsComment",
+            Self::CmsNewsPageCreate
+            | Self::CmsNewsPageRead
+            | Self::CmsNewsPageUpdate
+            | Self::CmsNewsPageDelete => "NewsPage",
+            Self::CmsNoticeBoardCreate
+            | Self::CmsNoticeBoardRead
+            | Self::CmsNoticeBoardUpdate
+            | Self::CmsNoticeBoardDelete
+            | Self::CmsNoticeBoardPublish
+            | Self::CmsNoticeBoardUnpublish => "NoticeBoard",
+            Self::CmsTestimonialCreate
+            | Self::CmsTestimonialRead
+            | Self::CmsTestimonialUpdate
+            | Self::CmsTestimonialDelete => "Testimonial",
+            Self::CmsHomeSliderCreate
+            | Self::CmsHomeSliderRead
+            | Self::CmsHomeSliderUpdate
+            | Self::CmsHomeSliderDelete => "HomeSlider",
+            Self::CmsSpeechSliderCreate
+            | Self::CmsSpeechSliderRead
+            | Self::CmsSpeechSliderUpdate
+            | Self::CmsSpeechSliderDelete => "SpeechSlider",
+            Self::CmsContentCreate
+            | Self::CmsContentRead
+            | Self::CmsContentUpdate
+            | Self::CmsContentDelete => "Content",
+            Self::CmsContentTypeCreate
+            | Self::CmsContentTypeRead
+            | Self::CmsContentTypeUpdate
+            | Self::CmsContentTypeDelete => "ContentType",
+            Self::CmsContentShareListCreate
+            | Self::CmsContentShareListRead
+            | Self::CmsContentShareListUpdate
+            | Self::CmsContentShareListDelete
+            | Self::CmsContentShareListDispatch
+            | Self::CmsContentShareListCancel => "ContentShareList",
+            Self::CmsTeacherUploadContentCreate
+            | Self::CmsTeacherUploadContentRead
+            | Self::CmsTeacherUploadContentUpdate
+            | Self::CmsTeacherUploadContentDelete => "TeacherUploadContent",
+            Self::CmsUploadContentCreate
+            | Self::CmsUploadContentRead
+            | Self::CmsUploadContentUpdate
+            | Self::CmsUploadContentDelete => "UploadContent",
+            Self::CmsAboutPageCreate
+            | Self::CmsAboutPageRead
+            | Self::CmsAboutPageUpdate
+            | Self::CmsAboutPageDelete => "AboutPage",
+            Self::CmsContactPageCreate
+            | Self::CmsContactPageRead
+            | Self::CmsContactPageUpdate
+            | Self::CmsContactPageDelete => "ContactPage",
+            Self::CmsCoursePageCreate
+            | Self::CmsCoursePageRead
+            | Self::CmsCoursePageUpdate
+            | Self::CmsCoursePageDelete => "CoursePage",
+            Self::CmsHomePageSettingConfigure
+            | Self::CmsHomePageSettingRead
+            | Self::CmsHomePageSettingDelete => "HomePageSetting",
+            Self::CmsFrontendPageCreate
+            | Self::CmsFrontendPageRead
+            | Self::CmsFrontendPageUpdate
+            | Self::CmsFrontendPageDelete => "FrontendPage",
+            Self::CmsRead => "Cms",
             Self::FacilitiesRoomCreate
             | Self::FacilitiesRoomRead
             | Self::FacilitiesRoomUpdate
@@ -1728,6 +2068,23 @@ impl Capability {
             | Self::PostalDispatchCreate
             | Self::PostalReceiveCreate
             | Self::CmsPageCreate
+            | Self::CmsNewsCreate
+            | Self::CmsNewsCategoryCreate
+            | Self::CmsNewsPageCreate
+            | Self::CmsNoticeBoardCreate
+            | Self::CmsTestimonialCreate
+            | Self::CmsHomeSliderCreate
+            | Self::CmsSpeechSliderCreate
+            | Self::CmsContentCreate
+            | Self::CmsContentTypeCreate
+            | Self::CmsContentShareListCreate
+            | Self::CmsTeacherUploadContentCreate
+            | Self::CmsUploadContentCreate
+            | Self::CmsAboutPageCreate
+            | Self::CmsContactPageCreate
+            | Self::CmsCoursePageCreate
+            | Self::CmsFrontendPageCreate
+            | Self::CmsNewsCommentCreate
             | Self::FacilitiesRoomCreate
             | Self::EventsCalendarCreate
             | Self::AttendanceStudentCreate
@@ -1794,7 +2151,26 @@ impl Capability {
             | Self::AttendanceStaffRead
             | Self::AttendanceExamRead
             | Self::AttendanceImportRead
-            | Self::AttendanceReportRead => "Read",
+            | Self::AttendanceReportRead
+            | Self::CmsNewsRead
+            | Self::CmsNewsCategoryRead
+            | Self::CmsNewsCommentRead
+            | Self::CmsNewsPageRead
+            | Self::CmsNoticeBoardRead
+            | Self::CmsTestimonialRead
+            | Self::CmsHomeSliderRead
+            | Self::CmsSpeechSliderRead
+            | Self::CmsContentRead
+            | Self::CmsContentTypeRead
+            | Self::CmsContentShareListRead
+            | Self::CmsTeacherUploadContentRead
+            | Self::CmsUploadContentRead
+            | Self::CmsAboutPageRead
+            | Self::CmsContactPageRead
+            | Self::CmsCoursePageRead
+            | Self::CmsHomePageSettingRead
+            | Self::CmsFrontendPageRead
+            | Self::CmsRead => "Read",
             Self::PlatformSchoolUpdate
             | Self::PlatformUserUpdate
             | Self::RbacRoleUpdate
@@ -1831,14 +2207,30 @@ impl Capability {
             | Self::FormDownloadUpdate
             | Self::PostalDispatchUpdate
             | Self::PostalReceiveUpdate
-            | Self::CmsPageUpdate
             | Self::FacilitiesRoomUpdate
             | Self::EventsCalendarUpdate
             | Self::AttendanceStudentUpdate
             | Self::AttendanceSubjectUpdate
             | Self::AttendanceStaffUpdate
             | Self::AttendanceExamUpdate
-            | Self::AttendanceImportUpdate => "Update",
+            | Self::AttendanceImportUpdate
+            | Self::CmsPageUpdate
+            | Self::CmsNewsUpdate
+            | Self::CmsNewsCategoryUpdate
+            | Self::CmsNewsPageUpdate
+            | Self::CmsNoticeBoardUpdate
+            | Self::CmsTestimonialUpdate
+            | Self::CmsHomeSliderUpdate
+            | Self::CmsSpeechSliderUpdate
+            | Self::CmsContentUpdate
+            | Self::CmsContentTypeUpdate
+            | Self::CmsContentShareListUpdate
+            | Self::CmsTeacherUploadContentUpdate
+            | Self::CmsUploadContentUpdate
+            | Self::CmsAboutPageUpdate
+            | Self::CmsContactPageUpdate
+            | Self::CmsCoursePageUpdate
+            | Self::CmsFrontendPageUpdate => "Update",
             Self::PlatformSchoolDelete
             | Self::PlatformUserDelete
             | Self::RbacRoleDelete
@@ -1870,7 +2262,6 @@ impl Capability {
             | Self::FormDownloadDelete
             | Self::PostalDispatchDelete
             | Self::PostalReceiveDelete
-            | Self::CmsPageDelete
             | Self::FacilitiesRoomDelete
             | Self::EventsCalendarDelete
             | Self::AttendanceStudentDelete
@@ -1880,7 +2271,26 @@ impl Capability {
             | Self::AttendanceImportDelete
             | Self::BookDelete
             | Self::BookCategoryDelete
-            | Self::MemberDelete => "Delete",
+            | Self::MemberDelete
+            | Self::CmsPageDelete
+            | Self::CmsNewsDelete
+            | Self::CmsNewsCategoryDelete
+            | Self::CmsNewsCommentDelete
+            | Self::CmsNewsPageDelete
+            | Self::CmsNoticeBoardDelete
+            | Self::CmsTestimonialDelete
+            | Self::CmsHomeSliderDelete
+            | Self::CmsSpeechSliderDelete
+            | Self::CmsContentDelete
+            | Self::CmsContentTypeDelete
+            | Self::CmsContentShareListDelete
+            | Self::CmsTeacherUploadContentDelete
+            | Self::CmsUploadContentDelete
+            | Self::CmsAboutPageDelete
+            | Self::CmsContactPageDelete
+            | Self::CmsCoursePageDelete
+            | Self::CmsHomePageSettingDelete
+            | Self::CmsFrontendPageDelete => "Delete",
             Self::RbacRoleManage => "Manage",
             Self::RbacRoleClone => "Clone",
             Self::RbacCapabilityAssign => "Assign",
@@ -2104,6 +2514,18 @@ impl Capability {
             Self::FacilitiesInventoryCancelSell => "CancelSell",
             Self::FacilitiesInventoryRefundSell => "RefundSell",
             Self::FacilitiesSupplierDeactivate => "Deactivate",
+            // -- CMS (Phase 12) specific verbs --
+            Self::CmsPagePublish => "Publish",
+            Self::CmsPageArchive => "Archive",
+            Self::CmsNewsPublish => "Publish",
+            Self::CmsNewsUnpublish => "Unpublish",
+            Self::CmsNewsIncrementView => "IncrementView",
+            Self::CmsNewsCommentModerate => "Moderate",
+            Self::CmsNoticeBoardPublish => "Publish",
+            Self::CmsNoticeBoardUnpublish => "Unpublish",
+            Self::CmsContentShareListDispatch => "Dispatch",
+            Self::CmsContentShareListCancel => "Cancel",
+            Self::CmsHomePageSettingConfigure => "Configure",
         }
     }
 
@@ -2421,6 +2843,87 @@ impl Capability {
             Self::CmsPageRead => "Cms.Page.Read",
             Self::CmsPageUpdate => "Cms.Page.Update",
             Self::CmsPageDelete => "Cms.Page.Delete",
+            Self::CmsPagePublish => "Cms.Page.Publish",
+            Self::CmsPageArchive => "Cms.Page.Archive",
+            Self::CmsNewsCreate => "Cms.News.Create",
+            Self::CmsNewsRead => "Cms.News.Read",
+            Self::CmsNewsUpdate => "Cms.News.Update",
+            Self::CmsNewsDelete => "Cms.News.Delete",
+            Self::CmsNewsPublish => "Cms.News.Publish",
+            Self::CmsNewsUnpublish => "Cms.News.Unpublish",
+            Self::CmsNewsIncrementView => "Cms.News.IncrementView",
+            Self::CmsNewsCategoryCreate => "Cms.NewsCategory.Create",
+            Self::CmsNewsCategoryRead => "Cms.NewsCategory.Read",
+            Self::CmsNewsCategoryUpdate => "Cms.NewsCategory.Update",
+            Self::CmsNewsCategoryDelete => "Cms.NewsCategory.Delete",
+            Self::CmsNewsCommentCreate => "Cms.NewsComment.Create",
+            Self::CmsNewsCommentModerate => "Cms.NewsComment.Moderate",
+            Self::CmsNewsCommentDelete => "Cms.NewsComment.Delete",
+            Self::CmsNewsCommentRead => "Cms.NewsComment.Read",
+            Self::CmsNewsPageCreate => "Cms.NewsPage.Create",
+            Self::CmsNewsPageRead => "Cms.NewsPage.Read",
+            Self::CmsNewsPageUpdate => "Cms.NewsPage.Update",
+            Self::CmsNewsPageDelete => "Cms.NewsPage.Delete",
+            Self::CmsNoticeBoardCreate => "Cms.NoticeBoard.Create",
+            Self::CmsNoticeBoardRead => "Cms.NoticeBoard.Read",
+            Self::CmsNoticeBoardUpdate => "Cms.NoticeBoard.Update",
+            Self::CmsNoticeBoardDelete => "Cms.NoticeBoard.Delete",
+            Self::CmsNoticeBoardPublish => "Cms.NoticeBoard.Publish",
+            Self::CmsNoticeBoardUnpublish => "Cms.NoticeBoard.Unpublish",
+            Self::CmsTestimonialCreate => "Cms.Testimonial.Create",
+            Self::CmsTestimonialRead => "Cms.Testimonial.Read",
+            Self::CmsTestimonialUpdate => "Cms.Testimonial.Update",
+            Self::CmsTestimonialDelete => "Cms.Testimonial.Delete",
+            Self::CmsHomeSliderCreate => "Cms.HomeSlider.Create",
+            Self::CmsHomeSliderRead => "Cms.HomeSlider.Read",
+            Self::CmsHomeSliderUpdate => "Cms.HomeSlider.Update",
+            Self::CmsHomeSliderDelete => "Cms.HomeSlider.Delete",
+            Self::CmsSpeechSliderCreate => "Cms.SpeechSlider.Create",
+            Self::CmsSpeechSliderRead => "Cms.SpeechSlider.Read",
+            Self::CmsSpeechSliderUpdate => "Cms.SpeechSlider.Update",
+            Self::CmsSpeechSliderDelete => "Cms.SpeechSlider.Delete",
+            Self::CmsContentCreate => "Cms.Content.Create",
+            Self::CmsContentRead => "Cms.Content.Read",
+            Self::CmsContentUpdate => "Cms.Content.Update",
+            Self::CmsContentDelete => "Cms.Content.Delete",
+            Self::CmsContentTypeCreate => "Cms.ContentType.Create",
+            Self::CmsContentTypeRead => "Cms.ContentType.Read",
+            Self::CmsContentTypeUpdate => "Cms.ContentType.Update",
+            Self::CmsContentTypeDelete => "Cms.ContentType.Delete",
+            Self::CmsContentShareListCreate => "Cms.ContentShareList.Create",
+            Self::CmsContentShareListRead => "Cms.ContentShareList.Read",
+            Self::CmsContentShareListUpdate => "Cms.ContentShareList.Update",
+            Self::CmsContentShareListDelete => "Cms.ContentShareList.Delete",
+            Self::CmsContentShareListDispatch => "Cms.ContentShareList.Dispatch",
+            Self::CmsContentShareListCancel => "Cms.ContentShareList.Cancel",
+            Self::CmsTeacherUploadContentCreate => "Cms.TeacherUploadContent.Create",
+            Self::CmsTeacherUploadContentRead => "Cms.TeacherUploadContent.Read",
+            Self::CmsTeacherUploadContentUpdate => "Cms.TeacherUploadContent.Update",
+            Self::CmsTeacherUploadContentDelete => "Cms.TeacherUploadContent.Delete",
+            Self::CmsUploadContentCreate => "Cms.UploadContent.Create",
+            Self::CmsUploadContentRead => "Cms.UploadContent.Read",
+            Self::CmsUploadContentUpdate => "Cms.UploadContent.Update",
+            Self::CmsUploadContentDelete => "Cms.UploadContent.Delete",
+            Self::CmsAboutPageCreate => "Cms.AboutPage.Create",
+            Self::CmsAboutPageRead => "Cms.AboutPage.Read",
+            Self::CmsAboutPageUpdate => "Cms.AboutPage.Update",
+            Self::CmsAboutPageDelete => "Cms.AboutPage.Delete",
+            Self::CmsContactPageCreate => "Cms.ContactPage.Create",
+            Self::CmsContactPageRead => "Cms.ContactPage.Read",
+            Self::CmsContactPageUpdate => "Cms.ContactPage.Update",
+            Self::CmsContactPageDelete => "Cms.ContactPage.Delete",
+            Self::CmsCoursePageCreate => "Cms.CoursePage.Create",
+            Self::CmsCoursePageRead => "Cms.CoursePage.Read",
+            Self::CmsCoursePageUpdate => "Cms.CoursePage.Update",
+            Self::CmsCoursePageDelete => "Cms.CoursePage.Delete",
+            Self::CmsHomePageSettingConfigure => "Cms.HomePageSetting.Configure",
+            Self::CmsHomePageSettingRead => "Cms.HomePageSetting.Read",
+            Self::CmsHomePageSettingDelete => "Cms.HomePageSetting.Delete",
+            Self::CmsFrontendPageCreate => "Cms.FrontendPage.Create",
+            Self::CmsFrontendPageRead => "Cms.FrontendPage.Read",
+            Self::CmsFrontendPageUpdate => "Cms.FrontendPage.Update",
+            Self::CmsFrontendPageDelete => "Cms.FrontendPage.Delete",
+            Self::CmsRead => "Cms.Read",
             Self::FacilitiesRoomCreate => "Facilities.Room.Create",
             Self::FacilitiesRoomRead => "Facilities.Room.Read",
             Self::FacilitiesRoomUpdate => "Facilities.Room.Update",
@@ -2833,6 +3336,87 @@ impl Capability {
             Self::CmsPageRead,
             Self::CmsPageUpdate,
             Self::CmsPageDelete,
+            Self::CmsPagePublish,
+            Self::CmsPageArchive,
+            Self::CmsNewsCreate,
+            Self::CmsNewsRead,
+            Self::CmsNewsUpdate,
+            Self::CmsNewsDelete,
+            Self::CmsNewsPublish,
+            Self::CmsNewsUnpublish,
+            Self::CmsNewsIncrementView,
+            Self::CmsNewsCategoryCreate,
+            Self::CmsNewsCategoryRead,
+            Self::CmsNewsCategoryUpdate,
+            Self::CmsNewsCategoryDelete,
+            Self::CmsNewsCommentCreate,
+            Self::CmsNewsCommentModerate,
+            Self::CmsNewsCommentDelete,
+            Self::CmsNewsCommentRead,
+            Self::CmsNewsPageCreate,
+            Self::CmsNewsPageRead,
+            Self::CmsNewsPageUpdate,
+            Self::CmsNewsPageDelete,
+            Self::CmsNoticeBoardCreate,
+            Self::CmsNoticeBoardRead,
+            Self::CmsNoticeBoardUpdate,
+            Self::CmsNoticeBoardDelete,
+            Self::CmsNoticeBoardPublish,
+            Self::CmsNoticeBoardUnpublish,
+            Self::CmsTestimonialCreate,
+            Self::CmsTestimonialRead,
+            Self::CmsTestimonialUpdate,
+            Self::CmsTestimonialDelete,
+            Self::CmsHomeSliderCreate,
+            Self::CmsHomeSliderRead,
+            Self::CmsHomeSliderUpdate,
+            Self::CmsHomeSliderDelete,
+            Self::CmsSpeechSliderCreate,
+            Self::CmsSpeechSliderRead,
+            Self::CmsSpeechSliderUpdate,
+            Self::CmsSpeechSliderDelete,
+            Self::CmsContentCreate,
+            Self::CmsContentRead,
+            Self::CmsContentUpdate,
+            Self::CmsContentDelete,
+            Self::CmsContentTypeCreate,
+            Self::CmsContentTypeRead,
+            Self::CmsContentTypeUpdate,
+            Self::CmsContentTypeDelete,
+            Self::CmsContentShareListCreate,
+            Self::CmsContentShareListRead,
+            Self::CmsContentShareListUpdate,
+            Self::CmsContentShareListDelete,
+            Self::CmsContentShareListDispatch,
+            Self::CmsContentShareListCancel,
+            Self::CmsTeacherUploadContentCreate,
+            Self::CmsTeacherUploadContentRead,
+            Self::CmsTeacherUploadContentUpdate,
+            Self::CmsTeacherUploadContentDelete,
+            Self::CmsUploadContentCreate,
+            Self::CmsUploadContentRead,
+            Self::CmsUploadContentUpdate,
+            Self::CmsUploadContentDelete,
+            Self::CmsAboutPageCreate,
+            Self::CmsAboutPageRead,
+            Self::CmsAboutPageUpdate,
+            Self::CmsAboutPageDelete,
+            Self::CmsContactPageCreate,
+            Self::CmsContactPageRead,
+            Self::CmsContactPageUpdate,
+            Self::CmsContactPageDelete,
+            Self::CmsCoursePageCreate,
+            Self::CmsCoursePageRead,
+            Self::CmsCoursePageUpdate,
+            Self::CmsCoursePageDelete,
+            Self::CmsHomePageSettingConfigure,
+            Self::CmsHomePageSettingRead,
+            Self::CmsHomePageSettingDelete,
+            Self::CmsFrontendPageCreate,
+            Self::CmsFrontendPageRead,
+            Self::CmsFrontendPageUpdate,
+            Self::CmsFrontendPageDelete,
+            Self::CmsRead,
             Self::FacilitiesRoomCreate,
             Self::FacilitiesRoomRead,
             Self::FacilitiesRoomUpdate,
@@ -3252,6 +3836,87 @@ impl Capability {
             "Cms.Page.Read" => Some(Self::CmsPageRead),
             "Cms.Page.Update" => Some(Self::CmsPageUpdate),
             "Cms.Page.Delete" => Some(Self::CmsPageDelete),
+            "Cms.Page.Publish" => Some(Self::CmsPagePublish),
+            "Cms.Page.Archive" => Some(Self::CmsPageArchive),
+            "Cms.News.Create" => Some(Self::CmsNewsCreate),
+            "Cms.News.Read" => Some(Self::CmsNewsRead),
+            "Cms.News.Update" => Some(Self::CmsNewsUpdate),
+            "Cms.News.Delete" => Some(Self::CmsNewsDelete),
+            "Cms.News.Publish" => Some(Self::CmsNewsPublish),
+            "Cms.News.Unpublish" => Some(Self::CmsNewsUnpublish),
+            "Cms.News.IncrementView" => Some(Self::CmsNewsIncrementView),
+            "Cms.NewsCategory.Create" => Some(Self::CmsNewsCategoryCreate),
+            "Cms.NewsCategory.Read" => Some(Self::CmsNewsCategoryRead),
+            "Cms.NewsCategory.Update" => Some(Self::CmsNewsCategoryUpdate),
+            "Cms.NewsCategory.Delete" => Some(Self::CmsNewsCategoryDelete),
+            "Cms.NewsComment.Create" => Some(Self::CmsNewsCommentCreate),
+            "Cms.NewsComment.Moderate" => Some(Self::CmsNewsCommentModerate),
+            "Cms.NewsComment.Delete" => Some(Self::CmsNewsCommentDelete),
+            "Cms.NewsComment.Read" => Some(Self::CmsNewsCommentRead),
+            "Cms.NewsPage.Create" => Some(Self::CmsNewsPageCreate),
+            "Cms.NewsPage.Read" => Some(Self::CmsNewsPageRead),
+            "Cms.NewsPage.Update" => Some(Self::CmsNewsPageUpdate),
+            "Cms.NewsPage.Delete" => Some(Self::CmsNewsPageDelete),
+            "Cms.NoticeBoard.Create" => Some(Self::CmsNoticeBoardCreate),
+            "Cms.NoticeBoard.Read" => Some(Self::CmsNoticeBoardRead),
+            "Cms.NoticeBoard.Update" => Some(Self::CmsNoticeBoardUpdate),
+            "Cms.NoticeBoard.Delete" => Some(Self::CmsNoticeBoardDelete),
+            "Cms.NoticeBoard.Publish" => Some(Self::CmsNoticeBoardPublish),
+            "Cms.NoticeBoard.Unpublish" => Some(Self::CmsNoticeBoardUnpublish),
+            "Cms.Testimonial.Create" => Some(Self::CmsTestimonialCreate),
+            "Cms.Testimonial.Read" => Some(Self::CmsTestimonialRead),
+            "Cms.Testimonial.Update" => Some(Self::CmsTestimonialUpdate),
+            "Cms.Testimonial.Delete" => Some(Self::CmsTestimonialDelete),
+            "Cms.HomeSlider.Create" => Some(Self::CmsHomeSliderCreate),
+            "Cms.HomeSlider.Read" => Some(Self::CmsHomeSliderRead),
+            "Cms.HomeSlider.Update" => Some(Self::CmsHomeSliderUpdate),
+            "Cms.HomeSlider.Delete" => Some(Self::CmsHomeSliderDelete),
+            "Cms.SpeechSlider.Create" => Some(Self::CmsSpeechSliderCreate),
+            "Cms.SpeechSlider.Read" => Some(Self::CmsSpeechSliderRead),
+            "Cms.SpeechSlider.Update" => Some(Self::CmsSpeechSliderUpdate),
+            "Cms.SpeechSlider.Delete" => Some(Self::CmsSpeechSliderDelete),
+            "Cms.Content.Create" => Some(Self::CmsContentCreate),
+            "Cms.Content.Read" => Some(Self::CmsContentRead),
+            "Cms.Content.Update" => Some(Self::CmsContentUpdate),
+            "Cms.Content.Delete" => Some(Self::CmsContentDelete),
+            "Cms.ContentType.Create" => Some(Self::CmsContentTypeCreate),
+            "Cms.ContentType.Read" => Some(Self::CmsContentTypeRead),
+            "Cms.ContentType.Update" => Some(Self::CmsContentTypeUpdate),
+            "Cms.ContentType.Delete" => Some(Self::CmsContentTypeDelete),
+            "Cms.ContentShareList.Create" => Some(Self::CmsContentShareListCreate),
+            "Cms.ContentShareList.Read" => Some(Self::CmsContentShareListRead),
+            "Cms.ContentShareList.Update" => Some(Self::CmsContentShareListUpdate),
+            "Cms.ContentShareList.Delete" => Some(Self::CmsContentShareListDelete),
+            "Cms.ContentShareList.Dispatch" => Some(Self::CmsContentShareListDispatch),
+            "Cms.ContentShareList.Cancel" => Some(Self::CmsContentShareListCancel),
+            "Cms.TeacherUploadContent.Create" => Some(Self::CmsTeacherUploadContentCreate),
+            "Cms.TeacherUploadContent.Read" => Some(Self::CmsTeacherUploadContentRead),
+            "Cms.TeacherUploadContent.Update" => Some(Self::CmsTeacherUploadContentUpdate),
+            "Cms.TeacherUploadContent.Delete" => Some(Self::CmsTeacherUploadContentDelete),
+            "Cms.UploadContent.Create" => Some(Self::CmsUploadContentCreate),
+            "Cms.UploadContent.Read" => Some(Self::CmsUploadContentRead),
+            "Cms.UploadContent.Update" => Some(Self::CmsUploadContentUpdate),
+            "Cms.UploadContent.Delete" => Some(Self::CmsUploadContentDelete),
+            "Cms.AboutPage.Create" => Some(Self::CmsAboutPageCreate),
+            "Cms.AboutPage.Read" => Some(Self::CmsAboutPageRead),
+            "Cms.AboutPage.Update" => Some(Self::CmsAboutPageUpdate),
+            "Cms.AboutPage.Delete" => Some(Self::CmsAboutPageDelete),
+            "Cms.ContactPage.Create" => Some(Self::CmsContactPageCreate),
+            "Cms.ContactPage.Read" => Some(Self::CmsContactPageRead),
+            "Cms.ContactPage.Update" => Some(Self::CmsContactPageUpdate),
+            "Cms.ContactPage.Delete" => Some(Self::CmsContactPageDelete),
+            "Cms.CoursePage.Create" => Some(Self::CmsCoursePageCreate),
+            "Cms.CoursePage.Read" => Some(Self::CmsCoursePageRead),
+            "Cms.CoursePage.Update" => Some(Self::CmsCoursePageUpdate),
+            "Cms.CoursePage.Delete" => Some(Self::CmsCoursePageDelete),
+            "Cms.HomePageSetting.Configure" => Some(Self::CmsHomePageSettingConfigure),
+            "Cms.HomePageSetting.Read" => Some(Self::CmsHomePageSettingRead),
+            "Cms.HomePageSetting.Delete" => Some(Self::CmsHomePageSettingDelete),
+            "Cms.FrontendPage.Create" => Some(Self::CmsFrontendPageCreate),
+            "Cms.FrontendPage.Read" => Some(Self::CmsFrontendPageRead),
+            "Cms.FrontendPage.Update" => Some(Self::CmsFrontendPageUpdate),
+            "Cms.FrontendPage.Delete" => Some(Self::CmsFrontendPageDelete),
+            "Cms.Read" => Some(Self::CmsRead),
             "Facilities.Room.Create" => Some(Self::FacilitiesRoomCreate),
             "Facilities.Room.Read" => Some(Self::FacilitiesRoomRead),
             "Facilities.Room.Update" => Some(Self::FacilitiesRoomUpdate),
@@ -3836,6 +4501,29 @@ mod tests {
         assert_eq!(
             count, 15,
             "expected 15 Documents.* capabilities (4 Phase 2 placeholders + 11 Phase 11 net-new; got {count})"
+        );
+    }
+
+    #[test]
+    fn cms_capabilities_round_trip_and_resolve_to_cms_domain() {
+        let mut count = 0u32;
+        for c in Capability::all() {
+            let s = c.as_str();
+            if s.starts_with("Cms.") && !s.starts_with("Cms.Read") {
+                let parsed = Capability::from_str(s).unwrap();
+                assert_eq!(parsed, *c, "round-trip failed for {s}");
+                assert_eq!(c.domain(), CapabilityDomain::Cms, "domain mismatch for {s}");
+                count += 1;
+            }
+        }
+        // Phase 12: 4 placeholders (CmsPageCreate/Read/Update/Delete)
+        // + ~80 net-new across 20 aggregates (one aggregate
+        // typically has Create/Read/Update/Delete; News adds
+        // Publish/Unpublish/IncrementView; NoticeBoard adds
+        // Publish/Unpublish; HomePageSetting adds Configure).
+        assert!(
+            count >= 80,
+            "expected >= 80 Cms.* capabilities (got {count})"
         );
     }
 

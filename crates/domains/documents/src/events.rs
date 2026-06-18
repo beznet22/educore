@@ -224,9 +224,7 @@ impl DomainEvent for FormDeleted {
 // did not bring in.
 
 use crate::aggregate::PostalDispatch;
-use crate::value_objects::{
-    DispatchDate, FromTitle, PostalDispatchId, PostalReferenceNo, ToTitle,
-};
+use crate::value_objects::{DispatchDate, FromTitle, PostalDispatchId, PostalReferenceNo, ToTitle};
 
 // =============================================================================
 // PostalDispatch lifecycle events (3)
@@ -677,9 +675,7 @@ mod tests {
     }
 
     fn publish_date() -> crate::value_objects::PublishDate {
-        crate::value_objects::PublishDate::new(
-            chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-        )
+        crate::value_objects::PublishDate::new(chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap())
     }
 
     fn url() -> crate::value_objects::Url {
@@ -783,7 +779,10 @@ mod tests {
             "documents.form_download.uploaded"
         );
         assert_eq!(<FormUploaded as DomainEvent>::SCHEMA_VERSION, 1);
-        assert_eq!(<FormUploaded as DomainEvent>::AGGREGATE_TYPE, "form_download");
+        assert_eq!(
+            <FormUploaded as DomainEvent>::AGGREGATE_TYPE,
+            "form_download"
+        );
         assert_eq!(event.form_id, form.id);
         assert_eq!(event.school_id, s);
         assert_eq!(event.title, form.title);
@@ -799,19 +798,16 @@ mod tests {
         let u = educore_core::clock::SystemIdGen.next_user_id();
         let c = educore_core::clock::SystemIdGen.next_correlation_id();
         let t = educore_core::value_objects::Timestamp::now();
-        let event = FormUpdated::new(
-            &form,
-            vec!["title".to_owned(), "link".to_owned()],
-            u,
-            t,
-            c,
-        );
+        let event = FormUpdated::new(&form, vec!["title".to_owned(), "link".to_owned()], u, t, c);
         assert_eq!(
             <FormUpdated as DomainEvent>::EVENT_TYPE,
             "documents.form_download.updated"
         );
         assert_eq!(<FormUpdated as DomainEvent>::SCHEMA_VERSION, 1);
-        assert_eq!(<FormUpdated as DomainEvent>::AGGREGATE_TYPE, "form_download");
+        assert_eq!(
+            <FormUpdated as DomainEvent>::AGGREGATE_TYPE,
+            "form_download"
+        );
         assert_eq!(event.form_id, form.id);
         assert_eq!(event.school_id, s);
         assert_eq!(event.changes, vec!["title".to_owned(), "link".to_owned()]);
@@ -830,7 +826,10 @@ mod tests {
             "documents.form_download.deleted"
         );
         assert_eq!(<FormDeleted as DomainEvent>::SCHEMA_VERSION, 1);
-        assert_eq!(<FormDeleted as DomainEvent>::AGGREGATE_TYPE, "form_download");
+        assert_eq!(
+            <FormDeleted as DomainEvent>::AGGREGATE_TYPE,
+            "form_download"
+        );
         assert_eq!(event.form_id, form.id);
         assert_eq!(event.school_id, s);
         assert_eq!(event.deleted_by, u);
@@ -867,13 +866,7 @@ mod tests {
         let u = educore_core::clock::SystemIdGen.next_user_id();
         let c = educore_core::clock::SystemIdGen.next_correlation_id();
         let t = educore_core::value_objects::Timestamp::now();
-        let event = PostalDispatchUpdated::new(
-            &dispatch,
-            vec!["to_title".to_owned()],
-            u,
-            t,
-            c,
-        );
+        let event = PostalDispatchUpdated::new(&dispatch, vec!["to_title".to_owned()], u, t, c);
         assert_eq!(
             <PostalDispatchUpdated as DomainEvent>::EVENT_TYPE,
             "documents.postal_dispatch.updated"
@@ -940,8 +933,7 @@ mod tests {
         let u = educore_core::clock::SystemIdGen.next_user_id();
         let c = educore_core::clock::SystemIdGen.next_correlation_id();
         let t = educore_core::value_objects::Timestamp::now();
-        let event =
-            PostalReceiveUpdated::new(&receive, vec!["from_title".to_owned()], u, t, c);
+        let event = PostalReceiveUpdated::new(&receive, vec!["from_title".to_owned()], u, t, c);
         assert_eq!(
             <PostalReceiveUpdated as DomainEvent>::EVENT_TYPE,
             "documents.postal_receive.updated"

@@ -164,8 +164,7 @@ impl DeleteFormCommand {
 
 use crate::aggregate::{AcademicYearId, NewPostalDispatch, UpdatePostalDispatch};
 use crate::value_objects::{
-    DispatchDate, FromTitle, PostalDispatchId, PostalNote, PostalReferenceNo,
-    ToAddress, ToTitle,
+    DispatchDate, FromTitle, PostalDispatchId, PostalNote, PostalReferenceNo, ToAddress, ToTitle,
 };
 
 // =============================================================================
@@ -174,14 +173,11 @@ use crate::value_objects::{
 // =============================================================================
 
 /// Dispatch-postal command type.
-const DOCUMENTS_POSTAL_DISPATCH_DISPATCH_COMMAND_TYPE: &str =
-    "documents.postal_dispatch.dispatch";
+const DOCUMENTS_POSTAL_DISPATCH_DISPATCH_COMMAND_TYPE: &str = "documents.postal_dispatch.dispatch";
 /// Update-postal-dispatch command type.
-const DOCUMENTS_POSTAL_DISPATCH_UPDATE_COMMAND_TYPE: &str =
-    "documents.postal_dispatch.update";
+const DOCUMENTS_POSTAL_DISPATCH_UPDATE_COMMAND_TYPE: &str = "documents.postal_dispatch.update";
 /// Delete-postal-dispatch command type.
-const DOCUMENTS_POSTAL_DISPATCH_DELETE_COMMAND_TYPE: &str =
-    "documents.postal_dispatch.delete";
+const DOCUMENTS_POSTAL_DISPATCH_DELETE_COMMAND_TYPE: &str = "documents.postal_dispatch.delete";
 
 // =============================================================================
 // PostalDispatch commands
@@ -347,14 +343,11 @@ use crate::value_objects::{FromAddress, PostalReceiveId, ReceiveDate};
 // =============================================================================
 
 /// Receive-postal command type.
-const DOCUMENTS_POSTAL_RECEIVE_RECEIVE_COMMAND_TYPE: &str =
-    "documents.postal_receive.receive";
+const DOCUMENTS_POSTAL_RECEIVE_RECEIVE_COMMAND_TYPE: &str = "documents.postal_receive.receive";
 /// Update-postal-receive command type.
-const DOCUMENTS_POSTAL_RECEIVE_UPDATE_COMMAND_TYPE: &str =
-    "documents.postal_receive.update";
+const DOCUMENTS_POSTAL_RECEIVE_UPDATE_COMMAND_TYPE: &str = "documents.postal_receive.update";
 /// Delete-postal-receive command type.
-const DOCUMENTS_POSTAL_RECEIVE_DELETE_COMMAND_TYPE: &str =
-    "documents.postal_receive.delete";
+const DOCUMENTS_POSTAL_RECEIVE_DELETE_COMMAND_TYPE: &str = "documents.postal_receive.delete";
 /// Track-postal command type (query command; no event emitted).
 const DOCUMENTS_POSTAL_TRACK_COMMAND_TYPE: &str = "documents.postal.track";
 
@@ -570,9 +563,7 @@ mod tests {
     }
 
     fn publish_date() -> crate::value_objects::PublishDate {
-        crate::value_objects::PublishDate::new(
-            chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-        )
+        crate::value_objects::PublishDate::new(chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap())
     }
 
     // ---- Form commands ----
@@ -589,7 +580,10 @@ mod tests {
             file: None,
             show_public: crate::value_objects::ShowPublic::new(true),
         };
-        assert_eq!(UploadFormCommand::COMMAND_TYPE, "documents.form_download.upload");
+        assert_eq!(
+            UploadFormCommand::COMMAND_TYPE,
+            "documents.form_download.upload"
+        );
         let new = cmd.into_new_form_download();
         assert_eq!(new.id.school_id(), s);
         assert_eq!(new.created_by, tenant.actor_id);
@@ -611,7 +605,10 @@ mod tests {
             file: None,
             show_public: None,
         };
-        assert_eq!(UpdateFormCommand::COMMAND_TYPE, "documents.form_download.update");
+        assert_eq!(
+            UpdateFormCommand::COMMAND_TYPE,
+            "documents.form_download.update"
+        );
         let eid = educore_core::clock::SystemIdGen.next_event_id();
         let u = cmd.into_update_form_download(eid);
         assert_eq!(u.actor, tenant.actor_id);
@@ -626,7 +623,10 @@ mod tests {
             tenant: tenant.clone(),
             form_id,
         };
-        assert_eq!(DeleteFormCommand::COMMAND_TYPE, "documents.form_download.delete");
+        assert_eq!(
+            DeleteFormCommand::COMMAND_TYPE,
+            "documents.form_download.delete"
+        );
         assert_eq!(cmd.form_id, form_id);
         assert_eq!(cmd.tenant.school_id, s);
     }

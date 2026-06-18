@@ -199,7 +199,8 @@ mod tests {
         let file = crate::value_objects::FileReference::new("object-key-1234").unwrap();
         let at = educore_core::value_objects::Timestamp::now();
         let actor = educore_core::ids::UserId(Uuid::from_u128(99));
-        let child = crate::aggregate::FormDownloadFile::new(school, form_id, file.clone(), at, actor);
+        let child =
+            crate::aggregate::FormDownloadFile::new(school, form_id, file.clone(), at, actor);
         assert_eq!(child.school_id, school);
         assert_eq!(child.form_id, form_id);
         assert_eq!(child.file, file);
@@ -217,7 +218,8 @@ mod tests {
         let url = crate::value_objects::Url::new("https://example.com/path").unwrap();
         let at = educore_core::value_objects::Timestamp::now();
         let actor = educore_core::ids::UserId(Uuid::from_u128(99));
-        let child = crate::aggregate::FormDownloadLink::new(school, form_id, url.clone(), at, actor);
+        let child =
+            crate::aggregate::FormDownloadLink::new(school, form_id, url.clone(), at, actor);
         assert_eq!(child.school_id, school);
         assert_eq!(child.form_id, form_id);
         assert_eq!(child.url, url);
@@ -227,8 +229,7 @@ mod tests {
     #[test]
     fn postal_dispatch_attachment_child_entity_constructs_with_tenant_invariant() {
         let school = SchoolId::from_uuid(Uuid::nil());
-        let dispatch_id =
-            crate::value_objects::PostalDispatchId::new(school, Uuid::from_u128(7));
+        let dispatch_id = crate::value_objects::PostalDispatchId::new(school, Uuid::from_u128(7));
         let file = crate::value_objects::FileReference::new("object-key-1234").unwrap();
         let at = educore_core::value_objects::Timestamp::now();
         let actor = educore_core::ids::UserId(Uuid::from_u128(99));

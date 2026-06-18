@@ -27,8 +27,8 @@ use educore_core::clock::{IdGenerator, SystemIdGen, TestClock};
 use educore_core::ids::{CorrelationId, SchoolId, UserId};
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::Timestamp;
-use educore_documents::prelude::*;
 use educore_documents::aggregate::AcademicYearId;
+use educore_documents::prelude::*;
 use educore_event_bus::InProcessEventBus;
 use educore_events::domain_event::DomainEvent;
 use educore_events::event_bus::{
@@ -94,10 +94,7 @@ impl InMemoryFormRepo {
 
 #[async_trait]
 impl FormDownloadRepository for InMemoryFormRepo {
-    async fn get(
-        &self,
-        id: FormDownloadId,
-    ) -> educore_core::error::Result<Option<FormDownload>> {
+    async fn get(&self, id: FormDownloadId) -> educore_core::error::Result<Option<FormDownload>> {
         Ok(self
             .rows
             .lock()
@@ -118,9 +115,7 @@ impl FormDownloadRepository for InMemoryFormRepo {
             .filter(|f| f.school_id == school)
             .filter(|f| q.title.as_ref().is_none_or(|t| &f.title == t))
             .filter(|f| q.show_public.is_none_or(|sp| f.show_public == sp))
-            .filter(|f| {
-                q.publish_from.is_none_or(|p| f.publish_date.0 >= p.0)
-            })
+            .filter(|f| q.publish_from.is_none_or(|p| f.publish_date.0 >= p.0))
             .filter(|f| q.publish_to.is_none_or(|p| f.publish_date.0 <= p.0))
             .filter(|f| q.active_status.is_none_or(|a| f.active_status == a))
             .collect();
@@ -244,10 +239,7 @@ impl PostalDispatchRepository for InMemoryDispatchRepo {
                     .as_ref()
                     .is_none_or(|r| d.reference_no.as_ref() == Some(r))
             })
-            .filter(|d| {
-                q.date_from
-                    .is_none_or(|df| d.date.0 >= df.0)
-            })
+            .filter(|d| q.date_from.is_none_or(|df| d.date.0 >= df.0))
             .filter(|d| q.date_to.is_none_or(|dt| d.date.0 <= dt.0))
             .filter(|d| q.academic_id.is_none_or(|y| d.academic_id == y))
             .filter(|d| q.active_status.is_none_or(|a| d.active_status == a))
@@ -255,15 +247,13 @@ impl PostalDispatchRepository for InMemoryDispatchRepo {
         Ok(filtered)
     }
 
-    async fn insert(
-        &self,
-        dispatch: &PostalDispatch,
-    ) -> educore_core::error::Result<()> {
+    async fn insert(&self, dispatch: &PostalDispatch) -> educore_core::error::Result<()> {
         // Enforce reference uniqueness within (school_id, academic_id).
         let rows = self.rows.lock().unwrap();
         if let Some(existing_ref) = &dispatch.reference_no {
             if rows.iter().any(|d| {
-                d.academic_id == dispatch.academic_id && d.reference_no.as_ref() == Some(existing_ref)
+                d.academic_id == dispatch.academic_id
+                    && d.reference_no.as_ref() == Some(existing_ref)
             }) {
                 return Err(educore_core::error::DomainError::Conflict(format!(
                     "duplicate reference_no: {}",
@@ -276,10 +266,7 @@ impl PostalDispatchRepository for InMemoryDispatchRepo {
         Ok(())
     }
 
-    async fn update(
-        &self,
-        dispatch: &PostalDispatch,
-    ) -> educore_core::error::Result<()> {
+    async fn update(&self, dispatch: &PostalDispatch) -> educore_core::error::Result<()> {
         let mut rows = self.rows.lock().unwrap();
         if let Some(existing) = rows.iter_mut().find(|d| d.id == dispatch.id) {
             *existing = dispatch.clone();
@@ -343,10 +330,7 @@ impl InMemoryReceiveRepo {
 
 #[async_trait]
 impl PostalReceiveRepository for InMemoryReceiveRepo {
-    async fn get(
-        &self,
-        id: PostalReceiveId,
-    ) -> educore_core::error::Result<Option<PostalReceive>> {
+    async fn get(&self, id: PostalReceiveId) -> educore_core::error::Result<Option<PostalReceive>> {
         Ok(self
             .rows
             .lock()
@@ -380,10 +364,7 @@ impl PostalReceiveRepository for InMemoryReceiveRepo {
                     .as_ref()
                     .is_none_or(|rr| r.reference_no.as_ref() == Some(rr))
             })
-            .filter(|r| {
-                q.date_from
-                    .is_none_or(|df| r.date.0 >= df.0)
-            })
+            .filter(|r| q.date_from.is_none_or(|df| r.date.0 >= df.0))
             .filter(|r| q.date_to.is_none_or(|dt| r.date.0 <= dt.0))
             .filter(|r| q.academic_id.is_none_or(|y| r.academic_id == y))
             .filter(|r| q.active_status.is_none_or(|a| r.active_status == a))
@@ -391,14 +372,12 @@ impl PostalReceiveRepository for InMemoryReceiveRepo {
         Ok(filtered)
     }
 
-    async fn insert(
-        &self,
-        receive: &PostalReceive,
-    ) -> educore_core::error::Result<()> {
+    async fn insert(&self, receive: &PostalReceive) -> educore_core::error::Result<()> {
         let rows = self.rows.lock().unwrap();
         if let Some(existing_ref) = &receive.reference_no {
             if rows.iter().any(|r| {
-                r.academic_id == receive.academic_id && r.reference_no.as_ref() == Some(existing_ref)
+                r.academic_id == receive.academic_id
+                    && r.reference_no.as_ref() == Some(existing_ref)
             }) {
                 return Err(educore_core::error::DomainError::Conflict(format!(
                     "duplicate reference_no: {}",
@@ -411,10 +390,7 @@ impl PostalReceiveRepository for InMemoryReceiveRepo {
         Ok(())
     }
 
-    async fn update(
-        &self,
-        receive: &PostalReceive,
-    ) -> educore_core::error::Result<()> {
+    async fn update(&self, receive: &PostalReceive) -> educore_core::error::Result<()> {
         let mut rows = self.rows.lock().unwrap();
         if let Some(existing) = rows.iter_mut().find(|r| r.id == receive.id) {
             *existing = receive.clone();
@@ -764,9 +740,18 @@ fn documents_event_type_round_trip_for_all_aggregates() {
     assert_eq!(<PostalReceiveDeleted as DomainEvent>::SCHEMA_VERSION, 1);
 
     // Every event's AGGREGATE_TYPE matches the canonical name.
-    assert_eq!(<FormUploaded as DomainEvent>::AGGREGATE_TYPE, "form_download");
-    assert_eq!(<FormUpdated as DomainEvent>::AGGREGATE_TYPE, "form_download");
-    assert_eq!(<FormDeleted as DomainEvent>::AGGREGATE_TYPE, "form_download");
+    assert_eq!(
+        <FormUploaded as DomainEvent>::AGGREGATE_TYPE,
+        "form_download"
+    );
+    assert_eq!(
+        <FormUpdated as DomainEvent>::AGGREGATE_TYPE,
+        "form_download"
+    );
+    assert_eq!(
+        <FormDeleted as DomainEvent>::AGGREGATE_TYPE,
+        "form_download"
+    );
     assert_eq!(
         <PostalDispatched as DomainEvent>::AGGREGATE_TYPE,
         "postal_dispatch"
@@ -942,7 +927,10 @@ async fn documents_soft_delete_invariant_holds() {
         .await
         .expect("get")
         .expect("form still queryable after soft-delete");
-    assert!(!fetched.is_active(), "is_active() must be false after soft-delete");
+    assert!(
+        !fetched.is_active(),
+        "is_active() must be false after soft-delete"
+    );
     assert_eq!(fetched.id, form_id);
 }
 
@@ -991,7 +979,11 @@ async fn documents_form_publish_visibility_invariant() {
         .list_public(env.school)
         .await
         .expect("list_public");
-    assert_eq!(public_forms.len(), 1, "list_public must return exactly 1 form");
+    assert_eq!(
+        public_forms.len(),
+        1,
+        "list_public must return exactly 1 form"
+    );
     assert_eq!(public_forms[0].id, public_form.id);
     assert!(public_forms.iter().all(|f| f.is_public()));
 
@@ -1045,10 +1037,9 @@ async fn documents_integration_postgres() {
     let _actor = g.next_user_id();
     let _corr = g.next_correlation_id();
     let _bus: Arc<InProcessEventBus> = Arc::new(InProcessEventBus::new());
-    let adapter =
-        educore_storage_postgres::PostgresStorageAdapter::connect(&url, school)
-            .await
-            .expect("connect pg");
+    let adapter = educore_storage_postgres::PostgresStorageAdapter::connect(&url, school)
+        .await
+        .expect("connect pg");
     adapter.migrate().await.expect("migrate pg");
     // The PG vertical-slice test exercises the SQLite shape
     // (the documents repos are wired to the SQLite adapter in
@@ -1069,10 +1060,9 @@ async fn documents_integration_mysql() {
     let _actor = g.next_user_id();
     let _corr = g.next_correlation_id();
     let _bus: Arc<InProcessEventBus> = Arc::new(InProcessEventBus::new());
-    let adapter =
-        educore_storage_mysql::MysqlStorageAdapter::connect(&url, school)
-            .await
-            .expect("connect mysql");
+    let adapter = educore_storage_mysql::MysqlStorageAdapter::connect(&url, school)
+        .await
+        .expect("connect mysql");
     adapter.migrate().await.expect("migrate mysql");
     let _adapter: Arc<dyn educore_storage::StorageAdapter> = Arc::new(adapter);
 }

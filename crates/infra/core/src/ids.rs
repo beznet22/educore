@@ -278,6 +278,31 @@ pub const PLATFORM_SCHOOL_ID: SchoolId = SchoolId(Uuid::from_bytes([
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x70, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02,
 ]));
 
+/// The well-known "public" school id used for public-site aggregates
+/// (e.g. CMS `Page` rows surfaced on the school's public site) that
+/// are visible across all schools in a multi-tenant SaaS.
+///
+/// Per `docs/schemas/tenancy-schema.md` § 3 and
+/// `docs/build-plan.md` § "Phase 12" § Risks: RLS must NOT block
+/// public reads. A `school_id` of `PUBLIC` (the nil UUID) is
+/// reserved for public content; the RLS policies explicitly allow
+/// the nil UUID through (mirroring the Phase 0 `PLATFORM_SCHOOL_ID`
+/// pattern). Consumers that need to "show this page to the public"
+/// set `school_id = SchoolId::PUBLIC` on the aggregate and the
+/// public-site port adapter reads across the school boundary.
+pub const PUBLIC_SCHOOL_ID: SchoolId = SchoolId(Uuid::nil());
+
+impl SchoolId {
+    /// Returns `true` if this is the well-known public-content
+    /// school id (the nil UUID). Per `docs/build-plan.md` § "Phase 12"
+    /// § Risks, the RLS policy allows the nil UUID through; public
+    /// content is anchored to this id.
+    #[must_use]
+    pub const fn is_public(self) -> bool {
+        self.0.is_nil()
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
@@ -322,6 +347,18 @@ mod tests {
         ]);
         assert_eq!(a, b);
         assert_eq!(a.get_version_num(), 7);
+    }
+
+    #[test]
+    fn public_school_id_is_nil() {
+        assert_eq!(PUBLIC_SCHOOL_ID.as_uuid(), Uuid::nil());
+        assert!(PUBLIC_SCHOOL_ID.is_public());
+    }
+
+    #[test]
+    fn regular_school_id_is_not_public() {
+        let id = SchoolId::from_uuid(Uuid::now_v7());
+        assert!(!id.is_public());
     }
 
     #[test]

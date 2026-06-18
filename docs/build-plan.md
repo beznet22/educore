@@ -1395,6 +1395,72 @@ work across schools. Mitigation: a `school_id` of zero
 (`00000000-...`) is reserved for public content; RLS policies
 explicitly allow it (per `docs/schemas/tenancy-schema.md`).
 
+**Phase 12 outcome.**
+
+- `crates/domains/cms/` delivered. 20 root aggregates per
+  `docs/specs/cms/aggregates.md` ship as first-class ports
+  (spec-faithful). 9-file module layout: `aggregate.rs` /
+  `value_objects.rs` / `commands.rs` / `events.rs` /
+  `services.rs` / `repository.rs` / `query.rs` / `errors.rs`
+  / `entities.rs` + `lib.rs`.
+- ~67 typed events, ~67 typed commands, 19 repository port
+  traits, 19 typed query stubs.
+- 6 service factory fns (`create_page_service`,
+  `create_news_service`, `create_testimonial_service`,
+  `create_home_slider_service`, `content_service`,
+  `content_share_list_service`,
+  `configure_home_page_service`) + 6 service structs
+  (`PageService`, `NewsService`, `ContentService`,
+  `TestimonialService`, `HomeSliderService`,
+  `ContentShareListService`).
+- The `form_uploaded_public_indexing_subscriber` bus
+  subscriber for `documents.form_download.uploaded` (per
+  Phase 11 OQ #6) ships events-only (no `educore-documents`
+  dep).
+- `crates/infra/core/src/ids.rs` adds
+  `pub const PUBLIC_SCHOOL_ID: SchoolId =
+  SchoolId(Uuid::nil())` + `SchoolId::is_public()` helper
+  (the public-content special case per the § Risks clause).
+- `crates/domains/cms/Cargo.toml` adds `educore-academic`
+  (for `ClassId`, `SectionId`, `AcademicYearId`) +
+  `educore-audit`.
+- `crates/cross-cutting/rbac/src/value_objects.rs` adds 82
+  net-new `Capability` variants (4 retained Phase 2
+  `CmsPage*` placeholders + 82 net-new across the 20
+  aggregates) = 86 Cms caps. Extended arms: `domain()`,
+  `aggregate()`, `action()`, `as_str()`, `all()`,
+  `from_str_opt()`. The
+  `cms_capabilities_round_trip_and_resolve_to_cms_domain`
+  test asserts ≥ 80 Cms caps.
+- `crates/cross-cutting/rbac/src/services.rs` extends
+  `DefaultRoleCatalog` (the new `marketing` role + updates
+  to `school_admin`, `teacher`, `student`, `parent`).
+- `crates/cross-cutting/audit/src/writer.rs` adds 20 net-new
+  `AuditTarget` variants (News, NewsCategory, NewsComment,
+  NewsPage, NoticeBoard, Testimonial, HomeSlider,
+  SpeechSlider, Content, ContentType, ContentShareList,
+  TeacherUploadContent, UploadContent, AboutPage,
+  ContactPage, CoursePage, HomePageSetting, FrontendPage,
+  PageRevision, NewsRevision) + 1 retained `Page` placeholder
+  = 21 Cms-domain audit targets. The
+  `cms_audit_target_round_trip_for_all_aggregates` test
+  asserts all 21 targets, all snake_case, no duplicates.
+- `crates/tools/storage-parity/Cargo.toml` adds
+  `educore-cms`. The new `cms_integration.rs` runs 7
+  always-on scenarios + 2 env-gated `#[ignore]` PG/MySQL
+  variants (vertical slice, capability gate, event-type
+  round-trip for all 20 aggregates, slug uniqueness,
+  content-share-list window invariant, form-uploaded
+  public-indexing subscriber for `show_public = true` and
+  `show_public = false`).
+- 183 unit tests in `educore-cms` + 7 integration scenarios
+  in `cms_integration.rs` (2 env-gated).
+- 20 `coverage.toml` rows flipped from `Pending` to
+  `Tested` (one per root aggregate + 2 capability/audit
+  surface rows).
+- Hand-off for the next agent:
+  `docs/handoff/PHASE-12-HANDOFF.md`.
+
 ---
 
 ## Phase 13 — Events domain (calendar)

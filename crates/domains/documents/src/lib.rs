@@ -29,8 +29,8 @@ pub const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Convenient prelude: the public surface of the documents crate.
 pub mod prelude {
     pub use crate::aggregate::{
-        FormDownload, FormDownloadFile, FormDownloadLink, PostalDispatch,
-        PostalDispatchAttachment, PostalReceive, PostalReceiveAttachment,
+        FormDownload, FormDownloadFile, FormDownloadLink, PostalDispatch, PostalDispatchAttachment,
+        PostalReceive, PostalReceiveAttachment,
     };
     pub use crate::commands::{
         DeleteFormCommand, DeletePostalDispatchCommand, DeletePostalReceiveCommand,
@@ -52,15 +52,15 @@ pub mod prelude {
     };
     pub use crate::services::{
         delete_form_service, delete_postal_dispatch_service, delete_postal_receive_service,
-        dispatch_postal_service, FormService, PostalService, receive_postal_service,
-        track_postal_service, update_form_service, update_postal_dispatch_service,
-        update_postal_receive_service, upload_form_service,
+        dispatch_postal_service, receive_postal_service, track_postal_service, update_form_service,
+        update_postal_dispatch_service, update_postal_receive_service, upload_form_service,
+        FormService, PostalService,
     };
     pub use crate::value_objects::{
-        ActiveStatus, DispatchDate, DocumentType, DocumentVisibility, FileReference, FormDescription,
-        FormDownloadId, FormTitle, FromAddress, FromTitle, PostalAddress, PostalDispatchId,
-        PostalNote, PostalReceiveId, PostalReferenceNo, PostalTitle, PublishDate, ReceiveDate,
-        ShowPublic, ToAddress, ToTitle, Url,
+        ActiveStatus, DispatchDate, DocumentType, DocumentVisibility, FileReference,
+        FormDescription, FormDownloadId, FormTitle, FromAddress, FromTitle, PostalAddress,
+        PostalDispatchId, PostalNote, PostalReceiveId, PostalReferenceNo, PostalTitle, PublishDate,
+        ReceiveDate, ShowPublic, ToAddress, ToTitle, Url,
     };
 }
 
@@ -69,21 +69,20 @@ mod tests {
     use super::*;
     use crate::prelude::{
         DeleteFormCommand, DeletePostalDispatchCommand, DeletePostalReceiveCommand,
-        DispatchPostalCommand, FormDeleted, FormDownloadFile, FormDownloadFileId,
-        FormDownloadLink, FormDownloadLinkId, FormDownloadQuery, FormDownloadRepository,
-        FormUpdated, FormUploaded, PostalDispatchAttachment, PostalDispatchAttachmentId,
-        PostalDispatchDeleted, PostalDispatchQuery, PostalDispatchRepository,
-        PostalDispatchUpdated, PostalDispatched, PostalReceiveAttachment,
-        PostalReceiveAttachmentId, PostalReceiveDeleted, PostalReceiveQuery,
-        PostalReceiveRepository, PostalReceiveUpdated, PostalReceived, ReceivePostalCommand,
-        TrackPostalCommand, UpdateFormCommand, UpdatePostalDispatchCommand,
+        DispatchPostalCommand, FormDeleted, FormDownloadFile, FormDownloadFileId, FormDownloadLink,
+        FormDownloadLinkId, FormDownloadQuery, FormDownloadRepository, FormUpdated, FormUploaded,
+        PostalDispatchAttachment, PostalDispatchAttachmentId, PostalDispatchDeleted,
+        PostalDispatchQuery, PostalDispatchRepository, PostalDispatchUpdated, PostalDispatched,
+        PostalReceiveAttachment, PostalReceiveAttachmentId, PostalReceiveDeleted,
+        PostalReceiveQuery, PostalReceiveRepository, PostalReceiveUpdated, PostalReceived,
+        ReceivePostalCommand, TrackPostalCommand, UpdateFormCommand, UpdatePostalDispatchCommand,
         UpdatePostalReceiveCommand, UploadFormCommand,
     };
     use crate::value_objects::{
         ActiveStatus, DispatchDate, DocumentType, DocumentVisibility, FileReference,
         FormDescription, FormDownloadId, FormTitle, FromAddress, FromTitle, PostalAddress,
-        PostalDispatchId, PostalNote, PostalReceiveId, PostalReferenceNo, PostalTitle,
-        PublishDate, ReceiveDate, ShowPublic, ToAddress, ToTitle, Url,
+        PostalDispatchId, PostalNote, PostalReceiveId, PostalReferenceNo, PostalTitle, PublishDate,
+        ReceiveDate, ShowPublic, ToAddress, ToTitle, Url,
     };
     #[test]
     fn package_metadata_is_set() {

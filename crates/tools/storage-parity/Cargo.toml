@@ -27,6 +27,7 @@ educore-facilities = { workspace = true }
 educore-library = { workspace = true }
 educore-communication = { workspace = true }
 educore-documents = { workspace = true }
+educore-cms = { workspace = true }
 async-trait = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
