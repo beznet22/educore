@@ -432,10 +432,14 @@ impl Url {
     pub fn new(s: impl Into<String>) -> Result<Self> {
         let s = s.into();
         if s.is_empty() || s.len() > 2048 {
-            return Err(DomainError::Validation("url must be 1..2048 chars".to_owned()));
+            return Err(DomainError::Validation(
+                "url must be 1..2048 chars".to_owned(),
+            ));
         }
         if !(s.starts_with("http://") || s.starts_with("https://")) {
-            return Err(DomainError::Validation("url must start with http:// or https://".to_owned()));
+            return Err(DomainError::Validation(
+                "url must start with http:// or https://".to_owned(),
+            ));
         }
         Ok(Self(s))
     }

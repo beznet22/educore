@@ -11,8 +11,7 @@ use chrono::{Datelike, NaiveDate};
 
 use crate::aggregate::{Holiday, Incident, Weekend};
 use crate::value_objects::{
-    apply_holiday_overrides, CalendarEventStatus, ForWhom, IncidentStatus, RecurrenceRule,
-    Url,
+    apply_holiday_overrides, CalendarEventStatus, ForWhom, IncidentStatus, RecurrenceRule, Url,
 };
 
 // =============================================================================
@@ -31,7 +30,11 @@ impl CalendarService {
 
     /// Returns true if the audience resolves to the actor's roles.
     #[must_use]
-    pub fn audience_resolves_to(for_whom: ForWhom, role_ids: &[String], actor_roles: &[String]) -> bool {
+    pub fn audience_resolves_to(
+        for_whom: ForWhom,
+        role_ids: &[String],
+        actor_roles: &[String],
+    ) -> bool {
         match for_whom {
             ForWhom::All => true,
             _ => {
@@ -45,7 +48,12 @@ impl CalendarService {
 
     /// Returns true if two date ranges overlap.
     #[must_use]
-    pub fn overlaps(a_from: NaiveDate, a_to: NaiveDate, b_from: NaiveDate, b_to: NaiveDate) -> bool {
+    pub fn overlaps(
+        a_from: NaiveDate,
+        a_to: NaiveDate,
+        b_from: NaiveDate,
+        b_to: NaiveDate,
+    ) -> bool {
         a_from <= b_to && b_from <= a_to
     }
 
@@ -119,9 +127,7 @@ impl HolidayService {
     #[must_use]
     pub fn is_instructional(weekends: &[Weekend], holidays: &[Holiday], date: NaiveDate) -> bool {
         let weekday = date.weekday().num_days_from_monday() as i32;
-        let is_weekend_day = weekends
-            .iter()
-            .any(|w| w.is_weekend && w.order == weekday);
+        let is_weekend_day = weekends.iter().any(|w| w.is_weekend && w.order == weekday);
         let is_holiday = holidays.iter().any(|h| Self::contains(h, date));
         !is_weekend_day && !is_holiday
     }
@@ -176,7 +182,10 @@ impl CalendarSettingService {
     /// visible in the calendar UI.
     #[must_use]
     pub fn visible(setting_status: crate::value_objects::CalendarStatus) -> bool {
-        matches!(setting_status, crate::value_objects::CalendarStatus::Enabled)
+        matches!(
+            setting_status,
+            crate::value_objects::CalendarStatus::Enabled
+        )
     }
 }
 
@@ -192,7 +201,10 @@ pub struct IncidentService;
 impl IncidentService {
     /// Returns the next status for a given action.
     #[must_use]
-    pub fn next_status(current: IncidentStatus, action: super::value_objects::IncidentAction) -> IncidentStatus {
+    pub fn next_status(
+        current: IncidentStatus,
+        action: super::value_objects::IncidentAction,
+    ) -> IncidentStatus {
         current.next(action)
     }
 
@@ -219,9 +231,17 @@ impl IncidentService {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WeekendChange {
     /// Create a new weekend entry.
-    Create { name: String, order: i32, is_weekend: bool },
+    Create {
+        name: String,
+        order: i32,
+        is_weekend: bool,
+    },
     /// Update an existing weekend entry.
-    Update { name: String, order: i32, is_weekend: bool },
+    Update {
+        name: String,
+        order: i32,
+        is_weekend: bool,
+    },
     /// Delete an existing weekend entry.
     Delete { name: String },
 }
@@ -235,7 +255,10 @@ impl WeekendService {
     /// The output is the list of `WeekendChange` actions that
     /// the command processor applies.
     #[must_use]
-    pub fn reconcile(current: &[Weekend], proposed: &[crate::commands::WeekendEntry]) -> Vec<WeekendChange> {
+    pub fn reconcile(
+        current: &[Weekend],
+        proposed: &[crate::commands::WeekendEntry],
+    ) -> Vec<WeekendChange> {
         let mut changes = Vec::new();
         let current_names: std::collections::HashSet<&str> =
             current.iter().map(|w| w.name.as_str()).collect();
@@ -293,10 +316,10 @@ impl WeekendService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::value_objects::{RecurrenceFreq, IncidentAction, WeekendId};
-    use educore_core::ids::{Identifier, SchoolId, UserId, CorrelationId};
-    use educore_core::value_objects::{Etag, Timestamp, Version};
+    use crate::value_objects::{IncidentAction, RecurrenceFreq, WeekendId};
     use chrono::Datelike;
+    use educore_core::ids::{CorrelationId, Identifier, SchoolId, UserId};
+    use educore_core::value_objects::{Etag, Timestamp, Version};
 
     #[test]
     fn calendar_service_in_range() {
@@ -394,37 +417,44 @@ mod tests {
     #[test]
     fn weekend_service_reconcile_diff() {
         use crate::commands::WeekendEntry;
-    use crate::value_objects::WeekendId;
-    use educore_core::ids::{Identifier, SchoolId, UserId, CorrelationId};
-    use educore_core::value_objects::{Etag, Timestamp, Version};
-        let current = vec![
-            Weekend {
-                id: WeekendId::new(SchoolId::from_uuid(uuid::Uuid::nil()), uuid::Uuid::nil()),
-                school_id: SchoolId::from_uuid(uuid::Uuid::nil()),
-                name: "Saturday".to_owned(),
-                order: 5,
-                is_weekend: true,
-                academic_id: None,
-                version: Version::initial(),
-                etag: Etag::placeholder(),
-                created_at: Timestamp::now(),
-                updated_at: Timestamp::now(),
-                created_by: UserId::from_uuid(uuid::Uuid::nil()),
-                updated_by: UserId::from_uuid(uuid::Uuid::nil()),
-                active_status: true,
-                last_event_id: None,
-                correlation_id: CorrelationId::from_uuid(uuid::Uuid::nil()),
-            },
-        ];
-        let proposed = vec![
-            WeekendEntry { name: "Friday".to_owned(), order: 4, is_weekend: true },
-        ];
+        use crate::value_objects::WeekendId;
+        use educore_core::ids::{CorrelationId, Identifier, SchoolId, UserId};
+        use educore_core::value_objects::{Etag, Timestamp, Version};
+        let current = vec![Weekend {
+            id: WeekendId::new(SchoolId::from_uuid(uuid::Uuid::nil()), uuid::Uuid::nil()),
+            school_id: SchoolId::from_uuid(uuid::Uuid::nil()),
+            name: "Saturday".to_owned(),
+            order: 5,
+            is_weekend: true,
+            academic_id: None,
+            version: Version::initial(),
+            etag: Etag::placeholder(),
+            created_at: Timestamp::now(),
+            updated_at: Timestamp::now(),
+            created_by: UserId::from_uuid(uuid::Uuid::nil()),
+            updated_by: UserId::from_uuid(uuid::Uuid::nil()),
+            active_status: true,
+            last_event_id: None,
+            correlation_id: CorrelationId::from_uuid(uuid::Uuid::nil()),
+        }];
+        let proposed = vec![WeekendEntry {
+            name: "Friday".to_owned(),
+            order: 4,
+            is_weekend: true,
+        }];
         let changes = WeekendService::reconcile(&current, &proposed);
         assert_eq!(changes.len(), 2);
-        let has_create_friday = changes.iter().any(|c| matches!(c, WeekendChange::Create { name, .. } if name == "Friday"));
-        let has_delete_saturday = changes.iter().any(|c| matches!(c, WeekendChange::Delete { name } if name == "Saturday"));
+        let has_create_friday = changes
+            .iter()
+            .any(|c| matches!(c, WeekendChange::Create { name, .. } if name == "Friday"));
+        let has_delete_saturday = changes
+            .iter()
+            .any(|c| matches!(c, WeekendChange::Delete { name } if name == "Saturday"));
         assert!(has_create_friday, "expected Create(Friday) in {changes:?}");
-        assert!(has_delete_saturday, "expected Delete(Saturday) in {changes:?}");
+        assert!(
+            has_delete_saturday,
+            "expected Delete(Saturday) in {changes:?}"
+        );
     }
 
     #[test]
@@ -437,7 +467,8 @@ mod tests {
             None,
             UserId::from_uuid(uuid::Uuid::nil()),
             Timestamp::now(),
-        ).unwrap();
+        )
+        .unwrap();
         let w2 = Weekend::new(
             WeekendId::new(SchoolId::from_uuid(uuid::Uuid::nil()), uuid::Uuid::nil()),
             "Sun".to_owned(),
@@ -446,7 +477,8 @@ mod tests {
             None,
             UserId::from_uuid(uuid::Uuid::nil()),
             Timestamp::now(),
-        ).unwrap();
+        )
+        .unwrap();
         let bindings = vec![w2, w1];
         let ordered = WeekendService::ordered(&bindings);
         assert_eq!(ordered[0].name, "Sat");

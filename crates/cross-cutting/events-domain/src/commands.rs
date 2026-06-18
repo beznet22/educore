@@ -13,12 +13,10 @@ use educore_core::value_objects::Timestamp;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::aggregate::{
-    NewCalendarEvent, NewCalendarSetting, NewHoliday, NewIncident,
-};
+use crate::aggregate::{NewCalendarEvent, NewCalendarSetting, NewHoliday, NewIncident};
 use crate::value_objects::{
-    AcademicYearRef, AssignIncidentId, CalendarEventId, CalendarSettingId, FileRef,
-    ForWhom, HolidayId, IncidentCommentId, IncidentId, RecurrenceRule, Url, WeekendId,
+    AcademicYearRef, AssignIncidentId, CalendarEventId, CalendarSettingId, FileRef, ForWhom,
+    HolidayId, IncidentCommentId, IncidentId, RecurrenceRule, Url, WeekendId,
 };
 
 // =============================================================================
@@ -492,17 +490,38 @@ mod tests {
 
     #[test]
     fn command_types_have_wire_form() {
-        assert_eq!(CreateEventCommand::COMMAND_TYPE, "events.calendar_event.create");
-        assert_eq!(UpdateEventCommand::COMMAND_TYPE, "events.calendar_event.update");
-        assert_eq!(DeleteEventCommand::COMMAND_TYPE, "events.calendar_event.delete");
+        assert_eq!(
+            CreateEventCommand::COMMAND_TYPE,
+            "events.calendar_event.create"
+        );
+        assert_eq!(
+            UpdateEventCommand::COMMAND_TYPE,
+            "events.calendar_event.update"
+        );
+        assert_eq!(
+            DeleteEventCommand::COMMAND_TYPE,
+            "events.calendar_event.delete"
+        );
         assert_eq!(CreateHolidayCommand::COMMAND_TYPE, "events.holiday.create");
         assert_eq!(UpdateHolidayCommand::COMMAND_TYPE, "events.holiday.update");
         assert_eq!(DeleteHolidayCommand::COMMAND_TYPE, "events.holiday.delete");
-        assert_eq!(CreateIncidentCommand::COMMAND_TYPE, "events.incident.create");
-        assert_eq!(ResolveIncidentCommand::COMMAND_TYPE, "events.incident.resolve");
-        assert_eq!(CommentOnIncidentCommand::COMMAND_TYPE, "events.incident_comment.comment");
+        assert_eq!(
+            CreateIncidentCommand::COMMAND_TYPE,
+            "events.incident.create"
+        );
+        assert_eq!(
+            ResolveIncidentCommand::COMMAND_TYPE,
+            "events.incident.resolve"
+        );
+        assert_eq!(
+            CommentOnIncidentCommand::COMMAND_TYPE,
+            "events.incident_comment.comment"
+        );
         assert_eq!(CreateWeekendCommand::COMMAND_TYPE, "events.weekend.create");
-        assert_eq!(ConfigureWeekendsCommand::COMMAND_TYPE, "events.weekend.configure");
+        assert_eq!(
+            ConfigureWeekendsCommand::COMMAND_TYPE,
+            "events.weekend.configure"
+        );
     }
 
     #[test]
@@ -510,7 +529,8 @@ mod tests {
         let school = SchoolId::from_uuid(Uuid::nil());
         let user = UserId::from_uuid(Uuid::nil());
         let corr = CorrelationId::from_uuid(Uuid::nil());
-        let tenant = TenantContext::for_user(school, user, corr, educore_core::tenant::UserType::Teacher);
+        let tenant =
+            TenantContext::for_user(school, user, corr, educore_core::tenant::UserType::Teacher);
         let cmd = CreateEventCommand {
             tenant,
             title: "Test".to_owned(),

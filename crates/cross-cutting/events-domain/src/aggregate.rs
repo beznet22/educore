@@ -12,7 +12,9 @@ use educore_core::value_objects::{Etag, Timestamp, Version};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::entities::{CalendarEventAttachment, CalendarEventAudience, HolidayAttachment, HolidayPeriod};
+use crate::entities::{
+    CalendarEventAttachment, CalendarEventAudience, HolidayAttachment, HolidayPeriod,
+};
 use crate::errors::EventsDomainError;
 use crate::value_objects::{
     AcademicYearRef, AssignIncidentId, CalendarEventId, CalendarEventStatus, CalendarSettingId,
@@ -124,20 +126,37 @@ impl CalendarEvent {
     }
 
     /// Updates the event fields.
-    pub fn update(&mut self, title: Option<String>, from: Option<NaiveDate>, to: Option<NaiveDate>, actor: UserId, at: Timestamp) -> AggregateResult<()> {
+    pub fn update(
+        &mut self,
+        title: Option<String>,
+        from: Option<NaiveDate>,
+        to: Option<NaiveDate>,
+        actor: UserId,
+        at: Timestamp,
+    ) -> AggregateResult<()> {
         if !self.active_status {
-            return Err(EventsDomainError::Conflict("cannot update deleted event".to_owned()));
+            return Err(EventsDomainError::Conflict(
+                "cannot update deleted event".to_owned(),
+            ));
         }
         if let Some(t) = title {
             if t.trim().is_empty() {
-                return Err(EventsDomainError::Validation("title must not be empty".to_owned()));
+                return Err(EventsDomainError::Validation(
+                    "title must not be empty".to_owned(),
+                ));
             }
             self.title = t;
         }
-        if let Some(f) = from { self.from_date = f; }
-        if let Some(t) = to { self.to_date = t; }
+        if let Some(f) = from {
+            self.from_date = f;
+        }
+        if let Some(t) = to {
+            self.to_date = t;
+        }
         if self.from_date > self.to_date {
-            return Err(EventsDomainError::Validation("from_date must be <= to_date".to_owned()));
+            return Err(EventsDomainError::Validation(
+                "from_date must be <= to_date".to_owned(),
+            ));
         }
         self.updated_at = at;
         self.updated_by = actor;
@@ -344,22 +363,30 @@ impl CalendarSetting {
 /// Validates a CSS color string (hex, rgb, or named).
 pub fn validate_css_color(c: &str) -> AggregateResult<()> {
     if c.is_empty() || c.len() > 32 {
-        return Err(EventsDomainError::Validation("css color must be 1..32 chars".to_owned()));
+        return Err(EventsDomainError::Validation(
+            "css color must be 1..32 chars".to_owned(),
+        ));
     }
     let trimmed = c.trim();
     if trimmed.starts_with('#') {
         let hex = &trimmed[1..];
         if hex.len() != 3 && hex.len() != 6 && hex.len() != 8 {
-            return Err(EventsDomainError::Validation("hex color must be #RGB, #RRGGBB, or #RRGGBBAA".to_owned()));
+            return Err(EventsDomainError::Validation(
+                "hex color must be #RGB, #RRGGBB, or #RRGGBBAA".to_owned(),
+            ));
         }
         if !hex.chars().all(|c| c.is_ascii_hexdigit()) {
-            return Err(EventsDomainError::Validation("hex color must be hex digits".to_owned()));
+            return Err(EventsDomainError::Validation(
+                "hex color must be hex digits".to_owned(),
+            ));
         }
     } else if trimmed.starts_with("rgb(") || trimmed.starts_with("rgba(") {
         // basic validation
     } else if !trimmed.chars().all(|c| c.is_ascii_alphabetic()) {
         // named color — must be alphabetic only
-        return Err(EventsDomainError::Validation("named color must be alphabetic".to_owned()));
+        return Err(EventsDomainError::Validation(
+            "named color must be alphabetic".to_owned(),
+        ));
     }
     Ok(())
 }
@@ -440,23 +467,38 @@ impl Incident {
     }
 
     /// Updates the incident. Returns error if Resolved.
-    pub fn update(&mut self, title: Option<String>, point: Option<i32>, description: Option<String>, actor: UserId, at: Timestamp) -> AggregateResult<()> {
+    pub fn update(
+        &mut self,
+        title: Option<String>,
+        point: Option<i32>,
+        description: Option<String>,
+        actor: UserId,
+        at: Timestamp,
+    ) -> AggregateResult<()> {
         if self.status == IncidentStatus::Resolved {
-            return Err(EventsDomainError::Conflict("cannot update resolved incident".to_owned()));
+            return Err(EventsDomainError::Conflict(
+                "cannot update resolved incident".to_owned(),
+            ));
         }
         if let Some(t) = title {
             if t.trim().is_empty() {
-                return Err(EventsDomainError::Validation("title must not be empty".to_owned()));
+                return Err(EventsDomainError::Validation(
+                    "title must not be empty".to_owned(),
+                ));
             }
             self.title = t;
         }
         if let Some(p) = point {
             if !(0..=1000).contains(&p) {
-                return Err(EventsDomainError::Validation("point must be 0..1000".to_owned()));
+                return Err(EventsDomainError::Validation(
+                    "point must be 0..1000".to_owned(),
+                ));
             }
             self.point = p;
         }
-        if let Some(d) = description { self.description = d; }
+        if let Some(d) = description {
+            self.description = d;
+        }
         self.updated_at = at;
         self.updated_by = actor;
         self.version = self.version.next();
@@ -514,15 +556,30 @@ pub struct AssignIncident {
 
 impl AssignIncident {
     /// Constructs a new AssignIncident.
-    pub fn new(id: AssignIncidentId, incident_id: IncidentId, student_id: Option<Uuid>, user_id: Option<Uuid>, point: i32, added_by: UserId, academic_id: AcademicYearRef, at: Timestamp) -> AggregateResult<Self> {
+    pub fn new(
+        id: AssignIncidentId,
+        incident_id: IncidentId,
+        student_id: Option<Uuid>,
+        user_id: Option<Uuid>,
+        point: i32,
+        added_by: UserId,
+        academic_id: AcademicYearRef,
+        at: Timestamp,
+    ) -> AggregateResult<Self> {
         if student_id.is_none() && user_id.is_none() {
-            return Err(EventsDomainError::Validation("exactly one of student_id or user_id must be set".to_owned()));
+            return Err(EventsDomainError::Validation(
+                "exactly one of student_id or user_id must be set".to_owned(),
+            ));
         }
         if student_id.is_some() && user_id.is_some() {
-            return Err(EventsDomainError::Validation("only one of student_id or user_id may be set".to_owned()));
+            return Err(EventsDomainError::Validation(
+                "only one of student_id or user_id may be set".to_owned(),
+            ));
         }
         if !(0..=1000).contains(&point) {
-            return Err(EventsDomainError::Validation("point must be 0..1000".to_owned()));
+            return Err(EventsDomainError::Validation(
+                "point must be 0..1000".to_owned(),
+            ));
         }
         Ok(Self {
             school_id: id.school_id(),
@@ -548,7 +605,9 @@ impl AssignIncident {
     /// Reassigns (updates the point value).
     pub fn reassign(&mut self, point: i32, at: Timestamp) -> AggregateResult<()> {
         if !(0..=1000).contains(&point) {
-            return Err(EventsDomainError::Validation("point must be 0..1000".to_owned()));
+            return Err(EventsDomainError::Validation(
+                "point must be 0..1000".to_owned(),
+            ));
         }
         self.point = point;
         self.updated_at = at;
@@ -584,9 +643,17 @@ pub struct IncidentComment {
 
 impl IncidentComment {
     /// Constructs a new IncidentComment.
-    pub fn new(id: IncidentCommentId, incident_id: IncidentId, user_id: UserId, comment: String, at: Timestamp) -> AggregateResult<Self> {
+    pub fn new(
+        id: IncidentCommentId,
+        incident_id: IncidentId,
+        user_id: UserId,
+        comment: String,
+        at: Timestamp,
+    ) -> AggregateResult<Self> {
         if comment.trim().is_empty() {
-            return Err(EventsDomainError::Validation("comment must not be empty".to_owned()));
+            return Err(EventsDomainError::Validation(
+                "comment must not be empty".to_owned(),
+            ));
         }
         Ok(Self {
             school_id: id.school_id(),
@@ -642,12 +709,24 @@ pub struct Weekend {
 
 impl Weekend {
     /// Constructs a new Weekend.
-    pub fn new(id: WeekendId, name: String, order: i32, is_weekend: bool, academic_id: Option<AcademicYearRef>, created_by: UserId, at: Timestamp) -> AggregateResult<Self> {
+    pub fn new(
+        id: WeekendId,
+        name: String,
+        order: i32,
+        is_weekend: bool,
+        academic_id: Option<AcademicYearRef>,
+        created_by: UserId,
+        at: Timestamp,
+    ) -> AggregateResult<Self> {
         if name.trim().is_empty() {
-            return Err(EventsDomainError::Validation("name must not be empty".to_owned()));
+            return Err(EventsDomainError::Validation(
+                "name must not be empty".to_owned(),
+            ));
         }
         if !(0..=7).contains(&order) {
-            return Err(EventsDomainError::Validation("order must be 0..7".to_owned()));
+            return Err(EventsDomainError::Validation(
+                "order must be 0..7".to_owned(),
+            ));
         }
         Ok(Self {
             school_id: id.school_id(),
@@ -669,20 +748,33 @@ impl Weekend {
     }
 
     /// Updates the weekend fields.
-    pub fn update(&mut self, name: Option<String>, order: Option<i32>, is_weekend: Option<bool>, actor: UserId, at: Timestamp) -> AggregateResult<()> {
+    pub fn update(
+        &mut self,
+        name: Option<String>,
+        order: Option<i32>,
+        is_weekend: Option<bool>,
+        actor: UserId,
+        at: Timestamp,
+    ) -> AggregateResult<()> {
         if let Some(n) = name {
             if n.trim().is_empty() {
-                return Err(EventsDomainError::Validation("name must not be empty".to_owned()));
+                return Err(EventsDomainError::Validation(
+                    "name must not be empty".to_owned(),
+                ));
             }
             self.name = n;
         }
         if let Some(o) = order {
             if !(0..=7).contains(&o) {
-                return Err(EventsDomainError::Validation("order must be 0..7".to_owned()));
+                return Err(EventsDomainError::Validation(
+                    "order must be 0..7".to_owned(),
+                ));
             }
             self.order = o;
         }
-        if let Some(w) = is_weekend { self.is_weekend = w; }
+        if let Some(w) = is_weekend {
+            self.is_weekend = w;
+        }
         self.updated_at = at;
         self.updated_by = actor;
         self.version = self.version.next();
@@ -837,9 +929,18 @@ mod tests {
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
         };
         let mut inc = Incident::new(cmd).unwrap();
-        inc.resolve(UserId::from_uuid(Uuid::nil()), Timestamp::now()).unwrap();
+        inc.resolve(UserId::from_uuid(Uuid::nil()), Timestamp::now())
+            .unwrap();
         assert_eq!(inc.status, IncidentStatus::Resolved);
-        assert!(inc.update(None, None, None, UserId::from_uuid(Uuid::nil()), Timestamp::now()).is_err());
+        assert!(inc
+            .update(
+                None,
+                None,
+                None,
+                UserId::from_uuid(Uuid::nil()),
+                Timestamp::now()
+            )
+            .is_err());
     }
 
     #[test]
@@ -848,7 +949,16 @@ mod tests {
         let id = AssignIncidentId::new(school, Uuid::nil());
         let incident_id = IncidentId::new(school, Uuid::nil());
         let academic = AcademicYearRef::new(school, Uuid::nil());
-        let result = AssignIncident::new(id, incident_id, None, None, 5, UserId::from_uuid(Uuid::nil()), academic, Timestamp::now());
+        let result = AssignIncident::new(
+            id,
+            incident_id,
+            None,
+            None,
+            5,
+            UserId::from_uuid(Uuid::nil()),
+            academic,
+            Timestamp::now(),
+        );
         assert!(result.is_err());
     }
 
@@ -856,7 +966,15 @@ mod tests {
     fn weekend_validates_order_range() {
         let school = SchoolId::from_uuid(Uuid::nil());
         let id = WeekendId::new(school, Uuid::nil());
-        let result = Weekend::new(id, "Saturday".to_owned(), 10, true, None, UserId::from_uuid(Uuid::nil()), Timestamp::now());
+        let result = Weekend::new(
+            id,
+            "Saturday".to_owned(),
+            10,
+            true,
+            None,
+            UserId::from_uuid(Uuid::nil()),
+            Timestamp::now(),
+        );
         assert!(result.is_err());
     }
 }

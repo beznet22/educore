@@ -4791,7 +4791,11 @@ mod tests {
             if s.starts_with("Events.") {
                 let parsed = Capability::from_str(s).unwrap();
                 assert_eq!(parsed, *c, "round-trip failed for {s}");
-                assert_eq!(c.domain(), CapabilityDomain::Events, "domain mismatch for {s}");
+                assert_eq!(
+                    c.domain(),
+                    CapabilityDomain::Events,
+                    "domain mismatch for {s}"
+                );
                 count += 1;
             }
         }

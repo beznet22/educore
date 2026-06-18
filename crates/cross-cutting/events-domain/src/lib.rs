@@ -45,14 +45,16 @@ pub mod prelude {
     pub use crate::aggregate::{
         AssignIncident, CalendarEvent, CalendarSetting, Holiday, Incident, IncidentComment, Weekend,
     };
-    pub use crate::entities::{CalendarEventAttachment, CalendarEventAudience, HolidayAttachment, HolidayPeriod};
-    pub use crate::value_objects::{
-        AcademicYearRef, AssignIncidentId, AssignIncidentKind, CalendarEventAttachmentId,
-        CalendarEventId, CalendarEventStatus, CalendarSettingId, CalendarStatus,
-        ForWhom, HolidayAttachmentId, HolidayId, HolidayPeriodId, IncidentCommentId,
-        IncidentId, IncidentStatus, WeekendId,
+    pub use crate::entities::{
+        CalendarEventAttachment, CalendarEventAudience, HolidayAttachment, HolidayPeriod,
     };
     pub use crate::errors::{EventsDomainError, Result};
+    pub use crate::value_objects::{
+        AcademicYearRef, AssignIncidentId, AssignIncidentKind, CalendarEventAttachmentId,
+        CalendarEventId, CalendarEventStatus, CalendarSettingId, CalendarStatus, ForWhom,
+        HolidayAttachmentId, HolidayId, HolidayPeriodId, IncidentCommentId, IncidentId,
+        IncidentStatus, WeekendId,
+    };
     pub use educore_core::ids::SchoolId;
 }
 

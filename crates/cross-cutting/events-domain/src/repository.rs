@@ -17,8 +17,8 @@ use crate::aggregate::{
     AssignIncident, CalendarEvent, CalendarSetting, Holiday, Incident, IncidentComment, Weekend,
 };
 use crate::query::{
-    AssignIncidentQuery, CalendarEventQuery, CalendarSettingQuery, HolidayQuery, IncidentCommentQuery,
-    IncidentQuery, WeekendQuery,
+    AssignIncidentQuery, CalendarEventQuery, CalendarSettingQuery, HolidayQuery,
+    IncidentCommentQuery, IncidentQuery, WeekendQuery,
 };
 use crate::value_objects::{
     AcademicYearRef, AssignIncidentId, CalendarEventId, CalendarSettingId, ForWhom, HolidayId,
@@ -35,7 +35,11 @@ pub trait CalendarEventRepository: Send + Sync {
     /// Fetch a CalendarEvent by id.
     async fn get(&self, id: CalendarEventId) -> StorageResult<Option<CalendarEvent>>;
     /// List CalendarEvents for a school matching the query.
-    async fn list(&self, school: SchoolId, q: CalendarEventQuery) -> StorageResult<Vec<CalendarEvent>>;
+    async fn list(
+        &self,
+        school: SchoolId,
+        q: CalendarEventQuery,
+    ) -> StorageResult<Vec<CalendarEvent>>;
     /// Insert a new CalendarEvent.
     async fn insert(&self, e: &CalendarEvent) -> StorageResult<()>;
     /// Update an existing CalendarEvent.
@@ -43,9 +47,19 @@ pub trait CalendarEventRepository: Send + Sync {
     /// Soft-delete a CalendarEvent.
     async fn delete(&self, id: CalendarEventId) -> StorageResult<()>;
     /// List CalendarEvents in a date range.
-    async fn between(&self, school: SchoolId, from: NaiveDate, to: NaiveDate) -> StorageResult<Vec<CalendarEvent>>;
+    async fn between(
+        &self,
+        school: SchoolId,
+        from: NaiveDate,
+        to: NaiveDate,
+    ) -> StorageResult<Vec<CalendarEvent>>;
     /// List CalendarEvents for a specific audience.
-    async fn for_audience(&self, school: SchoolId, for_whom: ForWhom, role_id: &str) -> StorageResult<Vec<CalendarEvent>>;
+    async fn for_audience(
+        &self,
+        school: SchoolId,
+        for_whom: ForWhom,
+        role_id: &str,
+    ) -> StorageResult<Vec<CalendarEvent>>;
 }
 
 fn _assert_calendar_event_object_safe() {
@@ -72,9 +86,15 @@ pub trait HolidayRepository: Send + Sync {
     /// Soft-delete a Holiday.
     async fn delete(&self, id: HolidayId) -> StorageResult<()>;
     /// List Holidays in a date range.
-    async fn between(&self, school: SchoolId, from: NaiveDate, to: NaiveDate) -> StorageResult<Vec<Holiday>>;
+    async fn between(
+        &self,
+        school: SchoolId,
+        from: NaiveDate,
+        to: NaiveDate,
+    ) -> StorageResult<Vec<Holiday>>;
     /// List Holidays for an academic year.
-    async fn in_year(&self, school: SchoolId, year: AcademicYearRef) -> StorageResult<Vec<Holiday>>;
+    async fn in_year(&self, school: SchoolId, year: AcademicYearRef)
+        -> StorageResult<Vec<Holiday>>;
 }
 
 fn _assert_holiday_object_safe() {
@@ -93,9 +113,17 @@ pub trait CalendarSettingRepository: Send + Sync {
     /// Fetch a CalendarSetting by id.
     async fn get(&self, id: CalendarSettingId) -> StorageResult<Option<CalendarSetting>>;
     /// List CalendarSettings for a school matching the query.
-    async fn list(&self, school: SchoolId, q: CalendarSettingQuery) -> StorageResult<Vec<CalendarSetting>>;
+    async fn list(
+        &self,
+        school: SchoolId,
+        q: CalendarSettingQuery,
+    ) -> StorageResult<Vec<CalendarSetting>>;
     /// Find a CalendarSetting by menu name.
-    async fn find_by_name(&self, school: SchoolId, name: &str) -> StorageResult<Option<CalendarSetting>>;
+    async fn find_by_name(
+        &self,
+        school: SchoolId,
+        name: &str,
+    ) -> StorageResult<Option<CalendarSetting>>;
     /// List enabled CalendarSettings for a school.
     async fn list_enabled(&self, school: SchoolId) -> StorageResult<Vec<CalendarSetting>>;
     /// Insert a new CalendarSetting.
@@ -134,7 +162,12 @@ pub trait IncidentRepository: Send + Sync {
     /// List in-progress Incidents.
     async fn in_progress(&self, school: SchoolId) -> StorageResult<Vec<Incident>>;
     /// List Incidents in a date range.
-    async fn between(&self, school: SchoolId, from: NaiveDate, to: NaiveDate) -> StorageResult<Vec<Incident>>;
+    async fn between(
+        &self,
+        school: SchoolId,
+        from: NaiveDate,
+        to: NaiveDate,
+    ) -> StorageResult<Vec<Incident>>;
 }
 
 fn _assert_incident_object_safe() {
@@ -155,9 +188,17 @@ pub trait AssignIncidentRepository: Send + Sync {
     /// List AssignIncidents for an Incident.
     async fn list_for_incident(&self, incident: IncidentId) -> StorageResult<Vec<AssignIncident>>;
     /// List AssignIncidents for a student.
-    async fn list_for_student(&self, school: SchoolId, student: uuid::Uuid) -> StorageResult<Vec<AssignIncident>>;
+    async fn list_for_student(
+        &self,
+        school: SchoolId,
+        student: uuid::Uuid,
+    ) -> StorageResult<Vec<AssignIncident>>;
     /// List AssignIncidents for a user.
-    async fn list_for_user(&self, school: SchoolId, user: uuid::Uuid) -> StorageResult<Vec<AssignIncident>>;
+    async fn list_for_user(
+        &self,
+        school: SchoolId,
+        user: uuid::Uuid,
+    ) -> StorageResult<Vec<AssignIncident>>;
     /// Insert a new AssignIncident.
     async fn insert(&self, a: &AssignIncident) -> StorageResult<()>;
     /// Update an existing AssignIncident.

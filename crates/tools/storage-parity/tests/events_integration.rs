@@ -29,25 +29,25 @@ use educore_events_domain::commands::{
     CreateEventCommand, CreateHolidayCommand, CreateIncidentCommand, CreateWeekendCommand,
     WeekendEntry,
 };
+use educore_events_domain::events::{
+    CalendarSettingCreated, CalendarSettingDeleted, CalendarSettingDisabled,
+    CalendarSettingEnabled, CalendarSettingUpdated, EventCreated, EventDeleted, EventUpdated,
+    HolidayCreated, HolidayDeleted, HolidayUpdated, IncidentAssigned, IncidentCommentDeletedEvent,
+    IncidentCommented, IncidentDeleted, IncidentReassigned, IncidentReported, IncidentResolved,
+    IncidentUnassigned, IncidentUpdated, WeekendCreated, WeekendDeleted, WeekendUpdated,
+    WeekendsConfigured,
+};
 use educore_events_domain::repository::{
     CalendarEventRepository, HolidayRepository, IncidentRepository, WeekendRepository,
 };
+use educore_events_domain::services::{
+    CalendarService, HolidayService, IncidentService, RecurrenceService, WeekendChange,
+    WeekendService,
+};
+use educore_events_domain::value_objects::HolidayId;
 use educore_events_domain::value_objects::{
     AcademicYearRef, ForWhom, IncidentStatus, RecurrenceFreq, RecurrenceRule,
 };
-use educore_events_domain::events::{
-    CalendarSettingCreated, EventCreated, EventDeleted, EventUpdated, HolidayCreated,
-    HolidayDeleted, HolidayUpdated, IncidentCommented, IncidentCommentDeletedEvent,
-    IncidentDeleted, IncidentReported, IncidentResolved, IncidentUpdated, WeekendCreated,
-    WeekendDeleted, WeekendsConfigured, WeekendUpdated, CalendarSettingUpdated,
-    CalendarSettingEnabled, CalendarSettingDisabled, CalendarSettingDeleted,
-    IncidentAssigned, IncidentReassigned, IncidentUnassigned,
-};
-use educore_events_domain::services::{
-    CalendarService, HolidayService, IncidentService, RecurrenceService, WeekendService,
-    WeekendChange,
-};
-use educore_events_domain::value_objects::HolidayId;
 
 // ---------------------------------------------------------------------------
 // In-memory mocks
@@ -66,10 +66,23 @@ impl InMemoryCalendarEventRepo {
 
 #[async_trait]
 impl CalendarEventRepository for InMemoryCalendarEventRepo {
-    async fn get(&self, id: educore_events_domain::value_objects::CalendarEventId) -> educore_core::error::Result<Option<CalendarEvent>> {
-        Ok(self.rows.lock().unwrap().iter().find(|e| e.id == id).cloned())
+    async fn get(
+        &self,
+        id: educore_events_domain::value_objects::CalendarEventId,
+    ) -> educore_core::error::Result<Option<CalendarEvent>> {
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|e| e.id == id)
+            .cloned())
     }
-    async fn list(&self, _school: SchoolId, _q: educore_events_domain::query::CalendarEventQuery) -> educore_core::error::Result<Vec<CalendarEvent>> {
+    async fn list(
+        &self,
+        _school: SchoolId,
+        _q: educore_events_domain::query::CalendarEventQuery,
+    ) -> educore_core::error::Result<Vec<CalendarEvent>> {
         Ok(self.rows.lock().unwrap().clone())
     }
     async fn insert(&self, e: &CalendarEvent) -> educore_core::error::Result<()> {
@@ -82,19 +95,38 @@ impl CalendarEventRepository for InMemoryCalendarEventRepo {
             *existing = e.clone();
             Ok(())
         } else {
-            Err(educore_core::error::DomainError::NotFound("event not found".to_owned()))
+            Err(educore_core::error::DomainError::NotFound(
+                "event not found".to_owned(),
+            ))
         }
     }
-    async fn delete(&self, _id: educore_events_domain::value_objects::CalendarEventId) -> educore_core::error::Result<()> {
+    async fn delete(
+        &self,
+        _id: educore_events_domain::value_objects::CalendarEventId,
+    ) -> educore_core::error::Result<()> {
         Ok(())
     }
-    async fn between(&self, _school: SchoolId, from: NaiveDate, to: NaiveDate) -> educore_core::error::Result<Vec<CalendarEvent>> {
-        Ok(self.rows.lock().unwrap().iter()
+    async fn between(
+        &self,
+        _school: SchoolId,
+        from: NaiveDate,
+        to: NaiveDate,
+    ) -> educore_core::error::Result<Vec<CalendarEvent>> {
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
             .filter(|e| e.from_date >= from && e.to_date <= to)
             .cloned()
             .collect())
     }
-    async fn for_audience(&self, _school: SchoolId, _for_whom: ForWhom, _role_id: &str) -> educore_core::error::Result<Vec<CalendarEvent>> {
+    async fn for_audience(
+        &self,
+        _school: SchoolId,
+        _for_whom: ForWhom,
+        _role_id: &str,
+    ) -> educore_core::error::Result<Vec<CalendarEvent>> {
         Ok(vec![])
     }
 }
@@ -107,9 +139,19 @@ struct InMemoryHolidayRepo {
 #[async_trait]
 impl HolidayRepository for InMemoryHolidayRepo {
     async fn get(&self, id: HolidayId) -> educore_core::error::Result<Option<Holiday>> {
-        Ok(self.rows.lock().unwrap().iter().find(|h| h.id == id).cloned())
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|h| h.id == id)
+            .cloned())
     }
-    async fn list(&self, _school: SchoolId, _q: educore_events_domain::query::HolidayQuery) -> educore_core::error::Result<Vec<Holiday>> {
+    async fn list(
+        &self,
+        _school: SchoolId,
+        _q: educore_events_domain::query::HolidayQuery,
+    ) -> educore_core::error::Result<Vec<Holiday>> {
         Ok(self.rows.lock().unwrap().clone())
     }
     async fn insert(&self, h: &Holiday) -> educore_core::error::Result<()> {
@@ -122,19 +164,34 @@ impl HolidayRepository for InMemoryHolidayRepo {
             *existing = h.clone();
             Ok(())
         } else {
-            Err(educore_core::error::DomainError::NotFound("holiday not found".to_owned()))
+            Err(educore_core::error::DomainError::NotFound(
+                "holiday not found".to_owned(),
+            ))
         }
     }
     async fn delete(&self, _id: HolidayId) -> educore_core::error::Result<()> {
         Ok(())
     }
-    async fn between(&self, _school: SchoolId, from: NaiveDate, to: NaiveDate) -> educore_core::error::Result<Vec<Holiday>> {
-        Ok(self.rows.lock().unwrap().iter()
+    async fn between(
+        &self,
+        _school: SchoolId,
+        from: NaiveDate,
+        to: NaiveDate,
+    ) -> educore_core::error::Result<Vec<Holiday>> {
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
             .filter(|h| h.from_date >= from && h.to_date <= to)
             .cloned()
             .collect())
     }
-    async fn in_year(&self, _school: SchoolId, _year: AcademicYearRef) -> educore_core::error::Result<Vec<Holiday>> {
+    async fn in_year(
+        &self,
+        _school: SchoolId,
+        _year: AcademicYearRef,
+    ) -> educore_core::error::Result<Vec<Holiday>> {
         Ok(vec![])
     }
 }
@@ -146,10 +203,23 @@ struct InMemoryIncidentRepo {
 
 #[async_trait]
 impl IncidentRepository for InMemoryIncidentRepo {
-    async fn get(&self, id: educore_events_domain::value_objects::IncidentId) -> educore_core::error::Result<Option<Incident>> {
-        Ok(self.rows.lock().unwrap().iter().find(|i| i.id == id).cloned())
+    async fn get(
+        &self,
+        id: educore_events_domain::value_objects::IncidentId,
+    ) -> educore_core::error::Result<Option<Incident>> {
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|i| i.id == id)
+            .cloned())
     }
-    async fn list(&self, _school: SchoolId, _q: educore_events_domain::query::IncidentQuery) -> educore_core::error::Result<Vec<Incident>> {
+    async fn list(
+        &self,
+        _school: SchoolId,
+        _q: educore_events_domain::query::IncidentQuery,
+    ) -> educore_core::error::Result<Vec<Incident>> {
         Ok(self.rows.lock().unwrap().clone())
     }
     async fn insert(&self, i: &Incident) -> educore_core::error::Result<()> {
@@ -162,21 +232,51 @@ impl IncidentRepository for InMemoryIncidentRepo {
             *existing = i.clone();
             Ok(())
         } else {
-            Err(educore_core::error::DomainError::NotFound("incident not found".to_owned()))
+            Err(educore_core::error::DomainError::NotFound(
+                "incident not found".to_owned(),
+            ))
         }
     }
-    async fn delete(&self, _id: educore_events_domain::value_objects::IncidentId) -> educore_core::error::Result<()> {
+    async fn delete(
+        &self,
+        _id: educore_events_domain::value_objects::IncidentId,
+    ) -> educore_core::error::Result<()> {
         Ok(())
     }
     async fn open(&self, _school: SchoolId) -> educore_core::error::Result<Vec<Incident>> {
-        Ok(self.rows.lock().unwrap().iter().filter(|i| i.status == IncidentStatus::Open).cloned().collect())
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|i| i.status == IncidentStatus::Open)
+            .cloned()
+            .collect())
     }
     async fn in_progress(&self, _school: SchoolId) -> educore_core::error::Result<Vec<Incident>> {
-        Ok(self.rows.lock().unwrap().iter().filter(|i| i.status == IncidentStatus::InProgress).cloned().collect())
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|i| i.status == IncidentStatus::InProgress)
+            .cloned()
+            .collect())
     }
-    async fn between(&self, _school: SchoolId, from: NaiveDate, to: NaiveDate) -> educore_core::error::Result<Vec<Incident>> {
-        Ok(self.rows.lock().unwrap().iter()
-            .filter(|i| i.created_at >= Timestamp::now() && i.created_at <= Timestamp::now() && from <= to)
+    async fn between(
+        &self,
+        _school: SchoolId,
+        from: NaiveDate,
+        to: NaiveDate,
+    ) -> educore_core::error::Result<Vec<Incident>> {
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|i| {
+                i.created_at >= Timestamp::now() && i.created_at <= Timestamp::now() && from <= to
+            })
             .cloned()
             .collect())
     }
@@ -207,14 +307,33 @@ struct InMemoryWeekendRepo {
 
 #[async_trait]
 impl WeekendRepository for InMemoryWeekendRepo {
-    async fn get(&self, id: educore_events_domain::value_objects::WeekendId) -> educore_core::error::Result<Option<Weekend>> {
-        Ok(self.rows.lock().unwrap().iter().find(|w| w.id == id).cloned())
+    async fn get(
+        &self,
+        id: educore_events_domain::value_objects::WeekendId,
+    ) -> educore_core::error::Result<Option<Weekend>> {
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|w| w.id == id)
+            .cloned())
     }
     async fn list(&self, _school: SchoolId) -> educore_core::error::Result<Vec<Weekend>> {
         Ok(self.rows.lock().unwrap().clone())
     }
-    async fn find_by_name(&self, _school: SchoolId, name: &str) -> educore_core::error::Result<Option<Weekend>> {
-        Ok(self.rows.lock().unwrap().iter().find(|w| w.name == name).cloned())
+    async fn find_by_name(
+        &self,
+        _school: SchoolId,
+        name: &str,
+    ) -> educore_core::error::Result<Option<Weekend>> {
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|w| w.name == name)
+            .cloned())
     }
     async fn insert(&self, w: &Weekend) -> educore_core::error::Result<()> {
         self.rows.lock().unwrap().push(w.clone());
@@ -226,10 +345,15 @@ impl WeekendRepository for InMemoryWeekendRepo {
             *existing = w.clone();
             Ok(())
         } else {
-            Err(educore_core::error::DomainError::NotFound("weekend not found".to_owned()))
+            Err(educore_core::error::DomainError::NotFound(
+                "weekend not found".to_owned(),
+            ))
         }
     }
-    async fn delete(&self, _id: educore_events_domain::value_objects::WeekendId) -> educore_core::error::Result<()> {
+    async fn delete(
+        &self,
+        _id: educore_events_domain::value_objects::WeekendId,
+    ) -> educore_core::error::Result<()> {
         Ok(())
     }
 }
@@ -254,7 +378,8 @@ async fn events_integration_sqlite_vertical_slice() {
     let weekend_repo = Arc::new(InMemoryWeekendRepo::new());
 
     // Create a weekly recurring CalendarEvent.
-    let event_id = educore_events_domain::value_objects::CalendarEventId::new(school, uuid::Uuid::new_v4());
+    let event_id =
+        educore_events_domain::value_objects::CalendarEventId::new(school, uuid::Uuid::new_v4());
     let cmd = CreateEventCommand {
         tenant: tenant.clone(),
         title: "Staff Meeting".to_owned(),
@@ -272,7 +397,10 @@ async fn events_integration_sqlite_vertical_slice() {
     let new_event = cmd.into_new_event(event_id);
     let event = CalendarEvent::new(new_event).expect("create event");
     event_repo.insert(&event).await.expect("insert event");
-    assert_eq!(event_repo.get(event_id).await.unwrap().unwrap().id, event_id);
+    assert_eq!(
+        event_repo.get(event_id).await.unwrap().unwrap().id,
+        event_id
+    );
 
     // Create a Holiday in the middle of the recurring range.
     let holiday_id = HolidayId::new(school, uuid::Uuid::new_v4());
@@ -290,7 +418,8 @@ async fn events_integration_sqlite_vertical_slice() {
     holiday_repo.insert(&holiday).await.expect("insert holiday");
 
     // Create an Incident and resolve it.
-    let incident_id = educore_events_domain::value_objects::IncidentId::new(school, uuid::Uuid::new_v4());
+    let incident_id =
+        educore_events_domain::value_objects::IncidentId::new(school, uuid::Uuid::new_v4());
     let i_cmd = CreateIncidentCommand {
         tenant: tenant.clone(),
         title: "Test Incident".to_owned(),
@@ -299,27 +428,80 @@ async fn events_integration_sqlite_vertical_slice() {
     };
     let new_incident = i_cmd.into_new_incident(incident_id);
     let mut incident = Incident::new(new_incident).expect("create incident");
-    incident_repo.insert(&incident).await.expect("insert incident");
+    incident_repo
+        .insert(&incident)
+        .await
+        .expect("insert incident");
     assert_eq!(incident.status, IncidentStatus::Open);
-    incident.resolve(tenant.actor_id, Timestamp::now()).expect("resolve");
-    incident_repo.update(&incident).await.expect("update incident");
-    assert_eq!(incident_repo.get(incident_id).await.unwrap().unwrap().status, IncidentStatus::Resolved);
+    incident
+        .resolve(tenant.actor_id, Timestamp::now())
+        .expect("resolve");
+    incident_repo
+        .update(&incident)
+        .await
+        .expect("update incident");
+    assert_eq!(
+        incident_repo
+            .get(incident_id)
+            .await
+            .unwrap()
+            .unwrap()
+            .status,
+        IncidentStatus::Resolved
+    );
 
     // Configure Weekends.
-    let weekend_id = educore_events_domain::value_objects::WeekendId::new(school, uuid::Uuid::new_v4());
+    let weekend_id =
+        educore_events_domain::value_objects::WeekendId::new(school, uuid::Uuid::new_v4());
     let w_cmd = CreateWeekendCommand {
         tenant: tenant.clone(),
         name: "Saturday".to_owned(),
         order: 5,
         is_weekend: true,
     };
-    let weekend = Weekend::new(weekend_id, w_cmd.name, w_cmd.order, w_cmd.is_weekend, None, tenant.actor_id, Timestamp::now()).expect("create weekend");
+    let weekend = Weekend::new(
+        weekend_id,
+        w_cmd.name,
+        w_cmd.order,
+        w_cmd.is_weekend,
+        None,
+        tenant.actor_id,
+        Timestamp::now(),
+    )
+    .expect("create weekend");
     weekend_repo.insert(&weekend).await.expect("insert weekend");
 
     // Assert bus events would be created (we verify the event types exist and have correct wire forms).
-    let _ = EventCreated::new(event_id, school, "Staff Meeting".to_owned(), event.from_date, event.to_date, educore_core::ids::EventId(uuid::Uuid::new_v4()), CorrelationId::from_uuid(uuid::Uuid::new_v4()), Timestamp::now());
-    let _ = HolidayCreated::new(holiday_id, school, "Mid Break".to_owned(), holiday.from_date, holiday.to_date, educore_core::ids::EventId(uuid::Uuid::new_v4()), CorrelationId::from_uuid(uuid::Uuid::new_v4()), Timestamp::now());
-    let _ = IncidentReported::new(incident_id, school, "Test Incident".to_owned(), 5, tenant.actor_id, educore_core::ids::EventId(uuid::Uuid::new_v4()), CorrelationId::from_uuid(uuid::Uuid::new_v4()), Timestamp::now());
+    let _ = EventCreated::new(
+        event_id,
+        school,
+        "Staff Meeting".to_owned(),
+        event.from_date,
+        event.to_date,
+        educore_core::ids::EventId(uuid::Uuid::new_v4()),
+        CorrelationId::from_uuid(uuid::Uuid::new_v4()),
+        Timestamp::now(),
+    );
+    let _ = HolidayCreated::new(
+        holiday_id,
+        school,
+        "Mid Break".to_owned(),
+        holiday.from_date,
+        holiday.to_date,
+        educore_core::ids::EventId(uuid::Uuid::new_v4()),
+        CorrelationId::from_uuid(uuid::Uuid::new_v4()),
+        Timestamp::now(),
+    );
+    let _ = IncidentReported::new(
+        incident_id,
+        school,
+        "Test Incident".to_owned(),
+        5,
+        tenant.actor_id,
+        educore_core::ids::EventId(uuid::Uuid::new_v4()),
+        CorrelationId::from_uuid(uuid::Uuid::new_v4()),
+        Timestamp::now(),
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -336,10 +518,16 @@ async fn events_capability_check_gates_event_publish() {
     let cap_check = InMemoryCapabilityCheck::new();
 
     // Default: no capabilities granted → EventsEventPublish is denied.
-    assert!(!cap_check.has(&tenant, Capability::EventsEventPublish).await.unwrap());
+    assert!(!cap_check
+        .has(&tenant, Capability::EventsEventPublish)
+        .await
+        .unwrap());
 
     // Verify the capability variant exists and has the correct wire form.
-    assert_eq!(Capability::EventsEventPublish.as_str(), "Events.Event.Publish");
+    assert_eq!(
+        Capability::EventsEventPublish.as_str(),
+        "Events.Event.Publish"
+    );
     assert_eq!(
         Capability::EventsEventPublish.domain(),
         educore_rbac::value_objects::CapabilityDomain::Events
@@ -393,27 +581,37 @@ fn events_rrule_expansion_subset() {
     let start = NaiveDate::from_ymd_opt(2026, 6, 1).unwrap();
 
     // DAILY with COUNT=5
-    let rule = RecurrenceRule::new(RecurrenceFreq::Daily).with_interval(1).with_count(5);
+    let rule = RecurrenceRule::new(RecurrenceFreq::Daily)
+        .with_interval(1)
+        .with_count(5);
     assert_eq!(rule.expand(start).len(), 5);
 
     // WEEKLY with INTERVAL=2, COUNT=4
-    let rule = RecurrenceRule::new(RecurrenceFreq::Weekly).with_interval(2).with_count(4);
+    let rule = RecurrenceRule::new(RecurrenceFreq::Weekly)
+        .with_interval(2)
+        .with_count(4);
     let dates = rule.expand(start);
     assert_eq!(dates.len(), 4);
     assert_eq!(dates[1], NaiveDate::from_ymd_opt(2026, 6, 15).unwrap());
 
     // MONTHLY with COUNT=3
-    let rule = RecurrenceRule::new(RecurrenceFreq::Monthly).with_interval(1).with_count(3);
+    let rule = RecurrenceRule::new(RecurrenceFreq::Monthly)
+        .with_interval(1)
+        .with_count(3);
     let dates = rule.expand(NaiveDate::from_ymd_opt(2026, 1, 15).unwrap());
     assert_eq!(dates.len(), 3);
 
     // YEARLY with COUNT=2
-    let rule = RecurrenceRule::new(RecurrenceFreq::Yearly).with_interval(1).with_count(2);
+    let rule = RecurrenceRule::new(RecurrenceFreq::Yearly)
+        .with_interval(1)
+        .with_count(2);
     let dates = rule.expand(NaiveDate::from_ymd_opt(2026, 7, 4).unwrap());
     assert_eq!(dates.len(), 2);
 
     // COUNT + UNTIL semantics
-    let rule = RecurrenceRule::new(RecurrenceFreq::Daily).with_interval(1).with_until(NaiveDate::from_ymd_opt(2026, 6, 3).unwrap());
+    let rule = RecurrenceRule::new(RecurrenceFreq::Daily)
+        .with_interval(1)
+        .with_until(NaiveDate::from_ymd_opt(2026, 6, 3).unwrap());
     let dates = rule.expand(start);
     assert_eq!(dates.len(), 3);
 }
@@ -442,9 +640,18 @@ fn events_holiday_overrides_recurring_event() {
 #[test]
 fn events_incident_status_state_machine() {
     use educore_events_domain::value_objects::IncidentAction;
-    assert_eq!(IncidentService::next_status(IncidentStatus::Open, IncidentAction::InProgress), IncidentStatus::InProgress);
-    assert_eq!(IncidentService::next_status(IncidentStatus::InProgress, IncidentAction::Resolve), IncidentStatus::Resolved);
-    assert_eq!(IncidentService::next_status(IncidentStatus::Resolved, IncidentAction::InProgress), IncidentStatus::Resolved);
+    assert_eq!(
+        IncidentService::next_status(IncidentStatus::Open, IncidentAction::InProgress),
+        IncidentStatus::InProgress
+    );
+    assert_eq!(
+        IncidentService::next_status(IncidentStatus::InProgress, IncidentAction::Resolve),
+        IncidentStatus::Resolved
+    );
+    assert_eq!(
+        IncidentService::next_status(IncidentStatus::Resolved, IncidentAction::InProgress),
+        IncidentStatus::Resolved
+    );
 
     let school = SchoolId::from_uuid(uuid::Uuid::new_v4());
     let id = educore_events_domain::value_objects::IncidentId::new(school, uuid::Uuid::new_v4());
@@ -458,8 +665,17 @@ fn events_incident_status_state_machine() {
         correlation_id: CorrelationId::from_uuid(uuid::Uuid::nil()),
     };
     let mut inc = Incident::new(cmd).unwrap();
-    inc.resolve(UserId::from_uuid(uuid::Uuid::nil()), Timestamp::now()).unwrap();
-    assert!(inc.update(None, None, None, UserId::from_uuid(uuid::Uuid::nil()), Timestamp::now()).is_err());
+    inc.resolve(UserId::from_uuid(uuid::Uuid::nil()), Timestamp::now())
+        .unwrap();
+    assert!(inc
+        .update(
+            None,
+            None,
+            None,
+            UserId::from_uuid(uuid::Uuid::nil()),
+            Timestamp::now()
+        )
+        .is_err());
 }
 
 // ---------------------------------------------------------------------------
@@ -479,19 +695,35 @@ fn events_weekend_reconcile_diff() {
         None,
         actor,
         now,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Re-issue with same list → no changes.
-    let proposed_same = vec![WeekendEntry { name: "Saturday".to_owned(), order: 5, is_weekend: true }];
+    let proposed_same = vec![WeekendEntry {
+        name: "Saturday".to_owned(),
+        order: 5,
+        is_weekend: true,
+    }];
     let changes = WeekendService::reconcile(&[w1.clone()], &proposed_same);
-    assert!(changes.is_empty(), "idempotent re-issue should be no-op, got {changes:?}");
+    assert!(
+        changes.is_empty(),
+        "idempotent re-issue should be no-op, got {changes:?}"
+    );
 
     // Propose only Friday → Delete(Saturday) + Create(Friday).
-    let proposed_diff = vec![WeekendEntry { name: "Friday".to_owned(), order: 4, is_weekend: true }];
+    let proposed_diff = vec![WeekendEntry {
+        name: "Friday".to_owned(),
+        order: 4,
+        is_weekend: true,
+    }];
     let changes = WeekendService::reconcile(&[w1], &proposed_diff);
     assert_eq!(changes.len(), 2);
-    let has_create_friday = changes.iter().any(|c| matches!(c, WeekendChange::Create { name, .. } if name == "Friday"));
-    let has_delete_saturday = changes.iter().any(|c| matches!(c, WeekendChange::Delete { name } if name == "Saturday"));
+    let has_create_friday = changes
+        .iter()
+        .any(|c| matches!(c, WeekendChange::Create { name, .. } if name == "Friday"));
+    let has_delete_saturday = changes
+        .iter()
+        .any(|c| matches!(c, WeekendChange::Delete { name } if name == "Saturday"));
     assert!(has_create_friday);
     assert!(has_delete_saturday);
 }
