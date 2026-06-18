@@ -350,6 +350,15 @@ pub enum AuditTarget {
     Holiday(Uuid),
     /// A discipline / operational incident.
     Incident(Uuid),
+    // ---- Events domain (Phase 13 net-new) -------------------------------
+    /// A weekend day configuration.
+    Weekend(Uuid),
+    /// An incident-to-student or incident-to-staff assignment.
+    AssignIncident(Uuid),
+    /// A comment on an incident.
+    IncidentComment(Uuid),
+    /// A calendar UI menu label and color.
+    CalendarSetting(Uuid),
     // ---- Settings + Operations -----------------------------------------
     /// A school-settings row.
     SchoolSettings(Uuid),
@@ -480,6 +489,10 @@ impl AuditTarget {
             Self::CalendarEvent(_) => "calendar_event",
             Self::Holiday(_) => "holiday",
             Self::Incident(_) => "incident",
+            Self::Weekend(_) => "weekend",
+            Self::AssignIncident(_) => "assign_incident",
+            Self::IncidentComment(_) => "incident_comment",
+            Self::CalendarSetting(_) => "calendar_setting",
             Self::SchoolSettings(_) => "school_settings",
             Self::BellSchedule(_) => "bell_schedule",
             Self::Other(s, _) => s.as_str(),
@@ -602,6 +615,10 @@ impl AuditTarget {
             | Self::CalendarEvent(id)
             | Self::Holiday(id)
             | Self::Incident(id)
+            | Self::Weekend(id)
+            | Self::AssignIncident(id)
+            | Self::IncidentComment(id)
+            | Self::CalendarSetting(id)
             | Self::SchoolSettings(id)
             | Self::BellSchedule(id)
             | Self::Other(_, id) => *id,
@@ -1093,6 +1110,31 @@ mod tests {
             (AuditTarget::FrontendPage(id), "frontend_page"),
             (AuditTarget::PageRevision(id), "page_revision"),
             (AuditTarget::NewsRevision(id), "news_revision"),
+        ];
+        let mut seen_types: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for (target, expected) in cases {
+            let wire = target.target_type();
+            assert_eq!(wire, expected);
+            assert!(!wire.is_empty(), "target_type() returned empty string");
+            assert_eq!(target.target_id(), id);
+            assert!(
+                seen_types.insert(wire.to_owned()),
+                "duplicate target_type() wire string: {wire:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn events_audit_target_round_trip_for_all_aggregates() {
+        let id = Uuid::new_v4();
+        let cases: Vec<(AuditTarget, &str)> = vec![
+            (AuditTarget::CalendarEvent(id), "calendar_event"),
+            (AuditTarget::Holiday(id), "holiday"),
+            (AuditTarget::Incident(id), "incident"),
+            (AuditTarget::Weekend(id), "weekend"),
+            (AuditTarget::AssignIncident(id), "assign_incident"),
+            (AuditTarget::IncidentComment(id), "incident_comment"),
+            (AuditTarget::CalendarSetting(id), "calendar_setting"),
         ];
         let mut seen_types: std::collections::HashSet<String> = std::collections::HashSet::new();
         for (target, expected) in cases {

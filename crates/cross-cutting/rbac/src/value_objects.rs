@@ -1056,6 +1056,80 @@ pub enum Capability {
     EventsCalendarUpdate,
     /// Delete an events-domain calendar entry.
     EventsCalendarDelete,
+    // -- Events domain (Phase 13 net-new) --------------------------------
+    // The 4 Phase 2 `EventsCalendar{Create,Read,Update,Delete}`
+    // placeholders above are the start point for the Events catalog.
+    // The 30 net-new variants below extend the Events catalog with
+    // Event, Holiday, Weekend, Incident, IncidentComment, and
+    // CalendarSetting. Wire form per
+    // `docs/specs/events/permissions.md`:
+    // `<Domain>.<Aggregate>.<Action>` (e.g. `Events.Event.Create`).
+    // -- Event (5) --
+    /// Create a calendar event.
+    EventsEventCreate,
+    /// Read a calendar event.
+    EventsEventRead,
+    /// Update a calendar event.
+    EventsEventUpdate,
+    /// Delete (soft-delete) a calendar event.
+    EventsEventDelete,
+    /// Publish a calendar event (admin override for cross-role broadcast).
+    EventsEventPublish,
+    // -- Holiday (4) --
+    /// Create a school holiday.
+    EventsHolidayCreate,
+    /// Read a school holiday.
+    EventsHolidayRead,
+    /// Update a school holiday.
+    EventsHolidayUpdate,
+    /// Delete a school holiday.
+    EventsHolidayDelete,
+    // -- Weekend (5) --
+    /// Create a weekend day entry.
+    EventsWeekendCreate,
+    /// Read a weekend day entry.
+    EventsWeekendRead,
+    /// Update a weekend day entry.
+    EventsWeekendUpdate,
+    /// Delete a weekend day entry.
+    EventsWeekendDelete,
+    /// Batch-configure weekend days.
+    EventsWeekendConfigure,
+    // -- Incident (9) --
+    /// Create (report) an incident.
+    EventsIncidentCreate,
+    /// Read an incident.
+    EventsIncidentRead,
+    /// Update an incident.
+    EventsIncidentUpdate,
+    /// Delete (soft-delete) an incident (admin override).
+    EventsIncidentDelete,
+    /// Assign an incident to a student or staff member.
+    EventsIncidentAssign,
+    /// Reassign an incident (update point value).
+    EventsIncidentReassign,
+    /// Unassign an incident.
+    EventsIncidentUnassign,
+    /// Comment on an incident.
+    EventsIncidentComment,
+    /// Resolve an incident.
+    EventsIncidentResolve,
+    // -- IncidentComment (1) --
+    /// Delete (soft-delete) an incident comment (admin override).
+    EventsIncidentCommentDelete,
+    // -- CalendarSetting (6) --
+    /// Create a calendar UI setting.
+    EventsCalendarSettingCreate,
+    /// Read a calendar UI setting.
+    EventsCalendarSettingRead,
+    /// Update a calendar UI setting.
+    EventsCalendarSettingUpdate,
+    /// Enable a calendar UI setting.
+    EventsCalendarSettingEnable,
+    /// Disable a calendar UI setting.
+    EventsCalendarSettingDisable,
+    /// Delete a calendar UI setting.
+    EventsCalendarSettingDelete,
 
     // -- Cross-cutting management ---------------------------------------
     /// Manage settings for the active school.
@@ -1546,7 +1620,37 @@ impl Capability {
             Self::EventsCalendarCreate
             | Self::EventsCalendarRead
             | Self::EventsCalendarUpdate
-            | Self::EventsCalendarDelete => CapabilityDomain::Events,
+            | Self::EventsCalendarDelete
+            | Self::EventsEventCreate
+            | Self::EventsEventRead
+            | Self::EventsEventUpdate
+            | Self::EventsEventDelete
+            | Self::EventsEventPublish
+            | Self::EventsHolidayCreate
+            | Self::EventsHolidayRead
+            | Self::EventsHolidayUpdate
+            | Self::EventsHolidayDelete
+            | Self::EventsWeekendCreate
+            | Self::EventsWeekendRead
+            | Self::EventsWeekendUpdate
+            | Self::EventsWeekendDelete
+            | Self::EventsWeekendConfigure
+            | Self::EventsIncidentCreate
+            | Self::EventsIncidentRead
+            | Self::EventsIncidentUpdate
+            | Self::EventsIncidentDelete
+            | Self::EventsIncidentAssign
+            | Self::EventsIncidentReassign
+            | Self::EventsIncidentUnassign
+            | Self::EventsIncidentComment
+            | Self::EventsIncidentResolve
+            | Self::EventsIncidentCommentDelete
+            | Self::EventsCalendarSettingCreate
+            | Self::EventsCalendarSettingRead
+            | Self::EventsCalendarSettingUpdate
+            | Self::EventsCalendarSettingEnable
+            | Self::EventsCalendarSettingDisable
+            | Self::EventsCalendarSettingDelete => CapabilityDomain::Events,
             Self::SettingsManage => CapabilityDomain::Settings,
             Self::OperationsManage => CapabilityDomain::Operations,
         }
@@ -2032,6 +2136,36 @@ impl Capability {
             | Self::EventsCalendarRead
             | Self::EventsCalendarUpdate
             | Self::EventsCalendarDelete => "Calendar",
+            Self::EventsEventCreate
+            | Self::EventsEventRead
+            | Self::EventsEventUpdate
+            | Self::EventsEventDelete
+            | Self::EventsEventPublish => "Event",
+            Self::EventsHolidayCreate
+            | Self::EventsHolidayRead
+            | Self::EventsHolidayUpdate
+            | Self::EventsHolidayDelete => "Holiday",
+            Self::EventsWeekendCreate
+            | Self::EventsWeekendRead
+            | Self::EventsWeekendUpdate
+            | Self::EventsWeekendDelete
+            | Self::EventsWeekendConfigure => "Weekend",
+            Self::EventsIncidentCreate
+            | Self::EventsIncidentRead
+            | Self::EventsIncidentUpdate
+            | Self::EventsIncidentDelete
+            | Self::EventsIncidentAssign
+            | Self::EventsIncidentReassign
+            | Self::EventsIncidentUnassign
+            | Self::EventsIncidentComment
+            | Self::EventsIncidentResolve => "Incident",
+            Self::EventsIncidentCommentDelete => "IncidentComment",
+            Self::EventsCalendarSettingCreate
+            | Self::EventsCalendarSettingRead
+            | Self::EventsCalendarSettingUpdate
+            | Self::EventsCalendarSettingEnable
+            | Self::EventsCalendarSettingDisable
+            | Self::EventsCalendarSettingDelete => "CalendarSetting",
             Self::SettingsManage => "Settings",
             Self::OperationsManage => "Operations",
         }
@@ -2526,6 +2660,37 @@ impl Capability {
             Self::CmsContentShareListDispatch => "Dispatch",
             Self::CmsContentShareListCancel => "Cancel",
             Self::CmsHomePageSettingConfigure => "Configure",
+            // Phase 13 Events domain net-new
+            Self::EventsEventCreate
+            | Self::EventsHolidayCreate
+            | Self::EventsWeekendCreate
+            | Self::EventsIncidentCreate
+            | Self::EventsCalendarSettingCreate => "Create",
+            Self::EventsEventRead
+            | Self::EventsHolidayRead
+            | Self::EventsWeekendRead
+            | Self::EventsIncidentRead
+            | Self::EventsCalendarSettingRead => "Read",
+            Self::EventsEventUpdate
+            | Self::EventsHolidayUpdate
+            | Self::EventsWeekendUpdate
+            | Self::EventsIncidentUpdate
+            | Self::EventsCalendarSettingUpdate => "Update",
+            Self::EventsEventDelete
+            | Self::EventsHolidayDelete
+            | Self::EventsWeekendDelete
+            | Self::EventsIncidentDelete
+            | Self::EventsIncidentCommentDelete
+            | Self::EventsCalendarSettingDelete => "Delete",
+            Self::EventsEventPublish => "Publish",
+            Self::EventsWeekendConfigure => "Configure",
+            Self::EventsIncidentAssign => "Assign",
+            Self::EventsIncidentReassign => "Reassign",
+            Self::EventsIncidentUnassign => "Unassign",
+            Self::EventsIncidentComment => "Comment",
+            Self::EventsIncidentResolve => "Resolve",
+            Self::EventsCalendarSettingEnable => "Enable",
+            Self::EventsCalendarSettingDisable => "Disable",
         }
     }
 
@@ -2988,6 +3153,37 @@ impl Capability {
             Self::EventsCalendarRead => "Events.Calendar.Read",
             Self::EventsCalendarUpdate => "Events.Calendar.Update",
             Self::EventsCalendarDelete => "Events.Calendar.Delete",
+            // Phase 13 Events domain net-new
+            Self::EventsEventCreate => "Events.Event.Create",
+            Self::EventsEventRead => "Events.Event.Read",
+            Self::EventsEventUpdate => "Events.Event.Update",
+            Self::EventsEventDelete => "Events.Event.Delete",
+            Self::EventsEventPublish => "Events.Event.Publish",
+            Self::EventsHolidayCreate => "Events.Holiday.Create",
+            Self::EventsHolidayRead => "Events.Holiday.Read",
+            Self::EventsHolidayUpdate => "Events.Holiday.Update",
+            Self::EventsHolidayDelete => "Events.Holiday.Delete",
+            Self::EventsWeekendCreate => "Events.Weekend.Create",
+            Self::EventsWeekendRead => "Events.Weekend.Read",
+            Self::EventsWeekendUpdate => "Events.Weekend.Update",
+            Self::EventsWeekendDelete => "Events.Weekend.Delete",
+            Self::EventsWeekendConfigure => "Events.Weekend.Configure",
+            Self::EventsIncidentCreate => "Events.Incident.Create",
+            Self::EventsIncidentRead => "Events.Incident.Read",
+            Self::EventsIncidentUpdate => "Events.Incident.Update",
+            Self::EventsIncidentDelete => "Events.Incident.Delete",
+            Self::EventsIncidentAssign => "Events.Incident.Assign",
+            Self::EventsIncidentReassign => "Events.Incident.Reassign",
+            Self::EventsIncidentUnassign => "Events.Incident.Unassign",
+            Self::EventsIncidentComment => "Events.Incident.Comment",
+            Self::EventsIncidentResolve => "Events.Incident.Resolve",
+            Self::EventsIncidentCommentDelete => "Events.IncidentComment.Delete",
+            Self::EventsCalendarSettingCreate => "Events.CalendarSetting.Create",
+            Self::EventsCalendarSettingRead => "Events.CalendarSetting.Read",
+            Self::EventsCalendarSettingUpdate => "Events.CalendarSetting.Update",
+            Self::EventsCalendarSettingEnable => "Events.CalendarSetting.Enable",
+            Self::EventsCalendarSettingDisable => "Events.CalendarSetting.Disable",
+            Self::EventsCalendarSettingDelete => "Events.CalendarSetting.Delete",
             Self::AttendanceStudentCreate => "Attendance.Student.Create",
             Self::AttendanceStudentRead => "Attendance.Student.Read",
             Self::AttendanceStudentUpdate => "Attendance.Student.Update",
@@ -3485,6 +3681,36 @@ impl Capability {
             Self::EventsCalendarRead,
             Self::EventsCalendarUpdate,
             Self::EventsCalendarDelete,
+            Self::EventsEventCreate,
+            Self::EventsEventRead,
+            Self::EventsEventUpdate,
+            Self::EventsEventDelete,
+            Self::EventsEventPublish,
+            Self::EventsHolidayCreate,
+            Self::EventsHolidayRead,
+            Self::EventsHolidayUpdate,
+            Self::EventsHolidayDelete,
+            Self::EventsWeekendCreate,
+            Self::EventsWeekendRead,
+            Self::EventsWeekendUpdate,
+            Self::EventsWeekendDelete,
+            Self::EventsWeekendConfigure,
+            Self::EventsIncidentCreate,
+            Self::EventsIncidentRead,
+            Self::EventsIncidentUpdate,
+            Self::EventsIncidentDelete,
+            Self::EventsIncidentAssign,
+            Self::EventsIncidentReassign,
+            Self::EventsIncidentUnassign,
+            Self::EventsIncidentComment,
+            Self::EventsIncidentResolve,
+            Self::EventsIncidentCommentDelete,
+            Self::EventsCalendarSettingCreate,
+            Self::EventsCalendarSettingRead,
+            Self::EventsCalendarSettingUpdate,
+            Self::EventsCalendarSettingEnable,
+            Self::EventsCalendarSettingDisable,
+            Self::EventsCalendarSettingDelete,
             Self::AttendanceStudentCreate,
             Self::AttendanceStudentRead,
             Self::AttendanceStudentUpdate,
@@ -3985,6 +4211,36 @@ impl Capability {
             "Events.Calendar.Read" => Some(Self::EventsCalendarRead),
             "Events.Calendar.Update" => Some(Self::EventsCalendarUpdate),
             "Events.Calendar.Delete" => Some(Self::EventsCalendarDelete),
+            "Events.Event.Create" => Some(Self::EventsEventCreate),
+            "Events.Event.Read" => Some(Self::EventsEventRead),
+            "Events.Event.Update" => Some(Self::EventsEventUpdate),
+            "Events.Event.Delete" => Some(Self::EventsEventDelete),
+            "Events.Event.Publish" => Some(Self::EventsEventPublish),
+            "Events.Holiday.Create" => Some(Self::EventsHolidayCreate),
+            "Events.Holiday.Read" => Some(Self::EventsHolidayRead),
+            "Events.Holiday.Update" => Some(Self::EventsHolidayUpdate),
+            "Events.Holiday.Delete" => Some(Self::EventsHolidayDelete),
+            "Events.Weekend.Create" => Some(Self::EventsWeekendCreate),
+            "Events.Weekend.Read" => Some(Self::EventsWeekendRead),
+            "Events.Weekend.Update" => Some(Self::EventsWeekendUpdate),
+            "Events.Weekend.Delete" => Some(Self::EventsWeekendDelete),
+            "Events.Weekend.Configure" => Some(Self::EventsWeekendConfigure),
+            "Events.Incident.Create" => Some(Self::EventsIncidentCreate),
+            "Events.Incident.Read" => Some(Self::EventsIncidentRead),
+            "Events.Incident.Update" => Some(Self::EventsIncidentUpdate),
+            "Events.Incident.Delete" => Some(Self::EventsIncidentDelete),
+            "Events.Incident.Assign" => Some(Self::EventsIncidentAssign),
+            "Events.Incident.Reassign" => Some(Self::EventsIncidentReassign),
+            "Events.Incident.Unassign" => Some(Self::EventsIncidentUnassign),
+            "Events.Incident.Comment" => Some(Self::EventsIncidentComment),
+            "Events.Incident.Resolve" => Some(Self::EventsIncidentResolve),
+            "Events.IncidentComment.Delete" => Some(Self::EventsIncidentCommentDelete),
+            "Events.CalendarSetting.Create" => Some(Self::EventsCalendarSettingCreate),
+            "Events.CalendarSetting.Read" => Some(Self::EventsCalendarSettingRead),
+            "Events.CalendarSetting.Update" => Some(Self::EventsCalendarSettingUpdate),
+            "Events.CalendarSetting.Enable" => Some(Self::EventsCalendarSettingEnable),
+            "Events.CalendarSetting.Disable" => Some(Self::EventsCalendarSettingDisable),
+            "Events.CalendarSetting.Delete" => Some(Self::EventsCalendarSettingDelete),
             "Attendance.Student.Create" => Some(Self::AttendanceStudentCreate),
             "Attendance.Student.Read" => Some(Self::AttendanceStudentRead),
             "Attendance.Student.Update" => Some(Self::AttendanceStudentUpdate),
@@ -4524,6 +4780,27 @@ mod tests {
         assert!(
             count >= 80,
             "expected >= 80 Cms.* capabilities (got {count})"
+        );
+    }
+
+    #[test]
+    fn events_capabilities_round_trip_and_resolve_to_events_domain() {
+        let mut count = 0u32;
+        for c in Capability::all() {
+            let s = c.as_str();
+            if s.starts_with("Events.") {
+                let parsed = Capability::from_str(s).unwrap();
+                assert_eq!(parsed, *c, "round-trip failed for {s}");
+                assert_eq!(c.domain(), CapabilityDomain::Events, "domain mismatch for {s}");
+                count += 1;
+            }
+        }
+        // Phase 13: 4 placeholders (EventsCalendarCreate/Read/Update/Delete)
+        // + 30 net-new across 6 aggregates (Event/Holiday/Weekend/Incident/
+        // IncidentComment/CalendarSetting).
+        assert!(
+            count >= 30,
+            "expected >= 30 Events.* capabilities (got {count})"
         );
     }
 

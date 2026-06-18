@@ -1484,11 +1484,21 @@ dependencies = [
 name = "educore-events-domain"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "bytes",
+ "chrono",
+ "educore-audit",
  "educore-core",
  "educore-events",
  "educore-platform",
  "educore-rbac",
  "educore-settings",
+ "educore-storage",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -1755,6 +1765,7 @@ dependencies = [
  "educore-documents",
  "educore-event-bus",
  "educore-events",
+ "educore-events-domain",
  "educore-facilities",
  "educore-finance",
  "educore-hr",
