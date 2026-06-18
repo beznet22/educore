@@ -1770,8 +1770,90 @@ item = "events_calendar_events aggregate"
 spec = "docs/specs/events/aggregates.md"
 crate = "educore-events-domain"
 phase = 13
-status = "Pending"
-notes = "Calendar domain; distinct from educore-events which is the envelope/bus port."
+status = "Tested"
+tests = "crates/cross-cutting/events-domain/src/aggregate.rs,crates/tools/storage-parity/tests/events_integration.rs"
+notes = "Phase 13: spec-faithful 7-root; RRULE subset (DAILY/WEEKLY/MONTHLY/YEARLY + INTERVAL + COUNT + UNTIL) via RecurrenceRule; RecurrenceService::expand applies holiday overrides; 3 events (Created/Updated/Deleted) + 3 commands; 7-method CalendarEventRepository; CalendarService + RecurrenceService; no educore-academic dep (AcademicYearRef is local Uuid newtype)."
+
+[[row]]
+id = "events_holidays_aggregate"
+item = "events_holidays aggregate"
+spec = "docs/specs/events/aggregates.md#holiday"
+crate = "educore-events-domain"
+phase = 13
+status = "Tested"
+tests = "crates/cross-cutting/events-domain/src/aggregate.rs"
+notes = "Phase 13: spec-faithful; 3 events (Created/Updated/Deleted) + 3 commands; non-empty title, from_date <= to_date; HolidayService::is_instructional is the canonical 'is school in session on date X?' answer (false if weekend day or holiday)."
+
+[[row]]
+id = "events_weekends_aggregate"
+item = "events_weekends aggregate"
+spec = "docs/specs/events/aggregates.md#weekend"
+crate = "educore-events-domain"
+phase = 13
+status = "Tested"
+tests = "crates/cross-cutting/events-domain/src/aggregate.rs,crates/tools/storage-parity/tests/events_integration.rs"
+notes = "Phase 13: spec-faithful; 4 events (Created/Updated/Configured/Deleted) + 4 commands; unique name within school; order in 0..7; WeekendService::reconcile is the canonical diff for ConfigureWeekends (3-way create/update/delete)."
+
+[[row]]
+id = "events_incidents_aggregate"
+item = "events_incidents aggregate"
+spec = "docs/specs/events/aggregates.md#incident"
+crate = "educore-events-domain"
+phase = 13
+status = "Tested"
+tests = "crates/cross-cutting/events-domain/src/aggregate.rs,crates/tools/storage-parity/tests/events_integration.rs"
+notes = "Phase 13: spec-faithful; 4 events (Reported/Updated/Resolved/Deleted) + 4 commands; point in 0..1000; IncidentService::next_status is the canonical state machine Open → InProgress → Resolved; body immutable after Resolved (per spec invariant 5)."
+
+[[row]]
+id = "events_assign_incidents_aggregate"
+item = "events_assign_incidents aggregate"
+spec = "docs/specs/events/aggregates.md#assignincident"
+crate = "educore-events-domain"
+phase = 13
+status = "Tested"
+tests = "crates/cross-cutting/events-domain/src/aggregate.rs"
+notes = "Phase 13: spec-faithful; 3 events (Assigned/Reassigned/Unassigned) + 3 commands; exactly one of student_id or user_id must be set; point in 0..1000."
+
+[[row]]
+id = "events_incident_comments_aggregate"
+item = "events_incident_comments aggregate"
+spec = "docs/specs/events/aggregates.md#incidentcomment"
+crate = "educore-events-domain"
+phase = 13
+status = "Tested"
+tests = "crates/cross-cutting/events-domain/src/aggregate.rs"
+notes = "Phase 13: spec-faithful; 2 events (Commented/Deleted) + 2 commands; append-only; non-empty comment."
+
+[[row]]
+id = "events_calendar_settings_aggregate"
+item = "events_calendar_settings aggregate"
+spec = "docs/specs/events/aggregates.md#calendarsetting"
+crate = "educore-events-domain"
+phase = 13
+status = "Tested"
+tests = "crates/cross-cutting/events-domain/src/aggregate.rs"
+notes = "Phase 13: spec-faithful; 5 events (Created/Updated/Enabled/Disabled/Deleted) + 5 commands; unique menu_name within school; validate_css_color accepts hex (#RGB/#RRGGBB/#RRGGBBAA), rgb()/rgba(), or alphabetic named colors."
+
+# Capability / audit surface (Phase 13)
+[[row]]
+id = "events_capability_variants"
+item = "30+ Events.* Capability variants in educore-rbac"
+spec = "docs/specs/events/permissions.md"
+crate = "educore-rbac"
+phase = 13
+status = "Tested"
+tests = "crates/cross-cutting/rbac/src/value_objects.rs"
+notes = "Phase 13: 4 retained Phase 2 placeholders (EventsCalendar{Create,Read,Update,Delete}) + 30 net-new across 6 aggregates (Event 5 + Holiday 4 + Weekend 5 + Incident 9 + IncidentComment 1 + CalendarSetting 6) = 34 total Events caps; tested via events_capabilities_round_trip_and_resolve_to_events_domain."
+
+[[row]]
+id = "events_audit_target_variants"
+item = "4 net-new Events AuditTarget variants in educore-audit"
+spec = "docs/specs/events/aggregates.md"
+crate = "educore-audit"
+phase = 13
+status = "Tested"
+tests = "crates/cross-cutting/audit/src/writer.rs"
+notes = "Phase 13: 3 retained Phase 2 placeholders (CalendarEvent, Holiday, Incident) + 4 net-new (Weekend, AssignIncident, IncidentComment, CalendarSetting) = 7 total Events audit targets; tested via events_audit_target_round_trip_for_all_aggregates."
 
 # =============================================================================
 # Settings + Operations domains (Phase 14)
