@@ -765,7 +765,13 @@ impl DefaultRoleCatalog {
                 .copied()
                 .filter(|c| {
                     let s = c.as_str();
-                    s.starts_with("Settings.") || s.starts_with("Operations.")
+                    s.starts_with("Settings.")
+                        || s.starts_with("Operations.")
+                        || s.starts_with("Auth.")
+                        || s.starts_with("Notify.")
+                        || s.starts_with("Payment.")
+                        || s.starts_with("Files.")
+                        || s.starts_with("Integrations.")
                 }),
         );
         s

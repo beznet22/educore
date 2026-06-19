@@ -14,7 +14,6 @@ workspace = true
 educore-core = { workspace = true }
 educore-platform = { workspace = true }
 educore-events = { workspace = true }
-educore-finance = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
 

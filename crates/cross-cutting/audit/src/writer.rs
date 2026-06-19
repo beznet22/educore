@@ -417,6 +417,11 @@ pub enum AuditTarget {
     MaintenanceSetting(Uuid),
     /// A per-role sidebar layout projection.
     Sidebar(Uuid),
+    // === Phase 15 port-adapter targets section begin (owner: F) ===
+    // 10 net-new AuditTarget variants ship in microtask F.6:
+    //   OAuthAccessToken, OAuthClient, PasswordReset, Migration, AuthSession,
+    //   PaymentReceipt, Refund, FileReference, IntegrationConfig, IntegrationInvocation.
+    // === Phase 15 port-adapter targets section end ===
     // ---- Catch-all ------------------------------------------------------
     /// A domain-specific resource not in the default set. The
     /// string is the canonical type name (e.g. `"library_copy"`).

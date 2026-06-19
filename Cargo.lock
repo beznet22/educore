@@ -1633,6 +1633,22 @@ dependencies = [
 [[package]]
 name = "educore-operations"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "chrono",
+ "educore-audit",
+ "educore-core",
+ "educore-events",
+ "educore-platform",
+ "educore-rbac",
+ "educore-storage",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tracing",
+ "uuid",
+]
 
 [[package]]
 name = "educore-payment"
@@ -1641,7 +1657,6 @@ dependencies = [
  "async-trait",
  "educore-core",
  "educore-events",
- "educore-finance",
  "educore-platform",
  "tokio",
 ]
@@ -1709,9 +1724,20 @@ dependencies = [
 name = "educore-settings"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "bytes",
+ "chrono",
+ "educore-audit",
  "educore-core",
  "educore-events",
  "educore-platform",
+ "educore-rbac",
+ "educore-storage",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -1770,8 +1796,10 @@ dependencies = [
  "educore-finance",
  "educore-hr",
  "educore-library",
+ "educore-operations",
  "educore-platform",
  "educore-rbac",
+ "educore-settings",
  "educore-storage",
  "educore-storage-mysql",
  "educore-storage-postgres",

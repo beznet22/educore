@@ -1364,6 +1364,48 @@ pub enum Capability {
     OperationsSidebarDelete,
     /// Reorder sidebar entries.
     OperationsSidebarReorder,
+
+    // === Auth.* (Phase 15 net-new) section begin (owner: A) ===
+    // Auth caps ship in microtask A.1 (parallel wave 2.1).
+    // 12 net-new variants: AuthLogin, AuthLogout, AuthRefresh, AuthRevoke,
+    //   AuthPasswordReset, OAuthAccessTokenRead, OAuthAccessTokenRevoke,
+    //   OAuthClientRead, OAuthClientManage, PasswordResetRequest,
+    //   PasswordResetConfirm, MfaEnroll, MfaVerify.
+    // === Auth.* (Phase 15 net-new) section end ===
+
+    // === Notify.* (Phase 15 net-new) section begin (owner: B) ===
+    // Notify caps ship in microtask B.1 (parallel wave 2.1).
+    // 13 net-new variants: NotifyChannelRead, NotifyChannelManage,
+    //   NotifyTemplateRead, NotifyTemplateManage, NotifyDispatchRead,
+    //   NotifyDispatchCancel, NotifyDispatchRetry, NotificationRead,
+    //   NotificationMarkRead, NotificationMarkAllRead, NotificationDelete,
+    //   NotificationPreferenceRead, NotificationPreferenceUpdate.
+    // === Notify.* (Phase 15 net-new) section end ===
+
+    // === Payment.* (Phase 15 net-new) section begin (owner: C) ===
+    // Payment caps ship in microtask C.1 (parallel wave 2.1).
+    // 12 net-new variants: PaymentMethodRead, PaymentMethodManage,
+    //   PaymentIntentCreate, PaymentIntentRead, PaymentIntentCancel,
+    //   PaymentReceiptRead, PaymentReceiptRefund, RefundRead,
+    //   WebhookEventRead, WebhookEventReplay, GatewayConfigRead,
+    //   GatewayConfigUpdate.
+    // === Payment.* (Phase 15 net-new) section end ===
+
+    // === Files.* (Phase 15 net-new) section begin (owner: D) ===
+    // Files caps ship in microtask D.1 (parallel wave 2.1).
+    // 13 net-new variants: FileUpload, FileRead, FileUpdate, FileDelete,
+    //   FileDownload, FileShareCreate, FileShareRevoke, FolderCreate,
+    //   FolderRead, FolderUpdate, FolderDelete, StorageQuotaRead,
+    //   StorageQuotaUpdate.
+    // === Files.* (Phase 15 net-new) section end ===
+
+    // === Integrations.* (Phase 15 net-new) section begin (owner: E) ===
+    // Integrations caps ship in microtask E.1 (parallel wave 2.1).
+    // 10 net-new variants: IntegrationConfigRead, IntegrationConfigManage,
+    //   IntegrationInvocationRead, IntegrationInvocationRetry,
+    //   WebhookSubscriptionRead, WebhookSubscriptionManage,
+    //   ApiKeyRead, ApiKeyRotate, SyncJobRead, SyncJobTrigger.
+    // === Integrations.* (Phase 15 net-new) section end ===
 }
 
 impl Capability {
