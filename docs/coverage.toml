@@ -1865,7 +1865,164 @@ item = "settings_school_settings aggregate"
 spec = "docs/specs/settings/aggregates.md"
 crate = "educore-settings"
 phase = 14
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs,crates/tools/storage-parity/tests/settings_integration.rs"
+notes = "Phase 14: maps to GeneralSettings aggregate; placeholder preserved + 15 net-new per-aggregate targets."
+
+[[row]]
+id = "settings_general_settings_aggregate"
+item = "settings_general_settings aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs,crates/tools/storage-parity/tests/settings_integration.rs"
+
+[[row]]
+id = "settings_languages_aggregate"
+item = "settings_languages aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs,crates/tools/storage-parity/tests/settings_integration.rs"
+
+[[row]]
+id = "settings_language_phrases_aggregate"
+item = "settings_language_phrases aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs,crates/tools/storage-parity/tests/settings_integration.rs"
+
+[[row]]
+id = "settings_base_setups_aggregate"
+item = "settings_base_setups aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs"
+
+[[row]]
+id = "settings_base_groups_aggregate"
+item = "settings_base_groups aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs"
+
+[[row]]
+id = "settings_date_formats_aggregate"
+item = "settings_date_formats aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs,crates/tools/storage-parity/tests/settings_integration.rs"
+
+[[row]]
+id = "settings_styles_aggregate"
+item = "settings_styles aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs"
+
+[[row]]
+id = "settings_background_settings_aggregate"
+item = "settings_background_settings aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs"
+
+[[row]]
+id = "settings_dashboard_settings_aggregate"
+item = "settings_dashboard_settings aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs,crates/tools/storage-parity/tests/settings_integration.rs"
+
+[[row]]
+id = "settings_custom_links_aggregate"
+item = "settings_custom_links aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs"
+
+[[row]]
+id = "settings_color_themes_aggregate"
+item = "settings_color_themes aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs"
+
+[[row]]
+id = "settings_themes_aggregate"
+item = "settings_themes aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs,crates/tools/storage-parity/tests/settings_integration.rs"
+
+[[row]]
+id = "settings_colors_aggregate"
+item = "settings_colors aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs,crates/tools/storage-parity/tests/settings_integration.rs"
+
+[[row]]
+id = "settings_behavior_record_settings_aggregate"
+item = "settings_behavior_record_settings aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs,crates/tools/storage-parity/tests/settings_integration.rs"
+
+[[row]]
+id = "settings_setup_admins_aggregate"
+item = "settings_setup_admins aggregate"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-settings"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/settings/src/aggregate.rs,crates/tools/storage-parity/tests/settings_integration.rs"
+
+[[row]]
+id = "settings_capability_variants"
+item = "settings_capability_variants"
+spec = "docs/specs/settings/permissions.md"
+crate = "educore-rbac"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/rbac/src/value_objects.rs"
+notes = "Phase 14: 66 Settings.* Capability variants per docs/specs/settings/permissions.md; SettingsManage placeholder removed; tested via settings_capabilities_round_trip_and_resolve_to_settings_domain."
+
+[[row]]
+id = "settings_audit_target_variants"
+item = "settings_audit_target_variants"
+spec = "docs/specs/settings/aggregates.md"
+crate = "educore-audit"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/audit/src/writer.rs"
+notes = "Phase 14: 2 Phase 2 placeholders (SchoolSettings/BellSchedule) preserved + 15 net-new Settings audit targets = 17 total; tested via settings_audit_target_round_trip_for_all_aggregates."
 
 [[row]]
 id = "operations_bell_schedules_aggregate"
@@ -1873,7 +2030,101 @@ item = "operations_bell_schedules aggregate"
 spec = "docs/specs/operations/aggregates.md"
 crate = "educore-operations"
 phase = 14
-status = "Pending"
+status = "Tested"
+tests = "crates/cross-cutting/operations/src/aggregate.rs"
+notes = "Phase 14: maps to Sidebar aggregate; placeholder preserved + 8 net-new per-aggregate targets."
+
+[[row]]
+id = "operations_backups_aggregate"
+item = "operations_backups aggregate"
+spec = "docs/specs/operations/aggregates.md"
+crate = "educore-operations"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/operations/src/aggregate.rs,crates/tools/storage-parity/tests/operations_integration.rs"
+
+[[row]]
+id = "operations_jobs_aggregate"
+item = "operations_jobs aggregate"
+spec = "docs/specs/operations/aggregates.md"
+crate = "educore-operations"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/operations/src/aggregate.rs,crates/tools/storage-parity/tests/operations_integration.rs"
+
+[[row]]
+id = "operations_failed_jobs_aggregate"
+item = "operations_failed_jobs aggregate"
+spec = "docs/specs/operations/aggregates.md"
+crate = "educore-operations"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/operations/src/aggregate.rs"
+
+[[row]]
+id = "operations_system_versions_aggregate"
+item = "operations_system_versions aggregate"
+spec = "docs/specs/operations/aggregates.md"
+crate = "educore-operations"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/operations/src/aggregate.rs,crates/tools/storage-parity/tests/operations_integration.rs"
+
+[[row]]
+id = "operations_version_histories_aggregate"
+item = "operations_version_histories aggregate"
+spec = "docs/specs/operations/aggregates.md"
+crate = "educore-operations"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/operations/src/aggregate.rs"
+
+[[row]]
+id = "operations_user_logs_aggregate"
+item = "operations_user_logs aggregate"
+spec = "docs/specs/operations/aggregates.md"
+crate = "educore-operations"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/operations/src/aggregate.rs"
+
+[[row]]
+id = "operations_maintenance_settings_aggregate"
+item = "operations_maintenance_settings aggregate"
+spec = "docs/specs/operations/aggregates.md"
+crate = "educore-operations"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/operations/src/aggregate.rs,crates/tools/storage-parity/tests/operations_integration.rs"
+
+[[row]]
+id = "operations_sidebars_aggregate"
+item = "operations_sidebars aggregate"
+spec = "docs/specs/operations/aggregates.md"
+crate = "educore-operations"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/operations/src/aggregate.rs,crates/tools/storage-parity/tests/operations_integration.rs"
+
+[[row]]
+id = "operations_capability_variants"
+item = "operations_capability_variants"
+spec = "docs/specs/operations/permissions.md"
+crate = "educore-rbac"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/rbac/src/value_objects.rs"
+notes = "Phase 14: 34 Operations.* Capability variants per docs/specs/operations/permissions.md; OperationsManage placeholder removed; tested via operations_capabilities_round_trip_and_resolve_to_operations_domain."
+
+[[row]]
+id = "operations_audit_target_variants"
+item = "operations_audit_target_variants"
+spec = "docs/specs/operations/aggregates.md"
+crate = "educore-audit"
+phase = 14
+status = "Tested"
+tests = "crates/cross-cutting/audit/src/writer.rs"
+notes = "Phase 14: 2 Phase 2 placeholders (SchoolSettings/BellSchedule) preserved + 8 net-new Operations audit targets = 10 total; tested via operations_audit_target_round_trip_for_all_aggregates."
 
 # =============================================================================
 # Port adapters (Phase 15)
