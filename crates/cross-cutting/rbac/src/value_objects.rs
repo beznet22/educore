@@ -1366,11 +1366,41 @@ pub enum Capability {
     OperationsSidebarReorder,
 
     // === Auth.* (Phase 15 net-new) section begin (owner: A) ===
-    // Auth caps ship in microtask A.1 (parallel wave 2.1).
-    // 12 net-new variants: AuthLogin, AuthLogout, AuthRefresh, AuthRevoke,
+    // 13 net-new variants: AuthLogin, AuthLogout, AuthRefresh, AuthRevoke,
     //   AuthPasswordReset, OAuthAccessTokenRead, OAuthAccessTokenRevoke,
     //   OAuthClientRead, OAuthClientManage, PasswordResetRequest,
     //   PasswordResetConfirm, MfaEnroll, MfaVerify.
+    // Auth
+    /// Authenticate a user (login).
+    AuthLogin,
+    /// End a user session (logout).
+    AuthLogout,
+    /// Refresh an authentication token.
+    AuthRefresh,
+    /// Revoke an authentication token.
+    AuthRevoke,
+    /// Initiate a password-reset flow.
+    AuthPasswordReset,
+    // OAuth access tokens
+    /// Read an OAuth access token.
+    OAuthAccessTokenRead,
+    /// Revoke an OAuth access token.
+    OAuthAccessTokenRevoke,
+    // OAuth clients
+    /// Read an OAuth client registration.
+    OAuthClientRead,
+    /// Manage (create/update/delete) an OAuth client registration.
+    OAuthClientManage,
+    // Password reset
+    /// Request a password-reset email.
+    PasswordResetRequest,
+    /// Confirm a password-reset (consume the token).
+    PasswordResetConfirm,
+    // MFA
+    /// Enroll a user in MFA (TOTP, WebAuthn, etc.).
+    MfaEnroll,
+    /// Verify an MFA challenge response.
+    MfaVerify,
     // === Auth.* (Phase 15 net-new) section end ===
 
     // === Notify.* (Phase 15 net-new) section begin (owner: B) ===
