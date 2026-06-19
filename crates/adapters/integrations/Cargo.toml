@@ -13,8 +13,14 @@ workspace = true
 [dependencies]
 educore-core = { workspace = true }
 educore-platform = { workspace = true }
+educore-rbac = { workspace = true }
 educore-events = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
 reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+indexmap = { workspace = true }
 
