@@ -29,6 +29,8 @@ educore-communication = { workspace = true }
 educore-documents = { workspace = true }
 educore-cms = { workspace = true }
 educore-events-domain = { workspace = true }
+educore-settings = { workspace = true }
+educore-operations = { workspace = true }
 async-trait = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
