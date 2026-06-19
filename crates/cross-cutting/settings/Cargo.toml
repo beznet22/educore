@@ -14,4 +14,14 @@ workspace = true
 educore-core = { workspace = true }
 educore-platform = { workspace = true }
 educore-events = { workspace = true }
-
+educore-rbac = { workspace = true }
+educore-audit = { workspace = true }
+educore-storage = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+bytes = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
