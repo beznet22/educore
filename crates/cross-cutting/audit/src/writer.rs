@@ -418,9 +418,28 @@ pub enum AuditTarget {
     /// A per-role sidebar layout projection.
     Sidebar(Uuid),
     // === Phase 15 port-adapter targets section begin (owner: F) ===
-    // 10 net-new AuditTarget variants ship in microtask F.6:
-    //   OAuthAccessToken, OAuthClient, PasswordReset, Migration, AuthSession,
-    //   PaymentReceipt, Refund, FileReference, IntegrationConfig, IntegrationInvocation.
+    // 10 net-new AuditTarget variants ship in microtask F.6 per
+    // docs/ports/{authentication,payments,file-storage,integrations}.md.
+    /// An OAuth access token (auth port).
+    OAuthAccessToken(Uuid),
+    /// An OAuth client registration (auth port).
+    OAuthClient(Uuid),
+    /// A password-reset request (auth port).
+    PasswordReset(Uuid),
+    /// A migration tracking row (auth port, port-driven from operations).
+    Migration(Uuid),
+    /// An authentication session (alias of the cross-cutting `Session`).
+    AuthSession(Uuid),
+    /// A payment receipt (payment port).
+    PaymentReceipt(Uuid),
+    /// A refund record (payment port).
+    Refund(Uuid),
+    /// A file storage reference (files port).
+    FileReference(Uuid),
+    /// An integration's per-tenant config (integrations port).
+    IntegrationConfig(Uuid),
+    /// A single integration invocation (integrations port).
+    IntegrationInvocation(Uuid),
     // === Phase 15 port-adapter targets section end ===
     // ---- Catch-all ------------------------------------------------------
     /// A domain-specific resource not in the default set. The
@@ -576,6 +595,16 @@ impl AuditTarget {
             Self::UserLog(_) => "user_log",
             Self::MaintenanceSetting(_) => "maintenance_setting",
             Self::Sidebar(_) => "sidebar",
+            Self::OAuthAccessToken(_) => "oauth_access_token",
+            Self::OAuthClient(_) => "oauth_client",
+            Self::PasswordReset(_) => "password_reset",
+            Self::Migration(_) => "migration",
+            Self::AuthSession(_) => "auth_session",
+            Self::PaymentReceipt(_) => "payment_receipt",
+            Self::Refund(_) => "refund",
+            Self::FileReference(_) => "file_reference",
+            Self::IntegrationConfig(_) => "integration_config",
+            Self::IntegrationInvocation(_) => "integration_invocation",
             Self::Other(s, _) => s.as_str(),
         }
     }
@@ -725,6 +754,16 @@ impl AuditTarget {
             | Self::UserLog(id)
             | Self::MaintenanceSetting(id)
             | Self::Sidebar(id)
+            | Self::OAuthAccessToken(id)
+            | Self::OAuthClient(id)
+            | Self::PasswordReset(id)
+            | Self::Migration(id)
+            | Self::AuthSession(id)
+            | Self::PaymentReceipt(id)
+            | Self::Refund(id)
+            | Self::FileReference(id)
+            | Self::IntegrationConfig(id)
+            | Self::IntegrationInvocation(id)
             | Self::Other(_, id) => *id,
         }
     }
@@ -1369,6 +1408,42 @@ mod tests {
                 seen_types.insert(wire.to_owned()),
                 "duplicate target_type() wire string: {wire:?}"
             );
+        }
+    }
+
+    #[test]
+    fn audit_target_round_trip_for_port_adapters() {
+        let ids = [
+            uuid::Uuid::now_v7(),
+            uuid::Uuid::now_v7(),
+            uuid::Uuid::now_v7(),
+            uuid::Uuid::now_v7(),
+            uuid::Uuid::now_v7(),
+            uuid::Uuid::now_v7(),
+            uuid::Uuid::now_v7(),
+            uuid::Uuid::now_v7(),
+            uuid::Uuid::now_v7(),
+            uuid::Uuid::now_v7(),
+        ];
+        let targets = [
+            (AuditTarget::OAuthAccessToken(ids[0]), "oauth_access_token"),
+            (AuditTarget::OAuthClient(ids[1]), "oauth_client"),
+            (AuditTarget::PasswordReset(ids[2]), "password_reset"),
+            (AuditTarget::Migration(ids[3]), "migration"),
+            (AuditTarget::AuthSession(ids[4]), "auth_session"),
+            (AuditTarget::PaymentReceipt(ids[5]), "payment_receipt"),
+            (AuditTarget::Refund(ids[6]), "refund"),
+            (AuditTarget::FileReference(ids[7]), "file_reference"),
+            (AuditTarget::IntegrationConfig(ids[8]), "integration_config"),
+            (
+                AuditTarget::IntegrationInvocation(ids[9]),
+                "integration_invocation",
+            ),
+        ];
+        assert_eq!(targets.len(), 10);
+        for (i, (target, expected_type)) in targets.iter().enumerate() {
+            assert_eq!(target.target_type(), *expected_type);
+            assert_eq!(target.target_id(), ids[i]);
         }
     }
 
