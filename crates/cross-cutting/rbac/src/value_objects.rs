@@ -1430,12 +1430,26 @@ pub enum Capability {
     // === Notify.* (Phase 15 net-new) section end ===
 
     // === Payment.* (Phase 15 net-new) section begin (owner: C) ===
-    // Payment caps ship in microtask C.1 (parallel wave 2.1).
-    // 12 net-new variants: PaymentMethodRead, PaymentMethodManage,
-    //   PaymentIntentCreate, PaymentIntentRead, PaymentIntentCancel,
-    //   PaymentReceiptRead, PaymentReceiptRefund, RefundRead,
-    //   WebhookEventRead, WebhookEventReplay, GatewayConfigRead,
-    //   GatewayConfigUpdate.
+    // 8 net-new variants per docs/ports/payments.md.
+    // Charge / refund
+    /// Charge a payment method (card, bank, wallet, gateway).
+    PaymentCharge,
+    /// Refund a previous payment.
+    PaymentRefund,
+    /// Read a payment status.
+    PaymentStatus,
+    /// List available payment methods for a tenant.
+    PaymentMethodList,
+    // Webhook
+    /// Process a payment provider webhook.
+    PaymentWebhook,
+    /// Match a settlement line to a payment receipt.
+    PaymentSettlement,
+    // Bank slip
+    /// Generate a bank-payment slip (offline flow).
+    BankSlipGenerate,
+    /// Approve a bank-payment slip.
+    BankSlipApprove,
     // === Payment.* (Phase 15 net-new) section end ===
 
     // === Files.* (Phase 15 net-new) section begin (owner: D) ===
