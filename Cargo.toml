@@ -159,6 +159,9 @@ surrealdb = { version = "2", default-features = false, features = ["kv-mem", "ru
 # Pinned per ADR-015 § "MSRV floor conflict resolution" (engine MSRV 1.75)
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
 
+# JWT (for the educore-auth JwtAuthProvider reference impl)
+jsonwebtoken = "9"
+
 # SQL adapters — multi-dialect (PostgreSQL, MySQL, SQLite)
 # Pinned per ADR-015 § "MSRV floor conflict resolution" (engine MSRV 1.75)
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "macros", "json", "uuid", "chrono", "rust_decimal", "mysql", "postgres", "sqlite"] }
