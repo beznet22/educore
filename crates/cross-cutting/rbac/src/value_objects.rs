@@ -1375,11 +1375,28 @@ pub enum Capability {
 
     // === Notify.* (Phase 15 net-new) section begin (owner: B) ===
     // Notify caps ship in microtask B.1 (parallel wave 2.1).
-    // 13 net-new variants: NotifyChannelRead, NotifyChannelManage,
-    //   NotifyTemplateRead, NotifyTemplateManage, NotifyDispatchRead,
-    //   NotifyDispatchCancel, NotifyDispatchRetry, NotificationRead,
-    //   NotificationMarkRead, NotificationMarkAllRead, NotificationDelete,
-    //   NotificationPreferenceRead, NotificationPreferenceUpdate.
+    // 9 net-new variants per docs/ports/notifications.md.
+    // Email
+    /// Send an email notification.
+    NotifyEmailSend,
+    /// Send an SMS notification.
+    NotifySmsSend,
+    /// Send a push notification.
+    NotifyPushSend,
+    /// Send an in-app notification.
+    NotifyInApp,
+    /// Send a voice call notification.
+    NotifyVoice,
+    /// Send a webhook notification.
+    NotifyWebhook,
+    // Templates
+    /// Read a notification template.
+    NotifyTemplateRead,
+    /// Manage (create/update/delete) a notification template.
+    NotifyTemplateWrite,
+    // Bulk
+    /// Send a bulk notification (many recipients, one template).
+    NotifyBulkSend,
     // === Notify.* (Phase 15 net-new) section end ===
 
     // === Payment.* (Phase 15 net-new) section begin (owner: C) ===
@@ -1393,18 +1410,44 @@ pub enum Capability {
 
     // === Files.* (Phase 15 net-new) section begin (owner: D) ===
     // Files caps ship in microtask D.1 (parallel wave 2.1).
-    // 13 net-new variants: FileUpload, FileRead, FileUpdate, FileDelete,
-    //   FileDownload, FileShareCreate, FileShareRevoke, FolderCreate,
-    //   FolderRead, FolderUpdate, FolderDelete, StorageQuotaRead,
-    //   StorageQuotaUpdate.
+    // 8 net-new variants per docs/ports/file-storage.md.
+    /// Upload a file.
+    FilesPut,
+    /// Download a file.
+    FilesGet,
+    /// Delete a file.
+    FilesDelete,
+    /// Generate a signed URL for a private file.
+    FilesSignedUrl,
+    /// Copy a file to a new key.
+    FilesCopy,
+    /// Move a file to a new key.
+    FilesMove,
+    /// Change a file's visibility (private / tenant / public).
+    FilesVisibilityChange,
+    /// Configure a file lifecycle rule (Hot/Cool/Archive transitions).
+    FilesLifecycle,
     // === Files.* (Phase 15 net-new) section end ===
 
     // === Integrations.* (Phase 15 net-new) section begin (owner: E) ===
     // Integrations caps ship in microtask E.1 (parallel wave 2.1).
-    // 10 net-new variants: IntegrationConfigRead, IntegrationConfigManage,
-    //   IntegrationInvocationRead, IntegrationInvocationRetry,
-    //   WebhookSubscriptionRead, WebhookSubscriptionManage,
-    //   ApiKeyRead, ApiKeyRotate, SyncJobRead, SyncJobTrigger.
+    // 8 net-new variants per docs/ports/integrations.md.
+    /// Invoke an integration action.
+    IntegrationInvoke,
+    /// List an integration's capabilities at runtime.
+    IntegrationListCapabilities,
+    /// Read an integration's health status.
+    IntegrationHealth,
+    /// Configure an integration (per-tenant credentials, retry policy, etc.).
+    IntegrationConfigure,
+    /// Publish an event to a configured out-webhook.
+    WebhookOut,
+    /// Poll an external system on a schedule.
+    PollingIn,
+    /// Sync the LMS roster (students, classes, sections).
+    LmsRosterSync,
+    /// Schedule a video-conferencing meeting.
+    VideoSchedule,
     // === Integrations.* (Phase 15 net-new) section end ===
 }
 
