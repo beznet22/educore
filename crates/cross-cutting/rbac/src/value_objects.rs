@@ -2108,6 +2108,52 @@ impl Capability {
             | Self::OperationsSidebarUpdate
             | Self::OperationsSidebarDelete
             | Self::OperationsSidebarReorder => CapabilityDomain::Operations,
+            | Self::AuthLogin
+            | Self::AuthLogout
+            | Self::AuthRefresh
+            | Self::AuthRevoke
+            | Self::AuthPasswordReset
+            | Self::OAuthAccessTokenRead
+            | Self::OAuthAccessTokenRevoke
+            | Self::OAuthClientRead
+            | Self::OAuthClientManage
+            | Self::PasswordResetRequest
+            | Self::PasswordResetConfirm
+            | Self::MfaEnroll
+            | Self::MfaVerify => CapabilityDomain::Auth,
+            | Self::NotifyEmailSend
+            | Self::NotifySmsSend
+            | Self::NotifyPushSend
+            | Self::NotifyInApp
+            | Self::NotifyVoice
+            | Self::NotifyWebhook
+            | Self::NotifyTemplateRead
+            | Self::NotifyTemplateWrite
+            | Self::NotifyBulkSend => CapabilityDomain::Notify,
+            | Self::PaymentCharge
+            | Self::PaymentRefund
+            | Self::PaymentStatus
+            | Self::PaymentMethodList
+            | Self::PaymentWebhook
+            | Self::PaymentSettlement
+            | Self::BankSlipGenerate
+            | Self::BankSlipApprove => CapabilityDomain::Payment,
+            | Self::FilesPut
+            | Self::FilesGet
+            | Self::FilesDelete
+            | Self::FilesSignedUrl
+            | Self::FilesCopy
+            | Self::FilesMove
+            | Self::FilesVisibilityChange
+            | Self::FilesLifecycle => CapabilityDomain::Files,
+            | Self::IntegrationInvoke
+            | Self::IntegrationListCapabilities
+            | Self::IntegrationHealth
+            | Self::IntegrationConfigure
+            | Self::WebhookOut
+            | Self::PollingIn
+            | Self::LmsRosterSync
+            | Self::VideoSchedule => CapabilityDomain::Integrations,
         }
     }
 
@@ -2722,6 +2768,52 @@ impl Capability {
             | Self::OperationsSidebarUpdate
             | Self::OperationsSidebarDelete
             | Self::OperationsSidebarReorder => "Sidebar",
+            | Self::AuthLogin
+            | Self::AuthLogout
+            | Self::AuthRefresh
+            | Self::AuthRevoke
+            | Self::AuthPasswordReset => "Auth",
+            | Self::OAuthAccessTokenRead
+            | Self::OAuthAccessTokenRevoke => "AccessToken",
+            | Self::OAuthClientRead
+            | Self::OAuthClientManage => "Client",
+            | Self::PasswordResetRequest
+            | Self::PasswordResetConfirm => "PasswordReset",
+            | Self::MfaEnroll
+            | Self::MfaVerify => "Mfa",
+            | Self::NotifyEmailSend => "Email",
+            | Self::NotifySmsSend => "Sms",
+            | Self::NotifyPushSend => "Push",
+            | Self::NotifyInApp => "InApp",
+            | Self::NotifyVoice => "Voice",
+            | Self::NotifyWebhook => "Webhook",
+            | Self::NotifyTemplateRead
+            | Self::NotifyTemplateWrite => "Template",
+            | Self::NotifyBulkSend => "Bulk",
+            | Self::PaymentCharge
+            | Self::PaymentRefund
+            | Self::PaymentStatus
+            | Self::PaymentMethodList
+            | Self::PaymentWebhook
+            | Self::PaymentSettlement => "Payment",
+            | Self::BankSlipGenerate
+            | Self::BankSlipApprove => "BankSlip",
+            | Self::FilesPut
+            | Self::FilesGet
+            | Self::FilesDelete
+            | Self::FilesSignedUrl
+            | Self::FilesCopy
+            | Self::FilesMove
+            | Self::FilesVisibilityChange
+            | Self::FilesLifecycle => "Files",
+            | Self::IntegrationInvoke
+            | Self::IntegrationListCapabilities
+            | Self::IntegrationHealth
+            | Self::IntegrationConfigure => "Integration",
+            | Self::WebhookOut => "WebhookOut",
+            | Self::PollingIn => "PollingIn",
+            | Self::LmsRosterSync => "Lms",
+            | Self::VideoSchedule => "Video",
         }
     }
 
@@ -3343,6 +3435,52 @@ impl Capability {
             Self::EventsIncidentResolve => "Resolve",
             Self::EventsCalendarSettingEnable => "Enable",
             Self::EventsCalendarSettingDisable => "Disable",
+            Self::AuthLogin => "Login",
+            Self::AuthLogout => "Logout",
+            Self::AuthRefresh => "Refresh",
+            Self::AuthRevoke => "Revoke",
+            Self::AuthPasswordReset => "PasswordReset",
+            Self::OAuthAccessTokenRead => "Read",
+            Self::OAuthAccessTokenRevoke => "Revoke",
+            Self::OAuthClientRead => "Read",
+            Self::OAuthClientManage => "Manage",
+            Self::PasswordResetRequest => "Request",
+            Self::PasswordResetConfirm => "Confirm",
+            Self::MfaEnroll => "Enroll",
+            Self::MfaVerify => "Verify",
+            Self::NotifyEmailSend => "Send",
+            Self::NotifySmsSend => "Send",
+            Self::NotifyPushSend => "Send",
+            Self::NotifyInApp => "InApp",
+            Self::NotifyVoice => "Voice",
+            Self::NotifyWebhook => "Webhook",
+            Self::NotifyTemplateRead => "Read",
+            Self::NotifyTemplateWrite => "Write",
+            Self::NotifyBulkSend => "Send",
+            Self::PaymentCharge => "Charge",
+            Self::PaymentRefund => "Refund",
+            Self::PaymentStatus => "Status",
+            Self::PaymentMethodList => "MethodList",
+            Self::PaymentWebhook => "Webhook",
+            Self::PaymentSettlement => "Settlement",
+            Self::BankSlipGenerate => "Generate",
+            Self::BankSlipApprove => "Approve",
+            Self::FilesPut => "Put",
+            Self::FilesGet => "Get",
+            Self::FilesDelete => "Delete",
+            Self::FilesSignedUrl => "SignedUrl",
+            Self::FilesCopy => "Copy",
+            Self::FilesMove => "Move",
+            Self::FilesVisibilityChange => "VisibilityChange",
+            Self::FilesLifecycle => "Lifecycle",
+            Self::IntegrationInvoke => "Invoke",
+            Self::IntegrationListCapabilities => "ListCapabilities",
+            Self::IntegrationHealth => "Health",
+            Self::IntegrationConfigure => "Configure",
+            Self::WebhookOut => "WebhookOut",
+            Self::PollingIn => "PollingIn",
+            Self::LmsRosterSync => "RosterSync",
+            Self::VideoSchedule => "Schedule",
         }
     }
 
@@ -3960,6 +4098,52 @@ impl Capability {
             Self::OperationsSidebarUpdate => "Operations.Sidebar.Update",
             Self::OperationsSidebarDelete => "Operations.Sidebar.Delete",
             Self::OperationsSidebarReorder => "Operations.Sidebar.Reorder",
+            Self::AuthLogin => "Auth.Login",
+            Self::AuthLogout => "Auth.Logout",
+            Self::AuthRefresh => "Auth.Refresh",
+            Self::AuthRevoke => "Auth.Revoke",
+            Self::AuthPasswordReset => "Auth.PasswordReset",
+            Self::OAuthAccessTokenRead => "OAuth.AccessToken.Read",
+            Self::OAuthAccessTokenRevoke => "OAuth.AccessToken.Revoke",
+            Self::OAuthClientRead => "OAuth.Client.Read",
+            Self::OAuthClientManage => "OAuth.Client.Manage",
+            Self::PasswordResetRequest => "PasswordReset.Request",
+            Self::PasswordResetConfirm => "PasswordReset.Confirm",
+            Self::MfaEnroll => "Mfa.Enroll",
+            Self::MfaVerify => "Mfa.Verify",
+            Self::NotifyEmailSend => "Notify.Email.Send",
+            Self::NotifySmsSend => "Notify.Sms.Send",
+            Self::NotifyPushSend => "Notify.Push.Send",
+            Self::NotifyInApp => "Notify.InApp",
+            Self::NotifyVoice => "Notify.Voice",
+            Self::NotifyWebhook => "Notify.Webhook",
+            Self::NotifyTemplateRead => "Notify.Template.Read",
+            Self::NotifyTemplateWrite => "Notify.Template.Write",
+            Self::NotifyBulkSend => "Notify.Bulk.Send",
+            Self::PaymentCharge => "Payment.Charge",
+            Self::PaymentRefund => "Payment.Refund",
+            Self::PaymentStatus => "Payment.Status",
+            Self::PaymentMethodList => "Payment.MethodList",
+            Self::PaymentWebhook => "Payment.Webhook",
+            Self::PaymentSettlement => "Payment.Settlement",
+            Self::BankSlipGenerate => "BankSlip.Generate",
+            Self::BankSlipApprove => "BankSlip.Approve",
+            Self::FilesPut => "Files.Put",
+            Self::FilesGet => "Files.Get",
+            Self::FilesDelete => "Files.Delete",
+            Self::FilesSignedUrl => "Files.SignedUrl",
+            Self::FilesCopy => "Files.Copy",
+            Self::FilesMove => "Files.Move",
+            Self::FilesVisibilityChange => "Files.VisibilityChange",
+            Self::FilesLifecycle => "Files.Lifecycle",
+            Self::IntegrationInvoke => "Integration.Invoke",
+            Self::IntegrationListCapabilities => "Integration.ListCapabilities",
+            Self::IntegrationHealth => "Integration.Health",
+            Self::IntegrationConfigure => "Integration.Configure",
+            Self::WebhookOut => "WebhookOut",
+            Self::PollingIn => "PollingIn",
+            Self::LmsRosterSync => "Lms.RosterSync",
+            Self::VideoSchedule => "Video.Schedule",
         }
     }
 
@@ -5213,6 +5397,52 @@ impl Capability {
             "Operations.Sidebar.Update" => Some(Self::OperationsSidebarUpdate),
             "Operations.Sidebar.Delete" => Some(Self::OperationsSidebarDelete),
             "Operations.Sidebar.Reorder" => Some(Self::OperationsSidebarReorder),
+            "Auth.Login" => Some(Self::AuthLogin),
+            "Auth.Logout" => Some(Self::AuthLogout),
+            "Auth.Refresh" => Some(Self::AuthRefresh),
+            "Auth.Revoke" => Some(Self::AuthRevoke),
+            "Auth.PasswordReset" => Some(Self::AuthPasswordReset),
+            "OAuth.AccessToken.Read" => Some(Self::OAuthAccessTokenRead),
+            "OAuth.AccessToken.Revoke" => Some(Self::OAuthAccessTokenRevoke),
+            "OAuth.Client.Read" => Some(Self::OAuthClientRead),
+            "OAuth.Client.Manage" => Some(Self::OAuthClientManage),
+            "PasswordReset.Request" => Some(Self::PasswordResetRequest),
+            "PasswordReset.Confirm" => Some(Self::PasswordResetConfirm),
+            "Mfa.Enroll" => Some(Self::MfaEnroll),
+            "Mfa.Verify" => Some(Self::MfaVerify),
+            "Notify.Email.Send" => Some(Self::NotifyEmailSend),
+            "Notify.Sms.Send" => Some(Self::NotifySmsSend),
+            "Notify.Push.Send" => Some(Self::NotifyPushSend),
+            "Notify.InApp" => Some(Self::NotifyInApp),
+            "Notify.Voice" => Some(Self::NotifyVoice),
+            "Notify.Webhook" => Some(Self::NotifyWebhook),
+            "Notify.Template.Read" => Some(Self::NotifyTemplateRead),
+            "Notify.Template.Write" => Some(Self::NotifyTemplateWrite),
+            "Notify.Bulk.Send" => Some(Self::NotifyBulkSend),
+            "Payment.Charge" => Some(Self::PaymentCharge),
+            "Payment.Refund" => Some(Self::PaymentRefund),
+            "Payment.Status" => Some(Self::PaymentStatus),
+            "Payment.MethodList" => Some(Self::PaymentMethodList),
+            "Payment.Webhook" => Some(Self::PaymentWebhook),
+            "Payment.Settlement" => Some(Self::PaymentSettlement),
+            "BankSlip.Generate" => Some(Self::BankSlipGenerate),
+            "BankSlip.Approve" => Some(Self::BankSlipApprove),
+            "Files.Put" => Some(Self::FilesPut),
+            "Files.Get" => Some(Self::FilesGet),
+            "Files.Delete" => Some(Self::FilesDelete),
+            "Files.SignedUrl" => Some(Self::FilesSignedUrl),
+            "Files.Copy" => Some(Self::FilesCopy),
+            "Files.Move" => Some(Self::FilesMove),
+            "Files.VisibilityChange" => Some(Self::FilesVisibilityChange),
+            "Files.Lifecycle" => Some(Self::FilesLifecycle),
+            "Integration.Invoke" => Some(Self::IntegrationInvoke),
+            "Integration.ListCapabilities" => Some(Self::IntegrationListCapabilities),
+            "Integration.Health" => Some(Self::IntegrationHealth),
+            "Integration.Configure" => Some(Self::IntegrationConfigure),
+            "WebhookOut" => Some(Self::WebhookOut),
+            "PollingIn" => Some(Self::PollingIn),
+            "Lms.RosterSync" => Some(Self::LmsRosterSync),
+            "Video.Schedule" => Some(Self::VideoSchedule),
             _ => None,
         }
     }
@@ -5266,6 +5496,16 @@ pub enum CapabilityDomain {
     Settings,
     /// Operations domain.
     Operations,
+    /// Authentication / authorization port (auth).
+    Auth,
+    /// Notification port (notify).
+    Notify,
+    /// Payment port (payment).
+    Payment,
+    /// File storage port (files).
+    Files,
+    /// Integration port (integrations).
+    Integrations,
 }
 
 impl CapabilityDomain {
@@ -5289,6 +5529,11 @@ impl CapabilityDomain {
             Self::Events => "Events",
             Self::Settings => "Settings",
             Self::Operations => "Operations",
+            Self::Auth => "Auth",
+            Self::Notify => "Notify",
+            Self::Payment => "Payment",
+            Self::Files => "Files",
+            Self::Integrations => "Integrations",
         }
     }
 }
