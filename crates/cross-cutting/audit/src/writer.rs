@@ -359,11 +359,64 @@ pub enum AuditTarget {
     IncidentComment(Uuid),
     /// A calendar UI menu label and color.
     CalendarSetting(Uuid),
-    // ---- Settings + Operations -----------------------------------------
-    /// A school-settings row.
+    // ---- Settings + Operations (Phase 2 placeholders) -------------------
+    // The 2 Phase 2 `SchoolSettings` + `BellSchedule` placeholders are
+    // preserved for `DefaultRoleCatalog` consistency (mirrors the
+    // Phase 13 pattern of preserving the 3 `CalendarEvent`/`Holiday`/
+    // `Incident` audit-target placeholders). Phase 14 adds 15 + 8 = 23
+    // net-new per-aggregate targets below.
+    /// A school-settings row (Phase 2 placeholder).
     SchoolSettings(Uuid),
-    /// A bell-schedule row.
+    /// A bell-schedule row (Phase 2 placeholder).
     BellSchedule(Uuid),
+    // ---- Settings (Phase 14 net-new) ------------------------------------
+    /// The school's per-school singleton general-settings row.
+    GeneralSettings(Uuid),
+    /// A language registered in the school.
+    Language(Uuid),
+    /// A translatable phrase key.
+    LanguagePhrase(Uuid),
+    /// A lookup value in a `BaseGroup`.
+    BaseSetup(Uuid),
+    /// A grouping of `BaseSetup` values.
+    BaseGroup(Uuid),
+    /// A `strftime` pattern.
+    DateFormat(Uuid),
+    /// A color palette / theme profile.
+    Style(Uuid),
+    /// A background image or color preset.
+    BackgroundSetting(Uuid),
+    /// A dashboard card binding to a role.
+    DashboardSetting(Uuid),
+    /// The per-school custom-link bundle.
+    CustomLink(Uuid),
+    /// A color binding in a theme.
+    ColorTheme(Uuid),
+    /// A theme (color mode, background).
+    Theme(Uuid),
+    /// A color entry used by `ColorTheme`.
+    Color(Uuid),
+    /// The behavior record feature flag.
+    BehaviorRecordSetting(Uuid),
+    /// A purpose/complaint/source/reference entry.
+    SetupAdmin(Uuid),
+    // ---- Operations (Phase 14 net-new) ----------------------------------
+    /// A database/file/image backup record.
+    Backup(Uuid),
+    /// A pending job in the queue.
+    Job(Uuid),
+    /// A job that has exhausted its retry budget.
+    FailedJob(Uuid),
+    /// A released version metadata record.
+    SystemVersion(Uuid),
+    /// A version bump record.
+    VersionHistory(Uuid),
+    /// A login event record.
+    UserLog(Uuid),
+    /// The school's maintenance mode config.
+    MaintenanceSetting(Uuid),
+    /// A per-role sidebar layout projection.
+    Sidebar(Uuid),
     // ---- Catch-all ------------------------------------------------------
     /// A domain-specific resource not in the default set. The
     /// string is the canonical type name (e.g. `"library_copy"`).
@@ -495,6 +548,29 @@ impl AuditTarget {
             Self::CalendarSetting(_) => "calendar_setting",
             Self::SchoolSettings(_) => "school_settings",
             Self::BellSchedule(_) => "bell_schedule",
+            Self::GeneralSettings(_) => "general_settings",
+            Self::Language(_) => "language",
+            Self::LanguagePhrase(_) => "language_phrase",
+            Self::BaseSetup(_) => "base_setup",
+            Self::BaseGroup(_) => "base_group",
+            Self::DateFormat(_) => "date_format",
+            Self::Style(_) => "style",
+            Self::BackgroundSetting(_) => "background_setting",
+            Self::DashboardSetting(_) => "dashboard_setting",
+            Self::CustomLink(_) => "custom_link",
+            Self::ColorTheme(_) => "color_theme",
+            Self::Theme(_) => "theme",
+            Self::Color(_) => "color",
+            Self::BehaviorRecordSetting(_) => "behavior_record_setting",
+            Self::SetupAdmin(_) => "setup_admin",
+            Self::Backup(_) => "backup",
+            Self::Job(_) => "job",
+            Self::FailedJob(_) => "failed_job",
+            Self::SystemVersion(_) => "system_version",
+            Self::VersionHistory(_) => "version_history",
+            Self::UserLog(_) => "user_log",
+            Self::MaintenanceSetting(_) => "maintenance_setting",
+            Self::Sidebar(_) => "sidebar",
             Self::Other(s, _) => s.as_str(),
         }
     }
@@ -621,6 +697,29 @@ impl AuditTarget {
             | Self::CalendarSetting(id)
             | Self::SchoolSettings(id)
             | Self::BellSchedule(id)
+            | Self::GeneralSettings(id)
+            | Self::Language(id)
+            | Self::LanguagePhrase(id)
+            | Self::BaseSetup(id)
+            | Self::BaseGroup(id)
+            | Self::DateFormat(id)
+            | Self::Style(id)
+            | Self::BackgroundSetting(id)
+            | Self::DashboardSetting(id)
+            | Self::CustomLink(id)
+            | Self::ColorTheme(id)
+            | Self::Theme(id)
+            | Self::Color(id)
+            | Self::BehaviorRecordSetting(id)
+            | Self::SetupAdmin(id)
+            | Self::Backup(id)
+            | Self::Job(id)
+            | Self::FailedJob(id)
+            | Self::SystemVersion(id)
+            | Self::VersionHistory(id)
+            | Self::UserLog(id)
+            | Self::MaintenanceSetting(id)
+            | Self::Sidebar(id)
             | Self::Other(_, id) => *id,
         }
     }
@@ -960,6 +1059,29 @@ mod tests {
             AuditTarget::Incident(id),
             AuditTarget::SchoolSettings(id),
             AuditTarget::BellSchedule(id),
+            AuditTarget::GeneralSettings(id),
+            AuditTarget::Language(id),
+            AuditTarget::LanguagePhrase(id),
+            AuditTarget::BaseSetup(id),
+            AuditTarget::BaseGroup(id),
+            AuditTarget::DateFormat(id),
+            AuditTarget::Style(id),
+            AuditTarget::BackgroundSetting(id),
+            AuditTarget::DashboardSetting(id),
+            AuditTarget::CustomLink(id),
+            AuditTarget::ColorTheme(id),
+            AuditTarget::Theme(id),
+            AuditTarget::Color(id),
+            AuditTarget::BehaviorRecordSetting(id),
+            AuditTarget::SetupAdmin(id),
+            AuditTarget::Backup(id),
+            AuditTarget::Job(id),
+            AuditTarget::FailedJob(id),
+            AuditTarget::SystemVersion(id),
+            AuditTarget::VersionHistory(id),
+            AuditTarget::UserLog(id),
+            AuditTarget::MaintenanceSetting(id),
+            AuditTarget::Sidebar(id),
         ];
         for v in &variants {
             assert!(!v.target_type().is_empty());
@@ -1141,6 +1263,102 @@ mod tests {
             let wire = target.target_type();
             assert_eq!(wire, expected);
             assert!(!wire.is_empty(), "target_type() returned empty string");
+            assert_eq!(target.target_id(), id);
+            assert!(
+                seen_types.insert(wire.to_owned()),
+                "duplicate target_type() wire string: {wire:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn settings_audit_target_round_trip_for_all_aggregates() {
+        // Phase 14: 15 Settings.* audit targets per
+        // `docs/specs/settings/aggregates.md`. The 2 Phase 2
+        // placeholders (`SchoolSettings`, `BellSchedule`) are
+        // preserved for `DefaultRoleCatalog` consistency.
+        let id = Uuid::new_v4();
+        let cases: Vec<(AuditTarget, &str)> = vec![
+            (AuditTarget::GeneralSettings(id), "general_settings"),
+            (AuditTarget::Language(id), "language"),
+            (AuditTarget::LanguagePhrase(id), "language_phrase"),
+            (AuditTarget::BaseSetup(id), "base_setup"),
+            (AuditTarget::BaseGroup(id), "base_group"),
+            (AuditTarget::DateFormat(id), "date_format"),
+            (AuditTarget::Style(id), "style"),
+            (AuditTarget::BackgroundSetting(id), "background_setting"),
+            (AuditTarget::DashboardSetting(id), "dashboard_setting"),
+            (AuditTarget::CustomLink(id), "custom_link"),
+            (AuditTarget::ColorTheme(id), "color_theme"),
+            (AuditTarget::Theme(id), "theme"),
+            (AuditTarget::Color(id), "color"),
+            (
+                AuditTarget::BehaviorRecordSetting(id),
+                "behavior_record_setting",
+            ),
+            (AuditTarget::SetupAdmin(id), "setup_admin"),
+        ];
+        assert_eq!(cases.len(), 15);
+        let mut seen_types: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for (target, expected) in cases {
+            let wire = target.target_type();
+            assert_eq!(wire, expected);
+            assert!(!wire.is_empty(), "target_type() returned empty string");
+            assert!(
+                wire.chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_'),
+                "target_type() {wire:?} is not snake_case ASCII"
+            );
+            assert!(
+                !wire.starts_with('_') && !wire.ends_with('_'),
+                "target_type() {wire:?} has a leading or trailing underscore"
+            );
+            assert!(
+                !wire.contains("__"),
+                "target_type() {wire:?} contains a double underscore"
+            );
+            assert_eq!(target.target_id(), id);
+            assert!(
+                seen_types.insert(wire.to_owned()),
+                "duplicate target_type() wire string: {wire:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn operations_audit_target_round_trip_for_all_aggregates() {
+        // Phase 14: 8 Operations.* audit targets per
+        // `docs/specs/operations/aggregates.md`.
+        let id = Uuid::new_v4();
+        let cases: Vec<(AuditTarget, &str)> = vec![
+            (AuditTarget::Backup(id), "backup"),
+            (AuditTarget::Job(id), "job"),
+            (AuditTarget::FailedJob(id), "failed_job"),
+            (AuditTarget::SystemVersion(id), "system_version"),
+            (AuditTarget::VersionHistory(id), "version_history"),
+            (AuditTarget::UserLog(id), "user_log"),
+            (AuditTarget::MaintenanceSetting(id), "maintenance_setting"),
+            (AuditTarget::Sidebar(id), "sidebar"),
+        ];
+        assert_eq!(cases.len(), 8);
+        let mut seen_types: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for (target, expected) in cases {
+            let wire = target.target_type();
+            assert_eq!(wire, expected);
+            assert!(!wire.is_empty(), "target_type() returned empty string");
+            assert!(
+                wire.chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_'),
+                "target_type() {wire:?} is not snake_case ASCII"
+            );
+            assert!(
+                !wire.starts_with('_') && !wire.ends_with('_'),
+                "target_type() {wire:?} has a leading or trailing underscore"
+            );
+            assert!(
+                !wire.contains("__"),
+                "target_type() {wire:?} contains a double underscore"
+            );
             assert_eq!(target.target_id(), id);
             assert!(
                 seen_types.insert(wire.to_owned()),

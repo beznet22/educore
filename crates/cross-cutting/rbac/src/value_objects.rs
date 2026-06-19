@@ -1131,11 +1131,239 @@ pub enum Capability {
     /// Delete a calendar UI setting.
     EventsCalendarSettingDelete,
 
-    // -- Cross-cutting management ---------------------------------------
-    /// Manage settings for the active school.
-    SettingsManage,
-    /// Manage operations (backups, jobs) for the active school.
-    OperationsManage,
+    // -- Settings (Phase 14 net-new) -------------------------------------
+    // Phase 14 ships the full per-aggregate catalog per
+    // `docs/specs/settings/permissions.md`. The Phase 2
+    // `SettingsManage` placeholder is replaced.
+    // GeneralSettings
+    /// Read the school's general settings row.
+    SettingsGeneralRead,
+    /// Update the school's general settings row.
+    SettingsGeneralUpdate,
+    /// Toggle the school's two-factor authentication.
+    SettingsGeneralTwoFactorToggle,
+    // Theme
+    /// Create a theme.
+    SettingsThemeCreate,
+    /// Read a theme.
+    SettingsThemeRead,
+    /// Update a theme.
+    SettingsThemeUpdate,
+    /// Activate a theme.
+    SettingsThemeActivate,
+    /// Delete a theme.
+    SettingsThemeDelete,
+    /// Replicate a theme.
+    SettingsThemeReplicate,
+    /// Select the active theme for the school.
+    SettingsThemeSelect,
+    // Color (system)
+    /// Create a color (system).
+    SettingsColorCreate,
+    /// Read a color.
+    SettingsColorRead,
+    /// Update a color (system).
+    SettingsColorUpdate,
+    /// Delete a color (system).
+    SettingsColorDelete,
+    // ColorTheme
+    /// Create a color-theme binding.
+    SettingsColorThemeCreate,
+    /// Read a color-theme binding.
+    SettingsColorThemeRead,
+    /// Update a color-theme binding.
+    SettingsColorThemeUpdate,
+    /// Delete a color-theme binding.
+    SettingsColorThemeDelete,
+    // Language
+    /// Add a language.
+    SettingsLanguageAdd,
+    /// Read a language.
+    SettingsLanguageRead,
+    /// Update a language.
+    SettingsLanguageUpdate,
+    /// Delete a language.
+    SettingsLanguageDelete,
+    /// Activate a language.
+    SettingsLanguageActivate,
+    /// Select the active language for the school.
+    SettingsLanguageSelect,
+    // LanguagePhrase
+    /// Add a language phrase.
+    SettingsLanguagePhraseAdd,
+    /// Read a language phrase.
+    SettingsLanguagePhraseRead,
+    /// Update a language phrase.
+    SettingsLanguagePhraseUpdate,
+    /// Delete a language phrase.
+    SettingsLanguagePhraseDelete,
+    /// Translate a language phrase.
+    SettingsLanguagePhraseTranslate,
+    // BaseGroup / BaseSetup
+    /// Add a base group.
+    SettingsBaseGroupAdd,
+    /// Read a base group.
+    SettingsBaseGroupRead,
+    /// Update a base group.
+    SettingsBaseGroupUpdate,
+    /// Delete a base group.
+    SettingsBaseGroupDelete,
+    /// Add a base setup.
+    SettingsBaseSetupAdd,
+    /// Read a base setup.
+    SettingsBaseSetupRead,
+    /// Update a base setup.
+    SettingsBaseSetupUpdate,
+    /// Delete a base setup.
+    SettingsBaseSetupDelete,
+    // DateFormat
+    /// Add a date format.
+    SettingsDateFormatAdd,
+    /// Read a date format.
+    SettingsDateFormatRead,
+    /// Update a date format.
+    SettingsDateFormatUpdate,
+    /// Delete a date format.
+    SettingsDateFormatDelete,
+    /// Select the active date format.
+    SettingsDateFormatSelect,
+    // TimeZone
+    /// Select the active time zone.
+    SettingsTimeZoneSelect,
+    // Session
+    /// Select the active academic session.
+    SettingsSessionSelect,
+    // Style
+    /// Create a style.
+    SettingsStyleCreate,
+    /// Read a style.
+    SettingsStyleRead,
+    /// Update a style.
+    SettingsStyleUpdate,
+    /// Activate a style.
+    SettingsStyleActivate,
+    /// Delete a style.
+    SettingsStyleDelete,
+    // Background
+    /// Create a background setting.
+    SettingsBackgroundCreate,
+    /// Read a background setting.
+    SettingsBackgroundRead,
+    /// Update a background setting.
+    SettingsBackgroundUpdate,
+    /// Delete a background setting.
+    SettingsBackgroundDelete,
+    // Dashboard
+    /// Create a dashboard setting.
+    SettingsDashboardCreate,
+    /// Read a dashboard setting.
+    SettingsDashboardRead,
+    /// Update a dashboard setting.
+    SettingsDashboardUpdate,
+    /// Delete a dashboard setting.
+    SettingsDashboardDelete,
+    // CustomLink
+    /// Read the custom links bundle.
+    SettingsCustomLinkRead,
+    /// Update the custom links bundle.
+    SettingsCustomLinkUpdate,
+    /// Reset the custom links bundle to defaults.
+    SettingsCustomLinkReset,
+    // BehaviorRecord
+    /// Read the behavior record settings.
+    SettingsBehaviorRecordRead,
+    /// Update the behavior record settings.
+    SettingsBehaviorRecordUpdate,
+    // SetupAdmin
+    /// Add a setup admin entry.
+    SettingsSetupAdminAdd,
+    /// Read a setup admin entry.
+    SettingsSetupAdminRead,
+    /// Update a setup admin entry.
+    SettingsSetupAdminUpdate,
+    /// Delete a setup admin entry.
+    SettingsSetupAdminDelete,
+
+    // -- Operations (Phase 14 net-new) -----------------------------------
+    // Phase 14 ships the full per-aggregate catalog per
+    // `docs/specs/operations/permissions.md`. The Phase 2
+    // `OperationsManage` placeholder is replaced.
+    // Backup
+    /// Create a backup.
+    OperationsBackupCreate,
+    /// Read a backup.
+    OperationsBackupRead,
+    /// Delete a backup.
+    OperationsBackupDelete,
+    /// Restore a backup.
+    OperationsBackupRestore,
+    /// Activate a backup.
+    OperationsBackupActivate,
+    /// Deactivate a backup.
+    OperationsBackupDeactivate,
+    // Job (system-tenant for the lifecycle commands)
+    /// Schedule a job (system).
+    OperationsJobSchedule,
+    /// Read a job.
+    OperationsJobRead,
+    /// Cancel a job (system).
+    OperationsJobCancel,
+    /// Reserve a job (system).
+    OperationsJobReserve,
+    /// Complete a job (system).
+    OperationsJobComplete,
+    /// Fail a job (system).
+    OperationsJobFail,
+    /// Retry a job (system).
+    OperationsJobRetry,
+    /// Purge completed jobs.
+    OperationsJobPurge,
+    // FailedJob
+    /// Read a failed job.
+    OperationsFailedJobRead,
+    /// Retry a failed job (system).
+    OperationsFailedJobRetry,
+    /// Delete a failed job.
+    OperationsFailedJobDelete,
+    /// Purge old failed jobs.
+    OperationsFailedJobPurge,
+    // SystemVersion
+    /// Register a system version (system, build-time).
+    OperationsVersionRegister,
+    /// Read a system version.
+    OperationsVersionRead,
+    /// Update a system version (system).
+    OperationsVersionUpdate,
+    // VersionHistory
+    /// Record a version history entry (system, build-time).
+    OperationsVersionHistoryRecord,
+    /// Read version history.
+    OperationsVersionHistoryRead,
+    // UserLog
+    /// Record a user log entry (system).
+    OperationsAuditRecord,
+    /// Read user logs.
+    OperationsAuditRead,
+    // Maintenance
+    /// Read the maintenance setting.
+    OperationsMaintenanceRead,
+    /// Configure the maintenance setting.
+    OperationsMaintenanceConfigure,
+    /// Enable maintenance mode.
+    OperationsMaintenanceEnable,
+    /// Disable maintenance mode.
+    OperationsMaintenanceDisable,
+    // Sidebar
+    /// Create a sidebar entry.
+    OperationsSidebarCreate,
+    /// Read sidebar entries.
+    OperationsSidebarRead,
+    /// Update a sidebar entry.
+    OperationsSidebarUpdate,
+    /// Delete a sidebar entry.
+    OperationsSidebarDelete,
+    /// Reorder sidebar entries.
+    OperationsSidebarReorder,
 }
 
 impl Capability {
@@ -1651,8 +1879,106 @@ impl Capability {
             | Self::EventsCalendarSettingEnable
             | Self::EventsCalendarSettingDisable
             | Self::EventsCalendarSettingDelete => CapabilityDomain::Events,
-            Self::SettingsManage => CapabilityDomain::Settings,
-            Self::OperationsManage => CapabilityDomain::Operations,
+            Self::SettingsGeneralRead
+            | Self::SettingsGeneralUpdate
+            | Self::SettingsGeneralTwoFactorToggle
+            | Self::SettingsThemeCreate
+            | Self::SettingsThemeRead
+            | Self::SettingsThemeUpdate
+            | Self::SettingsThemeActivate
+            | Self::SettingsThemeDelete
+            | Self::SettingsThemeReplicate
+            | Self::SettingsThemeSelect
+            | Self::SettingsColorCreate
+            | Self::SettingsColorRead
+            | Self::SettingsColorUpdate
+            | Self::SettingsColorDelete
+            | Self::SettingsColorThemeCreate
+            | Self::SettingsColorThemeRead
+            | Self::SettingsColorThemeUpdate
+            | Self::SettingsColorThemeDelete
+            | Self::SettingsLanguageAdd
+            | Self::SettingsLanguageRead
+            | Self::SettingsLanguageUpdate
+            | Self::SettingsLanguageDelete
+            | Self::SettingsLanguageActivate
+            | Self::SettingsLanguageSelect
+            | Self::SettingsLanguagePhraseAdd
+            | Self::SettingsLanguagePhraseRead
+            | Self::SettingsLanguagePhraseUpdate
+            | Self::SettingsLanguagePhraseDelete
+            | Self::SettingsLanguagePhraseTranslate
+            | Self::SettingsBaseGroupAdd
+            | Self::SettingsBaseGroupRead
+            | Self::SettingsBaseGroupUpdate
+            | Self::SettingsBaseGroupDelete
+            | Self::SettingsBaseSetupAdd
+            | Self::SettingsBaseSetupRead
+            | Self::SettingsBaseSetupUpdate
+            | Self::SettingsBaseSetupDelete
+            | Self::SettingsDateFormatAdd
+            | Self::SettingsDateFormatRead
+            | Self::SettingsDateFormatUpdate
+            | Self::SettingsDateFormatDelete
+            | Self::SettingsDateFormatSelect
+            | Self::SettingsTimeZoneSelect
+            | Self::SettingsSessionSelect
+            | Self::SettingsStyleCreate
+            | Self::SettingsStyleRead
+            | Self::SettingsStyleUpdate
+            | Self::SettingsStyleActivate
+            | Self::SettingsStyleDelete
+            | Self::SettingsBackgroundCreate
+            | Self::SettingsBackgroundRead
+            | Self::SettingsBackgroundUpdate
+            | Self::SettingsBackgroundDelete
+            | Self::SettingsDashboardCreate
+            | Self::SettingsDashboardRead
+            | Self::SettingsDashboardUpdate
+            | Self::SettingsDashboardDelete
+            | Self::SettingsCustomLinkRead
+            | Self::SettingsCustomLinkUpdate
+            | Self::SettingsCustomLinkReset
+            | Self::SettingsBehaviorRecordRead
+            | Self::SettingsBehaviorRecordUpdate
+            | Self::SettingsSetupAdminAdd
+            | Self::SettingsSetupAdminRead
+            | Self::SettingsSetupAdminUpdate
+            | Self::SettingsSetupAdminDelete => CapabilityDomain::Settings,
+            Self::OperationsBackupCreate
+            | Self::OperationsBackupRead
+            | Self::OperationsBackupDelete
+            | Self::OperationsBackupRestore
+            | Self::OperationsBackupActivate
+            | Self::OperationsBackupDeactivate
+            | Self::OperationsJobSchedule
+            | Self::OperationsJobRead
+            | Self::OperationsJobCancel
+            | Self::OperationsJobReserve
+            | Self::OperationsJobComplete
+            | Self::OperationsJobFail
+            | Self::OperationsJobRetry
+            | Self::OperationsJobPurge
+            | Self::OperationsFailedJobRead
+            | Self::OperationsFailedJobRetry
+            | Self::OperationsFailedJobDelete
+            | Self::OperationsFailedJobPurge
+            | Self::OperationsVersionRegister
+            | Self::OperationsVersionRead
+            | Self::OperationsVersionUpdate
+            | Self::OperationsVersionHistoryRecord
+            | Self::OperationsVersionHistoryRead
+            | Self::OperationsAuditRecord
+            | Self::OperationsAuditRead
+            | Self::OperationsMaintenanceRead
+            | Self::OperationsMaintenanceConfigure
+            | Self::OperationsMaintenanceEnable
+            | Self::OperationsMaintenanceDisable
+            | Self::OperationsSidebarCreate
+            | Self::OperationsSidebarRead
+            | Self::OperationsSidebarUpdate
+            | Self::OperationsSidebarDelete
+            | Self::OperationsSidebarReorder => CapabilityDomain::Operations,
         }
     }
 
@@ -2166,8 +2492,107 @@ impl Capability {
             | Self::EventsCalendarSettingEnable
             | Self::EventsCalendarSettingDisable
             | Self::EventsCalendarSettingDelete => "CalendarSetting",
-            Self::SettingsManage => "Settings",
-            Self::OperationsManage => "Operations",
+            Self::SettingsGeneralRead
+            | Self::SettingsGeneralUpdate
+            | Self::SettingsGeneralTwoFactorToggle => "General",
+            Self::SettingsThemeCreate
+            | Self::SettingsThemeRead
+            | Self::SettingsThemeUpdate
+            | Self::SettingsThemeActivate
+            | Self::SettingsThemeDelete
+            | Self::SettingsThemeReplicate
+            | Self::SettingsThemeSelect => "Theme",
+            Self::SettingsColorCreate
+            | Self::SettingsColorRead
+            | Self::SettingsColorUpdate
+            | Self::SettingsColorDelete => "Color",
+            Self::SettingsColorThemeCreate
+            | Self::SettingsColorThemeRead
+            | Self::SettingsColorThemeUpdate
+            | Self::SettingsColorThemeDelete => "ColorTheme",
+            Self::SettingsLanguageAdd
+            | Self::SettingsLanguageRead
+            | Self::SettingsLanguageUpdate
+            | Self::SettingsLanguageDelete
+            | Self::SettingsLanguageActivate
+            | Self::SettingsLanguageSelect => "Language",
+            Self::SettingsLanguagePhraseAdd
+            | Self::SettingsLanguagePhraseRead
+            | Self::SettingsLanguagePhraseUpdate
+            | Self::SettingsLanguagePhraseDelete
+            | Self::SettingsLanguagePhraseTranslate => "LanguagePhrase",
+            Self::SettingsBaseGroupAdd
+            | Self::SettingsBaseGroupRead
+            | Self::SettingsBaseGroupUpdate
+            | Self::SettingsBaseGroupDelete => "BaseGroup",
+            Self::SettingsBaseSetupAdd
+            | Self::SettingsBaseSetupRead
+            | Self::SettingsBaseSetupUpdate
+            | Self::SettingsBaseSetupDelete => "BaseSetup",
+            Self::SettingsDateFormatAdd
+            | Self::SettingsDateFormatRead
+            | Self::SettingsDateFormatUpdate
+            | Self::SettingsDateFormatDelete
+            | Self::SettingsDateFormatSelect => "DateFormat",
+            Self::SettingsTimeZoneSelect => "TimeZone",
+            Self::SettingsSessionSelect => "Session",
+            Self::SettingsStyleCreate
+            | Self::SettingsStyleRead
+            | Self::SettingsStyleUpdate
+            | Self::SettingsStyleActivate
+            | Self::SettingsStyleDelete => "Style",
+            Self::SettingsBackgroundCreate
+            | Self::SettingsBackgroundRead
+            | Self::SettingsBackgroundUpdate
+            | Self::SettingsBackgroundDelete => "Background",
+            Self::SettingsDashboardCreate
+            | Self::SettingsDashboardRead
+            | Self::SettingsDashboardUpdate
+            | Self::SettingsDashboardDelete => "Dashboard",
+            Self::SettingsCustomLinkRead
+            | Self::SettingsCustomLinkUpdate
+            | Self::SettingsCustomLinkReset => "CustomLink",
+            Self::SettingsBehaviorRecordRead | Self::SettingsBehaviorRecordUpdate => {
+                "BehaviorRecord"
+            }
+            Self::SettingsSetupAdminAdd
+            | Self::SettingsSetupAdminRead
+            | Self::SettingsSetupAdminUpdate
+            | Self::SettingsSetupAdminDelete => "SetupAdmin",
+            Self::OperationsBackupCreate
+            | Self::OperationsBackupRead
+            | Self::OperationsBackupDelete
+            | Self::OperationsBackupRestore
+            | Self::OperationsBackupActivate
+            | Self::OperationsBackupDeactivate => "Backup",
+            Self::OperationsJobSchedule
+            | Self::OperationsJobRead
+            | Self::OperationsJobCancel
+            | Self::OperationsJobReserve
+            | Self::OperationsJobComplete
+            | Self::OperationsJobFail
+            | Self::OperationsJobRetry
+            | Self::OperationsJobPurge => "Job",
+            Self::OperationsFailedJobRead
+            | Self::OperationsFailedJobRetry
+            | Self::OperationsFailedJobDelete
+            | Self::OperationsFailedJobPurge => "FailedJob",
+            Self::OperationsVersionRegister
+            | Self::OperationsVersionRead
+            | Self::OperationsVersionUpdate => "Version",
+            Self::OperationsVersionHistoryRecord | Self::OperationsVersionHistoryRead => {
+                "VersionHistory"
+            }
+            Self::OperationsAuditRecord | Self::OperationsAuditRead => "Audit",
+            Self::OperationsMaintenanceRead
+            | Self::OperationsMaintenanceConfigure
+            | Self::OperationsMaintenanceEnable
+            | Self::OperationsMaintenanceDisable => "Maintenance",
+            Self::OperationsSidebarCreate
+            | Self::OperationsSidebarRead
+            | Self::OperationsSidebarUpdate
+            | Self::OperationsSidebarDelete
+            | Self::OperationsSidebarReorder => "Sidebar",
         }
     }
 
@@ -2435,8 +2860,106 @@ impl Capability {
             Self::AttendanceBulkMark => "BulkMark",
             Self::AttendanceSubjectNotify => "Notify",
             Self::AttendanceNotify => "Notify",
-            Self::SettingsManage => "Manage",
-            Self::OperationsManage => "Manage",
+            Self::SettingsGeneralRead | Self::SettingsGeneralUpdate => "General",
+            Self::SettingsGeneralTwoFactorToggle => "Toggle",
+            Self::SettingsThemeCreate
+            | Self::SettingsThemeRead
+            | Self::SettingsThemeUpdate
+            | Self::SettingsThemeActivate
+            | Self::SettingsThemeDelete
+            | Self::SettingsThemeReplicate
+            | Self::SettingsThemeSelect => "Theme",
+            Self::SettingsColorCreate
+            | Self::SettingsColorRead
+            | Self::SettingsColorUpdate
+            | Self::SettingsColorDelete => "Color",
+            Self::SettingsColorThemeCreate
+            | Self::SettingsColorThemeRead
+            | Self::SettingsColorThemeUpdate
+            | Self::SettingsColorThemeDelete => "ColorTheme",
+            Self::SettingsLanguageAdd
+            | Self::SettingsLanguageRead
+            | Self::SettingsLanguageUpdate
+            | Self::SettingsLanguageDelete
+            | Self::SettingsLanguageActivate
+            | Self::SettingsLanguageSelect => "Language",
+            Self::SettingsLanguagePhraseAdd
+            | Self::SettingsLanguagePhraseRead
+            | Self::SettingsLanguagePhraseUpdate
+            | Self::SettingsLanguagePhraseDelete
+            | Self::SettingsLanguagePhraseTranslate => "LanguagePhrase",
+            Self::SettingsBaseGroupAdd
+            | Self::SettingsBaseGroupRead
+            | Self::SettingsBaseGroupUpdate
+            | Self::SettingsBaseGroupDelete => "BaseGroup",
+            Self::SettingsBaseSetupAdd
+            | Self::SettingsBaseSetupRead
+            | Self::SettingsBaseSetupUpdate
+            | Self::SettingsBaseSetupDelete => "BaseSetup",
+            Self::SettingsDateFormatAdd
+            | Self::SettingsDateFormatRead
+            | Self::SettingsDateFormatUpdate
+            | Self::SettingsDateFormatDelete
+            | Self::SettingsDateFormatSelect => "DateFormat",
+            Self::SettingsTimeZoneSelect => "TimeZone",
+            Self::SettingsSessionSelect => "Session",
+            Self::SettingsStyleCreate
+            | Self::SettingsStyleRead
+            | Self::SettingsStyleUpdate
+            | Self::SettingsStyleActivate
+            | Self::SettingsStyleDelete => "Style",
+            Self::SettingsBackgroundCreate
+            | Self::SettingsBackgroundRead
+            | Self::SettingsBackgroundUpdate
+            | Self::SettingsBackgroundDelete => "Background",
+            Self::SettingsDashboardCreate
+            | Self::SettingsDashboardRead
+            | Self::SettingsDashboardUpdate
+            | Self::SettingsDashboardDelete => "Dashboard",
+            Self::SettingsCustomLinkRead
+            | Self::SettingsCustomLinkUpdate
+            | Self::SettingsCustomLinkReset => "CustomLink",
+            Self::SettingsBehaviorRecordRead | Self::SettingsBehaviorRecordUpdate => {
+                "BehaviorRecord"
+            }
+            Self::SettingsSetupAdminAdd
+            | Self::SettingsSetupAdminRead
+            | Self::SettingsSetupAdminUpdate
+            | Self::SettingsSetupAdminDelete => "SetupAdmin",
+            Self::OperationsBackupCreate
+            | Self::OperationsBackupRead
+            | Self::OperationsBackupDelete
+            | Self::OperationsBackupRestore
+            | Self::OperationsBackupActivate
+            | Self::OperationsBackupDeactivate => "Backup",
+            Self::OperationsJobSchedule
+            | Self::OperationsJobRead
+            | Self::OperationsJobCancel
+            | Self::OperationsJobReserve
+            | Self::OperationsJobComplete
+            | Self::OperationsJobFail
+            | Self::OperationsJobRetry
+            | Self::OperationsJobPurge => "Job",
+            Self::OperationsFailedJobRead
+            | Self::OperationsFailedJobRetry
+            | Self::OperationsFailedJobDelete
+            | Self::OperationsFailedJobPurge => "FailedJob",
+            Self::OperationsVersionRegister
+            | Self::OperationsVersionRead
+            | Self::OperationsVersionUpdate => "Version",
+            Self::OperationsVersionHistoryRecord | Self::OperationsVersionHistoryRead => {
+                "VersionHistory"
+            }
+            Self::OperationsAuditRecord | Self::OperationsAuditRead => "Audit",
+            Self::OperationsMaintenanceRead
+            | Self::OperationsMaintenanceConfigure
+            | Self::OperationsMaintenanceEnable
+            | Self::OperationsMaintenanceDisable => "Maintenance",
+            Self::OperationsSidebarCreate
+            | Self::OperationsSidebarRead
+            | Self::OperationsSidebarUpdate
+            | Self::OperationsSidebarDelete
+            | Self::OperationsSidebarReorder => "Sidebar",
             Self::HrStaffSuspend => "Suspend",
             Self::HrStaffReinstate => "Reinstate",
             Self::HrStaffResign => "Resign",
@@ -3208,8 +3731,106 @@ impl Capability {
             Self::AttendanceBulkMark => "Attendance.BulkMark.BulkMark",
             Self::AttendanceReportRead => "Attendance.Report.Read",
             Self::AttendanceNotify => "Attendance.Notify.Notify",
-            Self::SettingsManage => "Settings.Manage",
-            Self::OperationsManage => "Operations.Manage",
+            Self::SettingsGeneralRead => "Settings.General.Read",
+            Self::SettingsGeneralUpdate => "Settings.General.Update",
+            Self::SettingsGeneralTwoFactorToggle => "Settings.General.TwoFactor.Toggle",
+            Self::SettingsThemeCreate => "Settings.Theme.Create",
+            Self::SettingsThemeRead => "Settings.Theme.Read",
+            Self::SettingsThemeUpdate => "Settings.Theme.Update",
+            Self::SettingsThemeActivate => "Settings.Theme.Activate",
+            Self::SettingsThemeDelete => "Settings.Theme.Delete",
+            Self::SettingsThemeReplicate => "Settings.Theme.Replicate",
+            Self::SettingsThemeSelect => "Settings.Theme.Select",
+            Self::SettingsColorCreate => "Settings.Color.Create",
+            Self::SettingsColorRead => "Settings.Color.Read",
+            Self::SettingsColorUpdate => "Settings.Color.Update",
+            Self::SettingsColorDelete => "Settings.Color.Delete",
+            Self::SettingsColorThemeCreate => "Settings.ColorTheme.Create",
+            Self::SettingsColorThemeRead => "Settings.ColorTheme.Read",
+            Self::SettingsColorThemeUpdate => "Settings.ColorTheme.Update",
+            Self::SettingsColorThemeDelete => "Settings.ColorTheme.Delete",
+            Self::SettingsLanguageAdd => "Settings.Language.Add",
+            Self::SettingsLanguageRead => "Settings.Language.Read",
+            Self::SettingsLanguageUpdate => "Settings.Language.Update",
+            Self::SettingsLanguageDelete => "Settings.Language.Delete",
+            Self::SettingsLanguageActivate => "Settings.Language.Activate",
+            Self::SettingsLanguageSelect => "Settings.Language.Select",
+            Self::SettingsLanguagePhraseAdd => "Settings.LanguagePhrase.Add",
+            Self::SettingsLanguagePhraseRead => "Settings.LanguagePhrase.Read",
+            Self::SettingsLanguagePhraseUpdate => "Settings.LanguagePhrase.Update",
+            Self::SettingsLanguagePhraseDelete => "Settings.LanguagePhrase.Delete",
+            Self::SettingsLanguagePhraseTranslate => "Settings.LanguagePhrase.Translate",
+            Self::SettingsBaseGroupAdd => "Settings.BaseGroup.Add",
+            Self::SettingsBaseGroupRead => "Settings.BaseGroup.Read",
+            Self::SettingsBaseGroupUpdate => "Settings.BaseGroup.Update",
+            Self::SettingsBaseGroupDelete => "Settings.BaseGroup.Delete",
+            Self::SettingsBaseSetupAdd => "Settings.BaseSetup.Add",
+            Self::SettingsBaseSetupRead => "Settings.BaseSetup.Read",
+            Self::SettingsBaseSetupUpdate => "Settings.BaseSetup.Update",
+            Self::SettingsBaseSetupDelete => "Settings.BaseSetup.Delete",
+            Self::SettingsDateFormatAdd => "Settings.DateFormat.Add",
+            Self::SettingsDateFormatRead => "Settings.DateFormat.Read",
+            Self::SettingsDateFormatUpdate => "Settings.DateFormat.Update",
+            Self::SettingsDateFormatDelete => "Settings.DateFormat.Delete",
+            Self::SettingsDateFormatSelect => "Settings.DateFormat.Select",
+            Self::SettingsTimeZoneSelect => "Settings.TimeZone.Select",
+            Self::SettingsSessionSelect => "Settings.Session.Select",
+            Self::SettingsStyleCreate => "Settings.Style.Create",
+            Self::SettingsStyleRead => "Settings.Style.Read",
+            Self::SettingsStyleUpdate => "Settings.Style.Update",
+            Self::SettingsStyleActivate => "Settings.Style.Activate",
+            Self::SettingsStyleDelete => "Settings.Style.Delete",
+            Self::SettingsBackgroundCreate => "Settings.Background.Create",
+            Self::SettingsBackgroundRead => "Settings.Background.Read",
+            Self::SettingsBackgroundUpdate => "Settings.Background.Update",
+            Self::SettingsBackgroundDelete => "Settings.Background.Delete",
+            Self::SettingsDashboardCreate => "Settings.Dashboard.Create",
+            Self::SettingsDashboardRead => "Settings.Dashboard.Read",
+            Self::SettingsDashboardUpdate => "Settings.Dashboard.Update",
+            Self::SettingsDashboardDelete => "Settings.Dashboard.Delete",
+            Self::SettingsCustomLinkRead => "Settings.CustomLink.Read",
+            Self::SettingsCustomLinkUpdate => "Settings.CustomLink.Update",
+            Self::SettingsCustomLinkReset => "Settings.CustomLink.Reset",
+            Self::SettingsBehaviorRecordRead => "Settings.BehaviorRecord.Read",
+            Self::SettingsBehaviorRecordUpdate => "Settings.BehaviorRecord.Update",
+            Self::SettingsSetupAdminAdd => "Settings.SetupAdmin.Add",
+            Self::SettingsSetupAdminRead => "Settings.SetupAdmin.Read",
+            Self::SettingsSetupAdminUpdate => "Settings.SetupAdmin.Update",
+            Self::SettingsSetupAdminDelete => "Settings.SetupAdmin.Delete",
+            Self::OperationsBackupCreate => "Operations.Backup.Create",
+            Self::OperationsBackupRead => "Operations.Backup.Read",
+            Self::OperationsBackupDelete => "Operations.Backup.Delete",
+            Self::OperationsBackupRestore => "Operations.Backup.Restore",
+            Self::OperationsBackupActivate => "Operations.Backup.Activate",
+            Self::OperationsBackupDeactivate => "Operations.Backup.Deactivate",
+            Self::OperationsJobSchedule => "Operations.Job.Schedule",
+            Self::OperationsJobRead => "Operations.Job.Read",
+            Self::OperationsJobCancel => "Operations.Job.Cancel",
+            Self::OperationsJobReserve => "Operations.Job.Reserve",
+            Self::OperationsJobComplete => "Operations.Job.Complete",
+            Self::OperationsJobFail => "Operations.Job.Fail",
+            Self::OperationsJobRetry => "Operations.Job.Retry",
+            Self::OperationsJobPurge => "Operations.Job.Purge",
+            Self::OperationsFailedJobRead => "Operations.FailedJob.Read",
+            Self::OperationsFailedJobRetry => "Operations.FailedJob.Retry",
+            Self::OperationsFailedJobDelete => "Operations.FailedJob.Delete",
+            Self::OperationsFailedJobPurge => "Operations.FailedJob.Purge",
+            Self::OperationsVersionRegister => "Operations.Version.Register",
+            Self::OperationsVersionRead => "Operations.Version.Read",
+            Self::OperationsVersionUpdate => "Operations.Version.Update",
+            Self::OperationsVersionHistoryRecord => "Operations.VersionHistory.Record",
+            Self::OperationsVersionHistoryRead => "Operations.VersionHistory.Read",
+            Self::OperationsAuditRecord => "Operations.Audit.Record",
+            Self::OperationsAuditRead => "Operations.Audit.Read",
+            Self::OperationsMaintenanceRead => "Operations.Maintenance.Read",
+            Self::OperationsMaintenanceConfigure => "Operations.Maintenance.Configure",
+            Self::OperationsMaintenanceEnable => "Operations.Maintenance.Enable",
+            Self::OperationsMaintenanceDisable => "Operations.Maintenance.Disable",
+            Self::OperationsSidebarCreate => "Operations.Sidebar.Create",
+            Self::OperationsSidebarRead => "Operations.Sidebar.Read",
+            Self::OperationsSidebarUpdate => "Operations.Sidebar.Update",
+            Self::OperationsSidebarDelete => "Operations.Sidebar.Delete",
+            Self::OperationsSidebarReorder => "Operations.Sidebar.Reorder",
         }
     }
 
@@ -3735,8 +4356,106 @@ impl Capability {
             Self::AttendanceBulkMark,
             Self::AttendanceReportRead,
             Self::AttendanceNotify,
-            Self::SettingsManage,
-            Self::OperationsManage,
+            Self::SettingsGeneralRead,
+            Self::SettingsGeneralUpdate,
+            Self::SettingsGeneralTwoFactorToggle,
+            Self::SettingsThemeCreate,
+            Self::SettingsThemeRead,
+            Self::SettingsThemeUpdate,
+            Self::SettingsThemeActivate,
+            Self::SettingsThemeDelete,
+            Self::SettingsThemeReplicate,
+            Self::SettingsThemeSelect,
+            Self::SettingsColorCreate,
+            Self::SettingsColorRead,
+            Self::SettingsColorUpdate,
+            Self::SettingsColorDelete,
+            Self::SettingsColorThemeCreate,
+            Self::SettingsColorThemeRead,
+            Self::SettingsColorThemeUpdate,
+            Self::SettingsColorThemeDelete,
+            Self::SettingsLanguageAdd,
+            Self::SettingsLanguageRead,
+            Self::SettingsLanguageUpdate,
+            Self::SettingsLanguageDelete,
+            Self::SettingsLanguageActivate,
+            Self::SettingsLanguageSelect,
+            Self::SettingsLanguagePhraseAdd,
+            Self::SettingsLanguagePhraseRead,
+            Self::SettingsLanguagePhraseUpdate,
+            Self::SettingsLanguagePhraseDelete,
+            Self::SettingsLanguagePhraseTranslate,
+            Self::SettingsBaseGroupAdd,
+            Self::SettingsBaseGroupRead,
+            Self::SettingsBaseGroupUpdate,
+            Self::SettingsBaseGroupDelete,
+            Self::SettingsBaseSetupAdd,
+            Self::SettingsBaseSetupRead,
+            Self::SettingsBaseSetupUpdate,
+            Self::SettingsBaseSetupDelete,
+            Self::SettingsDateFormatAdd,
+            Self::SettingsDateFormatRead,
+            Self::SettingsDateFormatUpdate,
+            Self::SettingsDateFormatDelete,
+            Self::SettingsDateFormatSelect,
+            Self::SettingsTimeZoneSelect,
+            Self::SettingsSessionSelect,
+            Self::SettingsStyleCreate,
+            Self::SettingsStyleRead,
+            Self::SettingsStyleUpdate,
+            Self::SettingsStyleActivate,
+            Self::SettingsStyleDelete,
+            Self::SettingsBackgroundCreate,
+            Self::SettingsBackgroundRead,
+            Self::SettingsBackgroundUpdate,
+            Self::SettingsBackgroundDelete,
+            Self::SettingsDashboardCreate,
+            Self::SettingsDashboardRead,
+            Self::SettingsDashboardUpdate,
+            Self::SettingsDashboardDelete,
+            Self::SettingsCustomLinkRead,
+            Self::SettingsCustomLinkUpdate,
+            Self::SettingsCustomLinkReset,
+            Self::SettingsBehaviorRecordRead,
+            Self::SettingsBehaviorRecordUpdate,
+            Self::SettingsSetupAdminAdd,
+            Self::SettingsSetupAdminRead,
+            Self::SettingsSetupAdminUpdate,
+            Self::SettingsSetupAdminDelete,
+            Self::OperationsBackupCreate,
+            Self::OperationsBackupRead,
+            Self::OperationsBackupDelete,
+            Self::OperationsBackupRestore,
+            Self::OperationsBackupActivate,
+            Self::OperationsBackupDeactivate,
+            Self::OperationsJobSchedule,
+            Self::OperationsJobRead,
+            Self::OperationsJobCancel,
+            Self::OperationsJobReserve,
+            Self::OperationsJobComplete,
+            Self::OperationsJobFail,
+            Self::OperationsJobRetry,
+            Self::OperationsJobPurge,
+            Self::OperationsFailedJobRead,
+            Self::OperationsFailedJobRetry,
+            Self::OperationsFailedJobDelete,
+            Self::OperationsFailedJobPurge,
+            Self::OperationsVersionRegister,
+            Self::OperationsVersionRead,
+            Self::OperationsVersionUpdate,
+            Self::OperationsVersionHistoryRecord,
+            Self::OperationsVersionHistoryRead,
+            Self::OperationsAuditRecord,
+            Self::OperationsAuditRead,
+            Self::OperationsMaintenanceRead,
+            Self::OperationsMaintenanceConfigure,
+            Self::OperationsMaintenanceEnable,
+            Self::OperationsMaintenanceDisable,
+            Self::OperationsSidebarCreate,
+            Self::OperationsSidebarRead,
+            Self::OperationsSidebarUpdate,
+            Self::OperationsSidebarDelete,
+            Self::OperationsSidebarReorder,
         ]
     }
 
@@ -4265,8 +4984,106 @@ impl Capability {
             "Attendance.BulkMark.BulkMark" => Some(Self::AttendanceBulkMark),
             "Attendance.Report.Read" => Some(Self::AttendanceReportRead),
             "Attendance.Notify.Notify" => Some(Self::AttendanceNotify),
-            "Settings.Manage" => Some(Self::SettingsManage),
-            "Operations.Manage" => Some(Self::OperationsManage),
+            "Settings.General.Read" => Some(Self::SettingsGeneralRead),
+            "Settings.General.Update" => Some(Self::SettingsGeneralUpdate),
+            "Settings.General.TwoFactor.Toggle" => Some(Self::SettingsGeneralTwoFactorToggle),
+            "Settings.Theme.Create" => Some(Self::SettingsThemeCreate),
+            "Settings.Theme.Read" => Some(Self::SettingsThemeRead),
+            "Settings.Theme.Update" => Some(Self::SettingsThemeUpdate),
+            "Settings.Theme.Activate" => Some(Self::SettingsThemeActivate),
+            "Settings.Theme.Delete" => Some(Self::SettingsThemeDelete),
+            "Settings.Theme.Replicate" => Some(Self::SettingsThemeReplicate),
+            "Settings.Theme.Select" => Some(Self::SettingsThemeSelect),
+            "Settings.Color.Create" => Some(Self::SettingsColorCreate),
+            "Settings.Color.Read" => Some(Self::SettingsColorRead),
+            "Settings.Color.Update" => Some(Self::SettingsColorUpdate),
+            "Settings.Color.Delete" => Some(Self::SettingsColorDelete),
+            "Settings.ColorTheme.Create" => Some(Self::SettingsColorThemeCreate),
+            "Settings.ColorTheme.Read" => Some(Self::SettingsColorThemeRead),
+            "Settings.ColorTheme.Update" => Some(Self::SettingsColorThemeUpdate),
+            "Settings.ColorTheme.Delete" => Some(Self::SettingsColorThemeDelete),
+            "Settings.Language.Add" => Some(Self::SettingsLanguageAdd),
+            "Settings.Language.Read" => Some(Self::SettingsLanguageRead),
+            "Settings.Language.Update" => Some(Self::SettingsLanguageUpdate),
+            "Settings.Language.Delete" => Some(Self::SettingsLanguageDelete),
+            "Settings.Language.Activate" => Some(Self::SettingsLanguageActivate),
+            "Settings.Language.Select" => Some(Self::SettingsLanguageSelect),
+            "Settings.LanguagePhrase.Add" => Some(Self::SettingsLanguagePhraseAdd),
+            "Settings.LanguagePhrase.Read" => Some(Self::SettingsLanguagePhraseRead),
+            "Settings.LanguagePhrase.Update" => Some(Self::SettingsLanguagePhraseUpdate),
+            "Settings.LanguagePhrase.Delete" => Some(Self::SettingsLanguagePhraseDelete),
+            "Settings.LanguagePhrase.Translate" => Some(Self::SettingsLanguagePhraseTranslate),
+            "Settings.BaseGroup.Add" => Some(Self::SettingsBaseGroupAdd),
+            "Settings.BaseGroup.Read" => Some(Self::SettingsBaseGroupRead),
+            "Settings.BaseGroup.Update" => Some(Self::SettingsBaseGroupUpdate),
+            "Settings.BaseGroup.Delete" => Some(Self::SettingsBaseGroupDelete),
+            "Settings.BaseSetup.Add" => Some(Self::SettingsBaseSetupAdd),
+            "Settings.BaseSetup.Read" => Some(Self::SettingsBaseSetupRead),
+            "Settings.BaseSetup.Update" => Some(Self::SettingsBaseSetupUpdate),
+            "Settings.BaseSetup.Delete" => Some(Self::SettingsBaseSetupDelete),
+            "Settings.DateFormat.Add" => Some(Self::SettingsDateFormatAdd),
+            "Settings.DateFormat.Read" => Some(Self::SettingsDateFormatRead),
+            "Settings.DateFormat.Update" => Some(Self::SettingsDateFormatUpdate),
+            "Settings.DateFormat.Delete" => Some(Self::SettingsDateFormatDelete),
+            "Settings.DateFormat.Select" => Some(Self::SettingsDateFormatSelect),
+            "Settings.TimeZone.Select" => Some(Self::SettingsTimeZoneSelect),
+            "Settings.Session.Select" => Some(Self::SettingsSessionSelect),
+            "Settings.Style.Create" => Some(Self::SettingsStyleCreate),
+            "Settings.Style.Read" => Some(Self::SettingsStyleRead),
+            "Settings.Style.Update" => Some(Self::SettingsStyleUpdate),
+            "Settings.Style.Activate" => Some(Self::SettingsStyleActivate),
+            "Settings.Style.Delete" => Some(Self::SettingsStyleDelete),
+            "Settings.Background.Create" => Some(Self::SettingsBackgroundCreate),
+            "Settings.Background.Read" => Some(Self::SettingsBackgroundRead),
+            "Settings.Background.Update" => Some(Self::SettingsBackgroundUpdate),
+            "Settings.Background.Delete" => Some(Self::SettingsBackgroundDelete),
+            "Settings.Dashboard.Create" => Some(Self::SettingsDashboardCreate),
+            "Settings.Dashboard.Read" => Some(Self::SettingsDashboardRead),
+            "Settings.Dashboard.Update" => Some(Self::SettingsDashboardUpdate),
+            "Settings.Dashboard.Delete" => Some(Self::SettingsDashboardDelete),
+            "Settings.CustomLink.Read" => Some(Self::SettingsCustomLinkRead),
+            "Settings.CustomLink.Update" => Some(Self::SettingsCustomLinkUpdate),
+            "Settings.CustomLink.Reset" => Some(Self::SettingsCustomLinkReset),
+            "Settings.BehaviorRecord.Read" => Some(Self::SettingsBehaviorRecordRead),
+            "Settings.BehaviorRecord.Update" => Some(Self::SettingsBehaviorRecordUpdate),
+            "Settings.SetupAdmin.Add" => Some(Self::SettingsSetupAdminAdd),
+            "Settings.SetupAdmin.Read" => Some(Self::SettingsSetupAdminRead),
+            "Settings.SetupAdmin.Update" => Some(Self::SettingsSetupAdminUpdate),
+            "Settings.SetupAdmin.Delete" => Some(Self::SettingsSetupAdminDelete),
+            "Operations.Backup.Create" => Some(Self::OperationsBackupCreate),
+            "Operations.Backup.Read" => Some(Self::OperationsBackupRead),
+            "Operations.Backup.Delete" => Some(Self::OperationsBackupDelete),
+            "Operations.Backup.Restore" => Some(Self::OperationsBackupRestore),
+            "Operations.Backup.Activate" => Some(Self::OperationsBackupActivate),
+            "Operations.Backup.Deactivate" => Some(Self::OperationsBackupDeactivate),
+            "Operations.Job.Schedule" => Some(Self::OperationsJobSchedule),
+            "Operations.Job.Read" => Some(Self::OperationsJobRead),
+            "Operations.Job.Cancel" => Some(Self::OperationsJobCancel),
+            "Operations.Job.Reserve" => Some(Self::OperationsJobReserve),
+            "Operations.Job.Complete" => Some(Self::OperationsJobComplete),
+            "Operations.Job.Fail" => Some(Self::OperationsJobFail),
+            "Operations.Job.Retry" => Some(Self::OperationsJobRetry),
+            "Operations.Job.Purge" => Some(Self::OperationsJobPurge),
+            "Operations.FailedJob.Read" => Some(Self::OperationsFailedJobRead),
+            "Operations.FailedJob.Retry" => Some(Self::OperationsFailedJobRetry),
+            "Operations.FailedJob.Delete" => Some(Self::OperationsFailedJobDelete),
+            "Operations.FailedJob.Purge" => Some(Self::OperationsFailedJobPurge),
+            "Operations.Version.Register" => Some(Self::OperationsVersionRegister),
+            "Operations.Version.Read" => Some(Self::OperationsVersionRead),
+            "Operations.Version.Update" => Some(Self::OperationsVersionUpdate),
+            "Operations.VersionHistory.Record" => Some(Self::OperationsVersionHistoryRecord),
+            "Operations.VersionHistory.Read" => Some(Self::OperationsVersionHistoryRead),
+            "Operations.Audit.Record" => Some(Self::OperationsAuditRecord),
+            "Operations.Audit.Read" => Some(Self::OperationsAuditRead),
+            "Operations.Maintenance.Read" => Some(Self::OperationsMaintenanceRead),
+            "Operations.Maintenance.Configure" => Some(Self::OperationsMaintenanceConfigure),
+            "Operations.Maintenance.Enable" => Some(Self::OperationsMaintenanceEnable),
+            "Operations.Maintenance.Disable" => Some(Self::OperationsMaintenanceDisable),
+            "Operations.Sidebar.Create" => Some(Self::OperationsSidebarCreate),
+            "Operations.Sidebar.Read" => Some(Self::OperationsSidebarRead),
+            "Operations.Sidebar.Update" => Some(Self::OperationsSidebarUpdate),
+            "Operations.Sidebar.Delete" => Some(Self::OperationsSidebarDelete),
+            "Operations.Sidebar.Reorder" => Some(Self::OperationsSidebarReorder),
             _ => None,
         }
     }
@@ -4809,6 +5626,84 @@ mod tests {
     }
 
     #[test]
+    fn settings_capabilities_round_trip_and_resolve_to_settings_domain() {
+        // Phase 14: 66 Settings.* capabilities per
+        // `docs/specs/settings/permissions.md`. The Phase 2
+        // `SettingsManage` placeholder is REPLACED by the
+        // per-aggregate catalog.
+        let mut count = 0u32;
+        let mut seen_wires: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for c in Capability::all() {
+            let s = c.as_str();
+            if s.starts_with("Settings.") {
+                let parsed = Capability::from_str(s).unwrap();
+                assert_eq!(parsed, *c, "round-trip failed for {s}");
+                assert_eq!(
+                    c.domain(),
+                    CapabilityDomain::Settings,
+                    "domain mismatch for {s}"
+                );
+                assert!(
+                    s.chars().all(|c| c.is_ascii_alphanumeric() || c == '.'),
+                    "wire string {s:?} is not dot-separated ASCII"
+                );
+                assert!(
+                    !s.starts_with('.') && !s.ends_with('.'),
+                    "wire string {s:?} has a leading or trailing dot"
+                );
+                assert!(
+                    seen_wires.insert(s.to_owned()),
+                    "duplicate wire string: {s:?}"
+                );
+                count += 1;
+            }
+        }
+        assert!(
+            count >= 66,
+            "expected >= 66 Settings.* capabilities (got {count})"
+        );
+    }
+
+    #[test]
+    fn operations_capabilities_round_trip_and_resolve_to_operations_domain() {
+        // Phase 14: 34 Operations.* capabilities per
+        // `docs/specs/operations/permissions.md`. The Phase 2
+        // `OperationsManage` placeholder is REPLACED by the
+        // per-aggregate catalog.
+        let mut count = 0u32;
+        let mut seen_wires: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for c in Capability::all() {
+            let s = c.as_str();
+            if s.starts_with("Operations.") {
+                let parsed = Capability::from_str(s).unwrap();
+                assert_eq!(parsed, *c, "round-trip failed for {s}");
+                assert_eq!(
+                    c.domain(),
+                    CapabilityDomain::Operations,
+                    "domain mismatch for {s}"
+                );
+                assert!(
+                    s.chars().all(|c| c.is_ascii_alphanumeric() || c == '.'),
+                    "wire string {s:?} is not dot-separated ASCII"
+                );
+                assert!(
+                    !s.starts_with('.') && !s.ends_with('.'),
+                    "wire string {s:?} has a leading or trailing dot"
+                );
+                assert!(
+                    seen_wires.insert(s.to_owned()),
+                    "duplicate wire string: {s:?}"
+                );
+                count += 1;
+            }
+        }
+        assert!(
+            count >= 34,
+            "expected >= 34 Operations.* capabilities (got {count})"
+        );
+    }
+
+    #[test]
     fn capability_from_str_unknown_returns_err() {
         let err = Capability::from_str("Foo.Bar.Baz").unwrap_err();
         assert!(matches!(err, DomainError::Validation(_)));
@@ -4833,9 +5728,8 @@ mod tests {
         for c in Capability::all() {
             let s = c.as_str();
             let parts: Vec<&str> = s.split('.').collect();
-            // Two-segment exceptions: `Rbac.Bootstrap`,
-            // `Settings.Manage`, `Operations.Manage`. Every other
-            // capability uses the three-segment form
+            // Two-segment exception: `Rbac.Bootstrap`. Every
+            // other capability uses the three-segment form
             // `<Domain>.<Aggregate>.<Action>` (or the four-segment
             // `<Domain>.<Aggregate>.<Action>.<Subject>` for
             // read-only report capabilities, e.g.
@@ -4858,9 +5752,7 @@ mod tests {
                 last == action
                     || last.starts_with(action)
                     || last_two.starts_with(action)
-                    || s == "Rbac.Bootstrap"
-                    || s == "Settings.Manage"
-                    || s == "Operations.Manage",
+                    || s == "Rbac.Bootstrap",
                 "action mismatch for {c:?}: wire={s:?} action={action:?}"
             );
         }

@@ -755,9 +755,19 @@ impl DefaultRoleCatalog {
             Capability::EventsCalendarRead,
             Capability::EventsCalendarUpdate,
             Capability::EventsCalendarDelete,
-            Capability::SettingsManage,
-            Capability::OperationsManage,
         ]);
+        // Phase 14: grant SuperAdmin all Settings.* and Operations.*
+        // per-aggregate caps (replacing the Phase 2
+        // SettingsManage/OperationsManage placeholders).
+        s.extend(
+            crate::value_objects::Capability::all()
+                .iter()
+                .copied()
+                .filter(|c| {
+                    let s = c.as_str();
+                    s.starts_with("Settings.") || s.starts_with("Operations.")
+                }),
+        );
         s
     }
 
