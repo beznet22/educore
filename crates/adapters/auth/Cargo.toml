@@ -17,4 +17,15 @@ educore-rbac = { workspace = true }
 educore-events = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
+# A.3a: HMAC-SHA256 sign + verify for the JwtAuthProvider reference impl.
+jsonwebtoken = { workspace = true }
+# A.3a: `Serialize` / `Deserialize` derives for `JwtClaims`.
+serde = { workspace = true }
+# A.3a: parse `sid` / `sub` / `schools` / `roles` / `active_school`
+# claim strings as UUIDv7 into typed identifiers.
+uuid = { workspace = true }
+# A.3a: convert JWT iat/exp (i64 unix seconds) to `Timestamp` (chrono-backed).
+chrono = { workspace = true }
+# A.3a: default 32-byte signing key for `JwtAuthProviderBuilder::new`.
+rand = { workspace = true }
 

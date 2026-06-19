@@ -23,6 +23,12 @@
 /// reference implementations live in separate microtasks.
 pub mod port;
 
+/// JWT-based [`port::AuthProvider`] reference implementation.
+///
+/// Lands in microtask A.3a. See [`jwt::JwtAuthProvider`] for the
+/// builder API.
+pub mod jwt;
+
 /// The [`errors::AuthError`] enum — the universal error type for
 /// the authentication port.
 pub mod errors;
@@ -32,6 +38,7 @@ pub mod errors;
 /// once at the top of a file.
 pub mod prelude {
     pub use crate::errors::AuthError;
+    pub use crate::jwt::{JwtAuthProvider, JwtAuthProviderBuilder, JwtClaims};
     pub use crate::port::{
         AuthProvider, AuthScheme, AuthToken, BearerToken, Credential, RbacPort, Session,
     };
