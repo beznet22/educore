@@ -71,12 +71,15 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// scaffold stage the prelude is intentionally a thin re-export of
 /// crate-level paths so the workspace builds; richer re-exports land
 /// alongside the `DomainError`, `TenantContext`, `EventEnvelope`, and
-/// `Capability` types in the relevant PRs.
+/// `Capability` types in the relevant PRs. Phase 14 adds the
+/// `educore_settings` + `educore_operations` re-exports.
 pub mod prelude {
     pub use educore_core;
     pub use educore_events;
+    pub use educore_operations;
     pub use educore_platform;
     pub use educore_rbac;
+    pub use educore_settings;
 }
 
 #[cfg(test)]

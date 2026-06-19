@@ -1535,6 +1535,51 @@ this explicitly in both `lib.rs` headers and in `AGENTS.md`.
 **Coverage matrix updates.** All `settings_*` and `operations_*`
 rows.
 
+**Phase 14 outcome.** Closed 2026-06-18. **`educore-settings`**
+and **`educore-operations`** delivered as the two new
+cross-cutting tier crates (per the build plan § "Phase 14").
+**Spec-faithful 15 + 8 interpretation** (per the Phase 13
+precedent): 15 settings root aggregates (GeneralSettings,
+Language, LanguagePhrase, BaseSetup, BaseGroup, DateFormat,
+Style, BackgroundSetting, DashboardSetting, CustomLink,
+ColorTheme, Theme, Color, BehaviorRecordSetting, SetupAdmin) +
+8 operations root aggregates (Backup, Job, FailedJob,
+SystemVersion, VersionHistory, UserLog, MaintenanceSetting,
+Sidebar) + 25 child entities + 53+25 typed events implementing
+`DomainEvent` (wire form `<domain>.<aggregate>.<verb>`) +
+53+28 typed commands + 15+11 repository port traits (object-safe
+smoke tests included) + 15+8 typed query stubs + 11+8 service
+factory structs + 2+3 policies + 3+4 specifications. **100
+net-new `Capability` variants** in `educore-rbac` (66 Settings.*
++ 34 Operations.*; the 2 Phase 2 `SettingsManage`/`OperationsManage`
+placeholders are REMOVED). **23 net-new `AuditTarget` variants**
+in `educore-audit` (15 Settings + 8 Operations; the 2 Phase 2
+`SchoolSettings`/`BellSchedule` placeholders are PRESERVED).
+**43 unit tests** in `educore-settings` + **47 unit tests** in
+`educore-operations` + **51 tests** in `educore-rbac` + **29
+tests** in `educore-audit` + **5 + 2 settings_integration
+scenarios** + **5 + 2 operations_integration scenarios** in
+`crates/tools/storage-parity/tests/`. **28 `docs/coverage.toml`
+rows** flipped from `Pending` → `Tested` (15 settings + 8
+operations + 4 cross-crate capability/audit target rows + 2
+placeholder rows kept). Headline correctness checks:
+`ColorHex::is_valid` (settings) + `JobService::next_backoff`
+(operations) + `VersionName::is_semver` (operations) +
+`IpAddress::is_valid` (operations) + `BehaviorFlag::new(0|1|2)`
+(settings). `cargo build --workspace`, `cargo test --workspace`,
+`cargo fmt --all -- --check`, and `cargo run -p educore-core
+--bin lint --features lint` are all green. The 2 new crates
+live in `crates/cross-cutting/` alongside `educore-events-domain`
+(the Phase 13 template). The 2 Phase 2 capability placeholders
+removed in Phase 14 (`SettingsManage`/`OperationsManage`) were
+replaced by the full per-aggregate catalog; the 2 Phase 2
+AuditTarget placeholders (`SchoolSettings`/`BellSchedule`) were
+preserved for `DefaultRoleCatalog` consistency. The
+`educore-settings` crate is already a dep of
+`educore-events-domain` and the `educore-events-domain/Cargo.toml`
+is unchanged. Hand-off: `docs/handoff/PHASE-14-HANDOFF.md`.
+Next-phase prompt: `docs/phase_prompt/phase-15-prompt.md`.
+
 ---
 
 ## Phase 15 — Port adapters
