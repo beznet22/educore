@@ -384,14 +384,13 @@ impl MaintenanceService {
 
     /// Returns a default `MaintenanceSetting` for a school with the
     /// standard "we are down" message and `maintenance_mode = false`.
-    #[must_use]
     pub fn default_setting(
         id: crate::value_objects::MaintenanceSettingId,
         _school: SchoolId,
         created_by: UserId,
         now: Timestamp,
         correlation_id: educore_core::ids::CorrelationId,
-    ) -> MaintenanceSetting {
+    ) -> crate::errors::Result<MaintenanceSetting> {
         MaintenanceSetting::configure(crate::aggregate::NewMaintenanceSetting {
             id,
             title: MaintenanceTitle::default_value(),
@@ -405,7 +404,7 @@ impl MaintenanceService {
             created_at: now,
             correlation_id,
         })
-        .expect("default MaintenanceSetting must construct")
+        .map_err(crate::errors::OperationsDomainError::from)
     }
 }
 

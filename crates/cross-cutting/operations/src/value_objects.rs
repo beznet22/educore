@@ -600,7 +600,10 @@ fn is_non_negative_int(s: &str) -> bool {
         return false;
     }
     let mut chars = s.chars();
-    let first = chars.next().expect("non-empty");
+    let first = match chars.next() {
+        Some(c) => c,
+        None => return false,
+    };
     if !first.is_ascii_digit() {
         return false;
     }
