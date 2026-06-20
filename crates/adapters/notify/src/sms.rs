@@ -426,11 +426,11 @@ impl NotificationProvider for SmsProvider {
 /// (when `variables_per_recipient` is set) overrides the bulk
 /// request's variables.
 fn build_single_from_bulk(bulk: &SendBulkNotification, row: &BulkRecipient) -> SendNotification {
-    let variables = if bulk.variables_per_recipient {
-        row.variables.clone()
-    } else {
-        row.variables.clone()
-    };
+    // The bulk request carries no shared variables map; every
+    // row's variables live on `BulkRecipient.variables` and the
+    // `variables_per_recipient` flag is consumed by the engine at
+    // request-build time. Use the row's map verbatim.
+    let variables = row.variables.clone();
     SendNotification {
         tenant: bulk.tenant.clone(),
         channel: bulk.channel.clone(),
@@ -440,7 +440,7 @@ fn build_single_from_bulk(bulk: &SendBulkNotification, row: &BulkRecipient) -> S
         attachments: Vec::new(),
         priority: bulk.priority,
         scheduled_at: bulk.scheduled_at,
-        idempotency_key: bulk.idempotency_key.clone(),
+        idempotency_key: bulk.idempotency_key,
         correlation_id: bulk.correlation_id,
         school_id: bulk.school_id,
     }
@@ -544,15 +544,16 @@ fn base64_encode(input: &[u8]) -> String {
 mod tests {
     use super::*;
     use crate::port::{ContactInfo, TemplateValue};
-    use educore_core::ids::{SchoolId, TenantContext, UserId};
+    use educore_core::clock::{IdGenerator, SystemIdGen};
+    use educore_core::tenant::{TenantContext, UserType};
+    use std::collections::BTreeMap;
 
     fn tenant() -> TenantContext {
-        TenantContext::new(
-            SchoolId::new(),
-            UserId::new(),
-            educore_core::tenant::Locale::default(),
-            educore_core::tenant::TimeZone::default(),
-            educore_core::tenant::UserType::Staff,
+        TenantContext::for_user(
+            SystemIdGen.next_school_id(),
+            SystemIdGen.next_user_id(),
+            SystemIdGen.next_correlation_id(),
+            UserType::Staff,
         )
     }
 
@@ -581,7 +582,7 @@ mod tests {
         vars.insert("name".to_owned(), TemplateValue::text("Alice"));
         vars.insert("amount".to_owned(), TemplateValue::number(42));
         vars.insert("currency".to_owned(), TemplateValue::text("USD"));
-        // `currency` placeholder maps to a key that is missing in
+        // `unused` placeholder maps to a key that is missing in
         // the body; verify the missing-key path is a no-op.
         vars.insert("unused".to_owned(), TemplateValue::text("ignored"));
 
@@ -589,8 +590,8 @@ mod tests {
         assert_eq!(rendered, "Hello Alice, your balance is 42 USD.");
     }
 
-    #[test]
-    fn test_sms_rejects_non_sms_channel() {
+    #[tokio::test]
+    async fn test_sms_rejects_non_sms_channel() {
         let provider = SmsProviderBuilder::new()
             .api_key("k")
             .default_from("+15555550101")
@@ -610,18 +611,18 @@ mod tests {
             scheduled_at: None,
             idempotency_key: None,
             correlation_id: None,
-            school_id: SchoolId::new(),
+            school_id: SystemIdGen.next_school_id(),
         };
 
-        let result = futures::executor::block_on(provider.send(request));
+        let result = provider.send(request).await;
         assert!(matches!(
             result,
             Err(NotificationError::Provider(_))
         ));
     }
 
-    #[test]
-    fn test_sms_missing_template_returns_template_not_found() {
+    #[tokio::test]
+    async fn test_sms_missing_template_returns_template_not_found() {
         let provider = SmsProviderBuilder::new()
             .api_key("k")
             .default_from("+15555550101")
@@ -643,18 +644,18 @@ mod tests {
             scheduled_at: None,
             idempotency_key: None,
             correlation_id: None,
-            school_id: SchoolId::new(),
+            school_id: SystemIdGen.next_school_id(),
         };
 
-        let result = futures::executor::block_on(provider.send(request));
+        let result = provider.send(request).await;
         assert!(matches!(
             result,
             Err(NotificationError::TemplateNotFound(_))
         ));
     }
 
-    #[test]
-    fn test_sms_bulk_batches_and_collects_failures() {
+    #[tokio::test]
+    async fn test_sms_bulk_batches_and_collects_failures() {
         let provider = SmsProviderBuilder::new()
             .api_key("k")
             .default_from("+15555550101")
@@ -670,11 +671,11 @@ mod tests {
             let mut vars = BTreeMap::new();
             vars.insert("name".to_owned(), TemplateValue::text(format!("u{i}")));
             recipients.push(
-                BulkRecipient::new(Recipient::User(UserId::new()))
+                BulkRecipient::new(Recipient::User(SystemIdGen.next_user_id()))
                     .with_variables(vars),
             );
         }
-        recipients.push(BulkRecipient::new(Recipient::User(UserId::new())));
+        recipients.push(BulkRecipient::new(Recipient::User(SystemIdGen.next_user_id())));
 
         let request = SendBulkNotification {
             tenant: tenant(),
@@ -689,10 +690,10 @@ mod tests {
             scheduled_at: None,
             idempotency_key: None,
             correlation_id: None,
-            school_id: SchoolId::new(),
+            school_id: SystemIdGen.next_school_id(),
         };
 
-        let result = futures::executor::block_on(provider.send_bulk(request));
+        let result = provider.send_bulk(request).await;
         // Every row fails recipient resolution; the four rows
         // are accounted for across `failed` and the bulk_id is
         // populated.
