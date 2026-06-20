@@ -16,4 +16,9 @@ educore-platform = { workspace = true }
 educore-events = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
+# Pinned per ADR-015 § "MSRV floor conflict resolution" (engine MSRV 1.75)
+aws-sdk-s3 = { workspace = true }
+# SHA-256 for the port's content-addressable checksum contract
+# (`docs/ports/file-storage.md` § "Content-Addressable Hashing").
+sha2 = { workspace = true }
 
