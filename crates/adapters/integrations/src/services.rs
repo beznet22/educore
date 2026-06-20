@@ -35,6 +35,7 @@ use sha2::Sha256;
 
 use educore_core::value_objects::Timestamp;
 
+use crate::errors::{IntegrationError, Result};
 use crate::port::{IntegrationId, RetryPolicy};
 
 // ---------------------------------------------------------------------------
@@ -142,13 +143,12 @@ impl WebhookSignatureService {
     /// HMAC-SHA256 accepts keys of any length; this method does
     /// not validate `secret` beyond what HMAC itself rejects (no
     /// rejection — every byte sequence is a valid HMAC key).
-    #[must_use]
-    pub fn compute_signature(secret: &str, payload: &[u8]) -> String {
-        let mut mac =
-            HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC accepts any key length");
+    pub fn compute_signature(secret: &str, payload: &[u8]) -> Result<String> {
+        let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
+            .map_err(|e| IntegrationError::Infrastructure(format!("HMAC key error: {e}").into()))?;
         mac.update(payload);
         let bytes = mac.finalize().into_bytes();
-        format!("sha256={}", hex_encode(&bytes))
+        Ok(format!("sha256={}", hex_encode(&bytes)))
     }
 
     /// Verifies a `"sha256=<hex>"` signature in constant time.
@@ -158,10 +158,9 @@ impl WebhookSignatureService {
     /// signature. The byte comparison walks the full buffer in
     /// constant time so an attacker cannot probe the receiver by
     /// timing partial matches.
-    #[must_use]
-    pub fn verify_signature(secret: &str, payload: &[u8], provided: &str) -> bool {
-        let expected = Self::compute_signature(secret, payload);
-        constant_time_eq(expected.as_bytes(), provided.as_bytes())
+    pub fn verify_signature(secret: &str, payload: &[u8], provided: &str) -> Result<bool> {
+        let expected = Self::compute_signature(secret, payload)?;
+        Ok(constant_time_eq(expected.as_bytes(), provided.as_bytes()))
     }
 }
 
@@ -412,7 +411,20 @@ impl RateLimitService {
         bucket.last_refill = now;
 
         Some(RateState {
-            tokens_remaining: bucket.tokens.floor().min(u32::MAX as f64) as u32,
+            tokens_remaining: {
+                let v = bucket.tokens.floor();
+                if v >= f64::from(u32::MAX) {
+                    u32::MAX
+                } else if v <= 0.0 {
+                    0
+                } else {
+                    // v is finite and in (0, u32::MAX); cast is exact.
+                    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                    {
+                        v as u32
+                    }
+                }
+            },
             max_per_second: bucket.max_per_second,
             last_refill: bucket.last_refill,
         })
@@ -469,7 +481,7 @@ fn exponential_backoff(base: Duration, max: Duration, attempt: u32) -> Duration 
     let base_nanos = base.as_nanos().min(u128::from(u64::MAX));
     let max_nanos = max.as_nanos().min(u128::from(u64::MAX));
     let scaled = (base_nanos.saturating_mul(u128::from(factor))).min(max_nanos);
-    Duration::from_nanos(scaled as u64)
+    Duration::from_nanos(u64::try_from(scaled).unwrap_or(0))
 }
 
 // ---------------------------------------------------------------------------
@@ -500,7 +512,7 @@ mod tests {
         let secret = "shared-secret";
         let payload = br#"{"event":"InvoicePaid","amount_minor":12500}"#;
 
-        let sig = WebhookSignatureService::compute_signature(secret, payload);
+        let sig = WebhookSignatureService::compute_signature(secret, payload).expect("HMAC succeeds");
         assert!(
             sig.starts_with("sha256="),
             "signature must carry the sha256= prefix, got {sig}"
@@ -508,22 +520,25 @@ mod tests {
         assert_eq!(sig.len(), "sha256=".len() + 64);
 
         assert!(
-            WebhookSignatureService::verify_signature(secret, payload, &sig),
+            WebhookSignatureService::verify_signature(secret, payload, &sig).expect("HMAC succeeds"),
             "freshly-computed signature must verify against itself"
         );
 
         assert!(
-            !WebhookSignatureService::verify_signature(secret, payload, "sha256=deadbeef"),
+            !WebhookSignatureService::verify_signature(secret, payload, "sha256=deadbeef")
+                .expect("HMAC succeeds"),
             "wrong signature must not verify"
         );
 
         assert!(
-            !WebhookSignatureService::verify_signature(secret, payload, "sha256="),
+            !WebhookSignatureService::verify_signature(secret, payload, "sha256=")
+                .expect("HMAC succeeds"),
             "truncated signature must not verify"
         );
 
         assert!(
-            !WebhookSignatureService::verify_signature("other-secret", payload, &sig),
+            !WebhookSignatureService::verify_signature("other-secret", payload, &sig)
+                .expect("HMAC succeeds"),
             "signature under a different secret must not verify"
         );
     }

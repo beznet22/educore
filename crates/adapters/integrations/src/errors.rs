@@ -31,8 +31,8 @@
 
 use std::error::Error as StdError;
 
-use serde::de::{self, Deserialize, Deserializer, MapAccess, Visitor};
-use serde::ser::{Serialize, SerializeStructVariant, SerializeTupleVariant, Serializer};
+use serde::de::{self, Deserialize, Deserializer, Visitor};
+use serde::ser::{Serialize, Serializer};
 use serde::de::{EnumAccess, VariantAccess};
 use std::fmt;
 use thiserror::Error;
@@ -309,12 +309,12 @@ impl<'de> Deserialize<'de> for IntegrationError {
 fn _ensure_traits_used() {
     fn _needs_de<T>(_: &T)
     where
-        T: ?Sized + serde::de::DeserializeOwned,
+        T: serde::de::DeserializeOwned,
     {
     }
     fn _needs_ser<T>(_: &T)
     where
-        T: ?Sized + serde::Serialize,
+        T: serde::Serialize,
     {
     }
     let _: fn(&IntegrationError) = |e| {

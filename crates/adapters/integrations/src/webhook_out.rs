@@ -199,6 +199,7 @@ impl WebhookOutIntegration {
     /// Returns the hex-encoded digest prefixed with `sha256=`,
     /// matching the wire format documented in
     /// `docs/ports/integrations.md`.
+    #[allow(clippy::expect_used)]
     pub fn compute_signature(secret: &str, payload: &[u8]) -> String {
         let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
             .expect("HMAC accepts any key length");
@@ -379,6 +380,7 @@ impl WebhookOutIntegrationBuilder {
 
     /// Assembles the final [`WebhookOutIntegration`].
     #[must_use]
+    #[allow(clippy::expect_used)]
     pub fn build(self) -> WebhookOutIntegration {
         let http = Client::builder()
             .timeout(std::time::Duration::from_secs(HTTP_TIMEOUT_SECS))
