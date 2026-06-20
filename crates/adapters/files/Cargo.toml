@@ -21,4 +21,8 @@ aws-sdk-s3 = { workspace = true }
 # SHA-256 for the port's content-addressable checksum contract
 # (`docs/ports/file-storage.md` § "Content-Addressable Hashing").
 sha2 = { workspace = true }
+# HMAC-SHA256 for the `SignedUrlService` helper (Phase 15
+# microtask D.4). The local adapter keeps its in-tree HMAC impl
+# for reference; this dep powers the helper struct.
+hmac = { workspace = true }
 

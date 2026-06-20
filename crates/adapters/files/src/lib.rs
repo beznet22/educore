@@ -21,6 +21,11 @@
 //!   ([`LocalFileStorage`](local::LocalFileStorage) +
 //!   [`LocalFileStorageBuilder`](local::LocalFileStorageBuilder))
 //!   for development and offline-mode use.
+//! - [`services`] — pure helper structs that sit alongside the
+//!   port: [`ChecksumService`](services::ChecksumService),
+//!   [`SignedUrlService`](services::SignedUrlService),
+//!   [`KeyNamespaceService`](services::KeyNamespaceService), and
+//!   [`VisibilityService`](services::VisibilityService).
 //!
 //! # Deviations from the spec
 //!
@@ -55,6 +60,11 @@ pub mod s3;
 /// and streaming-download contracts.
 pub mod local;
 
+/// Pure helper structs that sit alongside the port and its
+/// adapters. See the module-level doc in [`services`] for the
+/// checksum, signed-URL, namespacing, and visibility helpers.
+pub mod services;
+
 /// Package name constant. Re-exported so consumers can assert
 /// they are using the right crate version at compile time.
 pub const PACKAGE_NAME: &str = "educore-files";
@@ -77,6 +87,9 @@ pub mod prelude {
         Visibility,
     };
     pub use crate::s3::{S3FileStorage, S3FileStorageBuildError, S3FileStorageBuilder};
+    pub use crate::services::{
+        ChecksumService, KeyNamespaceService, SignedUrlService, VisibilityService,
+    };
 }
 
 #[cfg(test)]
