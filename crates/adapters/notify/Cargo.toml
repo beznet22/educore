@@ -16,4 +16,18 @@ educore-platform = { workspace = true }
 educore-events = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
+lettre = { workspace = true, features = ["smtp-transport", "builder", "tokio1-rustls-tls"] }
+educore-audit = { workspace = true }
+# B.3b: HTTP gateway calls (Twilio / generic) for the SmsProvider reference impl.
+reqwest = { workspace = true }
+# B.3b (deviation): the `port.rs` + `errors.rs` files committed in the
+# previous Phase 15 step (`Phase 15: educore-notify port + types (B)`)
+# use `serde::{Deserialize, Serialize}` derives and `thiserror::Error`
+# but the commit did not update `Cargo.toml`. Without these the notify
+# crate cannot compile. Added here (in addition to `reqwest`) so the
+# SMS reference implementation has a crate to live in. A follow-up
+# commit by the port+types owner can move these into a normal dep
+# block once the orchestrator re-balances file ownership.
+serde = { workspace = true }
+thiserror = { workspace = true }
 
