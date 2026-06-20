@@ -18,6 +18,12 @@
 //!   reference implementation that targets the Stripe REST API
 //!   and provides Stripe-Signature HMAC-SHA256 webhook
 //!   verification.
+//! - [`services`] — pure helper structs
+//!   ([`IdempotencyService`](services::IdempotencyService),
+//!   [`WebhookSignatureService`](services::WebhookSignatureService),
+//!   [`BankSlipService`](services::BankSlipService),
+//!   [`SettlementService`](services::SettlementService)) used by
+//!   the adapters to keep their hot paths tight.
 //!
 //! # Deviations from the spec
 //!
@@ -43,6 +49,9 @@ pub mod port;
 /// Stripe reference implementation of [`PaymentProvider`](port::PaymentProvider).
 pub mod stripe;
 
+/// Service helpers (idempotency, webhook signature, bank slip, settlement).
+pub mod services;
+
 /// Package name constant. Re-exported so consumers can assert
 /// they are using the right crate version at compile time.
 pub const PACKAGE_NAME: &str = "educore-payment";
@@ -66,6 +75,9 @@ pub mod prelude {
         SettlementRequest, WalletId,
     };
     pub use crate::stripe::{StripeProvider, StripeProviderBuilder};
+    pub use crate::services::{
+        BankSlipService, IdempotencyService, SettlementService, WebhookSignatureService,
+    };
 }
 
 #[cfg(test)]
