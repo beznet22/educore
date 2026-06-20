@@ -14,6 +14,10 @@
 //!   `PaymentReceipt`, `RefundRequest`, `Settlement`, …).
 //! - [`errors`] — the [`PaymentError`](errors::PaymentError) enum
 //!   returned by every adapter method.
+//! - [`stripe`] — the [`StripeProvider`](stripe::StripeProvider)
+//!   reference implementation that targets the Stripe REST API
+//!   and provides Stripe-Signature HMAC-SHA256 webhook
+//!   verification.
 //!
 //! # Deviations from the spec
 //!
@@ -35,6 +39,9 @@ pub mod errors;
 /// supporting types (`ChargeRequest`, `PaymentReceipt`,
 /// `RefundRequest`, `Settlement`, …).
 pub mod port;
+
+/// Stripe reference implementation of [`PaymentProvider`](port::PaymentProvider).
+pub mod stripe;
 
 /// Package name constant. Re-exported so consumers can assert
 /// they are using the right crate version at compile time.
@@ -58,6 +65,7 @@ pub mod prelude {
         RefundDestination, RefundReceipt, RefundRequest, Settlement, SettlementLine,
         SettlementRequest, WalletId,
     };
+    pub use crate::stripe::{StripeProvider, StripeProviderBuilder};
 }
 
 #[cfg(test)]

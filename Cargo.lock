@@ -1350,11 +1350,16 @@ name = "educore-auth"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "chrono",
  "educore-core",
  "educore-events",
  "educore-platform",
  "educore-rbac",
+ "jsonwebtoken",
+ "rand 0.8.6",
+ "serde",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -1664,6 +1669,10 @@ dependencies = [
  "educore-core",
  "educore-events",
  "educore-platform",
+ "hmac",
+ "reqwest",
+ "serde_json",
+ "sha2",
  "tokio",
 ]
 
