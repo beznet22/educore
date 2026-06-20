@@ -615,7 +615,7 @@ impl Default for CurrencyCode {
 /// depend on any crate in the `domains` tier. Consumers that need
 /// to convert to / from the canonical `Money` type do so at their
 /// boundary.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Money {
     /// The amount in minor units (cents, paisa, etc.). Always
     /// non-negative in the port surface — refunds are tracked by
@@ -646,7 +646,7 @@ impl Money {
 
     /// Returns `true` if this is the zero amount.
     #[must_use]
-    pub const fn is_zero(self) -> bool {
+    pub fn is_zero(&self) -> bool {
         self.amount_minor == 0
     }
 }
@@ -1127,7 +1127,7 @@ impl DeliveryStatus {
     /// Returns `true` if the notification has reached a terminal
     /// state (no further updates expected from the provider).
     #[must_use]
-    pub const fn is_terminal(self) -> bool {
+    pub fn is_terminal(&self) -> bool {
         matches!(
             self,
             Self::Bounced { .. } | Self::Failed { .. } | Self::Rejected { .. }
@@ -1137,14 +1137,14 @@ impl DeliveryStatus {
     /// Returns `true` if the delivery is in flight (not yet
     /// terminal).
     #[must_use]
-    pub const fn is_in_flight(self) -> bool {
+    pub fn is_in_flight(&self) -> bool {
         !self.is_terminal()
     }
 
     /// Returns `true` if the recipient engaged with the
     /// notification (opened or clicked).
     #[must_use]
-    pub const fn is_engagement(self) -> bool {
+    pub fn is_engagement(&self) -> bool {
         matches!(self, Self::Opened | Self::Clicked)
     }
 }

@@ -63,7 +63,16 @@ impl From<&str> for NotificationTemplateId {
 }
 
 /// The error type returned by the notification port.
-#[derive(Debug, thiserror::Error)]
+///
+/// The derives on this enum are required by `BulkReceipt::failed`
+/// in `port.rs`, which holds a `Vec<(BulkRecipientIndex,
+/// NotificationError)>` and derives `Clone, PartialEq, Eq,
+/// Serialize, Deserialize`. The engine never stores a live source
+/// error chain across a port boundary — it logs the source via
+/// `tracing` immediately and serialises only the string
+/// representation, so the `Infrastructure` variant is itself a
+/// `String` (not a `Box<dyn Error>`).
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, thiserror::Error)]
 pub enum NotificationError {
     /// The requested template was not found in the tenant's
     /// template store.
@@ -101,20 +110,24 @@ pub enum NotificationError {
     QuotaExceeded,
 
     /// An underlying infrastructure error (network, TLS, DNS,
-    /// serialization). The source is preserved for the
-    /// `DomainError::Infrastructure` mapping; the engine logs
-    /// the source via `tracing`.
+    /// serialization). The string is the source error's
+    /// `Display` rendering; the engine logs the source via
+    /// `tracing` and stores only the string here so the value
+    /// can satisfy `Clone / Eq / Serialize / Deserialize` and
+    /// flow through `BulkReceipt::failed`.
     #[error("infrastructure error: {0}")]
-    Infrastructure(#[source] Box<dyn std::error::Error + Send + Sync>),
+    Infrastructure(String),
 }
 
 impl NotificationError {
     /// Wraps an arbitrary error source as an `Infrastructure`
-    /// variant. Used by adapter implementations to lift `reqwest`,
-    /// `tokio`, or provider-specific errors into the port's
-    /// surface.
+    /// variant. The source is rendered to its `Display` string
+    /// at construction time so the stored value satisfies
+    /// `Clone / Eq / Serialize / Deserialize`. Used by adapter
+    /// implementations to lift `reqwest`, `tokio`, or
+    /// provider-specific errors into the port's surface.
     pub fn infrastructure(source: impl std::error::Error + Send + Sync + 'static) -> Self {
-        Self::Infrastructure(Box::new(source))
+        Self::Infrastructure(source.to_string())
     }
 
     /// Constructs a `Provider` variant from a string message.

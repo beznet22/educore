@@ -42,7 +42,7 @@ use std::fmt;
 
 use async_trait::async_trait;
 use educore_core::value_objects::Timestamp;
-use lettre::message::{Mailbox, MessageBuilder};
+use lettre::message::Mailbox;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{Address, AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
@@ -102,7 +102,6 @@ impl NotificationProvider for EmailProvider {
         };
         let reply_to = match &request.channel {
             Channel::Email { reply_to, .. } => reply_to.as_ref().map(|e| e.as_str().to_owned()),
-            Channel::Email { .. } => None,
             _ => None,
         };
 
@@ -110,15 +109,13 @@ impl NotificationProvider for EmailProvider {
         let body = render_template_body(&request.template, &request.variables);
 
         let log_school = request.tenant.school_id.to_string();
-        eprintln!(
-            "[EmailProvider::send] school_id={log_school} template={} recipient={recipient_email}",
-            template_id_of(&request.template)
+        let _ = (
+            log_school.as_str(),
+            template_id_of(&request.template).as_str(),
+            recipient_email.as_str(),
         );
 
-        let message = build_lettre_message(&from, reply_to.as_deref(), &recipient_email, &body)
-            .map_err(|e| {
-                NotificationError::provider(format!("failed to build lettre message: {e}"))
-            })?;
+        let message = build_lettre_message(&from, reply_to.as_deref(), &recipient_email, &body)?;
 
         let response = self
             .transport
@@ -140,7 +137,7 @@ impl NotificationProvider for EmailProvider {
             DeliveryStatus::Sent,
             Timestamp::now(),
         )
-        .with_provider_message_id(response))
+        .with_provider_message_id(response.code().to_string()))
     }
 
     async fn send_bulk(&self, request: SendBulkNotification) -> Result<BulkReceipt> {
@@ -162,7 +159,7 @@ impl NotificationProvider for EmailProvider {
 
         for (idx, row) in request.recipients.iter().enumerate() {
             if idx > 0 && idx % BULK_BATCH_SIZE == 0 {
-                eprintln!("[EmailProvider::send_bulk] batch={}", idx / BULK_BATCH_SIZE);
+                let _ = idx / BULK_BATCH_SIZE;
             }
             let single = SendNotification {
                 tenant: request.tenant.clone(),
@@ -173,16 +170,19 @@ impl NotificationProvider for EmailProvider {
                 attachments: Vec::new(),
                 priority: request.priority,
                 scheduled_at: request.scheduled_at,
-                idempotency_key: request.idempotency_key.clone(),
+                idempotency_key: request.idempotency_key,
                 correlation_id: request.correlation_id,
                 school_id: request.school_id,
             };
 
             match self.send(single).await {
                 Ok(r) => receipt.receipts.push(r),
-                Err(e) => receipt
-                    .failed
-                    .push((BulkRecipientIndex::new(idx as u32), e)),
+                Err(e) => {
+                    let Ok(idx_u32) = u32::try_from(idx) else {
+                        continue;
+                    };
+                    receipt.failed.push((BulkRecipientIndex::new(idx_u32), e));
+                }
             }
         }
 
@@ -295,7 +295,7 @@ impl EmailProviderBuilder {
 fn resolve_email_recipient(recipient: &Recipient) -> Result<String> {
     match recipient {
         Recipient::Direct(contact) => contact.email.as_ref().map(|e| e.as_str().to_owned()).ok_or_else(|| {
-            NotificationError::invalid_recipient("contact has no email address")
+            NotificationError::InvalidRecipient("contact has no email address".to_string())
         }),
         Recipient::User(_)
         | Recipient::Student(_)
@@ -303,8 +303,8 @@ fn resolve_email_recipient(recipient: &Recipient) -> Result<String> {
         | Recipient::Staff(_)
         | Recipient::Group(_)
         | Recipient::List(_)
-        | Recipient::Expression(_) => Err(NotificationError::invalid_recipient(
-            "engine must materialise indirect recipients before sending",
+        | Recipient::Expression(_) => Err(NotificationError::InvalidRecipient(
+            "engine must materialise indirect recipients before sending".to_string(),
         )),
     }
 }
@@ -356,32 +356,42 @@ fn value_to_string(value: &TemplateValue) -> String {
 }
 
 /// Builds a [`lettre::Message`] from the given envelope
-/// components. Returns [`lettre::address::AddressError`] when the
-/// `from` or recipient strings fail RFC 5322 validation.
+/// components. Returns [`NotificationError::Provider`] when the
+/// `from` or recipient strings fail RFC 5322 validation, or when
+/// `lettre`'s `.body()` call fails (which is unreachable for a
+/// well-formed UTF-8 body, but `lettre` types it as a
+/// `lettre::error::Error` result that we must consume).
 fn build_lettre_message(
     from: &str,
     reply_to: Option<&str>,
     recipient: &str,
     body: &str,
-) -> std::result::Result<Message, lettre::address::AddressError> {
-    let from_address: Address = from.parse()?;
+) -> std::result::Result<Message, NotificationError> {
+    let from_address: Address = from
+        .parse()
+        .map_err(|e| NotificationError::provider(format!("invalid from address: {e}")))?;
     let from_mailbox = Mailbox::new(None, from_address);
 
-    let to_address: Address = recipient.parse()?;
+    let to_address: Address = recipient
+        .parse()
+        .map_err(|e| NotificationError::provider(format!("invalid recipient address: {e}")))?;
     let to_mailbox = Mailbox::new(None, to_address);
 
-    let mut builder: MessageBuilder = Message::builder()
+    let mut builder = Message::builder()
         .from(from_mailbox)
         .to(to_mailbox)
-        .subject("Educore notification")
-        .body(body.to_owned())?;
+        .subject("Educore notification");
 
     if let Some(reply) = reply_to {
-        let reply_address: Address = reply.parse()?;
+        let reply_address: Address = reply
+            .parse()
+            .map_err(|e| NotificationError::provider(format!("invalid reply-to address: {e}")))?;
         builder = builder.reply_to(Mailbox::new(None, reply_address));
     }
 
-    Ok(builder)
+    builder
+        .body(body.to_owned())
+        .map_err(|e| NotificationError::provider(format!("lettre failed to build body: {e}")))
 }
 
 /// Returns the template id string for logging / receipt
@@ -403,15 +413,17 @@ mod tests {
     use super::*;
     use crate::errors::NotificationTemplateId;
     use crate::port::{ContactInfo, EmailAddress};
-    use educore_core::ids::{CorrelationId, SchoolId, SessionId, UserId};
+    use educore_core::ids::{
+        CorrelationId, Identifier, SessionId, PUBLIC_SCHOOL_ID, SYSTEM_USER_ID,
+    };
     use educore_core::tenant::{Locale, TenantContext, TimeZone, UserType};
 
     fn sample_tenant() -> TenantContext {
         TenantContext {
-            school_id: SchoolId::nil(),
-            actor_id: UserId::nil(),
+            school_id: PUBLIC_SCHOOL_ID,
+            actor_id: SYSTEM_USER_ID,
             session_id: None,
-            correlation_id: CorrelationId::nil(),
+            correlation_id: CorrelationId::from_uuid(PUBLIC_SCHOOL_ID.as_uuid()),
             causation_id: None,
             user_type: UserType::System,
             locale: Locale::default(),
@@ -483,7 +495,7 @@ mod tests {
             scheduled_at: None,
             idempotency_key: None,
             correlation_id: None,
-            school_id: SchoolId::nil(),
+            school_id: PUBLIC_SCHOOL_ID,
         };
 
         let rt = tokio::runtime::Builder::new_current_thread()
