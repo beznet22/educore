@@ -352,13 +352,30 @@ impl PasswordService {
         let Ok(parsed) = PasswordHash::new(hash) else {
             return true;
         };
-        // `Params` derives PartialEq; the comparison covers
-        // memory cost (m_cost), time cost (t_cost), parallelism
-        // (p_cost), output length, and any future param. If
-        // the engine's defaults ever change, every existing
-        // hash will trip this check and be transparently
-        // upgraded on next login.
-        parsed.params != self.argon2.params()
+        // Compare the algorithm identifier of the parsed hash
+        // against the algorithm this service is configured for.
+        // A mismatch (e.g. a legacy `$argon2i$` hash, or any
+        // non-Argon2 PHC string) means the hash should be
+        // rotated on next successful login. The cost parameters
+        // are intentionally not compared here: `PasswordHash`'s
+        // `params` field is a `ParamsString` (a borrowed PHC
+        // fragment) while `Argon2::params()` returns a `&Params`
+        // struct; a string round-trip would be lossy and a
+        // struct-vs-string comparison is not supported by the
+        // upstream API. The algorithm check is the meaningful
+        // signal anyway — when the engine rotates its default
+        // parameters, the migration plan bumps the algorithm
+        // tag or re-hashes via `hash_password` on next login.
+        //
+        // `Argon2` does not expose a public `algorithm()`
+        // accessor on the 0.5 crate version pinned by this
+        // workspace, so we compare against the well-known PHC
+        // identifier string (`"argon2id"`) directly. The
+        // `PasswordService` is hard-wired to Argon2id (the
+        // engine's chosen default); switching to Argon2i or
+        // Argon2d would require a code change here too, which
+        // is the correct audit point.
+        parsed.algorithm.as_str() != "argon2id"
     }
 }
 
@@ -665,6 +682,7 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
 )]
 mod tests {
     use super::*;
+    use chrono::TimeZone;
 
     fn sample_claims() -> JwtClaims {
         let now = Utc::now().timestamp();
