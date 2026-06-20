@@ -31,11 +31,22 @@ pub mod sms;
 /// implementation backed by SMTP via the `lettre` crate.
 pub mod email;
 
+/// Pure-helper services for the notify port: template variable
+/// substitution + validation ([`services::TemplateService`]),
+/// channel classification + fan-out ([`services::ChannelService`]),
+/// idempotency-key derivation ([`services::IdempotencyService`]),
+/// and per-channel rate limiting ([`services::RateLimitService`]).
+///
+/// Lands in microtask B.4. None of the helpers perform I/O —
+/// adapters wrap them with the async transport layer.
+pub mod services;
+
 // ---------------------------------------------------------------------------
 // Re-exports (crate prelude)
 // ---------------------------------------------------------------------------
 
 pub use crate::email::{EmailProvider, EmailProviderBuilder};
+pub use crate::services::{ChannelService, IdempotencyService, RateLimitService, TemplateService};
 pub use crate::sms::{SmsProvider, SmsProviderBuilder};
 
 #[cfg(test)]

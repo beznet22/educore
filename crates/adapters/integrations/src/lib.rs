@@ -86,6 +86,18 @@ pub mod video;
 /// See `docs/ports/integrations.md` § "LMS Sync".
 pub mod lms;
 
+/// Pure helper services reused by the integration adapters:
+/// HMAC-SHA256 webhook signing ([`services::WebhookSignatureService`]),
+/// cursor + due-date bookkeeping for inbound polling
+/// ([`services::PollingService`]), backoff + permanent-failure
+/// classification for outbound retries
+/// ([`services::RetryService`]), and per-integration token
+/// buckets ([`services::RateLimitService`]).
+///
+/// None of the helpers perform I/O — adapters wrap them with the
+/// async transport layer.
+pub mod services;
+
 /// Re-exports of the engine types and the port's request/response
 /// surface. Consumers typically
 /// `use educore_integrations::prelude::*;` once at the top of a
@@ -100,6 +112,9 @@ pub mod prelude {
         HealthStatus, IntegrationAction, IntegrationCapability, IntegrationCost, IntegrationGateway,
         IntegrationHealth, IntegrationId, IntegrationRequest, IntegrationResponse, IntegrationStatus,
         RetryPolicy, SchemaFormat, SchemaRef,
+    };
+    pub use crate::services::{
+        PollingService, RateLimitService, RateState, RetryService, Schedule, WebhookSignatureService,
     };
     pub use crate::video::{
         VideoConferencingIntegration, VideoConferencingIntegrationBuilder, ACTION_MEETING_CREATE,
