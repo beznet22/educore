@@ -39,6 +39,15 @@ pub mod jwt;
 /// for the reference impl.
 pub mod oauth_store;
 
+/// Pure-helper services for the auth port: JWT claim validation,
+/// OAuth scope checks, Argon2id password hashing, and RFC 6238
+/// TOTP code generation / verification.
+///
+/// Lands in microtask A.4. See [`services::JwtService`],
+/// [`services::OAuthScopeService`], [`services::PasswordService`],
+/// and [`services::MfaService`].
+pub mod services;
+
 /// The [`errors::AuthError`] enum — the universal error type for
 /// the authentication port.
 pub mod errors;
@@ -52,6 +61,9 @@ pub mod prelude {
     pub use crate::oauth_store::InMemoryOAuthStore;
     pub use crate::port::{
         AuthProvider, AuthScheme, AuthToken, BearerToken, Credential, RbacPort, Session,
+    };
+    pub use crate::services::{
+        JwtService, MfaService, OAuthScopeService, PasswordService, SecretString,
     };
 }
 

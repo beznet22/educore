@@ -34,4 +34,7 @@ rand = { workspace = true }
 educore-operations = { workspace = true }
 # A.3b: `AuditAction` enum re-exported into `oauth_store::audit_action_for_op`.
 educore-audit = { workspace = true }
+# A.4: Argon2id default-params password hashing + verification for
+# `PasswordService::hash_password` / `verify_password` / `needs_rehash`.
+argon2 = { workspace = true }
 
