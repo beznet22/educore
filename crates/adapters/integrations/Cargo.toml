@@ -23,4 +23,6 @@ serde_json = { workspace = true }
 chrono = { workspace = true }
 thiserror = { workspace = true }
 indexmap = { workspace = true }
+hmac = { workspace = true }
+sha2 = { workspace = true }
 
