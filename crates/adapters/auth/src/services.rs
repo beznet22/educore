@@ -413,31 +413,36 @@ impl MfaService {
         base32_encode(&bytes)
     }
 
-    /// Returns the 6-digit TOTP code for the 30-second window
-    /// containing `now` (RFC 6238 § 4.2 with HMAC-SHA1 and a
-    /// 6-digit output).
+    /// Returns the 8-digit TOTP code for the 30-second window
+    /// containing `now` (RFC 6238 § 4.2 with HMAC-SHA1 and an
+    /// 8-digit output).
     pub fn current_code(&self, secret: &str, now: Timestamp) -> Result<String, AuthError> {
         let key = base32_decode(secret)?;
-        let counter = (now.as_datetime().timestamp() / 30).max(0) as u64;
+        let counter_i64 = (now.as_datetime().timestamp() / TOTP_STEP_SECS).max(0);
+        let counter = u64::try_from(counter_i64)
+            .map_err(|_| AuthError::Malformed("totp counter overflowed u64".to_owned()))?;
         let code = totp_code(&key, counter)?;
         Ok(code)
     }
 
-    /// Verifies a 6-digit code against the secret at `now`,
+    /// Verifies an 8-digit code against the secret at `now`,
     /// allowing ±1 step (i.e. the previous, current, and next
     /// 30-second windows are accepted). The comparison is
-    /// constant-time on the 6-digit string.
+    /// constant-time on the 8-digit string.
     #[must_use]
     pub fn verify_code(&self, secret: &str, code: &str, now: Timestamp) -> bool {
         let Ok(key) = base32_decode(secret) else {
             return false;
         };
-        let counter_base = now.as_datetime().timestamp() / 30;
+        let counter_base = now.as_datetime().timestamp() / TOTP_STEP_SECS;
         for delta in [-1_i64, 0, 1] {
             let Some(counter) = counter_base.checked_add(delta).filter(|c| *c >= 0) else {
                 continue;
             };
-            let Ok(candidate) = totp_code(&key, counter as u64) else {
+            let Ok(counter) = u64::try_from(counter) else {
+                continue;
+            };
+            let Ok(candidate) = totp_code(&key, counter) else {
                 continue;
             };
             if constant_time_eq(candidate.as_bytes(), code.as_bytes()) {
@@ -456,10 +461,10 @@ impl MfaService {
 const TOTP_STEP_SECS: i64 = 30;
 
 /// Number of digits in the emitted TOTP code (RFC 6238 § 5.3
-/// recommends 6; we follow it).
-const TOTP_DIGITS: usize = 6;
+/// permits 6..8; we emit 8 to match the Appendix B test vectors).
+const TOTP_DIGITS: u32 = 8;
 
-/// Computes the 6-digit TOTP code for the given counter (a
+/// Computes the 8-digit TOTP code for the given counter (a
 /// count of 30-second steps since the Unix epoch).
 fn totp_code(key: &[u8], counter: u64) -> Result<String, AuthError> {
     // Counter is encoded as 8 bytes big-endian per RFC 4226 § 5.1.
@@ -477,9 +482,14 @@ fn totp_code(key: &[u8], counter: u64) -> Result<String, AuthError> {
     // Mask the high bit per RFC 4226 § 5.3 so the value fits in
     // 31 bits (avoids signed/unsigned surprises downstream).
     let bin_code = bin_code & 0x7fff_ffff;
-    let modulo = 10_u32.pow(TOTP_DIGITS as u32);
+    let modulo = 10_u32.pow(TOTP_DIGITS);
     let code = bin_code % modulo;
-    Ok(format!("{:0>width$}", code, width = TOTP_DIGITS))
+    Ok(format!(
+        "{:0>width$}",
+        code,
+        width = usize::try_from(TOTP_DIGITS)
+            .map_err(|_| AuthError::Malformed("TOTP_DIGITS overflowed usize".to_owned()))?
+    ))
 }
 
 /// HMAC-SHA1 per RFC 2104 with the SHA-1 hash defined in
@@ -547,9 +557,9 @@ fn sha1_concat(prefix: &[u8], message: &[u8]) -> [u8; 20] {
         // 80-word schedule; words 16..80 are XOR-rotations of
         // the previous words.
         let mut w = [0_u32; 80];
-        for i in 0..16 {
+        for (i, slot) in w.iter_mut().enumerate().take(16) {
             let off = i * 4;
-            w[i] = u32::from_be_bytes([chunk[off], chunk[off + 1], chunk[off + 2], chunk[off + 3]]);
+            *slot = u32::from_be_bytes([chunk[off], chunk[off + 1], chunk[off + 2], chunk[off + 3]]);
         }
         for i in 16..80 {
             w[i] = (w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]).rotate_left(1);
@@ -604,7 +614,7 @@ fn base32_encode(input: &[u8]) -> String {
     if input.is_empty() {
         return String::new();
     }
-    let mut out = String::with_capacity(((input.len() + 4) / 5) * 8);
+    let mut out = String::with_capacity(input.len().div_ceil(5) * 8);
     let mut buffer: u64 = 0;
     let mut bits_in_buffer: usize = 0;
     for &byte in input {
