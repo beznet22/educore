@@ -1351,8 +1351,10 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "chrono",
+ "educore-audit",
  "educore-core",
  "educore-events",
+ "educore-operations",
  "educore-platform",
  "educore-rbac",
  "jsonwebtoken",

@@ -29,6 +29,16 @@ pub mod port;
 /// builder API.
 pub mod jwt;
 
+/// In-memory reference implementation of the four port-driven
+/// OAuth-related repository traits declared in
+/// [`educore_operations::repository`](educore_operations::repository):
+/// `OAuthAccessTokenRepository`, `OAuthClientRepository`,
+/// `PasswordResetRepository`, and `MigrationRepository`.
+///
+/// Lands in microtask A.3b. See [`oauth_store::InMemoryOAuthStore`]
+/// for the reference impl.
+pub mod oauth_store;
+
 /// The [`errors::AuthError`] enum — the universal error type for
 /// the authentication port.
 pub mod errors;
@@ -39,6 +49,7 @@ pub mod errors;
 pub mod prelude {
     pub use crate::errors::AuthError;
     pub use crate::jwt::{JwtAuthProvider, JwtAuthProviderBuilder, JwtClaims};
+    pub use crate::oauth_store::InMemoryOAuthStore;
     pub use crate::port::{
         AuthProvider, AuthScheme, AuthToken, BearerToken, Credential, RbacPort, Session,
     };

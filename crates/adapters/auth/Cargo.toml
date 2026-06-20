@@ -28,4 +28,10 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 # A.3a: default 32-byte signing key for `JwtAuthProviderBuilder::new`.
 rand = { workspace = true }
+# A.3b: port-driven repository traits (`OAuthAccessTokenRepository`,
+# `OAuthClientRepository`, `PasswordResetRepository`,
+# `MigrationRepository`) for the `InMemoryOAuthStore` reference impl.
+educore-operations = { workspace = true }
+# A.3b: `AuditAction` enum re-exported into `oauth_store::audit_action_for_op`.
+educore-audit = { workspace = true }
 
