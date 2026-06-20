@@ -14,6 +14,13 @@
 //!   `FileMetadata`, `SignedUrlOptions`, …).
 //! - [`errors`] — the [`FileStorageError`](errors::FileStorageError)
 //!   enum returned by every adapter method.
+//! - [`s3`] — the AWS S3 reference implementation
+//!   ([`S3FileStorage`](s3::S3FileStorage) +
+//!   [`S3FileStorageBuilder`](s3::S3FileStorageBuilder)).
+//! - [`local`] — the local filesystem reference implementation
+//!   ([`LocalFileStorage`](local::LocalFileStorage) +
+//!   [`LocalFileStorageBuilder`](local::LocalFileStorageBuilder))
+//!   for development and offline-mode use.
 //!
 //! # Deviations from the spec
 //!
@@ -36,6 +43,18 @@ pub mod errors;
 /// `FileMetadata`, `SignedUrlOptions`, …).
 pub mod port;
 
+/// AWS S3 reference implementation of the
+/// [`FileStorage`](port::FileStorage) port. See the module-level
+/// doc in [`s3`] for the tenant-namespacing, content-hashing, and
+/// builder API contracts.
+pub mod s3;
+
+/// Local filesystem reference implementation of the
+/// [`FileStorage`](port::FileStorage) port. See the module-level
+/// doc in [`local`] for the path-safety, HMAC-SHA256 signed-URL,
+/// and streaming-download contracts.
+pub mod local;
+
 /// Package name constant. Re-exported so consumers can assert
 /// they are using the right crate version at compile time.
 pub const PACKAGE_NAME: &str = "educore-files";
@@ -51,11 +70,13 @@ pub const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// error type without naming each module.
 pub mod prelude {
     pub use crate::errors::{FileStorageError, InfrastructureError};
+    pub use crate::local::{LocalFileStorage, LocalFileStorageBuilder};
     pub use crate::port::{
         Checksum, ContentType, FileKey, FileMetadata, FileReference, FileStorage, FileStream,
         IdempotencyKey, PutRequest, Result, SignedUrlMethod, SignedUrlOptions, StorageClass,
         Visibility,
     };
+    pub use crate::s3::{S3FileStorage, S3FileStorageBuildError, S3FileStorageBuilder};
 }
 
 #[cfg(test)]
