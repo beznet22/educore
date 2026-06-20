@@ -155,7 +155,7 @@ impl OAuthAccessTokenRepository for InMemoryOAuthStore {
         let _action = audit_action_for_op("oauth_access_token.purge");
         let mut guard = self.lock_tokens();
         let initial = guard.len();
-        guard.retain(|_, t| t.expires_at.is_none_or(|exp| exp >= before));
+        guard.retain(|_, t| t.expires_at.map_or(true, |exp| exp >= before));
         Ok(u64::try_from(initial - guard.len()).unwrap_or(0))
     }
 }
@@ -207,7 +207,7 @@ impl PasswordResetRepository for InMemoryOAuthStore {
         let _action = audit_action_for_op("password_reset.purge");
         let mut guard = self.lock_resets();
         let initial = guard.len();
-        guard.retain(|_, r| r.expires_at.is_none_or(|exp| exp >= before));
+        guard.retain(|_, r| r.expires_at.map_or(true, |exp| exp >= before));
         Ok(u64::try_from(initial - guard.len()).unwrap_or(0))
     }
 }
