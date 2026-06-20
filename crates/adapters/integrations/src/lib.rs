@@ -48,16 +48,65 @@ pub mod port;
 /// method returns `Result<_, IntegrationError>`.
 pub mod errors;
 
+/// Reference implementation of the "Custom Webhook (Out)"
+/// integration: signs each dispatched event with HMAC-SHA256 and
+/// posts it to one or more configured webhook URLs.
+///
+/// See [`webhook_out::WebhookOutIntegration`] and the port spec in
+/// `docs/ports/integrations.md` § "Custom Webhook (Out)".
+pub mod webhook_out;
+
+/// Reference integration adapter for video conferencing providers
+/// (Zoom, Google Meet, Microsoft Teams).
+///
+/// Creates a meeting when a `LessonPlan` is scheduled, lists cloud
+/// recordings so the engine can emit `VideoRecordingAvailable`, and
+/// supports fetching meeting metadata by id. Construct via
+/// [`video::VideoConferencingIntegrationBuilder`] and hold behind
+/// `Arc<dyn IntegrationGateway>` to swap providers at runtime.
+///
+/// See `docs/ports/integrations.md` § "Video Conferencing".
+pub mod video;
+
+/// LMS (Learning Management System) reference
+/// [`IntegrationGateway`](port::IntegrationGateway) implementation.
+///
+/// Drives a generic LMS over its REST API (default base URL targets
+/// Google Classroom `https://classroom.googleapis.com/v1`). Exposes
+/// three closed-set actions: course creation, roster sync
+/// (driven by the engine's `StudentAdmitted`,
+/// `StudentAssignedToSection`, and `StudentWithdrawn` events), and
+/// assignment-submission pull (the engine translates each pulled
+/// submission into an `OnlineExamSubmitted` event with a
+/// `Source::Lms` tag).
+///
+/// Construct via [`lms::LmsIntegrationBuilder`] and hold behind
+/// `Arc<dyn IntegrationGateway>` to swap providers at runtime.
+///
+/// See `docs/ports/integrations.md` § "LMS Sync".
+pub mod lms;
+
 /// Re-exports of the engine types and the port's request/response
 /// surface. Consumers typically
 /// `use educore_integrations::prelude::*;` once at the top of a
 /// file.
 pub mod prelude {
     pub use crate::errors::IntegrationError;
+    pub use crate::lms::{
+        LmsIntegration, LmsIntegrationBuilder, ACTION_COURSE_CREATE, ACTION_ROSTER_SYNC,
+        ACTION_SUBMISSIONS_PULL, LMS_INTEGRATION_ID,
+    };
     pub use crate::port::{
         HealthStatus, IntegrationAction, IntegrationCapability, IntegrationCost, IntegrationGateway,
         IntegrationHealth, IntegrationId, IntegrationRequest, IntegrationResponse, IntegrationStatus,
         RetryPolicy, SchemaFormat, SchemaRef,
+    };
+    pub use crate::video::{
+        VideoConferencingIntegration, VideoConferencingIntegrationBuilder, ACTION_MEETING_CREATE,
+        ACTION_MEETING_GET, ACTION_RECORDING_LIST, VIDEO_INTEGRATION_ID,
+    };
+    pub use crate::webhook_out::{
+        WebhookOutIntegration, WebhookOutIntegrationBuilder, WebhookTarget, SIGNATURE_HEADER,
     };
 }
 
@@ -75,7 +124,11 @@ mod tests {
 
     use async_trait::async_trait;
 
-    use crate::port::{IntegrationAction, IntegrationId, IntegrationRequest, IntegrationResponse};
+    use crate::errors::Result;
+    use crate::port::{
+        HealthStatus, IntegrationAction, IntegrationCapability, IntegrationGateway, IntegrationHealth,
+        IntegrationId, IntegrationRequest, IntegrationResponse, IntegrationStatus,
+    };
 
     #[test]
     fn package_metadata_is_set() {
@@ -118,12 +171,12 @@ mod tests {
                 })
             }
 
-            async fn list_capabilities(&self) -> Result<Vec<crate::port::IntegrationCapability>> {
+            async fn list_capabilities(&self) -> Result<Vec<IntegrationCapability>> {
                 Ok(Vec::new())
             }
 
-            async fn health(&self) -> Result<crate::port::IntegrationHealth> {
-                Ok(crate::port::IntegrationHealth {
+            async fn health(&self) -> Result<IntegrationHealth> {
+                Ok(IntegrationHealth {
                     status: HealthStatus::Healthy,
                     last_checked_at: educore_core::value_objects::Timestamp::epoch(),
                     message: None,
