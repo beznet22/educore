@@ -1639,6 +1639,8 @@ port`. Plus all reference-impl test rows.
   feature-gate it; consumers who only need the local impl don't
   pay the binary-size cost.
 
+**Phase 15 outcome.** Closed 2026-06-21. **5 new crates** delivered in the `adapters` tier (`educore-auth`, `educore-notify`, `educore-payment`, `educore-files`, `educore-integrations`) with 9 reference implementations + 20 service-helper structs + 25 sync + 10 env-gated integration tests. **46 net-new `Capability` variants** in `educore-rbac` (13 Auth + 9 Notify + 8 Payment + 8 Files + 8 Integrations) + 5 new `CapabilityDomain` variants. **10 net-new `AuditTarget` variants** in `educore-audit`. The 4 port-driven repository traits in `educore-operations` (`OAuthAccessTokenRepository`, `OAuthClientRepository`, `PasswordResetRepository`, `MigrationRepository`) are now exercised by `InMemoryOAuthStore` in `educore-auth` (per Phase 14 OQ #10). 6 `coverage.toml` rows flipped Pending → Tested. `cargo test --workspace` + `cargo fmt --check` + `cargo run -p educore-core --bin lint --features lint` all green. The Phase 15 port-adapter crates pass `cargo clippy --all-targets -- -D warnings`; pre-existing clippy debt in `educore-settings` / `educore-documents` blocks the full workspace gate (out of scope per Phase 14 hand-off pattern). Hand-off: `docs/handoff/PHASE-15-HANDOFF.md`. Next-phase prompt: `docs/phase_prompt/phase-16-prompt.md`.
+
 ---
 
 ## Phase 16 — Test infrastructure + SDK
