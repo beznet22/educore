@@ -130,6 +130,19 @@ impl Default for TestkitWorld {
     }
 }
 
+/// Constructs a fresh [`TestkitWorld`]. Convenience alias for
+/// [`TestkitWorld::new`] so consumers can write
+/// `educore_testkit::test_world()` without the prefix.
+///
+/// Each call returns an independent world — the in-memory
+/// backends are not shared across `TestkitWorld` instances. The
+/// bus is the default `InProcessEventBus` (1024-channel-
+/// capacity, 4096-replay-log).
+#[must_use]
+pub fn test_world() -> TestkitWorld {
+    TestkitWorld::new()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -156,5 +169,10 @@ mod tests {
             &world.integrations;
         // The bus is `Arc<dyn EventBus>`; assert it derefs.
         let _ = &*world.bus;
+    }
+
+    #[test]
+    fn test_world_function_constructs_testkit_world() {
+        let _world = test_world();
     }
 }
