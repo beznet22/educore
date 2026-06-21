@@ -497,6 +497,12 @@ pub trait IntegrationGateway: Send + Sync + fmt::Debug {
 // =============================================================================
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::dbg_macro
+)]
 mod tests {
     use super::*;
 

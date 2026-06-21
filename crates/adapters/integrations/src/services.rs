@@ -489,6 +489,12 @@ fn exponential_backoff(base: Duration, max: Duration, attempt: u32) -> Duration 
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::dbg_macro
+)]
 mod tests {
     use super::*;
     use std::thread;
