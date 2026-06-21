@@ -104,7 +104,7 @@ fn payment_integration_settlement_match_line() {
         settled_at: educore_core::value_objects::Timestamp::now(),
     };
     assert_eq!(
-        SettlementService::match_settlement_line(&line, &[receipt.clone()]),
+        SettlementService::match_settlement_line(&line, std::slice::from_ref(&receipt)),
         Some(payment_id.clone())
     );
     let mismatched = SettlementLine {
