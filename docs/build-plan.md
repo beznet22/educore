@@ -1699,6 +1699,8 @@ the suite asserts against a documented behavior matrix, not
 against byte-identical SQL output. Differences in error messages
 between PG and MySQL are tolerated.
 
+**Phase 16 outcome.** Closed 2026-06-21 (same-day delivery). **4 new crates** delivered in the `tools` tier (`educore-testkit`, `educore-storage-parity`, `educore-sdk`, `educore-cli`) with 7 in-memory port impls + cross-backend parity suite + `Engine::builder()` facade + sample CLI binary. **9 commits land** in chronological order (testkit scaffold → testkit 7 port impls → surrealdb DDL + audit sub-port → settings clippy fixes → documents clippy fixes → surrealdb event_log + idempotency sub-ports → sdk → parity full suite → cli). **8 coverage rows flipped** Pending → Tested (`storage_parity_suite` re-tagged from `phase = 0` to `phase = 16`, plus `testkit_in_memory_adapters`, `sdk_high_level_facade`, `cli_sample_binary`, `parity_cross_backend_equivalence`, `parity_behavior_matrix`, `consumer_e2e_admission_workflow`, `cli_admit_attendance_payment`). `cargo test --workspace` + `cargo fmt --check` + `cargo run -p educore-core --bin lint --features lint` all green. `cargo clippy --workspace --all-targets -- -D warnings` green on the 4 Phase 16 crates (testkit, storage-parity, sdk, cli); the previously-blocked settings/documents clippy debt was paid down as Phase 16 prep work (commits `131c507` + `448d8ad`). Hand-off: `docs/handoff/PHASE-16-HANDOFF.md`. Next-phase prompt: `docs/phase_prompt/phase-17-prompt.md`.
+
 ---
 
 ## Phase 17 — Production readiness

@@ -356,9 +356,10 @@ id = "storage_parity_suite"
 item = "Cross-adapter parity test suite"
 spec = "docs/ports/storage.md"
 crate = "educore-storage-parity"
-phase = 0
-status = "Pending"
-notes = "Scaffold in Phase 0; full suite in Phase 16. **Orphaned** between Phase 0 and Phase 16 — no per-adapter parity test exists yet. Phase 1 will land the first cross-adapter outbox scenario (PG/MySQL/SQLite/SurrealDB parity); Phase 16 will fold that into the parity crate."
+phase = 16
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/"
+notes = "Phase 16 ships the full parity suite (cross-backend equivalence + behavior matrix + env-gated PG/MySQL/SQLite/SurrealDB/testkit scenarios) at `crates/tools/storage-parity/tests/`."
 
 # =============================================================================
 # Cross-cutting layer (Phase 2)
@@ -2188,7 +2189,8 @@ item = "In-memory test adapters (all 6 ports)"
 spec = "docs/ports/storage.md"
 crate = "educore-testkit"
 phase = 16
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/testkit/src/{storage,auth,notify,payment,files,integrations,event_bus,sync}.rs"
 
 [[row]]
 id = "sdk_high_level_facade"
@@ -2196,7 +2198,8 @@ item = "High-level SDK facade"
 spec = "docs/library-docs.md"
 crate = "educore-sdk"
 phase = 16
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/sdk/src/{engine,facade,errors}.rs"
 
 [[row]]
 id = "cli_sample_binary"
@@ -2204,7 +2207,8 @@ item = "Sample CLI binary"
 spec = "docs/guides/saas-backend.md"
 crate = "educore-cli"
 phase = 16
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/cli/src/{main,lib,commands}.rs"
 
 [[row]]
 id = "parity_cross_backend_equivalence"
@@ -2212,7 +2216,8 @@ item = "Cross-backend equivalence parity (5 backends)"
 spec = "docs/ports/storage.md"
 crate = "educore-storage-parity"
 phase = 16
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/parity_cross_backend_equivalence.rs"
 
 [[row]]
 id = "parity_behavior_matrix"
@@ -2220,7 +2225,8 @@ item = "Parity behavior matrix documentation test"
 spec = "docs/ports/storage.md"
 crate = "educore-storage-parity"
 phase = 16
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/storage-parity/tests/parity_behavior_matrix.rs"
 
 [[row]]
 id = "consumer_e2e_admission_workflow"
@@ -2228,7 +2234,8 @@ item = "Consumer E2E admission + attendance + payment + notify workflow"
 spec = "docs/build-plan.md"
 crate = "educore"
 phase = 16
-status = "Pending"
+status = "Tested"
+tests = "crates/educore/tests/consumer_e2e.rs"
 
 [[row]]
 id = "cli_admit_attendance_payment"
@@ -2236,7 +2243,8 @@ item = "CLI subcommands (admit, attendance, payment)"
 spec = "docs/guides/saas-backend.md"
 crate = "educore-cli"
 phase = 16
-status = "Pending"
+status = "Tested"
+tests = "crates/tools/cli/src/commands.rs"
 
 # =============================================================================
 # Production readiness (Phase 17)

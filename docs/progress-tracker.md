@@ -82,9 +82,11 @@ docs audit).
 | 13    | Events domain (calendar)           | `events-domain`                                                        | Planned  | No                |
 | 14    | Settings + Operations              | `settings`, `operations`                                               | Planned  | No                |
 | 15    | Port adapters                      | `auth`, `notify`, `payment`, `files`, `integrations`                   | Done     | Yes (all 5 crates shipped; 46 net-new caps + 10 net-new audit targets; 25 sync + 10 env-gated integration tests; coverage rows flipped) |
-| 16    | Test infrastructure + SDK          | `testkit`, `storage-parity` (full suite), `sdk`, `cli`                 | Planned  | No                |
+| 16    | Test infrastructure + SDK          | `testkit`, `storage-parity` (full suite), `sdk`, `cli`                 | Closed (2026-06-21 → 2026-06-21, same-day delivery) | Yes (Phase 16 delivered 4 new crates: `educore-testkit` + `educore-storage-parity` + `educore-sdk` + `educore-cli`; 8 coverage rows flipped; 9 commitments land in chronological order; see `docs/handoff/PHASE-16-HANDOFF.md`) |
 | 17    | Production readiness               | (no new crates)                                                        | Planned  | No                |
 | -     | graphify hook installed + graph fresh | (no new crates)                                                    | Done     | Yes (graph fresh as of last commit) |
+
+**Phase 16** closed 2026-06-21 (same-day delivery). Test infrastructure + SDK shipped (`educore-testkit` + `educore-storage-parity` + `educore-sdk` + `educore-cli`); 8 coverage rows flipped; see `docs/handoff/PHASE-16-HANDOFF.md`.
 
 ## Documentation Status
 
