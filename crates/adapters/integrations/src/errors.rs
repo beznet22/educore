@@ -96,7 +96,7 @@ pub enum IntegrationError {
 
     /// The adapter exhausted its `IntegrationRequest::timeout`
     /// budget without a response.
-    #[error("timeout after {0:?}")]
+    #[error("timeout after {}s", .0.num_seconds())]
     Timeout(chrono::Duration),
 
     /// The provider returned an error response. The string is
