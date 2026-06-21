@@ -104,88 +104,99 @@ DEFINE INDEX idx_outbox_correlation     ON TABLE outbox COLUMNS correlation_id;
 -- 2. audit_log — append-only, write-once compliance trail
 -- -----------------------------------------------------------------------------
 -- Reference: docs/schemas/audit-schema.md § 13
--- Every state-changing command, every authentication event, every
--- authorization denial, every capability change, every cross-tenant
--- operation, every backup/restore, every settings change touching
--- security, every school lifecycle event is recorded here. The
--- before/after snapshots are `object` for flexibility and indexability.
+-- Per the AuditLog sub-port contract
+-- (`crates/infra/storage/src/audit.rs`): every state-changing
+-- command, every authentication event, every authorization
+-- denial, every capability change, every cross-tenant
+-- operation writes one row. The before/after snapshots are
+-- stored as the native `bytes` type so the engine preserves
+-- the exact caller-supplied serialization (the adapter does
+-- not re-encode). Append-only is enforced at the engine layer
+-- (the SurrealDB adapter does not expose update/delete for
+-- this table to domain code) and at the SurrealDB layer via a
+-- REVOKE-style permission scope on the `audit_log` table for
+-- non-system roles.
 --
--- The audit sink port is implemented by the consumer; the engine
--- writes through it. Append-only is enforced at the engine layer
--- (the SurrealDB adapter does not expose update/delete for this table
--- to domain code) and at the SurrealDB layer via a REVOKE-style
--- permission scope on the `audit_log` table for non-system roles.
+-- Field shape matches `educore_storage::audit::AuditLogEntry`.
+-- A'.0 (Phase 16) replaces the speculative schema that was
+-- here previously (which had fields like `audit_id`,
+-- `actor_type`, `resource_type`, `ip`, `user_agent`, etc. that
+-- did not exist on the storage-port struct) with the
+-- minimal, contract-aligned schema below.
 -- -----------------------------------------------------------------------------
 DEFINE TABLE audit_log SCHEMAFULL
     COMMENT "Append-only, write-once compliance trail (audit-schema.md § 13)";
 
-DEFINE FIELD audit_id        ON TABLE audit_log TYPE uuid              ASSERT $value != NONE;
 DEFINE FIELD school_id       ON TABLE audit_log TYPE option<uuid>;
 DEFINE FIELD actor_id        ON TABLE audit_log TYPE uuid              ASSERT $value != NONE;
-DEFINE FIELD actor_type      ON TABLE audit_log TYPE string            ASSERT $value != NONE AND string::len($value) <= 16;
 DEFINE FIELD action          ON TABLE audit_log TYPE string            ASSERT $value != NONE AND string::len($value) <= 191;
-DEFINE FIELD resource_type   ON TABLE audit_log TYPE string            ASSERT $value != NONE AND string::len($value) <= 64;
-DEFINE FIELD resource_id     ON TABLE audit_log TYPE uuid              ASSERT $value != NONE;
+DEFINE FIELD target_type     ON TABLE audit_log TYPE string            ASSERT $value != NONE AND string::len($value) <= 64;
+DEFINE FIELD target_id       ON TABLE audit_log TYPE uuid              ASSERT $value != NONE;
+DEFINE FIELD before          ON TABLE audit_log TYPE option<bytes>;
+DEFINE FIELD after           ON TABLE audit_log TYPE option<bytes>;
 DEFINE FIELD event_id        ON TABLE audit_log TYPE option<uuid>;
-DEFINE FIELD command_id      ON TABLE audit_log TYPE option<uuid>;
 DEFINE FIELD correlation_id  ON TABLE audit_log TYPE uuid              ASSERT $value != NONE;
 DEFINE FIELD occurred_at     ON TABLE audit_log TYPE datetime          ASSERT $value != NONE;
-DEFINE FIELD recorded_at     ON TABLE audit_log TYPE datetime          ASSERT $value != NONE;
-DEFINE FIELD ip              ON TABLE audit_log TYPE option<string>    ASSERT $value = NONE OR string::len($value) <= 45;
-DEFINE FIELD user_agent      ON TABLE audit_log TYPE option<string>    ASSERT $value = NONE OR string::len($value) <= 512;
-DEFINE FIELD session_id      ON TABLE audit_log TYPE option<uuid>;
-DEFINE FIELD before_snapshot ON TABLE audit_log TYPE option<object>;
-DEFINE FIELD after_snapshot  ON TABLE audit_log TYPE option<object>;
+DEFINE FIELD active_status   ON TABLE audit_log TYPE string            ASSERT $value != NONE;
 DEFINE FIELD metadata        ON TABLE audit_log TYPE option<object>;
-DEFINE FIELD cross_tenant    ON TABLE audit_log TYPE bool              ASSERT $value != NONE VALUE false;
-DEFINE FIELD source          ON TABLE audit_log TYPE string            ASSERT $value != NONE AND string::len($value) <= 16;
 
-DEFINE INDEX idx_audit_log_audit_id     ON TABLE audit_log COLUMNS audit_id       UNIQUE;
-DEFINE INDEX idx_audit_log_school_time  ON TABLE audit_log COLUMNS school_id, occurred_at;
-DEFINE INDEX idx_audit_log_actor        ON TABLE audit_log COLUMNS actor_id, occurred_at;
-DEFINE INDEX idx_audit_log_resource     ON TABLE audit_log COLUMNS resource_type, resource_id, occurred_at;
-DEFINE INDEX idx_audit_log_correlation  ON TABLE audit_log COLUMNS correlation_id;
-DEFINE INDEX idx_audit_log_action       ON TABLE audit_log COLUMNS action, occurred_at;
+DEFINE INDEX idx_audit_target    ON TABLE audit_log COLUMNS school_id, target_type, target_id;
+DEFINE INDEX idx_audit_occurred  ON TABLE audit_log COLUMNS school_id, occurred_at;
 
 -- -----------------------------------------------------------------------------
 -- 3. idempotency — command replay safety
 -- -----------------------------------------------------------------------------
 -- Reference: docs/schemas/command-schema.md § 6
--- A command with the same (school_id, command_type, idempotency_key)
--- triple produces the same result without re-executing. The unique
--- composite index makes a duplicate insert fail; the engine catches the
--- constraint violation and returns the prior outcome.
+-- Per the Idempotency sub-port contract
+-- (`crates/infra/storage/src/idempotency.rs`): a command with
+-- the same (school_id, command_type, idempotency_key) triple
+-- produces the same result without re-executing. The unique
+-- composite index makes a duplicate insert fail; the engine
+-- catches the constraint violation and returns the prior
+-- outcome.
+--
+-- Field shape matches `educore_storage::idempotency::IdempotencyRecord`.
+-- A'.0 (Phase 16) replaces the previous speculative schema
+-- (which carried `command_id` and `expires_at`, neither of
+-- which is on the storage-port struct) with the minimal,
+-- contract-aligned schema below.
 -- -----------------------------------------------------------------------------
 DEFINE TABLE idempotency SCHEMAFULL
     COMMENT "Command replay safety (command-schema.md § 6)";
 
-DEFINE FIELD school_id       ON TABLE idempotency TYPE uuid     ASSERT $value != NONE;
-DEFINE FIELD command_type    ON TABLE idempotency TYPE string   ASSERT $value != NONE AND string::len($value) <= 191;
-DEFINE FIELD idempotency_key ON TABLE idempotency TYPE uuid     ASSERT $value != NONE;
-DEFINE FIELD command_id      ON TABLE idempotency TYPE uuid     ASSERT $value != NONE;
-DEFINE FIELD outcome         ON TABLE idempotency TYPE object   ASSERT $value != NONE;
-DEFINE FIELD recorded_at     ON TABLE idempotency TYPE datetime ASSERT $value != NONE;
-DEFINE FIELD expires_at      ON TABLE idempotency TYPE datetime ASSERT $value != NONE;
+DEFINE FIELD school_id              ON TABLE idempotency TYPE uuid                ASSERT $value != NONE;
+DEFINE FIELD command_type           ON TABLE idempotency TYPE string              ASSERT $value != NONE AND string::len($value) <= 191;
+DEFINE FIELD idempotency_key        ON TABLE idempotency TYPE uuid                ASSERT $value != NONE;
+DEFINE FIELD outcome                ON TABLE idempotency TYPE bytes               ASSERT $value != NONE;
+DEFINE FIELD outcome_version        ON TABLE idempotency TYPE int                 ASSERT $value != NONE;
+DEFINE FIELD recorded_at            ON TABLE idempotency TYPE datetime            ASSERT $value != NONE;
+DEFINE FIELD affected_aggregate_ids ON TABLE idempotency TYPE option<array<uuid>>;
 
-DEFINE INDEX idx_idempotency_pk          ON TABLE idempotency COLUMNS school_id, command_type, idempotency_key UNIQUE;
-DEFINE INDEX idx_idempotency_expires     ON TABLE idempotency COLUMNS expires_at;
+DEFINE INDEX idx_idempotency_pk      ON TABLE idempotency COLUMNS school_id, command_type, idempotency_key UNIQUE;
 
 -- -----------------------------------------------------------------------------
 -- 4. event_log — retained events for replay and projection rebuild
 -- -----------------------------------------------------------------------------
 -- Reference: docs/schemas/event-schema.md § 8, § 9
--- The outbox is the relay's read source; the event_log is the durable
--- store of every event ever emitted. Consumers replay from this table
--- to rebuild projections. Retention is consumer-configurable
--- (default 90 days; cold-archive to S3/Glacier after that).
+-- The outbox is the relay's read source; the event_log is the
+-- durable store of every event ever emitted. Consumers replay
+-- from this table to rebuild projections. Retention is
+-- consumer-configurable (default 90 days; cold-archive to
+-- S3/Glacier after that).
+--
+-- Field shape matches `educore_storage::event_log::EventLogEntry`.
+-- A'.0 (Phase 16) replaces the previous speculative schema
+-- (which had `event_version` rather than `schema_version`,
+-- and lacked the engine's `active_status` soft-delete flag)
+-- with the minimal, contract-aligned schema below.
 -- -----------------------------------------------------------------------------
 DEFINE TABLE event_log SCHEMAFULL
     COMMENT "Retained events for replay and projection rebuild (event-schema.md § 8, § 9)";
 
 DEFINE FIELD event_id        ON TABLE event_log TYPE uuid     ASSERT $value != NONE;
-DEFINE FIELD event_type      ON TABLE event_log TYPE string   ASSERT $value != NONE AND string::len($value) <= 191;
-DEFINE FIELD event_version   ON TABLE event_log TYPE int      ASSERT $value != NONE;
 DEFINE FIELD school_id       ON TABLE event_log TYPE option<uuid>;
+DEFINE FIELD event_type      ON TABLE event_log TYPE string   ASSERT $value != NONE AND string::len($value) <= 191;
+DEFINE FIELD schema_version  ON TABLE event_log TYPE int      ASSERT $value != NONE;
 DEFINE FIELD aggregate_id    ON TABLE event_log TYPE uuid     ASSERT $value != NONE;
 DEFINE FIELD aggregate_type  ON TABLE event_log TYPE string   ASSERT $value != NONE AND string::len($value) <= 64;
 DEFINE FIELD actor_id        ON TABLE event_log TYPE uuid     ASSERT $value != NONE;
@@ -193,13 +204,12 @@ DEFINE FIELD correlation_id  ON TABLE event_log TYPE uuid     ASSERT $value != N
 DEFINE FIELD causation_id    ON TABLE event_log TYPE option<uuid>;
 DEFINE FIELD occurred_at     ON TABLE event_log TYPE datetime ASSERT $value != NONE;
 DEFINE FIELD recorded_at     ON TABLE event_log TYPE datetime ASSERT $value != NONE;
-DEFINE FIELD payload         ON TABLE event_log TYPE object   ASSERT $value != NONE;
+DEFINE FIELD payload         ON TABLE event_log TYPE bytes    ASSERT $value != NONE;
+DEFINE FIELD active_status   ON TABLE event_log TYPE string   ASSERT $value != NONE;
 
-DEFINE INDEX idx_event_log_event_id     ON TABLE event_log COLUMNS event_id      UNIQUE;
-DEFINE INDEX idx_event_log_school_time  ON TABLE event_log COLUMNS school_id, occurred_at;
-DEFINE INDEX idx_event_log_type_time    ON TABLE event_log COLUMNS event_type, occurred_at;
-DEFINE INDEX idx_event_log_aggregate    ON TABLE event_log COLUMNS aggregate_type, aggregate_id, occurred_at;
-DEFINE INDEX idx_event_log_correlation  ON TABLE event_log COLUMNS correlation_id;
+DEFINE INDEX idx_event_log_event_id    ON TABLE event_log COLUMNS event_id      UNIQUE;
+DEFINE INDEX idx_event_log_school      ON TABLE event_log COLUMNS school_id, recorded_at;
+DEFINE INDEX idx_event_log_aggregate   ON TABLE event_log COLUMNS school_id, aggregate_id;
 
 -- -----------------------------------------------------------------------------
 -- 5. schema_registry — event-type schema catalog
