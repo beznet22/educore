@@ -918,42 +918,42 @@ mod tests {
     fn form_title_validates_length() {
         assert!(FormTitle::new("").is_err());
         assert!(FormTitle::new("Parent Consent Form 2026").is_ok());
-        assert!(FormTitle::new(&"x".repeat(192)).is_err());
+        assert!(FormTitle::new("x".repeat(192)).is_err());
     }
 
     #[test]
     fn form_description_validates_length() {
         assert!(FormDescription::new("").is_err());
         assert!(FormDescription::new("a").is_ok());
-        assert!(FormDescription::new(&"x".repeat(201)).is_err());
+        assert!(FormDescription::new("x".repeat(201)).is_err());
     }
 
     #[test]
     fn postal_title_validates_length() {
         assert!(PostalTitle::new("").is_err());
         assert!(PostalTitle::new("Mr Smith").is_ok());
-        assert!(PostalTitle::new(&"x".repeat(192)).is_err());
+        assert!(PostalTitle::new("x".repeat(192)).is_err());
     }
 
     #[test]
     fn postal_note_validates_length() {
         assert!(PostalNote::new("").is_err());
         assert!(PostalNote::new("Sent for review").is_ok());
-        assert!(PostalNote::new(&"x".repeat(5_001)).is_err());
+        assert!(PostalNote::new("x".repeat(5_001)).is_err());
     }
 
     #[test]
     fn postal_reference_no_validates_length() {
         assert!(PostalReferenceNo::new("").is_err());
         assert!(PostalReferenceNo::new("REF-2026-0001").is_ok());
-        assert!(PostalReferenceNo::new(&"x".repeat(192)).is_err());
+        assert!(PostalReferenceNo::new("x".repeat(192)).is_err());
     }
 
     #[test]
     fn postal_address_validates_length() {
         assert!(PostalAddress::new("").is_err());
         assert!(PostalAddress::new("1 Main St").is_ok());
-        assert!(PostalAddress::new(&"x".repeat(192)).is_err());
+        assert!(PostalAddress::new("x".repeat(192)).is_err());
     }
 
     #[test]
@@ -1042,30 +1042,30 @@ mod tests {
         // 1 char (min) is ok.
         assert!(PostalTitle::new("A").is_ok());
         // 191 chars (max) is ok.
-        assert!(PostalTitle::new(&"a".repeat(191)).is_ok());
+        assert!(PostalTitle::new("a".repeat(191)).is_ok());
         // 192 chars (over) is rejected.
-        assert!(PostalTitle::new(&"a".repeat(192)).is_err());
+        assert!(PostalTitle::new("a".repeat(192)).is_err());
     }
 
     #[test]
     fn postal_note_accepts_min_and_max_lengths() {
         assert!(PostalNote::new("a").is_ok());
-        assert!(PostalNote::new(&"x".repeat(5_000)).is_ok());
-        assert!(PostalNote::new(&"x".repeat(5_001)).is_err());
+        assert!(PostalNote::new("x".repeat(5_000)).is_ok());
+        assert!(PostalNote::new("x".repeat(5_001)).is_err());
     }
 
     #[test]
     fn postal_reference_no_accepts_min_and_max_lengths() {
         assert!(PostalReferenceNo::new("A").is_ok());
-        assert!(PostalReferenceNo::new(&"a".repeat(191)).is_ok());
-        assert!(PostalReferenceNo::new(&"a".repeat(192)).is_err());
+        assert!(PostalReferenceNo::new("a".repeat(191)).is_ok());
+        assert!(PostalReferenceNo::new("a".repeat(192)).is_err());
     }
 
     #[test]
     fn postal_address_accepts_min_and_max_lengths() {
         assert!(PostalAddress::new("A").is_ok());
-        assert!(PostalAddress::new(&"a".repeat(191)).is_ok());
-        assert!(PostalAddress::new(&"a".repeat(192)).is_err());
+        assert!(PostalAddress::new("a".repeat(191)).is_ok());
+        assert!(PostalAddress::new("a".repeat(192)).is_err());
     }
 
     #[test]

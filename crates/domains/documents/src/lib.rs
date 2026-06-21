@@ -94,86 +94,86 @@ mod tests {
         // Compile-time test: every public type listed in the prelude exists.
         // (No runtime assertion needed — this fails to compile if a re-export
         // points at a non-existent type.)
-        let _: fn() -> FormDownload = || unreachable!();
-        let _: fn() -> PostalDispatch = || unreachable!();
-        let _: fn() -> PostalReceive = || unreachable!();
+        let _: Option<FormDownload> = None;
+        let _: Option<PostalDispatch> = None;
+        let _: Option<PostalReceive> = None;
     }
 
     // -------------------------------------------------------------------------
     // Phase 11 / 4-tests — extended prelude re-export smoke tests.
     //
-    // The body of each function is `unreachable!()`; the test passes if
-    // and only if the type path resolves. This is the engine's
+    // The body of each test binds a typed `Option<T>` to `None`; the test
+    // passes if and only if the type path resolves. This is the engine's
     // compile-time proof that the prelude is intact.
     // -------------------------------------------------------------------------
 
     #[test]
     fn prelude_commands_resolve() {
-        let _: fn() -> DeleteFormCommand = || unreachable!();
-        let _: fn() -> DeletePostalDispatchCommand = || unreachable!();
-        let _: fn() -> DeletePostalReceiveCommand = || unreachable!();
-        let _: fn() -> DispatchPostalCommand = || unreachable!();
-        let _: fn() -> ReceivePostalCommand = || unreachable!();
-        let _: fn() -> TrackPostalCommand = || unreachable!();
-        let _: fn() -> UpdateFormCommand = || unreachable!();
-        let _: fn() -> UpdatePostalDispatchCommand = || unreachable!();
-        let _: fn() -> UpdatePostalReceiveCommand = || unreachable!();
-        let _: fn() -> UploadFormCommand = || unreachable!();
+        let _: Option<DeleteFormCommand> = None;
+        let _: Option<DeletePostalDispatchCommand> = None;
+        let _: Option<DeletePostalReceiveCommand> = None;
+        let _: Option<DispatchPostalCommand> = None;
+        let _: Option<ReceivePostalCommand> = None;
+        let _: Option<TrackPostalCommand> = None;
+        let _: Option<UpdateFormCommand> = None;
+        let _: Option<UpdatePostalDispatchCommand> = None;
+        let _: Option<UpdatePostalReceiveCommand> = None;
+        let _: Option<UploadFormCommand> = None;
     }
 
     #[test]
     fn prelude_events_resolve() {
-        let _: fn() -> FormDeleted = || unreachable!();
-        let _: fn() -> FormUpdated = || unreachable!();
-        let _: fn() -> FormUploaded = || unreachable!();
-        let _: fn() -> PostalDispatchDeleted = || unreachable!();
-        let _: fn() -> PostalDispatchUpdated = || unreachable!();
-        let _: fn() -> PostalDispatched = || unreachable!();
-        let _: fn() -> PostalReceiveDeleted = || unreachable!();
-        let _: fn() -> PostalReceiveUpdated = || unreachable!();
-        let _: fn() -> PostalReceived = || unreachable!();
+        let _: Option<FormDeleted> = None;
+        let _: Option<FormUpdated> = None;
+        let _: Option<FormUploaded> = None;
+        let _: Option<PostalDispatchDeleted> = None;
+        let _: Option<PostalDispatchUpdated> = None;
+        let _: Option<PostalDispatched> = None;
+        let _: Option<PostalReceiveDeleted> = None;
+        let _: Option<PostalReceiveUpdated> = None;
+        let _: Option<PostalReceived> = None;
     }
 
     #[test]
     fn prelude_entities_resolve() {
-        let _: fn() -> FormDownloadFileId = || unreachable!();
-        let _: fn() -> FormDownloadLinkId = || unreachable!();
-        let _: fn() -> PostalDispatchAttachmentId = || unreachable!();
-        let _: fn() -> PostalReceiveAttachmentId = || unreachable!();
+        let _: Option<FormDownloadFileId> = None;
+        let _: Option<FormDownloadLinkId> = None;
+        let _: Option<PostalDispatchAttachmentId> = None;
+        let _: Option<PostalReceiveAttachmentId> = None;
     }
 
     #[test]
     fn prelude_value_objects_resolve() {
-        let _: fn() -> ActiveStatus = || unreachable!();
-        let _: fn() -> DispatchDate = || unreachable!();
-        let _: fn() -> DocumentType = || unreachable!();
-        let _: fn() -> DocumentVisibility = || unreachable!();
-        let _: fn() -> FileReference = || unreachable!();
-        let _: fn() -> FormDescription = || unreachable!();
-        let _: fn() -> FormDownloadId = || unreachable!();
-        let _: fn() -> FormTitle = || unreachable!();
-        let _: fn() -> FromAddress = || unreachable!();
-        let _: fn() -> FromTitle = || unreachable!();
-        let _: fn() -> PostalAddress = || unreachable!();
-        let _: fn() -> PostalDispatchId = || unreachable!();
-        let _: fn() -> PostalNote = || unreachable!();
-        let _: fn() -> PostalReceiveId = || unreachable!();
-        let _: fn() -> PostalReferenceNo = || unreachable!();
-        let _: fn() -> PostalTitle = || unreachable!();
-        let _: fn() -> PublishDate = || unreachable!();
-        let _: fn() -> ReceiveDate = || unreachable!();
-        let _: fn() -> ShowPublic = || unreachable!();
-        let _: fn() -> ToAddress = || unreachable!();
-        let _: fn() -> ToTitle = || unreachable!();
-        let _: fn() -> Url = || unreachable!();
+        let _: Option<ActiveStatus> = None;
+        let _: Option<DispatchDate> = None;
+        let _: Option<DocumentType> = None;
+        let _: Option<DocumentVisibility> = None;
+        let _: Option<FileReference> = None;
+        let _: Option<FormDescription> = None;
+        let _: Option<FormDownloadId> = None;
+        let _: Option<FormTitle> = None;
+        let _: Option<FromAddress> = None;
+        let _: Option<FromTitle> = None;
+        let _: Option<PostalAddress> = None;
+        let _: Option<PostalDispatchId> = None;
+        let _: Option<PostalNote> = None;
+        let _: Option<PostalReceiveId> = None;
+        let _: Option<PostalReferenceNo> = None;
+        let _: Option<PostalTitle> = None;
+        let _: Option<PublishDate> = None;
+        let _: Option<ReceiveDate> = None;
+        let _: Option<ShowPublic> = None;
+        let _: Option<ToAddress> = None;
+        let _: Option<ToTitle> = None;
+        let _: Option<Url> = None;
     }
 
     #[test]
     fn prelude_aggregate_children_resolve() {
-        let _: fn() -> FormDownloadFile = || unreachable!();
-        let _: fn() -> FormDownloadLink = || unreachable!();
-        let _: fn() -> PostalDispatchAttachment = || unreachable!();
-        let _: fn() -> PostalReceiveAttachment = || unreachable!();
+        let _: Option<FormDownloadFile> = None;
+        let _: Option<FormDownloadLink> = None;
+        let _: Option<PostalDispatchAttachment> = None;
+        let _: Option<PostalReceiveAttachment> = None;
     }
 
     #[test]

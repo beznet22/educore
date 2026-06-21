@@ -151,6 +151,6 @@ mod tests {
         // The `Result` alias resolves to `core::result::Result<T,
         // DocumentsError>`. This is a compile-time check.
         let r: Result<u32> = Ok(7);
-        assert_eq!(r.unwrap(), 7);
+        assert!(r.is_ok());
     }
 }
