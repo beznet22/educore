@@ -5,10 +5,32 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "In-memory test adapters for the storage, auth, notify, payment, files, and event-bus ports. For unit and integration tests only."
+description = "In-memory test adapters for the storage, auth, notify, payment, files, integrations, and event-bus ports. For unit and integration tests only."
 
 [lints]
 workspace = true
 
 [dependencies]
-# No production dependencies yet — scaffold only.
+educore-core = { workspace = true }
+educore-storage = { workspace = true }
+educore-events = { workspace = true }
+educore-event-bus = { workspace = true }
+educore-platform = { workspace = true }
+educore-rbac = { workspace = true }
+educore-audit = { workspace = true }
+educore-auth = { workspace = true }
+educore-notify = { workspace = true }
+educore-payment = { workspace = true }
+educore-files = { workspace = true }
+educore-integrations = { workspace = true }
+async-trait = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+futures = { workspace = true }
+parking_lot = "0.12"
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["sync"] }
+tracing = { workspace = true }
+uuid = { workspace = true }
