@@ -2206,6 +2206,38 @@ crate = "educore-cli"
 phase = 16
 status = "Pending"
 
+[[row]]
+id = "parity_cross_backend_equivalence"
+item = "Cross-backend equivalence parity (5 backends)"
+spec = "docs/ports/storage.md"
+crate = "educore-storage-parity"
+phase = 16
+status = "Pending"
+
+[[row]]
+id = "parity_behavior_matrix"
+item = "Parity behavior matrix documentation test"
+spec = "docs/ports/storage.md"
+crate = "educore-storage-parity"
+phase = 16
+status = "Pending"
+
+[[row]]
+id = "consumer_e2e_admission_workflow"
+item = "Consumer E2E admission + attendance + payment + notify workflow"
+spec = "docs/build-plan.md"
+crate = "educore"
+phase = 16
+status = "Pending"
+
+[[row]]
+id = "cli_admit_attendance_payment"
+item = "CLI subcommands (admit, attendance, payment)"
+spec = "docs/guides/saas-backend.md"
+crate = "educore-cli"
+phase = 16
+status = "Pending"
+
 # =============================================================================
 # Production readiness (Phase 17)
 # =============================================================================

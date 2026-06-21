@@ -343,6 +343,28 @@ future phases:
 - **`uniffi`**: cross-language bindings (Kotlin/Swift/Python) for the
   engine's consumer. Out of scope for v1.
 
+## clap
+
+- **Version:** `4` (workspace: `"4"`, features `["derive"]`).
+- **Rationale:** CLI argument parser for `educore-cli` (Phase 16 sample
+  binary). Derive feature enables the `#[derive(Parser)]` macro
+  pattern.
+- **Alternatives:** `pico-args` (no derive, no help-text generation),
+  `structopt` (merged into clap 3.x and now deprecated upstream),
+  `argh` (lighter, but less ecosystem support and no derive macro for
+  subcommand enums).
+- **Selected because:** the de-facto Rust CLI argument parser; 14k+
+  GitHub stars; broadest ecosystem; first-class support for the
+  derive-macro pattern the engine's CLI uses (one `enum` per
+  subcommand, `#[derive(Parser)]` on the top-level CLI struct).
+- **Cross-compile status:** Linux + macOS + Windows (native clap
+  backend, no native-tls dep). The `clap` crate is pure-Rust and uses
+  no platform-specific code; the only optional native dep is the
+  `terminal_size` crate (for `--help` width), which is pure-Rust and
+  cross-compile-safe.
+- **MSRV-floor status:** clap 4.x requires Rust 1.74; engine MSRV is
+  1.75 → compatible. No pin required.
+
 ## Audit log
 
 - **2026-06-09** (this revision): initial ADR. 27 crates documented.

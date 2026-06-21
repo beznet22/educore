@@ -149,6 +149,10 @@ rustls-webpki = "0.102"
 # Bytes (for wire-format payloads in the storage port)
 bytes = { version = "1", features = ["serde"] }
 
+# CLI argument parser — used by `educore-cli` (Phase 16 sample binary).
+# Derive feature enables the `#[derive(Parser)]` macro pattern.
+clap = { version = "4", features = ["derive"] }
+
 # SurrealDB — Phase 0 primary storage adapter per ADR-017.
 # Pinned to the last pre-1.75 line. The crate is pre-1.0 and
 # the latest dev line raises MSRV above the engine's 1.75

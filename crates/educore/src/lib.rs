@@ -79,6 +79,7 @@ pub mod prelude {
     pub use educore_operations;
     pub use educore_platform;
     pub use educore_rbac;
+    pub use educore_sdk;
     pub use educore_settings;
 }
 
