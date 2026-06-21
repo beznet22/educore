@@ -5,7 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "High-level consumer SDK wrapping common workflows."
+description = "High-level consumer SDK wrapping common engine workflows (Engine::builder + facade services)."
 
 [lints]
 workspace = true
@@ -21,4 +21,21 @@ educore-finance = { workspace = true }
 educore-hr = { workspace = true }
 educore-events = { workspace = true }
 educore-storage = { workspace = true }
+educore-event-bus = { workspace = true }
+educore-auth = { workspace = true }
+educore-files = { workspace = true }
+educore-integrations = { workspace = true }
+educore-notify = { workspace = true }
+educore-payment = { workspace = true }
+educore-testkit = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+parking_lot = "0.12"
+bytes = { workspace = true }
+uuid = { workspace = true }
+anyhow = { workspace = true }
 
+[dev-dependencies]
+tokio = { workspace = true }
+chrono = { workspace = true }

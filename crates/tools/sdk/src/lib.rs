@@ -1,27 +1,30 @@
 //! # educore-sdk
 //!
-//!  High-level consumer SDK wrapping common workflows.
+//! High-level consumer SDK for the Educore engine. Provides
+//! `Engine::builder()` for wiring the engine's 6 ports (storage,
+//! auth, notify, payment, files, integrations) + clock + id
+//! generator, and facade services that wrap the most common
+//! consumer workflows (admit, attendance, payment, notify).
 //!
-//! This crate is a member of the Educore workspace. See
-//! `docs/architecture.md` and the domain spec in
-//! `docs/specs/` for behavioral details.
+//! See `docs/library-docs.md` for the consumer-facing API and
+//! `docs/build-plan.md` § "Phase 16" for the implementation
+//! context.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
-/// Package name constant. Re-exported so consumers can assert they
-/// are using the right crate version at compile time.
-pub const PACKAGE_NAME: &str = "educore-sdk";
+pub mod engine;
+pub mod errors;
+pub mod facade;
 
-/// Package version at compile time.
-pub const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub use engine::{Engine, EngineBuilder};
+pub use errors::SdkError;
+pub use facade::{AdmissionService, AttendanceService, NotificationService, PaymentService};
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     #[test]
     fn package_metadata_is_set() {
-        assert_eq!(PACKAGE_NAME, "educore-sdk");
-        assert!(!PACKAGE_VERSION.is_empty());
+        assert_eq!(env!("CARGO_PKG_NAME"), "educore-sdk");
     }
 }
