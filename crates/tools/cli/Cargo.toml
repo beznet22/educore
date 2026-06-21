@@ -5,7 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Sample CLI demonstrating consumer-side wiring of the engine. NOT shipped to library consumers."
+description = "Sample CLI demonstrating daily engine operations (admit, attendance, payment). NOT shipped to library consumers."
 
 [lints]
 workspace = true
@@ -15,4 +15,16 @@ name = "educore-cli"
 path = "src/main.rs"
 
 [dependencies]
-# No production dependencies yet — scaffold only.
+educore-testkit = { workspace = true }
+educore-storage = { workspace = true }
+educore-payment = { workspace = true }
+educore-core = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+chrono = { workspace = true }
+uuid = { workspace = true }
