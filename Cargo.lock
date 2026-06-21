@@ -2039,6 +2039,7 @@ dependencies = [
  "educore-core",
  "educore-events",
  "educore-platform",
+ "hmac 0.12.1",
  "sha2 0.10.9",
  "tokio",
 ]
