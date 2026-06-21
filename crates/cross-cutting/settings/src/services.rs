@@ -7,9 +7,8 @@
 #![allow(missing_docs)]
 
 use crate::aggregate::{
-    BackgroundSetting, BaseGroup, BaseSetup, BehaviorRecordSetting, Color, ColorTheme, CustomLink,
-    DashboardSetting, DateFormat, GeneralSettings, Language, LanguagePhrase, SetupAdmin, Style,
-    Theme,
+    BackgroundSetting, BaseSetup, BehaviorRecordSetting, Color, ColorTheme, CustomLink,
+    DashboardSetting, DateFormat, GeneralSettings, Language, LanguagePhrase, Style, Theme,
 };
 use crate::entities::CustomLinkSocial;
 use crate::value_objects::{
@@ -711,19 +710,18 @@ fn _suppress_unused_value_object_imports() {
 mod tests {
     use super::*;
     use crate::aggregate::{
-        NewBackgroundSetting, NewBehaviorRecordSetting, NewCustomLink, NewGeneralSettings,
-        NewLanguage, NewStyle, NewTheme,
+        NewBackgroundSetting, NewBehaviorRecordSetting, NewGeneralSettings, NewStyle, NewTheme,
     };
     use crate::value_objects::{
         BackgroundColor, BackgroundType, ColorHex, ColorId, ColorName, ColorStatus, ColorValue,
-        EmailDriver, FontFamily, GeneralSettingsId, IsColor, LanguageCode, LanguageId,
-        LanguageName, LanguageNative, LawnGreen, QueueConnection, RtlFlag, SetupAdminType,
-        StyleName, StylePath, ThemePath, ThemeTitle,
+        FontFamily, GeneralSettingsId, IsColor, LanguageCode, LanguageId, LanguageName,
+        LanguageNative, LawnGreen, QueueConnection, RtlFlag, StyleName, StylePath, ThemePath,
+        ThemeTitle,
     };
     use educore_core::ids::{CorrelationId, Identifier, SchoolId, UserId};
     use educore_core::value_objects::{Etag, Timestamp, Version};
 
-    fn mk_settings() -> GeneralSettings {
+    fn mk_settings() -> std::result::Result<GeneralSettings, Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(uuid::Uuid::nil());
         let user = UserId::from_uuid(uuid::Uuid::nil());
         let corr = CorrelationId::from_uuid(uuid::Uuid::nil());
@@ -745,21 +743,22 @@ mod tests {
             week_start_id: 0,
             time_zone_id: "UTC".to_owned(),
             attendance_layout: 1,
-            active_theme: crate::value_objects::ActiveTheme::new("default").unwrap(),
-            queue_connection: QueueConnection::new("sync").unwrap(),
+            active_theme: crate::value_objects::ActiveTheme::new("default")?,
+            queue_connection: QueueConnection::new("sync")?,
             created_by: user,
             created_at: Timestamp::now(),
             correlation_id: corr,
         };
-        GeneralSettings::new(cmd).unwrap()
+        Ok(GeneralSettings::new(cmd)?)
     }
 
     #[test]
-    fn general_settings_service_helpers() {
-        let s = mk_settings();
+    fn general_settings_service_helpers() -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let s = mk_settings()?;
         assert!(GeneralSettingsService::is_active(&s));
         assert_eq!(GeneralSettingsService::effective_currency(&s), "USD");
         assert_eq!(GeneralSettingsService::effective_time_zone(&s), "UTC");
+        Ok(())
     }
 
     #[test]
@@ -772,55 +771,61 @@ mod tests {
     }
 
     #[test]
-    fn language_service_fallback_translation() {
+    fn language_service_fallback_translation() -> std::result::Result<(), Box<dyn std::error::Error>>
+    {
         let school = SchoolId::from_uuid(uuid::Uuid::nil());
         let user = UserId::from_uuid(uuid::Uuid::nil());
         let corr = CorrelationId::from_uuid(uuid::Uuid::nil());
         let phrase = crate::aggregate::NewLanguagePhrase {
             id: crate::value_objects::LanguagePhraseId::new(school, uuid::Uuid::nil()),
-            modules: crate::value_objects::PhraseModule::new("dashboard").unwrap(),
-            default_phrases: crate::value_objects::DefaultPhrase::new("Hello").unwrap(),
+            modules: crate::value_objects::PhraseModule::new("dashboard")?,
+            default_phrases: crate::value_objects::DefaultPhrase::new("Hello")?,
             created_by: user,
             created_at: Timestamp::now(),
             correlation_id: corr,
         };
-        let p = LanguagePhrase::new(phrase).unwrap();
-        let s = LanguageService::fallback_translation(&p, LocaleCode::new("xx").unwrap());
+        let p = LanguagePhrase::new(phrase)?;
+        let s = LanguageService::fallback_translation(&p, LocaleCode::new("xx")?);
         assert_eq!(s.as_deref(), Some("Hello"));
+        Ok(())
     }
 
     #[test]
-    fn language_service_can_delete_default() {
+    fn language_service_can_delete_default() -> std::result::Result<(), Box<dyn std::error::Error>>
+    {
         let school = SchoolId::from_uuid(uuid::Uuid::nil());
         let user = UserId::from_uuid(uuid::Uuid::nil());
         let corr = CorrelationId::from_uuid(uuid::Uuid::nil());
         let lang = Language::new(crate::aggregate::NewLanguage {
             id: LanguageId::new(school, uuid::Uuid::nil()),
-            code: LanguageCode::new("en").unwrap(),
-            name: LanguageName::new("English").unwrap(),
-            native: LanguageNative::new("English").unwrap(),
+            code: LanguageCode::new("en")?,
+            name: LanguageName::new("English")?,
+            native: LanguageNative::new("English")?,
             rtl: RtlFlag::new(false),
             created_by: user,
             created_at: Timestamp::now(),
             correlation_id: corr,
-        })
-        .unwrap();
-        let mut s = mk_settings();
+        })?;
+        let mut s = mk_settings()?;
         s.language_id = Some(lang.id);
-        let err = LanguageService::can_delete(&lang, &s, 0).unwrap_err();
+        let err = LanguageService::can_delete(&lang, &s, 0)
+            .err()
+            .ok_or_else(|| "can_delete should have failed".to_owned())?;
         assert!(err.contains("default"));
+        Ok(())
     }
 
     #[test]
-    fn style_service_cannot_delete_default() {
+    fn style_service_cannot_delete_default() -> std::result::Result<(), Box<dyn std::error::Error>>
+    {
         let school = SchoolId::from_uuid(uuid::Uuid::nil());
         let user = UserId::from_uuid(uuid::Uuid::nil());
         let corr = CorrelationId::from_uuid(uuid::Uuid::nil());
-        let mut s = Style::new(NewStyle {
+        let s = Style::new(NewStyle {
             id: crate::value_objects::StyleId::new(school, uuid::Uuid::nil()),
-            style_name: StyleName::new("default").unwrap(),
-            path_main_style: StylePath::new("a.css").unwrap(),
-            path_style: StylePath::new("b.css").unwrap(),
+            style_name: StyleName::new("default")?,
+            path_main_style: StylePath::new("a.css")?,
+            path_style: StylePath::new("b.css")?,
             primary_color: ColorHex("#000000".to_owned()),
             primary_color2: ColorHex("#111111".to_owned()),
             title_color: ColorHex("#222222".to_owned()),
@@ -839,16 +844,15 @@ mod tests {
             created_by: user,
             created_at: Timestamp::now(),
             correlation_id: corr,
-        })
-        .unwrap();
+        })?;
         let _ = s; // suppress
         let result = StyleService::can_delete(
             &Style {
                 id: crate::value_objects::StyleId::new(school, uuid::Uuid::nil()),
                 school_id: school,
-                style_name: StyleName::new("x").unwrap(),
-                path_main_style: StylePath::new("a.css").unwrap(),
-                path_style: StylePath::new("b.css").unwrap(),
+                style_name: StyleName::new("x")?,
+                path_main_style: StylePath::new("a.css")?,
+                path_style: StylePath::new("b.css")?,
                 primary_color: ColorHex("#000000".to_owned()),
                 primary_color2: ColorHex("#111111".to_owned()),
                 title_color: ColorHex("#222222".to_owned()),
@@ -878,16 +882,18 @@ mod tests {
             0,
         );
         assert!(result.is_err());
+        Ok(())
     }
 
     #[test]
-    fn only_one_active_style_allows_demoting() {
+    fn only_one_active_style_allows_demoting() -> std::result::Result<(), Box<dyn std::error::Error>>
+    {
         let school = SchoolId::from_uuid(uuid::Uuid::nil());
         let mut a = Style::new(NewStyle {
             id: crate::value_objects::StyleId::new(school, uuid::Uuid::nil()),
-            style_name: StyleName::new("a").unwrap(),
-            path_main_style: StylePath::new("a.css").unwrap(),
-            path_style: StylePath::new("b.css").unwrap(),
+            style_name: StyleName::new("a")?,
+            path_main_style: StylePath::new("a.css")?,
+            path_style: StylePath::new("b.css")?,
             primary_color: ColorHex("#000000".to_owned()),
             primary_color2: ColorHex("#111111".to_owned()),
             title_color: ColorHex("#222222".to_owned()),
@@ -906,14 +912,13 @@ mod tests {
             created_by: UserId::from_uuid(uuid::Uuid::nil()),
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(uuid::Uuid::nil()),
-        })
-        .unwrap();
+        })?;
         a.is_active = true;
         let mut b = Style::new(NewStyle {
             id: crate::value_objects::StyleId::new(school, uuid::Uuid::nil()),
-            style_name: StyleName::new("b").unwrap(),
-            path_main_style: StylePath::new("a.css").unwrap(),
-            path_style: StylePath::new("b.css").unwrap(),
+            style_name: StyleName::new("b")?,
+            path_main_style: StylePath::new("a.css")?,
+            path_style: StylePath::new("b.css")?,
             primary_color: ColorHex("#000000".to_owned()),
             primary_color2: ColorHex("#111111".to_owned()),
             title_color: ColorHex("#222222".to_owned()),
@@ -932,21 +937,22 @@ mod tests {
             created_by: UserId::from_uuid(uuid::Uuid::nil()),
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(uuid::Uuid::nil()),
-        })
-        .unwrap();
+        })?;
         b.is_active = false;
         let _ = OnlyOneActiveStyle::check(&a, &[b]);
+        Ok(())
     }
 
     #[test]
-    fn one_default_theme_per_school_blocks_duplicate() {
+    fn one_default_theme_per_school_blocks_duplicate(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(uuid::Uuid::nil());
-        let mk = |is_default: bool, id_val: uuid::Uuid| {
-            Theme::new(NewTheme {
+        let mk = |is_default: bool, id_val: uuid::Uuid| -> std::result::Result<crate::aggregate::Theme, Box<dyn std::error::Error>> {
+            Ok(Theme::new(NewTheme {
                 id: crate::value_objects::ThemeId::new(school, id_val),
-                title: ThemeTitle::new("t").unwrap(),
-                path_main_style: ThemePath::new("a.css").unwrap(),
-                path_style: ThemePath::new("b.css").unwrap(),
+                title: ThemeTitle::new("t")?,
+                path_main_style: ThemePath::new("a.css")?,
+                path_style: ThemePath::new("b.css")?,
                 color_mode: crate::value_objects::ColorMode::Solid,
                 box_shadow: crate::value_objects::BoxShadow::new(false),
                 background_type: BackgroundType::Color,
@@ -956,12 +962,12 @@ mod tests {
                 created_by: UserId::from_uuid(uuid::Uuid::nil()),
                 created_at: Timestamp::now(),
                 correlation_id: CorrelationId::from_uuid(uuid::Uuid::nil()),
-            })
-            .unwrap()
+            })?)
         };
-        let a = mk(true, uuid::Uuid::from_u128(1));
-        let b = mk(true, uuid::Uuid::from_u128(2));
+        let a = mk(true, uuid::Uuid::from_u128(1))?;
+        let b = mk(true, uuid::Uuid::from_u128(2))?;
         assert!(OneDefaultThemePerSchool::check(&b, &[a]).is_err());
+        Ok(())
     }
 
     #[test]
@@ -971,48 +977,50 @@ mod tests {
     }
 
     #[test]
-    fn active_languages_spec() {
+    fn active_languages_spec() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(uuid::Uuid::nil());
         let l = Language::new(crate::aggregate::NewLanguage {
             id: LanguageId::new(school, uuid::Uuid::nil()),
-            code: LanguageCode::new("en").unwrap(),
-            name: LanguageName::new("English").unwrap(),
-            native: LanguageNative::new("English").unwrap(),
+            code: LanguageCode::new("en")?,
+            name: LanguageName::new("English")?,
+            native: LanguageNative::new("English")?,
             rtl: RtlFlag::new(false),
             created_by: UserId::from_uuid(uuid::Uuid::nil()),
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(uuid::Uuid::nil()),
-        })
-        .unwrap();
+        })?;
         assert!(ActiveLanguages::is_satisfied_by(&l));
         assert!(!RtlLanguages::is_satisfied_by(&l));
+        Ok(())
     }
 
     #[test]
-    fn background_service_validates_type_consistency() {
+    fn background_service_validates_type_consistency(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(uuid::Uuid::nil());
         let user = UserId::from_uuid(uuid::Uuid::nil());
         let corr = CorrelationId::from_uuid(uuid::Uuid::nil());
         let mut bg = BackgroundSetting::new(NewBackgroundSetting {
             id: crate::value_objects::BackgroundSettingId::new(school, uuid::Uuid::nil()),
-            title: crate::value_objects::BackgroundTitle::new("Login").unwrap(),
+            title: crate::value_objects::BackgroundTitle::new("Login")?,
             background_type: BackgroundType::Color,
             image: None,
-            color: Some(BackgroundColor::new("#000000").unwrap()),
+            color: Some(BackgroundColor::new("#000000")?),
             is_default: false,
             created_by: user,
             created_at: Timestamp::now(),
             correlation_id: corr,
-        })
-        .unwrap();
+        })?;
         // Clear the color and switch to Image — should now fail.
         bg.color = None;
         bg.background_type = BackgroundType::Image;
         assert!(BackgroundService::validate(&bg).is_err());
+        Ok(())
     }
 
     #[test]
-    fn behavior_record_setting_flags_default_off() {
+    fn behavior_record_setting_flags_default_off(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(uuid::Uuid::nil());
         let user = UserId::from_uuid(uuid::Uuid::nil());
         let corr = CorrelationId::from_uuid(uuid::Uuid::nil());
@@ -1021,32 +1029,33 @@ mod tests {
             created_by: user,
             created_at: Timestamp::now(),
             correlation_id: corr,
-        })
-        .unwrap();
+        })?;
         assert!(!BehaviorRecordService::student_can_comment(&s));
         assert!(!BehaviorRecordService::parent_can_comment(&s));
         assert!(!BehaviorRecordService::student_can_view(&s));
         assert!(!BehaviorRecordService::parent_can_view(&s));
+        Ok(())
     }
 
     #[test]
-    fn color_service_can_delete_blocks_referenced() {
+    fn color_service_can_delete_blocks_referenced(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(uuid::Uuid::nil());
         let user = UserId::from_uuid(uuid::Uuid::nil());
         let corr = CorrelationId::from_uuid(uuid::Uuid::nil());
         let c = Color::new(crate::aggregate::NewColor {
             id: ColorId::new(school, uuid::Uuid::new_v4()),
-            name: ColorName::new("primary").unwrap(),
-            default_value: ColorValue::new("#ff0000").unwrap(),
-            lawn_green: LawnGreen::new("#7cfc00").unwrap(),
+            name: ColorName::new("primary")?,
+            default_value: ColorValue::new("#ff0000")?,
+            lawn_green: LawnGreen::new("#7cfc00")?,
             is_color: IsColor::new(true),
             status: ColorStatus::new(true),
             created_by: user,
             created_at: Timestamp::now(),
             correlation_id: corr,
-        })
-        .unwrap();
+        })?;
         assert!(ColorService::can_delete(&c, 2).is_err());
         assert!(ColorService::can_delete(&c, 0).is_ok());
+        Ok(())
     }
 }

@@ -9,9 +9,8 @@
 #![allow(missing_docs, dead_code, clippy::all)]
 
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
-use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
+use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
 use educore_core::value_objects::{Etag, Timestamp, Version};
 
 use crate::entities::CustomLinkSocial;
@@ -19,16 +18,15 @@ use crate::errors::SettingsDomainError;
 use crate::value_objects::{
     AcademicYearRef, ActiveTheme, BackgroundColor, BackgroundImage, BackgroundSettingId,
     BackgroundTitle, BackgroundType, BaseGroupId, BaseGroupName, BaseGroupOrder, BaseSetupId,
-    BaseSetupName, BehaviorFlag, BehaviorRecordSettingId, BoxShadow, ColorFormat, ColorHex,
-    ColorId, ColorMode, ColorName, ColorStatus, ColorThemeId, ColorValue, CustomLinkId,
-    DashboardSectionId, DashboardSettingId, DateFormatActive, DateFormatId, DateFormatPattern,
-    DateFormatPreview, DefaultPhrase, EmailDriver, FileReference, FontFamily, GeneralSettingsId,
-    IsColor, LanguageCode, LanguageId, LanguageName, LanguageNative, LanguagePhraseId,
-    LanguageStatus, LanguageUniversal, LawnGreen, LinkHref, LinkLabel, LocaleCode,
-    ModuleTogglePatch, PhoneNumberPrivacy, PhraseModule, PreloaderStyle, PreloaderType,
-    QueueConnection, RtlFlag, RtlLtl, SetupAdminDescription, SetupAdminId, SetupAdminName,
-    SetupAdminType, SocialUrl, StyleId, StyleName, StylePath, ThemeId, ThemePath, ThemeTitle,
-    Translation,
+    BaseSetupName, BehaviorFlag, BehaviorRecordSettingId, BoxShadow, ColorHex, ColorId, ColorMode,
+    ColorName, ColorStatus, ColorThemeId, ColorValue, CustomLinkId, DashboardSectionId,
+    DashboardSettingId, DateFormatActive, DateFormatId, DateFormatPattern, DateFormatPreview,
+    DefaultPhrase, EmailDriver, FileReference, FontFamily, GeneralSettingsId, IsColor,
+    LanguageCode, LanguageId, LanguageName, LanguageNative, LanguagePhraseId, LanguageStatus,
+    LanguageUniversal, LawnGreen, LinkHref, LinkLabel, LocaleCode, ModuleTogglePatch,
+    PhoneNumberPrivacy, PhraseModule, PreloaderStyle, PreloaderType, QueueConnection, RtlFlag,
+    SetupAdminDescription, SetupAdminId, SetupAdminName, SetupAdminType, StyleId, StyleName,
+    StylePath, ThemeId, ThemePath, ThemeTitle, Translation,
 };
 
 /// Result alias for aggregate constructors.
@@ -2089,6 +2087,8 @@ impl SetupAdmin {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use educore_core::ids::Identifier;
+    use uuid::Uuid;
 
     fn school() -> SchoolId {
         SchoolId::from_uuid(Uuid::nil())
@@ -2103,7 +2103,8 @@ mod tests {
     }
 
     #[test]
-    fn general_settings_validates_required_fields() {
+    fn general_settings_validates_required_fields(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let id = GeneralSettingsId::new(school(), Uuid::nil());
         let cmd = NewGeneralSettings {
             id,
@@ -2122,17 +2123,19 @@ mod tests {
             week_start_id: 0,
             time_zone_id: "UTC".to_owned(),
             attendance_layout: 1,
-            active_theme: ActiveTheme::new("default").unwrap(),
-            queue_connection: QueueConnection::new("sync").unwrap(),
+            active_theme: ActiveTheme::new("default")?,
+            queue_connection: QueueConnection::new("sync")?,
             created_by: user(),
             created_at: Timestamp::now(),
             correlation_id: corr(),
         };
         assert!(GeneralSettings::new(cmd).is_err());
+        Ok(())
     }
 
     #[test]
-    fn general_settings_patch_updates_school_name() {
+    fn general_settings_patch_updates_school_name(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let id = GeneralSettingsId::new(school(), Uuid::nil());
         let cmd = NewGeneralSettings {
             id,
@@ -2151,115 +2154,130 @@ mod tests {
             week_start_id: 0,
             time_zone_id: "UTC".to_owned(),
             attendance_layout: 1,
-            active_theme: ActiveTheme::new("default").unwrap(),
-            queue_connection: QueueConnection::new("sync").unwrap(),
+            active_theme: ActiveTheme::new("default")?,
+            queue_connection: QueueConnection::new("sync")?,
             created_by: user(),
             created_at: Timestamp::now(),
             correlation_id: corr(),
         };
-        let mut s = GeneralSettings::new(cmd).unwrap();
+        let mut s = GeneralSettings::new(cmd)?;
         let mut patch = crate::entities::GeneralSettingsPatch::default();
         patch.school_name = Some("New".to_owned());
-        s.apply_patch(patch, user(), Timestamp::now()).unwrap();
+        s.apply_patch(patch, user(), Timestamp::now())?;
         assert_eq!(s.school_name, "New");
+        Ok(())
     }
 
     #[test]
-    fn language_activate_deactivate() {
+    fn language_activate_deactivate() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let id = LanguageId::new(school(), Uuid::nil());
         let cmd = NewLanguage {
             id,
-            code: LanguageCode::new("en").unwrap(),
-            name: LanguageName::new("English").unwrap(),
-            native: LanguageNative::new("English").unwrap(),
+            code: LanguageCode::new("en")?,
+            name: LanguageName::new("English")?,
+            native: LanguageNative::new("English")?,
             rtl: RtlFlag::new(false),
             created_by: user(),
             created_at: Timestamp::now(),
             correlation_id: corr(),
         };
-        let mut l = Language::new(cmd).unwrap();
+        let mut l = Language::new(cmd)?;
         l.deactivate(Timestamp::now(), user());
         assert_eq!(l.status, LanguageStatus::Inactive);
         l.activate(Timestamp::now(), user());
         assert_eq!(l.status, LanguageStatus::Active);
+        Ok(())
     }
 
     #[test]
-    fn language_phrase_translate_known_locales() {
+    fn language_phrase_translate_known_locales(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let id = LanguagePhraseId::new(school(), Uuid::nil());
         let cmd = NewLanguagePhrase {
             id,
-            modules: PhraseModule::new("dashboard").unwrap(),
-            default_phrases: DefaultPhrase::new("Hello").unwrap(),
+            modules: PhraseModule::new("dashboard")?,
+            default_phrases: DefaultPhrase::new("Hello")?,
             created_by: user(),
             created_at: Timestamp::now(),
             correlation_id: corr(),
         };
-        let mut p = LanguagePhrase::new(cmd).unwrap();
+        let mut p = LanguagePhrase::new(cmd)?;
         p.translate(
-            LocaleCode::new("en").unwrap(),
-            Translation::new("Hello").unwrap(),
+            LocaleCode::new("en")?,
+            Translation::new("Hello")?,
             user(),
             Timestamp::now(),
-        )
-        .unwrap();
-        assert_eq!(p.en.as_ref().unwrap().as_str(), "Hello");
+        )?;
+        assert_eq!(
+            p.en.as_ref()
+                .ok_or_else(|| "expected en translation".to_owned())?
+                .as_str(),
+            "Hello"
+        );
         p.translate(
-            LocaleCode::new("es").unwrap(),
-            Translation::new("Hola").unwrap(),
+            LocaleCode::new("es")?,
+            Translation::new("Hola")?,
             user(),
             Timestamp::now(),
-        )
-        .unwrap();
-        assert_eq!(p.es.as_ref().unwrap().as_str(), "Hola");
+        )?;
+        assert_eq!(
+            p.es.as_ref()
+                .ok_or_else(|| "expected es translation".to_owned())?
+                .as_str(),
+            "Hola"
+        );
         assert!(p
             .translate(
-                LocaleCode::new("xx").unwrap(),
-                Translation::new("X").unwrap(),
+                LocaleCode::new("xx")?,
+                Translation::new("X")?,
                 user(),
                 Timestamp::now()
             )
             .is_err());
+        Ok(())
     }
 
     #[test]
-    fn style_activate_demotes_previous() {
+    fn style_activate_demotes_previous() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let id1 = StyleId::new(school(), Uuid::nil());
         let id2 = StyleId::new(school(), Uuid::nil());
-        let mk = |id: StyleId| NewStyle {
-            id,
-            style_name: StyleName::new("s").unwrap(),
-            path_main_style: StylePath::new("a.css").unwrap(),
-            path_style: StylePath::new("b.css").unwrap(),
-            primary_color: ColorHex("#000000".to_owned()),
-            primary_color2: ColorHex("#111111".to_owned()),
-            title_color: ColorHex("#222222".to_owned()),
-            text_color: ColorHex("#333333".to_owned()),
-            white: ColorHex("#FFFFFF".to_owned()),
-            black: ColorHex("#000000".to_owned()),
-            sidebar_bg: ColorHex("#444444".to_owned()),
-            barchart1: ColorHex("#555555".to_owned()),
-            barchart2: ColorHex("#666666".to_owned()),
-            barcharttextcolor: ColorHex("#777777".to_owned()),
-            barcharttextfamily: FontFamily("Inter".to_owned()),
-            areachartlinecolor1: ColorHex("#888888".to_owned()),
-            areachartlinecolor2: ColorHex("#999999".to_owned()),
-            dashboardbackground: ColorHex("#aaaaaa".to_owned()),
-            is_default: false,
-            created_by: user(),
-            created_at: Timestamp::now(),
-            correlation_id: corr(),
+        let mk = |id: StyleId| -> std::result::Result<NewStyle, Box<dyn std::error::Error>> {
+            Ok(NewStyle {
+                id,
+                style_name: StyleName::new("s")?,
+                path_main_style: StylePath::new("a.css")?,
+                path_style: StylePath::new("b.css")?,
+                primary_color: ColorHex("#000000".to_owned()),
+                primary_color2: ColorHex("#111111".to_owned()),
+                title_color: ColorHex("#222222".to_owned()),
+                text_color: ColorHex("#333333".to_owned()),
+                white: ColorHex("#FFFFFF".to_owned()),
+                black: ColorHex("#000000".to_owned()),
+                sidebar_bg: ColorHex("#444444".to_owned()),
+                barchart1: ColorHex("#555555".to_owned()),
+                barchart2: ColorHex("#666666".to_owned()),
+                barcharttextcolor: ColorHex("#777777".to_owned()),
+                barcharttextfamily: FontFamily("Inter".to_owned()),
+                areachartlinecolor1: ColorHex("#888888".to_owned()),
+                areachartlinecolor2: ColorHex("#999999".to_owned()),
+                dashboardbackground: ColorHex("#aaaaaa".to_owned()),
+                is_default: false,
+                created_by: user(),
+                created_at: Timestamp::now(),
+                correlation_id: corr(),
+            })
         };
-        let mut s1 = Style::new(mk(id1)).unwrap();
-        let mut s2 = Style::new(mk(id2)).unwrap();
+        let mut s1 = Style::new(mk(id1)?)?;
+        let mut s2 = Style::new(mk(id2)?)?;
         s1.is_active = true;
         s2.activate(Some(&mut s1), Timestamp::now(), user());
         assert!(s2.is_active);
         assert!(!s1.is_active);
+        Ok(())
     }
 
     #[test]
-    fn custom_link_max_16() {
+    fn custom_link_max_16() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let id = CustomLinkId::new(school(), Uuid::nil());
         let cmd = NewCustomLink {
             id,
@@ -2267,28 +2285,30 @@ mod tests {
             created_at: Timestamp::now(),
             correlation_id: corr(),
         };
-        let mut c = CustomLink::new(cmd).unwrap();
-        let links = (0..17)
+        let mut c = CustomLink::new(cmd)?;
+        let links: std::result::Result<Vec<_>, Box<dyn std::error::Error>> = (0..17)
             .map(|i| {
-                (
-                    LinkLabel::new(format!("l{i}").as_str()).unwrap(),
-                    LinkHref::new(format!("https://x.com/{i}").as_str()).unwrap(),
-                )
+                Ok((
+                    LinkLabel::new(format!("l{i}").as_str())?,
+                    LinkHref::new(format!("https://x.com/{i}").as_str())?,
+                ))
             })
-            .collect::<Vec<_>>();
+            .collect();
+        let links = links?;
         assert!(c
             .update(links, CustomLinkSocial::default(), user(), Timestamp::now())
             .is_err());
+        Ok(())
     }
 
     #[test]
-    fn theme_cannot_delete_default() {
+    fn theme_cannot_delete_default() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let id = ThemeId::new(school(), Uuid::nil());
         let cmd = NewTheme {
             id,
-            title: ThemeTitle::new("Default").unwrap(),
-            path_main_style: ThemePath::new("a.css").unwrap(),
-            path_style: ThemePath::new("b.css").unwrap(),
+            title: ThemeTitle::new("Default")?,
+            path_main_style: ThemePath::new("a.css")?,
+            path_style: ThemePath::new("b.css")?,
             color_mode: ColorMode::Solid,
             box_shadow: BoxShadow::new(false),
             background_type: BackgroundType::Color,
@@ -2299,12 +2319,13 @@ mod tests {
             created_at: Timestamp::now(),
             correlation_id: corr(),
         };
-        let mut t = Theme::new(cmd).unwrap();
+        let mut t = Theme::new(cmd)?;
         assert!(t.delete(Timestamp::now(), user()).is_err());
+        Ok(())
     }
 
     #[test]
-    fn behavior_record_flags_default_off() {
+    fn behavior_record_flags_default_off() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let id = BehaviorRecordSettingId::new(school(), Uuid::nil());
         let cmd = NewBehaviorRecordSetting {
             id,
@@ -2312,10 +2333,11 @@ mod tests {
             created_at: Timestamp::now(),
             correlation_id: corr(),
         };
-        let s = BehaviorRecordSetting::new(cmd).unwrap();
+        let s = BehaviorRecordSetting::new(cmd)?;
         assert!(!s.student_can_comment());
         assert!(!s.parent_can_comment());
         assert!(!s.student_can_view());
         assert!(!s.parent_can_view());
+        Ok(())
     }
 }

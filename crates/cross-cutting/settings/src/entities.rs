@@ -12,10 +12,10 @@ use educore_core::ids::{Identifier, SchoolId};
 use educore_core::value_objects::Timestamp;
 
 use crate::value_objects::{
-    AcademicYearRef, BackgroundColor, BackgroundImage, BackgroundTitle, BackgroundType,
-    BaseGroupId, BaseSetupId, BehaviorFlag, ColorHex, ColorId, ColorThemeId, ColorValue,
-    DashboardSectionId, DateFormatId, DateFormatPattern, DateFormatPreview, EmailDriver,
-    FileReference, LanguageId, LanguagePhraseId, ModuleTogglePatch, ThemeId, ThemeTitle,
+    AcademicYearRef, BackgroundColor, BackgroundImage, BackgroundType, BaseGroupId, BaseSetupId,
+    BehaviorFlag, ColorHex, ColorId, ColorThemeId, ColorValue, DashboardSectionId, DateFormatId,
+    DateFormatPattern, DateFormatPreview, EmailDriver, FileReference, LanguageId, LanguagePhraseId,
+    ModuleTogglePatch, ThemeId,
 };
 
 // =============================================================================
@@ -861,23 +861,26 @@ mod tests {
     }
 
     #[test]
-    fn behavior_record_flag_is_on() {
-        let flag = BehaviorRecordFlag::new("student_comment", BehaviorFlag::new(1).unwrap());
+    fn behavior_record_flag_is_on() -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let flag = BehaviorRecordFlag::new("student_comment", BehaviorFlag::new(1)?);
         assert!(flag.is_on());
-        let flag = BehaviorRecordFlag::new("student_comment", BehaviorFlag::new(0).unwrap());
+        let flag = BehaviorRecordFlag::new("student_comment", BehaviorFlag::new(0)?);
         assert!(!flag.is_on());
+        Ok(())
     }
 
     #[test]
-    fn custom_link_social_count() {
+    fn custom_link_social_count() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let mut s = CustomLinkSocial::default();
         assert_eq!(s.count_set(), 0);
-        s.facebook_url = Some(crate::value_objects::SocialUrl::new("https://fb.com/x").unwrap());
-        s.twitter_url =
-            Some(crate::value_objects::SocialUrl::new("https://twitter.com/x").unwrap());
+        s.facebook_url = Some(crate::value_objects::SocialUrl::new("https://fb.com/x")?);
+        s.twitter_url = Some(crate::value_objects::SocialUrl::new(
+            "https://twitter.com/x",
+        )?);
         assert_eq!(s.count_set(), 2);
         s.clear();
         assert_eq!(s.count_set(), 0);
+        Ok(())
     }
 
     #[test]
@@ -889,12 +892,13 @@ mod tests {
     }
 
     #[test]
-    fn language_translation_constructor() {
+    fn language_translation_constructor() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let phrase = LanguagePhraseId::new(SchoolId::from_uuid(Uuid::nil()), Uuid::nil());
-        let locale = crate::value_objects::LocaleCode::new("en").unwrap();
-        let translation = crate::value_objects::Translation::new("Hello").unwrap();
+        let locale = crate::value_objects::LocaleCode::new("en")?;
+        let translation = crate::value_objects::Translation::new("Hello")?;
         let lt = LanguageTranslation::new(phrase, locale, translation);
         assert_eq!(lt.school_id, phrase.school_id());
         assert_eq!(lt.locale.as_str(), "en");
+        Ok(())
     }
 }

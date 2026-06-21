@@ -7,25 +7,24 @@
 #![allow(dead_code, clippy::all)]
 #![allow(missing_docs)]
 
-use educore_core::ids::Identifier;
 use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
 
 use crate::aggregate::{
-    NewBackgroundSetting, NewBaseGroup, NewBaseSetup, NewBehaviorRecordSetting, NewColor,
-    NewColorTheme, NewCustomLink, NewDashboardSetting, NewDateFormat, NewGeneralSettings,
-    NewLanguage, NewLanguagePhrase, NewSetupAdmin, NewStyle, NewTheme,
+    NewBackgroundSetting, NewBaseGroup, NewBaseSetup, NewColor, NewColorTheme, NewDashboardSetting,
+    NewDateFormat, NewGeneralSettings, NewLanguage, NewLanguagePhrase, NewSetupAdmin, NewStyle,
+    NewTheme,
 };
 use crate::value_objects::{
     AcademicYearRef, ActiveTheme, BackgroundColor, BackgroundImage, BackgroundTitle,
     BackgroundType, BaseGroupId, BaseGroupName, BaseGroupOrder, BaseSetupId, BaseSetupName,
     BehaviorFlag, ColorHex, ColorId, ColorMode, ColorName, ColorStatus, ColorThemeId, ColorValue,
-    CustomLinkId, DashboardSectionId, DashboardSettingId, DateFormatId, DateFormatPattern,
-    DateFormatPreview, EmailDriver, FileReference, FontFamily, GeneralSettingsId, IsColor,
-    LanguageCode, LanguageId, LanguageName, LanguageNative, LanguagePhraseId, LawnGreen, LinkHref,
-    LinkLabel, LocaleCode, ModuleTogglePatch, PhoneNumberPrivacy, PreloaderStyle, PreloaderType,
-    QueueConnection, RtlFlag, SetupAdminDescription, SetupAdminId, SetupAdminName, SetupAdminType,
-    SocialUrl, StyleId, StyleName, StylePath, ThemeId, ThemePath, ThemeTitle, Translation,
+    DashboardSectionId, DashboardSettingId, DateFormatId, DateFormatPattern, DateFormatPreview,
+    EmailDriver, FileReference, FontFamily, GeneralSettingsId, IsColor, LanguageCode, LanguageId,
+    LanguageName, LanguageNative, LanguagePhraseId, LawnGreen, LinkHref, LinkLabel, LocaleCode,
+    ModuleTogglePatch, PhoneNumberPrivacy, PreloaderStyle, PreloaderType, QueueConnection, RtlFlag,
+    SetupAdminDescription, SetupAdminId, SetupAdminName, SetupAdminType, SocialUrl, StyleId,
+    StyleName, StylePath, ThemeId, ThemePath, ThemeTitle, Translation,
 };
 
 // =============================================================================
@@ -1442,20 +1441,22 @@ mod tests {
     }
 
     #[test]
-    fn add_language_command_into_new_language() {
+    fn add_language_command_into_new_language(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(uuid::Uuid::nil());
         let user = UserId::from_uuid(uuid::Uuid::nil());
         let corr = CorrelationId::from_uuid(uuid::Uuid::nil());
         let tenant = TenantContext::for_user(school, user, corr, UserType::SchoolAdmin);
         let cmd = AddLanguageCommand {
             tenant,
-            code: LanguageCode::new("en").unwrap(),
-            name: LanguageName::new("English").unwrap(),
-            native: LanguageNative::new("English").unwrap(),
+            code: LanguageCode::new("en")?,
+            name: LanguageName::new("English")?,
+            native: LanguageNative::new("English")?,
             rtl: RtlFlag::new(false),
         };
         let id = LanguageId::new(school, uuid::Uuid::nil());
         let new = cmd.into_new_language(id);
         assert_eq!(new.code.as_str(), "en");
+        Ok(())
     }
 }

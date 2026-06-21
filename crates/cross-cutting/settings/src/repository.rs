@@ -19,10 +19,9 @@ use crate::aggregate::{
 };
 use crate::entities::GeneralSettingsPatch;
 use crate::value_objects::{
-    BackgroundSettingId, BaseGroupId, BaseSetupId, BehaviorRecordSettingId, ColorId, ColorThemeId,
-    CustomLinkId, DashboardSectionId, DashboardSettingId, DateFormatId, GeneralSettingsId,
-    LanguageCode, LanguageId, LanguagePhraseId, LocaleCode, SetupAdminId, SetupAdminType, StyleId,
-    ThemeId, Translation,
+    BackgroundSettingId, BaseGroupId, BaseSetupId, ColorId, ColorThemeId, DashboardSectionId,
+    DashboardSettingId, DateFormatId, LanguageCode, LanguageId, LanguagePhraseId, LocaleCode,
+    SetupAdminId, SetupAdminType, StyleId, ThemeId, Translation,
 };
 
 // =============================================================================

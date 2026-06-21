@@ -7,7 +7,7 @@
 #![allow(dead_code, clippy::all)]
 #![allow(missing_docs)]
 
-use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
+use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId};
 use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 use serde::{Deserialize, Serialize};
@@ -15,10 +15,10 @@ use uuid::Uuid;
 
 use crate::value_objects::{
     AcademicYearRef, ActiveTheme, BackgroundTitle, BackgroundType, BaseGroupId, BaseSetupId,
-    BehaviorFlag, ColorId, ColorName, ColorStatus, ColorThemeId, ColorValue, CustomLinkId,
-    DashboardSectionId, DashboardSettingId, DateFormatId, DateFormatPattern, DateFormatPreview,
-    GeneralSettingsId, LanguageCode, LanguageId, LanguageName, LanguagePhraseId, LocaleCode,
-    PhoneNumberPrivacy, RtlFlag, SetupAdminId, SetupAdminType, StyleId, ThemeId,
+    ColorId, ColorName, ColorThemeId, ColorValue, CustomLinkId, DashboardSectionId,
+    DashboardSettingId, DateFormatId, DateFormatPattern, DateFormatPreview, GeneralSettingsId,
+    LanguageCode, LanguageId, LanguageName, LanguagePhraseId, LocaleCode, SetupAdminId,
+    SetupAdminType, StyleId, ThemeId,
 };
 
 // =============================================================================
@@ -2802,7 +2802,6 @@ fn _ensure_ids_compile(school: SchoolId) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn all_event_wire_forms_resolve() {

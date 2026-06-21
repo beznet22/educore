@@ -1490,25 +1490,27 @@ mod tests {
     }
 
     #[test]
-    fn behavior_flag_constrains_to_0_1_2() {
+    fn behavior_flag_constrains_to_0_1_2() -> std::result::Result<(), Box<dyn std::error::Error>> {
         assert!(BehaviorFlag::new(0).is_ok());
         assert!(BehaviorFlag::new(1).is_ok());
         assert!(BehaviorFlag::new(2).is_ok());
         assert!(BehaviorFlag::new(3).is_err());
         assert!(BehaviorFlag::new(-1).is_err());
-        assert!(BehaviorFlag::new(1).unwrap().is_on());
+        assert!(BehaviorFlag::new(1)?.is_on());
+        Ok(())
     }
 
     #[test]
-    fn setup_admin_type_constrains_to_1_4() {
+    fn setup_admin_type_constrains_to_1_4() -> std::result::Result<(), Box<dyn std::error::Error>> {
         assert!(SetupAdminType::new(1).is_ok());
         assert!(SetupAdminType::new(4).is_ok());
         assert!(SetupAdminType::new(0).is_err());
         assert!(SetupAdminType::new(5).is_err());
-        assert_eq!(SetupAdminType::new(1).unwrap().as_name(), "Purpose");
-        assert_eq!(SetupAdminType::new(2).unwrap().as_name(), "ComplaintType");
-        assert_eq!(SetupAdminType::new(3).unwrap().as_name(), "Source");
-        assert_eq!(SetupAdminType::new(4).unwrap().as_name(), "Reference");
+        assert_eq!(SetupAdminType::new(1)?.as_name(), "Purpose");
+        assert_eq!(SetupAdminType::new(2)?.as_name(), "ComplaintType");
+        assert_eq!(SetupAdminType::new(3)?.as_name(), "Source");
+        assert_eq!(SetupAdminType::new(4)?.as_name(), "Reference");
+        Ok(())
     }
 
     #[test]
@@ -1519,10 +1521,11 @@ mod tests {
     }
 
     #[test]
-    fn rtl_ltl_direction() {
-        assert!(RtlLtl::new(1).unwrap().is_rtl());
-        assert!(!RtlLtl::new(2).unwrap().is_rtl());
+    fn rtl_ltl_direction() -> std::result::Result<(), Box<dyn std::error::Error>> {
+        assert!(RtlLtl::new(1)?.is_rtl());
+        assert!(!RtlLtl::new(2)?.is_rtl());
         assert!(RtlLtl::new(3).is_err());
+        Ok(())
     }
 
     #[test]
@@ -1540,14 +1543,16 @@ mod tests {
             .with("lesson_enabled", Some(true))
             .with("fees_enabled", Some(false))
             .with("chat_enabled", None);
-        assert_eq!(patch.toggles.get("lesson_enabled").unwrap(), &Some(true));
-        assert_eq!(patch.toggles.get("fees_enabled").unwrap(), &Some(false));
-        assert_eq!(patch.toggles.get("chat_enabled").unwrap(), &None);
+        assert_eq!(patch.toggles.get("lesson_enabled"), Some(&Some(true)));
+        assert_eq!(patch.toggles.get("fees_enabled"), Some(&Some(false)));
+        assert_eq!(patch.toggles.get("chat_enabled"), Some(&None));
     }
 
     #[test]
-    fn url_validation_includes_empty_for_optional_fields() {
-        assert!(LinkHref::new("").unwrap().is_set() == false);
-        assert!(LinkHref::new("https://x.com").unwrap().is_set());
+    fn url_validation_includes_empty_for_optional_fields(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        assert!(LinkHref::new("")?.is_set() == false);
+        assert!(LinkHref::new("https://x.com")?.is_set());
+        Ok(())
     }
 }
