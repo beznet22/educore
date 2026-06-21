@@ -12,14 +12,20 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
+pub mod audit;
 pub mod connection;
 pub(crate) mod error;
+pub mod event_log;
+pub mod idempotency;
 pub mod outbox;
 pub mod storage;
 pub mod stubs;
 pub mod transaction;
 
+pub use audit::SurrealAuditLog;
 pub use connection::SurrealConnection;
+pub use event_log::SurrealEventLog;
+pub use idempotency::SurrealIdempotency;
 pub use outbox::SurrealOutbox;
 pub use storage::SurrealStorageAdapter;
 pub use transaction::SurrealTransaction;

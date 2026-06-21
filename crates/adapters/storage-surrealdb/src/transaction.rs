@@ -21,7 +21,9 @@ use educore_storage::transaction::Transaction;
 
 use crate::connection::Db;
 use crate::outbox::SurrealOutbox;
-use crate::stubs::{SurrealAuditLog, SurrealEventLog, SurrealIdempotency};
+use crate::audit::SurrealAuditLog;
+use crate::event_log::SurrealEventLog;
+use crate::idempotency::SurrealIdempotency;
 
 /// The SurrealDB-backed transaction. Owns its sub-port
 /// handles; the `Transaction` trait's `&self`-returning
@@ -67,10 +69,7 @@ impl SurrealTransaction {
             db: db.clone(),
             school,
         };
-        let idem = SurrealIdempotency {
-            db: db.clone(),
-            school,
-        };
+        let idem = SurrealIdempotency { db: db.clone() };
         Self {
             outbox,
             audit,
