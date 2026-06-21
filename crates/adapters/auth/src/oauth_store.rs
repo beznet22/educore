@@ -37,7 +37,7 @@
 //! audit emission belongs to the command handler, not the
 //! repository port.
 
-#![allow(clippy::expect_used)]
+#![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
