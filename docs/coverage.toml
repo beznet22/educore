@@ -2136,7 +2136,7 @@ item = "AuthProvider port"
 spec = "docs/ports/authentication.md"
 crate = "educore-auth"
 phase = 15
-status = "Pending"
+status = "Tested"
 
 [[row]]
 id = "auth_provider_jwt_impl"
@@ -2144,7 +2144,7 @@ item = "JwtAuthProvider impl"
 spec = "docs/ports/authentication.md"
 crate = "educore-auth"
 phase = 15
-status = "Pending"
+status = "Tested"
 
 [[row]]
 id = "notification_provider_port"
@@ -2152,7 +2152,7 @@ item = "NotificationProvider port"
 spec = "docs/ports/notifications.md"
 crate = "educore-notify"
 phase = 15
-status = "Pending"
+status = "Tested"
 
 [[row]]
 id = "payment_provider_port"
@@ -2160,7 +2160,7 @@ item = "PaymentProvider port"
 spec = "docs/ports/payments.md"
 crate = "educore-payment"
 phase = 15
-status = "Pending"
+status = "Tested"
 
 [[row]]
 id = "file_storage_port"
@@ -2168,7 +2168,7 @@ item = "FileStorage port"
 spec = "docs/ports/file-storage.md"
 crate = "educore-files"
 phase = 15
-status = "Pending"
+status = "Tested"
 
 [[row]]
 id = "integration_gateway_port"
@@ -2176,7 +2176,7 @@ item = "IntegrationGateway port"
 spec = "docs/ports/integrations.md"
 crate = "educore-integrations"
 phase = 15
-status = "Pending"
+status = "Tested"
 
 # =============================================================================
 # Test infrastructure + SDK (Phase 16)
