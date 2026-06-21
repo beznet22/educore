@@ -158,10 +158,15 @@ impl WebhookSignatureService {
     /// logged in the commit message.
     pub fn compute_signature(&self, payload: &[u8]) -> Result<String, PaymentError> {
         let mut mac = HmacSha256::new_from_slice(self.secret.as_bytes()).map_err(|e| {
-            PaymentError::Provider(format!("hmac key rejected (unreachable for HMAC-SHA256): {e}"))
+            PaymentError::Provider(format!(
+                "hmac key rejected (unreachable for HMAC-SHA256): {e}"
+            ))
         })?;
         mac.update(payload);
-        Ok(format!("sha256={}", hex_encode(&mac.finalize().into_bytes())))
+        Ok(format!(
+            "sha256={}",
+            hex_encode(&mac.finalize().into_bytes())
+        ))
     }
 
     /// Returns `Ok(true)` iff the provided `sha256=<hex>` header
@@ -420,8 +425,10 @@ mod tests {
 
     #[test]
     fn test_idempotency_service_derive_charge_key() {
-        let a = IdempotencyService::derive_charge_key("cmd-1", &["inv_a".into(), "inv_b".into()], 1500);
-        let b = IdempotencyService::derive_charge_key("cmd-1", &["inv_b".into(), "inv_a".into()], 1500);
+        let a =
+            IdempotencyService::derive_charge_key("cmd-1", &["inv_a".into(), "inv_b".into()], 1500);
+        let b =
+            IdempotencyService::derive_charge_key("cmd-1", &["inv_b".into(), "inv_a".into()], 1500);
         // Invoice order is normalised: same key for any permutation.
         assert_eq!(a, b);
         // Different amount → different key.
@@ -564,7 +571,10 @@ mod tests {
     fn settlement_is_settled_requires_provider_payment_id() {
         let line = settlement_line("ch_abc", 1500);
         let r = receipt(Some("ch_abc"), 1500);
-        assert!(SettlementService::is_settled(&r, std::slice::from_ref(&line)));
+        assert!(SettlementService::is_settled(
+            &r,
+            std::slice::from_ref(&line)
+        ));
         assert!(!SettlementService::is_settled(&r, &[]));
 
         // Offline receipt with no provider id: never settled by a line.

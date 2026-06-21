@@ -304,9 +304,15 @@ mod tests {
         assert_eq!(listed.len(), 2);
 
         OAuthClientRepository::revoke(&store, "c1").await.unwrap();
-        let after = OAuthClientRepository::get(&store, "c1").await.unwrap().unwrap();
+        let after = OAuthClientRepository::get(&store, "c1")
+            .await
+            .unwrap()
+            .unwrap();
         assert!(after.revoked);
-        let other = OAuthClientRepository::get(&store, "c2").await.unwrap().unwrap();
+        let other = OAuthClientRepository::get(&store, "c2")
+            .await
+            .unwrap()
+            .unwrap();
         assert!(!other.revoked);
     }
 
@@ -321,7 +327,9 @@ mod tests {
             .unwrap();
         assert_eq!(got, Some(r));
 
-        PasswordResetRepository::delete(&store, "a@b.com").await.unwrap();
+        PasswordResetRepository::delete(&store, "a@b.com")
+            .await
+            .unwrap();
         let after = PasswordResetRepository::get_by_email(&store, "a@b.com")
             .await
             .unwrap();

@@ -814,9 +814,7 @@ mod object_safety {
 
     #[test]
     fn checksum_round_trips_string() {
-        let c = Checksum::new(
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        );
+        let c = Checksum::new("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
         assert!(c.as_str().starts_with("e3b0c44"));
     }
 

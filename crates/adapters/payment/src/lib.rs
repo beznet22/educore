@@ -74,10 +74,10 @@ pub mod prelude {
         RefundDestination, RefundReceipt, RefundRequest, Settlement, SettlementLine,
         SettlementRequest, WalletId,
     };
-    pub use crate::stripe::{StripeProvider, StripeProviderBuilder};
     pub use crate::services::{
         BankSlipService, IdempotencyService, SettlementService, WebhookSignatureService,
     };
+    pub use crate::stripe::{StripeProvider, StripeProviderBuilder};
 }
 
 #[cfg(test)]

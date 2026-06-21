@@ -231,9 +231,7 @@ impl OAuthScopeService {
         if required.is_empty() {
             return false;
         }
-        token_scopes
-            .split_ascii_whitespace()
-            .any(|s| s == required)
+        token_scopes.split_ascii_whitespace().any(|s| s == required)
     }
 
     /// Returns the canonical scope strings required to perform
@@ -324,18 +322,15 @@ impl PasswordService {
     /// hash is structurally invalid (e.g. corrupted PHC string,
     /// unknown algorithm tag).
     pub fn verify_password(&self, plain: &SecretString, hash: &str) -> Result<bool, AuthError> {
-        let parsed = PasswordHash::new(hash).map_err(|e| {
-            AuthError::Malformed(format!("stored password hash is malformed: {e}"))
-        })?;
+        let parsed = PasswordHash::new(hash)
+            .map_err(|e| AuthError::Malformed(format!("stored password hash is malformed: {e}")))?;
         match self
             .argon2
             .verify_password(plain.expose_secret().as_bytes(), &parsed)
         {
             Ok(()) => Ok(true),
             Err(argon2::password_hash::Error::Password) => Ok(false),
-            Err(e) => Err(AuthError::Malformed(format!(
-                "argon2 verify failed: {e}"
-            ))),
+            Err(e) => Err(AuthError::Malformed(format!("argon2 verify failed: {e}"))),
         }
     }
 
@@ -478,7 +473,12 @@ fn totp_code(key: &[u8], counter: u64) -> Result<String, AuthError> {
             "hmac-sha1 output too short for dynamic truncation".to_owned(),
         ));
     }
-    let bin_code = u32::from_be_bytes([mac[offset], mac[offset + 1], mac[offset + 2], mac[offset + 3]]);
+    let bin_code = u32::from_be_bytes([
+        mac[offset],
+        mac[offset + 1],
+        mac[offset + 2],
+        mac[offset + 3],
+    ]);
     // Mask the high bit per RFC 4226 § 5.3 so the value fits in
     // 31 bits (avoids signed/unsigned surprises downstream).
     let bin_code = bin_code & 0x7fff_ffff;
@@ -524,7 +524,9 @@ fn sha1(message: &[u8]) -> [u8; 20] {
 /// bit, then zeros, then the 64-bit big-endian length in bits,
 /// to a multiple of 64 bytes (512 bits).
 fn sha1_concat(prefix: &[u8], message: &[u8]) -> [u8; 20] {
-    let bit_len = (prefix.len() as u64).wrapping_add(message.len() as u64).wrapping_mul(8);
+    let bit_len = (prefix.len() as u64)
+        .wrapping_add(message.len() as u64)
+        .wrapping_mul(8);
 
     // Build the padded message: prefix || message || 0x80 ||
     // zeros || 8-byte big-endian bit length. The total length
@@ -559,7 +561,8 @@ fn sha1_concat(prefix: &[u8], message: &[u8]) -> [u8; 20] {
         let mut w = [0_u32; 80];
         for (i, slot) in w.iter_mut().enumerate().take(16) {
             let off = i * 4;
-            *slot = u32::from_be_bytes([chunk[off], chunk[off + 1], chunk[off + 2], chunk[off + 3]]);
+            *slot =
+                u32::from_be_bytes([chunk[off], chunk[off + 1], chunk[off + 2], chunk[off + 3]]);
         }
         for i in 16..80 {
             w[i] = (w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]).rotate_left(1);
@@ -753,7 +756,10 @@ mod tests {
             "profile:read"
         ));
         // Sad path: the scope is absent.
-        assert!(!OAuthScopeService::has_scope("openid profile:read", "profile:write"));
+        assert!(!OAuthScopeService::has_scope(
+            "openid profile:read",
+            "profile:write"
+        ));
         // Empty token scope string never matches a non-empty required scope.
         assert!(!OAuthScopeService::has_scope("", "profile:read"));
         // Empty required scope is rejected (fail-closed).
@@ -779,11 +785,17 @@ mod tests {
 
         // First hash.
         let hash1 = svc.hash_password(&plain).expect("hash succeeds");
-        assert!(hash1.starts_with("$argon2id$"), "hash must be argon2id PHC string, got {hash1}");
+        assert!(
+            hash1.starts_with("$argon2id$"),
+            "hash must be argon2id PHC string, got {hash1}"
+        );
 
         // Second hash of the same password must differ (fresh salt).
         let hash2 = svc.hash_password(&plain).expect("hash succeeds");
-        assert_ne!(hash1, hash2, "two hashes of the same password must differ (fresh salt)");
+        assert_ne!(
+            hash1, hash2,
+            "two hashes of the same password must differ (fresh salt)"
+        );
 
         // Verify round-trip on both.
         assert!(svc.verify_password(&plain, &hash1).expect("verify ok"));
@@ -818,18 +830,22 @@ mod tests {
         assert_eq!(code, "94287082", "RFC 6238 Appendix B vector for T=59");
 
         // T = 1111111109s -> counter 37037036 -> code "07081804"
-        let t2 = Timestamp::from_datetime(
-            Utc.timestamp_opt(1_111_111_109, 0).single().expect("valid"),
-        );
+        let t2 =
+            Timestamp::from_datetime(Utc.timestamp_opt(1_111_111_109, 0).single().expect("valid"));
         let code = svc.current_code(secret, t2).expect("code for t=1111111109");
-        assert_eq!(code, "07081804", "RFC 6238 Appendix B vector for T=1111111109");
+        assert_eq!(
+            code, "07081804",
+            "RFC 6238 Appendix B vector for T=1111111109"
+        );
 
         // T = 1111111111s -> counter 37037037 -> code "14050471"
-        let t3 = Timestamp::from_datetime(
-            Utc.timestamp_opt(1_111_111_111, 0).single().expect("valid"),
-        );
+        let t3 =
+            Timestamp::from_datetime(Utc.timestamp_opt(1_111_111_111, 0).single().expect("valid"));
         let code = svc.current_code(secret, t3).expect("code for t=1111111111");
-        assert_eq!(code, "14050471", "RFC 6238 Appendix B vector for T=1111111111");
+        assert_eq!(
+            code, "14050471",
+            "RFC 6238 Appendix B vector for T=1111111111"
+        );
 
         // verify_code accepts the exact code (delta = 0).
         assert!(svc.verify_code(secret, "94287082", t59));
@@ -844,14 +860,20 @@ mod tests {
 
         // verify_code rejects a stale code outside the ±1 window.
         let t_far = Timestamp::from_datetime(
-            Utc.timestamp_opt(1_111_111_111 + 5 * 60, 0).single().expect("valid"),
+            Utc.timestamp_opt(1_111_111_111 + 5 * 60, 0)
+                .single()
+                .expect("valid"),
         );
         assert!(!svc.verify_code(secret, "94287082", t_far));
 
         // generate_secret produces a 32-character base32 string
         // (160 bits = 32 base32 chars).
         let generated = MfaService::generate_secret();
-        assert_eq!(generated.len(), 32, "20-byte secret encodes to 32 base32 chars");
+        assert_eq!(
+            generated.len(),
+            32,
+            "20-byte secret encodes to 32 base32 chars"
+        );
         // Round-trip: a generated secret decodes back to 20 bytes.
         let decoded = base32_decode(&generated).expect("generated secret decodes");
         assert_eq!(decoded.len(), 20);

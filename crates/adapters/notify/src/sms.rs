@@ -37,8 +37,8 @@ use educore_core::value_objects::Timestamp;
 use crate::errors::{NotificationError, NotificationTemplateId};
 use crate::port::{
     BulkId, BulkReceipt, BulkRecipient, BulkRecipientIndex, Channel, DeliveryStatus,
-    NotificationProvider, NotificationReceipt, NotificationReceiptId, PhoneNumber,
-    Recipient, SendBulkNotification, SendNotification,
+    NotificationProvider, NotificationReceipt, NotificationReceiptId, PhoneNumber, Recipient,
+    SendBulkNotification, SendNotification,
 };
 // The port exposes a `Result<T>` type alias for
 // `std::result::Result<T, NotificationError>`. Bring it into
@@ -161,11 +161,7 @@ impl SmsProviderBuilder {
     /// time. Calling with the same id twice overwrites the prior
     /// registration.
     #[must_use]
-    pub fn template_body(
-        mut self,
-        id: NotificationTemplateId,
-        body: impl Into<String>,
-    ) -> Self {
+    pub fn template_body(mut self, id: NotificationTemplateId, body: impl Into<String>) -> Self {
         self.templates.insert(id, body.into());
         self
     }
@@ -179,9 +175,7 @@ impl SmsProviderBuilder {
         let gateway_url = self
             .gateway_url
             .unwrap_or_else(|| DEFAULT_GATEWAY_URL.replace("{account}", &self.api_key));
-        let http = Client::builder()
-            .build()
-            .unwrap_or_else(|_| Client::new());
+        let http = Client::builder().build().unwrap_or_else(|_| Client::new());
         SmsProvider {
             http,
             gateway_url,
@@ -277,10 +271,7 @@ impl SmsProvider {
     /// Looks up the template body registered for `template_id`,
     /// returning [`NotificationError::TemplateNotFound`] if no
     /// body is registered.
-    fn lookup_body(
-        &self,
-        template_id: &NotificationTemplateId,
-    ) -> Result<String> {
+    fn lookup_body(&self, template_id: &NotificationTemplateId) -> Result<String> {
         self.templates
             .get(template_id)
             .cloned()
@@ -302,10 +293,7 @@ impl SmsProvider {
     /// Called by both [`SmsProvider::send`] and the per-row path
     /// inside [`SmsProvider::send_bulk`] so the two share the
     /// exact same wire-format and status mapping.
-    async fn dispatch(
-        &self,
-        request: &SendNotification,
-    ) -> Result<NotificationReceipt> {
+    async fn dispatch(&self, request: &SendNotification) -> Result<NotificationReceipt> {
         let from = self.resolve_from(&request.channel)?;
         let template_id = match &request.template {
             crate::port::TemplateRef::Id(id) => id.clone(),
@@ -331,9 +319,8 @@ impl SmsProvider {
             .map_err(NotificationError::infrastructure)?;
 
         let status_code = response.status();
-        let provider_message_id = extract_provider_message_id(
-            &response.text().await.unwrap_or_default(),
-        );
+        let provider_message_id =
+            extract_provider_message_id(&response.text().await.unwrap_or_default());
 
         let status = if status_code.as_u16() == 202 {
             DeliveryStatus::Queued
@@ -388,9 +375,7 @@ impl NotificationProvider for SmsProvider {
         for chunk in request.recipients.chunks(SMS_BULK_BATCH_SIZE) {
             for (offset, row) in chunk.iter().enumerate() {
                 let global_idx = receipt.total();
-                let index = BulkRecipientIndex::new(
-                    u32::try_from(global_idx).unwrap_or(u32::MAX),
-                );
+                let index = BulkRecipientIndex::new(u32::try_from(global_idx).unwrap_or(u32::MAX));
                 let single = build_single_from_bulk(&request, row);
                 match self.dispatch(&single).await {
                     Ok(r) => receipt.receipts.push(r),
@@ -453,7 +438,10 @@ fn build_single_from_bulk(bulk: &SendBulkNotification, row: &BulkRecipient) -> S
 fn template_value_as_str(value: &crate::port::TemplateValue) -> String {
     use crate::port::TemplateValue;
     match value {
-        TemplateValue::Text(s) | TemplateValue::Decimal(s) | TemplateValue::Date(s) | TemplateValue::Json(s) => s.clone(),
+        TemplateValue::Text(s)
+        | TemplateValue::Decimal(s)
+        | TemplateValue::Date(s)
+        | TemplateValue::Json(s) => s.clone(),
         TemplateValue::Number(n) => n.to_string(),
         TemplateValue::Boolean(b) => b.to_string(),
     }
@@ -499,14 +487,12 @@ fn generate_id(prefix: &str) -> String {
 /// lines of arithmetic so the crate does not need a `base64`
 /// dependency for one header value.
 fn base64_encode(input: &[u8]) -> String {
-    const ALPHABET: &[u8; 64] =
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::with_capacity(input.len().div_ceil(3) * 4);
     let mut i = 0;
     while i + 3 <= input.len() {
-        let n = (u32::from(input[i]) << 16)
-            | (u32::from(input[i + 1]) << 8)
-            | u32::from(input[i + 2]);
+        let n =
+            (u32::from(input[i]) << 16) | (u32::from(input[i + 1]) << 8) | u32::from(input[i + 2]);
         out.push(ALPHABET[((n >> 18) & 0x3F) as usize] as char);
         out.push(ALPHABET[((n >> 12) & 0x3F) as usize] as char);
         out.push(ALPHABET[((n >> 6) & 0x3F) as usize] as char);
@@ -615,10 +601,7 @@ mod tests {
         };
 
         let result = provider.send(request).await;
-        assert!(matches!(
-            result,
-            Err(NotificationError::Provider(_))
-        ));
+        assert!(matches!(result, Err(NotificationError::Provider(_))));
     }
 
     #[tokio::test]
@@ -675,7 +658,9 @@ mod tests {
                     .with_variables(vars),
             );
         }
-        recipients.push(BulkRecipient::new(Recipient::User(SystemIdGen.next_user_id())));
+        recipients.push(BulkRecipient::new(Recipient::User(
+            SystemIdGen.next_user_id(),
+        )));
 
         let request = SendBulkNotification {
             tenant: tenant(),

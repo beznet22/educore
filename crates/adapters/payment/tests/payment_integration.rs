@@ -41,12 +41,16 @@ fn payment_integration_idempotency_charge_key() {
 fn payment_integration_webhook_signature_round_trip() {
     let svc = WebhookSignatureService::new("whsec_test_secret".to_owned());
     let payload = b"{\"id\":\"evt_001\",\"amount\":1500}";
-    let sig = svc.compute_signature(payload).expect("HMAC accepts any key length");
+    let sig = svc
+        .compute_signature(payload)
+        .expect("HMAC accepts any key length");
     assert!(sig.starts_with("sha256="));
-    assert!(svc.verify_signature(payload, &sig).expect("compute should succeed"));
-    assert!(
-        !svc.verify_signature(b"{\"tampered\":\"data\"}", &sig).expect("compute should succeed")
-    );
+    assert!(svc
+        .verify_signature(payload, &sig)
+        .expect("compute should succeed"));
+    assert!(!svc
+        .verify_signature(b"{\"tampered\":\"data\"}", &sig)
+        .expect("compute should succeed"));
 }
 
 // ---------------------------------------------------------------------------
@@ -79,7 +83,9 @@ fn payment_integration_settlement_match_line() {
     let receipt = PaymentReceipt {
         payment_id: payment_id.clone(),
         provider_payment_id: Some("ch_123".to_owned()),
-        status: PaymentStatus::Captured { at: educore_core::value_objects::Timestamp::now() },
+        status: PaymentStatus::Captured {
+            at: educore_core::value_objects::Timestamp::now(),
+        },
         amount: Money::new(usd.clone(), 15_000).expect("non-negative"),
         method: PaymentMethodKind::Cash,
         authorized_at: None,

@@ -64,8 +64,7 @@ const DEFAULT_SMTP_PORT: u16 = 587;
 /// Default stub template body used when the engine has not
 /// pre-rendered a template body. The body contains a placeholder
 /// so the substitution path is exercised end-to-end.
-const DEFAULT_TEMPLATE_BODY: &str =
-    "Hello {student_name}, this is a notification from Educore.";
+const DEFAULT_TEMPLATE_BODY: &str = "Hello {student_name}, this is a notification from Educore.";
 
 /// SMTP-based [`NotificationProvider`].
 ///
@@ -294,9 +293,13 @@ impl EmailProviderBuilder {
 /// the email channel cannot route (e.g. an SMS-only contact).
 fn resolve_email_recipient(recipient: &Recipient) -> Result<String> {
     match recipient {
-        Recipient::Direct(contact) => contact.email.as_ref().map(|e| e.as_str().to_owned()).ok_or_else(|| {
-            NotificationError::InvalidRecipient("contact has no email address".to_string())
-        }),
+        Recipient::Direct(contact) => contact
+            .email
+            .as_ref()
+            .map(|e| e.as_str().to_owned())
+            .ok_or_else(|| {
+                NotificationError::InvalidRecipient("contact has no email address".to_string())
+            }),
         Recipient::User(_)
         | Recipient::Student(_)
         | Recipient::Guardian(_, _)
@@ -331,10 +334,7 @@ fn render_template_body(
 /// variables are left as-is. Used by the email provider and
 /// exercised directly by the unit tests.
 #[must_use]
-pub fn substitute_variables(
-    body: &str,
-    variables: &BTreeMap<String, TemplateValue>,
-) -> String {
+pub fn substitute_variables(body: &str, variables: &BTreeMap<String, TemplateValue>) -> String {
     let mut result = body.to_owned();
     for (key, value) in variables {
         let placeholder = format!("{{{key}}}");
@@ -502,7 +502,9 @@ mod tests {
             .enable_all()
             .build()
             .expect("runtime");
-        let err = rt.block_on(provider.send(req)).expect_err("non-email channel should fail");
+        let err = rt
+            .block_on(provider.send(req))
+            .expect_err("non-email channel should fail");
         assert!(matches!(err, NotificationError::Provider(_)), "got {err:?}");
     }
 

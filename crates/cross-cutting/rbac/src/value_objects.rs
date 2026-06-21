@@ -2108,7 +2108,7 @@ impl Capability {
             | Self::OperationsSidebarUpdate
             | Self::OperationsSidebarDelete
             | Self::OperationsSidebarReorder => CapabilityDomain::Operations,
-            | Self::AuthLogin
+            Self::AuthLogin
             | Self::AuthLogout
             | Self::AuthRefresh
             | Self::AuthRevoke
@@ -2121,7 +2121,7 @@ impl Capability {
             | Self::PasswordResetConfirm
             | Self::MfaEnroll
             | Self::MfaVerify => CapabilityDomain::Auth,
-            | Self::NotifyEmailSend
+            Self::NotifyEmailSend
             | Self::NotifySmsSend
             | Self::NotifyPushSend
             | Self::NotifyInApp
@@ -2130,7 +2130,7 @@ impl Capability {
             | Self::NotifyTemplateRead
             | Self::NotifyTemplateWrite
             | Self::NotifyBulkSend => CapabilityDomain::Notify,
-            | Self::PaymentCharge
+            Self::PaymentCharge
             | Self::PaymentRefund
             | Self::PaymentStatus
             | Self::PaymentMethodList
@@ -2138,7 +2138,7 @@ impl Capability {
             | Self::PaymentSettlement
             | Self::BankSlipGenerate
             | Self::BankSlipApprove => CapabilityDomain::Payment,
-            | Self::FilesPut
+            Self::FilesPut
             | Self::FilesGet
             | Self::FilesDelete
             | Self::FilesSignedUrl
@@ -2146,7 +2146,7 @@ impl Capability {
             | Self::FilesMove
             | Self::FilesVisibilityChange
             | Self::FilesLifecycle => CapabilityDomain::Files,
-            | Self::IntegrationInvoke
+            Self::IntegrationInvoke
             | Self::IntegrationListCapabilities
             | Self::IntegrationHealth
             | Self::IntegrationConfigure
@@ -2768,37 +2768,31 @@ impl Capability {
             | Self::OperationsSidebarUpdate
             | Self::OperationsSidebarDelete
             | Self::OperationsSidebarReorder => "Sidebar",
-            | Self::AuthLogin
+            Self::AuthLogin
             | Self::AuthLogout
             | Self::AuthRefresh
             | Self::AuthRevoke
             | Self::AuthPasswordReset => "Auth",
-            | Self::OAuthAccessTokenRead
-            | Self::OAuthAccessTokenRevoke => "AccessToken",
-            | Self::OAuthClientRead
-            | Self::OAuthClientManage => "Client",
-            | Self::PasswordResetRequest
-            | Self::PasswordResetConfirm => "PasswordReset",
-            | Self::MfaEnroll
-            | Self::MfaVerify => "Mfa",
-            | Self::NotifyEmailSend => "Email",
-            | Self::NotifySmsSend => "Sms",
-            | Self::NotifyPushSend => "Push",
-            | Self::NotifyInApp => "InApp",
-            | Self::NotifyVoice => "Voice",
-            | Self::NotifyWebhook => "Webhook",
-            | Self::NotifyTemplateRead
-            | Self::NotifyTemplateWrite => "Template",
-            | Self::NotifyBulkSend => "Bulk",
-            | Self::PaymentCharge
+            Self::OAuthAccessTokenRead | Self::OAuthAccessTokenRevoke => "AccessToken",
+            Self::OAuthClientRead | Self::OAuthClientManage => "Client",
+            Self::PasswordResetRequest | Self::PasswordResetConfirm => "PasswordReset",
+            Self::MfaEnroll | Self::MfaVerify => "Mfa",
+            Self::NotifyEmailSend => "Email",
+            Self::NotifySmsSend => "Sms",
+            Self::NotifyPushSend => "Push",
+            Self::NotifyInApp => "InApp",
+            Self::NotifyVoice => "Voice",
+            Self::NotifyWebhook => "Webhook",
+            Self::NotifyTemplateRead | Self::NotifyTemplateWrite => "Template",
+            Self::NotifyBulkSend => "Bulk",
+            Self::PaymentCharge
             | Self::PaymentRefund
             | Self::PaymentStatus
             | Self::PaymentMethodList
             | Self::PaymentWebhook
             | Self::PaymentSettlement => "Payment",
-            | Self::BankSlipGenerate
-            | Self::BankSlipApprove => "BankSlip",
-            | Self::FilesPut
+            Self::BankSlipGenerate | Self::BankSlipApprove => "BankSlip",
+            Self::FilesPut
             | Self::FilesGet
             | Self::FilesDelete
             | Self::FilesSignedUrl
@@ -2806,14 +2800,14 @@ impl Capability {
             | Self::FilesMove
             | Self::FilesVisibilityChange
             | Self::FilesLifecycle => "Files",
-            | Self::IntegrationInvoke
+            Self::IntegrationInvoke
             | Self::IntegrationListCapabilities
             | Self::IntegrationHealth
             | Self::IntegrationConfigure => "Integration",
-            | Self::WebhookOut => "WebhookOut",
-            | Self::PollingIn => "PollingIn",
-            | Self::LmsRosterSync => "Lms",
-            | Self::VideoSchedule => "Video",
+            Self::WebhookOut => "WebhookOut",
+            Self::PollingIn => "PollingIn",
+            Self::LmsRosterSync => "Lms",
+            Self::VideoSchedule => "Video",
         }
     }
 

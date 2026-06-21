@@ -109,12 +109,13 @@ pub mod prelude {
         ACTION_SUBMISSIONS_PULL, LMS_INTEGRATION_ID,
     };
     pub use crate::port::{
-        HealthStatus, IntegrationAction, IntegrationCapability, IntegrationCost, IntegrationGateway,
-        IntegrationHealth, IntegrationId, IntegrationRequest, IntegrationResponse, IntegrationStatus,
-        RetryPolicy, SchemaFormat, SchemaRef,
+        HealthStatus, IntegrationAction, IntegrationCapability, IntegrationCost,
+        IntegrationGateway, IntegrationHealth, IntegrationId, IntegrationRequest,
+        IntegrationResponse, IntegrationStatus, RetryPolicy, SchemaFormat, SchemaRef,
     };
     pub use crate::services::{
-        PollingService, RateLimitService, RateState, RetryService, Schedule, WebhookSignatureService,
+        PollingService, RateLimitService, RateState, RetryService, Schedule,
+        WebhookSignatureService,
     };
     pub use crate::video::{
         VideoConferencingIntegration, VideoConferencingIntegrationBuilder, ACTION_MEETING_CREATE,
@@ -141,8 +142,9 @@ mod tests {
 
     use crate::errors::Result;
     use crate::port::{
-        HealthStatus, IntegrationAction, IntegrationCapability, IntegrationGateway, IntegrationHealth,
-        IntegrationId, IntegrationRequest, IntegrationResponse, IntegrationStatus,
+        HealthStatus, IntegrationAction, IntegrationCapability, IntegrationGateway,
+        IntegrationHealth, IntegrationId, IntegrationRequest, IntegrationResponse,
+        IntegrationStatus,
     };
 
     #[test]
@@ -172,10 +174,7 @@ mod tests {
 
         #[async_trait]
         impl IntegrationGateway for NoopGateway {
-            async fn invoke(
-                &self,
-                _request: IntegrationRequest,
-            ) -> Result<IntegrationResponse> {
+            async fn invoke(&self, _request: IntegrationRequest) -> Result<IntegrationResponse> {
                 Ok(IntegrationResponse {
                     status: IntegrationStatus::Success,
                     output: None,

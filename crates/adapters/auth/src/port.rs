@@ -275,26 +275,17 @@ pub trait AuthProvider: Send + Sync + std::fmt::Debug {
     /// The adapter may cache token-to-session mappings but
     /// MUST verify the token's signature or validity on each
     /// call.
-    async fn validate(
-        &self,
-        token: &AuthToken,
-    ) -> Result<Session, crate::errors::AuthError>;
+    async fn validate(&self, token: &AuthToken) -> Result<Session, crate::errors::AuthError>;
 
     /// Invalidate an [`AuthToken`]. Subsequent `validate`
     /// calls for the same token return
     /// [`crate::errors::AuthError::Revoked`].
-    async fn revoke(
-        &self,
-        token: &AuthToken,
-    ) -> Result<(), crate::errors::AuthError>;
+    async fn revoke(&self, token: &AuthToken) -> Result<(), crate::errors::AuthError>;
 
     /// Issue a new [`Session`] for a non-expired [`AuthToken`].
     /// The adapter may rotate the token value; the old token
     /// is invalidated.
-    async fn refresh(
-        &self,
-        token: &AuthToken,
-    ) -> Result<Session, crate::errors::AuthError>;
+    async fn refresh(&self, token: &AuthToken) -> Result<Session, crate::errors::AuthError>;
 }
 
 // ---------------------------------------------------------------------------

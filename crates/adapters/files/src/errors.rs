@@ -270,16 +270,17 @@ mod tests {
             "key invalid: empty"
         );
         assert_eq!(
-            FileStorageError::StorageClassUnavailable(String::from("archive"))
-                .to_string(),
+            FileStorageError::StorageClassUnavailable(String::from("archive")).to_string(),
             "storage class not available: archive"
         );
     }
 
     #[test]
     fn infrastructure_error_carries_source() {
-        let io_err: Box<dyn StdError + Send + Sync> =
-            Box::new(std::io::Error::new(std::io::ErrorKind::ConnectionReset, "peer closed"));
+        let io_err: Box<dyn StdError + Send + Sync> = Box::new(std::io::Error::new(
+            std::io::ErrorKind::ConnectionReset,
+            "peer closed",
+        ));
         let infra = InfrastructureError::from_boxed(io_err);
         assert!(infra.source().is_some());
         let fs: FileStorageError = infra.into();

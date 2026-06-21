@@ -201,8 +201,8 @@ impl WebhookOutIntegration {
     /// `docs/ports/integrations.md`.
     #[allow(clippy::expect_used)]
     pub fn compute_signature(secret: &str, payload: &[u8]) -> String {
-        let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
-            .expect("HMAC accepts any key length");
+        let mut mac =
+            HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC accepts any key length");
         mac.update(payload);
         let bytes = mac.finalize().into_bytes();
         format!("sha256={}", hex_encode(&bytes))
@@ -442,7 +442,10 @@ mod tests {
 
         assert_eq!(integration.target_count(), 1);
         assert_eq!(integration.targets()[0], target);
-        assert_eq!(integration.targets()[0].url, "https://example.com/hooks/educore");
+        assert_eq!(
+            integration.targets()[0].url,
+            "https://example.com/hooks/educore"
+        );
         assert_eq!(integration.targets()[0].event_filter, None);
     }
 
@@ -462,7 +465,10 @@ mod tests {
             .build();
 
         assert_eq!(integration.target_count(), 2);
-        assert_eq!(integration.targets()[1].event_filter.as_deref(), Some("InvoicePaid"));
+        assert_eq!(
+            integration.targets()[1].event_filter.as_deref(),
+            Some("InvoicePaid")
+        );
     }
 
     #[test]
@@ -563,8 +569,14 @@ mod tests {
             event_filter: None,
         };
         let dbg = format!("{target:?}");
-        assert!(!dbg.contains("super-secret-value"), "debug must redact secrets: {dbg}");
-        assert!(dbg.contains("<redacted>"), "debug must mark redacted: {dbg}");
+        assert!(
+            !dbg.contains("super-secret-value"),
+            "debug must redact secrets: {dbg}"
+        );
+        assert!(
+            dbg.contains("<redacted>"),
+            "debug must mark redacted: {dbg}"
+        );
     }
 
     #[test]
@@ -586,6 +598,9 @@ mod tests {
         // (and therefore the same signature).
         let a = json!({"event": "InvoicePaid", "amount_minor": 12500});
         let b = json!({"event": "InvoicePaid", "amount_minor": 12500});
-        assert_eq!(serde_json::to_vec(&a).unwrap(), serde_json::to_vec(&b).unwrap());
+        assert_eq!(
+            serde_json::to_vec(&a).unwrap(),
+            serde_json::to_vec(&b).unwrap()
+        );
     }
 }

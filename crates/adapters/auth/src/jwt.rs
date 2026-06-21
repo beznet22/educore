@@ -286,7 +286,8 @@ impl JwtAuthProvider {
     fn session_from_claims(&self, claims: &JwtClaims) -> Result<Session, AuthError> {
         let session_id = SessionId::from_uuid(parse_uuid(&claims.sid, "sid")?);
         let user_id = UserId::from_uuid(parse_uuid(&claims.sub, "sub")?);
-        let active_school_id = SchoolId::from_uuid(parse_uuid(&claims.active_school, "active_school")?);
+        let active_school_id =
+            SchoolId::from_uuid(parse_uuid(&claims.active_school, "active_school")?);
 
         let school_ids = claims
             .schools
@@ -378,10 +379,7 @@ impl JwtAuthProvider {
 
 #[async_trait]
 impl AuthProvider for JwtAuthProvider {
-    async fn authenticate(
-        &self,
-        credential: Credential,
-    ) -> Result<Session, AuthError> {
+    async fn authenticate(&self, credential: Credential) -> Result<Session, AuthError> {
         match credential {
             Credential::Bearer(token) => {
                 let claims = self.decode(&token)?;
@@ -473,9 +471,8 @@ impl AuthProvider for JwtAuthProvider {
 /// Parses a UUID string, tagging the failure with the claim
 /// name so the resulting [`AuthError::Malformed`] is actionable.
 fn parse_uuid(s: &str, claim: &str) -> Result<Uuid, AuthError> {
-    Uuid::parse_str(s).map_err(|e| {
-        AuthError::Malformed(format!("claim {claim:?} is not a valid UUID: {e}"))
-    })
+    Uuid::parse_str(s)
+        .map_err(|e| AuthError::Malformed(format!("claim {claim:?} is not a valid UUID: {e}")))
 }
 
 /// Converts a Unix-seconds value to [`Timestamp`]. Out-of-range
@@ -574,13 +571,11 @@ mod tests {
         assert_eq!(provider.signing_key.len(), 32);
         assert_eq!(provider.access_ttl_secs, 3600);
         assert_eq!(provider.refresh_ttl_secs, 7 * 24 * 3600);
-        assert!(
-            provider
-                .revoked_sessions
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .is_empty()
-        );
+        assert!(provider
+            .revoked_sessions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .is_empty());
     }
 
     #[tokio::test]
@@ -622,7 +617,9 @@ mod tests {
         assert!(session_via_authn.capabilities.is_empty());
         assert!(!session_via_authn.mfa_satisfied);
         // Issued / expiry in the future.
-        assert!(session_via_authn.expires_at.as_datetime() > session_via_authn.issued_at.as_datetime());
+        assert!(
+            session_via_authn.expires_at.as_datetime() > session_via_authn.issued_at.as_datetime()
+        );
     }
 
     #[tokio::test]
@@ -648,10 +645,7 @@ mod tests {
             .expect("pre-revoke validate succeeds");
 
         // Revoke.
-        provider
-            .revoke(&auth_token)
-            .await
-            .expect("revoke succeeds");
+        provider.revoke(&auth_token).await.expect("revoke succeeds");
 
         // After revoke: AuthError::Revoked.
         let err = provider

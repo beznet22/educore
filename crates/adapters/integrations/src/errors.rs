@@ -32,8 +32,8 @@
 use std::error::Error as StdError;
 
 use serde::de::{self, Deserialize, Deserializer, Visitor};
-use serde::ser::{Serialize, Serializer};
 use serde::de::{EnumAccess, VariantAccess};
+use serde::ser::{Serialize, Serializer};
 use std::fmt;
 use thiserror::Error;
 
@@ -118,14 +118,20 @@ impl IntegrationError {
     /// and backoff).
     #[must_use]
     pub const fn is_retryable(&self) -> bool {
-        matches!(self, Self::RateLimited | Self::Timeout(_) | Self::Infrastructure(_))
+        matches!(
+            self,
+            Self::RateLimited | Self::Timeout(_) | Self::Infrastructure(_)
+        )
     }
 
     /// Returns `true` if the variant represents a configuration
     /// problem the caller can fix (missing integration, bad input).
     #[must_use]
     pub const fn is_configuration_error(&self) -> bool {
-        matches!(self, Self::NotConfigured(_) | Self::NotFound(_) | Self::InvalidInput(_))
+        matches!(
+            self,
+            Self::NotConfigured(_) | Self::NotFound(_) | Self::InvalidInput(_)
+        )
     }
 }
 
@@ -281,18 +287,18 @@ impl<'de> Deserialize<'de> for IntegrationError {
                     (Field::InvalidInput, v) => v
                         .newtype_variant::<String>()
                         .map(IntegrationError::InvalidInput),
-                    (Field::RateLimited, v) => v.unit_variant().map(|()| IntegrationError::RateLimited),
+                    (Field::RateLimited, v) => {
+                        v.unit_variant().map(|()| IntegrationError::RateLimited)
+                    }
                     (Field::Timeout, v) => v
                         .newtype_variant::<chrono::Duration>()
                         .map(IntegrationError::Timeout),
                     (Field::Provider, v) => v
                         .newtype_variant::<String>()
                         .map(IntegrationError::Provider),
-                    (Field::Infrastructure, v) => v
-                        .newtype_variant::<String>()
-                        .map(|msg| {
-                            IntegrationError::Infrastructure(Box::new(std::io::Error::other(msg)))
-                        }),
+                    (Field::Infrastructure, v) => v.newtype_variant::<String>().map(|msg| {
+                        IntegrationError::Infrastructure(Box::new(std::io::Error::other(msg)))
+                    }),
                 }
             }
         }
@@ -341,7 +347,9 @@ mod tests {
     fn retryable_classification_is_correct() {
         assert!(IntegrationError::RateLimited.is_retryable());
         assert!(IntegrationError::Timeout(chrono::Duration::seconds(5)).is_retryable());
-        assert!(IntegrationError::Infrastructure(Box::new(std::io::Error::other("net"))).is_retryable());
+        assert!(
+            IntegrationError::Infrastructure(Box::new(std::io::Error::other("net"))).is_retryable()
+        );
         assert!(!IntegrationError::Provider("400".into()).is_retryable());
         assert!(!IntegrationError::InvalidInput("bad".into()).is_retryable());
     }
@@ -384,7 +392,9 @@ mod tests {
     fn infrastructure_error_carries_source() {
         let inner = std::io::Error::other("connection reset");
         let err = IntegrationError::Infrastructure(Box::new(inner));
-        let source = err.source().expect("infrastructure variant carries a source");
+        let source = err
+            .source()
+            .expect("infrastructure variant carries a source");
         assert!(source.to_string().contains("connection reset"));
     }
 
@@ -407,8 +417,7 @@ mod tests {
             IntegrationError::Infrastructure(Box::new(std::io::Error::other("dns"))),
         ] {
             let json = serde_json::to_string(&original).expect("serialize");
-            let parsed: IntegrationError =
-                serde_json::from_str(&json).expect("deserialize");
+            let parsed: IntegrationError = serde_json::from_str(&json).expect("deserialize");
             assert_eq!(parsed.to_string(), original.to_string());
         }
     }

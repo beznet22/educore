@@ -207,11 +207,9 @@ impl SignedUrlService {
             .map_or(0, |d| d.as_secs());
         let expires_secs = now.saturating_add(expires_in.as_secs());
         let expires_rfc3339 = unix_secs_to_rfc3339(expires_secs);
-        let expires_at = Timestamp::parse_rfc3339(&expires_rfc3339)
-            .unwrap_or_else(|_| Timestamp::now());
-        let signature = self
-            .sign(key, expires_at)
-            .unwrap_or_else(|_| String::new());
+        let expires_at =
+            Timestamp::parse_rfc3339(&expires_rfc3339).unwrap_or_else(|_| Timestamp::now());
+        let signature = self.sign(key, expires_at).unwrap_or_else(|_| String::new());
         format!("{base_url}/{key}?expires={expires_rfc3339}&signature={signature}")
     }
 }
@@ -535,8 +533,8 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .map_or(0, |d| d.as_secs());
         let future_secs = now.saturating_add(60);
-        let expires_at = Timestamp::parse_rfc3339(&unix_secs_to_rfc3339(future_secs))
-            .expect("parse future");
+        let expires_at =
+            Timestamp::parse_rfc3339(&unix_secs_to_rfc3339(future_secs)).expect("parse future");
 
         let sig = svc
             .sign("students/photos/ada.jpg", expires_at)
@@ -552,14 +550,13 @@ mod tests {
 
         // Different expiry fails.
         let other_secs = future_secs.saturating_add(1);
-        let other_expiry = Timestamp::parse_rfc3339(&unix_secs_to_rfc3339(other_secs))
-            .expect("parse other");
+        let other_expiry =
+            Timestamp::parse_rfc3339(&unix_secs_to_rfc3339(other_secs)).expect("parse other");
         assert!(!svc.verify("students/photos/ada.jpg", other_expiry, &sig));
 
         // Past expiry fails even with a correct signature.
         let past_secs = now.saturating_sub(60);
-        let past = Timestamp::parse_rfc3339(&unix_secs_to_rfc3339(past_secs))
-            .expect("parse past");
+        let past = Timestamp::parse_rfc3339(&unix_secs_to_rfc3339(past_secs)).expect("parse past");
         let past_sig = svc
             .sign("students/photos/ada.jpg", past)
             .expect("sign past");
@@ -585,7 +582,8 @@ mod tests {
         assert!(url.contains("&signature="));
 
         // The signature parses out and verifies with the service.
-        let signature_start = url.rfind("&signature=").expect("signature marker") + "&signature=".len();
+        let signature_start =
+            url.rfind("&signature=").expect("signature marker") + "&signature=".len();
         let signature = &url[signature_start..];
         let expires_str = url
             .split("expires=")
@@ -607,7 +605,10 @@ mod tests {
             "std-001",
             "photos/ada.jpg",
         );
-        assert_eq!(composed, "school-abc/academic/student/std-001/photos/ada.jpg");
+        assert_eq!(
+            composed,
+            "school-abc/academic/student/std-001/photos/ada.jpg"
+        );
 
         let parsed = KeyNamespaceService::parse_namespaced_key(&composed).expect("parse");
         assert_eq!(parsed.0, "school-abc");
@@ -641,7 +642,10 @@ mod tests {
         let key = "school-abc/academic/student/std-001/photo.jpg";
         assert!(KeyNamespaceService::is_in_tenant(key, "school-abc"));
         assert!(!KeyNamespaceService::is_in_tenant(key, "school-xyz"));
-        assert!(!KeyNamespaceService::is_in_tenant("no-separator", "school-abc"));
+        assert!(!KeyNamespaceService::is_in_tenant(
+            "no-separator",
+            "school-abc"
+        ));
     }
 
     // ---- 4. VisibilityService ---------------------------------------
@@ -656,7 +660,9 @@ mod tests {
         assert!(!VisibilityService::is_public(&Visibility::Private));
         assert!(!VisibilityService::is_public(&Visibility::TenantPrivate));
 
-        assert!(VisibilityService::is_tenant_scoped(&Visibility::TenantPrivate));
+        assert!(VisibilityService::is_tenant_scoped(
+            &Visibility::TenantPrivate
+        ));
         assert!(!VisibilityService::is_tenant_scoped(&Visibility::Private));
         assert!(!VisibilityService::is_tenant_scoped(&Visibility::Public));
     }

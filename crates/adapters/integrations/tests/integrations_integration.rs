@@ -6,7 +6,9 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use educore_integrations::prelude::*;
-use educore_integrations::services::{PollingService, RateLimitService, RetryService, WebhookSignatureService};
+use educore_integrations::services::{
+    PollingService, RateLimitService, RetryService, WebhookSignatureService,
+};
 
 // ---------------------------------------------------------------------------
 // Scenario 1: Webhook signature HMAC-SHA256
@@ -22,10 +24,13 @@ fn integrations_integration_webhook_signature() {
     let payload = b"{\"event\":\"invoice.paid\"}";
     let sig = WebhookSignatureService::compute_signature(secret, payload).expect("HMAC succeeds");
     assert!(sig.starts_with("sha256="));
-    assert!(WebhookSignatureService::verify_signature(secret, payload, &sig)
-        .expect("verify succeeds"));
-    assert!(!WebhookSignatureService::verify_signature(secret, b"{\"tampered\":true}", &sig)
-        .expect("verify succeeds"));
+    assert!(
+        WebhookSignatureService::verify_signature(secret, payload, &sig).expect("verify succeeds")
+    );
+    assert!(
+        !WebhookSignatureService::verify_signature(secret, b"{\"tampered\":true}", &sig)
+            .expect("verify succeeds")
+    );
     // Touch the unit struct to silence "unused" if the import is
     // ever trimmed; the struct is referenced in the doc comment.
     let _svc = WebhookSignatureService;
@@ -71,7 +76,7 @@ fn integrations_integration_retry_classification() {
     assert!(RetryService::is_permanent_failure(404));
     assert!(!RetryService::is_permanent_failure(408)); // timeout = transient
     assert!(!RetryService::is_permanent_failure(429)); // rate-limited = transient
-    // 5xx = transient
+                                                       // 5xx = transient
     assert!(!RetryService::is_permanent_failure(500));
     assert!(!RetryService::is_permanent_failure(503));
     // 2xx, 3xx = not permanent (success, would not be retried anyway)
@@ -93,13 +98,21 @@ fn integrations_integration_polling_schedule() {
             .expect("valid timestamp"),
     );
     // If last poll was 1 hour ago and schedule is hourly, should poll
-    assert!(PollingService::should_poll(&Schedule::Hourly, one_hour_ago, now));
+    assert!(PollingService::should_poll(
+        &Schedule::Hourly,
+        one_hour_ago,
+        now
+    ));
     // If last poll was 1 second ago, should NOT poll (not enough time passed)
     let one_sec_ago = educore_core::value_objects::Timestamp::from_datetime(
         chrono::DateTime::from_timestamp(chrono::Utc::now().timestamp() - 1, 0)
             .expect("valid timestamp"),
     );
-    assert!(!PollingService::should_poll(&Schedule::Hourly, one_sec_ago, now));
+    assert!(!PollingService::should_poll(
+        &Schedule::Hourly,
+        one_sec_ago,
+        now
+    ));
 }
 
 // ---------------------------------------------------------------------------

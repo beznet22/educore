@@ -361,11 +361,14 @@ impl RateLimitService {
         }
 
         let now = Instant::now();
-        let bucket = self.buckets.entry(integration.clone()).or_insert_with(|| RateBucket {
-            tokens: f64::from(max_per_second),
-            max_per_second,
-            last_refill: now,
-        });
+        let bucket = self
+            .buckets
+            .entry(integration.clone())
+            .or_insert_with(|| RateBucket {
+                tokens: f64::from(max_per_second),
+                max_per_second,
+                last_refill: now,
+            });
 
         if bucket.max_per_second != max_per_second {
             bucket.max_per_second = max_per_second;
@@ -406,8 +409,8 @@ impl RateLimitService {
         let bucket = self.buckets.get_mut(integration)?;
 
         let elapsed = now.duration_since(bucket.last_refill).as_secs_f64();
-        bucket.tokens =
-            (bucket.tokens + elapsed * f64::from(bucket.max_per_second)).min(f64::from(bucket.max_per_second));
+        bucket.tokens = (bucket.tokens + elapsed * f64::from(bucket.max_per_second))
+            .min(f64::from(bucket.max_per_second));
         bucket.last_refill = now;
 
         Some(RateState {
@@ -518,7 +521,8 @@ mod tests {
         let secret = "shared-secret";
         let payload = br#"{"event":"InvoicePaid","amount_minor":12500}"#;
 
-        let sig = WebhookSignatureService::compute_signature(secret, payload).expect("HMAC succeeds");
+        let sig =
+            WebhookSignatureService::compute_signature(secret, payload).expect("HMAC succeeds");
         assert!(
             sig.starts_with("sha256="),
             "signature must carry the sha256= prefix, got {sig}"
@@ -526,7 +530,8 @@ mod tests {
         assert_eq!(sig.len(), "sha256=".len() + 64);
 
         assert!(
-            WebhookSignatureService::verify_signature(secret, payload, &sig).expect("HMAC succeeds"),
+            WebhookSignatureService::verify_signature(secret, payload, &sig)
+                .expect("HMAC succeeds"),
             "freshly-computed signature must verify against itself"
         );
 
@@ -682,10 +687,7 @@ mod tests {
             !RetryService::is_permanent_failure(429),
             "429 Too Many Requests is transient"
         );
-        assert!(
-            !RetryService::is_permanent_failure(500),
-            "5xx is transient"
-        );
+        assert!(!RetryService::is_permanent_failure(500), "5xx is transient");
         assert!(
             !RetryService::is_permanent_failure(200),
             "2xx is not a failure at all"

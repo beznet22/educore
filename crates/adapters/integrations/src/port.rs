@@ -512,7 +512,10 @@ mod tests {
         assert_eq!(id.as_str(), "twilio");
         assert_eq!(id.to_string(), "twilio");
         assert_eq!(IntegrationId::from("stripe"), IntegrationId::new("stripe"));
-        assert_eq!(IntegrationId::from(String::from("zoom")), IntegrationId::new("zoom"));
+        assert_eq!(
+            IntegrationId::from(String::from("zoom")),
+            IntegrationId::new("zoom")
+        );
 
         let action = IntegrationAction::new("send_sms");
         assert_eq!(action.as_str(), "send_sms");
@@ -536,7 +539,11 @@ mod tests {
     fn retry_policy_default_is_exponential() {
         let policy = RetryPolicy::default();
         match policy {
-            RetryPolicy::Exponential { max_retries, base, max } => {
+            RetryPolicy::Exponential {
+                max_retries,
+                base,
+                max,
+            } => {
                 assert_eq!(max_retries, 3);
                 assert_eq!(base, ChronoDuration::seconds(1));
                 assert_eq!(max, ChronoDuration::seconds(30));

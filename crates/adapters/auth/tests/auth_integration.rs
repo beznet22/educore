@@ -41,7 +41,10 @@ fn auth_integration_password_hash_and_verify() {
 // Scenario 3: OAuth scope membership is a whitespace-bounded check, fail-closed.
 #[test]
 fn auth_integration_oauth_scope_check() {
-    assert!(OAuthScopeService::has_scope("read:user write:user", "read:user"));
+    assert!(OAuthScopeService::has_scope(
+        "read:user write:user",
+        "read:user"
+    ));
     assert!(!OAuthScopeService::has_scope("read:user", "write:user"));
     // Empty required is rejected (fail-closed).
     assert!(!OAuthScopeService::has_scope("", ""));
@@ -58,7 +61,9 @@ fn auth_integration_mfa_generate_secret() {
     // 20 raw bytes encoded as base32 = 32 chars.
     assert_eq!(secret.len(), 32);
     assert!(secret.chars().all(|c| c.is_ascii_alphanumeric()));
-    assert!(secret.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()));
+    assert!(secret
+        .chars()
+        .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()));
 }
 
 // Scenario 5: JWT claim semantic validation (iss / aud / exp).

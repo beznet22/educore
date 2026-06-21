@@ -217,12 +217,14 @@ fn channel_key(channel: &Channel) -> String {
             let from = from.as_ref().map_or("-", PhoneNumber::as_str);
             format!("sms:{from}:{unicode}")
         }
-        Channel::Push { topic, ttl, collapse_key } => {
+        Channel::Push {
+            topic,
+            ttl,
+            collapse_key,
+        } => {
             let topic = topic.as_deref().unwrap_or("-");
             let collapse = collapse_key.as_deref().unwrap_or("-");
-            let ttl_ms = ttl.map_or(0, |d| {
-                u64::try_from(d.as_millis()).unwrap_or(u64::MAX)
-            });
+            let ttl_ms = ttl.map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX));
             format!("push:{topic}:{ttl_ms}:{collapse}")
         }
         Channel::InApp => "inapp".to_owned(),
@@ -273,10 +275,7 @@ impl TemplateService {
     /// [`validate_required_variables`](Self::validate_required_variables)
     /// first).
     #[must_use]
-    pub fn substitute_variables(
-        body: &str,
-        variables: &BTreeMap<String, String>,
-    ) -> String {
+    pub fn substitute_variables(body: &str, variables: &BTreeMap<String, String>) -> String {
         let mut out = String::with_capacity(body.len());
         let bytes = body.as_bytes();
         let mut i = 0;
@@ -403,7 +402,10 @@ impl ChannelService {
     /// classification.
     #[must_use]
     pub fn is_async(channel: &Channel) -> bool {
-        matches!(channel, Channel::Push { .. } | Channel::InApp | Channel::Webhook { .. })
+        matches!(
+            channel,
+            Channel::Push { .. } | Channel::InApp | Channel::Webhook { .. }
+        )
     }
 
     /// Returns the list of channels to dispatch to for a single
@@ -458,11 +460,7 @@ impl IdempotencyService {
     /// <command_id>:<recipient>:<template_version as decimal>
     /// ```
     #[must_use]
-    pub fn derive_key(
-        command_id: &str,
-        recipient: &str,
-        template_version: u32,
-    ) -> String {
+    pub fn derive_key(command_id: &str, recipient: &str, template_version: u32) -> String {
         let input = format!("{command_id}:{recipient}:{template_version}");
         sha256_hex(input.as_bytes())
     }
@@ -530,11 +528,14 @@ impl RateLimitService {
         });
 
         // Refill: 1 token per 1000 ms, capped at `max_tokens`.
-        let elapsed_ms = u64::try_from(now.duration_since(entry.last_refill).as_millis())
-            .unwrap_or(u64::MAX);
+        let elapsed_ms =
+            u64::try_from(now.duration_since(entry.last_refill).as_millis()).unwrap_or(u64::MAX);
         let new_tokens = u32::try_from(elapsed_ms / 1000).unwrap_or(u32::MAX);
         if new_tokens > 0 {
-            entry.tokens = entry.tokens.saturating_add(new_tokens).min(entry.max_tokens);
+            entry.tokens = entry
+                .tokens
+                .saturating_add(new_tokens)
+                .min(entry.max_tokens);
             entry.last_refill = entry
                 .last_refill
                 .checked_add(Duration::from_millis(u64::from(new_tokens) * 1000))
@@ -704,5 +705,3 @@ mod tests {
         assert!(state.tokens <= 5);
     }
 }
-
-

@@ -144,7 +144,9 @@ impl LmsIntegrationBuilder {
     pub fn build(self) -> LmsIntegration {
         LmsIntegration {
             http: Client::new(),
-            provider: self.provider.unwrap_or_else(|| "google_classroom".to_owned()),
+            provider: self
+                .provider
+                .unwrap_or_else(|| "google_classroom".to_owned()),
             api_key: self.api_key.unwrap_or_default(),
             base_url: self
                 .base_url
@@ -448,8 +450,8 @@ impl LmsIntegration {
         IntegrationCapability {
             integration: IntegrationId::new(LMS_INTEGRATION_ID),
             action: IntegrationAction::new(ACTION_COURSE_CREATE),
-            description:
-                "Create an LMS course for a configured AcademicYear/Class pair.".to_owned(),
+            description: "Create an LMS course for a configured AcademicYear/Class pair."
+                .to_owned(),
             input_schema: Some(self.schema_ref("input.schema.json", ACTION_COURSE_CREATE)),
             output_schema: Some(self.schema_ref("output.schema.json", ACTION_COURSE_CREATE)),
             required_capabilities: vec![Capability::LmsRosterSync],
@@ -479,10 +481,7 @@ impl LmsIntegration {
                           OnlineExamSubmitted events with a Source::Lms tag."
                 .to_owned(),
             input_schema: Some(self.schema_ref("input.schema.json", ACTION_SUBMISSIONS_PULL)),
-            output_schema: Some(self.schema_ref(
-                "output.schema.json",
-                ACTION_SUBMISSIONS_PULL,
-            )),
+            output_schema: Some(self.schema_ref("output.schema.json", ACTION_SUBMISSIONS_PULL)),
             required_capabilities: vec![Capability::LmsRosterSync],
         }
     }
@@ -554,10 +553,7 @@ fn test_tenant_context() -> educore_core::tenant::TenantContext {
     use educore_core::clock::IdGenerator;
 
     let gen = educore_core::clock::SystemIdGen;
-    educore_core::tenant::TenantContext::system(
-        gen.next_school_id(),
-        gen.next_correlation_id(),
-    )
+    educore_core::tenant::TenantContext::system(gen.next_school_id(), gen.next_correlation_id())
 }
 
 #[cfg(test)]
@@ -674,7 +670,10 @@ mod tests {
             timeout: None,
         };
 
-        let response = adapter.invoke(request).await.expect("invoke must wrap errors");
+        let response = adapter
+            .invoke(request)
+            .await
+            .expect("invoke must wrap errors");
         assert_eq!(response.status, IntegrationStatus::Failed);
         let err = response.error.expect("error must be populated");
         assert!(matches!(err, IntegrationError::InvalidInput(_)));
@@ -688,9 +687,7 @@ mod tests {
         let schema = adapter.schema_ref("input.schema.json", ACTION_COURSE_CREATE);
         assert_eq!(
             schema.location,
-            format!(
-                "integrations/{LMS_INTEGRATION_ID}/{ACTION_COURSE_CREATE}/input.schema.json"
-            )
+            format!("integrations/{LMS_INTEGRATION_ID}/{ACTION_COURSE_CREATE}/input.schema.json")
         );
         assert!(matches!(schema.format, SchemaFormat::JsonSchema));
     }

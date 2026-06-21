@@ -445,10 +445,7 @@ fn test_tenant_context() -> educore_core::tenant::TenantContext {
     use educore_core::clock::IdGenerator;
 
     let gen = educore_core::clock::SystemIdGen;
-    educore_core::tenant::TenantContext::system(
-        gen.next_school_id(),
-        gen.next_correlation_id(),
-    )
+    educore_core::tenant::TenantContext::system(gen.next_school_id(), gen.next_correlation_id())
 }
 
 #[cfg(test)]
@@ -521,10 +518,7 @@ mod tests {
 
         assert_eq!(capabilities.len(), 3);
 
-        let actions: Vec<&str> = capabilities
-            .iter()
-            .map(|c| c.action.as_str())
-            .collect();
+        let actions: Vec<&str> = capabilities.iter().map(|c| c.action.as_str()).collect();
         assert!(actions.contains(&ACTION_MEETING_CREATE));
         assert!(actions.contains(&ACTION_MEETING_GET));
         assert!(actions.contains(&ACTION_RECORDING_LIST));
@@ -563,7 +557,10 @@ mod tests {
             timeout: None,
         };
 
-        let response = adapter.invoke(request).await.expect("invoke must wrap errors");
+        let response = adapter
+            .invoke(request)
+            .await
+            .expect("invoke must wrap errors");
         assert_eq!(response.status, IntegrationStatus::Failed);
         let err = response.error.expect("error must be populated");
         assert!(matches!(err, IntegrationError::InvalidInput(_)));
@@ -574,8 +571,7 @@ mod tests {
     #[test]
     fn schema_ref_points_at_relative_path() {
         let adapter = VideoConferencingIntegrationBuilder::new().build();
-        let schema = adapter
-            .schema_ref("input.schema.json", ACTION_MEETING_CREATE);
+        let schema = adapter.schema_ref("input.schema.json", ACTION_MEETING_CREATE);
         assert_eq!(
             schema.location,
             format!(

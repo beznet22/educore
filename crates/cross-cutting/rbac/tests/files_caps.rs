@@ -21,7 +21,10 @@ fn files_capabilities_round_trip() {
     assert_eq!(FILES_VARIANTS.len(), 8);
     for cap in FILES_VARIANTS {
         let wire = cap.as_str();
-        assert!(wire.starts_with("Files."), "{cap:?}.as_str() = {wire} should start with Files.");
+        assert!(
+            wire.starts_with("Files."),
+            "{cap:?}.as_str() = {wire} should start with Files."
+        );
         let parsed = Capability::from_str_opt(wire)
             .or_else(|| wire.parse::<Capability>().ok())
             .unwrap_or_else(|| panic!("failed to parse {wire}"));
