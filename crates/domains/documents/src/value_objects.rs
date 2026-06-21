@@ -717,7 +717,7 @@ impl fmt::Display for FileReference {
 
 /// A `bool` newtype indicating whether the form is visible on
 /// the public site. `true` = visible; `false` = staff-only.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct ShowPublic(pub bool);
 
@@ -732,12 +732,6 @@ impl ShowPublic {
     #[must_use]
     pub const fn is_public(self) -> bool {
         self.0
-    }
-}
-
-impl Default for ShowPublic {
-    fn default() -> Self {
-        Self(false)
     }
 }
 
@@ -887,7 +881,7 @@ fn is_plausible_url(s: &str) -> bool {
         return false;
     }
     let host_end = rest
-        .find(|c: char| c == '/' || c == '?' || c == '#')
+        .find(['/', '?', '#'])
         .unwrap_or(rest.len());
     let host = &rest[..host_end];
     if host.is_empty() {
