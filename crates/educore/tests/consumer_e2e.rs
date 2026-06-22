@@ -17,7 +17,6 @@
 use std::collections::BTreeMap;
 
 use educore_core::clock::{IdGenerator, SystemIdGen};
-use educore_core::ids::Identifier;
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 use educore_notify::errors::NotificationTemplateId;

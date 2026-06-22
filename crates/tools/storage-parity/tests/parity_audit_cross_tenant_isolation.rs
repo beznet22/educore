@@ -25,7 +25,6 @@
 mod common;
 
 use educore_core::clock::{IdGenerator, SystemIdGen};
-use educore_core::ids::{Identifier, SchoolId};
 use educore_storage::audit::AuditLogEntry;
 use educore_storage::StorageAdapter;
 
