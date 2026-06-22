@@ -52,7 +52,12 @@ pub async fn admit(
 }
 
 /// Mark a bulk attendance row. Prints the row id as JSON.
-pub async fn attendance(school: String, student: String, date: String, status: String) -> Result<()> {
+pub async fn attendance(
+    school: String,
+    student: String,
+    date: String,
+    status: String,
+) -> Result<()> {
     let world = test_world();
     let school_id = parse_school(&school)?;
     let student_id = parse_uuid(&student, "student")?;
@@ -143,8 +148,8 @@ pub async fn payment(
     );
     let currency_code = CurrencyCode::new(&currency)
         .map_err(|e| anyhow!("invalid currency {currency:?}: {e:?}"))?;
-    let money = Money::new(currency_code, amount)
-        .map_err(|e| anyhow!("invalid amount {amount}: {e:?}"))?;
+    let money =
+        Money::new(currency_code, amount).map_err(|e| anyhow!("invalid amount {amount}: {e:?}"))?;
     let payment_method = match method.as_str() {
         "cash" => PaymentMethod::Cash,
         "card" => PaymentMethod::Card {
@@ -156,7 +161,11 @@ pub async fn payment(
             bank: "HDFC".to_owned(),
             date: ChequeDate::new(2026, 6, 21)?,
         },
-        _ => return Err(anyhow!("invalid method {method:?}; expected cash|card|cheque")),
+        _ => {
+            return Err(anyhow!(
+                "invalid method {method:?}; expected cash|card|cheque"
+            ))
+        }
     };
     let req = ChargeRequest::new(
         ctx,

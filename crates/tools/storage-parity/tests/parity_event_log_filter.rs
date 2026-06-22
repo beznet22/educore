@@ -105,8 +105,8 @@ async fn assert_event_log_filter(adapter: &dyn StorageAdapter, school: SchoolId)
 
     // 2. Event-types filter — only `student.admitted` → 1 row.
     let tx = adapter.begin().await.expect("begin");
-    let filter = EventLogFilter::for_school(school)
-        .only_types(vec!["academic.student.admitted".to_owned()]);
+    let filter =
+        EventLogFilter::for_school(school).only_types(vec!["academic.student.admitted".to_owned()]);
     let rows = tx.event_log().read(filter).await.expect("read");
     tx.commit().await.expect("commit-read-2");
     assert_eq!(

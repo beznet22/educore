@@ -72,10 +72,7 @@ impl UniquenessChecker for TestUniqueness {
 /// `commit`, so a post-commit drain would see an empty outbox.
 /// See `parity_cross_backend_equivalence.rs` for the
 /// long-form rationale.
-async fn append_and_drain_within_tx(
-    adapter: &dyn StorageAdapter,
-    serialized: SerializedEnvelope,
-) {
+async fn append_and_drain_within_tx(adapter: &dyn StorageAdapter, serialized: SerializedEnvelope) {
     let tx = adapter.begin().await.expect("begin");
     tx.outbox().append(serialized).await.expect("outbox append");
     let pending = tx.outbox().pending(100).await.expect("pending");
@@ -96,10 +93,7 @@ async fn append_and_drain_within_tx(
 /// Builds an envelope, appends + drains, and asserts the event
 /// log row preserves `event_id`, event type, aggregate id,
 /// school id, active_status, and the payload semantically.
-async fn assert_outbox_relay_preserves_envelope(
-    adapter: &dyn StorageAdapter,
-    school: SchoolId,
-) {
+async fn assert_outbox_relay_preserves_envelope(adapter: &dyn StorageAdapter, school: SchoolId) {
     let ctx = common::make_ctx(school);
     let uniqueness = TestUniqueness;
     let cmd = CreateSchoolCommand::new(
@@ -138,10 +132,7 @@ async fn assert_outbox_relay_preserves_envelope(
         row.aggregate_id, aggregate_id,
         "aggregate_id must be preserved"
     );
-    assert_eq!(
-        row.school_id, ctx.school_id,
-        "school_id must be preserved"
-    );
+    assert_eq!(row.school_id, ctx.school_id, "school_id must be preserved");
     assert_eq!(row.active_status, ActiveStatus::Active);
     // Payload semantic round-trip (see module-level doc for
     // the SurrealDB-known-deviation note).

@@ -105,14 +105,13 @@ async fn dispatch_create_school(
     bus: &Arc<dyn EventBus>,
     uniqueness: &dyn UniquenessChecker,
 ) -> School {
-    let (school, school_created): (School, SchoolCreated) =
-        platform_services::create_school(
-            cmd,
-            &educore_core::clock::SystemClock,
-            &educore_core::clock::SystemIdGen,
-            uniqueness,
-        )
-        .expect("create_school");
+    let (school, school_created): (School, SchoolCreated) = platform_services::create_school(
+        cmd,
+        &educore_core::clock::SystemClock,
+        &educore_core::clock::SystemIdGen,
+        uniqueness,
+    )
+    .expect("create_school");
     let aggregate_id = school_created.aggregate_id();
     let envelope: educore_events::envelope::EventEnvelope = school_created.into_envelope(ctx);
     let serialized = SerializedEnvelope::from_event_envelope(&envelope);

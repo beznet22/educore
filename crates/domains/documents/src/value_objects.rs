@@ -880,9 +880,7 @@ fn is_plausible_url(s: &str) -> bool {
     if rest.is_empty() {
         return false;
     }
-    let host_end = rest
-        .find(['/', '?', '#'])
-        .unwrap_or(rest.len());
+    let host_end = rest.find(['/', '?', '#']).unwrap_or(rest.len());
     let host = &rest[..host_end];
     if host.is_empty() {
         return false;

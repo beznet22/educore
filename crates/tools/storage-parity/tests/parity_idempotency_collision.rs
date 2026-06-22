@@ -50,10 +50,7 @@ use educore_storage::StorageAdapter;
 /// Asserts the parts of the idempotency contract that are
 /// uniformly enforced across every backend: same outcome is a
 /// no-op; a fresh key is a clean write.
-async fn assert_idempotency_no_op_and_independent(
-    adapter: &dyn StorageAdapter,
-    school: SchoolId,
-) {
+async fn assert_idempotency_no_op_and_independent(adapter: &dyn StorageAdapter, school: SchoolId) {
     let g = SystemIdGen;
     let key = g.next_idempotency_key();
     let outcome_a = bytes::Bytes::from_static(b"{\"id\":\"a\"}");
@@ -115,10 +112,7 @@ async fn assert_idempotency_no_op_and_independent(
 /// deviation). This helper asserts the conflict only on
 /// testkit so the test surface accurately reflects the
 /// production state.
-async fn assert_outcome_conflict_on_testkit(
-    adapter: &dyn StorageAdapter,
-    school: SchoolId,
-) {
+async fn assert_outcome_conflict_on_testkit(adapter: &dyn StorageAdapter, school: SchoolId) {
     let g = SystemIdGen;
     let key = g.next_idempotency_key();
     let r1 = IdempotencyRecord {

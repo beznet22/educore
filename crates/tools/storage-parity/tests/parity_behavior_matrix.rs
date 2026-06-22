@@ -56,19 +56,9 @@ const PARITY_MATRIX: &[(&str, &str, &str, bool)] = &[
     ("audit_log_append", "postgres", "pg", true),
     ("audit_log_append", "mysql", "mysql", true),
     // ---- audit_log_read_for_target (5/5) ----
-    (
-        "audit_log_read_for_target",
-        "testkit",
-        "in-memory",
-        true,
-    ),
+    ("audit_log_read_for_target", "testkit", "in-memory", true),
     ("audit_log_read_for_target", "sqlite", "sqlite3", true),
-    (
-        "audit_log_read_for_target",
-        "surrealdb",
-        "surql",
-        true,
-    ),
+    ("audit_log_read_for_target", "surrealdb", "surql", true),
     ("audit_log_read_for_target", "postgres", "pg", true),
     ("audit_log_read_for_target", "mysql", "mysql", true),
     // ---- event_log_filter (5/5) ----
@@ -84,24 +74,9 @@ const PARITY_MATRIX: &[(&str, &str, &str, bool)] = &[
     ("idempotency_collision", "postgres", "pg", true),
     ("idempotency_collision", "mysql", "mysql", true),
     // ---- transaction_commit_rollback (5/5) ----
-    (
-        "transaction_commit_rollback",
-        "testkit",
-        "in-memory",
-        true,
-    ),
-    (
-        "transaction_commit_rollback",
-        "sqlite",
-        "sqlite3",
-        true,
-    ),
-    (
-        "transaction_commit_rollback",
-        "surrealdb",
-        "surql",
-        true,
-    ),
+    ("transaction_commit_rollback", "testkit", "in-memory", true),
+    ("transaction_commit_rollback", "sqlite", "sqlite3", true),
+    ("transaction_commit_rollback", "surrealdb", "surql", true),
     ("transaction_commit_rollback", "postgres", "pg", true),
     ("transaction_commit_rollback", "mysql", "mysql", true),
 ];

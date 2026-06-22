@@ -97,10 +97,7 @@ fn fresh_writes(school: SchoolId) -> (SerializedEnvelope, AuditLogEntry, EventLo
     (env, audit, event)
 }
 
-async fn assert_commit_and_rollback_lifecycle(
-    adapter: &dyn StorageAdapter,
-    school: SchoolId,
-) {
+async fn assert_commit_and_rollback_lifecycle(adapter: &dyn StorageAdapter, school: SchoolId) {
     // ---- 1. Commit path --------------------------------------------------
     let (env_a, audit_a, event_a) = fresh_writes(school);
     {
