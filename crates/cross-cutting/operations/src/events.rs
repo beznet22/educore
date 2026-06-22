@@ -1498,13 +1498,13 @@ mod tests {
     }
 
     #[test]
-    fn backup_event_metadata_is_set() {
+    fn backup_event_metadata_is_set() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let id = crate::value_objects::BackupId::new(school, Uuid::from_u128(1));
         let event = BackupCreated::new(
             id,
             school,
-            BackupFileName::new("backup.sql").unwrap(),
+            BackupFileName::new("backup.sql")?,
             BackupFileType::Database,
             Timestamp::now(),
             EventId::from_uuid(Uuid::from_u128(2)),
@@ -1517,13 +1517,15 @@ mod tests {
             "operations.backup.created"
         );
         assert_eq!(event.aggregate_id(), Uuid::from_u128(1));
+        Ok(())
     }
 
     #[test]
-    fn system_version_bumped_aggregate_id_derived_from_to_version() {
+    fn system_version_bumped_aggregate_id_derived_from_to_version(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let event = SystemVersionBumped::new(
             None,
-            crate::value_objects::VersionName::new("8.2.3").unwrap(),
+            crate::value_objects::VersionName::new("8.2.3")?,
             Timestamp::now(),
             EventId::from_uuid(Uuid::from_u128(1)),
             CorrelationId::from_uuid(Uuid::from_u128(2)),
@@ -1536,5 +1538,6 @@ mod tests {
         assert_eq!(bytes[1], b'.');
         assert_eq!(bytes[2], b'2');
         assert_eq!(bytes[3], b'.');
+        Ok(())
     }
 }

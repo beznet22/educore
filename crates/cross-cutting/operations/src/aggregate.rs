@@ -10,8 +10,6 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(test)]
-use educore_core::ids::Identifier;
 use educore_core::ids::{CorrelationId, EventId, UserId};
 use educore_core::value_objects::{Etag, Timestamp, Version};
 #[cfg(test)]
@@ -790,9 +788,9 @@ mod tests {
     use super::*;
     use crate::value_objects::{
         BackupSourceLink, FailedJobConnection, FailedJobException, FailedJobQueue, FailedJobUuid,
-        FileReference, HistoryNotes, HistoryReleaseDate, HistoryVersion, IpAddress, JobPayload,
-        JobQueue, MaintenanceApplicableFor, MaintenanceSubTitle, MaintenanceTitle, PermissionId,
-        RoleId, UserAgent, VersionFeatures, VersionTitle, WorkerId,
+        HistoryNotes, HistoryReleaseDate, HistoryVersion, IpAddress, JobPayload, JobQueue,
+        MaintenanceApplicableFor, MaintenanceSubTitle, MaintenanceTitle, PermissionId, RoleId,
+        UserAgent, VersionFeatures, VersionTitle, WorkerId,
     };
     use educore_core::ids::Identifier;
 
@@ -801,13 +799,13 @@ mod tests {
     }
 
     #[test]
-    fn backup_new_constructs() {
+    fn backup_new_constructs() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = make_school();
         let id = crate::value_objects::BackupId::new(school, Uuid::nil());
         let b = Backup::new(NewBackup {
             id,
-            file_name: BackupFileName::new("backup.sql").unwrap(),
-            source_link: BackupSourceLink::new("s3://bucket/backup.sql").unwrap(),
+            file_name: BackupFileName::new("backup.sql")?,
+            source_link: BackupSourceLink::new("s3://bucket/backup.sql")?,
             file_type: BackupFileType::Database,
             lang_type: None,
             active_status: true,
@@ -815,98 +813,99 @@ mod tests {
             created_by: UserId::from_uuid(Uuid::nil()),
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
-        })
-        .unwrap();
+        })?;
         assert_eq!(b.school_id, school);
         assert!(b.active_status);
         assert!(!b.restore_in_progress);
+        Ok(())
     }
     #[test]
-    fn job_lifecycle_pending_reserved_completed() {
+    fn job_lifecycle_pending_reserved_completed(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let id = crate::value_objects::JobId::new(Uuid::nil());
         let mut job = Job::new(NewJob {
             id,
-            queue: JobQueue::new("default").unwrap(),
-            payload: JobPayload::new("{}").unwrap(),
+            queue: JobQueue::new("default")?,
+            payload: JobPayload::new("{}")?,
             available_at: Timestamp::now(),
             created_by: UserId::from_uuid(Uuid::nil()),
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
-        })
-        .unwrap();
+        })?;
         assert_eq!(job.attempts.0, 0);
         let event_id = EventId::from_uuid(Uuid::from_u128(1));
-        job.reserve(
-            WorkerId::new("worker-1").unwrap(),
-            Timestamp::now(),
-            event_id,
-        )
-        .unwrap();
+        job.reserve(WorkerId::new("worker-1")?, Timestamp::now(), event_id)?;
         assert_eq!(job.attempts.0, 1);
         assert!(matches!(
             job.status,
             crate::value_objects::JobStatus::Reserved
         ));
-        job.complete(Timestamp::now(), event_id).unwrap();
+        job.complete(Timestamp::now(), event_id)?;
         assert!(matches!(
             job.status,
             crate::value_objects::JobStatus::Completed
         ));
+        Ok(())
     }
 
     #[test]
-    fn job_cannot_complete_unreserved() {
+    fn job_cannot_complete_unreserved() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let id = crate::value_objects::JobId::new(Uuid::nil());
         let mut job = Job::new(NewJob {
             id,
-            queue: JobQueue::new("default").unwrap(),
-            payload: JobPayload::new("{}").unwrap(),
+            queue: JobQueue::new("default")?,
+            payload: JobPayload::new("{}")?,
             available_at: Timestamp::now(),
             created_by: UserId::from_uuid(Uuid::nil()),
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
-        })
-        .unwrap();
+        })?;
         let event_id = EventId::from_uuid(Uuid::from_u128(1));
-        let err = job.complete(Timestamp::now(), event_id).unwrap_err();
+        let err = match job.complete(Timestamp::now(), event_id) {
+            Ok(_) => return Err("expected Conflict error".into()),
+            Err(e) => e,
+        };
         assert!(matches!(err, OperationsDomainError::Conflict(_)));
+        Ok(())
     }
 
     #[test]
-    fn system_version_new_validates() {
+    fn system_version_new_validates() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let id = crate::value_objects::SystemVersionId::new(Uuid::nil());
         let ok = SystemVersion::new(NewSystemVersion {
             id,
-            version_name: crate::value_objects::VersionName::new("8.2.3").unwrap(),
-            title: VersionTitle::new("8.2.3").unwrap(),
-            features: VersionFeatures::new("Initial release").unwrap(),
+            version_name: crate::value_objects::VersionName::new("8.2.3")?,
+            title: VersionTitle::new("8.2.3")?,
+            features: VersionFeatures::new("Initial release")?,
             created_by: UserId::from_uuid(Uuid::nil()),
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
         });
         assert!(ok.is_ok());
+        Ok(())
     }
 
     #[test]
-    fn version_history_is_append_only() {
+    fn version_history_is_append_only() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let id = crate::value_objects::VersionHistoryId::new(Uuid::nil());
         let h = VersionHistory::new(
             id,
             VersionHistoryInput::new(
-                HistoryVersion::new("8.2.3").unwrap(),
-                HistoryReleaseDate::new("2026-06-13").unwrap(),
-                HistoryNotes::new("Initial release").unwrap(),
+                HistoryVersion::new("8.2.3")?,
+                HistoryReleaseDate::new("2026-06-13")?,
+                HistoryNotes::new("Initial release")?,
             ),
             UserId::from_uuid(Uuid::nil()),
             CorrelationId::from_uuid(Uuid::nil()),
             Timestamp::now(),
         );
         // No update method exists; we just check it constructed.
-        assert_eq!(h.version, HistoryVersion::new("8.2.3").unwrap());
+        assert_eq!(h.version, HistoryVersion::new("8.2.3")?);
+        Ok(())
     }
 
     #[test]
-    fn user_log_records_login() {
+    fn user_log_records_login() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = make_school();
         let id = crate::value_objects::UserLogId::new(school, Uuid::nil());
         let log = UserLog::new(
@@ -915,8 +914,8 @@ mod tests {
                 school,
                 UserId::from_uuid(Uuid::nil()),
                 RoleId::new(school, Uuid::nil()),
-                IpAddress::new("192.0.2.1").unwrap(),
-                UserAgent::new("Mozilla/5.0").unwrap(),
+                IpAddress::new("192.0.2.1")?,
+                UserAgent::new("Mozilla/5.0")?,
                 LoginOutcome::Success,
             ),
             UserId::from_uuid(Uuid::nil()),
@@ -925,23 +924,23 @@ mod tests {
         );
         assert!(matches!(log.outcome, LoginOutcome::Success));
         assert_eq!(log.ip_address.as_str(), "192.0.2.1");
+        Ok(())
     }
 
     #[test]
-    fn maintenance_setting_enable_disable() {
+    fn maintenance_setting_enable_disable() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = make_school();
         let id = crate::value_objects::MaintenanceSettingId::new(school, Uuid::nil());
         let mut m = MaintenanceSetting::configure(NewMaintenanceSetting {
             id,
-            title: MaintenanceTitle::new("We will be back soon!").unwrap(),
-            sub_title: MaintenanceSubTitle::new("Sorry for the inconvenience...").unwrap(),
+            title: MaintenanceTitle::new("We will be back soon!")?,
+            sub_title: MaintenanceSubTitle::new("Sorry for the inconvenience...")?,
             image: None,
-            applicable_for: MaintenanceApplicableFor::new("all").unwrap(),
+            applicable_for: MaintenanceApplicableFor::new("all")?,
             created_by: UserId::from_uuid(Uuid::nil()),
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
-        })
-        .unwrap();
+        })?;
         assert!(!m.maintenance_mode);
         m.enable(
             UserId::from_uuid(Uuid::nil()),
@@ -955,61 +954,62 @@ mod tests {
             EventId::from_uuid(Uuid::nil()),
         );
         assert!(!m.maintenance_mode);
+        Ok(())
     }
 
     #[test]
-    fn sidebar_new_constructs() {
+    fn sidebar_new_constructs() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = make_school();
         let id = crate::value_objects::SidebarId::new(school, Uuid::from_u128(1));
         let s = Sidebar::new(NewSidebar {
             id,
             permission_id: PermissionId::new(school, Uuid::from_u128(2)),
             role_id: RoleId::new(school, Uuid::from_u128(3)),
-            position: SidebarPosition::new(0).unwrap(),
+            position: SidebarPosition::new(0)?,
             section_id: SidebarSectionId::new(1),
             parent: None,
             parent_route: None,
-            level: SidebarLevel::new(1).unwrap(),
+            level: SidebarLevel::new(1)?,
             is_system_defined: SidebarIsSystemDefined::new(false),
-            ignore: SidebarIgnoreFlag::new(0).unwrap(),
+            ignore: SidebarIgnoreFlag::new(0)?,
             active_status: SidebarActiveStatus::new(true),
             user_id: UserId::from_uuid(Uuid::from_u128(4)),
             created_by: UserId::from_uuid(Uuid::from_u128(4)),
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
-        })
-        .unwrap();
+        })?;
         assert!(!s.is_system());
         assert_eq!(s.level.get(), 1);
+        Ok(())
     }
 
     #[test]
-    fn failed_job_new_constructs() {
+    fn failed_job_new_constructs() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let id = crate::value_objects::FailedJobId::new(Uuid::nil());
         let f = FailedJob::new(NewFailedJob {
             id,
             uuid: FailedJobUuid::new(Uuid::from_u128(1)),
-            connection: FailedJobConnection::new("database").unwrap(),
-            queue: FailedJobQueue::new("default").unwrap(),
-            payload: JobPayload::new("{}").unwrap(),
-            exception: FailedJobException::new("RuntimeError: kaboom").unwrap(),
+            connection: FailedJobConnection::new("database")?,
+            queue: FailedJobQueue::new("default")?,
+            payload: JobPayload::new("{}")?,
+            exception: FailedJobException::new("RuntimeError: kaboom")?,
             original_job_id: crate::value_objects::JobId::new(Uuid::from_u128(2)),
             failed_at: Timestamp::now(),
             created_by: UserId::from_uuid(Uuid::nil()),
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
-        })
-        .unwrap();
+        })?;
         assert_eq!(f.queue.as_str(), "default");
+        Ok(())
     }
 
     #[test]
-    fn backup_marks_active_and_inactive() {
+    fn backup_marks_active_and_inactive() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = make_school();
         let id = crate::value_objects::BackupId::new(school, Uuid::nil());
         let mut b = Backup::new(NewBackup {
             id,
-            file_name: BackupFileName::new("backup.sql").unwrap(),
-            source_link: BackupSourceLink::new("s3://bucket/backup.sql").unwrap(),
+            file_name: BackupFileName::new("backup.sql")?,
+            source_link: BackupSourceLink::new("s3://bucket/backup.sql")?,
             file_type: BackupFileType::Database,
             lang_type: None,
             active_status: true,
@@ -1017,45 +1017,45 @@ mod tests {
             created_by: UserId::from_uuid(Uuid::nil()),
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
-        })
-        .unwrap();
+        })?;
         let event_id = EventId::from_uuid(Uuid::from_u128(1));
         b.mark_active(UserId::from_uuid(Uuid::nil()), Timestamp::now(), event_id);
         assert!(b.active_status);
         b.mark_inactive(UserId::from_uuid(Uuid::nil()), Timestamp::now(), event_id);
         assert!(!b.active_status);
+        Ok(())
     }
 
     #[test]
-    fn sidebar_reorder_updates_position() {
+    fn sidebar_reorder_updates_position() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = make_school();
         let id = crate::value_objects::SidebarId::new(school, Uuid::from_u128(1));
         let mut s = Sidebar::new(NewSidebar {
             id,
             permission_id: PermissionId::new(school, Uuid::from_u128(2)),
             role_id: RoleId::new(school, Uuid::from_u128(3)),
-            position: SidebarPosition::new(0).unwrap(),
+            position: SidebarPosition::new(0)?,
             section_id: SidebarSectionId::new(1),
             parent: None,
             parent_route: None,
-            level: SidebarLevel::new(1).unwrap(),
+            level: SidebarLevel::new(1)?,
             is_system_defined: SidebarIsSystemDefined::new(false),
-            ignore: SidebarIgnoreFlag::new(0).unwrap(),
+            ignore: SidebarIgnoreFlag::new(0)?,
             active_status: SidebarActiveStatus::new(true),
             user_id: UserId::from_uuid(Uuid::from_u128(4)),
             created_by: UserId::from_uuid(Uuid::from_u128(4)),
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
-        })
-        .unwrap();
+        })?;
         let event_id = EventId::from_uuid(Uuid::from_u128(1));
         s.reorder(
-            SidebarPosition::new(5).unwrap(),
+            SidebarPosition::new(5)?,
             UserId::from_uuid(Uuid::nil()),
             Timestamp::now(),
             event_id,
         );
         assert_eq!(s.position.get(), 5);
+        Ok(())
     }
 
     #[test]

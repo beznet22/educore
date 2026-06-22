@@ -586,19 +586,20 @@ mod tests {
     }
 
     #[test]
-    fn schedule_job_into_new_job() {
+    fn schedule_job_into_new_job() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let user = educore_core::ids::UserId::from_uuid(Uuid::nil());
         let corr = CorrelationId::from_uuid(Uuid::nil());
         let tenant = TenantContext::for_user(school, user, corr, UserType::SchoolAdmin);
         let cmd = ScheduleJobCommand {
             tenant,
-            queue: crate::value_objects::JobQueue::new("default").unwrap(),
-            payload: crate::value_objects::JobPayload::new("{}").unwrap(),
+            queue: crate::value_objects::JobQueue::new("default")?,
+            payload: crate::value_objects::JobPayload::new("{}")?,
             available_at: Timestamp::now(),
         };
         let id = crate::value_objects::JobId::new(Uuid::nil());
         let new = cmd.into_new_job(id);
         assert_eq!(new.queue.as_str(), "default");
+        Ok(())
     }
 }

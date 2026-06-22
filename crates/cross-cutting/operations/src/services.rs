@@ -714,12 +714,9 @@ impl FailedLogins {
 mod tests {
     use super::*;
     use crate::value_objects::{
-        BackupFileName, BackupFileType, BackupSourceLink, FailedJobConnection, FailedJobException,
-        FailedJobQueue, FailedJobUuid, FileReference, HistoryNotes, HistoryReleaseDate,
-        HistoryVersion, IpAddress, JobPayload, MaintenanceApplicableFor, MaintenanceImage,
-        MaintenanceSubTitle, MaintenanceTitle, PermissionId, SidebarActiveStatus,
-        SidebarIgnoreFlag, SidebarIsSystemDefined, SidebarLevel, SidebarPosition, SidebarSectionId,
-        UserAgent, VersionFeatures, VersionTitle,
+        BackupFileName, BackupFileType, BackupSourceLink, IpAddress, PermissionId,
+        SidebarActiveStatus, SidebarIgnoreFlag, SidebarIsSystemDefined, SidebarLevel,
+        SidebarPosition, SidebarSectionId, UserAgent,
     };
     use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
     use uuid::Uuid;
@@ -743,12 +740,13 @@ mod tests {
     }
 
     #[test]
-    fn backup_service_can_delete_blocks_during_restore() {
+    fn backup_service_can_delete_blocks_during_restore(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let mut b = Backup::new(crate::aggregate::NewBackup {
             id: crate::value_objects::BackupId::new(school, Uuid::nil()),
-            file_name: BackupFileName::new("backup.sql").unwrap(),
-            source_link: BackupSourceLink::new("s3://bucket/backup.sql").unwrap(),
+            file_name: BackupFileName::new("backup.sql")?,
+            source_link: BackupSourceLink::new("s3://bucket/backup.sql")?,
             file_type: BackupFileType::Database,
             lang_type: None,
             active_status: true,
@@ -756,8 +754,7 @@ mod tests {
             created_by: UserId::from_uuid(Uuid::nil()),
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
-        })
-        .unwrap();
+        })?;
         assert!(BackupService::can_delete(&b, false).is_ok());
         b.mark_restoring(
             UserId::from_uuid(Uuid::nil()),
@@ -765,19 +762,22 @@ mod tests {
             EventId::from_uuid(Uuid::nil()),
         );
         assert!(BackupService::can_delete(&b, false).is_err());
+        Ok(())
     }
 
     #[test]
-    fn system_version_service_is_newer_and_compatible() {
-        let a = VersionName::new("8.2.3").unwrap();
-        let b = VersionName::new("8.2.4").unwrap();
-        let c = VersionName::new("9.0.0").unwrap();
+    fn system_version_service_is_newer_and_compatible(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let a = VersionName::new("8.2.3")?;
+        let b = VersionName::new("8.2.4")?;
+        let c = VersionName::new("9.0.0")?;
         assert!(SystemVersionService::is_newer(&b, &a));
         assert!(!SystemVersionService::is_newer(&a, &b));
         assert!(SystemVersionService::is_newer(&c, &b));
         // Compatibility: same major (8.x with 8.y) is compatible; 8.x with 9.x is not.
         assert!(SystemVersionService::is_compatible(&a, &b));
         assert!(!SystemVersionService::is_compatible(&a, &c));
+        Ok(())
     }
 
     #[test]
@@ -804,13 +804,14 @@ mod tests {
     }
 
     #[test]
-    fn backup_specifications_partition_correctly() {
+    fn backup_specifications_partition_correctly(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let mk = |file_type: BackupFileType, active: bool| {
             Backup::new(crate::aggregate::NewBackup {
                 id: crate::value_objects::BackupId::new(school, Uuid::from_u128(rand_u128())),
-                file_name: BackupFileName::new("backup.sql").unwrap(),
-                source_link: BackupSourceLink::new("s3://bucket/backup.sql").unwrap(),
+                file_name: BackupFileName::new("backup.sql")?,
+                source_link: BackupSourceLink::new("s3://bucket/backup.sql")?,
                 file_type,
                 lang_type: None,
                 active_status: active,
@@ -820,13 +821,14 @@ mod tests {
                 correlation_id: CorrelationId::from_uuid(Uuid::nil()),
             })
         };
-        let db = mk(BackupFileType::Database, true).unwrap();
-        let img = mk(BackupFileType::Image, true).unwrap();
-        let inactive_db = mk(BackupFileType::Database, false).unwrap();
+        let db = mk(BackupFileType::Database, true)?;
+        let img = mk(BackupFileType::Image, true)?;
+        let inactive_db = mk(BackupFileType::Database, false)?;
         assert!(ActiveBackups::is_satisfied_by(&db));
         assert!(!ActiveBackups::is_satisfied_by(&inactive_db));
         assert!(DatabaseBackups::is_satisfied_by(&db));
         assert!(!DatabaseBackups::is_satisfied_by(&img));
+        Ok(())
     }
 
     fn rand_u128() -> u128 {
@@ -834,59 +836,63 @@ mod tests {
     }
 
     #[test]
-    fn user_log_specifications_partition_correctly() {
+    fn user_log_specifications_partition_correctly(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
-        let mk = |outcome: LoginOutcome| {
-            UserLog::new(
-                crate::value_objects::UserLogId::new(school, Uuid::from_u128(rand_u128())),
-                crate::entities::UserLogInput::new(
-                    school,
+        let mk =
+            |outcome: LoginOutcome| -> std::result::Result<UserLog, Box<dyn std::error::Error>> {
+                Ok(UserLog::new(
+                    crate::value_objects::UserLogId::new(school, Uuid::from_u128(rand_u128())),
+                    crate::entities::UserLogInput::new(
+                        school,
+                        UserId::from_uuid(Uuid::nil()),
+                        RoleId::new(school, Uuid::nil()),
+                        IpAddress::new("192.0.2.1")?,
+                        UserAgent::new("Mozilla/5.0")?,
+                        outcome,
+                    ),
                     UserId::from_uuid(Uuid::nil()),
-                    RoleId::new(school, Uuid::nil()),
-                    IpAddress::new("192.0.2.1").unwrap(),
-                    UserAgent::new("Mozilla/5.0").unwrap(),
-                    outcome,
-                ),
-                UserId::from_uuid(Uuid::nil()),
-                CorrelationId::from_uuid(Uuid::nil()),
-                Timestamp::now(),
-            )
-        };
-        let success = mk(LoginOutcome::Success);
-        let failure = mk(LoginOutcome::Failure);
+                    CorrelationId::from_uuid(Uuid::nil()),
+                    Timestamp::now(),
+                ))
+            };
+        let success = mk(LoginOutcome::Success)?;
+        let failure = mk(LoginOutcome::Failure)?;
         assert!(SuccessfulLogins::is_satisfied_by(&success));
         assert!(!SuccessfulLogins::is_satisfied_by(&failure));
         assert!(FailedLogins::is_satisfied_by(&failure));
         assert!(!FailedLogins::is_satisfied_by(&success));
+        Ok(())
     }
 
     #[test]
-    fn sidebar_service_reorder_validates_and_updates() {
+    fn sidebar_service_reorder_validates_and_updates(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let id = crate::value_objects::SidebarId::new(school, Uuid::from_u128(1));
         let sidebar = Sidebar::new(crate::aggregate::NewSidebar {
             id,
             permission_id: PermissionId::new(school, Uuid::from_u128(2)),
             role_id: RoleId::new(school, Uuid::from_u128(3)),
-            position: SidebarPosition::new(0).unwrap(),
+            position: SidebarPosition::new(0)?,
             section_id: SidebarSectionId::new(1),
             parent: None,
             parent_route: None,
-            level: SidebarLevel::new(1).unwrap(),
+            level: SidebarLevel::new(1)?,
             is_system_defined: SidebarIsSystemDefined::new(false),
-            ignore: SidebarIgnoreFlag::new(0).unwrap(),
+            ignore: SidebarIgnoreFlag::new(0)?,
             active_status: SidebarActiveStatus::new(true),
             user_id: UserId::from_uuid(Uuid::from_u128(4)),
             created_by: UserId::from_uuid(Uuid::from_u128(4)),
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
-        })
-        .unwrap();
+        })?;
         let mut entries = vec![sidebar];
         let mut map = BTreeMap::new();
-        map.insert(id, SidebarPosition::new(5).unwrap());
-        SidebarService::reorder(&mut entries, &map).unwrap();
+        map.insert(id, SidebarPosition::new(5)?);
+        SidebarService::reorder(&mut entries, &map)?;
         assert_eq!(entries[0].position.get(), 5);
+        Ok(())
     }
 
     #[test]
@@ -905,28 +911,30 @@ mod tests {
     }
 
     #[test]
-    fn audit_service_export_summary() {
+    fn audit_service_export_summary() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
-        let mk = |outcome: LoginOutcome| {
-            UserLog::new(
-                crate::value_objects::UserLogId::new(school, Uuid::from_u128(rand_u128())),
-                crate::entities::UserLogInput::new(
-                    school,
+        let mk =
+            |outcome: LoginOutcome| -> std::result::Result<UserLog, Box<dyn std::error::Error>> {
+                Ok(UserLog::new(
+                    crate::value_objects::UserLogId::new(school, Uuid::from_u128(rand_u128())),
+                    crate::entities::UserLogInput::new(
+                        school,
+                        UserId::from_uuid(Uuid::nil()),
+                        RoleId::new(school, Uuid::nil()),
+                        IpAddress::new("192.0.2.1")?,
+                        UserAgent::new("Mozilla/5.0")?,
+                        outcome,
+                    ),
                     UserId::from_uuid(Uuid::nil()),
-                    RoleId::new(school, Uuid::nil()),
-                    IpAddress::new("192.0.2.1").unwrap(),
-                    UserAgent::new("Mozilla/5.0").unwrap(),
-                    outcome,
-                ),
-                UserId::from_uuid(Uuid::nil()),
-                CorrelationId::from_uuid(Uuid::nil()),
-                Timestamp::now(),
-            )
-        };
-        let log = vec![mk(LoginOutcome::Success), mk(LoginOutcome::Failure)];
+                    CorrelationId::from_uuid(Uuid::nil()),
+                    Timestamp::now(),
+                ))
+            };
+        let log = vec![mk(LoginOutcome::Success)?, mk(LoginOutcome::Failure)?];
         let exp = AuditService::export(&log);
         assert_eq!(exp.total, 2);
         assert_eq!(exp.successes, 1);
         assert_eq!(exp.failures, 1);
+        Ok(())
     }
 }

@@ -1307,23 +1307,25 @@ mod tests {
     }
 
     #[test]
-    fn sidebar_level_constrains_to_1_3() {
-        assert!(SidebarLevel::new(1).unwrap().is_parent());
-        assert!(!SidebarLevel::new(2).unwrap().is_parent());
+    fn sidebar_level_constrains_to_1_3() -> std::result::Result<(), Box<dyn std::error::Error>> {
+        assert!(SidebarLevel::new(1)?.is_parent());
+        assert!(!SidebarLevel::new(2)?.is_parent());
         assert!(SidebarLevel::new(3).is_ok());
         assert!(SidebarLevel::new(4).is_err());
         assert!(SidebarLevel::new(0).is_err());
+        Ok(())
     }
 
     #[test]
-    fn sidebar_ignore_flag_states() {
-        let shown = SidebarIgnoreFlag::new(0).unwrap();
-        let hidden = SidebarIgnoreFlag::new(1).unwrap();
-        let disabled = SidebarIgnoreFlag::new(2).unwrap();
+    fn sidebar_ignore_flag_states() -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let shown = SidebarIgnoreFlag::new(0)?;
+        let hidden = SidebarIgnoreFlag::new(1)?;
+        let disabled = SidebarIgnoreFlag::new(2)?;
         assert!(shown.is_shown() && !shown.is_hidden() && !shown.is_disabled());
         assert!(!hidden.is_shown() && hidden.is_hidden() && !hidden.is_disabled());
         assert!(!disabled.is_shown() && !disabled.is_hidden() && disabled.is_disabled());
         assert!(SidebarIgnoreFlag::new(3).is_err());
+        Ok(())
     }
 
     #[test]
@@ -1368,10 +1370,11 @@ mod tests {
     }
 
     #[test]
-    fn maintenance_applicable_for_is_all() {
-        let all = MaintenanceApplicableFor::new("all").unwrap();
+    fn maintenance_applicable_for_is_all() -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let all = MaintenanceApplicableFor::new("all")?;
         assert!(all.is_all());
-        let student_parent = MaintenanceApplicableFor::new("student,parent").unwrap();
+        let student_parent = MaintenanceApplicableFor::new("student,parent")?;
         assert!(!student_parent.is_all());
+        Ok(())
     }
 }

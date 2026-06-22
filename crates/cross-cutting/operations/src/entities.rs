@@ -949,21 +949,23 @@ mod tests {
     use educore_core::ids::Identifier;
 
     #[test]
-    fn backup_file_constructs() {
+    fn backup_file_constructs() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let f = BackupFile::new(
             school,
             Uuid::nil(),
             "backup.sql".to_owned(),
-            BackupSourceLink::new("s3://bucket/backup.sql").unwrap(),
+            BackupSourceLink::new("s3://bucket/backup.sql")?,
             BackupFileType::Database,
             None,
         );
         assert_eq!(f.file_type.as_i32(), 0);
+        Ok(())
     }
 
     #[test]
-    fn sidebar_entry_constructs_with_required_fields() {
+    fn sidebar_entry_constructs_with_required_fields(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let sidebar_id = crate::value_objects::SidebarId::new(school, Uuid::from_u128(1));
         let permission = PermissionId::new(school, Uuid::from_u128(2));
@@ -973,29 +975,31 @@ mod tests {
             school,
             permission,
             role,
-            SidebarPosition::new(0).unwrap(),
+            SidebarPosition::new(0)?,
             SidebarSectionId::new(1),
-            SidebarLevel::new(1).unwrap(),
+            SidebarLevel::new(1)?,
             "Dashboard".to_owned(),
             "/dashboard".to_owned(),
             SidebarIsSystemDefined::new(false),
-            SidebarIgnoreFlag::new(0).unwrap(),
+            SidebarIgnoreFlag::new(0)?,
             SidebarActiveStatus::new(true),
             UserId::from_uuid(Uuid::from_u128(4)),
         );
         assert_eq!(entry.level.get(), 1);
         assert!(entry.ignore.is_shown());
+        Ok(())
     }
 
     #[test]
-    fn sidebar_reorder_map_builds() {
+    fn sidebar_reorder_map_builds() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let a = crate::value_objects::SidebarId::new(school, Uuid::from_u128(1));
         let b = crate::value_objects::SidebarId::new(school, Uuid::from_u128(2));
         let map = SidebarReorderMap::new()
-            .with(a, SidebarPosition::new(0).unwrap())
-            .with(b, SidebarPosition::new(1).unwrap());
+            .with(a, SidebarPosition::new(0)?)
+            .with(b, SidebarPosition::new(1)?);
         assert_eq!(map.entries.len(), 2);
+        Ok(())
     }
 
     #[test]
@@ -1006,16 +1010,17 @@ mod tests {
     }
 
     #[test]
-    fn user_log_input_builder() {
+    fn user_log_input_builder() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let user = UserId::from_uuid(Uuid::nil());
         let role = RoleId::new(school, Uuid::nil());
-        let ip = IpAddress::new("192.0.2.1").unwrap();
-        let ua = UserAgent::new("Mozilla/5.0").unwrap();
+        let ip = IpAddress::new("192.0.2.1")?;
+        let ua = UserAgent::new("Mozilla/5.0")?;
         let input = UserLogInput::new(school, user, role, ip, ua, LoginOutcome::Success);
         assert_eq!(input.school_id, school);
         assert!(matches!(input.outcome, LoginOutcome::Success));
         assert!(input.failure_reason.is_none());
+        Ok(())
     }
 
     #[test]
