@@ -233,7 +233,7 @@ mod tests {
     use clap::Parser;
 
     #[test]
-    fn parse_admit_args() {
+    fn parse_admit_args() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let cli = Cli::try_parse_from([
             "educore-cli",
             "admit",
@@ -247,28 +247,28 @@ mod tests {
             "00000000-0000-0000-0000-000000000002",
             "--section",
             "00000000-0000-0000-0000-000000000003",
-        ])
-        .unwrap();
-        match cli.command {
-            Command::Admit {
-                school,
-                first,
-                last,
-                class,
-                section,
-            } => {
-                assert_eq!(school, "00000000-0000-0000-0000-000000000001");
-                assert_eq!(first, "Ada");
-                assert_eq!(last, "Lovelace");
-                assert_eq!(class, "00000000-0000-0000-0000-000000000002");
-                assert_eq!(section, "00000000-0000-0000-0000-000000000003");
-            }
-            _ => panic!("expected Admit"),
+        ])?;
+        if let Command::Admit {
+            school,
+            first,
+            last,
+            class,
+            section,
+        } = cli.command
+        {
+            assert_eq!(school, "00000000-0000-0000-0000-000000000001");
+            assert_eq!(first, "Ada");
+            assert_eq!(last, "Lovelace");
+            assert_eq!(class, "00000000-0000-0000-0000-000000000002");
+            assert_eq!(section, "00000000-0000-0000-0000-000000000003");
+        } else {
+            return Err("expected Admit command".into());
         }
+        Ok(())
     }
 
     #[test]
-    fn parse_attendance_args() {
+    fn parse_attendance_args() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let cli = Cli::try_parse_from([
             "educore-cli",
             "attendance",
@@ -280,26 +280,26 @@ mod tests {
             "2026-06-21",
             "--status",
             "P",
-        ])
-        .unwrap();
-        match cli.command {
-            Command::Attendance {
-                school,
-                student,
-                date,
-                status,
-            } => {
-                assert_eq!(school, "00000000-0000-0000-0000-000000000001");
-                assert_eq!(student, "00000000-0000-0000-0000-000000000004");
-                assert_eq!(date, "2026-06-21");
-                assert_eq!(status, "P");
-            }
-            _ => panic!("expected Attendance"),
+        ])?;
+        if let Command::Attendance {
+            school,
+            student,
+            date,
+            status,
+        } = cli.command
+        {
+            assert_eq!(school, "00000000-0000-0000-0000-000000000001");
+            assert_eq!(student, "00000000-0000-0000-0000-000000000004");
+            assert_eq!(date, "2026-06-21");
+            assert_eq!(status, "P");
+        } else {
+            return Err("expected Attendance command".into());
         }
+        Ok(())
     }
 
     #[test]
-    fn parse_payment_args() {
+    fn parse_payment_args() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let cli = Cli::try_parse_from([
             "educore-cli",
             "payment",
@@ -313,23 +313,23 @@ mod tests {
             "USD",
             "--method",
             "cash",
-        ])
-        .unwrap();
-        match cli.command {
-            Command::Payment {
-                school,
-                invoice,
-                amount,
-                currency,
-                method,
-            } => {
-                assert_eq!(school, "00000000-0000-0000-0000-000000000001");
-                assert_eq!(amount, 1500);
-                assert_eq!(currency, "USD");
-                assert_eq!(method, "cash");
-                assert_eq!(invoice, "00000000-0000-0000-0000-000000000005");
-            }
-            _ => panic!("expected Payment"),
+        ])?;
+        if let Command::Payment {
+            school,
+            invoice,
+            amount,
+            currency,
+            method,
+        } = cli.command
+        {
+            assert_eq!(school, "00000000-0000-0000-0000-000000000001");
+            assert_eq!(amount, 1500);
+            assert_eq!(currency, "USD");
+            assert_eq!(method, "cash");
+            assert_eq!(invoice, "00000000-0000-0000-0000-000000000005");
+        } else {
+            return Err("expected Payment command".into());
         }
+        Ok(())
     }
 }
