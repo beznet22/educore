@@ -109,22 +109,13 @@ impl InMemoryNotificationProvider {
 impl NotificationProvider for InMemoryNotificationProvider {
     async fn send(&self, request: SendNotification) -> Result<NotificationReceipt> {
         let receipt = Self::make_receipt(&request.channel);
-        let mut sends = self
-            .sends
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner);
+        let mut sends = self.sends.lock().unwrap_or_else(PoisonError::into_inner);
         sends.push(request);
         Ok(receipt)
     }
 
-    async fn send_bulk(
-        &self,
-        request: SendBulkNotification,
-    ) -> Result<BulkReceipt> {
-        let bulk_id = BulkId::new(format!(
-            "in-memory-bulk-{}",
-            Uuid::new_v4()
-        ));
+    async fn send_bulk(&self, request: SendBulkNotification) -> Result<BulkReceipt> {
+        let bulk_id = BulkId::new(format!("in-memory-bulk-{}", Uuid::new_v4()));
         let receipts: Vec<NotificationReceipt> = request
             .recipients
             .iter()
@@ -137,18 +128,12 @@ impl NotificationProvider for InMemoryNotificationProvider {
             failed: Vec::new(),
         };
 
-        let mut bulks = self
-            .bulks
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner);
+        let mut bulks = self.bulks.lock().unwrap_or_else(PoisonError::into_inner);
         bulks.insert(bulk_id, bulk_receipt.clone());
         Ok(bulk_receipt)
     }
 
-    async fn status(
-        &self,
-        _receipt_id: NotificationReceiptId,
-    ) -> Result<DeliveryStatus> {
+    async fn status(&self, _receipt_id: NotificationReceiptId) -> Result<DeliveryStatus> {
         Ok(DeliveryStatus::Sent)
     }
 }
@@ -173,8 +158,7 @@ mod tests {
     use educore_core::tenant::{TenantContext, UserType};
     use educore_notify::errors::NotificationTemplateId;
     use educore_notify::port::{
-        BulkRecipient, Channel, ContactInfo, EmailAddress, Priority, Recipient,
-        TemplateRef,
+        BulkRecipient, Channel, ContactInfo, EmailAddress, Priority, Recipient, TemplateRef,
     };
     use uuid::Uuid;
 
@@ -191,8 +175,7 @@ mod tests {
             channel,
             template: TemplateRef::Id(NotificationTemplateId::new("tpl-test")),
             recipient: Recipient::Direct(
-                ContactInfo::new()
-                    .with_email(EmailAddress::new("recipient@example.test")),
+                ContactInfo::new().with_email(EmailAddress::new("recipient@example.test")),
             ),
             variables: BTreeMap::new(),
             attachments: Vec::new(),
@@ -204,10 +187,7 @@ mod tests {
         }
     }
 
-    fn make_bulk(
-        recipients: Vec<BulkRecipient>,
-        channel: Channel,
-    ) -> SendBulkNotification {
+    fn make_bulk(recipients: Vec<BulkRecipient>, channel: Channel) -> SendBulkNotification {
         SendBulkNotification {
             tenant: system_tenant(),
             template: TemplateRef::Id(NotificationTemplateId::new("tpl-bulk")),
@@ -229,8 +209,7 @@ mod tests {
     #[test]
     fn send_records_request_and_returns_receipt() {
         let provider = InMemoryNotificationProvider::new();
-        let receipt =
-            block_on(provider.send(make_send(Channel::InApp))).unwrap();
+        let receipt = block_on(provider.send(make_send(Channel::InApp))).unwrap();
 
         assert_eq!(provider.send_count(), 1);
         assert_eq!(receipt.status, DeliveryStatus::Sent);
@@ -250,16 +229,13 @@ mod tests {
         let provider = InMemoryNotificationProvider::new();
         let recipients = vec![
             BulkRecipient::new(Recipient::Direct(
-                ContactInfo::new()
-                    .with_email(EmailAddress::new("a@example.test")),
+                ContactInfo::new().with_email(EmailAddress::new("a@example.test")),
             )),
             BulkRecipient::new(Recipient::Direct(
-                ContactInfo::new()
-                    .with_email(EmailAddress::new("b@example.test")),
+                ContactInfo::new().with_email(EmailAddress::new("b@example.test")),
             )),
             BulkRecipient::new(Recipient::Direct(
-                ContactInfo::new()
-                    .with_email(EmailAddress::new("c@example.test")),
+                ContactInfo::new().with_email(EmailAddress::new("c@example.test")),
             )),
         ];
         let bulk = make_bulk(recipients, Channel::InApp);

@@ -88,10 +88,7 @@ mod tests {
             educore_events::event_bus::ConsumerId::new("testkit.alias"),
             Topic::All,
         );
-        let mut sub = bus
-            .subscribe(opts)
-            .await
-            .expect("subscribe must succeed");
+        let mut sub = bus.subscribe(opts).await.expect("subscribe must succeed");
 
         let env = sample_envelope("platform.school.created", "school");
         let _receipt = bus

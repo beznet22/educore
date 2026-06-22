@@ -9,12 +9,11 @@
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use chrono::{DateTime, Utc};
-use surrealdb::sql::{Bytes as SurrealBytes, Datetime, Uuid as SurrealUuid};
 use educore_core::error::Result;
 use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::value_objects::{ActiveStatus, Timestamp};
 use educore_storage::event_log::{EventLog, EventLogEntry, EventLogFilter};
+use surrealdb::sql::{Bytes as SurrealBytes, Datetime, Uuid as SurrealUuid};
 
 use crate::connection::Db;
 use crate::error::StringError;
@@ -170,12 +169,22 @@ impl EventLog for SurrealEventLog {
         let since_clause = filter
             .since
             .as_ref()
-            .map(|s| format!(" AND recorded_at >= datetime::from('{}')", s.as_datetime().to_rfc3339()))
+            .map(|s| {
+                format!(
+                    " AND recorded_at >= datetime::from('{}')",
+                    s.as_datetime().to_rfc3339()
+                )
+            })
             .unwrap_or_default();
         let until_clause = filter
             .until
             .as_ref()
-            .map(|u| format!(" AND recorded_at < datetime::from('{}')", u.as_datetime().to_rfc3339()))
+            .map(|u| {
+                format!(
+                    " AND recorded_at < datetime::from('{}')",
+                    u.as_datetime().to_rfc3339()
+                )
+            })
             .unwrap_or_default();
         let agg_clause = filter
             .aggregate_id
@@ -222,12 +231,22 @@ impl EventLog for SurrealEventLog {
         let since_clause = filter
             .since
             .as_ref()
-            .map(|s| format!(" AND recorded_at >= datetime::from('{}')", s.as_datetime().to_rfc3339()))
+            .map(|s| {
+                format!(
+                    " AND recorded_at >= datetime::from('{}')",
+                    s.as_datetime().to_rfc3339()
+                )
+            })
             .unwrap_or_default();
         let until_clause = filter
             .until
             .as_ref()
-            .map(|u| format!(" AND recorded_at < datetime::from('{}')", u.as_datetime().to_rfc3339()))
+            .map(|u| {
+                format!(
+                    " AND recorded_at < datetime::from('{}')",
+                    u.as_datetime().to_rfc3339()
+                )
+            })
             .unwrap_or_default();
         let query = format!(
             "SELECT count() AS n FROM event_log \
@@ -247,12 +266,22 @@ impl EventLog for SurrealEventLog {
         let rows: Vec<CountRow> = response
             .take(0)
             .map_err(|e| StringError(format!("event_log count take: {e}")))?;
-        Ok(rows.first().map(|r| r.n as u64).unwrap_or(0))
+        Ok(rows
+            .first()
+            .map(|r| u64::try_from(r.n).unwrap_or(0))
+            .unwrap_or(0))
     }
 }
 
 #[cfg(test)]
 mod tests {
+    #![allow(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::panic,
+        clippy::dbg_macro
+    )]
+
     use super::*;
     use educore_core::clock::{IdGenerator, SystemIdGen};
     use educore_core::ids::SchoolId;

@@ -49,11 +49,7 @@ pub struct InMemoryIntegrationGateway {
 
 impl fmt::Debug for InMemoryIntegrationGateway {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let invocation_count = self
-            .invocations
-            .lock()
-            .map(|g| g.len())
-            .unwrap_or_default();
+        let invocation_count = self.invocations.lock().map(|g| g.len()).unwrap_or_default();
         f.debug_struct("InMemoryIntegrationGateway")
             .field("invocation_count", &invocation_count)
             .field("capability_count", &self.capabilities.len())
@@ -129,19 +125,13 @@ impl InMemoryIntegrationGateway {
     /// underlying `Vec`.
     #[must_use]
     pub fn invocation_count(&self) -> usize {
-        self.invocations
-            .lock()
-            .map(|g| g.len())
-            .unwrap_or_default()
+        self.invocations.lock().map(|g| g.len()).unwrap_or_default()
     }
 }
 
 #[async_trait]
 impl IntegrationGateway for InMemoryIntegrationGateway {
-    async fn invoke(
-        &self,
-        request: IntegrationRequest,
-    ) -> IntegrationResult<IntegrationResponse> {
+    async fn invoke(&self, request: IntegrationRequest) -> IntegrationResult<IntegrationResponse> {
         match self.invocations.lock() {
             Ok(mut g) => g.push(request),
             Err(_) => {

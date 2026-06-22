@@ -15,9 +15,7 @@ use surrealdb::sql::{Bytes as SurrealBytes, Uuid as SurrealUuid};
 use educore_core::error::Result;
 use educore_core::ids::{IdempotencyKey, Identifier, SchoolId};
 use educore_core::value_objects::Timestamp;
-use educore_storage::idempotency::{
-    Idempotency, IdempotencyCompositeKey, IdempotencyRecord,
-};
+use educore_storage::idempotency::{Idempotency, IdempotencyCompositeKey, IdempotencyRecord};
 
 use crate::connection::Db;
 use crate::error::StringError;
@@ -119,7 +117,10 @@ impl Idempotency for SurrealIdempotency {
         let rows: Vec<IdempotencyRow> = response
             .take(0)
             .map_err(|e| StringError(format!("idempotency lookup take: {e}")))?;
-        Ok(rows.into_iter().next().map(|r| IdempotencyRow::to_record(&r)))
+        Ok(rows
+            .into_iter()
+            .next()
+            .map(|r| IdempotencyRow::to_record(&r)))
     }
 
     async fn record(&self, record: IdempotencyRecord) -> Result<()> {
@@ -152,6 +153,13 @@ impl Idempotency for SurrealIdempotency {
 
 #[cfg(test)]
 mod tests {
+    #![allow(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::panic,
+        clippy::dbg_macro
+    )]
+
     use super::*;
     use educore_core::clock::{IdGenerator, SystemIdGen};
     use educore_core::ids::SchoolId;

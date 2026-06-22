@@ -41,11 +41,9 @@ use std::sync::{Mutex, PoisonError};
 use async_trait::async_trait;
 use chrono::{Duration, Utc};
 use educore_auth::errors::AuthError;
-use educore_auth::port::{
-    AuthProvider, AuthScheme, AuthToken, Credential, Session,
-};
+use educore_auth::port::{AuthProvider, AuthScheme, AuthToken, Credential, Session};
 use educore_core::clock::{IdGenerator, SystemIdGen};
-use educore_core::ids::{Identifier, SessionId};
+use educore_core::ids::Identifier;
 use educore_core::value_objects::Timestamp;
 use educore_rbac::ids::RoleId;
 use educore_rbac::value_objects::Capability;
@@ -92,10 +90,7 @@ impl InMemoryAuthProvider {
 
 #[async_trait]
 impl AuthProvider for InMemoryAuthProvider {
-    async fn authenticate(
-        &self,
-        credential: Credential,
-    ) -> Result<Session, AuthError> {
+    async fn authenticate(&self, credential: Credential) -> Result<Session, AuthError> {
         let id_gen = SystemIdGen;
         let user_id = id_gen.next_user_id();
         let school_id = id_gen.next_school_id();
@@ -103,8 +98,7 @@ impl AuthProvider for InMemoryAuthProvider {
 
         let now = Timestamp::now();
         let expires_at = Timestamp::from_datetime(
-            (now.as_datetime() + Duration::hours(SESSION_TTL_HOURS))
-                .with_timezone(&Utc),
+            (now.as_datetime() + Duration::hours(SESSION_TTL_HOURS)).with_timezone(&Utc),
         );
 
         let session = Session {
@@ -122,10 +116,7 @@ impl AuthProvider for InMemoryAuthProvider {
 
         let key = credential_key(&credential)?;
 
-        let mut sessions = self
-            .sessions
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner);
+        let mut sessions = self.sessions.lock().unwrap_or_else(PoisonError::into_inner);
         sessions.insert(key, session.clone());
         Ok(session)
     }
@@ -135,19 +126,13 @@ impl AuthProvider for InMemoryAuthProvider {
             return Err(AuthError::Expired);
         }
         let key = format!("{:?}", token.value);
-        let sessions = self
-            .sessions
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner);
+        let sessions = self.sessions.lock().unwrap_or_else(PoisonError::into_inner);
         sessions.get(&key).cloned().ok_or(AuthError::Expired)
     }
 
     async fn revoke(&self, token: &AuthToken) -> Result<(), AuthError> {
         let key = format!("{:?}", token.value);
-        let mut sessions = self
-            .sessions
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner);
+        let mut sessions = self.sessions.lock().unwrap_or_else(PoisonError::into_inner);
         sessions.remove(&key);
         Ok(())
     }
@@ -159,8 +144,7 @@ impl AuthProvider for InMemoryAuthProvider {
         let now = Timestamp::now();
         let new_session_id = id_gen.next_session_id();
         let expires_at = Timestamp::from_datetime(
-            (now.as_datetime() + Duration::hours(SESSION_TTL_HOURS))
-                .with_timezone(&Utc),
+            (now.as_datetime() + Duration::hours(SESSION_TTL_HOURS)).with_timezone(&Utc),
         );
 
         let new_session = Session {
@@ -176,14 +160,8 @@ impl AuthProvider for InMemoryAuthProvider {
             metadata: BTreeMap::new(),
         };
 
-        let key = format!(
-            "session:{}",
-            new_session.session_id.as_uuid()
-        );
-        let mut sessions = self
-            .sessions
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner);
+        let key = format!("session:{}", new_session.session_id.as_uuid());
+        let mut sessions = self.sessions.lock().unwrap_or_else(PoisonError::into_inner);
         sessions.insert(key, new_session.clone());
         Ok(new_session)
     }
@@ -205,18 +183,14 @@ impl AuthProvider for InMemoryAuthProvider {
 fn credential_key(credential: &Credential) -> Result<String, AuthError> {
     match credential {
         Credential::Bearer(token) => Ok(format!("{token:?}")),
-        Credential::UsernamePassword { username, .. } => {
-            Ok(format!("user:{username}"))
-        }
+        Credential::UsernamePassword { username, .. } => Ok(format!("user:{username}")),
         Credential::Oauth2 { code, .. } => Ok(format!("oauth:{code}")),
         Credential::Saml { assertion, .. } => {
             let head: String = assertion.chars().take(32).collect();
             Ok(format!("saml:{head}"))
         }
         Credential::ApiKey { id, .. } => Ok(format!("api-key:{id}")),
-        Credential::Biometric { device_id, .. } => {
-            Ok(format!("device:{device_id}"))
-        }
+        Credential::Biometric { device_id, .. } => Ok(format!("device:{device_id}")),
         Credential::Anonymous => Err(AuthError::InvalidCredentials),
     }
 }
@@ -253,10 +227,9 @@ mod tests {
     #[test]
     fn authenticate_bearer_mints_session() {
         let provider = InMemoryAuthProvider::new();
-        let session = block_on(provider.authenticate(Credential::Bearer(
-            "bearer-token-1".to_owned(),
-        )))
-        .unwrap();
+        let session =
+            block_on(provider.authenticate(Credential::Bearer("bearer-token-1".to_owned())))
+                .unwrap();
 
         assert!(session.mfa_satisfied, "test sessions must skip MFA");
         assert!(session.capabilities.is_empty());
@@ -281,30 +254,23 @@ mod tests {
     #[test]
     fn revoke_removes_session() {
         let provider = InMemoryAuthProvider::new();
-        let _ = block_on(provider.authenticate(Credential::Bearer(
-            "revoke-me".to_owned(),
-        )))
-        .unwrap();
+        let _ =
+            block_on(provider.authenticate(Credential::Bearer("revoke-me".to_owned()))).unwrap();
         assert_eq!(provider.session_count(), 1);
 
-        block_on(provider.revoke(&bearer_token("revoke-me")))
-            .unwrap();
+        block_on(provider.revoke(&bearer_token("revoke-me"))).unwrap();
         assert_eq!(provider.session_count(), 0);
 
-        let after_revoke =
-            block_on(provider.validate(&bearer_token("revoke-me")));
+        let after_revoke = block_on(provider.validate(&bearer_token("revoke-me")));
         assert_eq!(after_revoke, Err(AuthError::Expired));
     }
 
     #[test]
     fn refresh_mints_new_session_with_same_school() {
         let provider = InMemoryAuthProvider::new();
-        let first = block_on(provider.authenticate(Credential::Bearer(
-            "refresh-me".to_owned(),
-        )))
-        .unwrap();
-        let second =
-            block_on(provider.refresh(&bearer_token("refresh-me"))).unwrap();
+        let first =
+            block_on(provider.authenticate(Credential::Bearer("refresh-me".to_owned()))).unwrap();
+        let second = block_on(provider.refresh(&bearer_token("refresh-me"))).unwrap();
 
         assert_ne!(first.session_id, second.session_id);
         assert_eq!(first.active_school_id, second.active_school_id);

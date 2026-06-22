@@ -31,7 +31,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use bytes::Bytes;
 use chrono::NaiveDate;
 use parking_lot::Mutex;
 use uuid::Uuid;
@@ -70,7 +69,7 @@ pub(crate) struct InMemoryInner {
     pub(crate) snapshots: Mutex<Vec<SnapshotAggregate>>,
     pub(crate) migrated: AtomicBool,
     pub(crate) closed: AtomicBool,
-    pub(crate) id_seq: AtomicU64,
+    pub(crate) _id_seq: AtomicU64,
 }
 
 // ---------------------------------------------------------------------------
@@ -152,9 +151,14 @@ impl EventLog for EventLogHandle {
                 filter.event_types.is_empty()
                     || filter.event_types.iter().any(|t| t == &e.event_type)
             })
-            .filter(|e| filter.since.is_none_or(|s| e.recorded_at >= s))
-            .filter(|e| filter.until.is_none_or(|u| e.recorded_at < u))
-            .filter(|e| filter.aggregate_id.is_none_or(|a| e.aggregate_id == a))
+            .filter(|e| filter.since.as_ref().map_or(true, |s| e.recorded_at >= *s))
+            .filter(|e| filter.until.as_ref().map_or(true, |u| e.recorded_at < *u))
+            .filter(|e| {
+                filter
+                    .aggregate_id
+                    .as_ref()
+                    .map_or(true, |a| e.aggregate_id == *a)
+            })
             .cloned()
             .collect();
         out.sort_by_key(|e| e.recorded_at);
@@ -171,9 +175,14 @@ impl EventLog for EventLogHandle {
                 filter.event_types.is_empty()
                     || filter.event_types.iter().any(|t| t == &e.event_type)
             })
-            .filter(|e| filter.since.is_none_or(|s| e.recorded_at >= s))
-            .filter(|e| filter.until.is_none_or(|u| e.recorded_at < u))
-            .filter(|e| filter.aggregate_id.is_none_or(|a| e.aggregate_id == a))
+            .filter(|e| filter.since.as_ref().map_or(true, |s| e.recorded_at >= *s))
+            .filter(|e| filter.until.as_ref().map_or(true, |u| e.recorded_at < *u))
+            .filter(|e| {
+                filter
+                    .aggregate_id
+                    .as_ref()
+                    .map_or(true, |a| e.aggregate_id == *a)
+            })
             .count();
         Ok(n as u64)
     }
@@ -225,7 +234,8 @@ pub struct InMemoryStorageAdapter {
 
 impl std::fmt::Debug for InMemoryStorageAdapter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("InMemoryStorageAdapter").finish_non_exhaustive()
+        f.debug_struct("InMemoryStorageAdapter")
+            .finish_non_exhaustive()
     }
 }
 
@@ -246,14 +256,14 @@ impl InMemoryStorageAdapter {
                 snapshots: Mutex::new(Vec::new()),
                 migrated: AtomicBool::new(false),
                 closed: AtomicBool::new(false),
-                id_seq: AtomicU64::new(0),
+                _id_seq: AtomicU64::new(0),
             }),
             bus,
         }
     }
 
-    fn next_id(&self) -> u64 {
-        self.inner.id_seq.fetch_add(1, Ordering::Relaxed)
+    fn _next_id(&self) -> u64 {
+        self.inner._id_seq.fetch_add(1, Ordering::Relaxed)
     }
 }
 
@@ -349,9 +359,7 @@ impl StorageAdapter for InMemoryStorageAdapter {
             .map(Ok)
             .collect();
         let s = stream::iter(matching);
-        Ok(ChangeStream {
-            inner: Box::pin(s),
-        })
+        Ok(ChangeStream { inner: Box::pin(s) })
     }
 
     async fn apply_snapshot(&self, snapshot: SchoolSnapshot) -> Result<()> {
@@ -364,7 +372,10 @@ impl StorageAdapter for InMemoryStorageAdapter {
 
     async fn cursor_for(&self, school_id: SchoolId) -> Result<VersionCursor> {
         let cursors = self.inner.cursors.lock();
-        Ok(cursors.get(&school_id).copied().unwrap_or(VersionCursor::ZERO))
+        Ok(cursors
+            .get(&school_id)
+            .copied()
+            .unwrap_or(VersionCursor::ZERO))
     }
 
     async fn advance_cursor(&self, school_id: SchoolId, to: VersionCursor) -> Result<()> {
@@ -382,7 +393,7 @@ impl StorageAdapter for InMemoryStorageAdapter {
 /// live as long as the transaction.
 pub struct InMemoryTransaction {
     inner: Arc<InMemoryInner>,
-    bus: Arc<dyn EventBus>,
+    _bus: Arc<dyn EventBus>,
     outbox_h: OutboxHandle,
     audit_h: AuditLogHandle,
     event_h: EventLogHandle,
@@ -393,7 +404,8 @@ pub struct InMemoryTransaction {
 
 impl std::fmt::Debug for InMemoryTransaction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("InMemoryTransaction").finish_non_exhaustive()
+        f.debug_struct("InMemoryTransaction")
+            .finish_non_exhaustive()
     }
 }
 
@@ -405,7 +417,7 @@ impl InMemoryTransaction {
         let idem_h = IdempotencyHandle(inner.clone());
         Self {
             inner,
-            bus,
+            _bus: bus,
             outbox_h,
             audit_h,
             event_h,
@@ -420,14 +432,10 @@ impl InMemoryTransaction {
 impl Transaction for InMemoryTransaction {
     async fn commit(self: Box<Self>) -> Result<()> {
         if self.rolled_back.load(Ordering::SeqCst) {
-            return Err(DomainError::validation(
-                "transaction already rolled back",
-            ));
+            return Err(DomainError::validation("transaction already rolled back"));
         }
         if self.committed.swap(true, Ordering::SeqCst) {
-            return Err(DomainError::validation(
-                "transaction already committed",
-            ));
+            return Err(DomainError::validation("transaction already committed"));
         }
         // Drain the outbox; the in-memory testkit does not
         // republish envelopes to the bus (the SerializedEnvelope
@@ -445,9 +453,7 @@ impl Transaction for InMemoryTransaction {
 
     async fn rollback(self: Box<Self>) -> Result<()> {
         if self.committed.load(Ordering::SeqCst) {
-            return Err(DomainError::validation(
-                "transaction already committed",
-            ));
+            return Err(DomainError::validation("transaction already committed"));
         }
         self.rolled_back.store(true, Ordering::SeqCst);
         Ok(())
@@ -477,12 +483,12 @@ impl Transaction for InMemoryTransaction {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bytes::Bytes;
     use educore_core::clock::{IdGenerator, SystemIdGen};
     use educore_core::ids::{CorrelationId, UserId};
     use educore_core::tenant::UserType;
     use educore_core::value_objects::{ActiveStatus, Timestamp};
     use educore_event_bus::InProcessEventBus;
-    use educore_events::envelope::EventEnvelope;
 
     fn make_bus() -> Arc<dyn EventBus> {
         Arc::new(InProcessEventBus::new())
@@ -561,7 +567,8 @@ mod tests {
                 marked_at: educore_core::value_objects::Timestamp::now(),
                 marked_from: "manual".to_owned(),
                 version: educore_core::value_objects::Version::initial(),
-                etag: educore_core::value_objects::Etag::new("00000000000000000000000000000001").unwrap(),
+                etag: educore_core::value_objects::Etag::new("00000000000000000000000000000001")
+                    .unwrap(),
                 created_at: educore_core::value_objects::Timestamp::now(),
                 updated_at: educore_core::value_objects::Timestamp::now(),
                 created_by: user,
@@ -570,9 +577,7 @@ mod tests {
                 correlation_id: educore_core::ids::CorrelationId::from_uuid(Uuid::new_v4()),
                 last_event_id: Some(educore_core::ids::EventId::from_uuid(Uuid::new_v4())),
             };
-            let res = adapter
-                .bulk_insert_student_attendances(&ctx, &[row])
-                .await;
+            let res = adapter.bulk_insert_student_attendances(&ctx, &[row]).await;
             assert!(res.is_err());
         });
     }
@@ -602,7 +607,8 @@ mod tests {
                 marked_at: educore_core::value_objects::Timestamp::now(),
                 marked_from: "manual".to_owned(),
                 version: educore_core::value_objects::Version::initial(),
-                etag: educore_core::value_objects::Etag::new("00000000000000000000000000000001").unwrap(),
+                etag: educore_core::value_objects::Etag::new("00000000000000000000000000000001")
+                    .unwrap(),
                 created_at: educore_core::value_objects::Timestamp::now(),
                 updated_at: educore_core::value_objects::Timestamp::now(),
                 created_by: user,
@@ -615,9 +621,7 @@ mod tests {
                 .bulk_insert_student_attendances(&ctx, std::slice::from_ref(&row))
                 .await
                 .unwrap();
-            let res = adapter
-                .bulk_insert_student_attendances(&ctx, &[row])
-                .await;
+            let res = adapter.bulk_insert_student_attendances(&ctx, &[row]).await;
             assert!(res.is_err());
         });
     }

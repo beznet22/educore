@@ -116,9 +116,7 @@ impl TestkitWorld {
             notify: std::sync::Arc::new(notify::InMemoryNotificationProvider::new()),
             payment: std::sync::Arc::new(payment::InMemoryPaymentProvider::new()),
             files: std::sync::Arc::new(files::InMemoryFileStorage::new()),
-            integrations: std::sync::Arc::new(
-                integrations::InMemoryIntegrationGateway::new(),
-            ),
+            integrations: std::sync::Arc::new(integrations::InMemoryIntegrationGateway::new()),
             bus,
         }
     }
@@ -165,8 +163,7 @@ mod tests {
         let _: &std::sync::Arc<notify::InMemoryNotificationProvider> = &world.notify;
         let _: &std::sync::Arc<payment::InMemoryPaymentProvider> = &world.payment;
         let _: &std::sync::Arc<files::InMemoryFileStorage> = &world.files;
-        let _: &std::sync::Arc<integrations::InMemoryIntegrationGateway> =
-            &world.integrations;
+        let _: &std::sync::Arc<integrations::InMemoryIntegrationGateway> = &world.integrations;
         // The bus is `Arc<dyn EventBus>`; assert it derefs.
         let _ = &*world.bus;
     }

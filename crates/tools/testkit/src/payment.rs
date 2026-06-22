@@ -32,9 +32,8 @@ use educore_core::ids::IdempotencyKey;
 use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
 use educore_payment::port::{
-    ChargeRequest, CurrencyCode, Money, PaymentId, PaymentMethodInfo, PaymentMethodKind,
-    PaymentProvider, PaymentReceipt, PaymentStatus, RefundReceipt, RefundRequest, Settlement,
-    SettlementRequest,
+    ChargeRequest, Money, PaymentId, PaymentMethodInfo, PaymentMethodKind, PaymentProvider,
+    PaymentReceipt, PaymentStatus, RefundReceipt, RefundRequest, Settlement, SettlementRequest,
 };
 use parking_lot::Mutex;
 
@@ -64,9 +63,7 @@ impl InMemoryPaymentProvider {
 
     /// Returns the next monotonic id without bumping the counter.
     fn peek_id(&self) -> u64 {
-        self.id_seq
-            .fetch_add(1, Ordering::Relaxed)
-            .wrapping_add(1)
+        self.id_seq.fetch_add(1, Ordering::Relaxed).wrapping_add(1)
     }
 
     /// Looks up a stored charge by its engine-issued
@@ -195,7 +192,7 @@ mod tests {
     use super::*;
     use educore_core::clock::{IdGenerator, SystemIdGen};
     use educore_core::tenant::UserType;
-    use educore_payment::port::{CustomerRef, PaymentMethod};
+    use educore_payment::port::{CurrencyCode, CustomerRef, PaymentMethod};
 
     fn usd() -> CurrencyCode {
         CurrencyCode::new("USD").unwrap()
@@ -244,7 +241,10 @@ mod tests {
         assert_eq!(receipt.amount, Money::new(usd(), 1500).unwrap());
         assert!(matches!(receipt.status, PaymentStatus::Captured { .. }));
         assert_eq!(receipt.method, PaymentMethodKind::Cash);
-        assert_eq!(receipt.fees, Vec::<educore_payment::port::PaymentFee>::new());
+        assert_eq!(
+            receipt.fees,
+            Vec::<educore_payment::port::PaymentFee>::new()
+        );
         assert_eq!(receipt.net, receipt.amount);
         assert!(receipt.payment_id.as_str().starts_with("in-mem-charge-"));
         assert!(receipt.provider_payment_id.is_some());
@@ -275,8 +275,9 @@ mod tests {
             .unwrap()
             .payment_id;
 
-        let refund = futures::executor::block_on(provider.refund(refund_request(original.clone(), 500)))
-            .unwrap();
+        let refund =
+            futures::executor::block_on(provider.refund(refund_request(original.clone(), 500)))
+                .unwrap();
         assert_eq!(refund.original_payment_id, original);
         assert!(matches!(refund.status, PaymentStatus::Captured { .. }));
         assert!(refund.refunded_at.is_some());
@@ -308,8 +309,7 @@ mod tests {
     #[test]
     fn list_methods_returns_at_least_one_method() {
         let provider = InMemoryPaymentProvider::new();
-        let methods =
-            futures::executor::block_on(provider.list_methods(ctx())).unwrap();
+        let methods = futures::executor::block_on(provider.list_methods(ctx())).unwrap();
         assert!(!methods.is_empty());
         let cash = methods
             .iter()

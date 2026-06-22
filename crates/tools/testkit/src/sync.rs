@@ -33,12 +33,7 @@
 /// `advance_cursor`) are exposed as methods on the in-memory
 /// storage adapter — see
 /// [`storage::InMemoryStorageAdapter`](crate::storage::InMemoryStorageAdapter).
-///
-/// Returns the unit value; the function is marked `#[must_use]`
-/// so callers don't accidentally call it for side effects (it
-/// has none).
-#[must_use]
-pub fn dummy_witness() -> () {}
+pub fn dummy_witness() {}
 
 #[cfg(test)]
 #[allow(

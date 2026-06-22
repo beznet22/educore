@@ -19,11 +19,11 @@ use educore_storage::idempotency::Idempotency;
 use educore_storage::outbox::Outbox;
 use educore_storage::transaction::Transaction;
 
-use crate::connection::Db;
-use crate::outbox::SurrealOutbox;
 use crate::audit::SurrealAuditLog;
+use crate::connection::Db;
 use crate::event_log::SurrealEventLog;
 use crate::idempotency::SurrealIdempotency;
+use crate::outbox::SurrealOutbox;
 
 /// The SurrealDB-backed transaction. Owns its sub-port
 /// handles; the `Transaction` trait's `&self`-returning

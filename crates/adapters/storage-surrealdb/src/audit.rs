@@ -64,10 +64,7 @@ impl AuditRow {
                 .before
                 .as_ref()
                 .map(|b| SurrealBytes::from(b.to_vec())),
-            after: entry
-                .after
-                .as_ref()
-                .map(|b| SurrealBytes::from(b.to_vec())),
+            after: entry.after.as_ref().map(|b| SurrealBytes::from(b.to_vec())),
             event_id: entry.event_id.map(|e| SurrealUuid::from(e.as_uuid())),
             correlation_id: SurrealUuid::from(entry.correlation_id.as_uuid()),
             occurred_at: Datetime::from(entry.occurred_at.as_datetime()),
@@ -112,10 +109,7 @@ impl AuditRow {
             correlation_id,
             occurred_at,
             active_status,
-            metadata: self
-                .metadata
-                .clone()
-                .unwrap_or(serde_json::Value::Null),
+            metadata: self.metadata.clone().unwrap_or(serde_json::Value::Null),
         }
     }
 }
@@ -271,10 +265,9 @@ mod tests {
     /// canonical schema, and returns a `SurrealAuditLog` bound
     /// to the resulting `Db`.
     async fn setup(school: SchoolId) -> SurrealAuditLog {
-        let adapter =
-            crate::storage::SurrealStorageAdapter::in_memory(school)
-                .await
-                .expect("in-memory adapter should construct");
+        let adapter = crate::storage::SurrealStorageAdapter::in_memory(school)
+            .await
+            .expect("in-memory adapter should construct");
         adapter.migrate().await.expect("migration should succeed");
         SurrealAuditLog::new(adapter.db().clone(), school)
     }

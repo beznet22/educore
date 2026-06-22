@@ -27,8 +27,8 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 use educore_core::value_objects::Timestamp;
 use educore_files::port::{
-    Checksum, ContentType, FileKey, FileMetadata, FileReference, FileStorage, FileStream,
-    IdempotencyKey, PutRequest, SignedUrlOptions, StorageClass, Visibility,
+    Checksum, FileKey, FileMetadata, FileReference, FileStorage, FileStream, IdempotencyKey,
+    PutRequest, SignedUrlOptions, StorageClass,
 };
 use parking_lot::Mutex;
 use tokio::sync::mpsc;
@@ -58,10 +58,7 @@ impl InMemoryFileStorage {
 
 #[async_trait]
 impl FileStorage for InMemoryFileStorage {
-    async fn put(
-        &self,
-        request: PutRequest,
-    ) -> educore_files::port::Result<FileReference> {
+    async fn put(&self, request: PutRequest) -> educore_files::port::Result<FileReference> {
         // Idempotency: if this token has already been used, return
         // the original reference verbatim.
         if let Some(idempotency_key) = request.idempotency_key.as_ref() {
@@ -202,9 +199,7 @@ impl FileStorage for InMemoryFileStorage {
             checksum: src.checksum.clone(),
         };
 
-        self.store
-            .lock()
-            .insert(new_key, (new_ref.clone(), bytes));
+        self.store.lock().insert(new_key, (new_ref.clone(), bytes));
         Ok(new_ref)
     }
 
@@ -230,7 +225,7 @@ mod tests {
     use super::*;
     use educore_core::clock::{IdGenerator, SystemIdGen};
     use educore_core::tenant::{TenantContext, UserType};
-    use educore_files::port::SignedUrlMethod;
+    use educore_files::port::{ContentType, SignedUrlMethod, Visibility};
     use std::time::Duration;
 
     fn ctx() -> TenantContext {
@@ -269,13 +264,15 @@ mod tests {
     async fn put_then_get_returns_same_content() {
         let store = InMemoryFileStorage::new();
         let payload = b"hello world".to_vec();
-        let reference = store.put(put_request("docs/hello.txt", payload.clone())).await.unwrap();
+        let reference = store
+            .put(put_request("docs/hello.txt", payload.clone()))
+            .await
+            .unwrap();
 
         let chunks = drain(store.get(&reference).await.unwrap()).await;
         let flat: Vec<u8> = chunks
             .into_iter()
-            .map(|c| c.expect("chunk should be Ok"))
-            .flatten()
+            .flat_map(|c| c.expect("chunk should be Ok"))
             .collect();
         assert_eq!(flat, payload);
         assert_eq!(reference.size, u64::try_from(payload.len()).unwrap());
@@ -312,8 +309,7 @@ mod tests {
         let chunks = drain(store.get(&second).await.unwrap()).await;
         let flat: Vec<u8> = chunks
             .into_iter()
-            .map(|c| c.expect("chunk should be Ok"))
-            .flatten()
+            .flat_map(|c| c.expect("chunk should be Ok"))
             .collect();
         assert_eq!(flat, b"second-content".to_vec());
     }
@@ -419,10 +415,7 @@ mod tests {
             .await
             .unwrap();
 
-        let copy_ref = store
-            .copy(&reference, "dest/copied.txt")
-            .await
-            .unwrap();
+        let copy_ref = store.copy(&reference, "dest/copied.txt").await.unwrap();
 
         assert_eq!(copy_ref.key.as_str(), "dest/copied.txt");
         assert_eq!(copy_ref.size, reference.size);
@@ -433,8 +426,7 @@ mod tests {
         let orig_chunks = drain(store.get(&reference).await.unwrap()).await;
         let orig_flat: Vec<u8> = orig_chunks
             .into_iter()
-            .map(|c| c.expect("chunk should be Ok"))
-            .flatten()
+            .flat_map(|c| c.expect("chunk should be Ok"))
             .collect();
         assert_eq!(orig_flat, b"keep-me".to_vec());
 
@@ -442,8 +434,7 @@ mod tests {
         let copy_chunks = drain(store.get(&copy_ref).await.unwrap()).await;
         let copy_flat: Vec<u8> = copy_chunks
             .into_iter()
-            .map(|c| c.expect("chunk should be Ok"))
-            .flatten()
+            .flat_map(|c| c.expect("chunk should be Ok"))
             .collect();
         assert_eq!(copy_flat, b"keep-me".to_vec());
     }
@@ -469,8 +460,7 @@ mod tests {
         let moved_chunks = drain(store.get(&moved_ref).await.unwrap()).await;
         let moved_flat: Vec<u8> = moved_chunks
             .into_iter()
-            .map(|c| c.expect("chunk should be Ok"))
-            .flatten()
+            .flat_map(|c| c.expect("chunk should be Ok"))
             .collect();
         assert_eq!(moved_flat, b"moving".to_vec());
     }
