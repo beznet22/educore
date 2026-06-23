@@ -531,6 +531,14 @@ pub mod runner {
         if rel.components().any(|c| c.as_os_str() == "tests") {
             return;
         }
+        // Domain crates (and infra) enforce an extra set of
+        // restrictions: no `serde_json::Value`, no `HashMap<String,
+        // _>` for domain data. Tests, examples, and other crates
+        // are exempt from these (e.g. ports and adapters may
+        // legitimately use `serde_json::Value` for transport-layer
+        // concerns).
+        let is_domain_code = rel_str.starts_with("crates/domains/")
+            || rel_str.starts_with("crates/infra/");
         // Find `#[cfg(test)]` attributes. The test block is the
         // nearest `mod tests { ... }` opening that follows within
         // a small window (up to 10 lines, to accommodate the
@@ -559,13 +567,14 @@ pub mod runner {
         for (idx, line) in lines.iter().enumerate() {
             if test_block_ranges
                 .iter()
-                .any(|&(lo, hi)| idx > lo && idx < hi)
+                .any(|&(lo, hi)| idx >= lo && idx <= hi)
             {
                 continue;
             }
             for needle in [
                 ".unwrap()",
                 ".unwrap_err()",
+                ".expect(",
                 "panic!(",
                 "todo!()",
                 "unimplemented!()",
@@ -576,6 +585,60 @@ pub mod runner {
                         file: rel.to_path_buf(),
                         line: Some(idx + 1),
                         message: format!("forbidden `{needle}` in production code"),
+                    });
+                }
+            }
+            // `as` cast on a numeric type. We deliberately do NOT
+            // flag `as` when the right-hand side is a trait object
+            // (e.g. `as &dyn Trait`) or a pointer type. The
+            // AGENTS.md rule forbids `as` casts that truncate or
+            // lose data; that maps to numeric conversions. We use a
+            // simple whitespace + identifier check rather than a
+            // full Rust parser — false positives are tolerable as
+            // long as they are rare and the line they point to
+            // clearly shows the `as` use.
+            if let Some(as_pos) = line.find(" as ") {
+                let after = line[as_pos + 4..].trim_start();
+                let numeric_target = after
+                    .split(|c: char| !c.is_alphanumeric() && c != '_')
+                    .next()
+                    .unwrap_or("");
+                let is_numeric = [
+                    "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128",
+                    "isize", "f32", "f64", "bool",
+                ]
+                .contains(&numeric_target);
+                if is_numeric {
+                    report.violations.push(Violation {
+                        check: format!("anti_pattern:as_{numeric_target}"),
+                        file: rel.to_path_buf(),
+                        line: Some(idx + 1),
+                        message: format!(
+                            "forbidden `as {numeric_target}` cast in production code (use TryFrom)"
+                        ),
+                    });
+                }
+            }
+            // Domain-only rules: no `serde_json::Value`, no
+            // `HashMap<String, _>` for domain data.
+            if is_domain_code {
+                if line.contains("serde_json::Value") {
+                    report.violations.push(Violation {
+                        check: "anti_pattern:serde_json_value".to_string(),
+                        file: rel.to_path_buf(),
+                        line: Some(idx + 1),
+                        message: "forbidden `serde_json::Value` in domain code (use typed wrappers)"
+                            .to_string(),
+                    });
+                }
+                if line.contains("HashMap<String,") || line.contains("HashMap < String ,") {
+                    report.violations.push(Violation {
+                        check: "anti_pattern:hashmap_string".to_string(),
+                        file: rel.to_path_buf(),
+                        line: Some(idx + 1),
+                        message:
+                            "forbidden `HashMap<String, _>` for domain data (use typed structs)"
+                                .to_string(),
                     });
                 }
             }
@@ -761,6 +824,136 @@ mod tests {
             v.message.contains("pub struct WidgetDestroyed"),
             "message = {}",
             v.message
+        );
+    }
+
+    // ---- Anti-pattern detection tests ----
+
+    /// Helper: write a single Rust source file under a domain
+    /// crate and run the lint, returning the violations.
+    fn scan_domain_source(label: &str, src: &str) -> Vec<Violation> {
+        let tmp = fresh_tempdir(label);
+        let code_dir = tmp.0.join("crates/domains/test/src");
+        std::fs::create_dir_all(&code_dir).unwrap();
+        std::fs::write(code_dir.join("aggregate.rs"), src).unwrap();
+        run(&tmp.0).violations
+    }
+
+    #[test]
+    fn anti_pattern_unwrap_in_prod_is_reported() {
+        let v = scan_domain_source(
+            "anti-unwrap",
+            "pub struct Widget { value: Option<u32> }\nimpl Widget { pub fn value(&self) -> u32 { self.value.unwrap() } }\n",
+        );
+        assert!(
+            v.iter().any(|x| x.check == "anti_pattern:.unwrap()"),
+            "expected `.unwrap()` violation, got: {:#?}",
+            v
+        );
+    }
+
+    #[test]
+    fn anti_pattern_expect_in_prod_is_reported() {
+        let v = scan_domain_source(
+            "anti-expect",
+            "pub struct Widget { value: Option<u32> }\nimpl Widget { pub fn value(&self) -> u32 { self.value.expect(\"always set\") } }\n",
+        );
+        assert!(
+            v.iter().any(|x| x.check == "anti_pattern:.expect("),
+            "expected `.expect(` violation, got: {:#?}",
+            v
+        );
+    }
+
+    #[test]
+    fn anti_pattern_panic_in_prod_is_reported() {
+        let v = scan_domain_source(
+            "anti-panic",
+            "pub struct Widget {}\nimpl Widget { pub fn check(&self) { panic!(\"nope\"); } }\n",
+        );
+        assert!(
+            v.iter().any(|x| x.check == "anti_pattern:panic!("),
+            "expected `panic!` violation, got: {:#?}",
+            v
+        );
+    }
+
+    #[test]
+    fn anti_pattern_as_numeric_cast_in_prod_is_reported() {
+        let v = scan_domain_source(
+            "anti-as",
+            "pub struct Widget { value: u64 }\nimpl Widget { pub fn value(&self) -> u32 { self.value as u32 } }\n",
+        );
+        assert!(
+            v.iter()
+                .any(|x| x.check == "anti_pattern:as_u32" || x.check.starts_with("anti_pattern:as_")),
+            "expected `as u32` violation, got: {:#?}",
+            v
+        );
+    }
+
+    #[test]
+    fn anti_pattern_serde_json_value_in_domain_is_reported() {
+        let v = scan_domain_source(
+            "anti-value",
+            "pub struct Widget { payload: serde_json::Value }\n",
+        );
+        assert!(
+            v.iter()
+                .any(|x| x.check == "anti_pattern:serde_json_value"),
+            "expected `serde_json::Value` violation, got: {:#?}",
+            v
+        );
+    }
+
+    #[test]
+    fn anti_pattern_hashmap_string_in_domain_is_reported() {
+        let v = scan_domain_source(
+            "anti-hashmap",
+            "use std::collections::HashMap;\npub struct Widget { fields: HashMap<String, String> }\n",
+        );
+        assert!(
+            v.iter()
+                .any(|x| x.check == "anti_pattern:hashmap_string"),
+            "expected `HashMap<String,` violation, got: {:#?}",
+            v
+        );
+    }
+
+    #[test]
+    fn anti_pattern_unwrap_in_test_block_is_exempt() {
+        // Same `.unwrap()` pattern, but inside a `#[cfg(test)]`
+        // block — the lint must NOT report it.
+        let v = scan_domain_source(
+            "anti-unwrap-test-exempt",
+            "pub struct Widget {}\n#[cfg(test)]\nmod tests { #[test] fn it_works() { let _ = Option::Some(1).unwrap(); } }\n",
+        );
+        assert!(
+            !v.iter().any(|x| x.check.starts_with("anti_pattern:")),
+            "expected no anti-pattern violations in test block, got: {:#?}",
+            v
+        );
+    }
+
+    #[test]
+    fn anti_pattern_serde_json_value_in_adapter_is_exempt() {
+        // Adapters are not "domain code" per the lint's policy —
+        // they may use `serde_json::Value` for transport concerns.
+        let tmp = fresh_tempdir("anti-value-adapter-exempt");
+        let code_dir = tmp.0.join("crates/adapters/foo/src");
+        std::fs::create_dir_all(&code_dir).unwrap();
+        std::fs::write(
+            code_dir.join("lib.rs"),
+            "pub struct Widget { payload: serde_json::Value }\n",
+        )
+        .unwrap();
+        let r = run(&tmp.0);
+        assert!(
+            !r.violations
+                .iter()
+                .any(|x| x.check == "anti_pattern:serde_json_value"),
+            "expected NO `serde_json::Value` violation in adapter, got: {:#?}",
+            r.violations
         );
     }
 }
