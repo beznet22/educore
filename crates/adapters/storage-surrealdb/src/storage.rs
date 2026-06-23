@@ -74,6 +74,20 @@ impl SurrealStorageAdapter {
 
 #[async_trait]
 impl StorageAdapter for SurrealStorageAdapter {
+    async fn create_schema(&self) -> Result<()> {
+        if self.closed.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(DomainError::infrastructure(crate::error::StringError(
+                "StorageAdapter::create_schema called on a closed adapter".to_owned(),
+            )));
+        }
+        // Cluster A stage 3 (surrealdb): delegate to the
+        // schema module, which emits the 6 cross-cutting
+        // tables and walks the registered aggregates'
+        // `EntityDescriptor`s (audit finding ADAPTER-SD-001,
+        // closed).
+        crate::schema::create_schema(self).await
+    }
+
     async fn begin(&self) -> Result<Box<dyn Transaction>> {
         if self.closed.load(std::sync::atomic::Ordering::SeqCst) {
             return Err(DomainError::conflict(

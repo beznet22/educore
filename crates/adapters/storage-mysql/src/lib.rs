@@ -74,6 +74,7 @@ pub mod error;
 pub mod event_log;
 pub mod idempotency;
 pub mod outbox;
+pub mod schema;
 pub mod storage;
 pub mod transaction;
 
@@ -83,5 +84,10 @@ pub use connection::MysqlConnection;
 pub use event_log::MysqlEventLog;
 pub use idempotency::MysqlIdempotency;
 pub use outbox::MysqlOutbox;
+pub use schema::{
+    build_fk_ddl, build_index_ddl, build_schema_statements, build_table_ddl, column_type_to_mysql,
+    create_schema, create_schema_with, create_schema_with_report, fk_action_to_mysql,
+    register_entity_descriptor, registered_descriptors,
+};
 pub use storage::MysqlStorageAdapter;
 pub use transaction::MysqlTransaction;

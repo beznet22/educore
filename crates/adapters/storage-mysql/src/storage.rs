@@ -179,6 +179,16 @@ impl StorageAdapter for MysqlStorageAdapter {
     }
 
     #[instrument(skip(self))]
+    async fn create_schema(&self) -> Result<()> {
+        if self.closed.load(Ordering::SeqCst) {
+            return Err(DomainError::conflict(
+                "StorageAdapter::create_schema called on a closed adapter",
+            ));
+        }
+        crate::schema::create_schema(self).await
+    }
+
+    #[instrument(skip(self))]
     async fn ping(&self) -> Result<()> {
         if self.closed.load(Ordering::SeqCst) {
             return Err(DomainError::conflict(
