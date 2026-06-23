@@ -52,6 +52,10 @@ pub mod stripe;
 /// Service helpers (idempotency, webhook signature, bank slip, settlement).
 pub mod services;
 
+/// Webhook signature verification with constant-time comparison,
+/// replay-window enforcement, and signing-key rotation.
+pub mod webhook_security;
+
 /// Package name constant. Re-exported so consumers can assert
 /// they are using the right crate version at compile time.
 pub const PACKAGE_NAME: &str = "educore-payment";
