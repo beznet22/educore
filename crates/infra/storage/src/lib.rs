@@ -48,7 +48,9 @@ pub use change_stream::{
     SerializedChangeEvent, SnapshotAggregate, VersionCursor,
 };
 pub use event_log::{EventLog, EventLogEntry, EventLogFilter};
-pub use idempotency::{Idempotency, IdempotencyCompositeKey, IdempotencyRecord};
+pub use idempotency::{
+    Idempotency, IdempotencyCompositeKey, IdempotencyOutcome, IdempotencyRecord,
+};
 pub use outbox::{Outbox, SerializedEnvelope};
 pub use port::StorageAdapter;
 pub use repository::Repository;
