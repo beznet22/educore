@@ -10,7 +10,6 @@ use std::fmt;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use async_trait::async_trait;
-use sqlx::Executor;
 use sqlx::SqlitePool;
 use tracing::debug;
 
@@ -28,15 +27,10 @@ use crate::bulk_attendance::SqliteBulkAttendance;
 use crate::connection::SqliteConnection;
 use crate::transaction::SqliteTransaction;
 
-/// The canonical SQLite DDL for the 6 engine cross-cutting
-/// tables. `include_str!`'d at compile time from the engine
-/// migration file (per
-/// `docs/schemas/sql-dialects/sqlite.md#the-6-engine-cross-cutting-tables--sqlite-ddl`).
-const SCHEMA_SQL: &str = include_str!("../../../../migrations/engine/0000_engine_core.sqlite.sql");
-
 /// The current schema version. Bumped on every migration; the
 /// adapter's `migrate()` is idempotent thanks to the
-/// `IF NOT EXISTS` clauses in the .sql file.
+/// `IF NOT EXISTS` clauses in the canonical engine DDL (now
+/// emitted by `crate::schema::create_schema`).
 const SCHEMA_VERSION: u32 = 1;
 
 /// The SQLite-backed storage adapter.
@@ -101,24 +95,14 @@ impl StorageAdapter for SqliteStorageAdapter {
             ));
         }
         let start = std::time::Instant::now();
-        // `sqlx::raw_sql` handles multi-statement scripts
-        // (every DDL in SCHEMA_SQL is a `CREATE TABLE IF NOT
-        // EXISTS` / `CREATE INDEX IF NOT EXISTS` so the
-        // migration is idempotent).
-        let result = self
-            .pool()
-            .execute(sqlx::raw_sql(SCHEMA_SQL))
-            .await
-            .map_err(|e| {
-                DomainError::infrastructure(crate::error::StringError(format!(
-                    "sqlite migrate: {e}"
-                )))
-            })?;
-        let _ = result; // result.rows_affected() is uninteresting for raw_sql
-                        // The bulk-attendance table is the storage-port
-                        // target for the Phase 5 bulk-marking service; the
-                        // DDL is embedded in the `bulk_attendance` module so
-                        // it lives next to the implementation that owns it.
+        // Phase 1: the 6 engine cross-cutting tables, plus every
+        // macro-emitted domain aggregate registered via
+        // `educore_storage_sqlite::schema::register`.
+        crate::schema::create_schema(self).await?;
+        // The bulk-attendance table is the storage-port
+        // target for the Phase 5 bulk-marking service; the
+        // DDL is embedded in the `bulk_attendance` module so
+        // it lives next to the implementation that owns it.
         SqliteBulkAttendance::new(self.conn.db().clone(), self.conn.school())
             .ensure_schema()
             .await?;
