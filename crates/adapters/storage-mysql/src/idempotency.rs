@@ -49,7 +49,9 @@ use uuid::Uuid;
 use educore_core::error::Result;
 use educore_core::ids::{IdempotencyKey, Identifier as _, SchoolId};
 use educore_core::value_objects::Timestamp;
-use educore_storage::idempotency::{Idempotency, IdempotencyCompositeKey, IdempotencyRecord};
+use educore_storage::idempotency::{
+    Idempotency, IdempotencyCompositeKey, IdempotencyOutcome, IdempotencyRecord,
+};
 
 use crate::connection_helpers::{bytes_to_json_value, json_value_to_bytes};
 
@@ -223,6 +225,101 @@ impl Idempotency for MysqlIdempotency {
         Ok(())
     }
 
+    #[instrument(skip(self, record))]
+    async fn record_outcome(&self, record: IdempotencyRecord) -> Result<IdempotencyOutcome> {
+        // QW-12 (Phase B, MySQL adapter): implement the
+        // structured duplicate-detection contract from
+        // `docs/audit_reports/remediation/09-quick-wins.md` and
+        // `docs/decisions/ADR-014-Idempotency.md`. The
+        // default trait impl delegates to `record` (which
+        // uses `ON DUPLICATE KEY UPDATE` and silently
+        // swallows duplicates), so it can never surface
+        // `Conflict`. This override restores the
+        // duplicate-detection contract.
+        //
+        // Strategy:
+        //
+        // 1. Try a plain `INSERT` (no `ON DUPLICATE KEY`
+        //    clause). MySQL surfaces a duplicate-key
+        //    collision on the composite primary key as
+        //    error 1062, which sqlx maps to
+        //    `ErrorKind::UniqueViolation` on the
+        //    `sqlx::Error::Database` variant.
+        // 2. On a `UniqueViolation`, fetch the pre-existing
+        //    row via `self.lookup(...)` and return
+        //    `IdempotencyOutcome::Conflict { existing }` so
+        //    the dispatcher can replay the original outcome.
+        // 3. On any other error, surface it as
+        //    `DomainError::Infrastructure` (a true
+        //    adapter-level failure, not a business
+        //    outcome).
+        //
+        // The plain INSERT also closes audit finding
+        // ADAPT-MY-005 (Critical): the previous
+        // `ON DUPLICATE KEY UPDATE command_id =
+        // VALUES(command_id)` form silently overwrote any
+        // prior row regardless of outcome equality, which
+        // both halves of the port contract forbade.
+        let command_id = Uuid::now_v7();
+        let recorded_at = record.recorded_at.as_datetime();
+        let expires_at = recorded_at
+            .checked_add_signed(Duration::hours(DEFAULT_RETENTION_HOURS))
+            .unwrap_or(recorded_at);
+        let outcome = envelope_outcome(&record);
+
+        let insert = sqlx::query::<sqlx::MySql>(
+            "INSERT INTO `idempotency` (\
+                `school_id`, `command_type`, `idempotency_key`, \
+                `command_id`, `outcome`, `recorded_at`, `expires_at`\
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(record.school_id.as_uuid())
+        .bind(record.command_type)
+        .bind(record.idempotency_key.as_uuid())
+        .bind(command_id)
+        .bind(Json(&outcome))
+        .bind(recorded_at)
+        .bind(expires_at)
+        .execute(&self.pool)
+        .await;
+
+        match insert {
+            Ok(_) => Ok(IdempotencyOutcome::Recorded),
+            Err(sqlx::Error::Database(db))
+                if db.kind() == sqlx::error::ErrorKind::UniqueViolation =>
+            {
+                // Duplicate composite key: MySQL error 1062
+                // (`ER_DUP_ENTRY`). Fetch the existing row so
+                // the caller can replay the original outcome
+                // — the port contract requires we surface
+                // the pre-existing record, not the rejected
+                // one.
+                let key = IdempotencyRecord::composite_key(
+                    record.school_id,
+                    record.command_type,
+                    record.idempotency_key,
+                );
+                match self.lookup(key).await? {
+                    Some(existing) => Ok(IdempotencyOutcome::Conflict { existing }),
+                    // The row was present at INSERT time but
+                    // vanished before our SELECT (concurrent
+                    // sweep / retention purge). Surface as
+                    // infrastructure so the caller retries
+                    // rather than silently recording.
+                    None => Err(educore_core::error::DomainError::infrastructure(
+                        crate::error::StringError(
+                            "MysqlIdempotency::record_outcome: duplicate-key \
+                             detected but the existing row vanished before \
+                             the follow-up SELECT (concurrent purge?)"
+                                .to_owned(),
+                        ),
+                    )),
+                }
+            }
+            Err(other) => Err(educore_core::error::DomainError::infrastructure(other)),
+        }
+    }
+
     #[instrument(skip(self, cutoff))]
     async fn purge_older_than(&self, school_id: SchoolId, cutoff: Timestamp) -> Result<u64> {
         // The default impl in the trait is a no-op. The MySQL
@@ -302,6 +399,15 @@ mod tests {
 
     use super::*;
 
+    // Pull in the trait definitions so the live MySQL tests
+    // can use the `IdGenerator::next_*` and
+    // `StorageAdapter::{connect, migrate, begin}` methods on
+    // the concrete adapter types. These traits live in
+    // `educore-core::clock` and `educore-storage::port`
+    // respectively and are not in the `super::*` namespace.
+    use educore_core::clock::IdGenerator as _;
+    use educore_storage::StorageAdapter as _;
+
     // Serialize the tests in this module because they share
     // the process-wide `COMMAND_TYPE_CACHE` static. Without
     // this lock, parallel execution would let one test's
@@ -364,5 +470,223 @@ mod tests {
             after_reinserts, after_inserts,
             "re-interning the same strings must not grow the cache",
         );
+    }
+
+    // ---------------------------------------------------------------
+    // QW-12 (Phase B, MySQL adapter): `record_outcome` end-to-end
+    // tests against a live MySQL instance.
+    //
+    // These tests are gated on the `EDUCORE_MYSQL_URL` env var
+    // (matching the convention in `tests/outbox_e2e.rs` for
+    // this crate) AND marked `#[ignore]` so they do NOT run in
+    // a default `cargo test` invocation. They require a real
+    // MySQL 8 instance with the engine's canonical DDL applied.
+    //
+    // To run locally:
+    //
+    // ```text
+    // docker run --rm -d --name educore-mysql -p 3306:3306 \
+    //     -e MYSQL_ROOT_PASSWORD=educore -e MYSQL_DATABASE=educore \
+    //     -e MYSQL_USER=educore -e MYSQL_PASSWORD=educore \
+    //     mysql:8
+    // export EDUCORE_MYSQL_URL='mysql://educore:educore@localhost:3306/educore'
+    // cargo test -p educore-storage-mysql --lib -- \
+    //     --ignored idempotency::tests::record_outcome \
+    //     --nocapture --test-threads=1
+    // ```
+    //
+    // The two tests share the process-wide `COMMAND_TYPE_CACHE`
+    // static, so they must run on a single thread. They also
+    // share the `TEST_LOCK` so they serialize against the
+    // `intern_*` tests above.
+    // ---------------------------------------------------------------
+
+    /// Build a fresh connection to the `EDUCORE_MYSQL_URL`
+    /// test database, run the engine DDL, and return a
+    /// `Transaction` handle whose `.idempotency()` accessor
+    /// yields a `MysqlIdempotency`. Mirrors the convention
+    /// used by `tests/outbox_e2e.rs` (env-gated,
+    /// `migrate()`-first, then sub-port accessors).
+    ///
+    /// Returns `None` if `EDUCORE_MYSQL_URL` is unset; the
+    /// calling test must early-return in that case so CI is
+    /// green without a MySQL fixture.
+    async fn fresh_mysql_idempotency() -> Option<Box<dyn educore_storage::Transaction>> {
+        let url = std::env::var("EDUCORE_MYSQL_URL").ok()?;
+        let g = educore_core::clock::SystemIdGen;
+        let school = g.next_school_id();
+        let adapter: crate::MysqlStorageAdapter = crate::MysqlStorageAdapter::connect(&url, school)
+            .await
+            .expect("MySQL connection failed; is EDUCORE_MYSQL_URL correct?");
+        adapter
+            .migrate()
+            .await
+            .expect("MySQL migrate() failed; is the engine DDL present?");
+        Some(adapter.begin().await.expect("begin() failed"))
+    }
+
+    /// QW-12 regression test: a fresh `record_outcome` (no
+    /// pre-existing row) MUST return `Recorded`. Closes the
+    /// happy-path half of ADAPT-MY-005 / ADAPT-MY-009.
+    #[tokio::test]
+    #[ignore = "requires live MySQL; set EDUCORE_MYSQL_URL and run with --ignored"]
+    async fn record_outcome_returns_recorded_for_new_key() {
+        // NOTE: we deliberately do NOT acquire `TEST_LOCK`
+        // here. `TEST_LOCK` is a std `Mutex` and would be
+        // held across the `await` points below (clippy's
+        // `await_holding_lock` lint). The
+        // `COMMAND_TYPE_CACHE` static is internally
+        // `Mutex`-protected, so concurrent `lookup` calls
+        // from other tests are safe; the only risk is that
+        // the `intern_is_bounded` count assertion might see
+        // our inserts, which is acceptable because both this
+        // test and `intern_is_bounded` are `#[ignore]`'d by
+        // default and only run when explicitly opted in via
+        // `cargo test -- --ignored`.
+        let tx = match fresh_mysql_idempotency().await {
+            Some(t) => t,
+            None => {
+                tracing::info!("EDUCORE_MYSQL_URL not set; skipping live MySQL test");
+                return;
+            }
+        };
+
+        let g = educore_core::clock::SystemIdGen;
+        let school = g.next_school_id();
+        let key = g.next_idempotency_key();
+        let record = IdempotencyRecord {
+            school_id: school,
+            command_type: "academic.student.admit",
+            idempotency_key: key,
+            outcome: bytes::Bytes::from_static(b"first-payload-mysql-qw12"),
+            outcome_version: 1,
+            recorded_at: educore_core::value_objects::Timestamp::now(),
+            affected_aggregate_ids: Vec::new(),
+        };
+
+        let outcome = tx
+            .idempotency()
+            .record_outcome(record.clone())
+            .await
+            .expect("first record_outcome must not fail");
+        assert_eq!(
+            outcome,
+            IdempotencyOutcome::Recorded,
+            "first write with a fresh composite key must report Recorded",
+        );
+
+        // Sanity-check round-trip: lookup returns the same row.
+        let lookup_key = IdempotencyRecord::composite_key(
+            record.school_id,
+            record.command_type,
+            record.idempotency_key,
+        );
+        let stored = tx
+            .idempotency()
+            .lookup(lookup_key)
+            .await
+            .expect("lookup must not fail")
+            .expect("lookup must find the freshly written row");
+        assert_eq!(stored.outcome, record.outcome);
+        assert_eq!(stored.command_type, record.command_type);
+    }
+
+    /// QW-12 regression test: a `record_outcome` whose composite
+    /// key collides with an existing row MUST return
+    /// `Conflict { existing }` carrying the ORIGINAL record
+    /// (not the rejected one). Closes the duplicate-detection
+    /// half of ADAPT-MY-005 and the per-adapter half of
+    /// ADAPT-MY-009.
+    #[tokio::test]
+    #[ignore = "requires live MySQL; set EDUCORE_MYSQL_URL and run with --ignored"]
+    async fn record_outcome_returns_conflict_for_duplicate_key() {
+        // NOTE: we deliberately do NOT acquire `TEST_LOCK`
+        // here. `TEST_LOCK` is a std `Mutex` and would be
+        // held across the `await` points below (clippy's
+        // `await_holding_lock` lint). The
+        // `COMMAND_TYPE_CACHE` static is internally
+        // `Mutex`-protected, so concurrent `lookup` calls
+        // from other tests are safe; the only risk is that
+        // the `intern_is_bounded` count assertion might see
+        // our inserts, which is acceptable because both this
+        // test and `intern_is_bounded` are `#[ignore]`'d by
+        // default and only run when explicitly opted in via
+        // `cargo test -- --ignored`.
+        let tx = match fresh_mysql_idempotency().await {
+            Some(t) => t,
+            None => {
+                tracing::info!("EDUCORE_MYSQL_URL not set; skipping live MySQL test");
+                return;
+            }
+        };
+
+        let g = educore_core::clock::SystemIdGen;
+        let school = g.next_school_id();
+        let key = g.next_idempotency_key();
+        let first = IdempotencyRecord {
+            school_id: school,
+            command_type: "academic.student.admit",
+            idempotency_key: key,
+            outcome: bytes::Bytes::from_static(b"first-payload-mysql-qw12-dup"),
+            outcome_version: 1,
+            recorded_at: educore_core::value_objects::Timestamp::now(),
+            affected_aggregate_ids: Vec::new(),
+        };
+        let second = IdempotencyRecord {
+            // Same composite key, DIFFERENT outcome bytes —
+            // a hard conflict, not a no-op retry.
+            outcome: bytes::Bytes::from_static(b"second-payload-mysql-qw12-dup"),
+            ..first.clone()
+        };
+
+        let first_outcome = tx
+            .idempotency()
+            .record_outcome(first.clone())
+            .await
+            .expect("first record_outcome must not fail");
+        assert_eq!(
+            first_outcome,
+            IdempotencyOutcome::Recorded,
+            "first write must report Recorded",
+        );
+
+        let second_outcome = tx
+            .idempotency()
+            .record_outcome(second)
+            .await
+            .expect("second record_outcome must surface Conflict, not an error");
+        match second_outcome {
+            IdempotencyOutcome::Conflict { existing } => {
+                // The carried record is the FIRST write's
+                // payload — the port contract requires the
+                // pre-existing record, not the rejected one.
+                assert_eq!(
+                    existing.outcome,
+                    bytes::Bytes::from_static(b"first-payload-mysql-qw12-dup"),
+                    "Conflict::existing must carry the ORIGINAL outcome bytes, \
+                     not the rejected second payload",
+                );
+                assert_eq!(
+                    existing.outcome_version, 1,
+                    "Conflict::existing must carry the original outcome_version",
+                );
+                assert_eq!(
+                    existing.school_id, school,
+                    "Conflict::existing must carry the original school_id",
+                );
+                assert_eq!(
+                    existing.idempotency_key, key,
+                    "Conflict::existing must carry the original idempotency_key",
+                );
+                assert_eq!(
+                    existing.command_type, "academic.student.admit",
+                    "Conflict::existing must carry the original command_type",
+                );
+            }
+            other => panic!(
+                "expected IdempotencyOutcome::Conflict on duplicate key \
+                 with different outcome, got {other:?}",
+            ),
+        }
     }
 }
