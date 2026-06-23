@@ -170,19 +170,26 @@ impl SmsProviderBuilder {
     /// Resolves the gateway URL: an explicit URL wins; otherwise
     /// the Twilio default is used with `{account}` interpolated
     /// from `api_key`.
-    #[must_use]
-    pub fn build(self) -> SmsProvider {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NotificationError::Infrastructure`] if the
+    /// underlying [`reqwest::Client`] cannot be constructed (e.g.
+    /// the process TLS configuration is malformed).
+    pub fn build(self) -> Result<SmsProvider> {
         let gateway_url = self
             .gateway_url
             .unwrap_or_else(|| DEFAULT_GATEWAY_URL.replace("{account}", &self.api_key));
-        let http = Client::builder().build().unwrap_or_else(|_| Client::new());
-        SmsProvider {
+        let http = Client::builder()
+            .build()
+            .map_err(NotificationError::infrastructure)?;
+        Ok(SmsProvider {
             http,
             gateway_url,
             api_key: self.api_key,
             default_from: self.default_from,
             templates: self.templates,
-        }
+        })
     }
 }
 
@@ -283,9 +290,16 @@ impl SmsProvider {
     /// `api_key`; the password half is empty. Uses the inline
     /// [`base64_encode`] helper so we do not pull `base64` into
     /// the dep graph.
-    fn basic_auth_header(&self) -> String {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NotificationError::Provider`] if the base64
+    /// encoder fails (impossible in practice — the alphabet index
+    /// is always in `[0, 64)` by construction — but the type
+    /// system requires the propagation path).
+    fn basic_auth_header(&self) -> Result<String> {
         let raw = format!("{}:", self.api_key);
-        format!("Basic {}", base64_encode(raw.as_bytes()))
+        Ok(format!("Basic {}", base64_encode(raw.as_bytes())?))
     }
 
     /// Dispatches a single `SendNotification` to the configured
@@ -302,13 +316,13 @@ impl SmsProvider {
         let rendered = Self::render_template(&body, &request.variables);
         let to = self.recipient_phone(&request.recipient)?;
 
-        let receipt_id = NotificationReceiptId::new(generate_id("sms"));
+        let receipt_id = NotificationReceiptId::new(generate_id("sms")?);
         let channel = request.channel.clone();
 
         let response = self
             .http
             .post(&self.gateway_url)
-            .header("Authorization", self.basic_auth_header())
+            .header("Authorization", self.basic_auth_header()?)
             .form(&[
                 ("To", to.as_str()),
                 ("From", from.as_str()),
@@ -319,8 +333,11 @@ impl SmsProvider {
             .map_err(NotificationError::infrastructure)?;
 
         let status_code = response.status();
-        let provider_message_id =
-            extract_provider_message_id(&response.text().await.unwrap_or_default());
+        let body = response
+            .text()
+            .await
+            .map_err(NotificationError::infrastructure)?;
+        let provider_message_id = extract_provider_message_id(&body);
 
         let status = if status_code.as_u16() == 202 {
             DeliveryStatus::Queued
@@ -362,7 +379,7 @@ impl NotificationProvider for SmsProvider {
             ));
         }
 
-        let bulk_id = BulkId::new(generate_id("bulk"));
+        let bulk_id = BulkId::new(generate_id("bulk")?);
         let mut receipt = BulkReceipt::new(bulk_id);
 
         // Honor the per-request SMS bulk batch size from
@@ -375,7 +392,11 @@ impl NotificationProvider for SmsProvider {
         for chunk in request.recipients.chunks(SMS_BULK_BATCH_SIZE) {
             for (offset, row) in chunk.iter().enumerate() {
                 let global_idx = receipt.total();
-                let index = BulkRecipientIndex::new(u32::try_from(global_idx).unwrap_or(u32::MAX));
+                let index = BulkRecipientIndex::new(u32::try_from(global_idx).map_err(|e| {
+                    NotificationError::provider(format!(
+                        "recipient index overflow at global_idx={global_idx}: {e}"
+                    ))
+                })?);
                 let single = build_single_from_bulk(&request, row);
                 match self.dispatch(&single).await {
                     Ok(r) => receipt.receipts.push(r),
@@ -473,47 +494,75 @@ fn extract_provider_message_id(body: &str) -> Option<String> {
 /// non-cryptographic, engine-local identifier; the string is
 /// unique per (process, microsecond, counter-tick) and is treated
 /// as opaque by every downstream consumer.
-fn generate_id(prefix: &str) -> String {
+///
+/// # Errors
+///
+/// Returns [`NotificationError::Infrastructure`] if the system
+/// clock is before the Unix epoch (which would indicate clock
+/// skew so severe that no meaningful timestamp can be produced).
+fn generate_id(prefix: &str) -> Result<String> {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let counter = COUNTER.fetch_add(1, Ordering::Relaxed);
     let micros = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_micros())
-        .unwrap_or(0);
-    format!("{prefix}-{micros:x}-{counter:x}")
+        .map_err(NotificationError::infrastructure)?
+        .as_micros();
+    Ok(format!("{prefix}-{micros:x}-{counter:x}"))
 }
 
 /// RFC 4648 § 4 standard-alphabet base64 encoder. A handful of
 /// lines of arithmetic so the crate does not need a `base64`
 /// dependency for one header value.
-fn base64_encode(input: &[u8]) -> String {
+///
+/// # Errors
+///
+/// Returns [`NotificationError::Provider`] if the alphabet index
+/// cannot be narrowed to `usize` (impossible on the supported
+/// targets: the index is always in `[0, 64)` because of the
+/// `& 0x3F` mask, but the encoder is typed as fallible so the
+/// caller can `?` the result without a separate failure path).
+fn base64_encode(input: &[u8]) -> Result<String> {
     const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::with_capacity(input.len().div_ceil(3) * 4);
     let mut i = 0;
     while i + 3 <= input.len() {
         let n =
             (u32::from(input[i]) << 16) | (u32::from(input[i + 1]) << 8) | u32::from(input[i + 2]);
-        out.push(ALPHABET[((n >> 18) & 0x3F) as usize] as char);
-        out.push(ALPHABET[((n >> 12) & 0x3F) as usize] as char);
-        out.push(ALPHABET[((n >> 6) & 0x3F) as usize] as char);
-        out.push(ALPHABET[(n & 0x3F) as usize] as char);
+        push_base64_char(&mut out, ALPHABET, (n >> 18) & 0x3F)?;
+        push_base64_char(&mut out, ALPHABET, (n >> 12) & 0x3F)?;
+        push_base64_char(&mut out, ALPHABET, (n >> 6) & 0x3F)?;
+        push_base64_char(&mut out, ALPHABET, n & 0x3F)?;
         i += 3;
     }
     let rem = input.len() - i;
     if rem == 1 {
         let n = u32::from(input[i]) << 16;
-        out.push(ALPHABET[((n >> 18) & 0x3F) as usize] as char);
-        out.push(ALPHABET[((n >> 12) & 0x3F) as usize] as char);
+        push_base64_char(&mut out, ALPHABET, (n >> 18) & 0x3F)?;
+        push_base64_char(&mut out, ALPHABET, (n >> 12) & 0x3F)?;
         out.push('=');
         out.push('=');
     } else if rem == 2 {
         let n = (u32::from(input[i]) << 16) | (u32::from(input[i + 1]) << 8);
-        out.push(ALPHABET[((n >> 18) & 0x3F) as usize] as char);
-        out.push(ALPHABET[((n >> 12) & 0x3F) as usize] as char);
-        out.push(ALPHABET[((n >> 6) & 0x3F) as usize] as char);
+        push_base64_char(&mut out, ALPHABET, (n >> 18) & 0x3F)?;
+        push_base64_char(&mut out, ALPHABET, (n >> 12) & 0x3F)?;
+        push_base64_char(&mut out, ALPHABET, (n >> 6) & 0x3F)?;
         out.push('=');
     }
-    out
+    Ok(out)
+}
+
+/// Looks up a base64-alphabet index and pushes the corresponding
+/// character to `out`. The two numeric narrowings use
+/// [`usize::try_from`] and [`char::From<u8>`] (the latter is a
+/// total conversion for any `u8`) so neither step relies on an
+/// `as` cast; the only way this returns an error is if `index`
+/// cannot be represented as `usize`, which the `& 0x3F` mask
+/// forbids by construction.
+fn push_base64_char(out: &mut String, alphabet: &[u8; 64], index: u32) -> Result<()> {
+    let idx = usize::try_from(index)
+        .map_err(|e| NotificationError::provider(format!("base64 alphabet index overflow: {e}")))?;
+    out.push(char::from(alphabet[idx]));
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -548,7 +597,8 @@ mod tests {
         let provider = SmsProviderBuilder::new()
             .api_key("AC0123456789abcdef")
             .default_from("+14155550101")
-            .build();
+            .build()
+            .expect("builder should succeed with api_key + default_from");
 
         // Default URL is the Twilio Messages endpoint with
         // {account} interpolated from api_key.
@@ -581,7 +631,8 @@ mod tests {
         let provider = SmsProviderBuilder::new()
             .api_key("k")
             .default_from("+15555550101")
-            .build();
+            .build()
+            .expect("builder should succeed");
 
         let request = SendNotification {
             tenant: tenant(),
@@ -609,7 +660,8 @@ mod tests {
         let provider = SmsProviderBuilder::new()
             .api_key("k")
             .default_from("+15555550101")
-            .build();
+            .build()
+            .expect("builder should succeed");
 
         let request = SendNotification {
             tenant: tenant(),
@@ -643,7 +695,8 @@ mod tests {
             .api_key("k")
             .default_from("+15555550101")
             .template_body(NotificationTemplateId::new("t"), "hi {{name}}")
-            .build();
+            .build()
+            .expect("builder should succeed");
 
         // Every row uses a recipient that the reference adapter
         // cannot resolve locally (`Recipient::User`), so the bulk

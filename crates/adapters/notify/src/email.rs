@@ -122,13 +122,11 @@ impl NotificationProvider for EmailProvider {
             .await
             .map_err(NotificationError::infrastructure)?;
 
-        let receipt_id = NotificationReceiptId::new(format!(
-            "email:{log_school}:{}",
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_millis())
-                .unwrap_or(0)
-        ));
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(NotificationError::infrastructure)?
+            .as_millis();
+        let receipt_id = NotificationReceiptId::new(format!("email:{log_school}:{now_ms}"));
 
         Ok(NotificationReceipt::new(
             receipt_id,
@@ -146,13 +144,11 @@ impl NotificationProvider for EmailProvider {
             ));
         }
 
-        let bulk_id = BulkId::new(format!(
-            "bulk_email:{}",
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_nanos())
-                .unwrap_or(0)
-        ));
+        let now_ns = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(NotificationError::infrastructure)?
+            .as_nanos();
+        let bulk_id = BulkId::new(format!("bulk_email:{now_ns}"));
 
         let mut receipt = BulkReceipt::new(bulk_id);
 
