@@ -40,6 +40,7 @@
 use async_trait::async_trait;
 
 use educore_core::error::Result;
+use educore_core::ids::SchoolId;
 
 use super::audit::AuditLog;
 use super::event_log::EventLog;
@@ -122,6 +123,50 @@ pub trait Transaction: Send + Sync + std::fmt::Debug {
     }
 }
 
+/// Extension trait that exposes the tenant scope of a
+/// [`Transaction`].
+///
+/// ## Why a separate trait?
+///
+/// Per `docs/audit_reports/findings/wave4-storage-port.md`
+/// finding **PORT-STORE-002**, the base `Transaction` trait
+/// carries no tenant anchor — there is no way for an adapter
+/// to know which `SchoolId` scope the transaction runs in.
+/// Adding the accessor to the base trait would be a breaking
+/// change (every adapter would have to implement a new
+/// method); instead the accessor is exposed as a separate
+/// extension trait so existing code keeps compiling.
+///
+/// Every shipped `Transaction` impl implements both `Transaction`
+/// and `TenantTransaction`; consumers that need the tenant
+/// scope (e.g. a generic adapter wrapper that wants to log the
+/// tenant on each sub-port call, or a per-tenant routing layer)
+/// hold the concrete transaction type and call `school_id()`
+/// directly, or rely on the adapter to propagate the tenant
+/// scope internally.
+///
+/// ## Audit-handle guarantee (PORT-STORE-013)
+///
+/// The base trait already exposes `audit_log()` which returns a
+/// `&dyn AuditLog`; the handle returned by `audit_log()` on a
+/// `TenantTransaction` impl MUST commit (or roll back) atomically
+/// with the rest of the transaction's writes. Adapters that
+/// open per-method transactions (the SQL adapters) honour this
+/// by acquiring the per-method connection from the same pool
+/// and letting the database's transactional outbox + audit
+/// insert share the connection. Adapters with a staging layer
+/// (the testkit) honour this by staging all writes until
+/// `commit()` and discarding them on `rollback()`.
+pub trait TenantTransaction: Transaction {
+    /// Returns the `SchoolId` this transaction is scoped to.
+    ///
+    /// Every staged write (outbox append, audit row, idempotency
+    /// record, event log row) belongs to this school. Adapters
+    /// MUST reject any staged entry whose `school_id` differs
+    /// from the value returned here.
+    fn school_id(&self) -> SchoolId;
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
@@ -137,4 +182,9 @@ mod tests {
     // StorageAdapter port and elsewhere; if the trait gains a
     // generic method, this assertion will fail to compile.
     fn _assert_object_safe(_t: Box<dyn Transaction + Sync>) {}
+
+    // Compile-time check that `TenantTransaction` is also
+    // dyn-compatible. The extension trait only adds a
+    // `&self -> SchoolId` accessor, which is object-safe.
+    fn _assert_tenant_object_safe(_t: Box<dyn TenantTransaction + Sync>) {}
 }

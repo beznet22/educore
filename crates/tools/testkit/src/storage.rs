@@ -50,7 +50,7 @@ use educore_storage::idempotency::{Idempotency, IdempotencyCompositeKey, Idempot
 use educore_storage::outbox::{Outbox, SerializedEnvelope};
 use educore_storage::port::StorageAdapter;
 use educore_storage::student_attendance_row::StudentAttendanceRow;
-use educore_storage::transaction::Transaction;
+use educore_storage::transaction::{TenantTransaction, Transaction};
 
 use educore_events::event_bus::EventBus;
 
@@ -85,11 +85,57 @@ pub(crate) struct InMemoryInner {
 }
 
 // ---------------------------------------------------------------------------
+// InMemoryStaging (per-transaction staging buffer)
+//
+// Per Cluster F (`PORT-STORE-002` / `PORT-STORE-013`), the
+// testkit's transaction now stages every sub-port write
+// (outbox, audit, event_log, idempotency) into a per-transaction
+// buffer. The buffer is flushed into the shared `InMemoryInner`
+// on `commit()` and discarded on `rollback()`. This makes the
+// testkit behaviour match the production SQL adapters'
+// atomicity guarantee: an audit row that is appended inside a
+// transaction is observable to reads only after `commit()` and
+// is invisible to subsequent transactions if `rollback()` is
+// called instead.
+//
+// Before this change the testkit wrote directly to the shared
+// `InMemoryInner` (the `TOOL-TK-002` caveat documented in the
+// module-level Drop comment) — a rolled-back transaction left
+// its staged writes visible. This change closes that gap.
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Default)]
+pub(crate) struct InMemoryStaging {
+    /// Outbox envelopes staged by this transaction. Flushed on
+    /// `commit()`, discarded on `rollback()`.
+    pub(crate) outbox: Mutex<Vec<SerializedEnvelope>>,
+    /// Audit rows staged by this transaction.
+    pub(crate) audit_log: Mutex<Vec<AuditLogEntry>>,
+    /// Event log rows staged by this transaction.
+    pub(crate) event_log: Mutex<Vec<EventLogEntry>>,
+    /// Idempotency records staged by this transaction.
+    pub(crate) idempotency: Mutex<HashMap<IdempotencyCompositeKey, IdempotencyRecord>>,
+}
+
+// ---------------------------------------------------------------------------
 // Sub-port wrappers — each is a thin Arc-shared handle to the inner state.
 // Storing them in the Transaction struct (not constructing per call) avoids
 // the "cannot return reference to temporary value" error.
 // ---------------------------------------------------------------------------
 
+// `OutboxHandle` (and the three sibling handles below) is
+// the direct-access variant: it writes straight to the shared
+// inner state with no staging layer. After the Cluster F
+// staging change, `InMemoryTransaction` uses `StagingOutbox`
+// instead, so the direct variant is no longer constructed
+// inside the testkit. We keep it (and its `Outbox for
+// OutboxHandle` / `OutboxSource for OutboxHandle` impls)
+// because external consumers wire the testkit's storage
+// adapter as an `OutboxSource` for the production relay
+// (the `educore_events::relay::OutboxSource` impl on this
+// type is the public seam). The `dead_code` allow silences
+// the "never constructed" warning for the type itself.
+#[allow(dead_code)]
 pub(crate) struct OutboxHandle(pub(crate) Arc<InMemoryInner>);
 
 /// Bridge from the storage-port [`SerializedEnvelope`] to the
@@ -175,6 +221,10 @@ impl educore_events::relay::OutboxSource for OutboxHandle {
     }
 }
 
+// Direct-access audit handle; see the comment on
+// `OutboxHandle` above for why this type is retained with
+// `dead_code` allowed.
+#[allow(dead_code)]
 pub(crate) struct AuditLogHandle(pub(crate) Arc<InMemoryInner>);
 
 #[async_trait]
@@ -202,6 +252,10 @@ impl AuditLog for AuditLogHandle {
     }
 }
 
+// Direct-access event-log handle; see the comment on
+// `OutboxHandle` above for why this type is retained with
+// `dead_code` allowed.
+#[allow(dead_code)]
 pub(crate) struct EventLogHandle(pub(crate) Arc<InMemoryInner>);
 
 #[async_trait]
@@ -257,6 +311,10 @@ impl EventLog for EventLogHandle {
     }
 }
 
+// Direct-access idempotency handle; see the comment on
+// `OutboxHandle` above for why this type is retained with
+// `dead_code` allowed.
+#[allow(dead_code)]
 pub(crate) struct IdempotencyHandle(pub(crate) Arc<InMemoryInner>);
 
 #[async_trait]
@@ -288,6 +346,211 @@ impl Idempotency for IdempotencyHandle {
 }
 
 // ---------------------------------------------------------------------------
+// Staging handle types (Cluster F / PORT-STORE-013)
+//
+// Each staging handle holds an `Arc` to the shared
+// `InMemoryInner` (for reads that should fall through to
+// already-committed state) and an `Arc` to the per-transaction
+// `InMemoryStaging` buffer (for writes that should be deferred
+// until `commit()`).
+//
+// Reads are passed through to the inner state directly — a
+// staging transaction does not need to read its own uncommitted
+// writes because the engine's command pipeline issues all
+// stages within a single transaction and reads from inner state
+// (not from the staging buffer).
+//
+// Writes go to the staging buffer; the staging buffer is moved
+// into the inner state by `InMemoryTransaction::commit` and
+// dropped by `InMemoryTransaction::rollback`.
+// ---------------------------------------------------------------------------
+
+/// Staging outbox handle. Writes go to the staging buffer; reads
+/// pass through to the inner state.
+pub(crate) struct StagingOutbox {
+    inner: Arc<InMemoryInner>,
+    staging: Arc<InMemoryStaging>,
+}
+
+#[async_trait]
+impl Outbox for StagingOutbox {
+    async fn append(&self, envelope: SerializedEnvelope) -> Result<()> {
+        let mut staging = self.staging.outbox.lock();
+        if staging.iter().any(|e| e.event_id == envelope.event_id) {
+            return Err(DomainError::conflict(format!(
+                "duplicate event_id {} in outbox (staged)",
+                envelope.event_id.as_uuid()
+            )));
+        }
+        staging.push(envelope);
+        Ok(())
+    }
+
+    async fn pending(&self, limit: u32) -> Result<Vec<SerializedEnvelope>> {
+        // Reads always pass through to the inner state; the
+        // staging buffer is invisible to other transactions.
+        let outbox = self.inner.outbox.lock();
+        Ok(outbox.iter().take(limit as usize).cloned().collect())
+    }
+
+    async fn mark_published(&self, ids: &[educore_core::ids::EventId]) -> Result<()> {
+        let mut outbox = self.inner.outbox.lock();
+        outbox.retain(|e| !ids.contains(&e.event_id));
+        Ok(())
+    }
+}
+
+/// Staging audit-log handle. Writes go to the staging buffer;
+/// reads pass through to the inner state.
+pub(crate) struct StagingAuditLog {
+    inner: Arc<InMemoryInner>,
+    staging: Arc<InMemoryStaging>,
+}
+
+#[async_trait]
+impl AuditLog for StagingAuditLog {
+    async fn append(&self, entry: AuditLogEntry) -> Result<()> {
+        self.staging.audit_log.lock().push(entry);
+        Ok(())
+    }
+
+    async fn read_for_target(
+        &self,
+        school_id: SchoolId,
+        target_id: Uuid,
+        limit: u32,
+    ) -> Result<Vec<AuditLogEntry>> {
+        let log = self.inner.audit_log.lock();
+        let mut out: Vec<AuditLogEntry> = log
+            .iter()
+            .filter(|e| e.school_id == school_id && e.target_id == target_id)
+            .cloned()
+            .collect();
+        out.sort_by_key(|e| e.occurred_at);
+        out.truncate(limit as usize);
+        Ok(out)
+    }
+}
+
+/// Staging event-log handle. Writes go to the staging buffer;
+/// reads pass through to the inner state.
+pub(crate) struct StagingEventLog {
+    inner: Arc<InMemoryInner>,
+    staging: Arc<InMemoryStaging>,
+}
+
+#[async_trait]
+impl EventLog for StagingEventLog {
+    async fn append(&self, entry: EventLogEntry) -> Result<()> {
+        self.staging.event_log.lock().push(entry);
+        Ok(())
+    }
+
+    async fn read(&self, filter: EventLogFilter) -> Result<Vec<EventLogEntry>> {
+        let log = self.inner.event_log.lock();
+        let mut out: Vec<EventLogEntry> = log
+            .iter()
+            .filter(|e| e.school_id == filter.school_id)
+            .filter(|e| {
+                filter.event_types.is_empty()
+                    || filter.event_types.iter().any(|t| t == &e.event_type)
+            })
+            .filter(|e| filter.since.as_ref().map_or(true, |s| e.recorded_at >= *s))
+            .filter(|e| filter.until.as_ref().map_or(true, |u| e.recorded_at < *u))
+            .filter(|e| {
+                filter
+                    .aggregate_id
+                    .as_ref()
+                    .map_or(true, |a| e.aggregate_id == *a)
+            })
+            .cloned()
+            .collect();
+        out.sort_by_key(|e| e.recorded_at);
+        out.truncate(filter.limit as usize);
+        Ok(out)
+    }
+
+    async fn count(&self, filter: EventLogFilter) -> Result<u64> {
+        let log = self.inner.event_log.lock();
+        let n = log
+            .iter()
+            .filter(|e| e.school_id == filter.school_id)
+            .filter(|e| {
+                filter.event_types.is_empty()
+                    || filter.event_types.iter().any(|t| t == &e.event_type)
+            })
+            .filter(|e| filter.since.as_ref().map_or(true, |s| e.recorded_at >= *s))
+            .filter(|e| filter.until.as_ref().map_or(true, |u| e.recorded_at < *u))
+            .filter(|e| {
+                filter
+                    .aggregate_id
+                    .as_ref()
+                    .map_or(true, |a| e.aggregate_id == *a)
+            })
+            .count();
+        Ok(n as u64)
+    }
+}
+
+/// Staging idempotency handle. Writes go to the staging buffer;
+/// reads pass through to the inner state.
+pub(crate) struct StagingIdempotency {
+    inner: Arc<InMemoryInner>,
+    staging: Arc<InMemoryStaging>,
+}
+
+#[async_trait]
+impl Idempotency for StagingIdempotency {
+    async fn lookup(&self, key: IdempotencyCompositeKey) -> Result<Option<IdempotencyRecord>> {
+        // Check staging first (uncommitted record from this
+        // transaction), then fall through to the inner state
+        // (records committed by previous transactions).
+        {
+            let staging = self.staging.idempotency.lock();
+            if let Some(record) = staging.get(&key) {
+                return Ok(Some(record.clone()));
+            }
+        }
+        let store = self.inner.idempotency.lock();
+        Ok(store.get(&key).cloned())
+    }
+
+    async fn record(&self, record: IdempotencyRecord) -> Result<()> {
+        let key = IdempotencyCompositeKey {
+            school_id: record.school_id,
+            command_type: record.command_type,
+            idempotency_key: record.idempotency_key,
+        };
+        // Check both the staging buffer (this transaction's
+        // own writes) and the inner state (records committed
+        // by previous transactions) for an existing record
+        // with the same composite key.
+        let existing = {
+            let staging = self.staging.idempotency.lock();
+            staging.get(&key).cloned()
+        };
+        let existing = match existing {
+            Some(rec) => Some(rec),
+            None => {
+                let store = self.inner.idempotency.lock();
+                store.get(&key).cloned()
+            }
+        };
+        if let Some(existing) = existing {
+            if existing.outcome != record.outcome {
+                return Err(DomainError::conflict(format!(
+                    "idempotency key {} has different outcome",
+                    record.idempotency_key.as_uuid()
+                )));
+            }
+            return Ok(());
+        }
+        self.staging.idempotency.lock().insert(key, record);
+        Ok(())
+    }
+}
+
+// ---------------------------------------------------------------------------
 // InMemoryStorageAdapter
 // ---------------------------------------------------------------------------
 
@@ -299,6 +562,12 @@ impl Idempotency for IdempotencyHandle {
 pub struct InMemoryStorageAdapter {
     inner: Arc<InMemoryInner>,
     bus: Arc<dyn EventBus>,
+    /// Cluster F: the `SchoolId` scope of every transaction
+    /// opened by this adapter. Defaults to a fresh UUIDv7 in
+    /// `new()` and can be overridden with `with_school()`.
+    /// Mirrors the SQL adapters' `PostgresConnection::school()`
+    /// / `MySqlConnection::school()` / etc.
+    school: SchoolId,
 }
 
 impl std::fmt::Debug for InMemoryStorageAdapter {
@@ -330,6 +599,10 @@ impl InMemoryStorageAdapter {
                 explicit_commit_count: AtomicU64::new(0),
             }),
             bus,
+            // Fresh random school per adapter. Tests that
+            // need to assert on a specific school should call
+            // `with_school()` after construction.
+            school: SchoolId::from_uuid(Uuid::new_v4()),
         }
     }
 
@@ -350,6 +623,24 @@ impl InMemoryStorageAdapter {
         self.bus = bus;
         self
     }
+
+    /// Cluster F: sets the `SchoolId` scope of every
+    /// transaction opened by this adapter. Mirrors the SQL
+    /// adapters' per-connection school. Transactions opened
+    /// before `with_school` returns keep their original
+    /// scope.
+    #[must_use]
+    pub fn with_school(mut self, school: SchoolId) -> Self {
+        self.school = school;
+        self
+    }
+
+    /// Cluster F: returns the `SchoolId` scope of every
+    /// transaction opened by this adapter.
+    #[must_use]
+    pub fn school(&self) -> SchoolId {
+        self.school
+    }
 }
 
 #[async_trait]
@@ -361,6 +652,7 @@ impl StorageAdapter for InMemoryStorageAdapter {
         Ok(Box::new(InMemoryTransaction::new(
             self.inner.clone(),
             self.bus.clone(),
+            self.school,
         )))
     }
 
@@ -476,13 +768,27 @@ impl StorageAdapter for InMemoryStorageAdapter {
 /// In-memory transaction. Holds the sub-port handles as fields
 /// so the trait methods can return `&self.field` references that
 /// live as long as the transaction.
+///
+/// Cluster F (`PORT-STORE-002` + `PORT-STORE-013`): the
+/// sub-port handles are staging handles — writes go to a
+/// per-transaction buffer (an `Arc<InMemoryStaging>`) until
+/// `commit()` flushes the buffer into the shared
+/// `InMemoryInner` state. A `rollback()` drops the buffer
+/// without touching the inner state, giving the testkit the
+/// same atomicity guarantee as the production SQL adapters
+/// (audit rows are written transactionally with the
+/// aggregate mutation).
 pub struct InMemoryTransaction {
     inner: Arc<InMemoryInner>,
+    staging: Arc<InMemoryStaging>,
     _bus: Arc<dyn EventBus>,
-    outbox_h: OutboxHandle,
-    audit_h: AuditLogHandle,
-    event_h: EventLogHandle,
-    idem_h: IdempotencyHandle,
+    outbox_h: StagingOutbox,
+    audit_h: StagingAuditLog,
+    event_h: StagingEventLog,
+    idem_h: StagingIdempotency,
+    /// Cluster F: tenant scope of this transaction.
+    /// Mirrors the SQL adapters' `school_id` field.
+    school_id: SchoolId,
     committed: AtomicBool,
     rolled_back: AtomicBool,
 }
@@ -490,23 +796,41 @@ pub struct InMemoryTransaction {
 impl std::fmt::Debug for InMemoryTransaction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("InMemoryTransaction")
+            .field("school_id", &self.school_id)
+            .field("committed", &self.committed.load(Ordering::SeqCst))
+            .field("rolled_back", &self.rolled_back.load(Ordering::SeqCst))
             .finish_non_exhaustive()
     }
 }
 
 impl InMemoryTransaction {
-    fn new(inner: Arc<InMemoryInner>, bus: Arc<dyn EventBus>) -> Self {
-        let outbox_h = OutboxHandle(inner.clone());
-        let audit_h = AuditLogHandle(inner.clone());
-        let event_h = EventLogHandle(inner.clone());
-        let idem_h = IdempotencyHandle(inner.clone());
+    fn new(inner: Arc<InMemoryInner>, bus: Arc<dyn EventBus>, school_id: SchoolId) -> Self {
+        let staging = Arc::new(InMemoryStaging::default());
+        let outbox_h = StagingOutbox {
+            inner: inner.clone(),
+            staging: staging.clone(),
+        };
+        let audit_h = StagingAuditLog {
+            inner: inner.clone(),
+            staging: staging.clone(),
+        };
+        let event_h = StagingEventLog {
+            inner: inner.clone(),
+            staging: staging.clone(),
+        };
+        let idem_h = StagingIdempotency {
+            inner: inner.clone(),
+            staging: staging.clone(),
+        };
         Self {
             inner,
+            staging,
             _bus: bus,
             outbox_h,
             audit_h,
             event_h,
             idem_h,
+            school_id,
             committed: AtomicBool::new(false),
             rolled_back: AtomicBool::new(false),
         }
@@ -531,33 +855,35 @@ impl InMemoryTransaction {
     }
 }
 
-/// QW-4 / `TOOL-TK-002` partial fix — the Drop contract.
+/// QW-4 / `TOOL-TK-002` complete fix (Cluster F) — the Drop
+/// contract.
 ///
 /// If the transaction is dropped without an explicit `commit`
-/// or `rollback`, the `Drop` impl flips both the `committed`
-/// and `rolled_back` guards. This honors the port-level
-/// contract: a dropped transaction is "rolled back by default".
+/// or `rollback`, the `Drop` impl performs an implicit
+/// rollback: the staging buffer (held by `Arc<InMemoryStaging>`)
+/// is dropped along with the transaction, which discards all
+/// staged writes — the inner state is untouched. This honors
+/// the port-level "rollback by default" contract.
 ///
-/// **Caveat (TOOL-TK-002):** the in-memory sub-port handles
-/// write directly to the shared `InMemoryInner` state, so a
-/// dropped-without-finalize transaction leaves its staged
-/// audit / event / idempotency writes visible to subsequent
-/// transactions. The `Drop` only flips the transactional
-/// state flag; it does not undo the sub-port writes. That
-/// broader fix (a staging layer) is tracked under `TOOL-TK-002`
-/// and is **out of scope** for this PR.
+/// The previous `TOOL-TK-002` caveat (staged writes leaking
+/// to subsequent transactions on drop) is closed: a drop is
+/// now an atomic rollback of the staging buffer.
 impl Drop for InMemoryTransaction {
     fn drop(&mut self) {
         let was_committed = self.committed.load(Ordering::SeqCst);
         let was_rolled_back = self.rolled_back.load(Ordering::SeqCst);
         if !was_committed && !was_rolled_back {
             tracing::warn!(
+                school = %self.school_id,
                 "InMemoryTransaction dropped without commit or rollback; \
-                 performing implicit rollback (TOOL-TK-002 caveat: \
-                 sub-port writes are already visible)"
+                 performing implicit rollback (staging buffer discarded)"
             );
             self.rolled_back.store(true, Ordering::SeqCst);
             self.committed.store(true, Ordering::SeqCst);
+            // Dropping `self.staging` discards the staged
+            // writes (outbox / audit / event_log /
+            // idempotency) atomically — the inner state is
+            // never touched on the implicit-rollback path.
             self.inner
                 .implicit_rollback_count
                 .fetch_add(1, Ordering::SeqCst);
@@ -578,8 +904,52 @@ impl Transaction for InMemoryTransaction {
         if self.committed.swap(true, Ordering::SeqCst) {
             return Err(DomainError::validation("transaction already committed"));
         }
-        // Drain the outbox. Each drained envelope is converted
-        // to a bus-port `EventEnvelope` and published via the
+
+        // Flush the staging buffer into the shared inner
+        // state. Each lock is taken in the same order as the
+        // bulk-insert path (outbox, audit, event_log,
+        // idempotency) to preserve the engine's documented
+        // lock-ordering convention. The flush is the
+        // "atomic commit" point: after the staging buffers
+        // are drained into inner, all sub-port writes are
+        // visible to subsequent transactions and to the
+        // bus publish that follows.
+        let staged_outbox: Vec<SerializedEnvelope> = {
+            let mut buf = self.staging.outbox.lock();
+            buf.drain(..).collect()
+        };
+        let staged_audit: Vec<AuditLogEntry> = {
+            let mut buf = self.staging.audit_log.lock();
+            buf.drain(..).collect()
+        };
+        let staged_event: Vec<EventLogEntry> = {
+            let mut buf = self.staging.event_log.lock();
+            buf.drain(..).collect()
+        };
+        let staged_idem: HashMap<IdempotencyCompositeKey, IdempotencyRecord> = {
+            let mut buf = self.staging.idempotency.lock();
+            buf.drain().collect()
+        };
+        {
+            let mut outbox = self.inner.outbox.lock();
+            outbox.extend(staged_outbox.iter().cloned());
+        }
+        {
+            let mut audit = self.inner.audit_log.lock();
+            audit.extend(staged_audit.iter().cloned());
+        }
+        {
+            let mut event = self.inner.event_log.lock();
+            event.extend(staged_event.iter().cloned());
+        }
+        {
+            let mut idem = self.inner.idempotency.lock();
+            for (k, v) in staged_idem {
+                idem.insert(k, v);
+            }
+        }
+
+        // Drain the outbox and publish each envelope via the
         // testkit's `EventBus` (TOOL-TK-001). Successful
         // publishes are removed from the outbox via
         // `mark_published`; failed publishes stay pending for
@@ -636,6 +1006,15 @@ impl Transaction for InMemoryTransaction {
             return Err(DomainError::validation("transaction already committed"));
         }
         self.rolled_back.store(true, Ordering::SeqCst);
+        // Cluster F (PORT-STORE-013): when `self` drops at
+        // the end of this function, the staging buffer is
+        // dropped along with the transaction, which discards
+        // every staged write (outbox / audit / event_log /
+        // idempotency). The inner state is never touched on
+        // the rollback path. The staging handle fields
+        // (`outbox_h`, `audit_h`, `event_h`, `idem_h`) hold
+        // `Arc` clones of the same staging buffer; their
+        // drops are no-ops.
         Ok(())
     }
 
@@ -653,6 +1032,22 @@ impl Transaction for InMemoryTransaction {
 
     fn event_log(&self) -> &dyn EventLog {
         &self.event_h
+    }
+}
+
+/// Cluster F / `PORT-STORE-002` — the `TenantTransaction`
+/// extension for the testkit's in-memory adapter.
+///
+/// The transaction's tenant scope is the `SchoolId` it was
+/// constructed with (sourced from the adapter's `with_school()`
+/// setting). The audit handle returned by
+/// `Transaction::audit_log()` is the staging handle; its writes
+/// are committed (or rolled back) atomically with the rest of
+/// the transaction's writes per `PORT-STORE-013` (the staging
+/// buffer flush is the atomicity point).
+impl TenantTransaction for InMemoryTransaction {
+    fn school_id(&self) -> SchoolId {
+        self.school_id
     }
 }
 
@@ -836,9 +1231,14 @@ mod tests {
             tx.rollback().await.unwrap();
             let tx2 = adapter.begin().await.unwrap();
             let pending = tx2.outbox().pending(10).await.unwrap();
-            // The first tx was rolled back so the outbox still
-            // has the envelope; the second tx sees it.
-            assert_eq!(pending.len(), 1);
+            // Cluster F (PORT-STORE-013): the staging buffer
+            // is discarded on rollback, so the next
+            // transaction observes an empty outbox. (Before
+            // the staging fix, the entry leaked to the inner
+            // state — this test asserted that broken
+            // behaviour. The staging fix closes
+            // `TOOL-TK-002`.)
+            assert!(pending.is_empty());
         });
     }
 
@@ -1132,6 +1532,372 @@ mod tests {
                 adapter.inner.explicit_commit_count.load(Ordering::SeqCst),
                 1,
                 "dropping a committed transaction counts the happy path"
+            );
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // Cluster F (storage transaction hardening) tests
+    // -----------------------------------------------------------------
+    //
+    // These tests close `PORT-STORE-002` (tenant context on
+    // the transaction) and `PORT-STORE-013` (atomic audit-write
+    // with the aggregate mutation) in the testkit's
+    // in-memory adapter.
+
+    /// `Transaction::school_id()` returns the tenant scope of
+    /// the transaction (PORT-STORE-002).
+    #[test]
+    fn tenant_tx_school_id_returns_scope() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let g = SystemIdGen;
+            let school = g.next_school_id();
+            let adapter = InMemoryStorageAdapter::new(make_bus()).with_school(school);
+            // Construct an `InMemoryTransaction` directly so we
+            // can call its `TenantTransaction::school_id()`
+            // method without downcasting a `Box<dyn
+            // Transaction>`. The transaction is dropped
+            // without `commit`/`rollback`, so it triggers the
+            // implicit-rollback Drop path (no observable side
+            // effects: staging buffer is empty).
+            let tx = InMemoryTransaction::new(
+                adapter.inner.clone(),
+                make_bus(),
+                school,
+            );
+            assert_eq!(tx.school_id(), school);
+            // Verify the trait surface: the concrete type
+            // implements both `Transaction` and
+            // `TenantTransaction`.
+            fn _assert_tx_and_tenant<T: Send + Sync + std::fmt::Debug>(_: &T)
+            where
+                T: Transaction,
+                T: TenantTransaction,
+            {
+            }
+            _assert_tx_and_tenant(&tx);
+        });
+    }
+
+    /// `Transaction::commit` atomically writes audit rows with
+    /// the aggregate mutation (PORT-STORE-013).
+    #[test]
+    fn commit_atomically_writes_audit_row() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let g = SystemIdGen;
+            let school = g.next_school_id();
+            let user = g.next_user_id();
+            let target = g.next_uuid();
+            let adapter = InMemoryStorageAdapter::new(make_bus()).with_school(school);
+
+            let entry = AuditLogEntry::create(
+                school,
+                user,
+                "student",
+                target,
+                Bytes::from_static(b"{\"id\":\"x\"}"),
+                g.next_correlation_id(),
+            );
+
+            let tx = adapter.begin().await.unwrap();
+            tx.audit_log().append(entry.clone()).await.unwrap();
+            // Before commit: the audit row is staged, not
+            // visible to a read through the inner state.
+            // (We can't observe the staging buffer directly,
+            // but we can confirm commit-then-read works.)
+            tx.commit().await.unwrap();
+
+            // After commit: the audit row is in the inner
+            // state and visible to subsequent reads.
+            let tx2 = adapter.begin().await.unwrap();
+            let rows = tx2
+                .audit_log()
+                .read_for_target(school, target, 10)
+                .await
+                .unwrap();
+            assert_eq!(rows.len(), 1);
+            assert_eq!(rows[0].target_id, target);
+            assert_eq!(rows[0].action, "create");
+        });
+    }
+
+    /// `Transaction::rollback` discards staged audit rows
+    /// (PORT-STORE-013).
+    #[test]
+    fn rollback_discards_staged_audit_rows() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let g = SystemIdGen;
+            let school = g.next_school_id();
+            let user = g.next_user_id();
+            let target = g.next_uuid();
+            let adapter = InMemoryStorageAdapter::new(make_bus()).with_school(school);
+
+            let entry = AuditLogEntry::create(
+                school,
+                user,
+                "student",
+                target,
+                Bytes::from_static(b"{\"id\":\"x\"}"),
+                g.next_correlation_id(),
+            );
+
+            let tx = adapter.begin().await.unwrap();
+            tx.audit_log().append(entry.clone()).await.unwrap();
+            tx.rollback().await.unwrap();
+
+            // After rollback: the audit row was discarded
+            // with the staging buffer and is NOT visible to
+            // subsequent reads.
+            let tx2 = adapter.begin().await.unwrap();
+            let rows = tx2
+                .audit_log()
+                .read_for_target(school, target, 10)
+                .await
+                .unwrap();
+            assert!(
+                rows.is_empty(),
+                "audit row staged in a rolled-back transaction must not be visible"
+            );
+        });
+    }
+
+    /// `AuditLog::append` inside a rolled-back transaction
+    /// does not produce a visible audit row (PORT-STORE-013).
+    #[test]
+    fn audit_append_inside_transaction_is_rolled_back() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let g = SystemIdGen;
+            let school = g.next_school_id();
+            let user = g.next_user_id();
+            let target_a = g.next_uuid();
+            let target_b = g.next_uuid();
+            let adapter = InMemoryStorageAdapter::new(make_bus()).with_school(school);
+
+            // Transaction 1: commit target_a.
+            let entry_a = AuditLogEntry::create(
+                school,
+                user,
+                "student",
+                target_a,
+                Bytes::from_static(b"{\"id\":\"a\"}"),
+                g.next_correlation_id(),
+            );
+            let tx1 = adapter.begin().await.unwrap();
+            tx1.audit_log().append(entry_a).await.unwrap();
+            tx1.commit().await.unwrap();
+
+            // Transaction 2: append target_b, then rollback.
+            let entry_b = AuditLogEntry::create(
+                school,
+                user,
+                "student",
+                target_b,
+                Bytes::from_static(b"{\"id\":\"b\"}"),
+                g.next_correlation_id(),
+            );
+            let tx2 = adapter.begin().await.unwrap();
+            tx2.audit_log().append(entry_b).await.unwrap();
+            tx2.rollback().await.unwrap();
+
+            // Reads see only the committed target_a, not the
+            // rolled-back target_b.
+            let tx3 = adapter.begin().await.unwrap();
+            let a_rows = tx3
+                .audit_log()
+                .read_for_target(school, target_a, 10)
+                .await
+                .unwrap();
+            let b_rows = tx3
+                .audit_log()
+                .read_for_target(school, target_b, 10)
+                .await
+                .unwrap();
+            assert_eq!(a_rows.len(), 1, "committed audit row is visible");
+            assert!(b_rows.is_empty(), "rolled-back audit row is discarded");
+        });
+    }
+
+    /// `Transaction::commit` is atomic across sub-ports: the
+    /// outbox row, audit row, idempotency record, and event
+    /// log row all become visible together. Before commit,
+    /// none are visible; after rollback, none are visible.
+    #[test]
+    fn commit_is_atomic_across_all_subports() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let g = SystemIdGen;
+            let school = g.next_school_id();
+            let user = g.next_user_id();
+            let adapter = InMemoryStorageAdapter::new(make_bus()).with_school(school);
+
+            // Use one envelope, one audit row, one idempotency
+            // record, one event log row — all sharing the same
+            // correlation id so the test is one logical
+            // "command".
+            let correlation_id = g.next_correlation_id();
+            let target = g.next_uuid();
+
+            let envelope = sample_envelope(school);
+            let audit = AuditLogEntry::create(
+                school,
+                user,
+                "student",
+                target,
+                Bytes::from_static(b"{\"id\":\"x\"}"),
+                correlation_id,
+            );
+            let idem_key = g.next_idempotency_key();
+            let idem_record = IdempotencyRecord {
+                school_id: school,
+                command_type: "academic.student.admit",
+                idempotency_key: idem_key,
+                outcome: Bytes::from_static(b"{\"id\":\"x\"}"),
+                outcome_version: 1,
+                recorded_at: Timestamp::now(),
+                affected_aggregate_ids: vec![],
+            };
+            let event_entry = EventLogEntry {
+                event_id: envelope.event_id,
+                school_id: school,
+                event_type: envelope.event_type.clone(),
+                schema_version: envelope.schema_version,
+                aggregate_id: envelope.aggregate_id,
+                aggregate_type: envelope.aggregate_type.clone(),
+                actor_id: envelope.actor_id,
+                correlation_id,
+                causation_id: envelope.causation_id,
+                occurred_at: envelope.occurred_at,
+                recorded_at: Timestamp::now(),
+                payload: envelope.payload.clone(),
+                active_status: ActiveStatus::Active,
+            };
+
+            // Phase 1: commit — all four become visible.
+            let tx = adapter.begin().await.unwrap();
+            tx.outbox().append(envelope.clone()).await.unwrap();
+            tx.audit_log().append(audit.clone()).await.unwrap();
+            tx.idempotency().record(idem_record.clone()).await.unwrap();
+            tx.event_log().append(event_entry.clone()).await.unwrap();
+            tx.commit().await.unwrap();
+
+            let tx2 = adapter.begin().await.unwrap();
+            assert_eq!(
+                tx2.outbox().pending(10).await.unwrap().len(),
+                0,
+                "outbox is drained on commit (envelopes flow to the bus and are removed)"
+            );
+            assert_eq!(
+                tx2.audit_log()
+                    .read_for_target(school, target, 10)
+                    .await
+                    .unwrap()
+                    .len(),
+                1,
+                "audit row committed"
+            );
+            let idem_composite =
+                IdempotencyRecord::composite_key(school, "academic.student.admit", idem_key);
+            assert!(
+                tx2.idempotency().lookup(idem_composite).await.unwrap().is_some(),
+                "idempotency record committed"
+            );
+            let mut filter = EventLogFilter::for_school(school);
+            filter.event_types = vec![envelope.event_type.clone()];
+            assert_eq!(
+                tx2.event_log().read(filter).await.unwrap().len(),
+                1,
+                "event log row committed"
+            );
+        });
+    }
+
+    /// `Transaction::rollback` is atomic across sub-ports: the
+    /// outbox row, audit row, idempotency record, and event
+    /// log row are all discarded together.
+    #[test]
+    fn rollback_is_atomic_across_all_subports() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let g = SystemIdGen;
+            let school = g.next_school_id();
+            let user = g.next_user_id();
+            let adapter = InMemoryStorageAdapter::new(make_bus()).with_school(school);
+
+            let correlation_id = g.next_correlation_id();
+            let target = g.next_uuid();
+
+            let envelope = sample_envelope(school);
+            let audit = AuditLogEntry::create(
+                school,
+                user,
+                "student",
+                target,
+                Bytes::from_static(b"{\"id\":\"x\"}"),
+                correlation_id,
+            );
+            let idem_key = g.next_idempotency_key();
+            let idem_record = IdempotencyRecord {
+                school_id: school,
+                command_type: "academic.student.admit",
+                idempotency_key: idem_key,
+                outcome: Bytes::from_static(b"{\"id\":\"x\"}"),
+                outcome_version: 1,
+                recorded_at: Timestamp::now(),
+                affected_aggregate_ids: vec![],
+            };
+            let event_entry = EventLogEntry {
+                event_id: envelope.event_id,
+                school_id: school,
+                event_type: envelope.event_type.clone(),
+                schema_version: envelope.schema_version,
+                aggregate_id: envelope.aggregate_id,
+                aggregate_type: envelope.aggregate_type.clone(),
+                actor_id: envelope.actor_id,
+                correlation_id,
+                causation_id: envelope.causation_id,
+                occurred_at: envelope.occurred_at,
+                recorded_at: Timestamp::now(),
+                payload: envelope.payload.clone(),
+                active_status: ActiveStatus::Active,
+            };
+
+            // Phase 1: stage everything, then rollback.
+            let tx = adapter.begin().await.unwrap();
+            tx.outbox().append(envelope.clone()).await.unwrap();
+            tx.audit_log().append(audit.clone()).await.unwrap();
+            tx.idempotency().record(idem_record.clone()).await.unwrap();
+            tx.event_log().append(event_entry.clone()).await.unwrap();
+            tx.rollback().await.unwrap();
+
+            // Phase 2: nothing is visible to subsequent reads.
+            let tx2 = adapter.begin().await.unwrap();
+            assert!(
+                tx2.outbox().pending(10).await.unwrap().is_empty(),
+                "rolled-back outbox is empty"
+            );
+            assert!(
+                tx2.audit_log()
+                    .read_for_target(school, target, 10)
+                    .await
+                    .unwrap()
+                    .is_empty(),
+                "rolled-back audit is empty"
+            );
+            let idem_composite =
+                IdempotencyRecord::composite_key(school, "academic.student.admit", idem_key);
+            assert!(
+                tx2.idempotency().lookup(idem_composite).await.unwrap().is_none(),
+                "rolled-back idempotency record is discarded"
+            );
+            let mut filter = EventLogFilter::for_school(school);
+            filter.event_types = vec![envelope.event_type.clone()];
+            assert!(
+                tx2.event_log().read(filter).await.unwrap().is_empty(),
+                "rolled-back event log is empty"
             );
         });
     }

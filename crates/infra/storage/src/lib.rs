@@ -55,7 +55,7 @@ pub use outbox::{Outbox, SerializedEnvelope};
 pub use port::StorageAdapter;
 pub use repository::Repository;
 pub use student_attendance_row::StudentAttendanceRow;
-pub use transaction::Transaction;
+pub use transaction::{TenantTransaction, Transaction};
 
 // Re-export the `educore_core::error::Result` alias for convenience.
 pub use educore_core::error::Result;

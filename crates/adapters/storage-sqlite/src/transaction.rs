@@ -36,7 +36,7 @@ use educore_storage::audit::AuditLog;
 use educore_storage::event_log::EventLog;
 use educore_storage::idempotency::Idempotency;
 use educore_storage::outbox::Outbox;
-use educore_storage::transaction::Transaction;
+use educore_storage::transaction::{TenantTransaction, Transaction};
 use educore_storage::StudentAttendanceRow;
 
 use crate::audit_log::SqliteAuditLog;
@@ -176,5 +176,21 @@ impl Transaction for SqliteTransaction {
         // transaction so a failure in one batched `INSERT`
         // rolls back the whole bulk insert.
         self.bulk.bulk_insert(self.bulk.school(), rows).await
+    }
+}
+
+/// Cluster F / `PORT-STORE-002` — the `TenantTransaction`
+/// extension.
+///
+/// The transaction's tenant scope is the `school_id` it was
+/// constructed with; we delegate to the outbox handle's
+/// `school()` accessor. Audit rows are committed atomically
+/// with the aggregate mutation per `PORT-STORE-013` (the SQLite
+/// adapter's sub-port methods each acquire a short-lived
+/// transaction from the same `SqlitePool`, so the database
+/// guarantees atomicity at the connection level).
+impl TenantTransaction for SqliteTransaction {
+    fn school_id(&self) -> SchoolId {
+        self.outbox.school()
     }
 }

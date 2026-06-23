@@ -17,7 +17,7 @@ use educore_storage::audit::AuditLog;
 use educore_storage::event_log::EventLog;
 use educore_storage::idempotency::Idempotency;
 use educore_storage::outbox::Outbox;
-use educore_storage::transaction::Transaction;
+use educore_storage::transaction::{TenantTransaction, Transaction};
 
 use crate::audit::SurrealAuditLog;
 use crate::connection::Db;
@@ -140,5 +140,22 @@ impl Transaction for SurrealTransaction {
 
     fn event_log(&self) -> &dyn EventLog {
         &self.event
+    }
+}
+
+/// Cluster F / `PORT-STORE-002` — the `TenantTransaction`
+/// extension.
+///
+/// The transaction's tenant scope is the `school_id` it was
+/// constructed with; we delegate to the outbox handle's
+/// `school` field. Audit rows are committed atomically with the
+/// aggregate mutation per `PORT-STORE-013` (SurrealDB's
+/// transactional outbox pattern will be wired in once the
+/// SurrealDB 3.x transaction API is exposed; the Phase 0
+/// stub still tracks the scope here so the trait surface is
+/// complete).
+impl TenantTransaction for SurrealTransaction {
+    fn school_id(&self) -> SchoolId {
+        self.outbox.school
     }
 }

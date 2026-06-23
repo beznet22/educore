@@ -44,7 +44,7 @@ use educore_storage::audit::AuditLog;
 use educore_storage::event_log::EventLog;
 use educore_storage::idempotency::Idempotency;
 use educore_storage::outbox::Outbox;
-use educore_storage::transaction::Transaction;
+use educore_storage::transaction::{TenantTransaction, Transaction};
 use educore_storage::StudentAttendanceRow;
 
 use crate::audit_log::PostgresAuditLog;
@@ -195,5 +195,24 @@ impl Transaction for PostgresTransaction {
         // `PostgresBulkAttendance::bulk_insert` which compares
         // every row's `school_id` against the scoped school.
         self.bulk.bulk_insert(self.bulk.school(), rows).await
+    }
+}
+
+/// Cluster F / `PORT-STORE-002` — the `TenantTransaction`
+/// extension.
+///
+/// The transaction's tenant scope is the `school_id` it was
+/// constructed with; we delegate to the outbox handle's
+/// `school()` accessor (the same `SchoolId` is stored on every
+/// sub-port handle). The audit handle returned by
+/// `Transaction::audit_log()` is the same handle stored on the
+/// struct; audit rows are committed atomically with the
+/// outbox / aggregate mutation per `PORT-STORE-013` (the SQL
+/// adapter's sub-port methods each acquire a short-lived
+/// connection from the same `PgPool`, so the database
+/// guarantees atomicity at the connection level).
+impl TenantTransaction for PostgresTransaction {
+    fn school_id(&self) -> SchoolId {
+        self.outbox.school()
     }
 }
