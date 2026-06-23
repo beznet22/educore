@@ -202,3 +202,106 @@ When all clusters close, the audit's no-gaps gates (per `docs/build-plan.md:1825
 - [ ] `docs/coverage.toml` rows for `tables.md` and `workflows.md` no longer reference missing files
 
 Until all 6 boxes are checked, residual Critical findings remain deploy-blockers.
+
+---
+
+## M. Subagent abort-recovery pattern (from this session)
+
+**Why this section exists.** During this remediation session, multiple subagents were aborted due to `max_turns` or `duration limit exceeded`. This section documents the recovery pattern that emerged so future sessions don't lose work.
+
+### The three outcomes of an aborted subagent
+
+| Outcome | Description | Recovery |
+|---|---|---|
+| **A. Committed before abort** | Agent finished its work and committed, then was killed by the harness | Nothing — work is in git |
+| **B. Staged/unstaged work, no commit** | Agent produced real changes but the commit step was the last thing it tried | **Lead agent recovers manually**: see "Recovery procedure" below |
+| **C. No output** | Agent produced nothing useful (e.g., stuck mid-thought) | **Lead agent retries** with higher turn budget |
+
+### Recovery procedure (for outcome B)
+
+When a subagent aborts and the lead agent sees uncommitted changes via `git status --short`:
+
+1. **Inventory the uncommitted changes:**
+   ```bash
+   git status --short | grep -v "graphify-out"
+   ```
+
+2. **For each modified/added file:**
+   - If it's a new file (??) — likely safe, just verify it compiles
+   - If it's modified (M or M ) — may have build errors from incomplete work
+   - If it's staged (M with leading space) — agent got partway through commit
+
+3. **Verify the workspace still builds:**
+   ```bash
+   cargo build --workspace 2>&1 | tail -3
+   ```
+   If errors, identify which files are broken.
+
+4. **For each build error:**
+   - Read the error message
+   - Look at the offending file
+   - Common errors from this session:
+     - **Type mismatch on `event_type`**: the events crate migration from `&'static str` to `String` left consumers expecting `&str`. Fix: `envelope.event_type.as_str()` or `event_type.to_owned()`
+     - **Missing `pub mod schema`**: a new module file was added but `lib.rs` not updated. Fix: add `pub mod schema;`
+     - **Wrong function signature**: agent created a function with extra parameter. Fix: align with the port trait
+     - **Missing dep**: agent used `futures::executor::block_on` but `futures` isn't a dep. Fix: use `tokio` runtime helper
+   - Fix the error
+   - Re-run `cargo build`
+
+5. **Commit on behalf of the agent:**
+   ```bash
+   git add <fixed files>
+   GIT_EDITOR=true git commit -m "<original commit message, slightly modified>"
+   ```
+
+6. **Verify the commit landed:**
+   ```bash
+   git log -1 --stat
+   ```
+
+7. **Document the recovery** in this tracker's section M (this section)
+
+### Tuning parameters to reduce aborts
+
+Future subagent launches should use these turn budgets:
+
+| Task type | max_turns | token_budget | max_duration |
+|---|---|---|---|
+| Single-file refactor | 60-80 | 60k | 600s |
+| Cross-crate coordination (e.g., QW-7+QW-8) | 100-120 | 120k | 900s |
+| Multi-file adapter implementation | **150-200** | **150k** | **1500s** |
+| Macro / proc-macro work | 100-150 | 100k | 1200s |
+| Lint extension (multi-direction) | 80-100 | 100k | 900s |
+| Per-domain workflows.rs file | 150 | 150k | 1200s |
+
+**Lesson learned:** subagents reading many files in Phase 1 (10+ spec files) then writing in Phase 2 need 80-100 turns minimum. Default to **max_turns=150** unless the task is trivial.
+
+### Aborted-agent recovery log (this session)
+
+| Agent ID | Task | Outcome | Recovery |
+|---|---|---|---|
+| `57553e56` | QW-7 JWT secret loading | C — no commit | Discarded + retried as part of `db72274` (QW-7+QW-8 coordinated) |
+| `01245b16` | QW-8 rate limiting | C — no commit | Discarded + retried as part of `db72274` |
+| `6d6d6f4a` | Cluster D parity + matrix | B — partial, code broken | Discarded + retried as `3528cfb` |
+| `acc77291` | Cluster A stage 3 postgres | A — already in `d18d8ee` | Lead's commit accidentally absorbed the agent's staged work |
+| `9404a380` | Cluster A stage 3 mysql | B — staged, signature wrong | Lead fixed: `db288ff` → wait, that's wrong. `d7ae99c` |
+| `49e78cb1` | Cluster A stage 3 sqlite | A — committed `02a2e63` | (subagent committed before being marked aborted) |
+| `54dd54df` | Cluster A stage 3 surrealdb | B — staged, return-type wrong | Lead fixed: `d7ae99c` |
+| `c3713d9b` | Cluster B subscribers | B — partial | Discarded + retried (combined with QW-8 in `db72274` later) |
+| `1139ced8` | Cluster B workflows tests | B — partial (1 domain only) | Discarded + retried as `81ef68b` (academic) + per-domain agents |
+| `7b00123b` | Cluster B outbox relay | A — relay_envelope.rs in `cbb7d3a` | Lead did bridging work + `6f6cb87` |
+| `6f27037a` | Cluster B relay wiring retry | B — partial, Cargo.toml dep missing | Lead committed `1db5ad8` (Cargo.toml cleanup) |
+| `f99532be` | Cluster B hr-library (first attempt) | C — no output | Discarded + retried as `5204a82` |
+| `5cee76aa`, `bafdf739`, `3d1d49ad`, `90f3409a`, `8afdb7d5`, `9b206603`, `1bc7bad0`, `2614797`, `380033a`, `df0bc02`, `df0b74c`, `3c45e28`, `5204a82` | Cluster B per-domain workflows | A — all committed | Nothing to do |
+
+### Future improvement (deferred)
+
+A `scripts/recover-aborted-agents.sh` automation that:
+1. Detects uncommitted changes after a subagent abort
+2. Runs `cargo build` to identify errors
+3. Applies common fixes (the 4 listed in step 4 above)
+4. Commits with the original commit message
+5. Notifies the lead agent
+
+This is out of scope for this remediation session but should be a follow-up PR to `crates/tools/cli/` or a new `crates/tools/recovery/` crate.
+
