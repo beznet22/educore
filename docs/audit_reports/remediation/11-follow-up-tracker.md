@@ -307,11 +307,11 @@ This is out of scope for this remediation session but should be a follow-up PR t
 
 ---
 
-## N. Cluster F status (post-Cluster F partial)
+## N. Cluster F status (Cluster F COMPLETE)
 
-After Cluster F work (5 commits: `1952864`, `b8dc5e7`, `d414782`, `dd429ed`, `eba1ae3`):
+After Cluster F work (6 commits: `1952864`, `b8dc5e7`, `d414782`, `dd429ed`, `eba1ae3`, `e700c67`):
 
-### Completed (4 of 6 sub-clusters)
+### Completed (6 of 6 sub-clusters) — CLUSTER F COMPLETE
 
 | Crate | Findings closed | Tests added |
 |---|---|---|
@@ -319,13 +319,9 @@ After Cluster F work (5 commits: `1952864`, `b8dc5e7`, `d414782`, `dd429ed`, `eb
 | `educore-files` | ADAPT-FILE-003 (storage quota + tenant guard) | 6 |
 | `educore-payment` | ADAPT-PAY-005, 008 (webhook signature + signing key) | 6 |
 | `educore-integrations` | ADAPT-INT-005, 007, 009 (retry cap, signing-key rotation, replay protection) | 27 |
+| `educore-storage` (port trait) | PORT-STORE-002, PORT-STORE-013 (TenantContext + atomic audit) | ~30 (postgres/mysql/sqlite/surrealdb/testkit) |
 
-Total: 10 findings closed, 56 new tests passing.
-
-### Still open in Cluster F
-
-- **PORT-STORE-002**: `Transaction` port-trait needs `TenantContext` propagation. The first parallel attempt had 4 agents modifying the same shared files; the work was reverted. Pending a single-agent retry with strict sequencing (port first, then 4 adapters, then testkit).
-- **PORT-STORE-013**: `Transaction::commit` should atomically write audit rows with the aggregate mutation. Same recovery situation as PORT-STORE-002.
+Total: 12 findings closed, ~86 new tests passing.
 
 ### Isolated-scope pattern (refined)
 
@@ -333,7 +329,7 @@ After the first Cluster F attempt aborted due to overlapping changes across 4 pa
 
 > **STRICT SCOPE:** Only ADD a new file `<path>`. Do NOT modify any other file. Tests go in `<test_path>`.
 
-Result: 3 of 4 agents completed cleanly; 1 needed a small test-fix commit by the lead.
+Result: 3 of 4 isolated-scope agents completed cleanly; 1 needed a small test-fix commit by the lead. The final storage-transaction PR (PORT-STORE-002/013) used the **single-agent sequential** pattern with 250 turns / 250k tokens.
 
 **Recommendation for future cross-cutting work:** when the work would touch shared infrastructure (port traits, umbrella crates, testkit), use ONE agent with a high turn budget (200+) doing sequential work. Reserve parallel agents for isolated file additions.
 
@@ -345,5 +341,6 @@ Result: 3 of 4 agents completed cleanly; 1 needed a small test-fix commit by the
 |---|---|---|
 | `remediation-checkpoint-1` | `4d403d1` (Migration fix) | Cluster A, B, D done; ~1,416 lib tests pass |
 | `remediation-checkpoint-2` | `eba1ae3` (Cluster F payment test fix) | Cluster A, B, D, F (partial) done; ~1,425 lib tests pass |
+| `remediation-checkpoint-3` | `e700c67` (Cluster F storage transaction) | Cluster A, B, D, F (complete) done; ~1,500 lib tests pass |
 
 
