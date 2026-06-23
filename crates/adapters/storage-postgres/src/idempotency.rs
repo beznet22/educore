@@ -37,7 +37,9 @@ use uuid::Uuid;
 use educore_core::error::Result;
 use educore_core::ids::{IdempotencyKey, Identifier as _, SchoolId};
 use educore_core::value_objects::Timestamp;
-use educore_storage::idempotency::{Idempotency, IdempotencyCompositeKey, IdempotencyRecord};
+use educore_storage::idempotency::{
+    Idempotency, IdempotencyCompositeKey, IdempotencyOutcome, IdempotencyRecord,
+};
 
 use crate::connection_helpers::{bytes_to_json_value, json_value_to_bytes};
 
@@ -206,6 +208,137 @@ impl Idempotency for PostgresIdempotency {
         .await
         .map_err(educore_core::error::DomainError::infrastructure)?;
         Ok(())
+    }
+
+    /// QW-12 (PR 4 Phase B) — Postgres adapter override of
+    /// [`Idempotency::record_outcome`].
+    ///
+    /// Closes audit finding ADAPTER-PG-009. The default
+    /// implementation delegates to [`Self::record`] and
+    /// therefore cannot distinguish "newly written" from
+    /// "duplicate-with-different-outcome" — it returns
+    /// `Recorded` for every successful underlying write and
+    /// surfaces a duplicate-key collision as
+    /// `Err(DomainError::Conflict)`, which the engine's
+    /// dispatcher cannot distinguish from a true
+    /// infrastructure failure. This override closes the gap
+    /// for the Postgres adapter by issuing the `INSERT`
+    /// **without** `ON CONFLICT DO NOTHING` and inspecting
+    /// the returned error: a PG `unique_violation`
+    /// (SQLSTATE 23505) on the composite primary key
+    /// `(school_id, command_type, idempotency_key)` is the
+    /// signal that a row already exists.
+    ///
+    /// On collision we `SELECT` the existing row and
+    /// compare outcome bytes:
+    ///
+    /// - Same outcome bytes → `Recorded` (idempotent
+    ///   re-insert: the engine's at-least-once retry case).
+    /// - Different outcome bytes → `Conflict { existing }`
+    ///   so the caller can replay the original outcome.
+    ///
+    /// See [`Idempotency::record_outcome`] for the full port
+    /// contract and `docs/decisions/ADR-014-Idempotency.md`
+    /// for the design rationale.
+    #[instrument(skip(self, record))]
+    async fn record_outcome(&self, record: IdempotencyRecord) -> Result<IdempotencyOutcome> {
+        // Generate the synthetic columns the DDL requires
+        // but the record does not carry. Same logic as
+        // `record` so the row layout is identical between
+        // the two write paths.
+        let command_id = Uuid::now_v7();
+        let recorded_at = record.recorded_at.as_datetime();
+        let expires_at = recorded_at
+            .checked_add_signed(Duration::hours(DEFAULT_RETENTION_HOURS))
+            .unwrap_or(recorded_at);
+        let outcome = envelope_outcome(&record);
+
+        // Attempt the INSERT. Unlike `record`, we do NOT
+        // include `ON CONFLICT DO NOTHING` — we need the
+        // driver to surface the unique-key violation so we
+        // can branch on it. All seven parameters are bound
+        // via `sqlx`'s positional parameters; no string
+        // interpolation.
+        let insert = sqlx::query(
+            "INSERT INTO idempotency (\
+                school_id, command_type, idempotency_key, \
+                command_id, outcome, recorded_at, expires_at\
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        )
+        .bind(record.school_id.as_uuid())
+        .bind(record.command_type)
+        .bind(record.idempotency_key.as_uuid())
+        .bind(command_id)
+        .bind(Json(&outcome))
+        .bind(recorded_at)
+        .bind(expires_at)
+        .execute(&self.pool)
+        .await;
+
+        match insert {
+            Ok(_) => Ok(IdempotencyOutcome::Recorded),
+            Err(e) => {
+                // Inspect the database error. A unique-key
+                // violation on the composite primary key is
+                // PG SQLSTATE 23505 (the `unique_violation`
+                // class; see the [PostgreSQL error codes
+                // appendix][1]). The constant is not
+                // re-exported from `sqlx::postgres`, so we
+                // match the SQLSTATE string directly.
+                //
+                // [1]: https://www.postgresql.org/docs/current/errcodes-appendix.html
+                const PG_UNIQUE_VIOLATION: &str = "23505";
+                let is_unique_violation = e.as_database_error().and_then(|db| db.code()).as_deref()
+                    == Some(PG_UNIQUE_VIOLATION);
+
+                if !is_unique_violation {
+                    // Any other error (lost connection,
+                    // deadlock, serialisation error, etc.)
+                    // is an infrastructure failure per the
+                    // port contract.
+                    return Err(educore_core::error::DomainError::infrastructure(e));
+                }
+
+                // Unique-key violation: a row already exists
+                // for this composite key. Fetch it so we can
+                // decide between an idempotent re-insert
+                // (same outcome bytes) and a hard conflict
+                // (different outcome bytes).
+                let key = IdempotencyCompositeKey {
+                    school_id: record.school_id,
+                    command_type: record.command_type,
+                    idempotency_key: record.idempotency_key,
+                };
+                let existing = match self.lookup(key).await? {
+                    Some(rec) => rec,
+                    // Race: the conflicting row was purged
+                    // (e.g. by `purge_older_than`) between
+                    // our INSERT and our SELECT. There is no
+                    // "existing" record to return, so we
+                    // cannot report `Conflict { existing }`.
+                    // We surface the original DB error as
+                    // an infrastructure failure rather
+                    // than retrying transparently — the
+                    // engine's dispatcher will see the
+                    // error and decide whether to retry the
+                    // whole command.
+                    None => {
+                        return Err(educore_core::error::DomainError::infrastructure(e));
+                    }
+                };
+
+                // Same outcome bytes → idempotent re-insert
+                // (engine's at-least-once retry case).
+                // Different outcome bytes → hard conflict;
+                // surface the pre-existing record so the
+                // caller can replay its outcome.
+                if existing.outcome == record.outcome {
+                    Ok(IdempotencyOutcome::Recorded)
+                } else {
+                    Ok(IdempotencyOutcome::Conflict { existing })
+                }
+            }
+        }
     }
 
     #[instrument(skip(self, cutoff))]
