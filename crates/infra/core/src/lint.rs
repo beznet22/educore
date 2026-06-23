@@ -1003,9 +1003,69 @@ pub mod runner {
         out
     }
 
-    /// Coverage-matrix sync: every `Tested` row in
-    /// `docs/coverage.toml` has a `tests` path that exists on disk.
-    pub fn check_coverage_matrix(repo_root: &Path, _report: &mut LintReport) {
+    /// Parses a single `key = value` line from a TOML stanza.
+    /// Returns `(key, value)` where `value` is the unquoted string
+    /// (trailing quotes stripped, no escape processing). Returns
+    /// `None` for non-assignment lines, multi-line values, or
+    /// array/table assignments.
+    ///
+    /// The lint only consumes string-valued scalars (`id`,
+    /// `status`, `tests`), so the parser stays narrow on purpose.
+    /// A full `toml` crate is reserved for Phase 1+ follow-ups.
+    fn parse_toml_kv(line: &str) -> Option<(String, String)> {
+        let eq = line.find('=')?;
+        let key = line[..eq].trim();
+        let rest = line[eq + 1..].trim();
+        if key.is_empty() || !key.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+            return None;
+        }
+        // String literal: "..." or '...'. Skip leading/trailing
+        // whitespace inside the quotes.
+        let bytes = rest.as_bytes();
+        let quote = *bytes.first()?;
+        if quote != b'"' && quote != b'\'' {
+            // Non-string scalar (number, bool, array, inline
+            // table). The lint does not need these.
+            return None;
+        }
+        let quote_char = quote as char;
+        let close = rest[1..].rfind(quote_char)? + 1;
+        let value = rest[1..close].trim().to_string();
+        Some((key.to_string(), value))
+    }
+
+    /// Coverage-matrix sync (item 5 of the No-Gaps Gates):
+    ///
+    /// 1. Every `[[row]]` in `docs/coverage.toml` whose
+    ///    `status = "Tested"` MUST have a `tests = "..."` field
+    ///    AND that path must exist on disk. Violations:
+    ///    - `coverage_matrix:missing_tests_field` — `Tested` row
+    ///      with no `tests` field.
+    ///    - `coverage_matrix:missing_tests_path` — `Tested` row
+    ///      whose `tests` path does not exist.
+    /// 2. Every file under `crates/**/tests/*.rs` on disk MUST be
+    ///    referenced by at least one `[[row]]` (regardless of
+    ///    status). Violation:
+    ///    - `coverage_matrix:orphan_tests_path` — file exists but
+    ///      no row references it.
+    ///
+    /// The parser is deliberately line-based: we accumulate the
+    /// current `[[row]]` block's `id`, `status`, and `tests`
+    /// fields as we encounter them, and finalize the row when we
+    /// hit the next `[[row]]` header (or EOF). This is enough for
+    /// the well-formed, hand-edited matrix the engine ships; the
+    /// full `toml` parser is reserved for Phase 1+ follow-ups.
+    ///
+    /// Edge cases:
+    /// - A missing `docs/coverage.toml` is allowed during a fresh
+    ///   scaffold and is not a violation (build plan Phase 0).
+    /// - Inline `# comments` and blank lines are skipped, but
+    ///   `# ...` substrings inside string values are not (the
+    ///   matrix never uses them in practice).
+    /// - Paths are normalised against `repo_root`. The `tests`
+    ///   field may be a comma-separated list of paths; each is
+    ///   verified independently.
+    pub fn check_coverage_matrix(repo_root: &Path, report: &mut LintReport) {
         let toml_path = repo_root.join("docs").join("coverage.toml");
         let Ok(contents) = fs::read_to_string(&toml_path) else {
             // The matrix is allowed to be absent during a fresh
@@ -1014,41 +1074,145 @@ pub mod runner {
             return;
         };
 
-        // Naive line-by-line scan for `status = "Tested"` rows that
-        // are missing a `tests = "..."` field on the same stanza.
-        // The full TOML parser is reserved for Phase 1+; this
-        // lightweight pass is enough to catch the common drift.
-        let mut status_tested: Option<(String, usize)> = None;
+        // (id, status, tests, header_line)
+        let mut rows: Vec<(String, String, Option<String>, usize)> = Vec::new();
+        let mut cur_id = String::new();
+        let mut cur_status = String::new();
+        let mut cur_tests: Option<String> = None;
+        let mut cur_header_line: usize = 0;
         for (idx, line) in contents.lines().enumerate() {
             let trimmed = line.trim();
-            if trimmed.starts_with("id = ") {
-                status_tested = None;
-            }
-            if let Some(rest) = trimmed.strip_prefix("status = ") {
-                let value = rest.trim().trim_matches('"');
-                if value == "Tested" {
-                    status_tested = Some((String::new(), idx + 1));
+            // Row header: finalize the previous block first.
+            if trimmed.starts_with("[[row]]") {
+                if !cur_id.is_empty() || !cur_status.is_empty() || cur_tests.is_some() {
+                    rows.push((
+                        std::mem::take(&mut cur_id),
+                        std::mem::take(&mut cur_status),
+                        cur_tests.take(),
+                        cur_header_line,
+                    ));
+                } else {
+                    cur_id = String::new();
+                    cur_status = String::new();
+                    cur_tests = None;
                 }
-            }
-            if trimmed.starts_with("tests = ") {
-                if let Some((_, line_no)) = status_tested.as_mut() {
-                    *line_no = idx + 1;
-                }
-            }
-            if trimmed.is_empty() || trimmed.starts_with("#") {
+                cur_header_line = idx + 1;
                 continue;
+            }
+            // Blank lines and comments reset nothing but contribute nothing.
+            if trimmed.is_empty() || trimmed.starts_with('#') {
+                continue;
+            }
+            // Field assignments: `key = "value"` (string). We
+            // only consume string-valued scalars (`id`, `status`,
+            // `tests`); other field types are ignored.
+            if let Some((key, value)) = parse_toml_kv(trimmed) {
+                match key.as_str() {
+                    "id" => cur_id = value,
+                    "status" => cur_status = value,
+                    "tests" => cur_tests = Some(value),
+                    _ => {}
+                }
+            }
+        }
+        // Flush the trailing block (file may not end with a newline).
+        if !cur_id.is_empty() || !cur_status.is_empty() || cur_tests.is_some() {
+            rows.push((cur_id, cur_status, cur_tests, cur_header_line));
+        }
+
+        // Verify every Tested row and collect referenced tests paths.
+        let mut referenced_tests: std::collections::HashSet<String> =
+            std::collections::HashSet::new();
+        for (id, status, tests, header_line) in &rows {
+            if status != "Tested" {
+                if let Some(t) = tests {
+                    for path in t.split(',') {
+                        let p = path.trim();
+                        if !p.is_empty() {
+                            referenced_tests.insert(p.to_string());
+                        }
+                    }
+                }
+                continue;
+            }
+            match tests {
+                None => {
+                    report.violations.push(Violation {
+                        check: "coverage_matrix:missing_tests_field".to_string(),
+                        file: toml_path
+                            .strip_prefix(repo_root)
+                            .unwrap_or(&toml_path)
+                            .to_path_buf(),
+                        line: Some(*header_line),
+                        message: format!(
+                            "coverage row `{id}` has status=\"Tested\" but no `tests = \"...\"` field"
+                        ),
+                    });
+                }
+                Some(t) => {
+                    // The matrix allows a comma-separated list of
+                    // paths (e.g. one row covering both the
+                    // domain aggregate and the integration test).
+                    // Each path is verified independently.
+                    let mut missing: Vec<&str> = Vec::new();
+                    for path in t.split(',') {
+                        let p = path.trim();
+                        if p.is_empty() {
+                            continue;
+                        }
+                        referenced_tests.insert(p.to_string());
+                        let abs = repo_root.join(p);
+                        if !abs.exists() {
+                            missing.push(p);
+                        }
+                    }
+                    if !missing.is_empty() {
+                        report.violations.push(Violation {
+                            check: "coverage_matrix:missing_tests_path".to_string(),
+                            file: toml_path
+                                .strip_prefix(repo_root)
+                                .unwrap_or(&toml_path)
+                                .to_path_buf(),
+                            line: Some(*header_line),
+                            message: format!(
+                                "coverage row `{id}` references tests path(s) {} which do not exist on disk",
+                                missing
+                                    .iter()
+                                    .map(|p| format!("`{p}`"))
+                                    .collect::<Vec<_>>()
+                                    .join(", ")
+                            ),
+                        });
+                    }
+                }
             }
         }
 
-        // The lightweight scan above flags *every* `Tested` row that
-        // does not have a `tests = ...` field within its stanza.
-        // We don't have a full parser, so the actual per-row
-        // verification is delegated to Phase 1+ (the full lint
-        // sub-module). For now, this pass produces a no-op when
-        // the matrix is well-formed; it surfaces as a violation
-        // when the matrix is hand-edited and a `Tested` row is
-        // left without a `tests` path.
-        let _ = status_tested;
+        // Orphan check: every `crates/**/tests/*.rs` must be referenced.
+        let crates_dir = repo_root.join("crates");
+        walk_dir(&crates_dir, &mut |path| {
+            if path.extension().and_then(|s| s.to_str()) != Some("rs") {
+                return;
+            }
+            if !path.components().any(|c| c.as_os_str() == "tests") {
+                return;
+            }
+            let Some(rel) = path.strip_prefix(repo_root).ok() else {
+                return;
+            };
+            // Normalise to forward slashes for TOML-consistent comparison.
+            let rel_str = rel.to_string_lossy().replace('\\', "/");
+            if !referenced_tests.contains(&rel_str) {
+                report.violations.push(Violation {
+                    check: "coverage_matrix:orphan_tests_path".to_string(),
+                    file: rel.to_path_buf(),
+                    line: None,
+                    message: format!(
+                        "tests path `{rel_str}` exists on disk but no `[[row]]` in docs/coverage.toml references it"
+                    ),
+                });
+            }
+        });
     }
 
     /// Anti-pattern scan: forbids `unwrap`/`expect`/`panic`/`todo!`/
@@ -1664,6 +1828,178 @@ mod tests {
             !code_to_spec.iter().any(|x| x.message.contains("WidgetId")),
             "did not expect violation for re-exported `WidgetId`, got: {:#?}",
             code_to_spec
+        );
+    }
+
+    // ---- Parity check tests ----
+
+    /// Helper: lay down a domain crate with the given `aggregate.rs`
+    /// source and the given `tables.md` content, then run the lint.
+    /// Mirrors the layout that `check_parity` expects (one spec
+    /// row per aggregate in the second column of the markdown
+    /// table).
+    fn scan_parity(label: &str, aggregate_rs: &str, tables_md: &str) -> Vec<Violation> {
+        let tmp = fresh_tempdir(label);
+        let spec_dir = tmp.0.join("docs/specs/test");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        std::fs::write(spec_dir.join("tables.md"), tables_md).unwrap();
+        let code_dir = tmp.0.join("crates/domains/test/src");
+        std::fs::create_dir_all(&code_dir).unwrap();
+        std::fs::write(code_dir.join("aggregate.rs"), aggregate_rs).unwrap();
+        std::fs::write(code_dir.join("entities.rs"), "").unwrap();
+        run(&tmp.0).violations
+    }
+
+    #[test]
+    fn parity_missing_macro_application_is_reported() {
+        // `tables.md` declares `Widget` AND `Gadget` aggregates.
+        // Only `Widget` has a `#[derive(DomainQuery)]` struct in
+        // `aggregate.rs`. The lint must report `Gadget` as a
+        // `parity:missing_macro` violation.
+        let tables_md = "\
+| Table             | Aggregate | Notes       |
+| ----------------- | --------- | ----------- |
+| `test_widgets`    | Widget    | Has macro   |
+| `test_gadgets`    | Gadget    | Missing one |
+";
+        let aggregate_rs = "\
+#[derive(Debug, Clone, DomainQuery)]
+pub struct Widget { _phantom: () }
+";
+        let v = scan_parity("parity-missing-macro", aggregate_rs, tables_md);
+        let parity: Vec<_> = v.iter().filter(|x| x.check.starts_with("parity:")).collect();
+        assert_eq!(parity.len(), 1, "violations = {:#?}", parity);
+        let only = parity[0];
+        assert_eq!(only.check, "parity:missing_macro");
+        assert!(
+            only.message.contains("Gadget"),
+            "expected Gadget in message, got: {}",
+            only.message
+        );
+        assert!(
+            only.message.contains("tables.md"),
+            "expected tables.md in message, got: {}",
+            only.message
+        );
+    }
+
+    #[test]
+    fn parity_missing_spec_row_is_reported() {
+        // `tables.md` only declares `Widget`. `aggregate.rs`
+        // derives `DomainQuery` for both `Widget` AND `Orphan`.
+        // The lint must report `Orphan` as a
+        // `parity:missing_spec_row` violation.
+        let tables_md = "\
+| Table             | Aggregate | Notes |
+| ----------------- | --------- | ----- |
+| `test_widgets`    | Widget    | ok    |
+";
+        let aggregate_rs = "\
+#[derive(Debug, Clone, DomainQuery)]
+pub struct Widget { _phantom: () }
+#[derive(Debug, Clone, DomainQuery)]
+pub struct Orphan { _phantom: () }
+";
+        let v = scan_parity("parity-missing-spec-row", aggregate_rs, tables_md);
+        let parity: Vec<_> = v.iter().filter(|x| x.check.starts_with("parity:")).collect();
+        assert_eq!(parity.len(), 1, "violations = {:#?}", parity);
+        let only = parity[0];
+        assert_eq!(only.check, "parity:missing_spec_row");
+        assert!(
+            only.message.contains("Orphan"),
+            "expected Orphan in message, got: {}",
+            only.message
+        );
+    }
+
+    // ---- Coverage-matrix sync tests ----
+
+    /// Helper: lay down `docs/coverage.toml` plus optional
+    /// `crates/...` fixtures, then run the lint.
+    fn scan_coverage_matrix(
+        label: &str,
+        coverage_toml: &str,
+        crates_layout: &[(&str, &str)],
+    ) -> Vec<Violation> {
+        let tmp = fresh_tempdir(label);
+        std::fs::create_dir_all(tmp.0.join("docs")).unwrap();
+        std::fs::write(tmp.0.join("docs/coverage.toml"), coverage_toml).unwrap();
+        for (rel_path, contents) in crates_layout {
+            let full = tmp.0.join(rel_path);
+            if let Some(parent) = full.parent() {
+                std::fs::create_dir_all(parent).unwrap();
+            }
+            std::fs::write(&full, contents).unwrap();
+        }
+        run(&tmp.0).violations
+    }
+
+    #[test]
+    fn coverage_matrix_missing_tests_path_is_reported() {
+        // A `Tested` row whose `tests = "..."` points to a file
+        // that does NOT exist on disk. The lint must flag it.
+        let coverage = "\
+[[row]]
+id = \"orphan_tested\"
+status = \"Tested\"
+tests = \"crates/domains/test/tests/ghost_e2e.rs\"
+";
+        let v = scan_coverage_matrix("coverage-missing-path", coverage, &[]);
+        let matrix: Vec<_> = v
+            .iter()
+            .filter(|x| x.check.starts_with("coverage_matrix:"))
+            .collect();
+        assert_eq!(matrix.len(), 1, "violations = {:#?}", matrix);
+        let only = matrix[0];
+        assert_eq!(only.check, "coverage_matrix:missing_tests_path");
+        assert!(
+            only.message.contains("ghost_e2e.rs"),
+            "expected ghost_e2e.rs in message, got: {}",
+            only.message
+        );
+        assert!(
+            only.message.contains("orphan_tested"),
+            "expected row id in message, got: {}",
+            only.message
+        );
+    }
+
+    #[test]
+    fn coverage_matrix_orphan_tests_path_is_reported() {
+        // A tests file that exists on disk but no row in
+        // coverage.toml references it. The lint must flag it.
+        // We also add a row that DOES reference a different
+        // tests file, so the orphan check is the only thing
+        // that fires (no `missing_tests_path` violation for
+        // the referenced row, because the referenced file
+        // exists).
+        let coverage = "\
+[[row]]
+id = \"referenced_row\"
+status = \"Implemented\"
+tests = \"crates/domains/test/tests/referenced.rs\"
+";
+        let crates = &[
+            ("crates/domains/test/tests/referenced.rs", "// referenced\n"),
+            ("crates/domains/test/tests/orphan.rs", "// orphan\n"),
+        ];
+        let v = scan_coverage_matrix("coverage-orphan", coverage, crates);
+        let matrix: Vec<_> = v
+            .iter()
+            .filter(|x| x.check.starts_with("coverage_matrix:"))
+            .collect();
+        assert_eq!(matrix.len(), 1, "violations = {:#?}", matrix);
+        let only = matrix[0];
+        assert_eq!(only.check, "coverage_matrix:orphan_tests_path");
+        assert!(
+            only.message.contains("orphan.rs"),
+            "expected orphan.rs in message, got: {}",
+            only.message
+        );
+        assert!(
+            !matrix.iter().any(|x| x.message.contains("missing_tests_path")),
+            "did not expect missing_tests_path violation, got: {:#?}",
+            matrix
         );
     }
 }
