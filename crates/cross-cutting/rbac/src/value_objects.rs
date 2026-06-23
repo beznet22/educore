@@ -5808,47 +5808,45 @@ impl fmt::Display for TwoFactorMode {
 }
 
 #[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::panic,
-    clippy::dbg_macro,
-    clippy::manual_str_repeat
-)]
 mod tests {
     use super::*;
 
     #[test]
-    fn capability_round_trip_via_display_and_from_str() {
+    fn capability_round_trip_via_display_and_from_str(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         for c in Capability::all() {
             let s = c.to_string();
-            let parsed = Capability::from_str(&s).unwrap();
+            let parsed = Capability::from_str(&s)?;
             assert_eq!(parsed, *c);
         }
+        Ok(())
     }
 
     #[test]
-    fn assessment_capabilities_round_trip_and_resolve_to_assessment_domain() {
+    fn assessment_capabilities_round_trip_and_resolve_to_assessment_domain(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let mut count = 0u32;
         for c in Capability::all() {
             let s = c.as_str();
             if s.starts_with("Assessment.") {
-                let parsed = Capability::from_str(s).unwrap();
+                let parsed = Capability::from_str(s)?;
                 assert_eq!(parsed, *c);
                 assert_eq!(c.domain(), CapabilityDomain::Assessment);
                 count += 1;
             }
         }
         assert_eq!(count, 31, "expected 31 Assessment.* capabilities");
+        Ok(())
     }
 
     #[test]
-    fn attendance_capabilities_round_trip_and_resolve_to_attendance_domain() {
+    fn attendance_capabilities_round_trip_and_resolve_to_attendance_domain(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let mut count = 0u32;
         for c in Capability::all() {
             let s = c.as_str();
             if s.starts_with("Attendance.") {
-                let parsed = Capability::from_str(s).unwrap();
+                let parsed = Capability::from_str(s)?;
                 assert_eq!(parsed, *c, "round-trip failed for {s}");
                 assert_eq!(
                     c.domain(),
@@ -5862,30 +5860,34 @@ mod tests {
             count, 24,
             "expected 24 Attendance.* capabilities (got {count})"
         );
+        Ok(())
     }
 
     #[test]
-    fn hr_capabilities_round_trip_and_resolve_to_hr_domain() {
+    fn hr_capabilities_round_trip_and_resolve_to_hr_domain(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let mut count = 0u32;
         for c in Capability::all() {
             let s = c.as_str();
             if s.starts_with("Hr.") {
-                let parsed = Capability::from_str(s).unwrap();
+                let parsed = Capability::from_str(s)?;
                 assert_eq!(parsed, *c, "round-trip failed for {s}");
                 assert_eq!(c.domain(), CapabilityDomain::Hr, "domain mismatch for {s}");
                 count += 1;
             }
         }
         assert_eq!(count, 92, "expected 92 Hr.* capabilities (got {count})");
+        Ok(())
     }
 
     #[test]
-    fn finance_capabilities_round_trip_and_resolve_to_finance_domain() {
+    fn finance_capabilities_round_trip_and_resolve_to_finance_domain(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let mut count = 0u32;
         for c in Capability::all() {
             let s = c.as_str();
             if s.starts_with("Finance.") {
-                let parsed = Capability::from_str(s).unwrap();
+                let parsed = Capability::from_str(s)?;
                 assert_eq!(parsed, *c, "round-trip failed for {s}");
                 assert_eq!(
                     c.domain(),
@@ -5899,15 +5901,17 @@ mod tests {
             count, 114,
             "expected 114 Finance.* capabilities (4 legacy placeholders + 110 Phase 7; got {count})"
         );
+        Ok(())
     }
 
     #[test]
-    fn library_capabilities_round_trip_and_resolve_to_library_domain() {
+    fn library_capabilities_round_trip_and_resolve_to_library_domain(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let mut count = 0u32;
         for c in Capability::all() {
             let s = c.as_str();
             if s.starts_with("Library.") {
-                let parsed = Capability::from_str(s).unwrap();
+                let parsed = Capability::from_str(s)?;
                 assert_eq!(parsed, *c, "round-trip failed for {s}");
                 assert_eq!(
                     c.domain(),
@@ -5921,15 +5925,17 @@ mod tests {
             count, 26,
             "expected 26 Library.* capabilities (4 Phase 2 placeholders deduplicated during implementation; got {count})"
         );
+        Ok(())
     }
 
     #[test]
-    fn documents_capabilities_round_trip_and_resolve_to_documents_domain() {
+    fn documents_capabilities_round_trip_and_resolve_to_documents_domain(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let mut count = 0u32;
         for c in Capability::all() {
             let s = c.as_str();
             if s.starts_with("Documents.") {
-                let parsed = Capability::from_str(s).unwrap();
+                let parsed = Capability::from_str(s)?;
                 assert_eq!(parsed, *c, "round-trip failed for {s}");
                 assert_eq!(
                     c.domain(),
@@ -5943,15 +5949,17 @@ mod tests {
             count, 15,
             "expected 15 Documents.* capabilities (4 Phase 2 placeholders + 11 Phase 11 net-new; got {count})"
         );
+        Ok(())
     }
 
     #[test]
-    fn cms_capabilities_round_trip_and_resolve_to_cms_domain() {
+    fn cms_capabilities_round_trip_and_resolve_to_cms_domain(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let mut count = 0u32;
         for c in Capability::all() {
             let s = c.as_str();
             if s.starts_with("Cms.") && !s.starts_with("Cms.Read") {
-                let parsed = Capability::from_str(s).unwrap();
+                let parsed = Capability::from_str(s)?;
                 assert_eq!(parsed, *c, "round-trip failed for {s}");
                 assert_eq!(c.domain(), CapabilityDomain::Cms, "domain mismatch for {s}");
                 count += 1;
@@ -5966,15 +5974,17 @@ mod tests {
             count >= 80,
             "expected >= 80 Cms.* capabilities (got {count})"
         );
+        Ok(())
     }
 
     #[test]
-    fn events_capabilities_round_trip_and_resolve_to_events_domain() {
+    fn events_capabilities_round_trip_and_resolve_to_events_domain(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let mut count = 0u32;
         for c in Capability::all() {
             let s = c.as_str();
             if s.starts_with("Events.") {
-                let parsed = Capability::from_str(s).unwrap();
+                let parsed = Capability::from_str(s)?;
                 assert_eq!(parsed, *c, "round-trip failed for {s}");
                 assert_eq!(
                     c.domain(),
@@ -5991,10 +6001,12 @@ mod tests {
             count >= 30,
             "expected >= 30 Events.* capabilities (got {count})"
         );
+        Ok(())
     }
 
     #[test]
-    fn settings_capabilities_round_trip_and_resolve_to_settings_domain() {
+    fn settings_capabilities_round_trip_and_resolve_to_settings_domain(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         // Phase 14: 66 Settings.* capabilities per
         // `docs/specs/settings/permissions.md`. The Phase 2
         // `SettingsManage` placeholder is REPLACED by the
@@ -6004,7 +6016,7 @@ mod tests {
         for c in Capability::all() {
             let s = c.as_str();
             if s.starts_with("Settings.") {
-                let parsed = Capability::from_str(s).unwrap();
+                let parsed = Capability::from_str(s)?;
                 assert_eq!(parsed, *c, "round-trip failed for {s}");
                 assert_eq!(
                     c.domain(),
@@ -6030,10 +6042,12 @@ mod tests {
             count >= 66,
             "expected >= 66 Settings.* capabilities (got {count})"
         );
+        Ok(())
     }
 
     #[test]
-    fn operations_capabilities_round_trip_and_resolve_to_operations_domain() {
+    fn operations_capabilities_round_trip_and_resolve_to_operations_domain(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         // Phase 14: 34 Operations.* capabilities per
         // `docs/specs/operations/permissions.md`. The Phase 2
         // `OperationsManage` placeholder is REPLACED by the
@@ -6043,7 +6057,7 @@ mod tests {
         for c in Capability::all() {
             let s = c.as_str();
             if s.starts_with("Operations.") {
-                let parsed = Capability::from_str(s).unwrap();
+                let parsed = Capability::from_str(s)?;
                 assert_eq!(parsed, *c, "round-trip failed for {s}");
                 assert_eq!(
                     c.domain(),
@@ -6069,12 +6083,13 @@ mod tests {
             count >= 34,
             "expected >= 34 Operations.* capabilities (got {count})"
         );
+        Ok(())
     }
 
     #[test]
     fn capability_from_str_unknown_returns_err() {
-        let err = Capability::from_str("Foo.Bar.Baz").unwrap_err();
-        assert!(matches!(err, DomainError::Validation(_)));
+        let result = Capability::from_str("Foo.Bar.Baz");
+        assert!(matches!(result, Err(DomainError::Validation(_))));
     }
 
     #[test]
@@ -6127,74 +6142,61 @@ mod tests {
     }
 
     #[test]
-    fn assignment_status_byte_round_trip() {
-        assert_eq!(
-            AssignmentStatus::from_byte(1).unwrap(),
-            AssignmentStatus::Granted
-        );
-        assert_eq!(
-            AssignmentStatus::from_byte(0).unwrap(),
-            AssignmentStatus::Revoked
-        );
+    fn assignment_status_byte_round_trip(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        assert_eq!(AssignmentStatus::from_byte(1)?, AssignmentStatus::Granted);
+        assert_eq!(AssignmentStatus::from_byte(0)?, AssignmentStatus::Revoked);
         assert!(AssignmentStatus::from_byte(7).is_err());
+        Ok(())
     }
 
     #[test]
-    fn menu_status_byte_round_trip() {
-        assert_eq!(MenuStatus::from_byte(1).unwrap(), MenuStatus::Visible);
-        assert_eq!(MenuStatus::from_byte(0).unwrap(), MenuStatus::Hidden);
+    fn menu_status_byte_round_trip() -> std::result::Result<(), Box<dyn std::error::Error>> {
+        assert_eq!(MenuStatus::from_byte(1)?, MenuStatus::Visible);
+        assert_eq!(MenuStatus::from_byte(0)?, MenuStatus::Hidden);
         assert!(MenuStatus::from_byte(3).is_err());
+        Ok(())
     }
 
     #[test]
-    fn permission_type_byte_round_trip() {
-        assert_eq!(PermissionType::from_byte(1).unwrap(), PermissionType::Menu);
-        assert_eq!(
-            PermissionType::from_byte(2).unwrap(),
-            PermissionType::SubMenu
-        );
-        assert_eq!(
-            PermissionType::from_byte(3).unwrap(),
-            PermissionType::Action
-        );
+    fn permission_type_byte_round_trip(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        assert_eq!(PermissionType::from_byte(1)?, PermissionType::Menu);
+        assert_eq!(PermissionType::from_byte(2)?, PermissionType::SubMenu);
+        assert_eq!(PermissionType::from_byte(3)?, PermissionType::Action);
         assert!(PermissionType::from_byte(0).is_err());
+        Ok(())
     }
 
     #[test]
-    fn two_factor_mode_byte_round_trip() {
-        assert_eq!(
-            TwoFactorMode::from_byte(1).unwrap(),
-            TwoFactorMode::Required
-        );
-        assert_eq!(
-            TwoFactorMode::from_byte(2).unwrap(),
-            TwoFactorMode::Optional
-        );
-        assert_eq!(
-            TwoFactorMode::from_byte(3).unwrap(),
-            TwoFactorMode::Disabled
-        );
+    fn two_factor_mode_byte_round_trip(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        assert_eq!(TwoFactorMode::from_byte(1)?, TwoFactorMode::Required);
+        assert_eq!(TwoFactorMode::from_byte(2)?, TwoFactorMode::Optional);
+        assert_eq!(TwoFactorMode::from_byte(3)?, TwoFactorMode::Disabled);
         assert!(TwoFactorMode::from_byte(0).is_err());
+        Ok(())
     }
 
     #[test]
     fn role_name_rejects_empty() {
-        let err = RoleName::new("").unwrap_err();
-        assert!(matches!(err, DomainError::Validation(_)));
+        let result = RoleName::new("");
+        assert!(matches!(result, Err(DomainError::Validation(_))));
     }
 
     #[test]
     fn role_name_rejects_too_long() {
-        let s: String = std::iter::repeat('a').take(RoleName::MAX_LEN + 1).collect();
-        let err = RoleName::new(s).unwrap_err();
-        assert!(matches!(err, DomainError::Validation(_)));
+        let s: String = "a".repeat(RoleName::MAX_LEN + 1);
+        let result = RoleName::new(s);
+        assert!(matches!(result, Err(DomainError::Validation(_))));
     }
 
     #[test]
-    fn role_name_accepts_max_len() {
-        let s: String = std::iter::repeat('a').take(RoleName::MAX_LEN).collect();
-        let name = RoleName::new(s).unwrap();
+    fn role_name_accepts_max_len() -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let s: String = "a".repeat(RoleName::MAX_LEN);
+        let name = RoleName::new(s)?;
         assert_eq!(name.as_str().chars().count(), RoleName::MAX_LEN);
+        Ok(())
     }
 
     #[test]

@@ -789,15 +789,25 @@ mod tests {
     use super::*;
     use crate::value_objects::RecurrenceFreq;
 
+    fn hardcoded_date(
+        y: i32,
+        m: u32,
+        d: u32,
+    ) -> std::result::Result<NaiveDate, Box<dyn std::error::Error>> {
+        NaiveDate::from_ymd_opt(y, m, d).ok_or_else(|| {
+            Box::<dyn std::error::Error>::from(format!("invalid hardcoded date {y}-{m}-{d}"))
+        })
+    }
+
     #[test]
-    fn calendar_event_validates_title() {
+    fn calendar_event_validates_title() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let id = CalendarEventId::new(school, Uuid::nil());
         let cmd = NewCalendarEvent {
             id,
             title: "".to_owned(),
-            from_date: NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-            to_date: NaiveDate::from_ymd_opt(2026, 6, 2).unwrap(),
+            from_date: hardcoded_date(2026, 6, 1)?,
+            to_date: hardcoded_date(2026, 6, 2)?,
             for_whom: ForWhom::All,
             role_ids: vec![],
             url: None,
@@ -811,17 +821,19 @@ mod tests {
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
         };
         assert!(CalendarEvent::new(cmd).is_err());
+        Ok(())
     }
 
     #[test]
-    fn calendar_event_validates_date_range() {
+    fn calendar_event_validates_date_range(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let id = CalendarEventId::new(school, Uuid::nil());
         let cmd = NewCalendarEvent {
             id,
             title: "Test".to_owned(),
-            from_date: NaiveDate::from_ymd_opt(2026, 6, 5).unwrap(),
-            to_date: NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            from_date: hardcoded_date(2026, 6, 5)?,
+            to_date: hardcoded_date(2026, 6, 1)?,
             for_whom: ForWhom::All,
             role_ids: vec![],
             url: None,
@@ -835,17 +847,19 @@ mod tests {
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
         };
         assert!(CalendarEvent::new(cmd).is_err());
+        Ok(())
     }
 
     #[test]
-    fn calendar_event_with_rrule_constructs() {
+    fn calendar_event_with_rrule_constructs(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let id = CalendarEventId::new(school, Uuid::nil());
         let cmd = NewCalendarEvent {
             id,
             title: "Weekly Meeting".to_owned(),
-            from_date: NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-            to_date: NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+            from_date: hardcoded_date(2026, 6, 1)?,
+            to_date: hardcoded_date(2026, 6, 1)?,
             for_whom: ForWhom::Teacher,
             role_ids: vec!["teacher".to_owned()],
             url: None,
@@ -858,20 +872,21 @@ mod tests {
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
         };
-        let event = CalendarEvent::new(cmd).unwrap();
+        let event = CalendarEvent::new(cmd)?;
         assert!(event.rrule.is_some());
         assert_eq!(event.for_whom, ForWhom::Teacher);
+        Ok(())
     }
 
     #[test]
-    fn holiday_validates_title() {
+    fn holiday_validates_title() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let id = HolidayId::new(school, Uuid::nil());
         let cmd = NewHoliday {
             id,
             title: "".to_owned(),
-            from_date: NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-            to_date: NaiveDate::from_ymd_opt(2026, 6, 2).unwrap(),
+            from_date: hardcoded_date(2026, 6, 1)?,
+            to_date: hardcoded_date(2026, 6, 2)?,
             details: None,
             image: None,
             academic_id: AcademicYearRef::new(school, Uuid::nil()),
@@ -880,6 +895,7 @@ mod tests {
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
         };
         assert!(Holiday::new(cmd).is_err());
+        Ok(())
     }
 
     #[test]
@@ -916,7 +932,8 @@ mod tests {
     }
 
     #[test]
-    fn incident_resolve_immutability() {
+    fn incident_resolve_immutability(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let id = IncidentId::new(school, Uuid::nil());
         let cmd = NewIncident {
@@ -928,9 +945,8 @@ mod tests {
             created_at: Timestamp::now(),
             correlation_id: CorrelationId::from_uuid(Uuid::nil()),
         };
-        let mut inc = Incident::new(cmd).unwrap();
-        inc.resolve(UserId::from_uuid(Uuid::nil()), Timestamp::now())
-            .unwrap();
+        let mut inc = Incident::new(cmd)?;
+        inc.resolve(UserId::from_uuid(Uuid::nil()), Timestamp::now())?;
         assert_eq!(inc.status, IncidentStatus::Resolved);
         assert!(inc
             .update(
@@ -941,6 +957,7 @@ mod tests {
                 Timestamp::now()
             )
             .is_err());
+        Ok(())
     }
 
     #[test]

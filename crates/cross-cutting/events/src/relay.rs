@@ -383,12 +383,6 @@ impl<O: OutboxSource, B: EventBus + Send + Sync> OutboxRelay<O, B> {
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::panic,
-    clippy::dbg_macro
-)]
 mod tests {
     use super::*;
     use async_trait::async_trait;
@@ -401,8 +395,32 @@ mod tests {
         AckOutcome, BatchReceipt, EventBus, EventSubscription, PublishReceipt, SubscribeOptions,
     };
     use crate::relay_envelope::SerializedEnvelope;
+    use std::convert::TryFrom;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
+
+    /// Acquire a `std::sync::Mutex` guard, recovering from
+    /// poisoning. Test fixtures never intentionally poison a
+    /// mutex; if poisoning is observed (a previous test
+    /// panicked while holding the lock), we recover the
+    /// inner value rather than panicking the whole test
+    /// process. This replaces the prior `.lock().unwrap()`
+    /// pattern in the relay test fixtures.
+    fn lock_unpoisoned<T>(m: &std::sync::Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+        match m.lock() {
+            Ok(g) => g,
+            Err(poisoned) => poisoned.into_inner(),
+        }
+    }
+
+    /// Convert a `u32` batch limit to `usize` without the
+    /// truncating `as` cast. On 32-bit platforms the input
+    /// must fit in `usize`; on 64-bit (the only supported
+    /// target) every `u32` does. Returns `DomainError::Validation`
+    /// on the (impossible on 64-bit) overflow.
+    fn batch_limit_to_usize(limit: u32) -> std::result::Result<usize, DomainError> {
+        usize::try_from(limit).map_err(|_| DomainError::validation("batch limit exceeds usize"))
+    }
 
     // -----------------------------------------------------------------
     // Test fixture: a counting, optionally-failing bus
@@ -433,7 +451,7 @@ mod tests {
             self.published.load(Ordering::SeqCst)
         }
         fn set_fail_next(&self, n: u32) {
-            *self.fail_next.lock().unwrap() = n;
+            *lock_unpoisoned(&self.fail_next) = n;
         }
     }
 
@@ -461,7 +479,7 @@ mod tests {
     #[async_trait]
     impl EventBus for CountingBus {
         async fn publish(&self, envelope: EventEnvelope) -> Result<PublishReceipt> {
-            let mut fail = self.fail_next.lock().unwrap();
+            let mut fail = lock_unpoisoned(&self.fail_next);
             if *fail > 0 {
                 *fail -= 1;
                 return Err(DomainError::validation("forced failure"));
@@ -524,10 +542,10 @@ mod tests {
             }
         }
         fn append_envelope(&self, env: SerializedEnvelope) {
-            self.rows.lock().unwrap().push(env);
+            lock_unpoisoned(&self.rows).push(env);
         }
         fn len(&self) -> usize {
-            self.rows.lock().unwrap().len()
+            lock_unpoisoned(&self.rows).len()
         }
     }
 
@@ -538,15 +556,16 @@ mod tests {
             school_id: SchoolId,
             limit: u32,
         ) -> Result<Vec<SerializedEnvelope>> {
-            let g = self.rows.lock().unwrap();
+            let limit_usize = batch_limit_to_usize(limit)?;
+            let g = lock_unpoisoned(&self.rows);
             Ok(g.iter()
                 .filter(|e| e.school_id == school_id)
-                .take(limit as usize)
+                .take(limit_usize)
                 .cloned()
                 .collect())
         }
         async fn mark_published(&self, ids: &[EventId]) -> Result<()> {
-            let mut g = self.rows.lock().unwrap();
+            let mut g = lock_unpoisoned(&self.rows);
             g.retain(|e| !ids.contains(&e.event_id));
             Ok(())
         }
@@ -585,7 +604,8 @@ mod tests {
     // -----------------------------------------------------------------
 
     #[tokio::test]
-    async fn run_once_drains_pending_envelopes_and_publishes_via_bus() {
+    async fn run_once_drains_pending_envelopes_and_publishes_via_bus(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let g = SystemIdGen;
         let school = g.next_school_id();
         let outbox = Arc::new(VecOutbox::new());
@@ -594,7 +614,7 @@ mod tests {
         outbox.append_envelope(sample_envelope(school, "academic.student.transferred"));
 
         let r = relay(outbox.clone(), bus.clone());
-        let stats = r.run_once(school).await.unwrap();
+        let stats = r.run_once(school).await?;
 
         assert_eq!(stats.published, 2);
         assert_eq!(stats.failed, 0);
@@ -602,10 +622,12 @@ mod tests {
         assert!(stats.is_fully_published());
         assert_eq!(bus.published(), 2);
         assert_eq!(outbox.len(), 0);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn run_once_marks_envelopes_as_published_after_successful_publish() {
+    async fn run_once_marks_envelopes_as_published_after_successful_publish(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let g = SystemIdGen;
         let school = g.next_school_id();
         let outbox = Arc::new(VecOutbox::new());
@@ -615,7 +637,7 @@ mod tests {
         outbox.append_envelope(env);
 
         let r = relay(outbox.clone(), bus.clone());
-        let stats = r.run_once(school).await.unwrap();
+        let stats = r.run_once(school).await?;
 
         assert_eq!(stats.published, 1);
         // The row was removed from the outbox.
@@ -625,10 +647,12 @@ mod tests {
         // Sanity: the event id we published matches what we
         // appended.
         let _ = env_id; // (kept to make the test self-documenting)
+        Ok(())
     }
 
     #[tokio::test]
-    async fn run_once_does_not_mark_failed_envelopes_as_published() {
+    async fn run_once_does_not_mark_failed_envelopes_as_published(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let g = SystemIdGen;
         let school = g.next_school_id();
         let outbox = Arc::new(VecOutbox::new());
@@ -638,7 +662,7 @@ mod tests {
         outbox.append_envelope(sample_envelope(school, "academic.student.transferred"));
 
         let r = relay(outbox.clone(), bus.clone());
-        let stats = r.run_once(school).await.unwrap();
+        let stats = r.run_once(school).await?;
 
         assert_eq!(stats.published, 0);
         assert_eq!(stats.failed, 2);
@@ -647,14 +671,16 @@ mod tests {
         assert_eq!(bus.published(), 0);
 
         // Retry: now the bus is healthy, both should drain.
-        let stats2 = r.run_once(school).await.unwrap();
+        let stats2 = r.run_once(school).await?;
         assert_eq!(stats2.published, 2);
         assert_eq!(stats2.failed, 0);
         assert_eq!(outbox.len(), 0);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn run_once_partial_failure_leaves_only_failed_envelopes_in_outbox() {
+    async fn run_once_partial_failure_leaves_only_failed_envelopes_in_outbox(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let g = SystemIdGen;
         let school = g.next_school_id();
         let outbox = Arc::new(VecOutbox::new());
@@ -664,31 +690,35 @@ mod tests {
         outbox.append_envelope(sample_envelope(school, "academic.student.transferred"));
 
         let r = relay(outbox.clone(), bus.clone());
-        let stats = r.run_once(school).await.unwrap();
+        let stats = r.run_once(school).await?;
 
         assert_eq!(stats.published, 1);
         assert_eq!(stats.failed, 1);
         // Exactly one envelope (the failing one) remains.
         assert_eq!(outbox.len(), 1);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn run_once_empty_outbox_is_noop() {
+    async fn run_once_empty_outbox_is_noop(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let g = SystemIdGen;
         let school = g.next_school_id();
         let outbox = Arc::new(VecOutbox::new());
         let bus = Arc::new(CountingBus::new());
         let r = relay(outbox, bus);
-        let stats = r.run_once(school).await.unwrap();
+        let stats = r.run_once(school).await?;
         assert_eq!(stats.published, 0);
         assert_eq!(stats.failed, 0);
         assert_eq!(stats.skipped, 0);
         assert_eq!(stats.total(), 0);
         assert!(!stats.is_fully_published());
+        Ok(())
     }
 
     #[tokio::test]
-    async fn run_once_skips_envelopes_from_other_schools() {
+    async fn run_once_skips_envelopes_from_other_schools(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let g = SystemIdGen;
         let school_a = g.next_school_id();
         let school_b = g.next_school_id();
@@ -698,14 +728,16 @@ mod tests {
         outbox.append_envelope(sample_envelope(school_b, "academic.student.admitted"));
 
         let r = relay(outbox.clone(), bus.clone());
-        let stats = r.run_once(school_a).await.unwrap();
+        let stats = r.run_once(school_a).await?;
         assert_eq!(stats.published, 0);
         assert_eq!(stats.skipped, 0); // pending_for_school filtered it
         assert_eq!(outbox.len(), 1); // still pending for school_b
+        Ok(())
     }
 
     #[tokio::test]
-    async fn run_once_with_custom_batch_size_caps_pending_read() {
+    async fn run_once_with_custom_batch_size_caps_pending_read(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let g = SystemIdGen;
         let school = g.next_school_id();
         let outbox = Arc::new(VecOutbox::new());
@@ -715,9 +747,10 @@ mod tests {
         }
 
         let r = OutboxRelay::new(outbox.clone(), bus.clone()).with_batch_size(2);
-        let stats = r.run_once(school).await.unwrap();
+        let stats = r.run_once(school).await?;
         assert_eq!(stats.published, 2);
         assert_eq!(outbox.len(), 3);
+        Ok(())
     }
 
     // -----------------------------------------------------------------
@@ -725,7 +758,8 @@ mod tests {
     // -----------------------------------------------------------------
 
     #[tokio::test]
-    async fn run_loop_respects_cancellation_token_shutdown() {
+    async fn run_loop_respects_cancellation_token_shutdown(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let g = SystemIdGen;
         let school = g.next_school_id();
         let outbox = Arc::new(VecOutbox::new());
@@ -743,7 +777,7 @@ mod tests {
         });
 
         let started = std::time::Instant::now();
-        r.run_loop(school, token).await.unwrap();
+        r.run_loop(school, token).await?;
         let elapsed = started.elapsed();
         // Should have run at least one idle tick before
         // shutdown; should NOT have run for more than 1s.
@@ -752,10 +786,12 @@ mod tests {
             "run_loop took too long ({:?}) — shutdown did not fire",
             elapsed
         );
+        Ok(())
     }
 
     #[tokio::test]
-    async fn run_loop_drains_initial_envelopes_before_idling() {
+    async fn run_loop_drains_initial_envelopes_before_idling(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let g = SystemIdGen;
         let school = g.next_school_id();
         let outbox = Arc::new(VecOutbox::new());
@@ -775,13 +811,15 @@ mod tests {
             child.cancel();
         });
 
-        r.run_loop(school, token).await.unwrap();
+        r.run_loop(school, token).await?;
         assert_eq!(bus.published(), 3);
         assert_eq!(outbox.len(), 0);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn run_loop_immediate_cancellation_exits_without_publishing() {
+    async fn run_loop_immediate_cancellation_exits_without_publishing(
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let g = SystemIdGen;
         let school = g.next_school_id();
         let outbox = Arc::new(VecOutbox::new());
@@ -795,7 +833,7 @@ mod tests {
         // fire immediately on the first iteration.
         token.cancel();
 
-        r.run_loop(school, token).await.unwrap();
+        r.run_loop(school, token).await?;
         // We can't assert "nothing was published" because the
         // loop MAY publish the single envelope before checking
         // the token on the next iteration — but it MUST exit
@@ -803,6 +841,7 @@ mod tests {
         // the envelope, then the loop checks the token. The
         // envelope is published, then the loop exits.
         // The contract we assert is: the loop returned.
+        Ok(())
     }
 
     // -----------------------------------------------------------------
@@ -836,23 +875,13 @@ mod tests {
     // -----------------------------------------------------------------
     // Test fixture helpers
     // -----------------------------------------------------------------
-
-    /// Minimal `std::error::Error` impl used by the test fixture
-    /// when it needs to construct a `DomainError::Infrastructure`.
-    /// Carries a `String` message so the `tracing` output of a
-    /// failing publish is readable.
-    #[derive(Debug)]
-    struct StringError(pub String);
-
-    impl std::fmt::Display for StringError {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            self.0.fmt(f)
-        }
-    }
-
-    impl std::error::Error for StringError {}
-
-    fn infrastructure_err(s: &str) -> DomainError {
-        DomainError::infrastructure(StringError(s.to_owned()))
-    }
+    //
+    // Intentionally empty: the test fixtures above use
+    // `DomainError::validation(...)` for forced failures, which
+    // does not need a custom error type. Previously a
+    // `StringError` helper lived here to construct
+    // `DomainError::Infrastructure(...)`, but no test ever called
+    // it; the helper was preserved under the file-level
+    // `#[allow(clippy::all)]`. Cluster E removed that blanket
+    // allow, so the dead helper has been deleted.
 }
