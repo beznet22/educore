@@ -51,6 +51,7 @@
 #![allow(clippy::missing_docs_in_private_items)]
 
 use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -66,7 +67,7 @@ use educore_core::value_objects::Timestamp;
 use educore_rbac::ids::RoleId;
 use educore_rbac::value_objects::Capability;
 
-use crate::errors::AuthError;
+use crate::errors::{AuthError, InfrastructureError};
 use crate::port::{AuthProvider, AuthScheme, AuthToken, Credential, Session};
 
 // ---------------------------------------------------------------------------
@@ -117,6 +118,153 @@ pub struct JwtClaims {
     /// session.
     #[serde(default)]
     pub mfa: bool,
+}
+
+// ---------------------------------------------------------------------------
+// JwtSecretSource
+// ---------------------------------------------------------------------------
+
+/// Where the HMAC signing key for [`JwtAuthProvider`] should be
+/// loaded from.
+///
+/// This is the ADAPT-AUTH-002 surface: production deployments
+/// must load the key from a stable, persistent source so that
+/// every process restart (and every replica in a horizontally
+/// scaled deployment) signs with the same key. The default
+/// builder still generates a random key for tests and the
+/// worked example; production wiring should use
+/// [`JwtSecretSource::from_env`] via
+/// [`JwtAuthProvider::new`] or pass an explicit
+/// [`JwtSecretSource::EnvVar`] / [`JwtSecretSource::File`] to
+/// [`JwtAuthProviderBuilder::signing_key_source`].
+///
+/// Resolution order in [`JwtSecretSource::from_env`]:
+///
+/// 1. The `JWT_SECRET` environment variable (raw key bytes).
+/// 2. The `JWT_SECRET_FILE` environment variable (path to a
+///    file containing the key bytes; useful for k8s `Secret`
+///    mounts and Docker `--secret` mounts).
+/// 3. [`JwtSecretSource::RandomDevFallback`] — a freshly
+///    generated 32-byte key. **Debug builds only**: release
+///    builds reject this fallback with [`AuthError::Malformed`]
+///    so a misconfigured production deploy fails loudly rather
+///    than silently signing tokens with a per-process random
+///    key.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum JwtSecretSource {
+    /// Read the key bytes from an environment variable (e.g.
+    /// `JWT_SECRET=...`). The wrapped string is the secret
+    /// value; it is converted to bytes verbatim by
+    /// [`JwtSecretSource::into_bytes`].
+    EnvVar(String),
+
+    /// Read the key bytes from a file at the given path. Useful
+    /// for Kubernetes `Secret` mounts and Docker `--secret`
+    /// mounts where the secret is delivered as a file rather
+    /// than an environment variable.
+    File(PathBuf),
+
+    /// Fall back to a freshly generated random 32-byte key.
+    /// Debug builds accept this and emit a `tracing::warn!` so
+    /// the developer sees the warning in their dev logs.
+    /// Release builds reject this with [`AuthError::Malformed`]
+    /// so a misconfigured production deploy fails loudly
+    /// instead of silently invalidating every session on
+    /// restart.
+    RandomDevFallback,
+}
+
+impl JwtSecretSource {
+    /// Resolves the secret source from environment variables.
+    ///
+    /// Order:
+    ///
+    /// 1. `JWT_SECRET` — if present, returns
+    ///    [`JwtSecretSource::EnvVar`].
+    /// 2. `JWT_SECRET_FILE` — if present, returns
+    ///    [`JwtSecretSource::File`].
+    /// 3. Otherwise, returns [`JwtSecretSource::RandomDevFallback`].
+    ///
+    /// This function does **not** read any files or generate any
+    /// key material — it only inspects environment variables
+    /// and returns the chosen variant. Call
+    /// [`JwtSecretSource::into_bytes`] to materialise the bytes
+    /// (which is where file reads and key generation happen).
+    ///
+    /// This is also the variant used by [`JwtAuthProvider::new`],
+    /// so production wiring can rely on the same env-var
+    /// convention in both the explicit-builder and default-
+    /// constructor paths.
+    #[must_use]
+    pub fn from_env() -> Self {
+        Self::from_env_with_reader(|key| std::env::var(key).ok())
+    }
+
+    /// Test-friendly variant of [`JwtSecretSource::from_env`]
+    /// that accepts a custom env-var reader. Production code
+    /// should call [`JwtSecretSource::from_env`]; tests use this
+    /// to avoid mutating process-wide environment variables
+    /// (which is `unsafe` in Rust 1.86+ and which this crate
+    /// forbids via `#![forbid(unsafe_code)]`).
+    #[must_use]
+    pub fn from_env_with_reader(read: impl Fn(&str) -> Option<String>) -> Self {
+        if let Some(value) = read("JWT_SECRET") {
+            return Self::EnvVar(value);
+        }
+        if let Some(path) = read("JWT_SECRET_FILE") {
+            return Self::File(PathBuf::from(path));
+        }
+        Self::RandomDevFallback
+    }
+
+    /// Resolves the source to its raw key bytes.
+    ///
+    /// - [`JwtSecretSource::EnvVar`]: returns the wrapped string
+    ///   as bytes (UTF-8 conversion).
+    /// - [`JwtSecretSource::File`]: reads the file at the given
+    ///   path. Trailing whitespace is **not** trimmed (the
+    ///   caller is responsible for producing a clean file). A
+    ///   missing or unreadable file returns
+    ///   [`AuthError::Infrastructure`].
+    /// - [`JwtSecretSource::RandomDevFallback`]: in debug builds
+    ///   generates 32 bytes from the OS RNG and emits a
+    ///   `tracing::warn!` so the developer sees the warning. In
+    ///   release builds returns [`AuthError::Malformed`] with a
+    ///   message explaining that `JWT_SECRET` or
+    ///   `JWT_SECRET_FILE` must be set.
+    pub fn into_bytes(self) -> Result<Vec<u8>, AuthError> {
+        match self {
+            Self::EnvVar(value) => Ok(value.into_bytes()),
+            Self::File(path) => std::fs::read(&path).map_err(|err| {
+                AuthError::Infrastructure(InfrastructureError::with_source(
+                    format!("failed to read JWT secret file {path:?}"),
+                    Box::new(err),
+                ))
+            }),
+            Self::RandomDevFallback => {
+                #[cfg(debug_assertions)]
+                {
+                    tracing::warn!(
+                        "JWT_SECRET and JWT_SECRET_FILE are unset; generating a \
+                         random 32-byte signing key. This is suitable for dev/test \
+                         only — every process restart will invalidate every existing \
+                         JWT. Set JWT_SECRET (or JWT_SECRET_FILE) before deploying."
+                    );
+                    let mut key = vec![0_u8; 32];
+                    rand::thread_rng().fill_bytes(&mut key);
+                    Ok(key)
+                }
+                #[cfg(not(debug_assertions))]
+                {
+                    Err(AuthError::Malformed(
+                        "JWT_SECRET (or JWT_SECRET_FILE) must be set in release \
+                         builds; refusing to fall back to a random per-process key."
+                            .to_owned(),
+                    ))
+                }
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -184,6 +332,43 @@ impl JwtAuthProviderBuilder {
         self
     }
 
+    /// Resolves the HMAC signing key from a [`JwtSecretSource`]
+    /// (env var, file path, or random dev fallback) and
+    /// installs it on the builder.
+    ///
+    /// This is the ADAPT-AUTH-002 surface: production code
+    /// should pass [`JwtSecretSource::from_env`] here so the
+    /// key is loaded from `JWT_SECRET` / `JWT_SECRET_FILE`
+    /// rather than the per-process random default that
+    /// [`JwtAuthProviderBuilder::new`] generates.
+    ///
+    /// Returns the builder on success so the calls chain.
+    /// Returns [`AuthError::Malformed`] if the resolved key is
+    /// shorter than 32 bytes (HS256 requires ≥256-bit keys per
+    /// RFC 7518 § 3.2). Returns [`AuthError::Infrastructure`]
+    /// if the source is [`JwtSecretSource::File`] and the file
+    /// cannot be read. Returns [`AuthError::Malformed`] in
+    /// release builds if the source falls back to
+    /// [`JwtSecretSource::RandomDevFallback`].
+    ///
+    /// Errors are propagated via `Result` — this method does
+    /// **not** panic on a missing or unreadable secret.
+    pub fn signing_key_source(
+        mut self,
+        source: JwtSecretSource,
+    ) -> Result<Self, AuthError> {
+        let bytes = source.into_bytes()?;
+        if bytes.len() < 32 {
+            return Err(AuthError::Malformed(format!(
+                "JWT signing key is {} bytes; HS256 requires at least 32 bytes \
+                 (RFC 7518 § 3.2)",
+                bytes.len()
+            )));
+        }
+        self.signing_key = bytes;
+        Ok(self)
+    }
+
     /// Sets the issuer (`iss` claim). The provider rejects
     /// tokens whose `iss` does not match.
     #[must_use]
@@ -242,6 +427,33 @@ impl Default for JwtAuthProviderBuilder {
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
+
+impl JwtAuthProvider {
+    /// Constructs a provider that loads its HMAC signing key
+    /// from [`JwtSecretSource::from_env`] (i.e. `JWT_SECRET`
+    /// first, then `JWT_SECRET_FILE`, then a dev-only random
+    /// fallback).
+    ///
+    /// This is the recommended way to construct a
+    /// [`JwtAuthProvider`] in production code: it ensures every
+    /// process restart (and every replica in a horizontally
+    /// scaled deployment) signs with the same key, fixing
+    /// ADAPT-AUTH-002 (per-process random key invalidating all
+    /// sessions on restart).
+    ///
+    /// Returns `Err` rather than panicking if:
+    ///
+    /// - the `JWT_SECRET_FILE` path cannot be read;
+    /// - the resolved key is shorter than 32 bytes (HS256
+    ///   minimum-length, RFC 7518 § 3.2);
+    /// - no env var is set and the build is release (no
+    ///   random-fallback allowed in release).
+    pub fn new() -> Result<Self, AuthError> {
+        Ok(JwtAuthProviderBuilder::new()
+            .signing_key_source(JwtSecretSource::from_env())?
+            .build())
+    }
+}
 
 impl JwtAuthProvider {
     /// Builds the `jsonwebtoken::Validation` for this provider's
@@ -661,5 +873,172 @@ mod tests {
             .await
             .expect_err("post-revoke authenticate fails");
         assert_eq!(authn_err, AuthError::Revoked);
+    }
+
+    // -----------------------------------------------------------------
+    // QW-7: JwtSecretSource env-loading tests.
+    //
+    // We exercise the resolver via `from_env_with_reader` so the
+    // tests don't mutate process-wide environment variables
+    // (`std::env::set_var` is `unsafe` from Rust 1.86 and the crate
+    // forbids `unsafe`). Production callers use `from_env`, which is
+    // a thin wrapper that delegates to `from_env_with_reader`.
+    // -----------------------------------------------------------------
+
+    #[test]
+    fn test_jwt_secret_source_from_env_reads_jwt_secret_var() {
+        let source = JwtSecretSource::from_env_with_reader(|key| match key {
+            "JWT_SECRET" => Some("a".repeat(32)),
+            _ => None,
+        });
+        assert_eq!(source, JwtSecretSource::EnvVar("a".repeat(32)));
+    }
+
+    #[test]
+    fn test_jwt_secret_source_from_env_reads_jwt_secret_file_var() {
+        let source = JwtSecretSource::from_env_with_reader(|key| match key {
+            "JWT_SECRET" => None,
+            "JWT_SECRET_FILE" => Some("/run/secrets/jwt".to_owned()),
+            _ => None,
+        });
+        assert_eq!(
+            source,
+            JwtSecretSource::File(PathBuf::from("/run/secrets/jwt"))
+        );
+    }
+
+    #[test]
+    fn test_jwt_secret_source_from_env_prefers_jwt_secret_over_file() {
+        // Both set: JWT_SECRET wins.
+        let source = JwtSecretSource::from_env_with_reader(|key| match key {
+            "JWT_SECRET" => Some("a".repeat(32)),
+            "JWT_SECRET_FILE" => Some("/run/secrets/jwt".to_owned()),
+            _ => None,
+        });
+        assert_eq!(source, JwtSecretSource::EnvVar("a".repeat(32)));
+    }
+
+    #[test]
+    fn test_jwt_secret_source_from_env_falls_back_to_random_dev() {
+        // Neither env var set: RandomDevFallback.
+        let source = JwtSecretSource::from_env_with_reader(|_| None);
+        assert_eq!(source, JwtSecretSource::RandomDevFallback);
+    }
+
+    #[test]
+    fn test_jwt_secret_source_env_var_into_bytes_returns_raw_bytes() {
+        let bytes = JwtSecretSource::EnvVar("a".repeat(32))
+            .into_bytes()
+            .expect("env var resolves to bytes");
+        assert_eq!(bytes.len(), 32);
+        assert!(bytes.iter().all(|b| *b == b'a'));
+    }
+
+    #[test]
+    fn test_jwt_secret_source_file_into_bytes_reads_file() {
+        // Write a temp file with 32 bytes of 'b'.
+        let dir = std::env::temp_dir().join(format!(
+            "educore-auth-jwt-secret-test-{}",
+            Uuid::now_v7()
+        ));
+        std::fs::create_dir_all(&dir).expect("create temp dir");
+        let path = dir.join("secret");
+        let contents = "b".repeat(32).into_bytes();
+        std::fs::write(&path, &contents).expect("write temp file");
+
+        let bytes = JwtSecretSource::File(path.clone())
+            .into_bytes()
+            .expect("file resolves to bytes");
+        assert_eq!(bytes, contents);
+
+        // Cleanup.
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_jwt_secret_source_file_into_bytes_missing_file_errors() {
+        let bogus = PathBuf::from("/nonexistent/educore-auth-missing-secret-xyzzy");
+        let err = JwtSecretSource::File(bogus.clone())
+            .into_bytes()
+            .expect_err("missing file must error, not panic");
+        assert!(
+            matches!(err, AuthError::Infrastructure(_)),
+            "expected Infrastructure error, got {err:?}"
+        );
+    }
+
+    #[test]
+    fn test_jwt_secret_source_random_dev_fallback_in_debug_emits_random_bytes() {
+        // This is debug-only: in release builds the fallback errors
+        // so a misconfigured production deploy fails loudly.
+        #[cfg(debug_assertions)]
+        {
+            let a = JwtSecretSource::RandomDevFallback
+                .into_bytes()
+                .expect("debug build falls back to random");
+            let b = JwtSecretSource::RandomDevFallback
+                .into_bytes()
+                .expect("debug build falls back to random");
+            assert_eq!(a.len(), 32);
+            assert_eq!(b.len(), 32);
+            assert_ne!(a, b, "two consecutive fallbacks must produce different bytes");
+        }
+    }
+
+    #[test]
+    fn test_signing_key_source_env_var_applies_bytes_to_builder() {
+        let key_bytes: Vec<u8> = (0..32).collect();
+        let provider = JwtAuthProviderBuilder::new()
+            .signing_key_source(JwtSecretSource::EnvVar(
+                String::from_utf8(key_bytes.clone()).expect("ascii"),
+            ))
+            .expect("valid key applies to builder")
+            .issuer("educore-test")
+            .audience("educore")
+            .build();
+        assert_eq!(&*provider.signing_key, &key_bytes[..]);
+    }
+
+    #[test]
+    fn test_signing_key_source_rejects_short_key() {
+        let short = JwtSecretSource::EnvVar("too-short".to_owned());
+        let err = JwtAuthProviderBuilder::new()
+            .signing_key_source(short)
+            .expect_err("HS256 requires >= 32 bytes");
+        assert!(
+            matches!(err, AuthError::Malformed(_)),
+            "expected Malformed error, got {err:?}"
+        );
+    }
+
+    #[test]
+    fn test_signing_key_source_random_dev_fallback_errors_in_release() {
+        // Mirror the release-mode behaviour: a release build must
+        // not silently accept the random fallback. We branch on the
+        // same cfg the production code uses.
+        #[cfg(not(debug_assertions))]
+        {
+            let err = JwtAuthProviderBuilder::new()
+                .signing_key_source(JwtSecretSource::RandomDevFallback)
+                .expect_err("release must refuse random fallback");
+            assert!(
+                matches!(err, AuthError::Malformed(_)),
+                "expected Malformed error, got {err:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_signing_key_source_file_missing_returns_error_not_panic() {
+        // Regression for the previous two-agent attempt: the bug
+        // there was `unwrap_or_else(resolve_err_panic)` — a function
+        // that doesn't exist. The new path propagates the I/O
+        // failure as AuthError::Infrastructure via `?`, never panics.
+        let bogus = PathBuf::from("/nonexistent/educore-auth-file-xyzzy");
+        let result = JwtAuthProviderBuilder::new().signing_key_source(JwtSecretSource::File(bogus));
+        assert!(
+            matches!(result, Err(AuthError::Infrastructure(_))),
+            "expected Infrastructure error from missing file, got {result:?}"
+        );
     }
 }

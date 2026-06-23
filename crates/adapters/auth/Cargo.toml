@@ -37,4 +37,8 @@ educore-audit = { workspace = true }
 # A.4: Argon2id default-params password hashing + verification for
 # `PasswordService::hash_password` / `verify_password` / `needs_rehash`.
 argon2 = { workspace = true }
+# A.7 (QW-7): emit a warning when JWT_SECRET is unset and we fall back
+# to a randomly generated key in debug builds. tracing is the workspace's
+# standard logging facade.
+tracing = { workspace = true }
 

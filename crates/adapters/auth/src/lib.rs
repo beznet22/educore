@@ -52,16 +52,27 @@ pub mod services;
 /// the authentication port.
 pub mod errors;
 
+/// Per-IP rate limiter and lockout for credential endpoints.
+///
+/// Implements QW-8 (ADAPT-AUTH-007). See
+/// [`rate_limit::RateLimiter`] for the limiter, [`rate_limit::Clock`]
+/// for the time abstraction, and [`rate_limit::RateLimitError`]
+/// for the failure modes.
+pub mod rate_limit;
+
 /// Convenience re-exports of the most-used types. Consumers of
 /// the auth crate typically `use educore_auth::prelude::*;`
 /// once at the top of a file.
 pub mod prelude {
     pub use crate::errors::AuthError;
-    pub use crate::jwt::{JwtAuthProvider, JwtAuthProviderBuilder, JwtClaims};
+    pub use crate::jwt::{
+        JwtAuthProvider, JwtAuthProviderBuilder, JwtClaims, JwtSecretSource,
+    };
     pub use crate::oauth_store::InMemoryOAuthStore;
     pub use crate::port::{
         AuthProvider, AuthScheme, AuthToken, BearerToken, Credential, RbacPort, Session,
     };
+    pub use crate::rate_limit::{RateLimitError, RateLimiter, RateLimiterConfig};
     pub use crate::services::{
         JwtService, MfaService, OAuthScopeService, PasswordService, SecretString,
     };
