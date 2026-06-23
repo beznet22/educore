@@ -1196,11 +1196,11 @@ mod tests {
         });
         let env = educore_events::envelope::EventEnvelope {
             event_id: educore_core::ids::EventId(uuid::Uuid::now_v7()),
-            event_type: "documents.form_download.uploaded",
+            event_type: "documents.form_download.uploaded".to_string(),
             schema_version: 1,
             school_id: educore_core::ids::SchoolId(uuid::Uuid::now_v7()),
             aggregate_id: uuid::Uuid::now_v7(),
-            aggregate_type: "form_download",
+            aggregate_type: "form_download".to_string(),
             actor_id: educore_core::ids::UserId(uuid::Uuid::now_v7()),
             correlation_id: educore_core::ids::CorrelationId(uuid::Uuid::now_v7()),
             causation_id: None,
@@ -1227,11 +1227,11 @@ mod tests {
         });
         let env = educore_events::envelope::EventEnvelope {
             event_id: educore_core::ids::EventId(uuid::Uuid::now_v7()),
-            event_type: "documents.form_download.uploaded",
+            event_type: "documents.form_download.uploaded".to_string(),
             schema_version: 1,
             school_id: educore_core::ids::SchoolId(uuid::Uuid::now_v7()),
             aggregate_id: uuid::Uuid::now_v7(),
-            aggregate_type: "form_download",
+            aggregate_type: "form_download".to_string(),
             actor_id: educore_core::ids::UserId(uuid::Uuid::now_v7()),
             correlation_id: educore_core::ids::CorrelationId(uuid::Uuid::now_v7()),
             causation_id: None,
@@ -1252,11 +1252,11 @@ mod tests {
         });
         let env = educore_events::envelope::EventEnvelope {
             event_id: educore_core::ids::EventId(uuid::Uuid::now_v7()),
-            event_type: "documents.form_download.uploaded",
+            event_type: "documents.form_download.uploaded".to_string(),
             schema_version: 1,
             school_id: educore_core::ids::SchoolId(uuid::Uuid::now_v7()),
             aggregate_id: uuid::Uuid::now_v7(),
-            aggregate_type: "form_download",
+            aggregate_type: "form_download".to_string(),
             actor_id: educore_core::ids::UserId(uuid::Uuid::now_v7()),
             correlation_id: educore_core::ids::CorrelationId(uuid::Uuid::now_v7()),
             causation_id: None,

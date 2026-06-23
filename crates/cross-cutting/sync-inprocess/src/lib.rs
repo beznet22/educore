@@ -222,7 +222,7 @@ mod tests {
     }
 
     fn event_type(envelope: &EventEnvelope) -> &str {
-        envelope.event_type
+        envelope.event_type.as_str()
     }
 
     #[tokio::test]

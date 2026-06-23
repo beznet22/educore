@@ -550,8 +550,8 @@ mod tests {
             school,
             g.next_correlation_id(),
         ));
-        envelope.event_type = event_type;
-        envelope.aggregate_type = aggregate_type;
+        envelope.event_type = event_type.to_owned();
+        envelope.aggregate_type = aggregate_type.to_owned();
         envelope
     }
 

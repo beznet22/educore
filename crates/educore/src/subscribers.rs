@@ -51,9 +51,7 @@ use std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 
 use educore_events::envelope::EventEnvelope;
-use educore_events::subscribe::{
-    Subscriber, SubscriberRegistry, SubscriptionFilter,
-};
+use educore_events::subscribe::{Subscriber, SubscriberRegistry, SubscriptionFilter};
 
 use educore_core::error::Result;
 use educore_core::ids::Identifier;
@@ -556,18 +554,28 @@ mod tests {
     use super::*;
     use educore_core::clock::{IdGenerator, SystemIdGen};
     use educore_core::value_objects::Timestamp;
-    use futures::executor::block_on;
     use serde_json::json;
+
+    /// Test helper: run an async future to completion. Uses a
+    /// fresh single-thread tokio runtime; tests are short-lived
+    /// so the runtime cost is negligible.
+    fn block_on<F: std::future::Future>(future: F) -> F::Output {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("test runtime")
+            .block_on(future)
+    }
 
     fn envelope(event_type: &'static str, payload: serde_json::Value) -> EventEnvelope {
         let g = SystemIdGen;
         EventEnvelope {
             event_id: g.next_event_id(),
-            event_type,
+            event_type: event_type.to_string(),
             schema_version: 1,
             school_id: g.next_school_id(),
             aggregate_id: g.next_uuid(),
-            aggregate_type: "test_aggregate",
+            aggregate_type: "test_aggregate".to_string(),
             actor_id: g.next_user_id(),
             correlation_id: g.next_correlation_id(),
             causation_id: None,
@@ -653,7 +661,10 @@ mod tests {
     #[test]
     fn form_uploaded_subscriber_handles_missing_show_public() {
         let subscriber = FormUploadedPublicIndexing::new();
-        let env = envelope("documents.form_download.uploaded", json!({"form_id": "abc"}));
+        let env = envelope(
+            "documents.form_download.uploaded",
+            json!({"form_id": "abc"}),
+        );
         let result = block_on(subscriber.handle(&env));
         assert!(result.is_ok());
     }
@@ -692,10 +703,7 @@ mod tests {
             StaffRegisteredSalaryTemplate::new().name(),
             "staff_registered_salary_template"
         );
-        assert_eq!(
-            PayrollPaidMarkPaid::new().name(),
-            "payroll_paid_mark_paid"
-        );
+        assert_eq!(PayrollPaidMarkPaid::new().name(), "payroll_paid_mark_paid");
     }
 
     #[test]
