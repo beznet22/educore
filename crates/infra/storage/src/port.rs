@@ -43,6 +43,40 @@ pub trait StorageAdapter: Send + Sync + fmt::Debug {
     /// already-migrated database returns a no-op report.
     async fn migrate(&self) -> Result<MigrationReport>;
 
+    /// Emits the engine's full schema: the 6 cross-cutting
+    /// tables (outbox / audit_log / idempotency / event_log /
+    /// schema_registry / system_user) plus one `DEFINE TABLE` /
+    /// set of `DEFINE FIELD`s / set of `DEFINE INDEX`es per
+    /// registered aggregate.
+    ///
+    /// Per `docs/build-plan.md` § "The macro-driven schema" and
+    /// `docs/schemas/sql-dialects/README.md` § "Runtime DDL
+    /// emission", the schema is **emitted at startup**, not
+    /// applied from `.sql` migration files at runtime. The
+    /// adapter walks the macro-emitted AST (added in PR
+    /// `e036f73`) and translates each `EntityDescriptor` into
+    /// dialect-specific DDL.
+    ///
+    /// Adapters that ship their own canonical DDL (the 6
+    /// engine cross-cutting tables) must execute it before
+    /// walking the descriptor list. Adapters must make the call
+    /// idempotent: every emitted `DEFINE` / `CREATE` statement
+    /// uses `IF NOT EXISTS` (or its dialect equivalent) so
+    /// re-running on an already-migrated database is a no-op.
+    ///
+    /// The default implementation returns
+    /// `DomainError::NotSupported`; adapters that participate
+    /// in runtime schema emission override this method.
+    ///
+    /// # Errors
+    /// - `Infrastructure` if the underlying storage fails to
+    ///   apply any of the emitted statements.
+    async fn create_schema(&self) -> Result<()> {
+        Err(educore_core::error::DomainError::not_supported(
+            "StorageAdapter::create_schema is not supported by this adapter",
+        ))
+    }
+
     /// Liveness check. Returns `Ok(())` if the adapter is
     /// connected and responsive; `Err(Infrastructure)` otherwise.
     async fn ping(&self) -> Result<()>;

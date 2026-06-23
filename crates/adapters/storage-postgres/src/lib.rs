@@ -52,6 +52,7 @@ pub mod error;
 pub mod event_log;
 pub mod idempotency;
 pub mod outbox;
+pub mod schema;
 pub mod storage;
 pub mod transaction;
 
