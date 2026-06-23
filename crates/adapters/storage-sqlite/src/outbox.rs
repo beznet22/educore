@@ -175,6 +175,12 @@ impl Outbox for SqliteOutbox {
     }
 
     async fn pending(&self, limit: u32) -> Result<Vec<SerializedEnvelope>> {
+        // QW-13 / school-partitioning contract: the `WHERE
+        // school_id = ?1` predicate is the engine's tenant-isolation
+        // guarantee for this handle. `?1` is bound to
+        // `self.school` (the handle's scope) — never to a
+        // caller-supplied value — so cross-tenant leakage is
+        // impossible at this method.
         let rows: Vec<OutboxRow> = sqlx::query_as::<sqlx::Sqlite, OutboxRow>(
             "SELECT \
                 event_id, event_type, event_version, school_id, \
@@ -193,6 +199,30 @@ impl Outbox for SqliteOutbox {
         .await
         .map_err(|e| StringError(format!("outbox pending: {e}")))?;
         Ok(rows.iter().map(OutboxRow::to_envelope).collect())
+    }
+
+    async fn pending_for_school(
+        &self,
+        school_id: SchoolId,
+        limit: u32,
+    ) -> Result<Vec<SerializedEnvelope>> {
+        // QW-13 / ADAPTER-SQ-OUTBOX-001: the explicit school
+        // argument MUST match the handle's scope. A mismatched
+        // `school_id` is a cross-tenant read attempt and is
+        // rejected with `TenantViolation` (per
+        // `docs/schemas/tenancy-schema.md` § 2). Once the
+        // assertion passes, the underlying `pending` query is
+        // already partitioned by `self.school`, so no extra
+        // SQL is needed.
+        if school_id != self.school {
+            return Err(DomainError::tenant_violation(format!(
+                "outbox::pending_for_school called with school_id {} but \
+                 handle is scoped to school_id {}",
+                school_id.as_uuid(),
+                self.school.as_uuid(),
+            )));
+        }
+        self.pending(limit).await
     }
 
     async fn mark_published(&self, ids: &[EventId]) -> Result<()> {
@@ -224,11 +254,28 @@ impl Outbox for SqliteOutbox {
     }
 
     async fn pending_count(&self, school_id: SchoolId) -> Result<u64> {
+        // QW-13 / ADAPTER-SQ-OUTBOX-002: the explicit school
+        // argument MUST match the handle's scope. The previous
+        // implementation bound the caller-supplied `school_id`
+        // directly into the `WHERE` clause, which let any
+        // tenant read any other tenant's pending outbox depth
+        // (a back-pressure side channel — the relay uses this
+        // count for back-pressure sizing and a cross-tenant
+        // probe would leak tenant activity). Reject mismatches
+        // with `TenantViolation`; bind `self.school` into the SQL.
+        if school_id != self.school {
+            return Err(DomainError::tenant_violation(format!(
+                "outbox::pending_count called with school_id {} but \
+                 handle is scoped to school_id {}",
+                school_id.as_uuid(),
+                self.school.as_uuid(),
+            )));
+        }
         let count: i64 = sqlx::query_scalar::<sqlx::Sqlite, i64>(
             "SELECT COUNT(*) FROM outbox \
              WHERE school_id = ?1 AND published_at IS NULL",
         )
-        .bind(school_id.as_uuid().hyphenated())
+        .bind(self.school.as_uuid().hyphenated())
         .fetch_one(&self.pool)
         .await
         .map_err(|e| StringError(format!("outbox pending_count: {e}")))?;
