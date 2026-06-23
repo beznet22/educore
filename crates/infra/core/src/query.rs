@@ -473,6 +473,150 @@ pub fn to_relational_node<F: Field>(node: QueryNode<F>) -> QueryNode<RelationalF
     }
 }
 
+// =============================================================================
+// EntityDescriptor — the macro-emitted schema description
+// =============================================================================
+//
+// Per `docs/build-plan.md` and `docs/query_layer.md`, the
+// `#[derive(DomainQuery)]` macro emits an `EntityDescriptor` for
+// every domain aggregate. Storage adapters walk this descriptor at
+// `create_schema()` time to emit dialect-specific DDL.
+//
+// The descriptor is **dialect-agnostic**: it carries the table name,
+// columns, indexes, foreign keys, and RLS policies. The adapter
+// chooses the concrete syntax (`CREATE TABLE` vs `DEFINE TABLE`,
+// etc.).
+//
+// This is the **macro's output side**. The macro is the producer;
+// storage adapters are the consumers. Adapters consume the
+// descriptor via the `pub const ENTITY_DESCRIPTOR: EntityDescriptor`
+// that the macro emits on every derived struct.
+
+/// A dialect-agnostic schema description for one aggregate. Emitted
+/// by `#[derive(DomainQuery)]` as a `pub const ENTITY_DESCRIPTOR` on
+/// every derived struct.
+#[derive(Debug, Clone)]
+pub struct EntityDescriptor {
+    /// The table name in snake_case. E.g. `student`.
+    pub table: &'static str,
+    /// All columns in the table (id, audit, domain fields).
+    pub columns: Vec<ColumnDescriptor>,
+    /// Indexes to create. Adapters emit `CREATE INDEX` or dialect equivalent.
+    pub indexes: Vec<IndexDescriptor>,
+    /// Foreign keys to other tables.
+    pub foreign_keys: Vec<ForeignKeyDescriptor>,
+    /// Row-level security policies. Empty for adapters that don't support RLS.
+    pub rls: Vec<RlsPolicy>,
+}
+
+/// One column in an [`EntityDescriptor`].
+#[derive(Debug, Clone)]
+pub struct ColumnDescriptor {
+    /// The column name in snake_case. E.g. `last_name`.
+    pub name: &'static str,
+    /// The dialect-agnostic column type. Adapters map this to their native types.
+    pub column_type: ColumnType,
+    /// Whether the column permits NULL.
+    pub nullable: bool,
+    /// Whether this column is part of the primary key.
+    pub primary_key: bool,
+    /// Whether the column is auto-generated (UUID v7, `SERIAL`, etc.).
+    pub auto_generated: bool,
+    /// Whether the column should have a single-column index for fast lookup.
+    pub indexed: bool,
+    /// Whether the column has a unique constraint within its scope.
+    pub unique: bool,
+}
+
+/// Dialect-agnostic column type. Adapters map each variant to a
+/// native type appropriate to their backend (e.g. `Uuid` →
+/// `UUID` in Postgres, `CHAR(36)` in MySQL, `TEXT` in SQLite).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ColumnType {
+    /// UUID v7 (or v4 if older). The engine emits UUID v7 from `educore_core::id_gen`.
+    Uuid,
+    /// Bounded UTF-8 string. Adapters pick `VARCHAR(n)` or `TEXT`.
+    String,
+    /// Unlimited UTF-8 text.
+    Text,
+    /// 64-bit signed integer.
+    I64,
+    /// 64-bit unsigned integer.
+    U64,
+    /// 32-bit signed integer.
+    I32,
+    /// 32-bit unsigned integer.
+    U32,
+    /// 64-bit floating point.
+    F64,
+    /// Boolean.
+    Bool,
+    /// UTC timestamp with microsecond precision.
+    Timestamp,
+    /// JSON document. The engine forbids `serde_json::Value` in
+    /// domain code; this variant exists for adapter-level JSON
+    /// payloads (event metadata, audit metadata).
+    Json,
+    /// Byte string (BLOB).
+    Bytes,
+    /// Adapter-specific type. The `dialect_hint` carries the
+    /// underlying SQL type for adapters that need to know.
+    Custom(&'static str),
+}
+
+/// One index in an [`EntityDescriptor`].
+#[derive(Debug, Clone)]
+pub struct IndexDescriptor {
+    /// The index name. E.g. `student_school_id_idx`.
+    pub name: &'static str,
+    /// The columns covered by the index, in order.
+    pub columns: Vec<&'static str>,
+    /// Whether the index enforces uniqueness.
+    pub unique: bool,
+}
+
+/// One foreign key in an [`EntityDescriptor`].
+#[derive(Debug, Clone)]
+pub struct ForeignKeyDescriptor {
+    /// The column in this table that holds the foreign key.
+    pub column: &'static str,
+    /// The table being referenced.
+    pub references_table: &'static str,
+    /// The column being referenced.
+    pub references_column: &'static str,
+    /// Action on `DELETE`.
+    pub on_delete: ForeignKeyAction,
+    /// Action on `UPDATE`.
+    pub on_update: ForeignKeyAction,
+}
+
+/// Action to take on FK violation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ForeignKeyAction {
+    /// SQL `NO ACTION` (deferred to end of statement).
+    NoAction,
+    /// SQL `RESTRICT` (immediate).
+    Restrict,
+    /// SQL `CASCADE`.
+    Cascade,
+    /// SQL `SET NULL`.
+    SetNull,
+    /// SQL `SET DEFAULT`.
+    SetDefault,
+}
+
+/// One row-level security policy in an [`EntityDescriptor`].
+#[derive(Debug, Clone)]
+pub struct RlsPolicy {
+    /// The policy name. E.g. `student_school_isolation`.
+    pub name: &'static str,
+    /// The `USING` expression. Stored as a SQL fragment that the
+    /// adapter binds to its dialect. E.g. `"school_id = current_setting('app.school_id')::uuid"`.
+    pub using_expr: &'static str,
+    /// Optional `WITH CHECK` expression for INSERT/UPDATE.
+    pub with_check_expr: Option<&'static str>,
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
@@ -572,5 +716,99 @@ mod tests {
     fn field_column_name_round_trip() {
         assert_eq!(DummyField::Name.column_name(), "name");
         assert_eq!(DummyField::Age.column_name(), "age");
+    }
+
+    // ---- EntityDescriptor tests ----
+
+    #[test]
+    fn entity_descriptor_can_be_constructed_empty() {
+        // Empty descriptor is valid; adapters receive this shape
+        // when a domain struct has no queryable fields.
+        let d = EntityDescriptor {
+            table: "widget",
+            columns: vec![],
+            indexes: vec![],
+            foreign_keys: vec![],
+            rls: vec![],
+        };
+        assert_eq!(d.table, "widget");
+        assert!(d.columns.is_empty());
+        assert!(d.indexes.is_empty());
+        assert!(d.foreign_keys.is_empty());
+        assert!(d.rls.is_empty());
+    }
+
+    #[test]
+    fn column_descriptor_carries_type_and_constraints() {
+        let col = ColumnDescriptor {
+            name: "last_name",
+            column_type: ColumnType::String,
+            nullable: false,
+            primary_key: false,
+            auto_generated: false,
+            indexed: false,
+            unique: false,
+        };
+        assert_eq!(col.name, "last_name");
+        assert_eq!(col.column_type, ColumnType::String);
+        assert!(!col.nullable);
+    }
+
+    #[test]
+    fn column_type_variants_are_distinct() {
+        // Smoke-test that the ColumnType variants we care about
+        // are distinct. The lint forbids `serde_json::Value` but
+        // the JSON variant is adapter-level (event metadata),
+        // not domain data.
+        let types = [
+            ColumnType::Uuid,
+            ColumnType::String,
+            ColumnType::I64,
+            ColumnType::Bool,
+            ColumnType::Timestamp,
+            ColumnType::Json,
+            ColumnType::Custom("BYTEA"),
+        ];
+        for (i, a) in types.iter().enumerate() {
+            for (j, b) in types.iter().enumerate() {
+                if i != j {
+                    assert_ne!(a, b, "variants {i} and {j} should differ");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn foreign_key_actions_are_distinct() {
+        let actions = [
+            ForeignKeyAction::NoAction,
+            ForeignKeyAction::Restrict,
+            ForeignKeyAction::Cascade,
+            ForeignKeyAction::SetNull,
+            ForeignKeyAction::SetDefault,
+        ];
+        for (i, a) in actions.iter().enumerate() {
+            for (j, b) in actions.iter().enumerate() {
+                if i != j {
+                    assert_ne!(a, b);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn rls_policy_with_and_without_with_check() {
+        let with_check = RlsPolicy {
+            name: "school_isolation",
+            using_expr: "school_id = current_setting('app.school_id')::uuid",
+            with_check_expr: Some("school_id = current_setting('app.school_id')::uuid"),
+        };
+        let without_check = RlsPolicy {
+            name: "read_only",
+            using_expr: "false",
+            with_check_expr: None,
+        };
+        assert!(with_check.with_check_expr.is_some());
+        assert!(without_check.with_check_expr.is_none());
     }
 }

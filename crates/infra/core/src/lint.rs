@@ -102,6 +102,7 @@ pub fn run(repo_root: &Path) -> LintReport {
     let mut report = LintReport::default();
     runner::check_spec_to_code(repo_root, &mut report);
     runner::check_code_to_spec(repo_root, &mut report);
+    runner::check_parity(repo_root, &mut report);
     runner::check_coverage_matrix(repo_root, &mut report);
     runner::check_anti_patterns(repo_root, &mut report);
     report
@@ -724,6 +725,282 @@ pub mod runner {
             }
         }
         false
+    }
+
+    /// Parity check (item 4 of the No-Gaps Gates). Walks each
+    /// domain crate's `aggregate.rs` / `entities.rs` and the
+    /// matching `docs/specs/<domain>/tables.md`, and verifies
+    /// that every `#[derive(DomainQuery)]` struct in the source
+    /// has a matching aggregate row in the spec, and vice versa.
+    ///
+    /// The check is **bidirectional**:
+    ///
+    /// - **Spec → code**: every `| \`table\` | <Aggregate> | ...`
+    ///   row whose `Aggregate` cell names a real PascalCase
+    ///   identifier must have a corresponding `#[derive(DomainQuery)]`
+    ///   struct in the domain crate. Missing struct =>
+    ///   `parity:missing_macro` violation.
+    /// - **Code → spec**: every `#[derive(DomainQuery)]` struct
+    ///   must appear as an aggregate in `tables.md`. Missing
+    ///   spec row => `parity:missing_spec_row` violation.
+    ///
+    /// **Heuristic & known false positives** (documented per
+    /// `docs/build-plan.md` § "The No-Gaps Gates"):
+    ///
+    /// - The macro detector uses a substring match
+    ///   (`#[derive(` AND `DomainQuery`) on the same line). This
+    ///   tolerates both `#[derive(DomainQuery)]` and
+    ///   `#[derive(Debug, DomainQuery)]`, and tolerates macros
+    ///   defined as `pub fn DomainQuery` (none today) because
+    ///   we require both substrings to coexist.
+    /// - The follow-up `pub struct <Name>` is searched within
+    ///   the next 5 lines, which is enough for the common
+    ///   `#[derive(DomainQuery)]\npub struct Foo {}` pattern and
+    ///   tolerates one or two attribute lines in between (e.g.
+    ///   `#[serde(rename_all = "snake_case")]`). Macro
+    ///   applications with longer attribute chains (>=3 lines
+    ///   of intervening attributes) will be MISSED; they will
+    ///   NOT trigger a violation because the struct will not be
+    ///   attributed to the macro. This is a known limitation
+    ///   of the simple regex approach.
+    /// - The spec aggregate column parser ignores parenthetical
+    ///   annotations (`AcademicYear (legacy)`, `Subject (alt)`)
+    ///   by taking the prefix before `(`, and ignores rows whose
+    ///   aggregate cell starts with `(` (e.g. `(template)`,
+    ///   `(sentinel)`, `(cms)` markers). These are intentional
+    ///   non-aggregates; they do not represent Rust types.
+    /// - The scan is restricted to `aggregate.rs` and
+    ///   `entities.rs` because the engine's spec → code
+    ///   invariant pins the macro to those two files (per the
+    ///   build plan). Query-stub files (`query.rs`) are
+    ///   explicitly out of scope: the actual query types live
+    ///   in the `educore-query-derive` crate and the stubs are
+    ///   future-shaped placeholders.
+    pub fn check_parity(repo_root: &Path, report: &mut LintReport) {
+        let specs_dir = repo_root.join("docs").join("specs");
+        let domains_dir = repo_root.join("crates").join("domains");
+        let Ok(specs_entries) = fs::read_dir(&specs_dir) else {
+            return;
+        };
+        for spec_entry in specs_entries.flatten() {
+            let domain_path = spec_entry.path();
+            if !domain_path.is_dir() {
+                continue;
+            }
+            let domain_name = match spec_entry.file_name().into_string() {
+                Ok(s) => s,
+                Err(_) => continue,
+            };
+            let code_root = domains_dir.join(&domain_name);
+            if !code_root.join("src").is_dir() {
+                // Cross-cutting spec (events, operations, platform,
+                // rbac, settings, sync) — no Rust crate, skip.
+                continue;
+            }
+            let tables_md = domain_path.join("tables.md");
+            let aggregate_rs = code_root.join("src").join("aggregate.rs");
+            let entities_rs = code_root.join("src").join("entities.rs");
+            let spec_contents = fs::read_to_string(&tables_md).unwrap_or_default();
+            let spec_aggregates = extract_table_aggregates(&spec_contents);
+            let mut macro_structs: Vec<(String, std::path::PathBuf)> = Vec::new();
+            for src_file in [&aggregate_rs, &entities_rs] {
+                let Ok(src_contents) = fs::read_to_string(src_file) else {
+                    continue;
+                };
+                for name in extract_domain_query_structs(&src_contents) {
+                    macro_structs.push((name, src_file.clone()));
+                }
+            }
+            // Bidirectional comparison: every spec aggregate name
+            // without a matching struct => `parity:missing_macro`;
+            // every macro struct without a matching spec row =>
+            // `parity:missing_spec_row`.
+            for agg in &spec_aggregates {
+                if !macro_structs.iter().any(|(n, _)| n == agg) {
+                    report.violations.push(Violation {
+                        check: "parity:missing_macro".to_string(),
+                        file: tables_md
+                            .strip_prefix(repo_root)
+                            .unwrap_or(&tables_md)
+                            .to_path_buf(),
+                        line: None,
+                        message: format!(
+                            "spec row `{agg}` in {} has no `#[derive(DomainQuery)]` struct in crates/domains/{}/src/",
+                            tables_md.display(),
+                            domain_name
+                        ),
+                    });
+                }
+            }
+            for (name, src_file) in &macro_structs {
+                if !spec_aggregates.iter().any(|a| a == name) {
+                    report.violations.push(Violation {
+                        check: "parity:missing_spec_row".to_string(),
+                        file: src_file
+                            .strip_prefix(repo_root)
+                            .unwrap_or(src_file)
+                            .to_path_buf(),
+                        line: None,
+                        message: format!(
+                            "`#[derive(DomainQuery)]` on `pub struct {name}` in {} has no matching aggregate row in {}",
+                            src_file.display(),
+                            tables_md.display()
+                        ),
+                    });
+                }
+            }
+        }
+    }
+
+    /// Returns every `pub struct <Name>` declaration in `src`
+    /// that is preceded (within ~5 lines) by a
+    /// `#[derive(DomainQuery)]` attribute line. The 5-line window
+    /// tolerates one or two attribute lines interleaved between
+    /// the derive and the struct (e.g. `#[serde(...)]`,
+    /// `#[allow(...)]`).
+    ///
+    /// The matcher is **deliberately permissive** (it tolerates
+    /// the `#[derive(...)]` being on the same line OR within 5
+    /// lines above the struct). The downside — false positives
+    /// when a different derive attribute is on the line above —
+    /// is acceptable because the engine's only proc macro in
+    /// this role is `DomainQuery`. The check is cheap enough to
+    /// run on every domain crate on every lint invocation.
+    fn extract_domain_query_structs(src: &str) -> Vec<String> {
+        let lines: Vec<&str> = src.lines().collect();
+        let mut out = Vec::new();
+        let mut seen: Vec<String> = Vec::new();
+        for (idx, line) in lines.iter().enumerate() {
+            let trimmed = line.trim_start();
+            // Macro application detection: `#[derive(`
+            // substring AND `DomainQuery` substring on the SAME
+            // line. The delimiter check after the name in
+            // `extract_struct_names` below protects against
+            // false matches from `pub struct CommandHistory`
+            // when the suffix is `Command`. Here we have no
+            // suffix; we just need the struct name.
+            if !(trimmed.starts_with("#[derive") && trimmed.contains("DomainQuery")) {
+                continue;
+            }
+            // Look forward up to 5 lines for `pub struct <Name>`.
+            // Break out as soon as we see ANY `pub struct`
+            // (whether or not it has a usable name) so the same
+            // struct is not attributed to the next derive in a
+            // chain like:
+            //   #[derive(DomainQuery)]
+            //   pub struct Foo {}
+            //   #[derive(DomainQuery)]
+            //   pub struct Bar {}
+            for offset in 1..=5 {
+                let Some(candidate) = lines.get(idx + offset) else {
+                    break;
+                };
+                if !candidate.trim_start().starts_with("pub struct ") {
+                    continue;
+                }
+                for name in extract_struct_names(candidate, "") {
+                    if !seen.contains(&name) {
+                        seen.push(name.clone());
+                        out.push(name);
+                    }
+                }
+                break;
+            }
+        }
+        out
+    }
+
+    /// Parses `tables.md` and returns the deduplicated list of
+    /// aggregate names declared in the second column of each
+    /// markdown table row.
+    ///
+    /// The expected format is the same across all 10 domain
+    /// specs:
+    ///
+    /// ```text
+    /// | Table                        | Aggregate       | Notes           |
+    /// | ---------------------------- | --------------- | --------------- |
+    /// | `academic_students`          | Student         | The student     |
+    /// | `academic_classes`           | Class           | Grade level     |
+    /// | `student_records`            | StudentRecord   | Enrollment/year |
+    /// ```
+    ///
+    /// The function tolerates:
+    /// - Header rows (`Table | Aggregate | Notes |`)
+    /// - Separator rows (`--- | --- | ---`)
+    /// - Parenthetical annotations on the aggregate cell
+    ///   (`AcademicYear (legacy)` => `AcademicYear`)
+    /// - Trailing free-text annotations after a single space
+    ///   (`HomeworkSubmission file` => `HomeworkSubmission`)
+    /// - Empty aggregate cells (skipped)
+    /// - Code-fenced rows (skipped; no tables.md ships tables
+    ///   inside code fences today but the rule is consistent
+    ///   with the other parsers)
+    ///
+    /// Cells that begin with `(` (template / sentinel / cms
+    /// markers) are NOT aggregates and are skipped.
+    fn extract_table_aggregates(md: &str) -> Vec<String> {
+        let mut out = Vec::new();
+        let mut seen: Vec<String> = Vec::new();
+        let mut in_code = false;
+        for line in md.lines() {
+            if is_code_fence(line) {
+                in_code = !in_code;
+                continue;
+            }
+            if in_code {
+                continue;
+            }
+            // Only consider table rows.
+            let Some(after_pipe) = line.trim_start().strip_prefix('|') else {
+                continue;
+            };
+            let cells: Vec<&str> = after_pipe.split('|').collect();
+            // Need at least: cell[0] (table), cell[1] (aggregate),
+            // cell[2] (notes). The leading/trailing pipes produce
+            // empty cells at the ends; trim them.
+            if cells.len() < 3 {
+                continue;
+            }
+            let table_cell = cells[0].trim();
+            let agg_cell = cells[1].trim();
+            // Skip header rows (the literal word `Table` or
+            // separator rows with dashes).
+            if table_cell.eq_ignore_ascii_case("Table")
+                || table_cell.starts_with("---")
+                || table_cell.is_empty()
+            {
+                continue;
+            }
+            // Skip non-aggregate markers.
+            if agg_cell.is_empty() || agg_cell.starts_with('(') {
+                continue;
+            }
+            // Strip parenthetical annotations:
+            // `AcademicYear (legacy)` => `AcademicYear`.
+            let before_paren = agg_cell.split('(').next().unwrap_or(agg_cell).trim();
+            // If the cell is "HomeworkSubmission file", keep
+            // only the first word (the struct name) and drop
+            // the free-text trailing word. If the cell is just
+            // "HomeworkSubmission", the split yields the same.
+            let name = before_paren.split_whitespace().next().unwrap_or("");
+            // Validate that the result looks like a Rust
+            // identifier (PascalCase).
+            if name.is_empty() {
+                continue;
+            }
+            if !name.chars().next().is_some_and(char::is_alphabetic) {
+                continue;
+            }
+            if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+                continue;
+            }
+            if !seen.iter().any(|s| s == name) {
+                seen.push(name.to_string());
+                out.push(name.to_string());
+            }
+        }
+        out
     }
 
     /// Coverage-matrix sync: every `Tested` row in

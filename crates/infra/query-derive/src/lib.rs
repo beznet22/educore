@@ -104,6 +104,30 @@ fn pascal_case(s: &str) -> String {
     out
 }
 
+/// Convert a PascalCase or camelCase identifier to snake_case.
+/// Used for table-name derivation in the EntityDescriptor
+/// emission.
+fn snake_case(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 4);
+    for (i, ch) in s.chars().enumerate() {
+        if ch.is_ascii_uppercase() {
+            if i > 0 {
+                let prev = s.chars().nth(i - 1);
+                let next = s.chars().nth(i + 1);
+                let prev_is_lower = prev.is_some_and(|c| c.is_ascii_lowercase());
+                let next_is_lower = next.is_some_and(|c| c.is_ascii_lowercase());
+                if prev_is_lower || next_is_lower {
+                    out.push('_');
+                }
+            }
+            out.push(ch.to_ascii_lowercase());
+        } else {
+            out.push(ch);
+        }
+    }
+    out
+}
+
 // ---------- Macro expansion ---------
 
 /// Procedural derive: emits the `*Field` enum, `*Relation` enum,
@@ -829,6 +853,58 @@ fn expand(input: DeriveInput) -> syn::Result<TokenStream2> {
             }
         };
 
+        // -------- EntityDescriptor emission --------
+        //
+        // Emit a `pub const ENTITY_DESCRIPTOR: EntityDescriptor` on
+        // the derived struct. The table name is the struct name in
+        // snake_case (with a trailing "s" — naive pluralization;
+        // adapters may override via a future `#[query(table = "...")]`
+        // attribute). The columns are derived from the struct's
+        // fields, with `ColumnType::Custom("UNKNOWN")` as a placeholder
+        // until type inference lands (Cluster A stage 2 follow-up).
+        //
+        // Indexes, foreign keys, and RLS policies are empty arrays —
+        // the audit's CORE-002 finding noted these need to be derived
+        // from `#[query(...)]` attributes. That follow-up is tracked
+        // under Cluster A stage 2.
+        let table_name = snake_case(&struct_name.to_string()) + "s";
+        let table_name_lit: LitStr = syn::parse_quote!(#table_name);
+
+        let column_entries = field_infos.iter().map(|f| {
+            let col_name = f.name.to_string();
+            let col_name_lit: LitStr = syn::parse_quote!(#col_name);
+            quote! {
+                ::educore_core::query::ColumnDescriptor {
+                    name: #col_name_lit,
+                    column_type: ::educore_core::query::ColumnType::Custom("UNKNOWN"),
+                    nullable: true,
+                    primary_key: false,
+                    auto_generated: false,
+                    indexed: false,
+                    unique: false,
+                }
+            }
+        });
+
+        let entity_descriptor_const = quote! {
+            #[automatically_derived]
+            impl #struct_name {
+                /// The dialect-agnostic schema descriptor for this
+                /// aggregate. Storage adapters walk this at
+                /// `create_schema()` time to emit DDL.
+                pub const ENTITY_DESCRIPTOR: ::educore_core::query::EntityDescriptor =
+                    ::educore_core::query::EntityDescriptor {
+                        table: #table_name_lit,
+                        columns: ::std::vec![
+                            #(#column_entries),*
+                        ],
+                        indexes: ::std::vec::[],
+                        foreign_keys: ::std::vec::[],
+                        rls: ::std::vec![],
+                    };
+            }
+        };
+
         let out = quote! {
             #field_enum
             #field_impl
@@ -838,6 +914,7 @@ fn expand(input: DeriveInput) -> syn::Result<TokenStream2> {
             #builder_struct
             #builder_impl
             #struct_query
+            #entity_descriptor_const
         };
 
         Ok(out)
