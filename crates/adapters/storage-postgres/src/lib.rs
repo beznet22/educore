@@ -47,6 +47,7 @@ pub mod audit_log;
 pub mod bulk_attendance;
 pub mod connection;
 pub(crate) mod connection_helpers;
+pub mod ddl;
 pub mod error;
 pub mod event_log;
 pub mod idempotency;

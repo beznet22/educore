@@ -18,6 +18,13 @@
 //! so queries can reference `outbox`, `audit_log`, etc.
 //! unqualified.
 //!
+//! In addition to the canonical DDL, `migrate()` also applies the
+//! per-tenant `school_id` indexes from
+//! [`crate::ddl::SCHOOL_ID_INDEXES_SQL`]. Those indexes are
+//! applied as a separate step so the canonical file stays
+//! authoritative for the 6 cross-cutting tables themselves, and
+//! the adapter-local index additions stay scoped to this crate.
+//!
 //! ## Migrations
 //!
 //! `migrate()` executes the DDL via `sqlx::raw_sql`, which
@@ -52,6 +59,7 @@ use educore_storage::StudentAttendanceRow;
 
 use crate::bulk_attendance::PostgresBulkAttendance;
 use crate::connection::PostgresConnection;
+use crate::ddl::SCHOOL_ID_INDEXES_SQL;
 use crate::transaction::PostgresTransaction;
 
 /// The canonical PostgreSQL DDL for the 6 engine cross-cutting
@@ -61,8 +69,16 @@ const SCHEMA_SQL: &str =
 
 /// The current schema version. Bumped on every migration; the
 /// adapter's `migrate()` is idempotent thanks to the
-/// `IF NOT EXISTS` clauses in the .sql file.
-const SCHEMA_VERSION: u32 = 1;
+/// `IF NOT EXISTS` clauses in the .sql file and in
+/// [`SCHOOL_ID_INDEXES_SQL`].
+///
+/// Version history:
+/// * `1` — initial schema; 6 cross-cutting tables + indexes
+///   from the canonical DDL only.
+/// * `2` — QW-6: per-tenant `school_id` indexes for the 4
+///   multi-tenant cross-cutting tables (`outbox`, `audit_log`,
+///   `idempotency`, `event_log`).
+const SCHEMA_VERSION: u32 = 2;
 
 /// The PostgreSQL-backed storage adapter.
 pub struct PostgresStorageAdapter {
@@ -142,6 +158,14 @@ impl StorageAdapter for PostgresStorageAdapter {
             .execute(self.conn.db())
             .await
             .map_err(DomainError::infrastructure)?;
+        // QW-6: per-tenant school_id indexes for the 4
+        // multi-tenant cross-cutting tables. Applied after
+        // SCHEMA_SQL so the tables are guaranteed to exist.
+        // Idempotent (`CREATE INDEX IF NOT EXISTS`).
+        sqlx::raw_sql(SCHOOL_ID_INDEXES_SQL)
+            .execute(self.conn.db())
+            .await
+            .map_err(DomainError::infrastructure)?;
         // The bulk-attendance table is the storage-port
         // target for the Phase 5 bulk-marking service; the
         // DDL is embedded in the `bulk_attendance` module so
@@ -151,13 +175,19 @@ impl StorageAdapter for PostgresStorageAdapter {
             .await?;
         let duration = start.elapsed();
         // Count statements by counting top-level `;` separators
-        // plus one. The number is a coarse lower bound (it
-        // includes the `CREATE SCHEMA` and the seed `INSERT`).
+        // plus one across both the canonical schema and the
+        // adapter-local school_id indexes. The number is a
+        // coarse lower bound (it includes the `CREATE SCHEMA`
+        // and the seed `INSERT`).
         let statements_executed = u32::try_from(
             SCHEMA_SQL
                 .split(';')
                 .filter(|s| !s.trim().is_empty())
-                .count(),
+                .count()
+                + SCHOOL_ID_INDEXES_SQL
+                    .split(';')
+                    .filter(|s| !s.trim().is_empty())
+                    .count(),
         )
         .unwrap_or(0);
         Ok(MigrationReport {
