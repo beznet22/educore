@@ -18,8 +18,12 @@
 //! - The deprecated `PaymentProvider` trait + `StubPaymentProvider`
 //!   impl (moves to `educore-payment` in Phase 15 per the plan)
 
+// Module-level docs for every public item are tracked in
+// `docs/specs/finance/`. The `#[allow(missing_docs)]` here is a
+// conscious exception for the Phase 7 finance crate: adding rustdoc
+// for ~60 fields across `services.rs` is the Workstream K backlog
+// (see `PHASE-7-HANDOFF.md` § Workstream K).
 #![allow(missing_docs)]
-#![allow(unused_imports)]
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
@@ -988,7 +992,7 @@ mod tests {
     }
 
     #[test]
-    fn credit_wallet_creates_pending_transaction() {
+    fn credit_wallet_creates_pending_transaction() -> educore_core::error::Result<()> {
         let (school, user, _at, _corr, tenant) = ctx();
         let cmd = CreditWalletCommand {
             tenant,
@@ -1004,7 +1008,7 @@ mod tests {
         };
         let clock = SystemClock;
         let ids = educore_core::clock::SystemIdGen;
-        let (tx, event) = credit_wallet(cmd, &clock, &ids).unwrap();
+        let (tx, event) = credit_wallet(cmd, &clock, &ids)?;
         assert_eq!(tx.amount_minor, 5000);
         assert_eq!(tx.wallet_type, WalletTxType::Deposit);
         assert_eq!(event.amount_minor, 5000);
@@ -1012,10 +1016,11 @@ mod tests {
             <crate::events::WalletCredited as educore_events::domain_event::DomainEvent>::EVENT_TYPE,
             "finance.wallet.credited"
         );
+        Ok(())
     }
 
     #[test]
-    fn request_wallet_refund_emits_refund_requested_event() {
+    fn request_wallet_refund_emits_refund_requested_event() -> educore_core::error::Result<()> {
         let (school, user, _at, _corr, tenant) = ctx();
         let cmd = RequestWalletRefundCommand {
             tenant,
@@ -1028,17 +1033,18 @@ mod tests {
         };
         let clock = SystemClock;
         let ids = educore_core::clock::SystemIdGen;
-        let (tx, event) = request_wallet_refund(cmd, &clock, &ids).unwrap();
+        let (tx, event) = request_wallet_refund(cmd, &clock, &ids)?;
         assert_eq!(tx.wallet_type, WalletTxType::Refund);
         assert_eq!(event.reason, "Overpayment on invoice INV-001");
         assert_eq!(
             <crate::events::WalletRefundRequested as educore_events::domain_event::DomainEvent>::EVENT_TYPE,
             "finance.wallet.refund_requested"
         );
+        Ok(())
     }
 
     #[test]
-    fn deduct_wallet_rejects_insufficient_balance() {
+    fn deduct_wallet_rejects_insufficient_balance() -> educore_core::error::Result<()> {
         let (school, user, _at, _corr, tenant) = ctx();
         let wid = WalletId::new(school, uuid::Uuid::now_v7());
         let mut wallet = Wallet::fresh(
@@ -1062,18 +1068,19 @@ mod tests {
             reference: None,
             note: None,
         };
-        let err = deduct_wallet_credit(
+        let result = deduct_wallet_credit(
             &wallet,
             cmd,
             &SystemClock,
             &educore_core::clock::SystemIdGen,
-        )
-        .unwrap_err();
+        );
+        let err = result.expect_err("INVARIANT: expected insufficient-balance error");
         assert!(matches!(err, DomainError::Conflict(_)));
+        Ok(())
     }
 
     #[test]
-    fn approve_wallet_transaction_emits_event() {
+    fn approve_wallet_transaction_emits_event() -> educore_core::error::Result<()> {
         let (school, user, _at, _corr, _tenant) = ctx();
         let wid = WalletId::new(school, uuid::Uuid::now_v7());
         let tid = WalletTransactionId::new(school, uuid::Uuid::now_v7());
@@ -1091,25 +1098,26 @@ mod tests {
             user,
             Timestamp::now(),
             CorrelationId(uuid::Uuid::now_v7()),
-        )
-        .unwrap();
+        )?;
         let event = approve_wallet_transaction(
             &mut tx,
             user,
             &SystemClock,
             &educore_core::clock::SystemIdGen,
-        )
-        .unwrap();
+        )?;
         assert_eq!(
             <crate::events::WalletTransactionApproved as educore_events::domain_event::DomainEvent>::EVENT_TYPE,
             "finance.wallet_transaction.approved"
         );
         let _ = event;
+        Ok(())
     }
 
     #[test]
-    fn record_payment_returns_aggregate_and_event() {
+    fn record_payment_returns_aggregate_and_event() -> educore_core::error::Result<()> {
         let (school, user, _at, _corr, tenant) = ctx();
+        let payment_date = chrono::NaiveDate::from_ymd_opt(2026, 6, 13)
+            .ok_or_else(|| DomainError::validation("INVARIANT: 2026-06-13 is a valid calendar date"))?;
         let cmd = RecordPaymentCommand {
             tenant,
             amount_minor: 10_000,
@@ -1121,16 +1129,17 @@ mod tests {
             payment_method_id: None,
             reference: Some("INV-001".to_owned()),
             note: None,
-            payment_date: chrono::NaiveDate::from_ymd_opt(2026, 6, 13).unwrap(),
+            payment_date,
         };
         let (payment, event) =
-            record_payment(cmd, &SystemClock, &educore_core::clock::SystemIdGen).unwrap();
+            record_payment(cmd, &SystemClock, &educore_core::clock::SystemIdGen)?;
         assert_eq!(payment.amount_minor, 10_000);
         assert_eq!(event.amount_minor, 10_000);
+        Ok(())
     }
 
     #[test]
-    fn wallet_service_validates_debit() {
+    fn wallet_service_validates_debit() -> educore_core::error::Result<()> {
         let (school, user, _at, _corr, _tenant) = ctx();
         let wid = WalletId::new(school, uuid::Uuid::now_v7());
         let mut wallet = Wallet::fresh(
@@ -1142,13 +1151,15 @@ mod tests {
             CorrelationId(uuid::Uuid::now_v7()),
         );
         wallet.balance_minor = 500;
-        WalletService::validate_debit(&wallet, 200, Currency::INR).unwrap();
-        let err = WalletService::validate_debit(&wallet, 600, Currency::INR).unwrap_err();
+        WalletService::validate_debit(&wallet, 200, Currency::INR)?;
+        let err = WalletService::validate_debit(&wallet, 600, Currency::INR)
+            .expect_err("INVARIANT: expected insufficient-balance error");
         assert!(matches!(err, DomainError::Conflict(_)));
+        Ok(())
     }
 
     #[test]
-    fn stub_payment_provider_returns_local_ids() {
+    fn stub_payment_provider_returns_local_ids() -> educore_core::error::Result<()> {
         let stub = StubPaymentProvider::new();
         let req = ChargeRequest {
             amount_minor: 100,
@@ -1156,9 +1167,12 @@ mod tests {
             method: crate::value_objects::PaymentMethodKind::Cash,
             school_id: educore_core::clock::SystemIdGen.next_school_id(),
         };
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let receipt = rt.block_on(stub.charge(req)).unwrap();
+        let rt = tokio::runtime::Runtime::new().map_err(|e| {
+            DomainError::validation(format!("INVARIANT: tokio runtime init succeeded: {e}"))
+        })?;
+        let receipt = rt.block_on(stub.charge(req))?;
         assert_eq!(receipt.provider_payment_id, "local://stub/0");
+        Ok(())
     }
 
     // -------------------------------------------------------------------------
@@ -1166,26 +1180,29 @@ mod tests {
     // -------------------------------------------------------------------------
 
     #[test]
-    fn carry_forward_rule_1_no_open_balance_skips() {
-        let settings = FeesCarryForwardSetting::new("Q3".to_owned(), 30).unwrap();
+    fn carry_forward_rule_1_no_open_balance_skips() -> educore_core::error::Result<()> {
+        let settings = FeesCarryForwardSetting::new("Q3".to_owned(), 30)?;
         assert!(!CarryForwardService::should_carry_forward(0, &settings));
+        Ok(())
     }
 
     #[test]
-    fn carry_forward_rule_4_below_threshold_skips() {
-        let settings = FeesCarryForwardSetting::new("Q3".to_owned(), 30).unwrap();
+    fn carry_forward_rule_4_below_threshold_skips() -> educore_core::error::Result<()> {
+        let settings = FeesCarryForwardSetting::new("Q3".to_owned(), 30)?;
         // 20 < 30 -> skip
         assert!(!CarryForwardService::should_carry_forward(20, &settings));
         assert!(!CarryForwardService::should_carry_forward(-20, &settings));
+        Ok(())
     }
 
     #[test]
-    fn carry_forward_rule_2_3_at_or_above_threshold_carry() {
-        let settings = FeesCarryForwardSetting::new("Q3".to_owned(), 30).unwrap();
+    fn carry_forward_rule_2_3_at_or_above_threshold_carry() -> educore_core::error::Result<()> {
+        let settings = FeesCarryForwardSetting::new("Q3".to_owned(), 30)?;
         assert!(CarryForwardService::should_carry_forward(30, &settings));
         assert!(CarryForwardService::should_carry_forward(31, &settings));
         assert!(CarryForwardService::should_carry_forward(-30, &settings));
         assert!(CarryForwardService::should_carry_forward(-100, &settings));
+        Ok(())
     }
 
     // -------------------------------------------------------------------------
@@ -1193,8 +1210,8 @@ mod tests {
     // -------------------------------------------------------------------------
 
     #[test]
-    fn late_fee_fixed_amount_1_to_30_days() {
-        let amount = FeeAmount::new(Currency::INR, 10_000).unwrap();
+    fn late_fee_fixed_amount_1_to_30_days() -> educore_core::error::Result<()> {
+        let amount = FeeAmount::new(Currency::INR, 10_000)?;
         let settings = LateFeeSettings {
             kind: LateFeeKind::FixedAmount(500),
             grace_period_days: 0,
@@ -1205,11 +1222,12 @@ mod tests {
                 500
             );
         }
+        Ok(())
     }
 
     #[test]
-    fn late_fee_percent_of_amount_1_to_30_days() {
-        let amount = FeeAmount::new(Currency::INR, 10_000).unwrap();
+    fn late_fee_percent_of_amount_1_to_30_days() -> educore_core::error::Result<()> {
+        let amount = FeeAmount::new(Currency::INR, 10_000)?;
         let settings = LateFeeSettings {
             kind: LateFeeKind::PercentOfAmount(2),
             grace_period_days: 0,
@@ -1221,11 +1239,12 @@ mod tests {
                 200
             );
         }
+        Ok(())
     }
 
     #[test]
-    fn late_fee_per_day_rate_1_to_30_days() {
-        let amount = FeeAmount::new(Currency::INR, 10_000).unwrap();
+    fn late_fee_per_day_rate_1_to_30_days() -> educore_core::error::Result<()> {
+        let amount = FeeAmount::new(Currency::INR, 10_000)?;
         let settings = LateFeeSettings {
             kind: LateFeeKind::PerDayRate(50),
             grace_period_days: 0,
@@ -1237,11 +1256,12 @@ mod tests {
                 expected
             );
         }
+        Ok(())
     }
 
     #[test]
-    fn late_fee_respects_grace_period() {
-        let amount = FeeAmount::new(Currency::INR, 10_000).unwrap();
+    fn late_fee_respects_grace_period() -> educore_core::error::Result<()> {
+        let amount = FeeAmount::new(Currency::INR, 10_000)?;
         let settings = LateFeeSettings {
             kind: LateFeeKind::FixedAmount(500),
             grace_period_days: 5,
@@ -1250,6 +1270,7 @@ mod tests {
         assert_eq!(LateFeeService::compute_late_fee(amount, 3, &settings), 0);
         // Outside grace: 500
         assert_eq!(LateFeeService::compute_late_fee(amount, 6, &settings), 500);
+        Ok(())
     }
 
     // -------------------------------------------------------------------------

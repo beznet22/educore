@@ -16,8 +16,13 @@
 //! `school_id` is **derived from `id.school_id()`**, never taken
 //! from the caller.
 
+// Module-level docs for every public item are tracked in
+// `docs/specs/finance/`. The `#[allow(missing_docs)]` here is a
+// conscious exception for the Phase 7 finance crate: adding rustdoc
+// for ~80 fields + ~40 placeholder-aggregate stubs across
+// `aggregate.rs` is the Workstream K backlog (see
+// `PHASE-7-HANDOFF.md` § Workstream K).
 #![allow(missing_docs)]
-#![allow(unused_imports)]
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
