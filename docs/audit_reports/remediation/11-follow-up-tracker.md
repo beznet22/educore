@@ -305,3 +305,45 @@ A `scripts/recover-aborted-agents.sh` automation that:
 
 This is out of scope for this remediation session but should be a follow-up PR to `crates/tools/cli/` or a new `crates/tools/recovery/` crate.
 
+---
+
+## N. Cluster F status (post-Cluster F partial)
+
+After Cluster F work (5 commits: `1952864`, `b8dc5e7`, `d414782`, `dd429ed`, `eba1ae3`):
+
+### Completed (4 of 6 sub-clusters)
+
+| Crate | Findings closed | Tests added |
+|---|---|---|
+| `educore-notify` | ADAPT-NOT-005, 007, 010, 012 (DLQ, retry, failover, rate limit) | 17 |
+| `educore-files` | ADAPT-FILE-003 (storage quota + tenant guard) | 6 |
+| `educore-payment` | ADAPT-PAY-005, 008 (webhook signature + signing key) | 6 |
+| `educore-integrations` | ADAPT-INT-005, 007, 009 (retry cap, signing-key rotation, replay protection) | 27 |
+
+Total: 10 findings closed, 56 new tests passing.
+
+### Still open in Cluster F
+
+- **PORT-STORE-002**: `Transaction` port-trait needs `TenantContext` propagation. The first parallel attempt had 4 agents modifying the same shared files; the work was reverted. Pending a single-agent retry with strict sequencing (port first, then 4 adapters, then testkit).
+- **PORT-STORE-013**: `Transaction::commit` should atomically write audit rows with the aggregate mutation. Same recovery situation as PORT-STORE-002.
+
+### Isolated-scope pattern (refined)
+
+After the first Cluster F attempt aborted due to overlapping changes across 4 parallel agents, the retry used this refined pattern in agent prompts:
+
+> **STRICT SCOPE:** Only ADD a new file `<path>`. Do NOT modify any other file. Tests go in `<test_path>`.
+
+Result: 3 of 4 agents completed cleanly; 1 needed a small test-fix commit by the lead.
+
+**Recommendation for future cross-cutting work:** when the work would touch shared infrastructure (port traits, umbrella crates, testkit), use ONE agent with a high turn budget (200+) doing sequential work. Reserve parallel agents for isolated file additions.
+
+---
+
+## O. Checkpoint tags
+
+| Tag | Commit | Status |
+|---|---|---|
+| `remediation-checkpoint-1` | `4d403d1` (Migration fix) | Cluster A, B, D done; ~1,416 lib tests pass |
+| `remediation-checkpoint-2` | `eba1ae3` (Cluster F payment test fix) | Cluster A, B, D, F (partial) done; ~1,425 lib tests pass |
+
+
