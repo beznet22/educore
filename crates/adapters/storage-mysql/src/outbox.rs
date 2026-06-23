@@ -32,7 +32,7 @@ use sqlx::{FromRow, MySqlPool, Row};
 use tracing::instrument;
 use uuid::Uuid;
 
-use educore_core::error::Result;
+use educore_core::error::{DomainError, Result};
 use educore_core::ids::{CorrelationId, EventId, Identifier as _, SchoolId, UserId};
 use educore_core::value_objects::Timestamp;
 use educore_storage::outbox::{Outbox, SerializedEnvelope};
@@ -149,6 +149,15 @@ impl Outbox for MysqlOutbox {
 
     #[instrument(skip(self))]
     async fn pending(&self, limit: u32) -> Result<Vec<SerializedEnvelope>> {
+        // School partition: the `WHERE school_id = ?` clause
+        // scopes the drain to the adapter's bound `self.school`
+        // (set at `MysqlStorageAdapter::connect` time).
+        // Per `crates/infra/storage/src/outbox.rs`, "the outbox
+        // is partitioned by `school_id` so callers see only
+        // envelopes for their school." This is the MySQL
+        // adapter's enforcement of that invariant; the testkit
+        // finding (TOOL-TK-004) closed the in-memory side of
+        // the same invariant.
         let rows: Vec<OutboxRow> = sqlx::query_as::<sqlx::MySql, OutboxRow>(
             "SELECT \
                 `event_id`, `event_type`, `event_version`, `school_id`, \
@@ -168,11 +177,43 @@ impl Outbox for MysqlOutbox {
         Ok(envelopes)
     }
 
+    #[instrument(skip(self))]
+    async fn pending_for_school(
+        &self,
+        school_id: SchoolId,
+        limit: u32,
+    ) -> Result<Vec<SerializedEnvelope>> {
+        // QW-13 / ADAPT-MY-OUTBOX-*: the explicit school
+        // argument MUST match the handle's scope. A mismatched
+        // `school_id` is a cross-tenant read attempt and is
+        // rejected with `TenantViolation` (per
+        // `docs/schemas/tenancy-schema.md` § 2). Once the
+        // assertion passes, the underlying `pending` query is
+        // already partitioned by `self.school`, so no extra
+        // SQL is needed.
+        if school_id != self.school {
+            return Err(DomainError::tenant_violation(format!(
+                "outbox::pending_for_school called with school_id {} but \
+                 handle is scoped to school_id {}",
+                school_id.as_uuid(),
+                self.school.as_uuid(),
+            )));
+        }
+        self.pending(limit).await
+    }
+
     #[instrument(skip(self, ids))]
     async fn mark_published(&self, ids: &[EventId]) -> Result<()> {
         if ids.is_empty() {
             return Ok(());
         }
+        // School partition: the `school_id = ?` predicate is
+        // bound to `self.school` so a relay holding an
+        // `EventId` from another school cannot mutate that
+        // school's outbox row. Defense in depth alongside the
+        // `pending()` filter above; closes the MySQL half of
+        // TOOL-TK-004 / ADAPT-MY-OUTBOX-*.
+        //
         // MySQL's `sqlx` driver does not implement
         // `Encode<MySql>` for `Vec<T>` (only `Vec<u8>`), so we
         // build the `IN (?, ?, ...)` clause dynamically with a
@@ -180,8 +221,10 @@ impl Outbox for MysqlOutbox {
         // equivalent to PostgreSQL's `ANY(?)` and to the
         // sqlite outbox's `QueryBuilder` pattern.
         let mut qb: sqlx::QueryBuilder<sqlx::MySql> = sqlx::QueryBuilder::new(
-            "UPDATE `outbox` SET `published_at` = UTC_TIMESTAMP(6) WHERE `event_id` IN (",
+            "UPDATE `outbox` SET `published_at` = UTC_TIMESTAMP(6) \
+             WHERE `school_id` = ? AND `event_id` IN (",
         );
+        qb.push_bind(self.school.as_uuid());
         let mut sep = qb.separated(", ");
         for id in ids {
             sep.push_bind(id.as_uuid());
@@ -196,6 +239,24 @@ impl Outbox for MysqlOutbox {
 
     #[instrument(skip(self))]
     async fn pending_count(&self, school_id: SchoolId) -> Result<u64> {
+        // QW-13 / ADAPT-MY-OUTBOX-*: the explicit school
+        // argument MUST match the handle's scope. The previous
+        // implementation bound the caller-supplied `school_id`
+        // directly into the `WHERE` clause, which let any
+        // tenant read any other tenant's pending outbox depth
+        // (a back-pressure side channel — the relay uses this
+        // count for back-pressure sizing and a cross-tenant
+        // probe would leak tenant activity). Reject mismatches
+        // with `TenantViolation`; bind `self.school` into the
+        // SQL.
+        if school_id != self.school {
+            return Err(DomainError::tenant_violation(format!(
+                "outbox::pending_count called with school_id {} but \
+                 handle is scoped to school_id {}",
+                school_id.as_uuid(),
+                self.school.as_uuid(),
+            )));
+        }
         // The default impl in the trait materialises every
         // pending row just to count them, which is O(n) memory
         // for a 1-line aggregate. Override with a direct
@@ -203,7 +264,7 @@ impl Outbox for MysqlOutbox {
         let row = sqlx::query::<sqlx::MySql>(
             "SELECT COUNT(*) AS n FROM `outbox` WHERE `school_id` = ? AND `published_at` IS NULL",
         )
-        .bind(school_id.as_uuid())
+        .bind(self.school.as_uuid())
         .fetch_one(&self.pool)
         .await
         .map_err(educore_core::error::DomainError::infrastructure)?;
