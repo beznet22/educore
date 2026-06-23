@@ -21,7 +21,7 @@ use sqlx::{FromRow, PgPool, Row};
 use tracing::instrument;
 use uuid::Uuid;
 
-use educore_core::error::Result;
+use educore_core::error::{DomainError, Result};
 use educore_core::ids::{CorrelationId, EventId, Identifier as _, SchoolId, UserId};
 use educore_core::value_objects::Timestamp;
 use educore_storage::outbox::{Outbox, SerializedEnvelope};
@@ -138,6 +138,12 @@ impl Outbox for PostgresOutbox {
 
     #[instrument(skip(self))]
     async fn pending(&self, limit: u32) -> Result<Vec<SerializedEnvelope>> {
+        // QW-13 / school-partitioning contract: the `WHERE
+        // school_id = $1` predicate is the engine's tenant-isolation
+        // guarantee for this handle. `$1` is bound to
+        // `self.school` (the handle's scope) — never to a
+        // caller-supplied value — so cross-tenant leakage is
+        // impossible at this method.
         let rows: Vec<OutboxRow> = sqlx::query_as::<_, OutboxRow>(
             "SELECT \
                 event_id, event_type, event_version, school_id, \
@@ -157,6 +163,31 @@ impl Outbox for PostgresOutbox {
         Ok(envelopes)
     }
 
+    #[instrument(skip(self))]
+    async fn pending_for_school(
+        &self,
+        school_id: SchoolId,
+        limit: u32,
+    ) -> Result<Vec<SerializedEnvelope>> {
+        // QW-13 / ADAPTER-PG-013, ADAPTER-PG-029: the explicit
+        // school argument MUST match the handle's scope. A
+        // mismatched `school_id` is a cross-tenant read attempt
+        // and is rejected with `TenantViolation` (per
+        // `docs/schemas/tenancy-schema.md` § 2). Once the
+        // assertion passes, the underlying `pending` query is
+        // already partitioned by `self.school`, so no extra
+        // SQL is needed.
+        if school_id != self.school {
+            return Err(DomainError::tenant_violation(format!(
+                "outbox::pending_for_school called with school_id {} but \
+                 handle is scoped to school_id {}",
+                school_id.as_uuid(),
+                self.school.as_uuid(),
+            )));
+        }
+        self.pending(limit).await
+    }
+
     #[instrument(skip(self, ids))]
     async fn mark_published(&self, ids: &[EventId]) -> Result<()> {
         if ids.is_empty() {
@@ -173,6 +204,22 @@ impl Outbox for PostgresOutbox {
 
     #[instrument(skip(self))]
     async fn pending_count(&self, school_id: SchoolId) -> Result<u64> {
+        // QW-13 / ADAPTER-PG-013, ADAPTER-PG-029: the explicit
+        // school argument MUST match the handle's scope. The
+        // previous implementation bound the caller-supplied
+        // `school_id` directly into the `WHERE` clause, which
+        // let any tenant read any other tenant's pending
+        // outbox depth (a back-pressure side channel). Reject
+        // mismatches with `TenantViolation`; bind `self.school`
+        // into the SQL.
+        if school_id != self.school {
+            return Err(DomainError::tenant_violation(format!(
+                "outbox::pending_count called with school_id {} but \
+                 handle is scoped to school_id {}",
+                school_id.as_uuid(),
+                self.school.as_uuid(),
+            )));
+        }
         // The default impl in the trait materialises every
         // pending row just to count them, which is O(n) memory
         // for a 1-line aggregate. Override with a direct
@@ -180,7 +227,7 @@ impl Outbox for PostgresOutbox {
         let row = sqlx::query(
             "SELECT COUNT(*) AS n FROM outbox WHERE school_id = $1 AND published_at IS NULL",
         )
-        .bind(school_id.as_uuid())
+        .bind(self.school.as_uuid())
         .fetch_one(&self.pool)
         .await
         .map_err(educore_core::error::DomainError::infrastructure)?;

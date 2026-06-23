@@ -103,9 +103,72 @@ pub trait Outbox: Send + Sync {
 
     /// Returns up to `limit` envelopes that have not yet been
     /// marked as published. The order is FIFO by append time
-    /// within a school. The outbox is partitioned by `school_id`
-    /// so callers see only envelopes for their school.
+    /// within a school.
+    ///
+    /// ## School partitioning contract (TOOL-TK-004 / QW-13)
+    ///
+    /// The outbox is **logically partitioned by `school_id`** —
+    /// every row carries the tenant that wrote it, and adapters
+    /// MUST return only envelopes belonging to the handle's
+    /// scoped school. Cross-tenant reads are a security
+    /// violation (per `docs/schemas/tenancy-schema.md` § 2 and
+    /// `docs/ports/storage.md` § "Tenant Isolation").
+    ///
+    /// Adapters that scope the handle to a single `SchoolId`
+    /// at construction time (e.g. `PostgresOutbox::new(pool,
+    /// school)`) may implement `pending` by filtering on that
+    /// internal scope. Adapters that don't carry a scoped
+    /// school MUST implement [`pending_for_school`](Self::pending_for_school)
+    /// explicitly.
+    ///
+    /// Prefer [`pending_for_school`](Self::pending_for_school)
+    /// when the caller knows which school it wants — the
+    /// explicit-school variant lets the adapter reject mismatched
+    /// `school_id` arguments with
+    /// [`DomainError::TenantViolation`](educore_core::error::DomainError::TenantViolation)
+    /// instead of silently returning rows from the wrong school.
     async fn pending(&self, limit: u32) -> Result<Vec<SerializedEnvelope>>;
+
+    /// Returns up to `limit` envelopes that have not yet been
+    /// marked as published, scoped to `school_id`. The order is
+    /// FIFO by append time within a school.
+    ///
+    /// ## School partitioning contract (QW-13)
+    ///
+    /// This is the explicit-school variant of
+    /// [`pending`](Self::pending). Adapters that scope the
+    /// handle to a single `SchoolId` MUST verify that
+    /// `school_id` matches the handle's scope and return
+    /// [`DomainError::TenantViolation`](educore_core::error::DomainError::TenantViolation)
+    /// otherwise. Adapters without a scoped handle MUST filter
+    /// by `school_id`.
+    ///
+    /// The default implementation delegates to
+    /// [`pending`](Self::pending), which is correct for
+    /// school-scoped handles (the outbox is already partitioned
+    /// by the handle's school). Adapters that hold an
+    /// un-scoped handle (the testkit's `OutboxHandle`) MUST
+    /// override this method to actually filter on `school_id`.
+    ///
+    /// Closing findings: TOOL-TK-004 (testkit half —
+    /// delegated to a follow-up PR), ADAPTER-PG-013,
+    /// ADAPTER-PG-029 (Postgres half — closed here by asserting
+    /// the explicit-school argument matches the handle scope).
+    async fn pending_for_school(
+        &self,
+        school_id: SchoolId,
+        limit: u32,
+    ) -> Result<Vec<SerializedEnvelope>> {
+        // SAFETY: This default impl assumes the handle is
+        // already school-scoped (so `pending(limit)` returns
+        // only the handle's school). The `school_id` argument is
+        // intentionally ignored: the adapter cannot validate it
+        // without knowing its own scope. Adapters that need to
+        // validate the caller-supplied `school_id` against their
+        // internal scope MUST override this method.
+        let _ = school_id;
+        self.pending(limit).await
+    }
 
     /// Marks the given envelopes as published. Idempotent: calling
     /// twice with the same id is a no-op.
@@ -114,6 +177,21 @@ pub trait Outbox: Send + Sync {
     /// Returns the count of envelopes currently in the outbox
     /// for `school_id` that have not been marked as published.
     /// Used by the relay for back-pressure decisions.
+    ///
+    /// ## School partitioning contract (QW-13, ADAPTER-PG-013)
+    ///
+    /// Adapters that scope the handle to a single `SchoolId`
+    /// MUST verify that `school_id` matches the handle's scope
+    /// and return
+    /// [`DomainError::TenantViolation`](educore_core::error::DomainError::TenantViolation)
+    /// otherwise. The handle may not be used to read another
+    /// tenant's outbox depth — that would leak back-pressure
+    /// signals across tenants.
+    ///
+    /// The default implementation counts via
+    /// [`pending`](Self::pending) and checks length, which is
+    /// `O(n)` memory for a one-line aggregate. Adapters with
+    /// efficient `COUNT(*)` support should override.
     async fn pending_count(&self, school_id: SchoolId) -> Result<u64> {
         // Default implementation: count via `pending` and check
         // length. Adapters with efficient `COUNT(*)` support may
