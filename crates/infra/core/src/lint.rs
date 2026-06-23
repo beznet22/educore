@@ -101,6 +101,7 @@ impl LintReport {
 pub fn run(repo_root: &Path) -> LintReport {
     let mut report = LintReport::default();
     runner::check_spec_to_code(repo_root, &mut report);
+    runner::check_code_to_spec(repo_root, &mut report);
     runner::check_coverage_matrix(repo_root, &mut report);
     runner::check_anti_patterns(repo_root, &mut report);
     report
@@ -430,6 +431,296 @@ pub mod runner {
             match after.chars().next() {
                 Some(' ') | Some('{') | Some('<') | Some('(') | Some(';') => return true,
                 _ => continue,
+            }
+        }
+        false
+    }
+
+    /// Code → spec direction (item 2 of the No-Gaps Gates, second
+    /// bullet). Walks every domain crate's source files and
+    /// verifies that each public `struct` and `enum` has a
+    /// matching row in the corresponding spec file.
+    ///
+    /// Mapping from source file to spec file:
+    ///
+    /// | Source file      | Spec file                       | Match strategy               |
+    /// | ---------------- | ------------------------------- | ---------------------------- |
+    /// | `aggregate.rs`   | `docs/specs/<d>/aggregates.md`  | `## <Name>` h2 heading       |
+    /// | `commands.rs`    | `docs/specs/<d>/commands.md`    | `## <Name>` or `pub struct <Name>Command` |
+    /// | `events.rs`      | `docs/specs/<d>/events.md`      | `pub struct <Name>` decl     |
+    /// | `services.rs`    | `docs/specs/<d>/services.md`    | `## <Name>` or `pub struct <Name>` |
+    /// | `value_objects.rs` | `docs/specs/<d>/value-objects.md` | `pub struct/enum <Name>` decl OR table row `| \`<Name>\` |` |
+    /// | `entities.rs`    | `docs/specs/<d>/entities.md`    | `## <Name>` h2 heading       |
+    ///
+    /// The check deliberately skips `lib.rs` (re-exports only),
+    /// `tests/`, and `examples/`. `pub use ...` re-exports
+    /// inside the listed files are also skipped because the
+    /// originating crate is the source of truth.
+    ///
+    /// **Known false positives** (intentionally not addressed by
+    /// the simple regex scan; left for the full Rust parser
+    /// follow-up):
+    ///
+    /// - Phantom types like `pub struct PhantomData<T>` are
+    ///   rarely public but, if they are, will trigger the check.
+    /// - Marker structs used only inside `mod tests` are exempt
+    ///   via the `#[cfg(test)]` block scanner from the
+    ///   anti-pattern check, but `check_code_to_spec` does not
+    ///   honour that exemption (test-only types should not be
+    ///   `pub` in the first place).
+    /// - Aggregate child structs (`NewPage`, `UpdatePage`,
+    ///   `PageRevision`) typically appear inside `aggregate.rs`
+    ///   but their spec lives in `aggregates.md` as a section
+    ///   under the parent aggregate. The simple `## <Name>`
+    ///   match misses them, which produces violations for
+    ///   legitimate child types. The full parser will read the
+    ///   spec's "Owned Children" table.
+    pub fn check_code_to_spec(repo_root: &Path, report: &mut LintReport) {
+        let domains_dir = repo_root.join("crates").join("domains");
+        let specs_dir = repo_root.join("docs").join("specs");
+        let Ok(entries) = fs::read_dir(&domains_dir) else {
+            return;
+        };
+        // Per-file scan plan. The first tuple field is the source
+        // file name (relative to the domain crate's `src/`
+        // directory), the second is the corresponding spec file
+        // (relative to `docs/specs/<domain>/`), and the third is
+        // the matcher function that decides whether the public
+        // type has a corresponding spec row.
+        type Matcher = dyn Fn(&str, &str) -> bool;
+        let plans: Vec<(&str, &str, Box<Matcher>)> = vec![
+            (
+                "aggregate.rs",
+                "aggregates.md",
+                Box::new(|spec, name| h2_heading_present(spec, name)),
+            ),
+            (
+                "commands.rs",
+                "commands.md",
+                Box::new(|spec, name| {
+                    h2_heading_present(spec, name)
+                        || item_defined(spec, "struct", &format!("{name}Command"))
+                }),
+            ),
+            (
+                "events.rs",
+                "events.md",
+                Box::new(|spec, name| item_defined(spec, "struct", name)),
+            ),
+            (
+                "services.rs",
+                "services.md",
+                Box::new(|spec, name| {
+                    h2_heading_present(spec, name) || item_defined(spec, "struct", name)
+                }),
+            ),
+            (
+                "value_objects.rs",
+                "value-objects.md",
+                Box::new(|spec, name| {
+                    item_defined(spec, "struct", name)
+                        || item_defined(spec, "enum", name)
+                        || table_row_present(spec, name)
+                }),
+            ),
+            (
+                "entities.rs",
+                "entities.md",
+                Box::new(|spec, name| h2_heading_present(spec, name)),
+            ),
+        ];
+
+        for domain_entry in entries.flatten() {
+            let domain_path = domain_entry.path();
+            if !domain_path.is_dir() {
+                continue;
+            }
+            let domain_name = match domain_entry.file_name().into_string() {
+                Ok(s) => s,
+                Err(_) => continue,
+            };
+            let src_dir = domain_path.join("src");
+            if !src_dir.is_dir() {
+                continue;
+            }
+            let spec_dir = specs_dir.join(&domain_name);
+            for (src_filename, spec_filename, matcher) in &plans {
+                let src_file = src_dir.join(src_filename);
+                let spec_file = spec_dir.join(spec_filename);
+                let Ok(src_contents) = fs::read_to_string(&src_file) else {
+                    continue;
+                };
+                let Ok(spec_contents) = fs::read_to_string(&spec_file) else {
+                    // No spec file for this domain — the spec →
+                    // code direction check would already have
+                    // flagged missing files in the opposite
+                    // direction. Here, we report every public
+                    // type as undocumented.
+                    for (kind, name) in extract_public_types(&src_contents) {
+                        report.violations.push(undocumented_public_item(
+                            repo_root,
+                            &src_file,
+                            &spec_file,
+                            kind,
+                            &name,
+                        ));
+                    }
+                    continue;
+                };
+                for (kind, name) in extract_public_types(&src_contents) {
+                    // For commands.rs, the convention is to name
+                    // the struct `<Verb><Entity>Command`. Strip
+                    // the suffix so the spec matcher looks for
+                    // `pub struct <Verb><Entity>Command`.
+                    let lookup_name = if *src_filename == "commands.rs" {
+                        name.strip_suffix("Command")
+                            .map(str::to_string)
+                            .unwrap_or_else(|| name.clone())
+                    } else {
+                        name.clone()
+                    };
+                    if matcher(&spec_contents, &lookup_name) {
+                        continue;
+                    }
+                    report.violations.push(undocumented_public_item(
+                        repo_root,
+                        &src_file,
+                        &spec_file,
+                        kind,
+                        &name,
+                    ));
+                }
+            }
+        }
+    }
+
+    fn undocumented_public_item(
+        repo_root: &Path,
+        src_file: &Path,
+        spec_file: &Path,
+        kind: &str,
+        name: &str,
+    ) -> Violation {
+        let rel = src_file.strip_prefix(repo_root).unwrap_or(src_file);
+        let spec_rel = spec_file.strip_prefix(repo_root).unwrap_or(spec_file);
+        Violation {
+            check: "code_to_spec:undocumented_public_item".to_string(),
+            file: rel.to_path_buf(),
+            line: None,
+            message: format!(
+                "public {kind} `{name}` has no matching row in {}",
+                spec_rel.display()
+            ),
+        }
+    }
+
+    /// Returns a list of `(kind, name)` pairs for every
+    /// `pub struct <Name>` and `pub enum <Name>` declaration in
+    /// `src`. Re-exports (`pub use ...`), private items
+    /// (`pub(crate)`, `pub(super)`, `pub(in path)`), and
+    /// declarations whose first identifier is a generic
+    /// parameter (rare; intentionally permissive) are all
+    /// skipped. The delimiter check after the name prevents
+    /// `pub struct FooBar` from matching `pub struct Foo`.
+    ///
+    /// Lines that look like attribute continuations
+    /// (`#[derive(...)]`, `#[serde(...)]`) are skipped naturally
+    /// because they start with `#`, not `pub`.
+    fn extract_public_types(src: &str) -> Vec<(&'static str, String)> {
+        let mut out = Vec::new();
+        let mut seen: Vec<String> = Vec::new();
+        for line in src.lines() {
+            let trimmed = line.trim_start();
+            // Skip `pub use` re-exports — the originating crate
+            // owns the spec row.
+            if trimmed.starts_with("pub use ") {
+                continue;
+            }
+            // Only plain `pub` — not `pub(crate)` / `pub(super)`
+            // / `pub(in path::to)`.
+            let after_pub = match trimmed.strip_prefix("pub ") {
+                Some(s) => s,
+                None => continue,
+            };
+            let (kind, after_kind) = if let Some(s) = after_pub.strip_prefix("struct ") {
+                ("struct", s)
+            } else if let Some(s) = after_pub.strip_prefix("enum ") {
+                ("enum", s)
+            } else {
+                continue;
+            };
+            let name_end = after_kind
+                .find(|c: char| matches!(c, ' ' | '{' | '<' | '(' | ';'))
+                .unwrap_or(after_kind.len());
+            if name_end == 0 {
+                continue;
+            }
+            let name = &after_kind[..name_end];
+            // Names start with an uppercase letter and contain
+            // only identifier characters.
+            if !name
+                .chars()
+                .next()
+                .is_some_and(|c| c.is_ascii_uppercase())
+            {
+                continue;
+            }
+            if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+                continue;
+            }
+            let kind_static: &'static str = if kind == "struct" { "struct" } else { "enum" };
+            let owned = name.to_string();
+            if !seen.contains(&owned) {
+                seen.push(owned.clone());
+                out.push((kind_static, owned));
+            }
+        }
+        out
+    }
+
+    /// Returns `true` when `spec` contains an `## <Name>` h2
+    /// heading (with the exact name match, modulo whitespace
+    /// and a trailing colon). Code fences are skipped.
+    fn h2_heading_present(spec: &str, name: &str) -> bool {
+        let mut in_code = false;
+        for line in spec.lines() {
+            if is_code_fence(line) {
+                in_code = !in_code;
+                continue;
+            }
+            if in_code {
+                continue;
+            }
+            let Some(rest) = line.strip_prefix("## ") else {
+                continue;
+            };
+            let heading = sanitize_heading_text(rest);
+            // Accept exact match or "Name — ..."
+            // (headings like "## Page — Website pages").
+            if heading == name || heading.starts_with(&format!("{name} ")) {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Returns `true` when `spec` contains a table row whose
+    /// first cell is the backtick-quoted `name` (e.g.
+    /// `` | `PageTitle` | 1..191 chars | ``). Used for the
+    /// `value-objects.md` spec which catalogues types in
+    /// tables rather than as Rust declarations.
+    fn table_row_present(spec: &str, name: &str) -> bool {
+        let needle = format!("`{name}`");
+        for line in spec.lines() {
+            // Only consider table rows (start with `|`) and only
+            // match when the name appears in the FIRST cell to
+            // avoid false positives from prose mentions.
+            let Some(after_pipe) = line.trim_start().strip_prefix('|') else {
+                continue;
+            };
+            let first_cell = after_pipe.split('|').next().unwrap_or("");
+            if first_cell.trim() == needle {
+                return true;
             }
         }
         false
@@ -954,6 +1245,148 @@ mod tests {
                 .any(|x| x.check == "anti_pattern:serde_json_value"),
             "expected NO `serde_json::Value` violation in adapter, got: {:#?}",
             r.violations
+        );
+    }
+
+    // ---- Code → spec direction tests ----
+
+    /// Helper: write a `commands.rs`-equivalent fixture with a
+    /// matching `commands.md` spec, and run the lint.
+    fn scan_code_to_spec_commands(
+        label: &str,
+        spec_md: &str,
+        commands_rs: &str,
+    ) -> Vec<Violation> {
+        let tmp = fresh_tempdir(label);
+        let spec_dir = tmp.0.join("docs/specs/test");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        std::fs::write(spec_dir.join("commands.md"), spec_md).unwrap();
+        // Provide stubs for the other spec files so the runner
+        // does not flag them as missing — we are testing the
+        // code → spec direction in isolation.
+        std::fs::write(
+            spec_dir.join("aggregates.md"),
+            "# Test Domain — Aggregates\n",
+        )
+        .unwrap();
+        std::fs::write(spec_dir.join("events.md"), "# Test Domain — Events\n").unwrap();
+        std::fs::write(spec_dir.join("services.md"), "# Test Domain — Services\n").unwrap();
+        std::fs::write(
+            spec_dir.join("value-objects.md"),
+            "# Test Domain — Value Objects\n",
+        )
+        .unwrap();
+        std::fs::write(spec_dir.join("entities.md"), "# Test Domain — Entities\n").unwrap();
+        let code_dir = tmp.0.join("crates/domains/test/src");
+        std::fs::create_dir_all(&code_dir).unwrap();
+        // Stubs for the other source files — empty content keeps
+        // them out of the code → spec scan's path.
+        std::fs::write(code_dir.join("aggregate.rs"), "").unwrap();
+        std::fs::write(code_dir.join("events.rs"), "").unwrap();
+        std::fs::write(code_dir.join("services.rs"), "").unwrap();
+        std::fs::write(code_dir.join("value_objects.rs"), "").unwrap();
+        std::fs::write(code_dir.join("entities.rs"), "").unwrap();
+        std::fs::write(code_dir.join("lib.rs"), "").unwrap();
+        std::fs::write(code_dir.join("commands.rs"), commands_rs).unwrap();
+        run(&tmp.0).violations
+    }
+
+    #[test]
+    fn code_to_spec_undocumented_public_struct_is_reported() {
+        // The spec only mentions `CreateWidget`. The Rust code
+        // declares a `pub struct DeleteWidgetCommand` that has no
+        // matching row in `commands.md`.
+        let spec = "# Test Domain — Commands\n\n## CreateWidget\n\n```rust\npub struct CreateWidgetCommand {}\n```\n";
+        let code = "pub struct CreateWidgetCommand {}\npub struct DeleteWidgetCommand {}\n";
+        let v = scan_code_to_spec_commands("code-to-spec-undocumented", spec, code);
+        assert!(
+            v.iter().any(|x| x.check == "code_to_spec:undocumented_public_item"
+                && x.message.contains("DeleteWidgetCommand")),
+            "expected undocumented violation for `DeleteWidgetCommand`, got: {:#?}",
+            v
+        );
+        // `CreateWidgetCommand` should NOT be flagged because the
+        // matcher strips the `Command` suffix and finds
+        // `pub struct CreateWidgetCommand` in the spec.
+        assert!(
+            !v.iter().any(|x| x.check == "code_to_spec:undocumented_public_item"
+                && x.message.contains("CreateWidgetCommand")),
+            "did not expect undocumented violation for `CreateWidgetCommand`, got: {:#?}",
+            v
+        );
+    }
+
+    #[test]
+    fn code_to_spec_documented_public_struct_is_clean() {
+        // Both the spec and the Rust code declare `CreateWidget`.
+        // No code → spec violation should fire.
+        let spec = "# Test Domain — Commands\n\n## CreateWidget\n\n```rust\npub struct CreateWidgetCommand {}\n```\n";
+        let code = "pub struct CreateWidgetCommand {}\n";
+        let v = scan_code_to_spec_commands("code-to-spec-clean", spec, code);
+        assert!(
+            !v.iter().any(|x| x.check == "code_to_spec:undocumented_public_item"),
+            "expected NO undocumented violations when spec and code match, got: {:#?}",
+            v
+        );
+    }
+
+    #[test]
+    fn code_to_spec_aggregate_reexports_are_exempt() {
+        // `aggregate.rs` has one re-export (`pub use ...`) and one
+        // real declaration (`pub struct Orphan { _phantom: () }`).
+        // The re-export must not trigger a violation; the orphan
+        // declaration must, because `aggregates.md` has no `##
+        // Orphan` heading.
+        let tmp = fresh_tempdir("code-to-spec-reexport-exempt");
+        let spec_dir = tmp.0.join("docs/specs/test");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        std::fs::write(
+            spec_dir.join("aggregates.md"),
+            "# Test Domain — Aggregates\n\n## Widget\n",
+        )
+        .unwrap();
+        std::fs::write(spec_dir.join("commands.md"), "# Test Domain — Commands\n").unwrap();
+        std::fs::write(spec_dir.join("events.md"), "# Test Domain — Events\n").unwrap();
+        std::fs::write(spec_dir.join("services.md"), "# Test Domain — Services\n").unwrap();
+        std::fs::write(
+            spec_dir.join("value-objects.md"),
+            "# Test Domain — Value Objects\n",
+        )
+        .unwrap();
+        std::fs::write(spec_dir.join("entities.md"), "# Test Domain — Entities\n").unwrap();
+        let code_dir = tmp.0.join("crates/domains/test/src");
+        std::fs::create_dir_all(&code_dir).unwrap();
+        std::fs::write(code_dir.join("commands.rs"), "").unwrap();
+        std::fs::write(code_dir.join("events.rs"), "").unwrap();
+        std::fs::write(code_dir.join("services.rs"), "").unwrap();
+        std::fs::write(code_dir.join("value_objects.rs"), "").unwrap();
+        std::fs::write(code_dir.join("entities.rs"), "").unwrap();
+        std::fs::write(code_dir.join("lib.rs"), "").unwrap();
+        std::fs::write(
+            code_dir.join("aggregate.rs"),
+            // Re-export of a type that lives in another crate (the
+            // usual pattern in domain crate preludes). The lint
+            // must skip these.
+            "pub use educore_core::ids::WidgetId;\n\
+             // A truly orphan declaration with no spec row.\n\
+             pub struct Orphan { _phantom: () }\n",
+        )
+        .unwrap();
+        let r = run(&tmp.0);
+        let code_to_spec: Vec<_> = r
+            .violations
+            .iter()
+            .filter(|x| x.check == "code_to_spec:undocumented_public_item")
+            .collect();
+        assert!(
+            code_to_spec.iter().any(|x| x.message.contains("Orphan")),
+            "expected violation for `Orphan`, got: {:#?}",
+            code_to_spec
+        );
+        assert!(
+            !code_to_spec.iter().any(|x| x.message.contains("WidgetId")),
+            "did not expect violation for re-exported `WidgetId`, got: {:#?}",
+            code_to_spec
         );
     }
 }
