@@ -570,7 +570,13 @@ mod tests {
 
     #[tokio::test]
     async fn signing_key_ring_dispatches_to_named_key() {
-        let now = 1_700_000_000_i64;
+        // Use a recent timestamp (within replay tolerance) instead
+        // of a hardcoded 2023 value, which the verifier correctly
+        // rejects as expired.
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system clock")
+            .as_secs() as i64;
         let mut ring = SigningKeyRing::new();
         ring.add_key("k_old", b"old_secret".to_vec());
         ring.add_key("k_new", b"new_secret".to_vec());
