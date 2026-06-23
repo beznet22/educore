@@ -28,7 +28,6 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use educore_core::error::Result;
 use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
 use educore_core::value_objects::Timestamp;
 
@@ -43,7 +42,7 @@ use crate::envelope::EventEnvelope;
 /// Rust type as `bytes::Bytes` (zero-copy, `Arc`-backed) while
 /// presenting a `Vec<u8>`-shaped wire form to serde.
 mod bytes_via_vec {
-    use serde::{Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     /// Serialise the bytes as a sequence of `u8`s. JSON adapters
     /// will emit a base64 string; binary adapters can emit the
@@ -144,6 +143,7 @@ impl SerializedEnvelope {
     /// resulting envelope is what `EventBus::publish` accepts.
     #[must_use]
     pub fn into_event_envelope(self) -> EventEnvelope {
+        let payload = self.payload_value();
         EventEnvelope {
             event_id: self.event_id,
             event_type: self.event_type,
@@ -156,7 +156,7 @@ impl SerializedEnvelope {
             causation_id: self.causation_id,
             occurred_at: self.occurred_at,
             published_at: None,
-            payload: self.payload_value(),
+            payload,
         }
     }
 }

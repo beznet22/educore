@@ -92,6 +92,31 @@ pub(crate) struct InMemoryInner {
 
 pub(crate) struct OutboxHandle(pub(crate) Arc<InMemoryInner>);
 
+/// Bridge from the storage-port [`SerializedEnvelope`] to the
+/// relay-port [`SerializedEnvelope`]. The two types have
+/// identical field shapes but live in different crates (the
+/// events crate cannot depend on the storage crate because the
+/// storage crate already depends on events). The testkit is the
+/// only place that has both crates in scope, so the bridge
+/// lives here.
+fn to_relay_envelope(
+    env: educore_storage::outbox::SerializedEnvelope,
+) -> educore_events::relay_envelope::SerializedEnvelope {
+    educore_events::relay_envelope::SerializedEnvelope {
+        event_id: env.event_id,
+        event_type: env.event_type,
+        schema_version: env.schema_version,
+        school_id: env.school_id,
+        aggregate_id: env.aggregate_id,
+        aggregate_type: env.aggregate_type,
+        actor_id: env.actor_id,
+        correlation_id: env.correlation_id,
+        causation_id: env.causation_id,
+        occurred_at: env.occurred_at,
+        payload: env.payload,
+    }
+}
+
 #[async_trait]
 impl Outbox for OutboxHandle {
     async fn append(&self, envelope: SerializedEnvelope) -> Result<()> {
@@ -109,6 +134,38 @@ impl Outbox for OutboxHandle {
     async fn pending(&self, limit: u32) -> Result<Vec<SerializedEnvelope>> {
         let outbox = self.0.outbox.lock();
         Ok(outbox.iter().take(limit as usize).cloned().collect())
+    }
+
+    async fn mark_published(&self, ids: &[educore_core::ids::EventId]) -> Result<()> {
+        let mut outbox = self.0.outbox.lock();
+        outbox.retain(|e| !ids.contains(&e.event_id));
+        Ok(())
+    }
+}
+
+/// `educore_events::relay::OutboxSource` impl for the
+/// testkit's `OutboxHandle`. Wires the in-memory outbox to
+/// the production `OutboxRelay<O, B>` so consumer tests can
+/// exercise the same relay path they would in production
+/// without standing up a real storage adapter. The mapping is
+/// 1:1: the testkit's `pending` already returns envelopes in
+/// append order, and `mark_published` removes them by id,
+/// which matches the relay's contract.
+#[async_trait]
+impl educore_events::relay::OutboxSource for OutboxHandle {
+    async fn pending_for_school(
+        &self,
+        school_id: educore_core::ids::SchoolId,
+        limit: u32,
+    ) -> Result<Vec<educore_events::relay_envelope::SerializedEnvelope>> {
+        let outbox = self.0.outbox.lock();
+        Ok(outbox
+            .iter()
+            .filter(|e| e.school_id == school_id)
+            .take(limit as usize)
+            .cloned()
+            .map(to_relay_envelope)
+            .collect())
     }
 
     async fn mark_published(&self, ids: &[educore_core::ids::EventId]) -> Result<()> {
@@ -278,6 +335,20 @@ impl InMemoryStorageAdapter {
 
     fn _next_id(&self) -> u64 {
         self.inner._id_seq.fetch_add(1, Ordering::Relaxed)
+    }
+
+    /// Replaces the bus on this adapter. Returns the adapter
+    /// with the new bus installed so the new bus drains the
+    /// outbox on subsequent commits. Existing transactions
+    /// continue to use the bus they were constructed with;
+    /// only transactions opened AFTER `with_bus` returns see
+    /// the new bus. Used by tests that wire the bus after
+    /// constructing the storage adapter (e.g. to swap in a
+    /// mock).
+    #[must_use]
+    pub fn with_bus(mut self, bus: Arc<dyn EventBus>) -> Self {
+        self.bus = bus;
+        self
     }
 }
 
@@ -507,17 +578,56 @@ impl Transaction for InMemoryTransaction {
         if self.committed.swap(true, Ordering::SeqCst) {
             return Err(DomainError::validation("transaction already committed"));
         }
-        // Drain the outbox; the in-memory testkit does not
-        // republish envelopes to the bus (the SerializedEnvelope
-        // shape uses owned Strings while EventEnvelope expects
-        // &'static str, so a strict conversion is awkward). The
-        // outbox-drain test asserts that the outbox is empty
-        // after commit; the bus is exercised separately by tests
-        // that publish directly via the bus port.
-        let _pending: Vec<SerializedEnvelope> = {
+        // Drain the outbox. Each drained envelope is converted
+        // to a bus-port `EventEnvelope` and published via the
+        // testkit's `EventBus` (TOOL-TK-001). Successful
+        // publishes are removed from the outbox via
+        // `mark_published`; failed publishes stay pending for
+        // the next drain (matching the production relay's
+        // contract — the bus-port contract is at-least-once
+        // delivery).
+        //
+        // The bus is `Arc<dyn EventBus>` shared with the
+        // adapter; the testkit wires an `InProcessEventBus`
+        // by default in `TestkitWorld::new`, so envelopes
+        // staged via `tx.outbox().append(...)` and then
+        // committed flow through the bus to any
+        // `SubscriberRegistry` the consumer has installed.
+        let pending: Vec<SerializedEnvelope> = {
             let mut outbox = self.inner.outbox.lock();
             outbox.drain(..).collect()
         };
+        if !pending.is_empty() {
+            let mut published_ids = Vec::with_capacity(pending.len());
+            for serialized in pending {
+                let envelope = to_relay_envelope(serialized.clone()).into_event_envelope();
+                match self._bus.publish(envelope).await {
+                    Ok(receipt) => published_ids.push(receipt.event_id),
+                    Err(err) => {
+                        // Mirror the production relay: a
+                        // failed publish leaves the envelope
+                        // in the outbox for retry. We push it
+                        // back so the next commit can try
+                        // again. This keeps the testkit
+                        // resilient without surfacing the
+                        // error to the caller (the bus is a
+                        // test seam; failure here is the
+                        // consumer's responsibility).
+                        tracing::warn!(
+                            error = %err,
+                            "InMemoryTransaction::commit: bus.publish failed; \
+                             envelope remains pending"
+                        );
+                        let mut outbox = self.inner.outbox.lock();
+                        outbox.push(serialized);
+                    }
+                }
+            }
+            if !published_ids.is_empty() {
+                let mut outbox = self.inner.outbox.lock();
+                outbox.retain(|e| !published_ids.contains(&e.event_id));
+            }
+        }
         Ok(())
     }
 

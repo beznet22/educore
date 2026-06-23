@@ -57,11 +57,11 @@ mod tests {
         let school = g.next_school_id();
         EventEnvelope {
             event_id: g.next_event_id(),
-            event_type,
+            event_type: event_type.to_owned(),
             schema_version: 1,
             school_id: school,
             aggregate_id: g.next_uuid(),
-            aggregate_type,
+            aggregate_type: aggregate_type.to_owned(),
             actor_id: g.next_user_id(),
             correlation_id: g.next_correlation_id(),
             causation_id: None,

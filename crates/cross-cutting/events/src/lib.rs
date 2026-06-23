@@ -51,6 +51,11 @@ pub mod event_bus;
 /// `SerializedEnvelope`.
 pub mod outbox;
 
+/// The relay envelope — the concrete, serialization-ready
+/// envelope stored in the outbox and consumed by
+/// [`OutboxRelay`](relay::OutboxRelay).
+pub mod relay_envelope;
+
 /// The four typed sync events emitted by the sync engine.
 pub mod sync;
 
@@ -58,6 +63,11 @@ pub mod sync;
 /// and the [`Subscriber`](subscribe::Subscriber) trait. Used to
 /// wire spec-mandated cross-domain handlers to the bus.
 pub mod subscribe;
+
+/// The [`OutboxRelay`](relay::OutboxRelay) that drains the
+/// storage-port `Outbox` and forwards envelopes to the
+/// bus-port `EventBus`.
+pub mod relay;
 
 /// Convenience re-exports for the most-used types.
 pub mod prelude {
@@ -70,6 +80,7 @@ pub mod prelude {
     };
     pub use crate::subscribe::{DispatchStats, Subscriber, SubscriberFailure, SubscriberRegistry, SubscriptionFilter};
     pub use crate::sync::{SyncPaused, SyncResumed, SyncStarted, SyncStopped};
+    pub use crate::relay::{OutboxRelay, RelayStats, DEFAULT_BATCH_SIZE, DEFAULT_IDLE_DELAY};
 }
 
 #[cfg(test)]
