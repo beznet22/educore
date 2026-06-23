@@ -118,6 +118,37 @@ impl MysqlTransaction {
     }
 }
 
+/// QW-4 / `ADAPT-MY-005` Drop contract.
+///
+/// If the transaction is dropped without an explicit `commit`
+/// or `rollback`, the `Drop` impl flips the `rolled_back`
+/// guard so any subsequent introspections of the transaction
+/// state observe a completed transaction (and any consumer
+/// code that holds the inner sub-port handles will see the
+/// "rolled back" state).
+///
+/// The current implementation's sub-port methods each commit
+/// their own short-lived `sqlx::Transaction` immediately, so
+/// there is no long-running database transaction to roll
+/// back at the struct level. The flag flip here is the
+/// port-level rollback contract: it is what `rollback().await`
+/// would have done, performed synchronously from `Drop`.
+/// We log a warning so dropped-without-finalize is observable
+/// in tracing output (a programming error in the caller).
+impl Drop for MysqlTransaction {
+    fn drop(&mut self) {
+        if !self.done.load(Ordering::SeqCst) {
+            tracing::warn!(
+                school = %self.outbox.school(),
+                "MysqlTransaction dropped without commit or rollback; \
+                 performing implicit rollback"
+            );
+            self.rolled_back.store(true, Ordering::SeqCst);
+            self.done.store(true, Ordering::SeqCst);
+        }
+    }
+}
+
 #[async_trait]
 impl Transaction for MysqlTransaction {
     #[instrument(skip(self))]

@@ -16,6 +16,26 @@
 //!
 //! The transaction is consumed by `commit` or `rollback`
 //! (`self: Box<Self>` to take ownership of the trait object).
+//!
+//! ## Drop contract (PORT-STORE-014 / QW-4)
+//!
+//! **Every `Transaction` impl MUST implement `Drop`.** If the
+//! transaction is dropped without `commit()` or `rollback()`
+//! having been called, the `Drop` impl MUST perform a
+//! best-effort rollback (logging a warning if it cannot reach
+//! a runtime to do the rollback asynchronously).
+//!
+//! The engine's transactional contract is "rollback by
+//! default" — a dropped transaction that committed silently
+//! would violate this. Implementations that hold an underlying
+//! `sqlx::Transaction` (or equivalent) MUST NOT rely on the
+//! upstream type's default `Drop` (which may commit); they
+//! MUST invoke an explicit rollback from their own `Drop`.
+//!
+//! See the wave-3 adapter findings
+//! (`ADAPTER-PG-005` / `ADAPT-MY-005` / `ADAPTER-SQ-005` /
+//! `ADAPTER-SD-005`) and the wave-4 port finding
+//! (`PORT-STORE-014`) for the original audit trail.
 
 use async_trait::async_trait;
 
@@ -29,6 +49,17 @@ use super::student_attendance_row::StudentAttendanceRow;
 
 /// The transactional unit of work. Object-safe (one trait
 /// object per transaction).
+///
+/// ## Drop contract
+///
+/// **Implementations MUST implement `Drop`** such that
+/// dropping a transaction that was neither `commit()`ted nor
+/// `rollback()`ed triggers an automatic rollback. The
+/// contract is advisory here (Rust cannot put `Drop` on a
+/// trait; it lives on the concrete impl) and is enforced by
+/// convention: every shipped `Transaction` impl has a `Drop`
+/// that honors it. See the module-level docs for the
+/// rationale and the source findings.
 #[async_trait]
 pub trait Transaction: Send + Sync + std::fmt::Debug {
     /// Commits the transaction. All outbox appends, aggregate

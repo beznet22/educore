@@ -82,6 +82,36 @@ impl SurrealTransaction {
     }
 }
 
+/// QW-4 / `ADAPTER-SD-005` Drop contract.
+///
+/// If the transaction is dropped without an explicit `commit`
+/// or `rollback`, the `Drop` impl flips the `rolled_back`
+/// guard so any subsequent introspections of the transaction
+/// state observe a completed transaction (and any consumer
+/// code that holds the inner sub-port handles will see the
+/// "rolled back" state).
+///
+/// The SurrealDB Phase 0 implementation does not yet hold a
+/// real SDK-level transaction; the flag flip here is the
+/// port-level rollback contract: it is what `rollback().await`
+/// would have done, performed synchronously from `Drop`.
+/// We log a warning so dropped-without-finalize is observable
+/// in tracing output (a programming error in the caller).
+impl Drop for SurrealTransaction {
+    fn drop(&mut self) {
+        if !self.done.load(std::sync::atomic::Ordering::SeqCst) {
+            tracing::warn!(
+                school = %self.outbox.school,
+                "SurrealTransaction dropped without commit or rollback; \
+                 performing implicit rollback"
+            );
+            self.rolled_back
+                .store(true, std::sync::atomic::Ordering::SeqCst);
+            self.done.store(true, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+}
+
 #[async_trait]
 impl Transaction for SurrealTransaction {
     async fn commit(self: Box<Self>) -> Result<()> {

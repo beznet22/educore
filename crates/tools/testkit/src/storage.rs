@@ -70,6 +70,18 @@ pub(crate) struct InMemoryInner {
     pub(crate) migrated: AtomicBool,
     pub(crate) closed: AtomicBool,
     pub(crate) _id_seq: AtomicU64,
+    /// QW-4 observability hook: counts how many transactions
+    /// were dropped *without* `commit()` / `rollback()` being
+    /// called. The Drop impl increments this so the unit
+    /// tests can verify the new contract without needing to
+    /// inspect post-Drop state (which is impossible — the
+    /// value is consumed).
+    pub(crate) implicit_rollback_count: AtomicU64,
+    /// QW-4 observability hook: counts how many transactions
+    /// were dropped *after* `commit()` (where no rollback
+    /// should fire). Used to assert the happy path is
+    /// unchanged.
+    pub(crate) explicit_commit_count: AtomicU64,
 }
 
 // ---------------------------------------------------------------------------
@@ -257,6 +269,8 @@ impl InMemoryStorageAdapter {
                 migrated: AtomicBool::new(false),
                 closed: AtomicBool::new(false),
                 _id_seq: AtomicU64::new(0),
+                implicit_rollback_count: AtomicU64::new(0),
+                explicit_commit_count: AtomicU64::new(0),
             }),
             bus,
         }
@@ -424,6 +438,62 @@ impl InMemoryTransaction {
             idem_h,
             committed: AtomicBool::new(false),
             rolled_back: AtomicBool::new(false),
+        }
+    }
+
+    /// Returns `true` once `commit()` (or an implicit
+    /// commit-style `Drop`) has been called. Used by the
+    /// unit tests to verify the QW-4 `Drop` contract.
+    #[cfg(test)]
+    #[must_use]
+    pub fn is_committed(&self) -> bool {
+        self.committed.load(Ordering::SeqCst)
+    }
+
+    /// Returns `true` once `rollback()` (or an implicit
+    /// rollback-style `Drop`) has been called. Used by the
+    /// unit tests to verify the QW-4 `Drop` contract.
+    #[cfg(test)]
+    #[must_use]
+    pub fn is_rolled_back(&self) -> bool {
+        self.rolled_back.load(Ordering::SeqCst)
+    }
+}
+
+/// QW-4 / `TOOL-TK-002` partial fix — the Drop contract.
+///
+/// If the transaction is dropped without an explicit `commit`
+/// or `rollback`, the `Drop` impl flips both the `committed`
+/// and `rolled_back` guards. This honors the port-level
+/// contract: a dropped transaction is "rolled back by default".
+///
+/// **Caveat (TOOL-TK-002):** the in-memory sub-port handles
+/// write directly to the shared `InMemoryInner` state, so a
+/// dropped-without-finalize transaction leaves its staged
+/// audit / event / idempotency writes visible to subsequent
+/// transactions. The `Drop` only flips the transactional
+/// state flag; it does not undo the sub-port writes. That
+/// broader fix (a staging layer) is tracked under `TOOL-TK-002`
+/// and is **out of scope** for this PR.
+impl Drop for InMemoryTransaction {
+    fn drop(&mut self) {
+        let was_committed = self.committed.load(Ordering::SeqCst);
+        let was_rolled_back = self.rolled_back.load(Ordering::SeqCst);
+        if !was_committed && !was_rolled_back {
+            tracing::warn!(
+                "InMemoryTransaction dropped without commit or rollback; \
+                 performing implicit rollback (TOOL-TK-002 caveat: \
+                 sub-port writes are already visible)"
+            );
+            self.rolled_back.store(true, Ordering::SeqCst);
+            self.committed.store(true, Ordering::SeqCst);
+            self.inner
+                .implicit_rollback_count
+                .fetch_add(1, Ordering::SeqCst);
+        } else if was_committed {
+            self.inner
+                .explicit_commit_count
+                .fetch_add(1, Ordering::SeqCst);
         }
     }
 }
@@ -854,6 +924,105 @@ mod tests {
             let school = g.next_school_id();
             let filter = ChangeFilter::for_school(school);
             let _stream = adapter.watch_changes(filter).await.unwrap();
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // QW-4: explicit `Drop` on Transaction impl rollback
+    // -----------------------------------------------------------------
+    //
+    // These two tests verify the QW-4 contract introduced in
+    // PR 2 of `remediation/day1-quick-wins`:
+    //
+    // 1. Dropping a transaction that was neither committed nor
+    //    rolled back MUST trigger an implicit rollback (the
+    //    `implicit_rollback_count` on the shared inner state
+    //    increments by one).
+    // 2. A transaction that was explicitly committed MUST NOT
+    //    trigger an implicit rollback on drop (the happy path
+    //    is unchanged; the `explicit_commit_count` increments
+    //    by one and the `implicit_rollback_count` does NOT).
+    //
+    // The counters live on `InMemoryInner` (not on the
+    // transaction itself) precisely so we can observe the
+    // Drop behavior from a different scope: the inner state
+    // outlives the transaction and the test holds an `Arc`
+    // to it via the adapter.
+
+    #[test]
+    fn drop_without_commit_triggers_implicit_rollback() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let adapter = InMemoryStorageAdapter::new(make_bus());
+            let g = SystemIdGen;
+            let school = g.next_school_id();
+            assert_eq!(
+                adapter.inner.implicit_rollback_count.load(Ordering::SeqCst),
+                0
+            );
+            assert_eq!(
+                adapter.inner.explicit_commit_count.load(Ordering::SeqCst),
+                0
+            );
+
+            let tx = adapter.begin().await.unwrap();
+            // Stage a write so the transaction has real work
+            // (and verifies the Drop path is exercised on a
+            // non-trivial transaction).
+            tx.outbox().append(sample_envelope(school)).await.unwrap();
+
+            // Drop without `commit` or `rollback`.
+            drop(tx);
+
+            // QW-4 contract: the implicit-rollback counter
+            // MUST have incremented.
+            assert_eq!(
+                adapter.inner.implicit_rollback_count.load(Ordering::SeqCst),
+                1,
+                "dropping a transaction without commit/rollback must trigger implicit rollback"
+            );
+            assert_eq!(
+                adapter.inner.explicit_commit_count.load(Ordering::SeqCst),
+                0,
+                "an uncommitted-then-dropped transaction must not count as a commit"
+            );
+        });
+    }
+
+    #[test]
+    fn drop_after_commit_does_not_trigger_rollback() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let adapter = InMemoryStorageAdapter::new(make_bus());
+            let g = SystemIdGen;
+            let school = g.next_school_id();
+            assert_eq!(
+                adapter.inner.implicit_rollback_count.load(Ordering::SeqCst),
+                0
+            );
+            assert_eq!(
+                adapter.inner.explicit_commit_count.load(Ordering::SeqCst),
+                0
+            );
+
+            let tx = adapter.begin().await.unwrap();
+            tx.outbox().append(sample_envelope(school)).await.unwrap();
+            // `commit` consumes the `Box<dyn Transaction>`;
+            // its Drop fires when `commit` returns. QW-4
+            // contract: a committed transaction MUST NOT
+            // trigger an implicit rollback on Drop.
+            tx.commit().await.unwrap();
+
+            assert_eq!(
+                adapter.inner.implicit_rollback_count.load(Ordering::SeqCst),
+                0,
+                "dropping a committed transaction must NOT trigger implicit rollback"
+            );
+            assert_eq!(
+                adapter.inner.explicit_commit_count.load(Ordering::SeqCst),
+                1,
+                "dropping a committed transaction counts the happy path"
+            );
         });
     }
 }
