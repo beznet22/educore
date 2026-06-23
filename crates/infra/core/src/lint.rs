@@ -91,8 +91,16 @@ impl LintReport {
 /// `repo_root` is the absolute path to the Educore repo root (the
 /// directory that contains `Cargo.toml` and `docs/`). The function
 /// is pure: it does not modify the filesystem.
+///
+/// Only the spec → code direction (item 1 of the No-Gaps Gates) is
+/// fully implemented. The remaining checks
+/// (`check_coverage_matrix`, `check_anti_patterns`) are best-effort
+/// scanners that catch the common cases but leave the hard problems
+/// to follow-up PRs; see `docs/audit_reports/findings/wave4-core.md`
+/// findings CORE-001..CORE-006 for the open work.
 pub fn run(repo_root: &Path) -> LintReport {
     let mut report = LintReport::default();
+    runner::check_spec_to_code(repo_root, &mut report);
     runner::check_coverage_matrix(repo_root, &mut report);
     runner::check_anti_patterns(repo_root, &mut report);
     report
@@ -105,6 +113,327 @@ pub mod runner {
     use std::path::Path;
 
     use super::{LintReport, Violation};
+
+    /// Spec → code direction (item 1 of the No-Gaps Gates). Walks
+    /// `docs/specs/<domain>/{aggregates,commands,events}.md` and
+    /// verifies every aggregate, command, and event declared in the
+    /// spec has a corresponding definition in the matching
+    /// `crates/domains/<domain>/src/*.rs` file.
+    ///
+    /// The three sub-checks use slightly different strategies because
+    /// the spec format varies across domains:
+    ///
+    /// - `aggregates.md` is consistent across all 10 domains: every
+    ///   aggregate is introduced by an `## <Name>` heading, and the
+    ///   aggregate itself is described in prose (no `pub struct`
+    ///   block). We extract the `## <Name>` headings.
+    /// - `commands.md` is less consistent: some headings bundle
+    ///   multiple commands (`## CreateClass / UpdateClass /
+    ///   DeleteClass`). The robust strategy is to extract
+    ///   `pub struct <Name>Command` declarations from the markdown
+    ///   directly, which gives one entry per command regardless of
+    ///   how the headings were split.
+    /// - `events.md` mixes `## <Category>` (e.g. "## Exam Lifecycle")
+    ///   and `### <EventName>` (e.g. "### StudentAdmitted") headings
+    ///   across the 10 domains. We extract `pub struct <Name>`
+    ///   declarations from the body that follows the first
+    ///   `## <Category>` heading, which skips the prelude code
+    ///   block (containing `EventEnvelope<E>` and friends) and
+    ///   yields one entry per event.
+    pub fn check_spec_to_code(repo_root: &Path, report: &mut LintReport) {
+        let specs_dir = repo_root.join("docs").join("specs");
+        let domains_dir = repo_root.join("crates").join("domains");
+        let Ok(specs_entries) = fs::read_dir(&specs_dir) else {
+            return;
+        };
+        for spec_entry in specs_entries.flatten() {
+            let domain_path = spec_entry.path();
+            if !domain_path.is_dir() {
+                continue;
+            }
+            let domain_name = match spec_entry.file_name().into_string() {
+                Ok(s) => s,
+                Err(_) => continue,
+            };
+            let code_root = domains_dir.join(&domain_name);
+            if !code_root.join("src").is_dir() {
+                // No Rust crate for this spec; the engine has
+                // cross-cutting specs (events, operations, platform,
+                // rbac, settings, sync) that live under `docs/specs/`
+                // but not under `crates/domains/`. They are out of
+                // scope for the spec → code direction check.
+                continue;
+            }
+            check_aggregates(&domain_path, &code_root, repo_root, report);
+            check_commands(&domain_path, &code_root, repo_root, report);
+            check_events(&domain_path, &code_root, repo_root, report);
+        }
+    }
+
+    fn check_aggregates(
+        domain_path: &Path,
+        code_root: &Path,
+        repo_root: &Path,
+        report: &mut LintReport,
+    ) {
+        let spec_file = domain_path.join("aggregates.md");
+        let src_file = code_root.join("src").join("aggregate.rs");
+        let (Ok(spec), Ok(src)) = (fs::read_to_string(&spec_file), fs::read_to_string(&src_file)) else {
+            return;
+        };
+        for agg in extract_h2_headings(&spec) {
+            if !item_defined(&src, "struct", &agg) {
+                report.violations.push(missing_spec_item(
+                    repo_root,
+                    &spec_file,
+                    "spec_to_code:missing_aggregate",
+                    "aggregate",
+                    &agg,
+                    &format!("pub struct {agg}"),
+                    &src_file,
+                ));
+            }
+        }
+    }
+
+    fn check_commands(
+        domain_path: &Path,
+        code_root: &Path,
+        repo_root: &Path,
+        report: &mut LintReport,
+    ) {
+        let spec_file = domain_path.join("commands.md");
+        let src_file = code_root.join("src").join("commands.rs");
+        let (Ok(spec), Ok(src)) = (fs::read_to_string(&spec_file), fs::read_to_string(&src_file)) else {
+            return;
+        };
+        for cmd in extract_struct_decls_after_first_heading(&spec, "Command") {
+            let expected = format!("{cmd}Command");
+            if !item_defined(&src, "struct", &expected) {
+                report.violations.push(missing_spec_item(
+                    repo_root,
+                    &spec_file,
+                    "spec_to_code:missing_command",
+                    "command",
+                    &cmd,
+                    &format!("pub struct {expected}"),
+                    &src_file,
+                ));
+            }
+        }
+    }
+
+    fn check_events(
+        domain_path: &Path,
+        code_root: &Path,
+        repo_root: &Path,
+        report: &mut LintReport,
+    ) {
+        let spec_file = domain_path.join("events.md");
+        let src_file = code_root.join("src").join("events.rs");
+        let (Ok(spec), Ok(src)) = (fs::read_to_string(&spec_file), fs::read_to_string(&src_file)) else {
+            return;
+        };
+        for evt in extract_event_struct_decls(&spec) {
+            if !item_defined(&src, "struct", &evt) {
+                report.violations.push(missing_spec_item(
+                    repo_root,
+                    &spec_file,
+                    "spec_to_code:missing_event",
+                    "event",
+                    &evt,
+                    &format!("pub struct {evt}"),
+                    &src_file,
+                ));
+            }
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn missing_spec_item(
+        repo_root: &Path,
+        spec_file: &Path,
+        check: &str,
+        kind: &str,
+        name: &str,
+        expected_signature: &str,
+        src_file: &Path,
+    ) -> Violation {
+        Violation {
+            check: check.to_string(),
+            file: spec_file.strip_prefix(repo_root).unwrap_or(spec_file).to_path_buf(),
+            line: None,
+            message: format!(
+                "{kind} `{name}` declared in spec but missing `{expected_signature}` in {}",
+                src_file.display()
+            ),
+        }
+    }
+
+    /// Returns every `## <Name>` heading in `md`, skipping lines
+    /// inside fenced code blocks. The document title (`# <Title>`)
+    /// is naturally excluded because it is an h1.
+    fn extract_h2_headings(md: &str) -> Vec<String> {
+        let mut out = Vec::new();
+        let mut in_code = false;
+        for line in md.lines() {
+            if is_code_fence(line) {
+                in_code = !in_code;
+                continue;
+            }
+            if in_code {
+                continue;
+            }
+            if let Some(rest) = line.strip_prefix("## ") {
+                let name = sanitize_heading_text(rest);
+                if !name.is_empty() {
+                    out.push(name);
+                }
+            }
+        }
+        out
+    }
+
+    /// Returns every `## <Name>` heading in `md` whose heading text
+    /// mentions a `<Suffix>` struct declaration in the body that
+    /// follows. The body is the markdown text after the heading;
+    /// we extract `pub struct <Name><Suffix>` declarations from it.
+    ///
+    /// This is more robust than parsing the heading text alone
+    /// because it tolerates bundled headings (`## A / B / C`) and
+    /// helper structs that the heading does not name.
+    fn extract_struct_decls_after_first_heading(md: &str, suffix: &str) -> Vec<String> {
+        let mut in_code = false;
+        let mut past_first_h2 = false;
+        let mut out = Vec::new();
+        for line in md.lines() {
+            if is_code_fence(line) {
+                in_code = !in_code;
+                continue;
+            }
+            if !in_code && line.starts_with("## ") {
+                past_first_h2 = true;
+            }
+            if !past_first_h2 {
+                continue;
+            }
+            for name in extract_struct_names(line, suffix) {
+                if !out.contains(&name) {
+                    out.push(name);
+                }
+            }
+        }
+        out
+    }
+
+    /// Returns every event `pub struct <Name>` declaration found in
+    /// `md` after the first `## <Category>` heading. This skips the
+    /// prelude code block (containing `EventEnvelope<E>` and similar
+    /// non-event types) and tolerates both h2-only and h2+h3 heading
+    /// styles across the 10 domain specs.
+    fn extract_event_struct_decls(md: &str) -> Vec<String> {
+        let mut in_code = false;
+        let mut past_first_h2 = false;
+        let mut out = Vec::new();
+        for line in md.lines() {
+            if is_code_fence(line) {
+                in_code = !in_code;
+                continue;
+            }
+            if !in_code && line.starts_with("## ") {
+                past_first_h2 = true;
+                continue;
+            }
+            if !past_first_h2 {
+                continue;
+            }
+            for name in extract_struct_names(line, "") {
+                if !out.contains(&name) {
+                    out.push(name);
+                }
+            }
+        }
+        out
+    }
+
+    /// Strips backticks, trims whitespace, and removes trailing
+    /// punctuation from a heading line. Headings like
+    /// `## Student Lifecycle` return `"Student Lifecycle"`.
+    fn sanitize_heading_text(raw: &str) -> String {
+        raw.trim()
+            .trim_matches('`')
+            .trim_end_matches(':')
+            .trim()
+            .to_string()
+    }
+
+    fn is_code_fence(line: &str) -> bool {
+        line.trim_start().starts_with("```")
+    }
+
+    /// Returns the names of any `pub struct <FullName>`
+    /// declarations found on `line`, with the trailing `suffix`
+    /// stripped from `FullName` if non-empty. For commands
+    /// (`suffix = "Command"`), `pub struct CreateWidgetCommand {}`
+    /// yields `"CreateWidget"`. For events (`suffix = ""`),
+    /// `pub struct StudentAdmitted {}` yields `"StudentAdmitted"`.
+    ///
+    /// A line may declare multiple structs; all are returned.
+    /// The delimiter check at the end of the name and the
+    /// `strip_suffix` boundary check together prevent collisions
+    /// with unrelated identifiers (e.g. `CommandHistory` does NOT
+    /// match the `"Command"` suffix because it does not end with it).
+    fn extract_struct_names(line: &str, suffix: &str) -> Vec<String> {
+        let trimmed = line.trim_start();
+        let Some(after_pub) = trimmed.strip_prefix("pub struct ") else {
+            return Vec::new();
+        };
+        // The full name extends from the start of `after_pub` to
+        // the first delimiter character.
+        let name_end = after_pub
+            .find(|c: char| matches!(c, ' ' | '{' | '<' | '(' | ';'))
+            .unwrap_or(after_pub.len());
+        if name_end == 0 {
+            return Vec::new();
+        }
+        let full_name = &after_pub[..name_end];
+        if suffix.is_empty() {
+            return vec![full_name.to_string()];
+        }
+        // For non-empty suffix, the full name MUST end with the
+        // suffix for this to be a match. This naturally rejects
+        // coincidental matches (e.g. `pub struct CommandHistory`
+        // does not match `suffix = "Command"`).
+        let Some(bare) = full_name.strip_suffix(suffix) else {
+            return Vec::new();
+        };
+        if bare.is_empty() {
+            // The full name is exactly the suffix with no preceding
+            // identifier (e.g. `pub struct Command`); not a valid
+            // command name.
+            return Vec::new();
+        }
+        vec![bare.to_string()]
+    }
+
+    /// Returns `true` if `src` contains `pub <kind> <name>` where
+    /// the next character after the name is a delimiter (space,
+    /// brace, generic, tuple, or semicolon). Accepts `struct` and
+    /// `enum`.
+    fn item_defined(src: &str, kind: &str, name: &str) -> bool {
+        let prefix = format!("pub {kind} {name}");
+        for line in src.lines() {
+            let trimmed = line.trim_start();
+            let Some(after) = trimmed.strip_prefix(&prefix) else {
+                continue;
+            };
+            match after.chars().next() {
+                Some(' ') | Some('{') | Some('<') | Some('(') | Some(';') => return true,
+                _ => continue,
+            }
+        }
+        false
+    }
 
     /// Coverage-matrix sync: every `Tested` row in
     /// `docs/coverage.toml` has a `tests` path that exists on disk.
@@ -293,16 +622,145 @@ pub mod runner {
     clippy::dbg_macro
 )]
 mod tests {
+    use std::path::PathBuf;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
     use super::*;
+
+    /// Creates a unique temporary directory under `std::env::temp_dir()`.
+    /// Avoids a `tempfile` dep — the directory is removed at the end
+    /// of the test via the returned [`TempPath`] guard.
+    fn fresh_tempdir(label: &str) -> TempPath {
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
+        let pid = std::process::id();
+        let n = COUNTER.fetch_add(1, Ordering::SeqCst);
+        let mut p = std::env::temp_dir();
+        p.push(format!("educore-lint-{label}-{pid}-{n}"));
+        if p.exists() {
+            let _ = std::fs::remove_dir_all(&p);
+        }
+        std::fs::create_dir_all(&p).expect("create tempdir");
+        TempPath(p)
+    }
+
+    /// Removes the directory on drop. Best-effort: a leak on test
+    /// failure is acceptable; the OS reclaims `std::env::temp_dir()`
+    /// eventually.
+    struct TempPath(PathBuf);
+
+    impl Drop for TempPath {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
 
     #[test]
     fn empty_repo_produces_clean_report() {
-        // The workspace as-shipped may legitimately have a few
-        // anti-pattern violations in the Phase 0 crates; the lint
-        // binary is the canonical check. The unit tests here cover
-        // the data structures (Violation, LintReport) only.
-        let r = LintReport::default();
-        assert!(r.is_clean());
-        assert_eq!(r.print_to_stderr(), 0);
+        let tmp = fresh_tempdir("empty");
+        let r = run(&tmp.0);
+        assert!(
+            r.is_clean(),
+            "expected clean report on empty repo, got {} violation(s): {:#?}",
+            r.violations.len(),
+            r.violations
+        );
+    }
+
+    #[test]
+    fn missing_aggregate_is_reported() {
+        let tmp = fresh_tempdir("missing-aggregate");
+        let spec_dir = tmp.0.join("docs/specs/test");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        std::fs::write(
+            spec_dir.join("aggregates.md"),
+            "# Test Domain — Aggregates\n\n## Widget\n\n## Gadget\n",
+        )
+        .unwrap();
+        let code_dir = tmp.0.join("crates/domains/test/src");
+        std::fs::create_dir_all(&code_dir).unwrap();
+        std::fs::write(
+            code_dir.join("aggregate.rs"),
+            "pub struct Widget { _phantom: () }\n",
+        )
+        .unwrap();
+
+        let r = run(&tmp.0);
+        assert_eq!(r.violations.len(), 1, "violations = {:?}", r.violations);
+        let v = &r.violations[0];
+        assert_eq!(v.check, "spec_to_code:missing_aggregate");
+        assert!(v.message.contains("Gadget"), "message = {}", v.message);
+        assert!(
+            v.message.contains("pub struct Gadget"),
+            "message = {}",
+            v.message
+        );
+    }
+
+    #[test]
+    fn missing_command_is_reported() {
+        let tmp = fresh_tempdir("missing-command");
+        let spec_dir = tmp.0.join("docs/specs/test");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        std::fs::write(
+            spec_dir.join("commands.md"),
+            "# Test Domain — Commands\n\n## CreateWidget\n\n```rust\npub struct CreateWidgetCommand {}\n```\n\n## DeleteWidget\n\n```rust\npub struct DeleteWidgetCommand {}\n```\n",
+        )
+        .unwrap();
+        let code_dir = tmp.0.join("crates/domains/test/src");
+        std::fs::create_dir_all(&code_dir).unwrap();
+        std::fs::write(
+            code_dir.join("commands.rs"),
+            "pub struct CreateWidgetCommand {}\n",
+        )
+        .unwrap();
+
+        let r = run(&tmp.0);
+        assert_eq!(r.violations.len(), 1, "violations = {:?}", r.violations);
+        let v = &r.violations[0];
+        assert_eq!(v.check, "spec_to_code:missing_command");
+        assert!(v.message.contains("DeleteWidget"), "message = {}", v.message);
+        assert!(
+            v.message.contains("DeleteWidgetCommand"),
+            "message = {}",
+            v.message
+        );
+    }
+
+    #[test]
+    fn missing_event_is_reported() {
+        let tmp = fresh_tempdir("missing-event");
+        let spec_dir = tmp.0.join("docs/specs/test");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        // The real spec format puts the prelude (EventEnvelope,
+        // DomainEvent trait, etc.) BEFORE the first h2 heading; the
+        // lint parser skips everything before the first h2 to
+        // exclude the prelude. This fixture mirrors that layout.
+        std::fs::write(
+            spec_dir.join("events.md"),
+            "# Test Domain — Events\n\n```rust\npub struct EventEnvelope<E> {}\n```\n\n## Widget Lifecycle\n\n```rust\npub struct WidgetCreated {}\npub struct WidgetDestroyed {}\n```\n",
+        )
+        .unwrap();
+        let code_dir = tmp.0.join("crates/domains/test/src");
+        std::fs::create_dir_all(&code_dir).unwrap();
+        std::fs::write(
+            code_dir.join("events.rs"),
+            "pub struct WidgetCreated {}\n",
+        )
+        .unwrap();
+
+        let r = run(&tmp.0);
+        assert_eq!(r.violations.len(), 1, "violations = {:?}", r.violations);
+        let v = &r.violations[0];
+        assert_eq!(v.check, "spec_to_code:missing_event");
+        assert!(
+            v.message.contains("WidgetDestroyed"),
+            "message = {}",
+            v.message
+        );
+        assert!(
+            v.message.contains("pub struct WidgetDestroyed"),
+            "message = {}",
+            v.message
+        );
     }
 }

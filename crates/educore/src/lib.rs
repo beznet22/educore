@@ -61,6 +61,17 @@ pub use educore_testkit as testkit;
 // ---- High-level SDK ------------------------------------------------------
 pub use educore_sdk as sdk;
 
+// ---- CLI and proc-macro re-exports ---------------------------------------
+// `educore-cli` is the reference command-line binary (Phase 16). It is a
+// binary crate, so the re-export exposes the library surface for embedding
+// (e.g. library-mode consumers that link the CLI parser as a sub-binary).
+// `educore-query-derive` provides the `#[derive(DomainQuery)]` proc-macro
+// (Phase 0 foundation). Re-exporting it makes the umbrella the single
+// import surface for the entire engine per AGENTS.md § "Naming Convention
+// (Enforced)".
+pub use educore_cli as cli;
+pub use educore_query_derive as query_derive;
+
 /// Educore version, sourced from the package manifest.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

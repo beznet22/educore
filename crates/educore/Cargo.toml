@@ -45,6 +45,8 @@ educore-testkit = { workspace = true }
 educore-sdk = { workspace = true }
 educore-sync = { workspace = true }
 educore-sync-inprocess = { workspace = true }
+educore-cli = { workspace = true }
+educore-query-derive = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
