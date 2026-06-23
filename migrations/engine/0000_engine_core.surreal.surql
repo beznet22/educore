@@ -95,6 +95,7 @@ DEFINE FIELD attempts        ON TABLE outbox TYPE int      ASSERT $value != NONE
 DEFINE FIELD last_error      ON TABLE outbox TYPE option<string>;
 
 DEFINE INDEX idx_outbox_event_id        ON TABLE outbox COLUMNS event_id      UNIQUE;
+DEFINE INDEX outbox_school_id_idx       ON TABLE outbox COLUMNS school_id;
 DEFINE INDEX idx_outbox_school_enqueued ON TABLE outbox COLUMNS school_id, enqueued_at;
 DEFINE INDEX idx_outbox_published       ON TABLE outbox COLUMNS published_at, enqueued_at;
 DEFINE INDEX idx_outbox_aggregate       ON TABLE outbox COLUMNS aggregate_type, aggregate_id, occurred_at;
@@ -140,8 +141,9 @@ DEFINE FIELD occurred_at     ON TABLE audit_log TYPE datetime          ASSERT $v
 DEFINE FIELD active_status   ON TABLE audit_log TYPE string            ASSERT $value != NONE;
 DEFINE FIELD metadata        ON TABLE audit_log TYPE option<object>;
 
-DEFINE INDEX idx_audit_target    ON TABLE audit_log COLUMNS school_id, target_type, target_id;
-DEFINE INDEX idx_audit_occurred  ON TABLE audit_log COLUMNS school_id, occurred_at;
+DEFINE INDEX idx_audit_target        ON TABLE audit_log COLUMNS school_id, target_type, target_id;
+DEFINE INDEX idx_audit_occurred      ON TABLE audit_log COLUMNS school_id, occurred_at;
+DEFINE INDEX audit_log_school_id_idx ON TABLE audit_log COLUMNS school_id;
 
 -- -----------------------------------------------------------------------------
 -- 3. idempotency — command replay safety
@@ -172,7 +174,8 @@ DEFINE FIELD outcome_version        ON TABLE idempotency TYPE int               
 DEFINE FIELD recorded_at            ON TABLE idempotency TYPE datetime            ASSERT $value != NONE;
 DEFINE FIELD affected_aggregate_ids ON TABLE idempotency TYPE option<array<uuid>>;
 
-DEFINE INDEX idx_idempotency_pk      ON TABLE idempotency COLUMNS school_id, command_type, idempotency_key UNIQUE;
+DEFINE INDEX idx_idempotency_pk        ON TABLE idempotency COLUMNS school_id, command_type, idempotency_key UNIQUE;
+DEFINE INDEX idempotency_school_id_idx ON TABLE idempotency COLUMNS school_id;
 
 -- -----------------------------------------------------------------------------
 -- 4. event_log — retained events for replay and projection rebuild
@@ -208,6 +211,7 @@ DEFINE FIELD payload         ON TABLE event_log TYPE bytes    ASSERT $value != N
 DEFINE FIELD active_status   ON TABLE event_log TYPE string   ASSERT $value != NONE;
 
 DEFINE INDEX idx_event_log_event_id    ON TABLE event_log COLUMNS event_id      UNIQUE;
+DEFINE INDEX event_log_school_id_idx   ON TABLE event_log COLUMNS school_id;
 DEFINE INDEX idx_event_log_school      ON TABLE event_log COLUMNS school_id, recorded_at;
 DEFINE INDEX idx_event_log_aggregate   ON TABLE event_log COLUMNS school_id, aggregate_id;
 
