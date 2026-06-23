@@ -11,15 +11,17 @@
 //! `affected_aggregate_ids`). Fields not carried by the
 //! schema are populated with adapter-level defaults on write
 //! and reset to empty on read. The `command_type` is stored
-//! as TEXT and recovered with a `Box::leak` on read (see
-//! "Known limitation" below).
+//! as TEXT and recovered through a process-wide interner on
+//! read (see `intern_command_type` below).
 //!
 //! | Schema column    | Source on write                            |
 //! |------------------|--------------------------------------------|
 //! | `command_id`     | `uuid::Uuid::now_v7()` (fresh per record)  |
 //! | `expires_at`     | `recorded_at + 30 days`                    |
 
+use std::collections::HashMap;
 use std::fmt;
+use std::sync::{Mutex, OnceLock, PoisonError};
 
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -56,16 +58,16 @@ impl IdempotencyRow {
     ///
     /// `IdempotencyRecord::command_type` is typed as
     /// `&'static str`, which means a runtime-derived value can
-    /// only be produced by leaking the string. The leak is
-    /// intentional for Phase 1; a future PR should change the
-    /// `IdempotencyRecord` field to `String` so adapters can
-    /// round-trip the value without leaking. Tracked by the
-    /// `command_type` field's `&'static str` signature in
-    /// `educore-storage`.
+    /// only be produced by leaking the string. The string is
+    /// interned via a process-wide cache so the leak occurs at
+    /// most once per distinct value. A future PR (QW-12) will
+    /// change the `IdempotencyRecord` field to `String` so
+    /// adapters can round-trip the value without leaking at
+    /// all.
     fn to_record(&self) -> IdempotencyRecord {
         IdempotencyRecord {
             school_id: SchoolId::from_uuid(*self.school_id.as_uuid()),
-            command_type: Box::leak(self.command_type.clone().into_boxed_str()),
+            command_type: intern_command_type(&self.command_type),
             idempotency_key: IdempotencyKey::from_uuid(*self.idempotency_key.as_uuid()),
             outcome: Bytes::from(self.outcome.clone().into_bytes()),
             outcome_version: 0,
@@ -166,5 +168,132 @@ impl Idempotency for SqliteIdempotency {
         // `rows_affected` already returns `u64` in sqlx 0.8;
         // no conversion needed.
         Ok(n)
+    }
+}
+
+/// Process-wide interner for `command_type` strings read out
+/// of the `idempotency` table.
+///
+/// The `IdempotencyRecord::command_type` field is `&'static str`
+/// (per the storage port's design — the engine's command
+/// catalogue is a fixed enum), but the database column is
+/// `TEXT` and yields a `String` on read. Each distinct value is
+/// leaked into a `&'static str` exactly once; subsequent
+/// lookups return the same pointer from the cache. Memory is
+/// therefore bounded by the number of distinct `command_type`
+/// values observed over the process lifetime, not by the
+/// number of lookups.
+///
+/// This replaces the previous `Box::leak(...)` per-call in
+/// `IdempotencyRow::to_record`, which leaked a fresh
+/// allocation on every `lookup`. Closes audit finding
+/// ADAPTER-SQ-006 (QW-3).
+static COMMAND_TYPE_CACHE: OnceLock<Mutex<HashMap<String, &'static str>>> = OnceLock::new();
+
+/// Intern a `command_type` value: return a `&'static str`
+/// pointer that is shared across all callers for the same
+/// input. The first call for a given string allocates and
+/// leaks a copy; later calls return the cached pointer.
+///
+/// This function is only used by `IdempotencyRow::to_record`;
+/// it lives at the bottom of the file to keep the hot-path
+/// code above it readable.
+fn intern_command_type(s: &str) -> &'static str {
+    let cache = COMMAND_TYPE_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut cache = cache.lock().unwrap_or_else(PoisonError::into_inner);
+    if let Some(&interned) = cache.get(s) {
+        return interned;
+    }
+    // First use of this string: leak an owned copy so the
+    // `&'static str` requirement is satisfied. The cache
+    // ensures we leak at most once per distinct value.
+    let leaked: &'static str = Box::leak(s.to_owned().into_boxed_str());
+    cache.insert(leaked.to_owned(), leaked);
+    leaked
+}
+
+/// Number of distinct `command_type` values currently cached.
+/// Exposed for tests so they can verify bounded growth without
+/// touching the private static directly.
+#[cfg(test)]
+fn cached_command_type_count() -> usize {
+    let cache = COMMAND_TYPE_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    let cache = cache.lock().unwrap_or_else(PoisonError::into_inner);
+    cache.len()
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::panic,
+        clippy::dbg_macro
+    )]
+
+    use super::*;
+
+    // Serialize the tests in this module because they share
+    // the process-wide `COMMAND_TYPE_CACHE` static. Without
+    // this lock, parallel execution would let one test's
+    // inserts leak into the other's count assertions.
+    static TEST_LOCK: Mutex<()> = Mutex::new(());
+
+    #[test]
+    fn intern_is_idempotent() {
+        let _guard = TEST_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
+
+        // Calling intern twice with the same string must
+        // return the exact same `&'static str` pointer; the
+        // second call is a cache hit and allocates nothing.
+        let first = intern_command_type("academic.student.admit");
+        let second = intern_command_type("academic.student.admit");
+        assert_eq!(
+            first as *const str, second as *const str,
+            "intern returned different pointers for the same input",
+        );
+        // The pointer must also be stable across many calls;
+        // verify a third call returns the same address.
+        let third = intern_command_type("academic.student.admit");
+        assert_eq!(first as *const str, third as *const str);
+    }
+
+    #[test]
+    fn intern_is_bounded() {
+        let _guard = TEST_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
+
+        // Insert 100 distinct strings; the cache must grow
+        // by exactly 100 entries (one per distinct value).
+        let n = 100_usize;
+        let baseline = cached_command_type_count();
+
+        // Build payloads first so the strings live for the
+        // duration of both phases.
+        let mut payloads: Vec<String> = Vec::with_capacity(n);
+        for i in 0..n {
+            payloads.push(format!("bounded-test-{i}-{}", Uuid::new_v4()));
+        }
+
+        // Phase 1: first-time insertion; cache grows by `n`.
+        for p in &payloads {
+            let _ = intern_command_type(p);
+        }
+        let after_inserts = cached_command_type_count();
+        assert_eq!(
+            after_inserts - baseline,
+            n,
+            "cache should grow by exactly {n} entries on first insert",
+        );
+
+        // Phase 2: re-intern the SAME strings; cache must
+        // NOT grow further (these are cache hits).
+        for p in &payloads {
+            let _ = intern_command_type(p);
+        }
+        let after_reinserts = cached_command_type_count();
+        assert_eq!(
+            after_reinserts, after_inserts,
+            "re-interning the same strings must not grow the cache",
+        );
     }
 }
