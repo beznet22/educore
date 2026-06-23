@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS outbox (
     last_error      TEXT             NULL,
     PRIMARY KEY (event_id),
     KEY idx_outbox_school_enqueued (school_id, enqueued_at),
+    KEY outbox_school_id_idx (school_id),
     KEY idx_outbox_published (published_at, enqueued_at),
     KEY idx_outbox_aggregate (aggregate_type, aggregate_id, occurred_at),
     KEY idx_outbox_correlation (correlation_id)
@@ -113,6 +114,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
     source          VARCHAR(16)  NOT NULL,
     PRIMARY KEY (audit_id),
     KEY idx_audit_log_school_time (school_id, occurred_at),
+    KEY audit_log_school_id_idx (school_id),
     KEY idx_audit_log_actor (actor_id, occurred_at),
     KEY idx_audit_log_resource (resource_type, resource_id, occurred_at),
     KEY idx_audit_log_correlation (correlation_id),
@@ -137,6 +139,7 @@ CREATE TABLE IF NOT EXISTS idempotency (
     recorded_at      TIMESTAMP    NOT NULL,
     expires_at       TIMESTAMP    NOT NULL,
     PRIMARY KEY (school_id, command_type, idempotency_key),
+    KEY idempotency_school_id_idx (school_id),
     KEY idx_idempotency_expires (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -164,6 +167,7 @@ CREATE TABLE IF NOT EXISTS event_log (
     payload         JSON         NOT NULL,
     PRIMARY KEY (event_id),
     KEY idx_event_log_school_time (school_id, occurred_at),
+    KEY event_log_school_id_idx (school_id),
     KEY idx_event_log_type_time (event_type, occurred_at),
     KEY idx_event_log_aggregate (aggregate_type, aggregate_id, occurred_at),
     KEY idx_event_log_correlation (correlation_id)
@@ -177,6 +181,12 @@ CREATE TABLE IF NOT EXISTS event_log (
 -- uses this to validate that producers do not emit unrecognized
 -- versions and to drive multi-version publication during deprecation
 -- windows. A consumer may back this with Confluent / Apicurio.
+--
+-- NOTE (ADAPT-MY-008): `schema_registry` is an engine-global catalog,
+-- not a multi-tenant table — event-type schemas are shared across all
+-- schools by design. There is intentionally no `school_id` column and
+-- therefore no `school_id` index. See `system_user` below for the
+-- other exempt table.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS schema_registry (
     event_type      VARCHAR(191) NOT NULL,
@@ -198,6 +208,12 @@ CREATE TABLE IF NOT EXISTS schema_registry (
 -- this single row. The id is the well-known `SYSTEM_USER_ID` constant
 -- in the engine code; the UUIDv7 value is fixed at engine
 -- initialization and seeded here.
+--
+-- NOTE (ADAPT-MY-008): `system_user` is a single-row engine-global
+-- table representing the SYSTEM actor. It is intentionally not
+-- tenant-scoped (the row IS the system actor for every school), so
+-- there is no `school_id` column and no `school_id` index. The PK on
+-- `id` is the only index needed for the single seeded row.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS system_user (
     id          CHAR(36)     NOT NULL,
