@@ -83,6 +83,14 @@ CREATE TABLE IF NOT EXISTS outbox (
 
 CREATE INDEX IF NOT EXISTS idx_outbox_school_enqueued
     ON outbox (school_id, enqueued_at);
+-- QW-6 (ADAPTER-SQ-013): dedicated single-column school_id index
+-- for per-school outbox scans that do not also filter by
+-- enqueued_at. The composite idx_outbox_school_enqueued above
+-- already serves school_id-leading predicates, but the
+-- single-column index gives the optimizer a cheaper plan for
+-- queries that touch only school_id.
+CREATE INDEX IF NOT EXISTS outbox_school_id_idx
+    ON outbox (school_id);
 CREATE INDEX IF NOT EXISTS idx_outbox_published
     ON outbox (published_at, enqueued_at);
 CREATE INDEX IF NOT EXISTS idx_outbox_aggregate
@@ -130,6 +138,11 @@ CREATE TABLE IF NOT EXISTS audit_log (
 
 CREATE INDEX IF NOT EXISTS idx_audit_log_school_time
     ON audit_log (school_id, occurred_at);
+-- QW-6 (ADAPTER-SQ-013): dedicated single-column school_id index
+-- for per-school audit scans (e.g. school-wide compliance
+-- reports) that do not also filter by occurred_at.
+CREATE INDEX IF NOT EXISTS audit_log_school_id_idx
+    ON audit_log (school_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_actor
     ON audit_log (actor_id, occurred_at);
 CREATE INDEX IF NOT EXISTS idx_audit_log_resource
@@ -159,6 +172,15 @@ CREATE TABLE IF NOT EXISTS idempotency (
     PRIMARY KEY (school_id, command_type, idempotency_key)
 );
 
+-- QW-6 (ADAPTER-SQ-013): dedicated single-column school_id index
+-- for per-school idempotency sweeps (e.g. purge_older_than
+-- across a single tenant). The PRIMARY KEY already begins with
+-- school_id, so this index is functionally redundant for
+-- equality lookups, but it documents the tenant-axis at DDL
+-- level and gives the optimizer a narrower index when the
+-- command_type / idempotency_key are not part of the predicate.
+CREATE INDEX IF NOT EXISTS idempotency_school_id_idx
+    ON idempotency (school_id);
 CREATE INDEX IF NOT EXISTS idx_idempotency_expires
     ON idempotency (expires_at);
 
@@ -189,6 +211,12 @@ CREATE TABLE IF NOT EXISTS event_log (
 
 CREATE INDEX IF NOT EXISTS idx_event_log_school_time
     ON event_log (school_id, occurred_at);
+-- QW-6 (ADAPTER-SQ-013): dedicated single-column school_id index
+-- for per-school event-log scans that do not also filter by
+-- occurred_at (e.g. projection rebuilds ordered by event_id
+-- within a school).
+CREATE INDEX IF NOT EXISTS event_log_school_id_idx
+    ON event_log (school_id);
 CREATE INDEX IF NOT EXISTS idx_event_log_type_time
     ON event_log (event_type, occurred_at);
 CREATE INDEX IF NOT EXISTS idx_event_log_aggregate
