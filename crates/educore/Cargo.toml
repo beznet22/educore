@@ -47,6 +47,10 @@ educore-sync = { workspace = true }
 educore-sync-inprocess = { workspace = true }
 educore-cli = { workspace = true }
 educore-query-derive = { workspace = true }
+async-trait = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }

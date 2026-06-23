@@ -306,12 +306,57 @@ impl PublishReceipt {
     }
 }
 
+/// A per-envelope failure recorded by [`EventBus::publish_batch`]
+/// when the adapter falls back to per-envelope `publish` (per
+/// the bus-port contract). The relay uses these to decide
+/// which outbox rows to retry: a failure here means the
+/// envelope was NOT published, so the outbox row must remain
+/// pending.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BatchFailure {
+    /// The event id of the envelope that failed. `None` only
+    /// when the input couldn't even be parsed (e.g. malformed
+    /// payload); adapters that successfully constructed an
+    /// [`EventEnvelope`] always populate this field.
+    pub event_id: Option<EventId>,
+    /// Human-readable failure reason. Adapters SHOULD include
+    /// the underlying error chain (e.g. `"transport closed:
+    /// <inner>"`) so operators can debug without re-parsing
+    /// logs.
+    pub error: String,
+}
+
+impl BatchFailure {
+    /// Convenience constructor.
+    #[must_use]
+    pub fn new(event_id: Option<EventId>, error: impl Into<String>) -> Self {
+        Self {
+            event_id,
+            error: error.into(),
+        }
+    }
+}
+
 /// Acknowledgement that a batch of envelopes was accepted.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BatchReceipt {
     /// Per-envelope receipts, in the order the envelopes were
-    /// submitted.
+    /// submitted. Each entry corresponds to an envelope the
+    /// adapter successfully published.
     pub receipts: Vec<PublishReceipt>,
+    /// Per-envelope failures, in the order the envelopes were
+    /// submitted. Each entry corresponds to an envelope the
+    /// adapter failed to publish; the relay (or any other
+    /// batch consumer) uses this list to decide which source
+    /// rows to retry vs. mark-published.
+    ///
+    /// Invariant: `receipts.len() + failures.len() == submitted_count`,
+    /// where `submitted_count` is the input to `publish_batch`.
+    /// Adapters that don't track per-envelope failure (the
+    /// legacy `?`-short-circuit shape) leave this empty and
+    /// `is_fully_accepted()` returns `false` defensively —
+    /// partial failure cannot be ruled out.
+    pub failures: Vec<BatchFailure>,
     /// The correlation id of the batch, if any. Producers may
     /// stamp this on a wrapping envelope; consumers use it to
     /// track in-flight batches.
@@ -319,27 +364,54 @@ pub struct BatchReceipt {
 }
 
 impl BatchReceipt {
-    /// Returns `true` if every receipt in the batch succeeded.
-    /// Adapters that don't support atomic batching always return
-    /// `true` here (the per-receipt `PublishReceipt` carries the
-    /// per-envelope status, but the trait doesn't model
-    /// per-receipt failure for batches; producers that need
-    /// that granularity call `publish` in a loop).
+    /// Constructs a `BatchReceipt` with no correlation id.
+    /// Used by adapters that always publish without one.
     #[must_use]
-    pub fn is_fully_accepted(&self) -> bool {
-        !self.receipts.is_empty()
+    pub fn new(receipts: Vec<PublishReceipt>, failures: Vec<BatchFailure>) -> Self {
+        Self {
+            receipts,
+            failures,
+            correlation_id: None,
+        }
     }
 
-    /// Returns the number of envelopes in the batch.
+    /// Returns `true` iff every input envelope was published
+    /// successfully AND at least one envelope was submitted.
+    ///
+    /// The previous implementation (`!receipts.is_empty()`)
+    /// reported a partial failure as a full success, which is
+    /// the CC-EVT-007 audit finding. The corrected
+    /// implementation inspects [`Self::failures`]; adapters
+    /// that don't track per-envelope failure return an empty
+    /// `failures` list but `is_fully_accepted()` still requires
+    /// at least one successful receipt, so an all-failure batch
+    /// (where the adapter short-circuited before recording any
+    /// receipts) reports `false` defensively rather than
+    /// silently true.
+    #[must_use]
+    pub fn is_fully_accepted(&self) -> bool {
+        self.failures.is_empty() && !self.receipts.is_empty()
+    }
+
+    /// Returns the total number of envelopes the adapter
+    /// accounted for (`receipts + failures`).
+    #[must_use]
+    pub fn total(&self) -> usize {
+        self.receipts.len() + self.failures.len()
+    }
+
+    /// Returns the number of successful publishes.
     #[must_use]
     pub fn len(&self) -> usize {
         self.receipts.len()
     }
 
-    /// Returns `true` if the batch is empty.
+    /// Returns `true` if no envelopes were published AND no
+    /// failures were recorded. Used to distinguish "no work
+    /// submitted" from "everything failed".
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.receipts.is_empty()
+        self.receipts.is_empty() && self.failures.is_empty()
     }
 }
 
@@ -358,11 +430,11 @@ mod tests {
         let g = SystemIdGen;
         EventEnvelope {
             event_id: g.next_event_id(),
-            event_type: "platform.school.created",
+            event_type: "platform.school.created".to_owned(),
             schema_version: 1,
             school_id: school,
             aggregate_id: g.next_uuid(),
-            aggregate_type: "school",
+            aggregate_type: "school".to_owned(),
             actor_id: g.next_user_id(),
             correlation_id: g.next_correlation_id(),
             causation_id: None,

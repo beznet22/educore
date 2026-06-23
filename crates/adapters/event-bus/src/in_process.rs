@@ -47,8 +47,8 @@ use educore_core::value_objects::Timestamp;
 use educore_events::envelope::EventEnvelope;
 use educore_events::errors::EventError;
 use educore_events::event_bus::{
-    AckOutcome, BatchReceipt, ConsumerId, EventBus, EventFilter, EventSubscription, PublishReceipt,
-    StartPosition, SubscribeOptions, Topic,
+    AckOutcome, BatchFailure, BatchReceipt, ConsumerId, EventBus, EventFilter, EventSubscription,
+    PublishReceipt, StartPosition, SubscribeOptions, Topic,
 };
 
 use crate::errors::subscribe_failed;
@@ -273,20 +273,30 @@ impl EventBus for InProcessEventBus {
         envelopes: Vec<EventEnvelope>,
     ) -> educore_core::error::Result<BatchReceipt> {
         let mut receipts = Vec::with_capacity(envelopes.len());
+        let mut failures = Vec::new();
         for env in envelopes {
-            // Sequential publishes preserve order within a batch
-            // and let the first failure short-circuit. The bus-port
-            // contract says adapters that don't support atomic
-            // batching fall back to per-envelope `publish`; we
-            // document that fallback by surfacing the first error
-            // we hit (and stopping the loop).
-            let receipt = self.publish(env).await?;
-            receipts.push(receipt);
+            // Per the bus-port contract: adapters that don't
+            // support atomic batching fall back to per-envelope
+            // `publish`. We record BOTH successes and failures
+            // so the caller (e.g. the outbox relay) can decide
+            // which source rows to mark-published vs. retry.
+            // The previous shape short-circuited on the first
+            // error and dropped the trailing envelopes silently
+            // — CC-EVT-007.
+            match self.publish(env.clone()).await {
+                Ok(receipt) => receipts.push(receipt),
+                Err(e) => {
+                    tracing::warn!(
+                        event_id = %env.event_id.as_uuid(),
+                        event_type = env.event_type,
+                        error = %e,
+                        "in-process bus: publish_batch entry failed"
+                    );
+                    failures.push(BatchFailure::new(Some(env.event_id), e.to_string()));
+                }
+            }
         }
-        Ok(BatchReceipt {
-            receipts,
-            correlation_id: None,
-        })
+        Ok(BatchReceipt::new(receipts, failures))
     }
 
     async fn subscribe(

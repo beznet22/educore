@@ -48,11 +48,11 @@ mod tests {
         let g = SystemIdGen;
         EventEnvelope {
             event_id: g.next_event_id(),
-            event_type: "test.event.created",
+            event_type: "test.event.created".to_owned(),
             schema_version: 1,
             school_id: g.next_school_id(),
             aggregate_id: g.next_uuid(),
-            aggregate_type: "test_event",
+            aggregate_type: "test_event".to_owned(),
             actor_id: g.next_user_id(),
             correlation_id: g.next_correlation_id(),
             causation_id: None,

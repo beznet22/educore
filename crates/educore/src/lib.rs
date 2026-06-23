@@ -72,6 +72,16 @@ pub use educore_sdk as sdk;
 pub use educore_cli as cli;
 pub use educore_query_derive as query_derive;
 
+// ---- Cross-domain subscriber wiring ---------------------------------------
+// `subscribers::register_all_subscribers` wires the spec-mandated
+// cross-domain handlers (form_uploaded_public_indexing,
+// student_promoted_fee_structure, staff_registered_salary_template,
+// payroll_paid_mark_paid) onto the `SubscriberRegistry`. The SDK
+// facade calls this at server startup (per Cluster A/B SDK work).
+// See `docs/audit_reports/findings/wave7-workflows.md` WF-002 /
+// WF-016.
+pub mod subscribers;
+
 /// Educore version, sourced from the package manifest.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

@@ -42,7 +42,13 @@ pub struct EventEnvelope {
     pub event_id: EventId,
     /// Stable dotted string of the form
     /// `<domain>.<aggregate>.<verb>` (e.g. `"platform.school.created"`).
-    pub event_type: &'static str,
+    /// Owned `String` so the envelope round-trips through the
+    /// outbox-port [`SerializedEnvelope`](crate::relay_envelope::SerializedEnvelope)
+    /// without requiring a `&'static` lifetime; in practice the
+    /// value is always constructed from a `DomainEvent::EVENT_TYPE`
+    /// `const` or the engine's event-type registry, both of which
+    /// produce compile-time-stable strings.
+    pub event_type: String,
     /// Schema version of `payload`. Producers MUST send a payload
     /// that matches the declared `schema_version`; consumers handle
     /// newer versions or migrate.
@@ -51,8 +57,9 @@ pub struct EventEnvelope {
     pub school_id: SchoolId,
     /// The root aggregate id this event describes.
     pub aggregate_id: Uuid,
-    /// The aggregate type name (e.g. `"school"`).
-    pub aggregate_type: &'static str,
+    /// The aggregate type name (e.g. `"school"`). Owned `String`
+    /// for the same reason as `event_type` (see above).
+    pub aggregate_type: String,
     /// The user (or `SYSTEM_USER_ID`) that triggered the change.
     pub actor_id: UserId,
     /// Propagated to every event in the same request / workflow.
@@ -111,11 +118,11 @@ mod tests {
         let g = SystemIdGen;
         EventEnvelope {
             event_id: g.next_event_id(),
-            event_type: "platform.school.created",
+            event_type: "platform.school.created".to_owned(),
             schema_version: 1,
             school_id: g.next_school_id(),
             aggregate_id: g.next_uuid(),
-            aggregate_type: "school",
+            aggregate_type: "school".to_owned(),
             actor_id: g.next_user_id(),
             correlation_id: g.next_correlation_id(),
             causation_id: None,
@@ -127,11 +134,12 @@ mod tests {
 
     #[test]
     fn envelope_payload_serde_round_trip() {
-        // The `EventEnvelope` has `&'static str` fields (per the
-        // bus-port contract), so it does NOT implement
-        // `DeserializeOwned`. The round-trip below serialises the
-        // payload only, which is the part that crosses the
-        // storage-port boundary as `bytes::Bytes`.
+        // `EventEnvelope` carries owned `String`s for `event_type`
+        // and `aggregate_type` (so it round-trips through the
+        // outbox-port `SerializedEnvelope`), but the rest of the
+        // envelope's typed fields (UUIDs, timestamps) still don't
+        // justify a `DeserializeOwned` blanket; we only round-trip
+        // the payload here.
         let env = sample();
         let bytes = crate::outbox::payload_bytes(&env);
         let back: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
@@ -147,7 +155,7 @@ mod tests {
     #[test]
     fn aggregate_topic_falls_back_to_aggregate_type() {
         let mut env = sample();
-        env.event_type = "school"; // no domain prefix
+        env.event_type = "school".to_owned(); // no domain prefix
         assert_eq!(env.aggregate_topic(), "school");
     }
 

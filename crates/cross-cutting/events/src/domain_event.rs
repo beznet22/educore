@@ -102,8 +102,8 @@ pub trait DomainEvent: Send + Sync + 'static {
         let school_id = self.school_id();
         let occurred_at = self.occurred_at();
         let payload = self.to_value();
-        let event_type = Self::EVENT_TYPE;
-        let aggregate_type = Self::AGGREGATE_TYPE;
+        let event_type = Self::EVENT_TYPE.to_owned();
+        let aggregate_type = Self::AGGREGATE_TYPE.to_owned();
         let schema_version = Self::SCHEMA_VERSION;
         EventEnvelope {
             event_id,

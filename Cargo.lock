@@ -1824,6 +1824,7 @@ dependencies = [
 name = "educore"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "educore-academic",
  "educore-assessment",
  "educore-attendance",
@@ -1860,7 +1861,10 @@ dependencies = [
  "educore-sync",
  "educore-sync-inprocess",
  "educore-testkit",
+ "serde_json",
  "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]

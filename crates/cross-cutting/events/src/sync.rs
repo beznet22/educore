@@ -301,7 +301,7 @@ mod tests {
             r.into_envelope(&ctx),
             t.into_envelope(&ctx),
         ];
-        let types: Vec<&str> = envs.iter().map(|e| e.event_type).collect();
+        let types: Vec<&str> = envs.iter().map(|e| e.event_type.as_str()).collect();
         assert_eq!(
             types,
             vec![

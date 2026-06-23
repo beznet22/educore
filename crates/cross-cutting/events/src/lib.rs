@@ -54,6 +54,11 @@ pub mod outbox;
 /// The four typed sync events emitted by the sync engine.
 pub mod sync;
 
+/// The in-process [`SubscriberRegistry`](subscribe::SubscriberRegistry)
+/// and the [`Subscriber`](subscribe::Subscriber) trait. Used to
+/// wire spec-mandated cross-domain handlers to the bus.
+pub mod subscribe;
+
 /// Convenience re-exports for the most-used types.
 pub mod prelude {
     pub use crate::domain_event::{DomainEvent, EmittedEvent, EventFactory};
@@ -63,6 +68,7 @@ pub mod prelude {
         AckOutcome, BatchReceipt, ConsumerId, EventBus, EventFilter, EventFilterExpr,
         EventSubscription, PublishReceipt, StartPosition, SubscribeOptions, Topic,
     };
+    pub use crate::subscribe::{DispatchStats, Subscriber, SubscriberFailure, SubscriberRegistry, SubscriptionFilter};
     pub use crate::sync::{SyncPaused, SyncResumed, SyncStarted, SyncStopped};
 }
 
