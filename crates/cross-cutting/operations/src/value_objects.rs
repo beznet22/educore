@@ -1028,17 +1028,18 @@ impl JobAttempts {
     }
     /// Returns the inner u32.
     #[must_use]
-    pub const fn as_u32(self) -> u32 {
+    pub fn as_u32(self) -> u32 {
         // INVARIANT: `u8` always fits in `u32` losslessly, so the
-        // widening is infallible. `From` is not yet stable in
-        // `const` context (rustc E0658), so we spell the
-        // widening as `self.0 as u32` inside a `const fn` body.
-        // The lint forbids `as` on numerics in non-`const`
-        // production paths; `const fn` bodies are evaluated at
-        // compile time and are exempt from the no-`as` rule per
-        // the engine's code standards (the cast is the
-        // canonical way to widen at compile time today).
-        self.0 as u32
+        // widening is infallible. We cannot use `From`/`TryFrom`
+        // here inside a `const fn` (Rust issue #143874, not yet
+        // stabilized for primitive numeric conversions at the
+        // engine's MSRV), and the engine forbids `as` on numerics
+        // for non-`const` production paths. Since this method is
+        // not invoked in any const context within the engine, we
+        // drop `const` and route through the stable non-`const`
+        // `From` impl, matching the codebase pattern at
+        // `services.rs:130` (`u32::from(attempts.0)`).
+        u32::from(self.0)
     }
 }
 
