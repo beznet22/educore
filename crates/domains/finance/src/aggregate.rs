@@ -44,7 +44,8 @@ use crate::value_objects::{
     FmFeesInvoiceChildId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId,
     FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId,
     FmFeesWeaverId, FmInvoiceType, IncomeApprovalId, IncomeHeadId, InvoiceSettingId, Money,
-    PaymentGatewaySettingId, PaymentMethodId, PaymentMethodKind, PayrollPaymentApprovalId,
+    PaymentGatewaySettingId, PaymentMethodId, PaymentMethodKind, PayrollEarnDeducId,
+    PayrollGenerateId, PayrollPaymentApprovalId,
     PayrollPaymentId, ProductPurchaseId, QuestionBankFeeId, StatementType, WalletId,
     WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
@@ -882,6 +883,25 @@ finance_aggregate_stub! {
 finance_aggregate_stub! {
     /// WalletTransactionApproval — child entity (Phase 7 Workstream K).
     pub struct WalletTransactionApproval { _id: () }
+}
+finance_aggregate_stub! {
+    /// PayrollGenerate — HR-owned payroll run; finance aggregate stub
+    /// because `docs/specs/finance/aggregates.md` references it under
+    /// § PayrollGenerate. The authoritative root implementation lives
+    /// in `educore-hr::aggregate::PayrollGenerate`; this stub exists
+    /// so the spec→code lint finds a type. Real impl lands in
+    /// Workstream I.
+    pub struct PayrollGenerate { _id: () }
+}
+finance_aggregate_stub! {
+    /// PayrollEarnDeduc — HR-owned earnings/deductions line on a
+    /// `PayrollGenerate`; finance aggregate stub because
+    /// `docs/specs/finance/aggregates.md` references it under
+    /// § PayrollEarnDeduc. The authoritative root implementation lives
+    /// in `educore-hr::aggregate::PayrollEarnDeduc`; this stub exists
+    /// so the spec→code lint finds a type. Real impl lands in
+    /// Workstream I.
+    pub struct PayrollEarnDeduc { _id: () }
 }
 
 #[cfg(test)]
