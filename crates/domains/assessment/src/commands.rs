@@ -976,3 +976,60 @@ pub struct UpdateExamAttendanceCommand {
     pub school_id: SchoolId,
     pub exam_attendance_id: ExamAttendanceId,
 }
+
+// =============================================================================
+// Cluster D final 20%: spec commands previously missing
+// (`CreateExamType`, `UpdateExamType`, `DeleteExamType`,
+// `ConfigureSeatPlanSettings`, `ConfigureTeacherEvaluation`,
+// `RequestAbsenceNotification`).
+//
+// Each stub carries the minimal `school_id` + aggregate id
+// (plus the natural primary key where the spec makes the
+// upsert target obvious). The full TenantContext + payload
+// lands in a follow-up batch.
+// =============================================================================
+
+/// The `create_exam_type` command.
+#[derive(Debug, Clone)]
+pub struct CreateExamTypeCommand {
+    pub school_id: SchoolId,
+    pub exam_type_id: ExamTypeId,
+}
+
+/// The `update_exam_type` command.
+#[derive(Debug, Clone)]
+pub struct UpdateExamTypeCommand {
+    pub school_id: SchoolId,
+    pub exam_type_id: ExamTypeId,
+}
+
+/// The `delete_exam_type` command.
+#[derive(Debug, Clone)]
+pub struct DeleteExamTypeCommand {
+    pub school_id: SchoolId,
+    pub exam_type_id: ExamTypeId,
+}
+
+/// The `configure_seat_plan_settings` command. Upserts the
+/// per-(school, academic-year) `SeatPlanSetting`.
+#[derive(Debug, Clone)]
+pub struct ConfigureSeatPlanSettingsCommand {
+    pub school_id: SchoolId,
+    pub academic_year_id: AcademicYearId,
+}
+
+/// The `configure_teacher_evaluation` command. Upserts the
+/// per-school `TeacherEvaluationSetting`.
+#[derive(Debug, Clone)]
+pub struct ConfigureTeacherEvaluationCommand {
+    pub school_id: SchoolId,
+}
+
+/// The `request_absence_notification` command. Emits the
+/// `ExamAbsenceNotificationRequested` trigger event that the
+/// communication domain subscribes to.
+#[derive(Debug, Clone)]
+pub struct RequestAbsenceNotificationCommand {
+    pub school_id: SchoolId,
+    pub exam_attendance_id: ExamAttendanceId,
+}
