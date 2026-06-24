@@ -455,12 +455,11 @@ fn hex_encode(bytes: &[u8]) -> String {
     let mut out = String::with_capacity(bytes.len() * 2);
     for byte in bytes {
         // The index is bounded by `0..16` (from `byte >> 4` and
-        // `byte & 0x0f`), so the `TryFrom` + `unwrap_or(0)`
-        // default never triggers in practice. The pattern
-        // replaces the forbidden `as usize` cast (engine
-        // no-`as`-cast rule).
-        out.push(HEX[usize::try_from(byte >> 4).unwrap_or(0)] as char);
-        out.push(HEX[usize::try_from(byte & 0x0f).unwrap_or(0)] as char);
+        // `byte & 0x0f`), so the `usize::from` widening cannot
+        // fail. This replaces the forbidden `as usize` cast
+        // (engine no-`as`-cast rule).
+        out.push(HEX[usize::from(byte >> 4)] as char);
+        out.push(HEX[usize::from(byte & 0x0f)] as char);
     }
     out
 }

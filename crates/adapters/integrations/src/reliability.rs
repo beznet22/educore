@@ -516,11 +516,9 @@ fn hex_lower(bytes: &[u8]) -> String {
     let mut s = String::with_capacity(bytes.len() * 2);
     for &b in bytes {
         // `b >> 4` and `b & 0x0f` are bounded to `0..=15` by the
-        // masks, so the `usize::try_from(...).unwrap_or(0)` branch
-        // is unreachable for any value of `b`; the `TryFrom` form
-        // documents the invariant and satisfies the engine lint.
-        let hi = usize::try_from(b >> 4).unwrap_or(0);
-        let lo = usize::try_from(b & 0x0f).unwrap_or(0);
+        // masks, so the `usize::from` widening is infallible.
+        let hi = usize::from(b >> 4);
+        let lo = usize::from(b & 0x0f);
         s.push(HEX[hi] as char);
         s.push(HEX[lo] as char);
     }

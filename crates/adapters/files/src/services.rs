@@ -387,8 +387,8 @@ fn hex_encode(bytes: &[u8]) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut out = String::with_capacity(bytes.len() * 2);
     for &b in bytes {
-        let hi = usize::try_from(b >> 4).unwrap_or(0);
-        let lo = usize::try_from(b & 0x0f).unwrap_or(0);
+        let hi = usize::from(b >> 4);
+        let lo = usize::from(b & 0x0f);
         out.push(HEX[hi] as char);
         out.push(HEX[lo] as char);
     }
