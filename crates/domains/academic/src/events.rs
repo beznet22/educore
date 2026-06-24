@@ -39,6 +39,7 @@ use educore_core::ids::{CorrelationId, EventId, SchoolId};
 use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 
+use crate::entities::StudentDocumentId;
 use crate::value_objects::{
     AcademicYearId, CertificateId, ClassId, ClassRoutineId, ClassSectionId, ClassSubjectId,
     GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
@@ -1654,6 +1655,267 @@ academic_event_stub! {
         aggregate_id: IdCardId,
         event_type: "academic.id_card.created",
         aggregate_type: "id_card",
+    }
+}
+
+// =============================================================================
+// Newly added events (Cluster D final — minimal placeholder structs so the
+// `educore-core::lint` spec_to_code check passes). Each carries the typed
+// fields declared in `docs/specs/academic/events.md` plus the standard
+// `event_id` / `correlation_id` / `occurred_at` envelope fields. The full
+// event payload (factory constructors, causation metadata, storage-side
+// publish paths) lands alongside the owning aggregates in later workstreams.
+// =============================================================================
+
+/// A student was assigned to a section within their current class.
+///
+/// Per `docs/specs/academic/events.md` § StudentAssignedToSection.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StudentAssignedToSection {
+    /// The student's typed id.
+    pub student_id: StudentId,
+    /// The section the student is moving from (if any).
+    pub from_section_id: Option<SectionId>,
+    /// The section the student is being assigned to.
+    pub to_section_id: SectionId,
+    /// The reason for the assignment.
+    pub reason: String,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl StudentAssignedToSection {
+    /// Mints a fresh `StudentAssignedToSection`.
+    #[must_use]
+    pub const fn new(
+        student_id: StudentId,
+        from_section_id: Option<SectionId>,
+        to_section_id: SectionId,
+        reason: String,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            student_id,
+            from_section_id,
+            to_section_id,
+            reason,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StudentAssignedToSection {
+    const EVENT_TYPE: &'static str = "academic.student.assigned_to_section";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.student_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.student_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A student's category assignment changed.
+///
+/// Per `docs/specs/academic/events.md` § StudentCategoryChanged.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StudentCategoryChanged {
+    /// The student's typed id.
+    pub student_id: StudentId,
+    /// The category the student was previously assigned to (if any).
+    pub from_category_id: Option<StudentCategoryId>,
+    /// The category the student is being assigned to.
+    pub to_category_id: StudentCategoryId,
+    /// The first day the new category is effective.
+    pub effective_from: NaiveDate,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl StudentCategoryChanged {
+    /// Mints a fresh `StudentCategoryChanged`.
+    #[must_use]
+    pub const fn new(
+        student_id: StudentId,
+        from_category_id: Option<StudentCategoryId>,
+        to_category_id: StudentCategoryId,
+        effective_from: NaiveDate,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            student_id,
+            from_category_id,
+            to_category_id,
+            effective_from,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StudentCategoryChanged {
+    const EVENT_TYPE: &'static str = "academic.student.category_changed";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.student_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.student_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// An optional subject was assigned to a student for an academic year.
+///
+/// Per `docs/specs/academic/events.md` § OptionalSubjectAssigned.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OptionalSubjectAssigned {
+    /// The student's typed id.
+    pub student_id: StudentId,
+    /// The optional subject's typed id.
+    pub subject_id: SubjectId,
+    /// The academic year the assignment applies to.
+    pub academic_year_id: AcademicYearId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl OptionalSubjectAssigned {
+    /// Mints a fresh `OptionalSubjectAssigned`.
+    #[must_use]
+    pub const fn new(
+        student_id: StudentId,
+        subject_id: SubjectId,
+        academic_year_id: AcademicYearId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            student_id,
+            subject_id,
+            academic_year_id,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for OptionalSubjectAssigned {
+    const EVENT_TYPE: &'static str = "academic.optional_subject.assigned";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.student_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.student_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A document was uploaded for a student.
+///
+/// Per `docs/specs/academic/events.md` § StudentDocumentUploaded.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StudentDocumentUploaded {
+    /// The student's typed id.
+    pub student_id: StudentId,
+    /// The uploaded document's typed id.
+    pub document_id: StudentDocumentId,
+    /// The document's display title.
+    pub title: String,
+    /// The file path or URI of the uploaded document.
+    pub file: String,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl StudentDocumentUploaded {
+    /// Mints a fresh `StudentDocumentUploaded`.
+    #[must_use]
+    pub const fn new(
+        student_id: StudentId,
+        document_id: StudentDocumentId,
+        title: String,
+        file: String,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            student_id,
+            document_id,
+            title,
+            file,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StudentDocumentUploaded {
+    const EVENT_TYPE: &'static str = "academic.student_document.uploaded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_document";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.document_id.1
+    }
+    fn school_id(&self) -> SchoolId {
+        self.document_id.0
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
     }
 }
 
