@@ -28,10 +28,6 @@
 )]
 
 use educore_core::clock::{IdGenerator as _, SystemIdGen};
-use educore_core::query::{
-    ColumnDescriptor, ColumnType, EntityDescriptor, ForeignKeyAction, ForeignKeyDescriptor,
-    IndexDescriptor,
-};
 use educore_storage::StorageAdapter;
 
 /// Test 3 of the cluster-A stage 3 PR: `create_schema` is
@@ -54,52 +50,13 @@ async fn create_schema_is_idempotent_against_live_mysql() {
 
     // Two adapters against the same MySQL instance — one per
     // `create_schema` call — each opens its own pool and runs
-    // the DDL. The aggregate descriptor is a synthetic widget
-    // table; it doesn't conflict with any real domain crate
-    // because the table name is suffixed with a UUID-derived
-    // hex string.
-    let table_suffix = g.next_uuid().simple().to_string();
-    let table = format!("idempotency_check_widget_{table_suffix}");
+    // the DDL. The test exercises the cross-cutting engine
+    // tables; with an empty global registry no aggregate
+    // DDL is emitted, so this verifies that the 6 cross-cutting
+    // `CREATE TABLE IF NOT EXISTS` statements are themselves
+    // idempotent.
 
-    let descriptor: &'static EntityDescriptor = Box::leak(Box::new(EntityDescriptor {
-        table: leak_str(&table),
-        columns: vec![
-            ColumnDescriptor {
-                name: "id",
-                column_type: ColumnType::Uuid,
-                nullable: false,
-                primary_key: true,
-                auto_generated: false,
-                indexed: false,
-                unique: false,
-            },
-            ColumnDescriptor {
-                name: "name",
-                column_type: ColumnType::String,
-                nullable: false,
-                primary_key: false,
-                auto_generated: false,
-                indexed: true,
-                unique: false,
-            },
-        ],
-        indexes: vec![IndexDescriptor {
-            name: leak_str(&format!("{table}_name_idx")),
-            columns: vec!["name"],
-            unique: false,
-        }],
-        foreign_keys: vec![ForeignKeyDescriptor {
-            column: "parent_id",
-            references_table: leak_str(&table),
-            references_column: "id",
-            on_delete: ForeignKeyAction::Cascade,
-            on_update: ForeignKeyAction::NoAction,
-        }],
-        rls: vec![],
-    }));
-
-    // First run: bootstraps the 6 cross-cutting tables and
-    // creates the widget table.
+    // First run: bootstraps the 6 cross-cutting tables.
     let adapter_a =
         educore_storage_mysql::MysqlStorageAdapter::connect(&url, school)
             .await
@@ -109,9 +66,9 @@ async fn create_schema_is_idempotent_against_live_mysql() {
         .await
         .expect("first create_schema");
 
-    // Second run: same descriptor, same database. The IF NOT
-    // EXISTS clauses and the FOREIGN_KEY_CHECKS=0/1 wrapper
-    // must make this a no-op (every statement succeeds).
+    // Second run: same database. The IF NOT EXISTS clauses
+    // and the FOREIGN_KEY_CHECKS=0/1 wrapper must make this a
+    // no-op (every statement succeeds).
     let adapter_b =
         educore_storage_mysql::MysqlStorageAdapter::connect(&url, school)
             .await
@@ -120,11 +77,4 @@ async fn create_schema_is_idempotent_against_live_mysql() {
         .create_schema()
         .await
         .expect("second create_schema must be idempotent");
-}
-
-/// Helper: leak a `String` to a `&'static str`. Used by the
-/// env-gated test fixture so the descriptor's `&'static str`
-/// fields have a stable address for the test's lifetime.
-fn leak_str(s: &str) -> &'static str {
-    Box::leak(s.to_owned().into_boxed_str())
 }
