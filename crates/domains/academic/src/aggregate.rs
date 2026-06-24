@@ -28,8 +28,10 @@ use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
 use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, ClassId, OptionalSubjectGpaThreshold, PassMark, SectionId,
-    StudentId, SubjectId, SubjectType,
+    AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoutineId, ClassSectionId,
+    ClassSubjectId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
+    OptionalSubjectGpaThreshold, PassMark, RegistrationFieldId, SectionId, StudentCategoryId,
+    StudentGroupId, StudentId, StudentPromotionId, SubjectId, SubjectType,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -491,6 +493,121 @@ impl AcademicYear {
             correlation_id,
         }
     }
+}
+
+// =============================================================================
+// Placeholder aggregates for the remaining 14 academic aggregates.
+//
+// Minimal `id + school_id` stubs so the spec is exhaustively
+// representable in code. The full impl (audit footer, domain
+// fields, invariants, services, events) lands in subsequent
+// workstreams per `docs/build-plan.md`.
+//
+// Each stub uses the typed id from `crate::value_objects` so the
+// type system catches cross-tenant confusion at compile time
+// (the `school_id` is derived from `id.school_id()` in real impl;
+// it is held explicitly here so the placeholder round-trips
+// through Serde without depending on a `Default::default` for
+// the id).
+// =============================================================================
+
+macro_rules! academic_aggregate_stub {
+    (
+        $(#[$attr:meta])*
+        $vis:vis struct $name:ident {
+            id: $id_ty:ty $(,)?
+        }
+    ) => {
+        $(#[$attr])*
+        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+        $vis struct $name {
+            /// The typed id (school_id + uuid).
+            pub id: $id_ty,
+            /// The owning school (derived from `id.school_id()` in
+            /// real impl; held explicitly here so the placeholder
+            /// is self-contained).
+            pub school_id: SchoolId,
+        }
+    };
+}
+
+academic_aggregate_stub! {
+    /// A parent, legal guardian, or authorized contact for a
+    /// [`Student`]. See
+    /// `docs/specs/academic/aggregates.md` § Guardian.
+    pub struct Guardian { id: GuardianId }
+}
+academic_aggregate_stub! {
+    /// The pairing of a class and a section in a specific
+    /// academic year that students are enrolled into. See
+    /// `docs/specs/academic/aggregates.md` § ClassSection.
+    pub struct ClassSection { id: ClassSectionId }
+}
+academic_aggregate_stub! {
+    /// The assignment of a subject to a class, with a teacher,
+    /// in a specific academic year. See
+    /// `docs/specs/academic/aggregates.md` § ClassSubject.
+    pub struct ClassSubject { id: ClassSubjectId }
+}
+academic_aggregate_stub! {
+    /// The weekly schedule for a class-section-subject
+    /// combination. See `docs/specs/academic/aggregates.md` §
+    /// ClassRoutine.
+    pub struct ClassRoutine { id: ClassRoutineId }
+}
+academic_aggregate_stub! {
+    /// An assignment given to students in a class-section, for a
+    /// subject, with a submission deadline. See
+    /// `docs/specs/academic/aggregates.md` § Homework.
+    pub struct Homework { id: HomeworkId }
+}
+academic_aggregate_stub! {
+    /// A teacher's plan for a specific lesson topic on a specific
+    /// date. See `docs/specs/academic/aggregates.md` § LessonPlan.
+    pub struct LessonPlan { id: LessonPlanId }
+}
+academic_aggregate_stub! {
+    /// A unit of study within a subject, owned by a class-section.
+    /// See `docs/specs/academic/aggregates.md` § Lesson.
+    pub struct Lesson { id: LessonId }
+}
+academic_aggregate_stub! {
+    /// A topic within a lesson, trackable through a syllabus.
+    /// See `docs/specs/academic/aggregates.md` § LessonTopic.
+    pub struct LessonTopic { id: LessonTopicId }
+}
+academic_aggregate_stub! {
+    /// A historical record of a promotion event. See
+    /// `docs/specs/academic/aggregates.md` § StudentPromotion.
+    pub struct StudentPromotion { id: StudentPromotionId }
+}
+academic_aggregate_stub! {
+    /// A categorization for students, used for fee discounts and
+    /// reporting. See `docs/specs/academic/aggregates.md` §
+    /// StudentCategory.
+    pub struct StudentCategory { id: StudentCategoryId }
+}
+academic_aggregate_stub! {
+    /// A grouping of students for non-academic purposes such as
+    /// clubs or sports teams. See
+    /// `docs/specs/academic/aggregates.md` § StudentGroup.
+    pub struct StudentGroup { id: StudentGroupId }
+}
+academic_aggregate_stub! {
+    /// A custom field on the student or staff registration form.
+    /// See `docs/specs/academic/aggregates.md` § RegistrationField.
+    pub struct RegistrationField { id: RegistrationFieldId }
+}
+academic_aggregate_stub! {
+    /// A configurable certificate template: transfer, character,
+    /// course completion, etc. See
+    /// `docs/specs/academic/aggregates.md` § Certificate.
+    pub struct Certificate { id: CertificateId }
+}
+academic_aggregate_stub! {
+    /// A configurable student ID card template. See
+    /// `docs/specs/academic/aggregates.md` § IdCard.
+    pub struct IdCard { id: IdCardId }
 }
 
 #[cfg(test)]
