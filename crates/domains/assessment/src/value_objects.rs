@@ -138,6 +138,12 @@ assessment_typed_id! {
 }
 
 assessment_typed_id! {
+    /// A typed id for a [`SeatPlanSetting`](crate::aggregate::SeatPlanSetting)
+    /// aggregate (Cluster D mop-up).
+    pub struct SeatPlanSettingId;
+}
+
+assessment_typed_id! {
     /// A typed id for an [`AdmitCard`](crate::aggregate::AdmitCard) row.
     pub struct AdmitCardId;
 }

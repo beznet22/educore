@@ -34,8 +34,8 @@ use crate::value_objects::{
     ExamId, ExamMark, ExamName, ExamScheduleId, ExamScheduleSubjectId, ExamTypeId,
     ExamWisePositionId, MarkStoreEntryId, MarksRegisterChildId, MeritPositionId,
     OnlineExamMarkId, OnlineExamQuestionId, OnlineExamStudentAnswerMarkingId,
-    QuestionAssignmentId, QuestionMuOptionId, SeatPlanChildId, SeatPlanId, SectionId, StaffId,
-    SubjectId,
+    QuestionAssignmentId, QuestionMuOptionId, SeatPlanChildId, SeatPlanId, SeatPlanSettingId,
+    SectionId, StaffId, SubjectId,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -908,4 +908,8 @@ pub struct ExamWisePosition { pub id: ExamWisePositionId, pub school_id: SchoolI
 pub struct AllExamWisePosition { pub id: AllExamWisePositionId, pub school_id: SchoolId }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExamAttendanceChild { pub id: ExamAttendanceChildId, pub school_id: SchoolId }
+
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SeatPlanSetting { pub id: SeatPlanSettingId, pub school_id: SchoolId }
 

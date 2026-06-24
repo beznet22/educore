@@ -1018,7 +1018,6 @@ The per-student entry: `AttendanceType` (P=Present, A=Absent),
 
 ---
 
-## SubjectAttendance (overlap with Attendance)
 
 The `SubjectAttendance` aggregate is owned by the attendance domain
 and is documented there. It records per-period (per-subject) daily

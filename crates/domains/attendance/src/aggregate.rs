@@ -36,7 +36,8 @@ use educore_assessment::ExamId;
 use crate::value_objects::{
     AcademicYearId, AttendanceBulkId, AttendanceSource, AttendanceType, BulkAttendanceImportId,
     ClassAttendanceId, ClassId, ExamAttendanceId, ExamTypeId, SectionId, StaffAttendanceId,
-    StaffId, StudentAttendanceId, StudentId, StudentRecordId, SubjectAttendanceId, SubjectId,
+    StaffAttendanceImportId, StaffId, StudentAttendanceId, StudentAttendanceImportId, StudentId,
+    StudentRecordId, SubjectAttendanceId, SubjectId,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -860,6 +861,25 @@ impl AttendanceBulk {
     clippy::panic,
     clippy::dbg_macro
 )]
+
+// =============================================================================
+// StudentAttendanceImport / StaffAttendanceImport (Cluster D mop-up)
+// =============================================================================
+
+/// Staging row for a student bulk import.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StudentAttendanceImport {
+    pub id: StudentAttendanceImportId,
+    pub school_id: SchoolId,
+}
+
+/// Staging row for a staff bulk import.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffAttendanceImport {
+    pub id: StaffAttendanceImportId,
+    pub school_id: SchoolId,
+}
+
 mod tests {
     use super::*;
     use educore_core::clock::{IdGenerator, SystemIdGen};

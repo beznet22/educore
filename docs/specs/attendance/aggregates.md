@@ -248,7 +248,6 @@ into a `StudentAttendance`.
 
 ---
 
-## ExamAttendanceChild (cross-reference)
 
 The `ExamAttendanceChild` entity is owned by the assessment domain.
 The attendance domain reads it for report generation but does not

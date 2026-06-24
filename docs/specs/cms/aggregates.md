@@ -1203,34 +1203,6 @@ satisfy the lint gate on undocumented public items.
 
 ---
 
-## PageStatusAction
-
-**Root type:** `PageStatusAction`
-**Identity:** `PageStatusActionId(SchoolId, Uuid)`
-**Tenant:** `SchoolId`
-**Bounded context:** Cms
-
-### Purpose
-
-The `PageStatusAction` aggregate. Documented as part of the engine spec to
-satisfy the lint gate on undocumented public items.
-
-### Invariants
-
-1. The aggregate is uniquely identified by `PageStatusActionId` within a school.
-
-### Commands
-
-- `CreatePageStatusAction`
-- `UpdatePageStatusAction`
-- `DeletePageStatusAction`
-
-### Events
-
-- `PageStatusActionCreated`
-
----
-
 ## UpdateContent
 
 **Root type:** `UpdateContent`
@@ -1881,33 +1853,6 @@ satisfy the lint gate on undocumented public items.
 
 ---
 
-## PageStatusAction
-
-**Root type:** `PageStatusAction`
-**Identity:** `PageStatusActionId(SchoolId, Uuid)`
-**Tenant:** `SchoolId`
-**Bounded context:** Cms
-
-### Purpose
-
-The `PageStatusAction` aggregate. Documented as part of the engine spec to
-satisfy the lint gate on undocumented public items.
-
-### Invariants
-
-1. The aggregate is uniquely identified by `PageStatusActionId` within a school.
-
-### Commands
-
-- `CreatePageStatusAction`
-- `UpdatePageStatusAction`
-- `DeletePageStatusAction`
-
-### Events
-
-- `PageStatusActionCreated`
-
----
 
 ## UpdateContent
 

@@ -658,32 +658,6 @@ are recorded.
 
 ---
 
-## ChatStatus
-
-**Root type:** `ChatStatus`
-**Identity:** `ChatStatusId(SchoolId, Uuid)`
-
-### Purpose
-
-The current presence status of a user in chat: `Inactive`, `Active`,
-`Away`, `Busy`.
-
-### Invariants
-
-1. A `ChatStatus` is unique by `user_id`.
-2. Status updates are append-only; the most recent timestamp is
-   authoritative.
-
-### Commands
-
-- `SetChatStatus`
-
-### Events
-
-- `ChatStatusSet`
-
----
-
 ## SendMessage
 
 **Root type:** `SendMessage`

@@ -31,7 +31,7 @@ use crate::value_objects::{
     AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoutineId, ClassSectionId,
     ClassSubjectId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
     OptionalSubjectGpaThreshold, PassMark, RegistrationFieldId, SectionId, StudentCategoryId,
-    StudentGroupId, StudentId, StudentPromotionId, SubjectId, SubjectType,
+    StudentGroupId, StudentId, StudentPromotionId, StudentRecordId, SubjectId, SubjectType,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -757,4 +757,15 @@ mod tests {
         Etag::new(Subject::FRESH_ETAG).expect("FRESH_ETAG must be a valid etag");
         Etag::new(AcademicYear::FRESH_ETAG).expect("FRESH_ETAG must be a valid etag");
     }
+}
+
+// =============================================================================
+// StudentRecord (Cluster D mop-up)
+// =============================================================================
+
+/// Per-school enrollment record for a student.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StudentRecord {
+    pub id: StudentRecordId,
+    pub school_id: SchoolId,
 }
