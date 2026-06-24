@@ -1483,12 +1483,16 @@ impl Content {
     pub fn available_to_class(&self, class: ClassId, section: Option<SectionId>) -> bool {
         match (self.available_for_class, self.available_for_section) {
             (None, None) => true,
-            (Some(c), None) => i64::from(c) == (class.as_uuid().as_u128() >> 64) as i64,
+            (Some(c), None) => {
+                i64::from(c) == i64::try_from(class.as_uuid().as_u128() >> 64).unwrap_or(i64::MIN)
+            }
             (None, Some(_)) => false,
             (Some(c), Some(s)) => {
-                i64::from(c) == (class.as_uuid().as_u128() >> 64) as i64
-                    && section
-                        .is_some_and(|sec| i64::from(s) == (sec.as_uuid().as_u128() >> 64) as i64)
+                i64::from(c) == i64::try_from(class.as_uuid().as_u128() >> 64).unwrap_or(i64::MIN)
+                    && section.is_some_and(|sec| {
+                        i64::from(s)
+                            == i64::try_from(sec.as_uuid().as_u128() >> 64).unwrap_or(i64::MIN)
+                    })
             }
         }
     }
