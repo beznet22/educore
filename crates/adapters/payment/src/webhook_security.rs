@@ -576,10 +576,13 @@ mod tests {
         // Use a recent timestamp (within replay tolerance) instead
         // of a hardcoded 2023 value, which the verifier correctly
         // rejects as expired.
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .expect("system clock")
-            .as_secs() as i64;
+        let now = i64::try_from(
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("system clock")
+                .as_secs(),
+        )
+        .expect("unix timestamp fits in i64");
         let mut ring = SigningKeyRing::new();
         ring.add_key("k_old", b"old_secret".to_vec());
         ring.add_key("k_new", b"new_secret".to_vec());
