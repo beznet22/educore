@@ -464,13 +464,14 @@ status = "Tested"
 tests = "crates/tools/storage-parity/tests/academic_integration.rs,crates/domains/academic/tests/workflows.rs"
 
 [[row]]
+[[row]]
 id = "academic_classes_aggregate"
 item = "academic_classes aggregate"
 spec = "docs/specs/academic/aggregates.md"
 crate = "educore-academic"
 phase = 3
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/academic_integration.rs"
+tests = "crates/tools/storage-parity/tests/academic_integration.rs,crates/domains/academic/tests/class.rs"
 
 [[row]]
 id = "academic_sections_aggregate"
@@ -643,7 +644,7 @@ spec = "docs/specs/attendance/aggregates.md"
 crate = "educore-attendance"
 phase = 5
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/attendance_integration.rs"
+tests = "crates/tools/storage-parity/tests/attendance_integration.rs,crates/domains/attendance/tests/subject_attendance.rs"
 
 [[row]]
 id = "attendance_staff_attendances_aggregate"
@@ -1297,7 +1298,7 @@ spec = "docs/specs/library/aggregates.md"
 crate = "educore-library"
 phase = 9
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/library_integration.rs"
+tests = "crates/tools/storage-parity/tests/library_integration.rs,crates/domains/library/tests/book_issue.rs"
 
 [[row]]
 id = "library_book_returns_aggregate"
@@ -1405,7 +1406,7 @@ spec = "docs/specs/communication/aggregates.md"
 crate = "educore-communication"
 phase = 10
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs,crates/domains/communication/tests/complaint_type.rs"
 
 [[row]]
 id = "communication_notifications_aggregate"
@@ -1548,13 +1549,14 @@ tests = "crates/domains/documents/src/aggregate.rs,crates/tools/storage-parity/t
 notes = "Phase 11: spec-faithful; owns FormDownloadFile + FormDownloadLink children; 3 commands, 3 events, soft-delete only."
 
 [[row]]
+[[row]]
 id = "documents_postal_receives_aggregate"
 item = "PostalReceive aggregate root"
 spec = "docs/specs/documents/aggregates.md#postalreceive"
 crate = "educore-documents"
 phase = 11
 status = "Tested"
-tests = "crates/domains/documents/src/aggregate.rs,crates/tools/storage-parity/tests/documents_integration.rs"
+tests = "crates/domains/documents/src/aggregate.rs,crates/tools/storage-parity/tests/documents_integration.rs,crates/domains/documents/tests/postal_receive.rs"
 notes = "Phase 11: spec-faithful; owns PostalReceiveAttachment child; 3 commands, 3 events, reference_no unique within (school_id, academic_id), reference_no immutable once set, soft-delete only."
 
 # =============================================================================
