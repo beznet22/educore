@@ -595,7 +595,7 @@ impl FileStorage for LocalFileStorage {
     clippy::cast_possible_truncation
 )]
 fn u64_from_usize(n: usize) -> u64 {
-    u64::try_from(n).expect("usize fits in u64 on all supported platforms")
+    u64::try_from(n).unwrap_or(0)
 }
 
 /// Lexical path normalisation without touching the filesystem
