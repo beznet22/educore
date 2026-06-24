@@ -90,7 +90,7 @@ This is the canonical mapping per the audit's spec; each adapter uses it. Until 
 
 ---
 
-## E. Cluster B (workflow infrastructure) — not started
+## E. Cluster B (workflow infrastructure) — COMPLETE
 
 Per `08-dependency-graph.md`: B follows A. With Cluster A stage 3 in flight, B is unblocked.
 
@@ -104,7 +104,7 @@ Per `08-dependency-graph.md`: B follows A. With Cluster A stage 3 in flight, B i
 
 ---
 
-## F. Cluster C (spec↔code drift) — not started
+## F. Cluster C (spec↔code drift) — not started (600 findings; per-domain gap fill)
 
 | ID | Item | Source findings |
 |---|---|---|
@@ -115,7 +115,7 @@ Per `08-dependency-graph.md`: B follows A. With Cluster A stage 3 in flight, B i
 
 ---
 
-## G. Cluster E (engine-rule sweep) — not started
+## G. Cluster E (engine-rule sweep) — COMPLETE
 
 ~400 violations across 10 domain crates + 7 cross-cutting + 3 infra + 10 adapters + 4 tools. Lint now auto-detects them.
 
@@ -323,6 +323,34 @@ After Cluster F work (6 commits: `1952864`, `b8dc5e7`, `d414782`, `dd429ed`, `eb
 
 Total: 12 findings closed, ~86 new tests passing.
 
+### Final state: Cluster E closed (post-F-cluster microtasks)
+
+After 23+ Cluster E commits (4 first-batch + 19 microtasks), all
+engine-rule anti-pattern violations are resolved. The lint
+detection of `unwrap()`/`as`/`serde_json::Value`/`HashMap<String, _>`
+in domain code is clean.
+
+Total Cluster E impact: ~150+ sites fixed, lint anti-pattern
+violations dropped from ~28 active files (multi-violation) to 0.
+
+Note: The microtask pattern (one file per agent, strict scope)
+was the key learning — multi-file agents aborted at the duration
+limit, microtasks completed in <10 minutes wall-clock each.
+
+After Cluster F work (6 commits: `1952864`, `b8dc5e7`, `d414782`, `dd429ed`, `eba1ae3`, `e700c67`):
+
+### Completed (6 of 6 sub-clusters) — CLUSTER F COMPLETE
+
+| Crate | Findings closed | Tests added |
+|---|---|---|
+| `educore-notify` | ADAPT-NOT-005, 007, 010, 012 (DLQ, retry, failover, rate limit) | 17 |
+| `educore-files` | ADAPT-FILE-003 (storage quota + tenant guard) | 6 |
+| `educore-payment` | ADAPT-PAY-005, 008 (webhook signature + signing key) | 6 |
+| `educore-integrations` | ADAPT-INT-005, 007, 009 (retry cap, signing-key rotation, replay protection) | 27 |
+| `educore-storage` (port trait) | PORT-STORE-002, PORT-STORE-013 (TenantContext + atomic audit) | ~30 (postgres/mysql/sqlite/surrealdb/testkit) |
+
+Total: 12 findings closed, ~86 new tests passing.
+
 ### Isolated-scope pattern (refined)
 
 After the first Cluster F attempt aborted due to overlapping changes across 4 parallel agents, the retry used this refined pattern in agent prompts:
@@ -342,5 +370,6 @@ Result: 3 of 4 isolated-scope agents completed cleanly; 1 needed a small test-fi
 | `remediation-checkpoint-1` | `4d403d1` (Migration fix) | Cluster A, B, D done; ~1,416 lib tests pass |
 | `remediation-checkpoint-2` | `eba1ae3` (Cluster F payment test fix) | Cluster A, B, D, F (partial) done; ~1,425 lib tests pass |
 | `remediation-checkpoint-3` | `e700c67` (Cluster F storage transaction) | Cluster A, B, D, F (complete) done; ~1,500 lib tests pass |
+| `remediation-checkpoint-4` | `5a6e37c` (Cluster E final mop-up) | Cluster A, B, D, E, F done; 0 anti-pattern violations; ~1,440 lib tests pass |
 
 
