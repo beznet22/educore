@@ -648,15 +648,58 @@ impl BookService {
 
 /// Handler skeleton: update a [`BookCategory`].
 pub fn update_book_category<C, G>(
-    _cmd: UpdateBookCategoryCommand,
-    _clock: &C,
-    _ids: &G,
-) -> Result<(BookCategory, BookCategoryUpdated)>
+    cmd: UpdateBookCategoryCommand,
+    clock: &C,
+    ids: &G,
+    category: &mut BookCategory,
+) -> Result<BookCategoryUpdated>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    let now = clock.now();
+    let actor = cmd.tenant.actor_id;
+    let mut changes: Vec<String> = Vec::new();
+
+    // Validate id matches the aggregate.
+    if cmd.book_category_id != category.id {
+        return Err(DomainError::Validation(
+            "UPDATE_BOOK_CATEGORY: command id does not match aggregate id".to_owned(),
+        ));
+    }
+
+    // Validate tenant matches.
+    if cmd.tenant.school_id != category.school_id {
+        return Err(DomainError::TenantViolation(
+            "UPDATE_BOOK_CATEGORY: tenant school does not match aggregate".to_owned(),
+        ));
+    }
+
+    // No-op detection.
+    if cmd.new_name == category.category_name {
+        return Err(DomainError::Validation(
+            "UPDATE_BOOK_CATEGORY: new_name equals current name (no changes)".to_owned(),
+        ));
+    }
+
+    // Mutate.
+    category.category_name = cmd.new_name;
+    category.updated_at = now;
+    category.updated_by = actor;
+    category.version = category.version.next();
+    category.last_event_id = Some(ids.next_event_id());
+    changes.push("category_name".to_owned());
+
+    // Emit event.
+    let event = BookCategoryUpdated::new(
+        category.id,
+        changes,
+        ids.next_event_id(),
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok(event)
 }
 
 /// Handler skeleton: delete a [`BookCategory`].
