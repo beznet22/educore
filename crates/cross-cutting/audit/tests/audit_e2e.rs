@@ -153,6 +153,7 @@ impl EventBus for InMemoryEventBus {
         self.published.lock().unwrap().extend(envelopes);
         Ok(BatchReceipt {
             receipts,
+            failures: vec![],
             correlation_id: None,
         })
     }
