@@ -567,12 +567,6 @@ strings plus the resolved `role`, `department`, `designation`,
 - `StaffImportPromoted`
 - `StaffImportRejected`
 
-## Orphaned Items (Cluster D catch-up)
-
-The following items are documented here to satisfy the
-`code_to_spec:undocumented_public_item` lint gate. They were
-discovered after the main spec was written.
-
 ## AssignClassTeacherScope
 
 **Root type:** `AssignClassTeacherScope`

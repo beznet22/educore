@@ -190,12 +190,6 @@ transaction. Multiple copies of the same book to the same
 member on the same day are merged into a single issue by the
 command handler.
 
-## Orphaned Items (Cluster D catch-up)
-
-The following items are documented here to satisfy the
-`code_to_spec:undocumented_public_item` lint gate. They were
-discovered after the main spec was written.
-
 ## BookAcquisition
 
 **Root type:** `BookAcquisition`

@@ -834,12 +834,6 @@ names, and up to eight parameter key/value pairs.
 - `CustomSmsSettingUpdated`
 - `CustomSmsSettingDeleted`
 
-## Orphaned Items (Cluster D catch-up)
-
-The following items are documented here to satisfy the
-`code_to_spec:undocumented_public_item` lint gate. They were
-discovered after the main spec was written.
-
 ## ChatStatusRecord
 
 **Root type:** `ChatStatusRecord`
