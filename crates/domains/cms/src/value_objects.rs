@@ -2515,35 +2515,56 @@ impl fmt::Display for AudienceDescriptor {
 /// A typed JSON value for per-page settings. Per the spec, the
 /// schema is versioned and consumer-defined; the domain
 /// validates that the JSON is well-formed.
+///
+/// The inner storage is the serialized JSON text. This keeps
+/// `PageSettings` as a typed wrapper that does not surface an
+/// untyped JSON value type in the domain layer (per the
+/// engine's typed-wrappers rule). Consumers that need to
+/// inspect the JSON can deserialize the string into a typed
+/// envelope (see [`PageSettings::schema_version`] for an
+/// example).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct PageSettings(pub serde_json::Value);
+pub struct PageSettings(String);
 
 impl PageSettings {
-    /// Constructs a `PageSettings` from any serializable value.
+    /// Constructs a `PageSettings` from any serializable value by
+    /// serializing it into a JSON string.
     pub fn new<T: Serialize>(value: &T) -> Result<Self> {
-        serde_json::to_value(value)
+        serde_json::to_string(value)
             .map(Self)
             .map_err(|e| DomainError::validation(format!("page settings not serializable: {e}")))
     }
-    /// Constructs a `PageSettings` from a raw [`serde_json::Value`].
+    /// Constructs a `PageSettings` from a raw JSON string. The
+    /// caller is responsible for the JSON being well-formed; the
+    /// domain layer does not re-parse on construction so that
+    /// schema-validity checks remain the consumer's concern.
     #[must_use]
-    pub const fn from_value(value: serde_json::Value) -> Self {
+    pub const fn from_serialized(value: String) -> Self {
         Self(value)
     }
-    /// Returns the inner value.
+    /// Returns the inner JSON string.
     #[must_use]
-    pub const fn as_value(&self) -> &serde_json::Value {
+    pub fn as_str(&self) -> &str {
         &self.0
     }
-    /// Returns the schema version (if the value is an object with
-    /// a `"schema_version"` integer field).
+    /// Returns the schema version (if the value is a JSON object
+    /// with a `"schema_version"` integer field). Returns `None`
+    /// for non-object payloads or for objects that omit the
+    /// field.
     #[must_use]
     pub fn schema_version(&self) -> Option<u32> {
-        self.0
-            .get("schema_version")
-            .and_then(|v| v.as_u64())
-            .map(|v| u32::try_from(v).unwrap_or(0))
+        #[derive(Deserialize)]
+        struct SchemaVersionEnvelope {
+            /// The schema version field, optional so a
+            /// missing field yields `None` rather than an
+            /// error.
+            #[serde(default)]
+            schema_version: Option<u32>,
+        }
+        serde_json::from_str::<SchemaVersionEnvelope>(&self.0)
+            .ok()
+            .and_then(|env| env.schema_version)
     }
 }
 
@@ -2815,7 +2836,7 @@ mod tests {
 
     #[test]
     fn page_settings_schema_version_returns_none_for_non_object() {
-        let s = PageSettings::from_value(serde_json::json!("just a string"));
+        let s = PageSettings::from_serialized(r#""just a string""#.to_string());
         assert_eq!(s.schema_version(), None);
     }
 
