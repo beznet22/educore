@@ -18,6 +18,20 @@
 //! - `Fine` — a calculated or waived fine, attached to a
 //!   `BookIssue`.
 //!
+//! Plus three aggregate stubs added in Cluster C microtask
+//! (library/aggregate):
+//!
+//! - `BookAcquisition` — a single procurement event for a book.
+//! - `BookCatalogEntry` — a versioned view of a book's
+//!   cataloguing metadata.
+//! - `LibraryMemberNote` — a free-text administrative note
+//!   about a library member.
+//!
+//! These mirror the child entities in
+//! [`crate::entities`] but are first-class aggregate roots
+//! (typed id + 10-field audit footer) so they can be served
+//! and queried as standalone records.
+//!
 //! Every aggregate follows the standard audit-footer pattern
 //! (per `AGENTS.md`):
 //!
@@ -42,11 +56,12 @@ use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
 use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
 use crate::value_objects::{
-    AcademicYearId, Author, BookCategoryId, BookId, BookIssueFineId, BookIssueId,
-    BookIssueRenewalId, BookNumber, BookPrice, BookReturnId, BookStatus, BookTitle, CategoryName,
-    Details, DueDate, Edition, FineAmount, FineId, FinePerDay, FineReason, GivenDate, Isbn,
-    IssueNote, IssueQuantity, IssueStatus, LibraryMemberId, MemberStatus, MemberUdId, RackNumber,
-    ReturnDate, RoleId, StaffId, StockAdjustmentReason, StockCopies, StudentId, SubjectId,
+    AcademicYearId, Author, BookAcquisitionId, BookCategoryId, BookCatalogEntryId, BookId,
+    BookIssueFineId, BookIssueId, BookIssueRenewalId, BookNumber, BookPrice, BookReturnId,
+    BookStatus, BookTitle, CategoryName, Details, DueDate, Edition, FineAmount, FineId,
+    FinePerDay, FineReason, GivenDate, Isbn, IssueNote, IssueQuantity, IssueStatus,
+    LibraryMemberId, LibraryMemberNoteId, MemberStatus, MemberUdId, RackNumber, ReturnDate,
+    RoleId, StaffId, StockAdjustmentReason, StockCopies, StudentId, SubjectId,
 };
 
 use crate::value_objects::MemberId;
@@ -710,6 +725,236 @@ impl Fine {
         self.updated_by = by;
         self.version = self.version.next();
         self.last_event_id = Some(event_id);
+    }
+}
+
+// =============================================================================
+// BookAcquisition (aggregate stub)
+// =============================================================================
+
+/// A single procurement event for a book (aggregate root
+/// stub). Carries `Vendor`, `InvoiceNumber`, `UnitCost`,
+/// `Quantity`, and `AcquiredAt`. The sum of acquisitions for a
+/// book is the total cost basis.
+///
+/// See [`crate::entities::BookAcquisition`] for the
+/// append-only child-entity projection of this aggregate.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BookAcquisition {
+    /// The typed id.
+    pub id: BookAcquisitionId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The book being acquired.
+    pub book_id: BookId,
+    /// The vendor name (free-text).
+    pub vendor: String,
+    /// The optional invoice number.
+    pub invoice_number: Option<String>,
+    /// The unit cost per copy.
+    pub unit_cost: BookPrice,
+    /// The quantity acquired.
+    pub quantity: u32,
+    /// The optional acquisition date.
+    pub acquired_at: Option<NaiveDate>,
+    /// Audit footer (10 fields).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl BookAcquisition {
+    /// Constructs a new `BookAcquisition` in the initial state.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: BookAcquisitionId,
+        book_id: BookId,
+        vendor: String,
+        invoice_number: Option<String>,
+        unit_cost: BookPrice,
+        quantity: u32,
+        acquired_at: Option<NaiveDate>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        Self {
+            school_id: id.school_id(),
+            id,
+            book_id,
+            vendor,
+            invoice_number,
+            unit_cost,
+            quantity,
+            acquired_at,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        }
+    }
+}
+
+// =============================================================================
+// BookCatalogEntry (aggregate stub)
+// =============================================================================
+
+/// A versioned view of a book's cataloguing metadata
+/// (aggregate root stub). A new entry is appended whenever
+/// `AddBook` or `UpdateBook` is issued. The current state is
+/// the latest entry; history is the full log.
+///
+/// See [`crate::entities::BookCatalogEntry`] for the
+/// append-only child-entity projection of this aggregate.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BookCatalogEntry {
+    /// The typed id.
+    pub id: BookCatalogEntryId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The book this entry belongs to.
+    pub book_id: BookId,
+    /// The entry sequence number (1-indexed, monotonically
+    /// increasing per book).
+    pub sequence: u32,
+    /// The optional ISBN at the time of the entry.
+    pub isbn_no: Option<Isbn>,
+    /// The optional book number at the time of the entry.
+    pub book_number: Option<BookNumber>,
+    /// The book title at the time of the entry.
+    pub book_title: BookTitle,
+    /// The optional author at the time of the entry.
+    pub author_name: Option<Author>,
+    /// Audit footer (10 fields).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl BookCatalogEntry {
+    /// Constructs a new `BookCatalogEntry` in the initial state.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: BookCatalogEntryId,
+        book_id: BookId,
+        sequence: u32,
+        isbn_no: Option<Isbn>,
+        book_number: Option<BookNumber>,
+        book_title: BookTitle,
+        author_name: Option<Author>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        Self {
+            school_id: id.school_id(),
+            id,
+            book_id,
+            sequence,
+            isbn_no,
+            book_number,
+            book_title,
+            author_name,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        }
+    }
+}
+
+// =============================================================================
+// LibraryMemberNote (aggregate stub)
+// =============================================================================
+
+/// A free-text administrative note about a library member
+/// (aggregate root stub). Captures overdue patterns, lost-book
+/// flags, account holds, and other staff observations.
+///
+/// See [`crate::entities::LibraryMemberNote`] for the
+/// append-only child-entity projection of this aggregate.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LibraryMemberNote {
+    /// The typed id.
+    pub id: LibraryMemberNoteId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The library member this note is about.
+    pub library_member_id: LibraryMemberId,
+    /// The note's local sequence (1-indexed, monotonically
+    /// increasing per member).
+    pub sequence: u32,
+    /// The author of the note.
+    pub author: UserId,
+    /// The note body (free-text).
+    pub body: String,
+    /// Whether the note is visible to the member.
+    pub visible_to_member: bool,
+    /// Audit footer (10 fields).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl LibraryMemberNote {
+    /// Constructs a new `LibraryMemberNote` in the initial state.
+    pub fn fresh(
+        id: LibraryMemberNoteId,
+        library_member_id: LibraryMemberId,
+        sequence: u32,
+        author: UserId,
+        body: String,
+        visible_to_member: bool,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        Self {
+            school_id: id.school_id(),
+            id,
+            library_member_id,
+            sequence,
+            author,
+            body,
+            visible_to_member,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        }
     }
 }
 
