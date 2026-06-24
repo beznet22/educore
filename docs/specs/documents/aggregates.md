@@ -117,3 +117,575 @@ optional attachment.
 - `PostalReceived`
 - `PostalReceiveUpdated`
 - `PostalReceiveDeleted`
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## FormDownloadFile
+
+**Root type:** `FormDownloadFile`
+**Identity:** `FormDownloadFileId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `FormDownloadFile` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `FormDownloadFileId` within a school.
+
+### Commands
+
+- `CreateFormDownloadFile`
+- `UpdateFormDownloadFile`
+- `DeleteFormDownloadFile`
+
+### Events
+
+- `FormDownloadFileCreated`
+
+---
+
+## FormDownloadLink
+
+**Root type:** `FormDownloadLink`
+**Identity:** `FormDownloadLinkId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `FormDownloadLink` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `FormDownloadLinkId` within a school.
+
+### Commands
+
+- `CreateFormDownloadLink`
+- `UpdateFormDownloadLink`
+- `DeleteFormDownloadLink`
+
+### Events
+
+- `FormDownloadLinkCreated`
+
+---
+
+## NewFormDownload
+
+**Root type:** `NewFormDownload`
+**Identity:** `NewFormDownloadId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `NewFormDownload` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewFormDownloadId` within a school.
+
+### Commands
+
+- `CreateNewFormDownload`
+- `UpdateNewFormDownload`
+- `DeleteNewFormDownload`
+
+### Events
+
+- `NewFormDownloadCreated`
+
+---
+
+## NewPostalDispatch
+
+**Root type:** `NewPostalDispatch`
+**Identity:** `NewPostalDispatchId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `NewPostalDispatch` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewPostalDispatchId` within a school.
+
+### Commands
+
+- `CreateNewPostalDispatch`
+- `UpdateNewPostalDispatch`
+- `DeleteNewPostalDispatch`
+
+### Events
+
+- `NewPostalDispatchCreated`
+
+---
+
+## NewPostalReceive
+
+**Root type:** `NewPostalReceive`
+**Identity:** `NewPostalReceiveId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `NewPostalReceive` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewPostalReceiveId` within a school.
+
+### Commands
+
+- `CreateNewPostalReceive`
+- `UpdateNewPostalReceive`
+- `DeleteNewPostalReceive`
+
+### Events
+
+- `NewPostalReceiveCreated`
+
+---
+
+## PostalDispatchAttachment
+
+**Root type:** `PostalDispatchAttachment`
+**Identity:** `PostalDispatchAttachmentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `PostalDispatchAttachment` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `PostalDispatchAttachmentId` within a school.
+
+### Commands
+
+- `CreatePostalDispatchAttachment`
+- `UpdatePostalDispatchAttachment`
+- `DeletePostalDispatchAttachment`
+
+### Events
+
+- `PostalDispatchAttachmentCreated`
+
+---
+
+## PostalReceiveAttachment
+
+**Root type:** `PostalReceiveAttachment`
+**Identity:** `PostalReceiveAttachmentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `PostalReceiveAttachment` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `PostalReceiveAttachmentId` within a school.
+
+### Commands
+
+- `CreatePostalReceiveAttachment`
+- `UpdatePostalReceiveAttachment`
+- `DeletePostalReceiveAttachment`
+
+### Events
+
+- `PostalReceiveAttachmentCreated`
+
+---
+
+## UpdateFormDownload
+
+**Root type:** `UpdateFormDownload`
+**Identity:** `UpdateFormDownloadId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `UpdateFormDownload` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `UpdateFormDownloadId` within a school.
+
+### Commands
+
+- `CreateUpdateFormDownload`
+- `UpdateUpdateFormDownload`
+- `DeleteUpdateFormDownload`
+
+### Events
+
+- `UpdateFormDownloadCreated`
+
+---
+
+## UpdatePostalDispatch
+
+**Root type:** `UpdatePostalDispatch`
+**Identity:** `UpdatePostalDispatchId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `UpdatePostalDispatch` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `UpdatePostalDispatchId` within a school.
+
+### Commands
+
+- `CreateUpdatePostalDispatch`
+- `UpdateUpdatePostalDispatch`
+- `DeleteUpdatePostalDispatch`
+
+### Events
+
+- `UpdatePostalDispatchCreated`
+
+---
+
+## UpdatePostalReceive
+
+**Root type:** `UpdatePostalReceive`
+**Identity:** `UpdatePostalReceiveId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `UpdatePostalReceive` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `UpdatePostalReceiveId` within a school.
+
+### Commands
+
+- `CreateUpdatePostalReceive`
+- `UpdateUpdatePostalReceive`
+- `DeleteUpdatePostalReceive`
+
+### Events
+
+- `UpdatePostalReceiveCreated`
+
+---
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## FormDownloadFile
+
+**Root type:** `FormDownloadFile`
+**Identity:** `FormDownloadFileId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `FormDownloadFile` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `FormDownloadFileId` within a school.
+
+### Commands
+
+- `CreateFormDownloadFile`
+- `UpdateFormDownloadFile`
+- `DeleteFormDownloadFile`
+
+### Events
+
+- `FormDownloadFileCreated`
+
+---
+
+## FormDownloadLink
+
+**Root type:** `FormDownloadLink`
+**Identity:** `FormDownloadLinkId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `FormDownloadLink` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `FormDownloadLinkId` within a school.
+
+### Commands
+
+- `CreateFormDownloadLink`
+- `UpdateFormDownloadLink`
+- `DeleteFormDownloadLink`
+
+### Events
+
+- `FormDownloadLinkCreated`
+
+---
+
+## NewFormDownload
+
+**Root type:** `NewFormDownload`
+**Identity:** `NewFormDownloadId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `NewFormDownload` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewFormDownloadId` within a school.
+
+### Commands
+
+- `CreateNewFormDownload`
+- `UpdateNewFormDownload`
+- `DeleteNewFormDownload`
+
+### Events
+
+- `NewFormDownloadCreated`
+
+---
+
+## NewPostalDispatch
+
+**Root type:** `NewPostalDispatch`
+**Identity:** `NewPostalDispatchId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `NewPostalDispatch` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewPostalDispatchId` within a school.
+
+### Commands
+
+- `CreateNewPostalDispatch`
+- `UpdateNewPostalDispatch`
+- `DeleteNewPostalDispatch`
+
+### Events
+
+- `NewPostalDispatchCreated`
+
+---
+
+## NewPostalReceive
+
+**Root type:** `NewPostalReceive`
+**Identity:** `NewPostalReceiveId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `NewPostalReceive` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewPostalReceiveId` within a school.
+
+### Commands
+
+- `CreateNewPostalReceive`
+- `UpdateNewPostalReceive`
+- `DeleteNewPostalReceive`
+
+### Events
+
+- `NewPostalReceiveCreated`
+
+---
+
+## PostalDispatchAttachment
+
+**Root type:** `PostalDispatchAttachment`
+**Identity:** `PostalDispatchAttachmentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `PostalDispatchAttachment` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `PostalDispatchAttachmentId` within a school.
+
+### Commands
+
+- `CreatePostalDispatchAttachment`
+- `UpdatePostalDispatchAttachment`
+- `DeletePostalDispatchAttachment`
+
+### Events
+
+- `PostalDispatchAttachmentCreated`
+
+---
+
+## PostalReceiveAttachment
+
+**Root type:** `PostalReceiveAttachment`
+**Identity:** `PostalReceiveAttachmentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `PostalReceiveAttachment` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `PostalReceiveAttachmentId` within a school.
+
+### Commands
+
+- `CreatePostalReceiveAttachment`
+- `UpdatePostalReceiveAttachment`
+- `DeletePostalReceiveAttachment`
+
+### Events
+
+- `PostalReceiveAttachmentCreated`
+
+---
+
+## UpdateFormDownload
+
+**Root type:** `UpdateFormDownload`
+**Identity:** `UpdateFormDownloadId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `UpdateFormDownload` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `UpdateFormDownloadId` within a school.
+
+### Commands
+
+- `CreateUpdateFormDownload`
+- `UpdateUpdateFormDownload`
+- `DeleteUpdateFormDownload`
+
+### Events
+
+- `UpdateFormDownloadCreated`
+
+---
+
+## UpdatePostalDispatch
+
+**Root type:** `UpdatePostalDispatch`
+**Identity:** `UpdatePostalDispatchId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `UpdatePostalDispatch` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `UpdatePostalDispatchId` within a school.
+
+### Commands
+
+- `CreateUpdatePostalDispatch`
+- `UpdateUpdatePostalDispatch`
+- `DeleteUpdatePostalDispatch`
+
+### Events
+
+- `UpdatePostalDispatchCreated`
+
+---
+
+## UpdatePostalReceive
+
+**Root type:** `UpdatePostalReceive`
+**Identity:** `UpdatePostalReceiveId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Documents
+
+### Purpose
+
+The `UpdatePostalReceive` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `UpdatePostalReceiveId` within a school.
+
+### Commands
+
+- `CreateUpdatePostalReceive`
+- `UpdateUpdatePostalReceive`
+- `DeleteUpdatePostalReceive`
+
+### Events
+
+- `UpdatePostalReceiveCreated`
+
+---

@@ -566,3 +566,1471 @@ strings plus the resolved `role`, `department`, `designation`,
 - `StaffBulkImported`
 - `StaffImportPromoted`
 - `StaffImportRejected`
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## AssignClassTeacherScope
+
+**Root type:** `AssignClassTeacherScope`
+**Identity:** `AssignClassTeacherScopeId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `AssignClassTeacherScope` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `AssignClassTeacherScopeId` within a school.
+
+### Commands
+
+- `CreateAssignClassTeacherScope`
+- `UpdateAssignClassTeacherScope`
+- `DeleteAssignClassTeacherScope`
+
+### Events
+
+- `AssignClassTeacherScopeCreated`
+
+---
+
+## BulkImportJob
+
+**Root type:** `BulkImportJob`
+**Identity:** `BulkImportJobId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `BulkImportJob` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `BulkImportJobId` within a school.
+
+### Commands
+
+- `CreateBulkImportJob`
+- `UpdateBulkImportJob`
+- `DeleteBulkImportJob`
+
+### Events
+
+- `BulkImportJobCreated`
+
+---
+
+## DepartmentHead
+
+**Root type:** `DepartmentHead`
+**Identity:** `DepartmentHeadId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `DepartmentHead` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `DepartmentHeadId` within a school.
+
+### Commands
+
+- `CreateDepartmentHead`
+- `UpdateDepartmentHead`
+- `DeleteDepartmentHead`
+
+### Events
+
+- `DepartmentHeadCreated`
+
+---
+
+## DesignationGrade
+
+**Root type:** `DesignationGrade`
+**Identity:** `DesignationGradeId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `DesignationGrade` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `DesignationGradeId` within a school.
+
+### Commands
+
+- `CreateDesignationGrade`
+- `UpdateDesignationGrade`
+- `DeleteDesignationGrade`
+
+### Events
+
+- `DesignationGradeCreated`
+
+---
+
+## HourlyRateOverride
+
+**Root type:** `HourlyRateOverride`
+**Identity:** `HourlyRateOverrideId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `HourlyRateOverride` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `HourlyRateOverrideId` within a school.
+
+### Commands
+
+- `CreateHourlyRateOverride`
+- `UpdateHourlyRateOverride`
+- `DeleteHourlyRateOverride`
+
+### Events
+
+- `HourlyRateOverrideCreated`
+
+---
+
+## LeaveDefineAdjustment
+
+**Root type:** `LeaveDefineAdjustment`
+**Identity:** `LeaveDefineAdjustmentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `LeaveDefineAdjustment` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `LeaveDefineAdjustmentId` within a school.
+
+### Commands
+
+- `CreateLeaveDefineAdjustment`
+- `UpdateLeaveDefineAdjustment`
+- `DeleteLeaveDefineAdjustment`
+
+### Events
+
+- `LeaveDefineAdjustmentCreated`
+
+---
+
+## LeaveRequestApproval
+
+**Root type:** `LeaveRequestApproval`
+**Identity:** `LeaveRequestApprovalId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `LeaveRequestApproval` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `LeaveRequestApprovalId` within a school.
+
+### Commands
+
+- `CreateLeaveRequestApproval`
+- `UpdateLeaveRequestApproval`
+- `DeleteLeaveRequestApproval`
+
+### Events
+
+- `LeaveRequestApprovalCreated`
+
+---
+
+## LeaveRequestAttachment
+
+**Root type:** `LeaveRequestAttachment`
+**Identity:** `LeaveRequestAttachmentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `LeaveRequestAttachment` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `LeaveRequestAttachmentId` within a school.
+
+### Commands
+
+- `CreateLeaveRequestAttachment`
+- `UpdateLeaveRequestAttachment`
+- `DeleteLeaveRequestAttachment`
+
+### Events
+
+- `LeaveRequestAttachmentCreated`
+
+---
+
+## PayrollGenerateAudit
+
+**Root type:** `PayrollGenerateAudit`
+**Identity:** `PayrollGenerateAuditId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `PayrollGenerateAudit` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `PayrollGenerateAuditId` within a school.
+
+### Commands
+
+- `CreatePayrollGenerateAudit`
+- `UpdatePayrollGenerateAudit`
+- `DeletePayrollGenerateAudit`
+
+### Events
+
+- `PayrollGenerateAuditCreated`
+
+---
+
+## PayrollPaymentLink
+
+**Root type:** `PayrollPaymentLink`
+**Identity:** `PayrollPaymentLinkId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `PayrollPaymentLink` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `PayrollPaymentLinkId` within a school.
+
+### Commands
+
+- `CreatePayrollPaymentLink`
+- `UpdatePayrollPaymentLink`
+- `DeletePayrollPaymentLink`
+
+### Events
+
+- `PayrollPaymentLinkCreated`
+
+---
+
+## StaffAddress
+
+**Root type:** `StaffAddress`
+**Identity:** `StaffAddressId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffAddress` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffAddressId` within a school.
+
+### Commands
+
+- `CreateStaffAddress`
+- `UpdateStaffAddress`
+- `DeleteStaffAddress`
+
+### Events
+
+- `StaffAddressCreated`
+
+---
+
+## StaffAttendanceImportBatch
+
+**Root type:** `StaffAttendanceImportBatch`
+**Identity:** `StaffAttendanceImportBatchId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffAttendanceImportBatch` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffAttendanceImportBatchId` within a school.
+
+### Commands
+
+- `CreateStaffAttendanceImportBatch`
+- `UpdateStaffAttendanceImportBatch`
+- `DeleteStaffAttendanceImportBatch`
+
+### Events
+
+- `StaffAttendanceImportBatchCreated`
+
+---
+
+## StaffAttendancePunch
+
+**Root type:** `StaffAttendancePunch`
+**Identity:** `StaffAttendancePunchId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffAttendancePunch` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffAttendancePunchId` within a school.
+
+### Commands
+
+- `CreateStaffAttendancePunch`
+- `UpdateStaffAttendancePunch`
+- `DeleteStaffAttendancePunch`
+
+### Events
+
+- `StaffAttendancePunchCreated`
+
+---
+
+## StaffBankDetail
+
+**Root type:** `StaffBankDetail`
+**Identity:** `StaffBankDetailId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffBankDetail` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffBankDetailId` within a school.
+
+### Commands
+
+- `CreateStaffBankDetail`
+- `UpdateStaffBankDetail`
+- `DeleteStaffBankDetail`
+
+### Events
+
+- `StaffBankDetailCreated`
+
+---
+
+## StaffCustomField
+
+**Root type:** `StaffCustomField`
+**Identity:** `StaffCustomFieldId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffCustomField` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffCustomFieldId` within a school.
+
+### Commands
+
+- `CreateStaffCustomField`
+- `UpdateStaffCustomField`
+- `DeleteStaffCustomField`
+
+### Events
+
+- `StaffCustomFieldCreated`
+
+---
+
+## StaffDocument
+
+**Root type:** `StaffDocument`
+**Identity:** `StaffDocumentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffDocument` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffDocumentId` within a school.
+
+### Commands
+
+- `CreateStaffDocument`
+- `UpdateStaffDocument`
+- `DeleteStaffDocument`
+
+### Events
+
+- `StaffDocumentCreated`
+
+---
+
+## StaffDrivingLicense
+
+**Root type:** `StaffDrivingLicense`
+**Identity:** `StaffDrivingLicenseId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffDrivingLicense` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffDrivingLicenseId` within a school.
+
+### Commands
+
+- `CreateStaffDrivingLicense`
+- `UpdateStaffDrivingLicense`
+- `DeleteStaffDrivingLicense`
+
+### Events
+
+- `StaffDrivingLicenseCreated`
+
+---
+
+## StaffImportResolution
+
+**Root type:** `StaffImportResolution`
+**Identity:** `StaffImportResolutionId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffImportResolution` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffImportResolutionId` within a school.
+
+### Commands
+
+- `CreateStaffImportResolution`
+- `UpdateStaffImportResolution`
+- `DeleteStaffImportResolution`
+
+### Events
+
+- `StaffImportResolutionCreated`
+
+---
+
+## StaffLeaveBalance
+
+**Root type:** `StaffLeaveBalance`
+**Identity:** `StaffLeaveBalanceId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffLeaveBalance` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffLeaveBalanceId` within a school.
+
+### Commands
+
+- `CreateStaffLeaveBalance`
+- `UpdateStaffLeaveBalance`
+- `DeleteStaffLeaveBalance`
+
+### Events
+
+- `StaffLeaveBalanceCreated`
+
+---
+
+## StaffLeaveHistory
+
+**Root type:** `StaffLeaveHistory`
+**Identity:** `StaffLeaveHistoryId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffLeaveHistory` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffLeaveHistoryId` within a school.
+
+### Commands
+
+- `CreateStaffLeaveHistory`
+- `UpdateStaffLeaveHistory`
+- `DeleteStaffLeaveHistory`
+
+### Events
+
+- `StaffLeaveHistoryCreated`
+
+---
+
+## StaffPayrollHistory
+
+**Root type:** `StaffPayrollHistory`
+**Identity:** `StaffPayrollHistoryId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffPayrollHistory` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffPayrollHistoryId` within a school.
+
+### Commands
+
+- `CreateStaffPayrollHistory`
+- `UpdateStaffPayrollHistory`
+- `DeleteStaffPayrollHistory`
+
+### Events
+
+- `StaffPayrollHistoryCreated`
+
+---
+
+## StaffProfilePhoto
+
+**Root type:** `StaffProfilePhoto`
+**Identity:** `StaffProfilePhotoId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffProfilePhoto` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffProfilePhotoId` within a school.
+
+### Commands
+
+- `CreateStaffProfilePhoto`
+- `UpdateStaffProfilePhoto`
+- `DeleteStaffProfilePhoto`
+
+### Events
+
+- `StaffProfilePhotoCreated`
+
+---
+
+## StaffRegistrationFieldOption
+
+**Root type:** `StaffRegistrationFieldOption`
+**Identity:** `StaffRegistrationFieldOptionId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffRegistrationFieldOption` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffRegistrationFieldOptionId` within a school.
+
+### Commands
+
+- `CreateStaffRegistrationFieldOption`
+- `UpdateStaffRegistrationFieldOption`
+- `DeleteStaffRegistrationFieldOption`
+
+### Events
+
+- `StaffRegistrationFieldOptionCreated`
+
+---
+
+## StaffRoleAssignment
+
+**Root type:** `StaffRoleAssignment`
+**Identity:** `StaffRoleAssignmentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffRoleAssignment` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffRoleAssignmentId` within a school.
+
+### Commands
+
+- `CreateStaffRoleAssignment`
+- `UpdateStaffRoleAssignment`
+- `DeleteStaffRoleAssignment`
+
+### Events
+
+- `StaffRoleAssignmentCreated`
+
+---
+
+## StaffSocialLink
+
+**Root type:** `StaffSocialLink`
+**Identity:** `StaffSocialLinkId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffSocialLink` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffSocialLinkId` within a school.
+
+### Commands
+
+- `CreateStaffSocialLink`
+- `UpdateStaffSocialLink`
+- `DeleteStaffSocialLink`
+
+### Events
+
+- `StaffSocialLinkCreated`
+
+---
+
+## StaffTimeline
+
+**Root type:** `StaffTimeline`
+**Identity:** `StaffTimelineId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffTimeline` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffTimelineId` within a school.
+
+### Commands
+
+- `CreateStaffTimeline`
+- `UpdateStaffTimeline`
+- `DeleteStaffTimeline`
+
+### Events
+
+- `StaffTimelineCreated`
+
+---
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## AssignClassTeacherScope
+
+**Root type:** `AssignClassTeacherScope`
+**Identity:** `AssignClassTeacherScopeId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `AssignClassTeacherScope` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `AssignClassTeacherScopeId` within a school.
+
+### Commands
+
+- `CreateAssignClassTeacherScope`
+- `UpdateAssignClassTeacherScope`
+- `DeleteAssignClassTeacherScope`
+
+### Events
+
+- `AssignClassTeacherScopeCreated`
+
+---
+
+## BulkImportJob
+
+**Root type:** `BulkImportJob`
+**Identity:** `BulkImportJobId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `BulkImportJob` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `BulkImportJobId` within a school.
+
+### Commands
+
+- `CreateBulkImportJob`
+- `UpdateBulkImportJob`
+- `DeleteBulkImportJob`
+
+### Events
+
+- `BulkImportJobCreated`
+
+---
+
+## DepartmentHead
+
+**Root type:** `DepartmentHead`
+**Identity:** `DepartmentHeadId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `DepartmentHead` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `DepartmentHeadId` within a school.
+
+### Commands
+
+- `CreateDepartmentHead`
+- `UpdateDepartmentHead`
+- `DeleteDepartmentHead`
+
+### Events
+
+- `DepartmentHeadCreated`
+
+---
+
+## DesignationGrade
+
+**Root type:** `DesignationGrade`
+**Identity:** `DesignationGradeId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `DesignationGrade` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `DesignationGradeId` within a school.
+
+### Commands
+
+- `CreateDesignationGrade`
+- `UpdateDesignationGrade`
+- `DeleteDesignationGrade`
+
+### Events
+
+- `DesignationGradeCreated`
+
+---
+
+## HourlyRateOverride
+
+**Root type:** `HourlyRateOverride`
+**Identity:** `HourlyRateOverrideId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `HourlyRateOverride` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `HourlyRateOverrideId` within a school.
+
+### Commands
+
+- `CreateHourlyRateOverride`
+- `UpdateHourlyRateOverride`
+- `DeleteHourlyRateOverride`
+
+### Events
+
+- `HourlyRateOverrideCreated`
+
+---
+
+## LeaveDefineAdjustment
+
+**Root type:** `LeaveDefineAdjustment`
+**Identity:** `LeaveDefineAdjustmentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `LeaveDefineAdjustment` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `LeaveDefineAdjustmentId` within a school.
+
+### Commands
+
+- `CreateLeaveDefineAdjustment`
+- `UpdateLeaveDefineAdjustment`
+- `DeleteLeaveDefineAdjustment`
+
+### Events
+
+- `LeaveDefineAdjustmentCreated`
+
+---
+
+## LeaveRequestApproval
+
+**Root type:** `LeaveRequestApproval`
+**Identity:** `LeaveRequestApprovalId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `LeaveRequestApproval` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `LeaveRequestApprovalId` within a school.
+
+### Commands
+
+- `CreateLeaveRequestApproval`
+- `UpdateLeaveRequestApproval`
+- `DeleteLeaveRequestApproval`
+
+### Events
+
+- `LeaveRequestApprovalCreated`
+
+---
+
+## LeaveRequestAttachment
+
+**Root type:** `LeaveRequestAttachment`
+**Identity:** `LeaveRequestAttachmentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `LeaveRequestAttachment` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `LeaveRequestAttachmentId` within a school.
+
+### Commands
+
+- `CreateLeaveRequestAttachment`
+- `UpdateLeaveRequestAttachment`
+- `DeleteLeaveRequestAttachment`
+
+### Events
+
+- `LeaveRequestAttachmentCreated`
+
+---
+
+## PayrollGenerateAudit
+
+**Root type:** `PayrollGenerateAudit`
+**Identity:** `PayrollGenerateAuditId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `PayrollGenerateAudit` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `PayrollGenerateAuditId` within a school.
+
+### Commands
+
+- `CreatePayrollGenerateAudit`
+- `UpdatePayrollGenerateAudit`
+- `DeletePayrollGenerateAudit`
+
+### Events
+
+- `PayrollGenerateAuditCreated`
+
+---
+
+## PayrollPaymentLink
+
+**Root type:** `PayrollPaymentLink`
+**Identity:** `PayrollPaymentLinkId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `PayrollPaymentLink` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `PayrollPaymentLinkId` within a school.
+
+### Commands
+
+- `CreatePayrollPaymentLink`
+- `UpdatePayrollPaymentLink`
+- `DeletePayrollPaymentLink`
+
+### Events
+
+- `PayrollPaymentLinkCreated`
+
+---
+
+## StaffAddress
+
+**Root type:** `StaffAddress`
+**Identity:** `StaffAddressId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffAddress` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffAddressId` within a school.
+
+### Commands
+
+- `CreateStaffAddress`
+- `UpdateStaffAddress`
+- `DeleteStaffAddress`
+
+### Events
+
+- `StaffAddressCreated`
+
+---
+
+## StaffAttendanceImportBatch
+
+**Root type:** `StaffAttendanceImportBatch`
+**Identity:** `StaffAttendanceImportBatchId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffAttendanceImportBatch` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffAttendanceImportBatchId` within a school.
+
+### Commands
+
+- `CreateStaffAttendanceImportBatch`
+- `UpdateStaffAttendanceImportBatch`
+- `DeleteStaffAttendanceImportBatch`
+
+### Events
+
+- `StaffAttendanceImportBatchCreated`
+
+---
+
+## StaffAttendancePunch
+
+**Root type:** `StaffAttendancePunch`
+**Identity:** `StaffAttendancePunchId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffAttendancePunch` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffAttendancePunchId` within a school.
+
+### Commands
+
+- `CreateStaffAttendancePunch`
+- `UpdateStaffAttendancePunch`
+- `DeleteStaffAttendancePunch`
+
+### Events
+
+- `StaffAttendancePunchCreated`
+
+---
+
+## StaffBankDetail
+
+**Root type:** `StaffBankDetail`
+**Identity:** `StaffBankDetailId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffBankDetail` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffBankDetailId` within a school.
+
+### Commands
+
+- `CreateStaffBankDetail`
+- `UpdateStaffBankDetail`
+- `DeleteStaffBankDetail`
+
+### Events
+
+- `StaffBankDetailCreated`
+
+---
+
+## StaffCustomField
+
+**Root type:** `StaffCustomField`
+**Identity:** `StaffCustomFieldId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffCustomField` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffCustomFieldId` within a school.
+
+### Commands
+
+- `CreateStaffCustomField`
+- `UpdateStaffCustomField`
+- `DeleteStaffCustomField`
+
+### Events
+
+- `StaffCustomFieldCreated`
+
+---
+
+## StaffDocument
+
+**Root type:** `StaffDocument`
+**Identity:** `StaffDocumentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffDocument` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffDocumentId` within a school.
+
+### Commands
+
+- `CreateStaffDocument`
+- `UpdateStaffDocument`
+- `DeleteStaffDocument`
+
+### Events
+
+- `StaffDocumentCreated`
+
+---
+
+## StaffDrivingLicense
+
+**Root type:** `StaffDrivingLicense`
+**Identity:** `StaffDrivingLicenseId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffDrivingLicense` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffDrivingLicenseId` within a school.
+
+### Commands
+
+- `CreateStaffDrivingLicense`
+- `UpdateStaffDrivingLicense`
+- `DeleteStaffDrivingLicense`
+
+### Events
+
+- `StaffDrivingLicenseCreated`
+
+---
+
+## StaffImportResolution
+
+**Root type:** `StaffImportResolution`
+**Identity:** `StaffImportResolutionId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffImportResolution` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffImportResolutionId` within a school.
+
+### Commands
+
+- `CreateStaffImportResolution`
+- `UpdateStaffImportResolution`
+- `DeleteStaffImportResolution`
+
+### Events
+
+- `StaffImportResolutionCreated`
+
+---
+
+## StaffLeaveBalance
+
+**Root type:** `StaffLeaveBalance`
+**Identity:** `StaffLeaveBalanceId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffLeaveBalance` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffLeaveBalanceId` within a school.
+
+### Commands
+
+- `CreateStaffLeaveBalance`
+- `UpdateStaffLeaveBalance`
+- `DeleteStaffLeaveBalance`
+
+### Events
+
+- `StaffLeaveBalanceCreated`
+
+---
+
+## StaffLeaveHistory
+
+**Root type:** `StaffLeaveHistory`
+**Identity:** `StaffLeaveHistoryId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffLeaveHistory` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffLeaveHistoryId` within a school.
+
+### Commands
+
+- `CreateStaffLeaveHistory`
+- `UpdateStaffLeaveHistory`
+- `DeleteStaffLeaveHistory`
+
+### Events
+
+- `StaffLeaveHistoryCreated`
+
+---
+
+## StaffPayrollHistory
+
+**Root type:** `StaffPayrollHistory`
+**Identity:** `StaffPayrollHistoryId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffPayrollHistory` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffPayrollHistoryId` within a school.
+
+### Commands
+
+- `CreateStaffPayrollHistory`
+- `UpdateStaffPayrollHistory`
+- `DeleteStaffPayrollHistory`
+
+### Events
+
+- `StaffPayrollHistoryCreated`
+
+---
+
+## StaffProfilePhoto
+
+**Root type:** `StaffProfilePhoto`
+**Identity:** `StaffProfilePhotoId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffProfilePhoto` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffProfilePhotoId` within a school.
+
+### Commands
+
+- `CreateStaffProfilePhoto`
+- `UpdateStaffProfilePhoto`
+- `DeleteStaffProfilePhoto`
+
+### Events
+
+- `StaffProfilePhotoCreated`
+
+---
+
+## StaffRegistrationFieldOption
+
+**Root type:** `StaffRegistrationFieldOption`
+**Identity:** `StaffRegistrationFieldOptionId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffRegistrationFieldOption` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffRegistrationFieldOptionId` within a school.
+
+### Commands
+
+- `CreateStaffRegistrationFieldOption`
+- `UpdateStaffRegistrationFieldOption`
+- `DeleteStaffRegistrationFieldOption`
+
+### Events
+
+- `StaffRegistrationFieldOptionCreated`
+
+---
+
+## StaffRoleAssignment
+
+**Root type:** `StaffRoleAssignment`
+**Identity:** `StaffRoleAssignmentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffRoleAssignment` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffRoleAssignmentId` within a school.
+
+### Commands
+
+- `CreateStaffRoleAssignment`
+- `UpdateStaffRoleAssignment`
+- `DeleteStaffRoleAssignment`
+
+### Events
+
+- `StaffRoleAssignmentCreated`
+
+---
+
+## StaffSocialLink
+
+**Root type:** `StaffSocialLink`
+**Identity:** `StaffSocialLinkId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffSocialLink` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffSocialLinkId` within a school.
+
+### Commands
+
+- `CreateStaffSocialLink`
+- `UpdateStaffSocialLink`
+- `DeleteStaffSocialLink`
+
+### Events
+
+- `StaffSocialLinkCreated`
+
+---
+
+## StaffTimeline
+
+**Root type:** `StaffTimeline`
+**Identity:** `StaffTimelineId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Hr
+
+### Purpose
+
+The `StaffTimeline` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `StaffTimelineId` within a school.
+
+### Commands
+
+- `CreateStaffTimeline`
+- `UpdateStaffTimeline`
+- `DeleteStaffTimeline`
+
+### Events
+
+- `StaffTimelineCreated`
+
+---

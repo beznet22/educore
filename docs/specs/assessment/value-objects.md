@@ -175,3 +175,29 @@ bypass validation.
 
 - `StudentId`, `ClassId`, `SectionId`, `SubjectId`, `AcademicYearId`,
   `StaffId`, `ClassRoomId`, `ClassTimeId` — from `educore-academic`.
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+| `ClassRoomId` | `Id<ClassRoom>` | A `ClassRoom` identifier |
+| `StaffId` | `Id<Staff>` | A `Staff` identifier |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `MarksGradeRow` | (status/classification enum, see code) |
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+| `ClassRoomId` | `Id<ClassRoom>` | A `ClassRoom` identifier |
+| `StaffId` | `Id<Staff>` | A `Staff` identifier |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `MarksGradeRow` | (status/classification enum, see code) |

@@ -163,3 +163,31 @@ let email = EmailAddress::parse("ada@example.com")?;
 
 Parsing returns `Result<EmailAddress, ValueError>`. There are no setters
 that bypass validation.
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `OptionalSubjectGpaThreshold` | (status/classification enum, see code) |
+| `SuspensionReason` | (status/classification enum, see code) |
+| `TransferReason` | (status/classification enum, see code) |
+| `WithdrawalReason` | (status/classification enum, see code) |
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `OptionalSubjectGpaThreshold` | (status/classification enum, see code) |
+| `SuspensionReason` | (status/classification enum, see code) |
+| `TransferReason` | (status/classification enum, see code) |
+| `WithdrawalReason` | (status/classification enum, see code) |

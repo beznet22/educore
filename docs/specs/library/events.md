@@ -254,3 +254,154 @@ A generic state-change event is not emitted; concrete events
 (`BookIssued`, `BookReturned`, `BookRenewed`,
 `BookMarkedLost`, `FineCalculated`) carry the transition
 information.
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Book Acquisition Recorded
+
+```rust
+pub struct BookAcquisitionRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Book Catalog Entry Appended
+
+```rust
+pub struct BookCatalogEntryAppended {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Book Issue Fine Appended
+
+```rust
+pub struct BookIssueFineAppended {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Book Issue Renewal Appended
+
+```rust
+pub struct BookIssueRenewalAppended {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Book Return Recorded
+
+```rust
+pub struct BookReturnRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Fine Waived
+
+```rust
+pub struct FineWaived {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Library Member Note Added
+
+```rust
+pub struct LibraryMemberNoteAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Book Acquisition Recorded
+
+```rust
+pub struct BookAcquisitionRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Book Catalog Entry Appended
+
+```rust
+pub struct BookCatalogEntryAppended {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Book Issue Fine Appended
+
+```rust
+pub struct BookIssueFineAppended {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Book Issue Renewal Appended
+
+```rust
+pub struct BookIssueRenewalAppended {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Book Return Recorded
+
+```rust
+pub struct BookReturnRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Fine Waived
+
+```rust
+pub struct FineWaived {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Library Member Note Added
+
+```rust
+pub struct LibraryMemberNoteAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+

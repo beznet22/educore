@@ -302,3 +302,594 @@ pub struct StudentGraduated {
 - `AdmissionQueryFollowedUp { id, followup_id, response }`
 - `AdmissionQueryConverted { id, student_id }`
 - `AdmissionQueryClosed { id, reason }`
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Academic Year Closed
+
+```rust
+pub struct AcademicYearClosed {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Academic Year Copied
+
+```rust
+pub struct AcademicYearCopied {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Academic Year Created
+
+```rust
+pub struct AcademicYearCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Academic Year Dates Updated
+
+```rust
+pub struct AcademicYearDatesUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Certificate Created
+
+```rust
+pub struct CertificateCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Created
+
+```rust
+pub struct ClassCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Deleted
+
+```rust
+pub struct ClassDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Routine Scheduled
+
+```rust
+pub struct ClassRoutineScheduled {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Section Created
+
+```rust
+pub struct ClassSectionCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Subject Assigned
+
+```rust
+pub struct ClassSubjectAssigned {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Updated
+
+```rust
+pub struct ClassUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Current Academic Year Set
+
+```rust
+pub struct CurrentAcademicYearSet {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Guardian Registered
+
+```rust
+pub struct GuardianRegistered {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Homework Assigned
+
+```rust
+pub struct HomeworkAssigned {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Id Card Created
+
+```rust
+pub struct IdCardCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Lesson Created
+
+```rust
+pub struct LessonCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Lesson Plan Created
+
+```rust
+pub struct LessonPlanCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Lesson Topic Created
+
+```rust
+pub struct LessonTopicCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Optional Subject Gpa Threshold Set
+
+```rust
+pub struct OptionalSubjectGpaThresholdSet {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Registration Field Created
+
+```rust
+pub struct RegistrationFieldCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Section Created
+
+```rust
+pub struct SectionCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Section Deleted
+
+```rust
+pub struct SectionDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Section Updated
+
+```rust
+pub struct SectionUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Student Category Created
+
+```rust
+pub struct StudentCategoryCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Student Group Created
+
+```rust
+pub struct StudentGroupCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Student Promotion Recorded
+
+```rust
+pub struct StudentPromotionRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Subject Created
+
+```rust
+pub struct SubjectCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Subject Deleted
+
+```rust
+pub struct SubjectDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Subject Updated
+
+```rust
+pub struct SubjectUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Academic Year Closed
+
+```rust
+pub struct AcademicYearClosed {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Academic Year Copied
+
+```rust
+pub struct AcademicYearCopied {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Academic Year Created
+
+```rust
+pub struct AcademicYearCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Academic Year Dates Updated
+
+```rust
+pub struct AcademicYearDatesUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Certificate Created
+
+```rust
+pub struct CertificateCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Created
+
+```rust
+pub struct ClassCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Deleted
+
+```rust
+pub struct ClassDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Routine Scheduled
+
+```rust
+pub struct ClassRoutineScheduled {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Section Created
+
+```rust
+pub struct ClassSectionCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Subject Assigned
+
+```rust
+pub struct ClassSubjectAssigned {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Updated
+
+```rust
+pub struct ClassUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Current Academic Year Set
+
+```rust
+pub struct CurrentAcademicYearSet {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Guardian Registered
+
+```rust
+pub struct GuardianRegistered {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Homework Assigned
+
+```rust
+pub struct HomeworkAssigned {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Id Card Created
+
+```rust
+pub struct IdCardCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Lesson Created
+
+```rust
+pub struct LessonCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Lesson Plan Created
+
+```rust
+pub struct LessonPlanCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Lesson Topic Created
+
+```rust
+pub struct LessonTopicCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Optional Subject Gpa Threshold Set
+
+```rust
+pub struct OptionalSubjectGpaThresholdSet {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Registration Field Created
+
+```rust
+pub struct RegistrationFieldCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Section Created
+
+```rust
+pub struct SectionCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Section Deleted
+
+```rust
+pub struct SectionDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Section Updated
+
+```rust
+pub struct SectionUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Student Category Created
+
+```rust
+pub struct StudentCategoryCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Student Group Created
+
+```rust
+pub struct StudentGroupCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Student Promotion Recorded
+
+```rust
+pub struct StudentPromotionRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Subject Created
+
+```rust
+pub struct SubjectCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Subject Deleted
+
+```rust
+pub struct SubjectDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Subject Updated
+
+```rust
+pub struct SubjectUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+

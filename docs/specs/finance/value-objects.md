@@ -277,3 +277,49 @@ let amount = Amount::new(Money::INR, 1500_00)?;
 
 Parsing returns `Result<T, ValueError>`. There are no setters that
 bypass validation.
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+| `BankPaymentSlipAuditId` | `Id<BankPaymentSlipAudit>` | A `BankPaymentSlipAudit` identifier |
+| `BankStatementAttachmentId` | `Id<BankStatementAttachment>` | A `BankStatementAttachment` identifier |
+| `DirectFeesInstallmentAssignChildId` | `Id<DirectFeesInstallmentAssignChild>` | A `DirectFeesInstallmentAssignChild` identifier |
+| `ExpenseApprovalId` | `Id<ExpenseApproval>` | A `ExpenseApproval` identifier |
+| `FeesInstallmentAssignDiscountId` | `Id<FeesInstallmentAssignDiscount>` | A `FeesInstallmentAssignDiscount` identifier |
+| `FmFeesInvoiceLineNoteId` | `Id<FmFeesInvoiceLineNote>` | A `FmFeesInvoiceLineNote` identifier |
+| `FmFeesTransactionLineNoteId` | `Id<FmFeesTransactionLineNote>` | A `FmFeesTransactionLineNote` identifier |
+| `IncomeApprovalId` | `Id<IncomeApproval>` | A `IncomeApproval` identifier |
+| `PayrollPaymentApprovalId` | `Id<PayrollPaymentApproval>` | A `PayrollPaymentApproval` identifier |
+| `WalletId` | `Id<Wallet>` | A `Wallet` identifier |
+| `WalletTransactionApprovalId` | `Id<WalletTransactionApproval>` | A `WalletTransactionApproval` identifier |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `FeesInvoiceStatus` | (status/classification enum, see code) |
+| `FeesPaymentStatus` | (status/classification enum, see code) |
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+| `BankPaymentSlipAuditId` | `Id<BankPaymentSlipAudit>` | A `BankPaymentSlipAudit` identifier |
+| `BankStatementAttachmentId` | `Id<BankStatementAttachment>` | A `BankStatementAttachment` identifier |
+| `DirectFeesInstallmentAssignChildId` | `Id<DirectFeesInstallmentAssignChild>` | A `DirectFeesInstallmentAssignChild` identifier |
+| `ExpenseApprovalId` | `Id<ExpenseApproval>` | A `ExpenseApproval` identifier |
+| `FeesInstallmentAssignDiscountId` | `Id<FeesInstallmentAssignDiscount>` | A `FeesInstallmentAssignDiscount` identifier |
+| `FmFeesInvoiceLineNoteId` | `Id<FmFeesInvoiceLineNote>` | A `FmFeesInvoiceLineNote` identifier |
+| `FmFeesTransactionLineNoteId` | `Id<FmFeesTransactionLineNote>` | A `FmFeesTransactionLineNote` identifier |
+| `IncomeApprovalId` | `Id<IncomeApproval>` | A `IncomeApproval` identifier |
+| `PayrollPaymentApprovalId` | `Id<PayrollPaymentApproval>` | A `PayrollPaymentApproval` identifier |
+| `WalletId` | `Id<Wallet>` | A `Wallet` identifier |
+| `WalletTransactionApprovalId` | `Id<WalletTransactionApproval>` | A `WalletTransactionApproval` identifier |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `FeesInvoiceStatus` | (status/classification enum, see code) |
+| `FeesPaymentStatus` | (status/classification enum, see code) |

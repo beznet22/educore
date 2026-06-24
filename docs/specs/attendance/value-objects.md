@@ -116,3 +116,17 @@ bypass validation.
 - `StudentId`, `ClassId`, `SectionId`, `SubjectId`, `AcademicYearId`,
   `StaffId`, `StudentRecordId` — from `educore-academic`.
 - `ExamTypeId` — from `educore-assessment`.
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+| `ExamAttendanceId` | `Id<ExamAttendance>` | A `ExamAttendance` identifier |
+| `StaffId` | `Id<Staff>` | A `Staff` identifier |
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+| `ExamAttendanceId` | `Id<ExamAttendance>` | A `ExamAttendance` identifier |
+| `StaffId` | `Id<Staff>` | A `Staff` identifier |

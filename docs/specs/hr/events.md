@@ -293,3 +293,1214 @@ pub struct LeaveDeductionInfoAdded {
 - `StaffBulkImported { bulk_import_job_id, total_rows, source }`
 - `StaffImportPromoted { staff_import_bulk_temporary_id, staff_id }`
 - `StaffImportRejected { staff_import_bulk_temporary_id, reason }`
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Assign Class Teacher Scope Added
+
+```rust
+pub struct AssignClassTeacherScopeAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Bulk Import Job Recorded
+
+```rust
+pub struct BulkImportJobRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Teacher Assignment Deleted
+
+```rust
+pub struct ClassTeacherAssignmentDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Teacher Assignment Updated
+
+```rust
+pub struct ClassTeacherAssignmentUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Department Created
+
+```rust
+pub struct DepartmentCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Department Deleted
+
+```rust
+pub struct DepartmentDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Department Head Recorded
+
+```rust
+pub struct DepartmentHeadRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Department Updated
+
+```rust
+pub struct DepartmentUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Designation Created
+
+```rust
+pub struct DesignationCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Designation Deleted
+
+```rust
+pub struct DesignationDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Designation Grade Recorded
+
+```rust
+pub struct DesignationGradeRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Designation Updated
+
+```rust
+pub struct DesignationUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Hourly Rate Deleted
+
+```rust
+pub struct HourlyRateDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Hourly Rate Override Set
+
+```rust
+pub struct HourlyRateOverrideSet {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Hourly Rate Set
+
+```rust
+pub struct HourlyRateSet {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Hourly Rate Updated
+
+```rust
+pub struct HourlyRateUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Cancelled
+
+```rust
+pub struct LeaveCancelled {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Deduction Info Deleted
+
+```rust
+pub struct LeaveDeductionInfoDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Deduction Info Updated
+
+```rust
+pub struct LeaveDeductionInfoUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Define Adjustment Applied
+
+```rust
+pub struct LeaveDefineAdjustmentApplied {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Policy Deleted
+
+```rust
+pub struct LeavePolicyDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Policy Updated
+
+```rust
+pub struct LeavePolicyUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Rejected
+
+```rust
+pub struct LeaveRejected {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Request Approval Recorded
+
+```rust
+pub struct LeaveRequestApprovalRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Request Attachment Registered
+
+```rust
+pub struct LeaveRequestAttachmentRegistered {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Type Deleted
+
+```rust
+pub struct LeaveTypeDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Type Updated
+
+```rust
+pub struct LeaveTypeUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Amounts Updated
+
+```rust
+pub struct PayrollAmountsUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Approved
+
+```rust
+pub struct PayrollApproved {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Deduction Added
+
+```rust
+pub struct PayrollDeductionAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Earn Deduc Deleted
+
+```rust
+pub struct PayrollEarnDeducDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Earn Deduc Updated
+
+```rust
+pub struct PayrollEarnDeducUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Generate Audit Appended
+
+```rust
+pub struct PayrollGenerateAuditAppended {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Paid
+
+```rust
+pub struct PayrollPaid {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Payment Link Created
+
+```rust
+pub struct PayrollPaymentLinkCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Salary Template Created
+
+```rust
+pub struct SalaryTemplateCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Salary Template Deleted
+
+```rust
+pub struct SalaryTemplateDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Salary Template Updated
+
+```rust
+pub struct SalaryTemplateUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Address Added
+
+```rust
+pub struct StaffAddressAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Attendance Deleted
+
+```rust
+pub struct StaffAttendanceDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Attendance Import Batch Recorded
+
+```rust
+pub struct StaffAttendanceImportBatchRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Attendance Punch Captured
+
+```rust
+pub struct StaffAttendancePunchCaptured {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Attendance Updated
+
+```rust
+pub struct StaffAttendanceUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Bank Detail Upserted
+
+```rust
+pub struct StaffBankDetailUpserted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Bulk Imported
+
+```rust
+pub struct StaffBulkImported {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Custom Field Set
+
+```rust
+pub struct StaffCustomFieldSet {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Deleted
+
+```rust
+pub struct StaffDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Document Registered
+
+```rust
+pub struct StaffDocumentRegistered {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Driving License Registered
+
+```rust
+pub struct StaffDrivingLicenseRegistered {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Import Promoted
+
+```rust
+pub struct StaffImportPromoted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Import Resolution Recorded
+
+```rust
+pub struct StaffImportResolutionRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Leave Balance Refreshed
+
+```rust
+pub struct StaffLeaveBalanceRefreshed {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Leave History Snapshotted
+
+```rust
+pub struct StaffLeaveHistorySnapshotted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Payroll History Snapshotted
+
+```rust
+pub struct StaffPayrollHistorySnapshotted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Profile Photo Registered
+
+```rust
+pub struct StaffProfilePhotoRegistered {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Registration Field Created
+
+```rust
+pub struct StaffRegistrationFieldCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Registration Field Option Added
+
+```rust
+pub struct StaffRegistrationFieldOptionAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Role Assignment Recorded
+
+```rust
+pub struct StaffRoleAssignmentRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Social Link Added
+
+```rust
+pub struct StaffSocialLinkAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Timeline Refreshed
+
+```rust
+pub struct StaffTimelineRefreshed {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Assign Class Teacher Scope Added
+
+```rust
+pub struct AssignClassTeacherScopeAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Bulk Import Job Recorded
+
+```rust
+pub struct BulkImportJobRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Teacher Assignment Deleted
+
+```rust
+pub struct ClassTeacherAssignmentDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Class Teacher Assignment Updated
+
+```rust
+pub struct ClassTeacherAssignmentUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Department Created
+
+```rust
+pub struct DepartmentCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Department Deleted
+
+```rust
+pub struct DepartmentDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Department Head Recorded
+
+```rust
+pub struct DepartmentHeadRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Department Updated
+
+```rust
+pub struct DepartmentUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Designation Created
+
+```rust
+pub struct DesignationCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Designation Deleted
+
+```rust
+pub struct DesignationDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Designation Grade Recorded
+
+```rust
+pub struct DesignationGradeRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Designation Updated
+
+```rust
+pub struct DesignationUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Hourly Rate Deleted
+
+```rust
+pub struct HourlyRateDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Hourly Rate Override Set
+
+```rust
+pub struct HourlyRateOverrideSet {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Hourly Rate Set
+
+```rust
+pub struct HourlyRateSet {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Hourly Rate Updated
+
+```rust
+pub struct HourlyRateUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Cancelled
+
+```rust
+pub struct LeaveCancelled {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Deduction Info Deleted
+
+```rust
+pub struct LeaveDeductionInfoDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Deduction Info Updated
+
+```rust
+pub struct LeaveDeductionInfoUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Define Adjustment Applied
+
+```rust
+pub struct LeaveDefineAdjustmentApplied {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Policy Deleted
+
+```rust
+pub struct LeavePolicyDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Policy Updated
+
+```rust
+pub struct LeavePolicyUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Rejected
+
+```rust
+pub struct LeaveRejected {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Request Approval Recorded
+
+```rust
+pub struct LeaveRequestApprovalRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Request Attachment Registered
+
+```rust
+pub struct LeaveRequestAttachmentRegistered {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Type Deleted
+
+```rust
+pub struct LeaveTypeDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Leave Type Updated
+
+```rust
+pub struct LeaveTypeUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Amounts Updated
+
+```rust
+pub struct PayrollAmountsUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Approved
+
+```rust
+pub struct PayrollApproved {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Deduction Added
+
+```rust
+pub struct PayrollDeductionAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Earn Deduc Deleted
+
+```rust
+pub struct PayrollEarnDeducDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Earn Deduc Updated
+
+```rust
+pub struct PayrollEarnDeducUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Generate Audit Appended
+
+```rust
+pub struct PayrollGenerateAuditAppended {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Paid
+
+```rust
+pub struct PayrollPaid {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Payment Link Created
+
+```rust
+pub struct PayrollPaymentLinkCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Salary Template Created
+
+```rust
+pub struct SalaryTemplateCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Salary Template Deleted
+
+```rust
+pub struct SalaryTemplateDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Salary Template Updated
+
+```rust
+pub struct SalaryTemplateUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Address Added
+
+```rust
+pub struct StaffAddressAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Attendance Deleted
+
+```rust
+pub struct StaffAttendanceDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Attendance Import Batch Recorded
+
+```rust
+pub struct StaffAttendanceImportBatchRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Attendance Punch Captured
+
+```rust
+pub struct StaffAttendancePunchCaptured {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Attendance Updated
+
+```rust
+pub struct StaffAttendanceUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Bank Detail Upserted
+
+```rust
+pub struct StaffBankDetailUpserted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Bulk Imported
+
+```rust
+pub struct StaffBulkImported {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Custom Field Set
+
+```rust
+pub struct StaffCustomFieldSet {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Deleted
+
+```rust
+pub struct StaffDeleted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Document Registered
+
+```rust
+pub struct StaffDocumentRegistered {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Driving License Registered
+
+```rust
+pub struct StaffDrivingLicenseRegistered {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Import Promoted
+
+```rust
+pub struct StaffImportPromoted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Import Resolution Recorded
+
+```rust
+pub struct StaffImportResolutionRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Leave Balance Refreshed
+
+```rust
+pub struct StaffLeaveBalanceRefreshed {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Leave History Snapshotted
+
+```rust
+pub struct StaffLeaveHistorySnapshotted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Payroll History Snapshotted
+
+```rust
+pub struct StaffPayrollHistorySnapshotted {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Profile Photo Registered
+
+```rust
+pub struct StaffProfilePhotoRegistered {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Registration Field Created
+
+```rust
+pub struct StaffRegistrationFieldCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Registration Field Option Added
+
+```rust
+pub struct StaffRegistrationFieldOptionAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Role Assignment Recorded
+
+```rust
+pub struct StaffRoleAssignmentRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Social Link Added
+
+```rust
+pub struct StaffSocialLinkAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Staff Timeline Refreshed
+
+```rust
+pub struct StaffTimelineRefreshed {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+

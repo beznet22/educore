@@ -510,3 +510,314 @@ All events are recorded in the per-aggregate event log and emitted
 on the event bus. Consumers and adapters consume from the bus to
 project read models, send notifications, render report cards, and
 refresh public listings.
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Admit Card Setting Created
+
+```rust
+pub struct AdmitCardSettingCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Custom Result Setting Created
+
+```rust
+pub struct CustomResultSettingCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Custom Temporary Result Created
+
+```rust
+pub struct CustomTemporaryResultCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Exam Attendance Created
+
+```rust
+pub struct ExamAttendanceCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Exam Routine Page Created
+
+```rust
+pub struct ExamRoutinePageCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Exam Step Skip Created
+
+```rust
+pub struct ExamStepSkipCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Frontend Exam Result Created
+
+```rust
+pub struct FrontendExamResultCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Frontend Exam Routine Created
+
+```rust
+pub struct FrontendExamRoutineCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Frontend Result Created
+
+```rust
+pub struct FrontendResultCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Question Bank Created
+
+```rust
+pub struct QuestionBankCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Result Setting Created
+
+```rust
+pub struct ResultSettingCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Student Take Online Exam Created
+
+```rust
+pub struct StudentTakeOnlineExamCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Teacher Evaluation Created
+
+```rust
+pub struct TeacherEvaluationCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Teacher Remark Created
+
+```rust
+pub struct TeacherRemarkCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Temporary Merit List Created
+
+```rust
+pub struct TemporaryMeritListCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Admit Card Setting Created
+
+```rust
+pub struct AdmitCardSettingCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Custom Result Setting Created
+
+```rust
+pub struct CustomResultSettingCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Custom Temporary Result Created
+
+```rust
+pub struct CustomTemporaryResultCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Exam Attendance Created
+
+```rust
+pub struct ExamAttendanceCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Exam Routine Page Created
+
+```rust
+pub struct ExamRoutinePageCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Exam Step Skip Created
+
+```rust
+pub struct ExamStepSkipCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Frontend Exam Result Created
+
+```rust
+pub struct FrontendExamResultCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Frontend Exam Routine Created
+
+```rust
+pub struct FrontendExamRoutineCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Frontend Result Created
+
+```rust
+pub struct FrontendResultCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Question Bank Created
+
+```rust
+pub struct QuestionBankCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Result Setting Created
+
+```rust
+pub struct ResultSettingCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Student Take Online Exam Created
+
+```rust
+pub struct StudentTakeOnlineExamCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Teacher Evaluation Created
+
+```rust
+pub struct TeacherEvaluationCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Teacher Remark Created
+
+```rust
+pub struct TeacherRemarkCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Temporary Merit List Created
+
+```rust
+pub struct TemporaryMeritListCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+

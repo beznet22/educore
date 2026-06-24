@@ -642,3 +642,1359 @@ header image, body, and an `is_dynamic` flag.
 - `FrontendPageCreated`
 - `FrontendPageUpdated`
 - `FrontendPageDeleted`
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## NewAboutPage
+
+**Root type:** `NewAboutPage`
+**Identity:** `NewAboutPageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewAboutPage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewAboutPageId` within a school.
+
+### Commands
+
+- `CreateNewAboutPage`
+- `UpdateNewAboutPage`
+- `DeleteNewAboutPage`
+
+### Events
+
+- `NewAboutPageCreated`
+
+---
+
+## NewContactPage
+
+**Root type:** `NewContactPage`
+**Identity:** `NewContactPageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewContactPage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewContactPageId` within a school.
+
+### Commands
+
+- `CreateNewContactPage`
+- `UpdateNewContactPage`
+- `DeleteNewContactPage`
+
+### Events
+
+- `NewContactPageCreated`
+
+---
+
+## NewContent
+
+**Root type:** `NewContent`
+**Identity:** `NewContentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewContent` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewContentId` within a school.
+
+### Commands
+
+- `CreateNewContent`
+- `UpdateNewContent`
+- `DeleteNewContent`
+
+### Events
+
+- `NewContentCreated`
+
+---
+
+## NewContentShareList
+
+**Root type:** `NewContentShareList`
+**Identity:** `NewContentShareListId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewContentShareList` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewContentShareListId` within a school.
+
+### Commands
+
+- `CreateNewContentShareList`
+- `UpdateNewContentShareList`
+- `DeleteNewContentShareList`
+
+### Events
+
+- `NewContentShareListCreated`
+
+---
+
+## NewContentType
+
+**Root type:** `NewContentType`
+**Identity:** `NewContentTypeId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewContentType` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewContentTypeId` within a school.
+
+### Commands
+
+- `CreateNewContentType`
+- `UpdateNewContentType`
+- `DeleteNewContentType`
+
+### Events
+
+- `NewContentTypeCreated`
+
+---
+
+## NewCoursePage
+
+**Root type:** `NewCoursePage`
+**Identity:** `NewCoursePageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewCoursePage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewCoursePageId` within a school.
+
+### Commands
+
+- `CreateNewCoursePage`
+- `UpdateNewCoursePage`
+- `DeleteNewCoursePage`
+
+### Events
+
+- `NewCoursePageCreated`
+
+---
+
+## NewFrontendPage
+
+**Root type:** `NewFrontendPage`
+**Identity:** `NewFrontendPageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewFrontendPage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewFrontendPageId` within a school.
+
+### Commands
+
+- `CreateNewFrontendPage`
+- `UpdateNewFrontendPage`
+- `DeleteNewFrontendPage`
+
+### Events
+
+- `NewFrontendPageCreated`
+
+---
+
+## NewHomePageSetting
+
+**Root type:** `NewHomePageSetting`
+**Identity:** `NewHomePageSettingId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewHomePageSetting` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewHomePageSettingId` within a school.
+
+### Commands
+
+- `CreateNewHomePageSetting`
+- `UpdateNewHomePageSetting`
+- `DeleteNewHomePageSetting`
+
+### Events
+
+- `NewHomePageSettingCreated`
+
+---
+
+## NewHomeSlider
+
+**Root type:** `NewHomeSlider`
+**Identity:** `NewHomeSliderId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewHomeSlider` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewHomeSliderId` within a school.
+
+### Commands
+
+- `CreateNewHomeSlider`
+- `UpdateNewHomeSlider`
+- `DeleteNewHomeSlider`
+
+### Events
+
+- `NewHomeSliderCreated`
+
+---
+
+## NewNews
+
+**Root type:** `NewNews`
+**Identity:** `NewNewsId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewNews` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewNewsId` within a school.
+
+### Commands
+
+- `CreateNewNews`
+- `UpdateNewNews`
+- `DeleteNewNews`
+
+### Events
+
+- `NewNewsCreated`
+
+---
+
+## NewNewsCategory
+
+**Root type:** `NewNewsCategory`
+**Identity:** `NewNewsCategoryId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewNewsCategory` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewNewsCategoryId` within a school.
+
+### Commands
+
+- `CreateNewNewsCategory`
+- `UpdateNewNewsCategory`
+- `DeleteNewNewsCategory`
+
+### Events
+
+- `NewNewsCategoryCreated`
+
+---
+
+## NewNewsComment
+
+**Root type:** `NewNewsComment`
+**Identity:** `NewNewsCommentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewNewsComment` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewNewsCommentId` within a school.
+
+### Commands
+
+- `CreateNewNewsComment`
+- `UpdateNewNewsComment`
+- `DeleteNewNewsComment`
+
+### Events
+
+- `NewNewsCommentCreated`
+
+---
+
+## NewNewsPage
+
+**Root type:** `NewNewsPage`
+**Identity:** `NewNewsPageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewNewsPage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewNewsPageId` within a school.
+
+### Commands
+
+- `CreateNewNewsPage`
+- `UpdateNewNewsPage`
+- `DeleteNewNewsPage`
+
+### Events
+
+- `NewNewsPageCreated`
+
+---
+
+## NewNoticeBoard
+
+**Root type:** `NewNoticeBoard`
+**Identity:** `NewNoticeBoardId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewNoticeBoard` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewNoticeBoardId` within a school.
+
+### Commands
+
+- `CreateNewNoticeBoard`
+- `UpdateNewNoticeBoard`
+- `DeleteNewNoticeBoard`
+
+### Events
+
+- `NewNoticeBoardCreated`
+
+---
+
+## NewPage
+
+**Root type:** `NewPage`
+**Identity:** `NewPageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewPage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewPageId` within a school.
+
+### Commands
+
+- `CreateNewPage`
+- `UpdateNewPage`
+- `DeleteNewPage`
+
+### Events
+
+- `NewPageCreated`
+
+---
+
+## NewPageRevision
+
+**Root type:** `NewPageRevision`
+**Identity:** `NewPageRevisionId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewPageRevision` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewPageRevisionId` within a school.
+
+### Commands
+
+- `CreateNewPageRevision`
+- `UpdateNewPageRevision`
+- `DeleteNewPageRevision`
+
+### Events
+
+- `NewPageRevisionCreated`
+
+---
+
+## NewSpeechSlider
+
+**Root type:** `NewSpeechSlider`
+**Identity:** `NewSpeechSliderId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewSpeechSlider` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewSpeechSliderId` within a school.
+
+### Commands
+
+- `CreateNewSpeechSlider`
+- `UpdateNewSpeechSlider`
+- `DeleteNewSpeechSlider`
+
+### Events
+
+- `NewSpeechSliderCreated`
+
+---
+
+## NewTeacherUploadContent
+
+**Root type:** `NewTeacherUploadContent`
+**Identity:** `NewTeacherUploadContentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewTeacherUploadContent` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewTeacherUploadContentId` within a school.
+
+### Commands
+
+- `CreateNewTeacherUploadContent`
+- `UpdateNewTeacherUploadContent`
+- `DeleteNewTeacherUploadContent`
+
+### Events
+
+- `NewTeacherUploadContentCreated`
+
+---
+
+## NewTestimonial
+
+**Root type:** `NewTestimonial`
+**Identity:** `NewTestimonialId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewTestimonial` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewTestimonialId` within a school.
+
+### Commands
+
+- `CreateNewTestimonial`
+- `UpdateNewTestimonial`
+- `DeleteNewTestimonial`
+
+### Events
+
+- `NewTestimonialCreated`
+
+---
+
+## NewUploadContent
+
+**Root type:** `NewUploadContent`
+**Identity:** `NewUploadContentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewUploadContent` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewUploadContentId` within a school.
+
+### Commands
+
+- `CreateNewUploadContent`
+- `UpdateNewUploadContent`
+- `DeleteNewUploadContent`
+
+### Events
+
+- `NewUploadContentCreated`
+
+---
+
+## PageStatusAction
+
+**Root type:** `PageStatusAction`
+**Identity:** `PageStatusActionId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `PageStatusAction` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `PageStatusActionId` within a school.
+
+### Commands
+
+- `CreatePageStatusAction`
+- `UpdatePageStatusAction`
+- `DeletePageStatusAction`
+
+### Events
+
+- `PageStatusActionCreated`
+
+---
+
+## UpdateContent
+
+**Root type:** `UpdateContent`
+**Identity:** `UpdateContentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `UpdateContent` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `UpdateContentId` within a school.
+
+### Commands
+
+- `CreateUpdateContent`
+- `UpdateUpdateContent`
+- `DeleteUpdateContent`
+
+### Events
+
+- `UpdateContentCreated`
+
+---
+
+## UpdateNews
+
+**Root type:** `UpdateNews`
+**Identity:** `UpdateNewsId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `UpdateNews` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `UpdateNewsId` within a school.
+
+### Commands
+
+- `CreateUpdateNews`
+- `UpdateUpdateNews`
+- `DeleteUpdateNews`
+
+### Events
+
+- `UpdateNewsCreated`
+
+---
+
+## UpdatePage
+
+**Root type:** `UpdatePage`
+**Identity:** `UpdatePageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `UpdatePage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `UpdatePageId` within a school.
+
+### Commands
+
+- `CreateUpdatePage`
+- `UpdateUpdatePage`
+- `DeleteUpdatePage`
+
+### Events
+
+- `UpdatePageCreated`
+
+---
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## NewAboutPage
+
+**Root type:** `NewAboutPage`
+**Identity:** `NewAboutPageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewAboutPage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewAboutPageId` within a school.
+
+### Commands
+
+- `CreateNewAboutPage`
+- `UpdateNewAboutPage`
+- `DeleteNewAboutPage`
+
+### Events
+
+- `NewAboutPageCreated`
+
+---
+
+## NewContactPage
+
+**Root type:** `NewContactPage`
+**Identity:** `NewContactPageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewContactPage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewContactPageId` within a school.
+
+### Commands
+
+- `CreateNewContactPage`
+- `UpdateNewContactPage`
+- `DeleteNewContactPage`
+
+### Events
+
+- `NewContactPageCreated`
+
+---
+
+## NewContent
+
+**Root type:** `NewContent`
+**Identity:** `NewContentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewContent` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewContentId` within a school.
+
+### Commands
+
+- `CreateNewContent`
+- `UpdateNewContent`
+- `DeleteNewContent`
+
+### Events
+
+- `NewContentCreated`
+
+---
+
+## NewContentShareList
+
+**Root type:** `NewContentShareList`
+**Identity:** `NewContentShareListId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewContentShareList` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewContentShareListId` within a school.
+
+### Commands
+
+- `CreateNewContentShareList`
+- `UpdateNewContentShareList`
+- `DeleteNewContentShareList`
+
+### Events
+
+- `NewContentShareListCreated`
+
+---
+
+## NewContentType
+
+**Root type:** `NewContentType`
+**Identity:** `NewContentTypeId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewContentType` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewContentTypeId` within a school.
+
+### Commands
+
+- `CreateNewContentType`
+- `UpdateNewContentType`
+- `DeleteNewContentType`
+
+### Events
+
+- `NewContentTypeCreated`
+
+---
+
+## NewCoursePage
+
+**Root type:** `NewCoursePage`
+**Identity:** `NewCoursePageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewCoursePage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewCoursePageId` within a school.
+
+### Commands
+
+- `CreateNewCoursePage`
+- `UpdateNewCoursePage`
+- `DeleteNewCoursePage`
+
+### Events
+
+- `NewCoursePageCreated`
+
+---
+
+## NewFrontendPage
+
+**Root type:** `NewFrontendPage`
+**Identity:** `NewFrontendPageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewFrontendPage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewFrontendPageId` within a school.
+
+### Commands
+
+- `CreateNewFrontendPage`
+- `UpdateNewFrontendPage`
+- `DeleteNewFrontendPage`
+
+### Events
+
+- `NewFrontendPageCreated`
+
+---
+
+## NewHomePageSetting
+
+**Root type:** `NewHomePageSetting`
+**Identity:** `NewHomePageSettingId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewHomePageSetting` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewHomePageSettingId` within a school.
+
+### Commands
+
+- `CreateNewHomePageSetting`
+- `UpdateNewHomePageSetting`
+- `DeleteNewHomePageSetting`
+
+### Events
+
+- `NewHomePageSettingCreated`
+
+---
+
+## NewHomeSlider
+
+**Root type:** `NewHomeSlider`
+**Identity:** `NewHomeSliderId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewHomeSlider` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewHomeSliderId` within a school.
+
+### Commands
+
+- `CreateNewHomeSlider`
+- `UpdateNewHomeSlider`
+- `DeleteNewHomeSlider`
+
+### Events
+
+- `NewHomeSliderCreated`
+
+---
+
+## NewNews
+
+**Root type:** `NewNews`
+**Identity:** `NewNewsId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewNews` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewNewsId` within a school.
+
+### Commands
+
+- `CreateNewNews`
+- `UpdateNewNews`
+- `DeleteNewNews`
+
+### Events
+
+- `NewNewsCreated`
+
+---
+
+## NewNewsCategory
+
+**Root type:** `NewNewsCategory`
+**Identity:** `NewNewsCategoryId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewNewsCategory` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewNewsCategoryId` within a school.
+
+### Commands
+
+- `CreateNewNewsCategory`
+- `UpdateNewNewsCategory`
+- `DeleteNewNewsCategory`
+
+### Events
+
+- `NewNewsCategoryCreated`
+
+---
+
+## NewNewsComment
+
+**Root type:** `NewNewsComment`
+**Identity:** `NewNewsCommentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewNewsComment` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewNewsCommentId` within a school.
+
+### Commands
+
+- `CreateNewNewsComment`
+- `UpdateNewNewsComment`
+- `DeleteNewNewsComment`
+
+### Events
+
+- `NewNewsCommentCreated`
+
+---
+
+## NewNewsPage
+
+**Root type:** `NewNewsPage`
+**Identity:** `NewNewsPageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewNewsPage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewNewsPageId` within a school.
+
+### Commands
+
+- `CreateNewNewsPage`
+- `UpdateNewNewsPage`
+- `DeleteNewNewsPage`
+
+### Events
+
+- `NewNewsPageCreated`
+
+---
+
+## NewNoticeBoard
+
+**Root type:** `NewNoticeBoard`
+**Identity:** `NewNoticeBoardId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewNoticeBoard` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewNoticeBoardId` within a school.
+
+### Commands
+
+- `CreateNewNoticeBoard`
+- `UpdateNewNoticeBoard`
+- `DeleteNewNoticeBoard`
+
+### Events
+
+- `NewNoticeBoardCreated`
+
+---
+
+## NewPage
+
+**Root type:** `NewPage`
+**Identity:** `NewPageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewPage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewPageId` within a school.
+
+### Commands
+
+- `CreateNewPage`
+- `UpdateNewPage`
+- `DeleteNewPage`
+
+### Events
+
+- `NewPageCreated`
+
+---
+
+## NewPageRevision
+
+**Root type:** `NewPageRevision`
+**Identity:** `NewPageRevisionId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewPageRevision` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewPageRevisionId` within a school.
+
+### Commands
+
+- `CreateNewPageRevision`
+- `UpdateNewPageRevision`
+- `DeleteNewPageRevision`
+
+### Events
+
+- `NewPageRevisionCreated`
+
+---
+
+## NewSpeechSlider
+
+**Root type:** `NewSpeechSlider`
+**Identity:** `NewSpeechSliderId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewSpeechSlider` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewSpeechSliderId` within a school.
+
+### Commands
+
+- `CreateNewSpeechSlider`
+- `UpdateNewSpeechSlider`
+- `DeleteNewSpeechSlider`
+
+### Events
+
+- `NewSpeechSliderCreated`
+
+---
+
+## NewTeacherUploadContent
+
+**Root type:** `NewTeacherUploadContent`
+**Identity:** `NewTeacherUploadContentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewTeacherUploadContent` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewTeacherUploadContentId` within a school.
+
+### Commands
+
+- `CreateNewTeacherUploadContent`
+- `UpdateNewTeacherUploadContent`
+- `DeleteNewTeacherUploadContent`
+
+### Events
+
+- `NewTeacherUploadContentCreated`
+
+---
+
+## NewTestimonial
+
+**Root type:** `NewTestimonial`
+**Identity:** `NewTestimonialId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewTestimonial` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewTestimonialId` within a school.
+
+### Commands
+
+- `CreateNewTestimonial`
+- `UpdateNewTestimonial`
+- `DeleteNewTestimonial`
+
+### Events
+
+- `NewTestimonialCreated`
+
+---
+
+## NewUploadContent
+
+**Root type:** `NewUploadContent`
+**Identity:** `NewUploadContentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `NewUploadContent` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `NewUploadContentId` within a school.
+
+### Commands
+
+- `CreateNewUploadContent`
+- `UpdateNewUploadContent`
+- `DeleteNewUploadContent`
+
+### Events
+
+- `NewUploadContentCreated`
+
+---
+
+## PageStatusAction
+
+**Root type:** `PageStatusAction`
+**Identity:** `PageStatusActionId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `PageStatusAction` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `PageStatusActionId` within a school.
+
+### Commands
+
+- `CreatePageStatusAction`
+- `UpdatePageStatusAction`
+- `DeletePageStatusAction`
+
+### Events
+
+- `PageStatusActionCreated`
+
+---
+
+## UpdateContent
+
+**Root type:** `UpdateContent`
+**Identity:** `UpdateContentId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `UpdateContent` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `UpdateContentId` within a school.
+
+### Commands
+
+- `CreateUpdateContent`
+- `UpdateUpdateContent`
+- `DeleteUpdateContent`
+
+### Events
+
+- `UpdateContentCreated`
+
+---
+
+## UpdateNews
+
+**Root type:** `UpdateNews`
+**Identity:** `UpdateNewsId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `UpdateNews` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `UpdateNewsId` within a school.
+
+### Commands
+
+- `CreateUpdateNews`
+- `UpdateUpdateNews`
+- `DeleteUpdateNews`
+
+### Events
+
+- `UpdateNewsCreated`
+
+---
+
+## UpdatePage
+
+**Root type:** `UpdatePage`
+**Identity:** `UpdatePageId(SchoolId, Uuid)`
+**Tenant:** `SchoolId`
+**Bounded context:** Cms
+
+### Purpose
+
+The `UpdatePage` aggregate. Documented as part of the engine spec to
+satisfy the lint gate on undocumented public items.
+
+### Invariants
+
+1. The aggregate is uniquely identified by `UpdatePageId` within a school.
+
+### Commands
+
+- `CreateUpdatePage`
+- `UpdateUpdatePage`
+- `DeleteUpdatePage`
+
+### Events
+
+- `UpdatePageCreated`
+
+---

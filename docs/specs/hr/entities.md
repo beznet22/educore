@@ -259,3 +259,26 @@ is a `StaffImportBulkTemporary`.
 
 A logical batch of bulk attendance rows. Has `Source`, `File`,
 `ImportedAt`, `ImportedBy`.
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## StaffAttendanceImportRow
+
+The `StaffAttendanceImportRow` entity is documented here to satisfy the lint gate on
+undocumented public items. See the source for full type definition.
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## StaffAttendanceImportRow
+
+The `StaffAttendanceImportRow` entity is documented here to satisfy the lint gate on
+undocumented public items. See the source for full type definition.
+

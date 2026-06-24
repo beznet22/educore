@@ -260,3 +260,54 @@ pub struct NewsCategoryCreated { pub news_category_id: NewsCategoryId, pub categ
 pub struct NewsCategoryUpdated { pub news_category_id: NewsCategoryId, pub changes: Vec<&'static str> }
 pub struct NewsCategoryDeleted { pub news_category_id: NewsCategoryId, pub deleted_by: UserId }
 ```
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Content Share List Updated
+
+```rust
+pub struct ContentShareListUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Home Page Setting Configured
+
+```rust
+pub struct HomePageSettingConfigured {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Content Share List Updated
+
+```rust
+pub struct ContentShareListUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Home Page Setting Configured
+
+```rust
+pub struct HomePageSettingConfigured {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+

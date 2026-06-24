@@ -151,3 +151,29 @@ or numerics where a value object exists.
 | `StaffId`         | From `educore-hr` (read-only reference)                  |
 | `AcademicYearId`  | From `educore-academic` (read-only reference)            |
 | `RoleId`          | From `educore-rbac` (read-only reference)                |
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `ItemReceiveLineSpec` | (status/classification enum, see code) |
+| `ItemSellLineSpec` | (status/classification enum, see code) |
+| `RouteStopSpec` | (status/classification enum, see code) |
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `ItemReceiveLineSpec` | (status/classification enum, see code) |
+| `ItemSellLineSpec` | (status/classification enum, see code) |
+| `RouteStopSpec` | (status/classification enum, see code) |

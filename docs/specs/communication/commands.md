@@ -672,3 +672,482 @@ pub struct CreateCustomSmsSettingCommand {
 
 **Capability:** `CustomSmsSetting.Create`
 **Effects:** Emits `CustomSmsSettingCreated`.
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Classify Chat Invitation
+
+```rust
+pub struct ClassifyChatInvitationCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatInvitation.Classify`
+**Effects:** Emits `ChatInvitationClassifyed`.
+
+
+### Close Chat Conversation
+
+```rust
+pub struct CloseChatConversationCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatConversation.Close`
+**Effects:** Emits `ChatConversationCloseed`.
+
+
+### Create Complaint Type
+
+```rust
+pub struct CreateComplaintTypeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ComplaintType.Create`
+**Effects:** Emits `ComplaintTypeCreateed`.
+
+
+### Delete Chat Group
+
+```rust
+pub struct DeleteChatGroupCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatGroup.Delete`
+**Effects:** Emits `ChatGroupDeleteed`.
+
+
+### Delete Chat Message
+
+```rust
+pub struct DeleteChatMessageCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatMessage.Delete`
+**Effects:** Emits `ChatMessageDeleteed`.
+
+
+### Delete Complaint Type
+
+```rust
+pub struct DeleteComplaintTypeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ComplaintType.Delete`
+**Effects:** Emits `ComplaintTypeDeleteed`.
+
+
+### Delete Custom Sms Setting
+
+```rust
+pub struct DeleteCustomSmsSettingCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `CustomSmsSetting.Delete`
+**Effects:** Emits `CustomSmsSettingDeleteed`.
+
+
+### Delete Email Setting
+
+```rust
+pub struct DeleteEmailSettingCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `EmailSetting.Delete`
+**Effects:** Emits `EmailSettingDeleteed`.
+
+
+### Delete Sms Gateway
+
+```rust
+pub struct DeleteSmsGatewayCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `SmsGateway.Delete`
+**Effects:** Emits `SmsGatewayDeleteed`.
+
+
+### Mark Contact Message Viewed
+
+```rust
+pub struct MarkContactMessageViewedCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ContactMessageViewed.Mark`
+**Effects:** Emits `ContactMessageViewedMarked`.
+
+
+### Mark Group Message Read
+
+```rust
+pub struct MarkGroupMessageReadCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `GroupMessageRead.Mark`
+**Effects:** Emits `GroupMessageReadMarked`.
+
+
+### Open Chat Conversation
+
+```rust
+pub struct OpenChatConversationCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatConversation.Open`
+**Effects:** Emits `ChatConversationOpened`.
+
+
+### Record Group Message Recipient
+
+```rust
+pub struct RecordGroupMessageRecipientCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `GroupMessageRecipient.Record`
+**Effects:** Emits `GroupMessageRecipientRecorded`.
+
+
+### Remove Group Message For User
+
+```rust
+pub struct RemoveGroupMessageForUserCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `GroupMessageForUser.Remove`
+**Effects:** Emits `GroupMessageForUserRemoveed`.
+
+
+### Set Chat Group Read Only
+
+```rust
+pub struct SetChatGroupReadOnlyCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatGroupReadOnly.Set`
+**Effects:** Emits `ChatGroupReadOnlySeted`.
+
+
+### Update Chat Group
+
+```rust
+pub struct UpdateChatGroupCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatGroup.Update`
+**Effects:** Emits `ChatGroupUpdateed`.
+
+
+### Update Complaint Type
+
+```rust
+pub struct UpdateComplaintTypeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ComplaintType.Update`
+**Effects:** Emits `ComplaintTypeUpdateed`.
+
+
+### Update Custom Sms Setting
+
+```rust
+pub struct UpdateCustomSmsSettingCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `CustomSmsSetting.Update`
+**Effects:** Emits `CustomSmsSettingUpdateed`.
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Classify Chat Invitation
+
+```rust
+pub struct ClassifyChatInvitationCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatInvitation.Classify`
+**Effects:** Emits `ChatInvitationClassifyed`.
+
+
+### Close Chat Conversation
+
+```rust
+pub struct CloseChatConversationCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatConversation.Close`
+**Effects:** Emits `ChatConversationCloseed`.
+
+
+### Create Complaint Type
+
+```rust
+pub struct CreateComplaintTypeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ComplaintType.Create`
+**Effects:** Emits `ComplaintTypeCreateed`.
+
+
+### Delete Chat Group
+
+```rust
+pub struct DeleteChatGroupCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatGroup.Delete`
+**Effects:** Emits `ChatGroupDeleteed`.
+
+
+### Delete Chat Message
+
+```rust
+pub struct DeleteChatMessageCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatMessage.Delete`
+**Effects:** Emits `ChatMessageDeleteed`.
+
+
+### Delete Complaint Type
+
+```rust
+pub struct DeleteComplaintTypeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ComplaintType.Delete`
+**Effects:** Emits `ComplaintTypeDeleteed`.
+
+
+### Delete Custom Sms Setting
+
+```rust
+pub struct DeleteCustomSmsSettingCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `CustomSmsSetting.Delete`
+**Effects:** Emits `CustomSmsSettingDeleteed`.
+
+
+### Delete Email Setting
+
+```rust
+pub struct DeleteEmailSettingCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `EmailSetting.Delete`
+**Effects:** Emits `EmailSettingDeleteed`.
+
+
+### Delete Sms Gateway
+
+```rust
+pub struct DeleteSmsGatewayCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `SmsGateway.Delete`
+**Effects:** Emits `SmsGatewayDeleteed`.
+
+
+### Mark Contact Message Viewed
+
+```rust
+pub struct MarkContactMessageViewedCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ContactMessageViewed.Mark`
+**Effects:** Emits `ContactMessageViewedMarked`.
+
+
+### Mark Group Message Read
+
+```rust
+pub struct MarkGroupMessageReadCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `GroupMessageRead.Mark`
+**Effects:** Emits `GroupMessageReadMarked`.
+
+
+### Open Chat Conversation
+
+```rust
+pub struct OpenChatConversationCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatConversation.Open`
+**Effects:** Emits `ChatConversationOpened`.
+
+
+### Record Group Message Recipient
+
+```rust
+pub struct RecordGroupMessageRecipientCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `GroupMessageRecipient.Record`
+**Effects:** Emits `GroupMessageRecipientRecorded`.
+
+
+### Remove Group Message For User
+
+```rust
+pub struct RemoveGroupMessageForUserCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `GroupMessageForUser.Remove`
+**Effects:** Emits `GroupMessageForUserRemoveed`.
+
+
+### Set Chat Group Read Only
+
+```rust
+pub struct SetChatGroupReadOnlyCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatGroupReadOnly.Set`
+**Effects:** Emits `ChatGroupReadOnlySeted`.
+
+
+### Update Chat Group
+
+```rust
+pub struct UpdateChatGroupCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ChatGroup.Update`
+**Effects:** Emits `ChatGroupUpdateed`.
+
+
+### Update Complaint Type
+
+```rust
+pub struct UpdateComplaintTypeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ComplaintType.Update`
+**Effects:** Emits `ComplaintTypeUpdateed`.
+
+
+### Update Custom Sms Setting
+
+```rust
+pub struct UpdateCustomSmsSettingCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `CustomSmsSetting.Update`
+**Effects:** Emits `CustomSmsSettingUpdateed`.
+

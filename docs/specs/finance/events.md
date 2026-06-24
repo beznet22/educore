@@ -506,3 +506,334 @@ pub struct PayrollGenerated {
 - `FeesInstallmentCreditAdded { fees_installment_credit_id, student_id, amount }`
 - `FeesInstallmentCreditConsumed { fees_installment_credit_id, installment_assign_id, applied_amount }`
 - `FeesInstallmentCreditCancelled { fees_installment_credit_id, reason }`
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Bank Payment Slip Audit Recorded
+
+```rust
+pub struct BankPaymentSlipAuditRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Bank Statement Attachment Attached
+
+```rust
+pub struct BankStatementAttachmentAttached {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Direct Fees Installment Assign Child Added
+
+```rust
+pub struct DirectFeesInstallmentAssignChildAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Expense Approval Recorded
+
+```rust
+pub struct ExpenseApprovalRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Fees Installment Assign Discount Added
+
+```rust
+pub struct FeesInstallmentAssignDiscountAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Fm Fees Invoice Line Note Added
+
+```rust
+pub struct FmFeesInvoiceLineNoteAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Fm Fees Transaction Line Note Added
+
+```rust
+pub struct FmFeesTransactionLineNoteAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Income Approval Recorded
+
+```rust
+pub struct IncomeApprovalRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Payment Approval Recorded
+
+```rust
+pub struct PayrollPaymentApprovalRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Payment Recorded
+
+```rust
+pub struct PayrollPaymentRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Wallet Created
+
+```rust
+pub struct WalletCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Wallet Debited
+
+```rust
+pub struct WalletDebited {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Wallet Refund Requested
+
+```rust
+pub struct WalletRefundRequested {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Wallet Transaction Approval Recorded
+
+```rust
+pub struct WalletTransactionApprovalRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Wallet Transaction Approved
+
+```rust
+pub struct WalletTransactionApproved {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Wallet Transaction Rejected
+
+```rust
+pub struct WalletTransactionRejected {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Bank Payment Slip Audit Recorded
+
+```rust
+pub struct BankPaymentSlipAuditRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Bank Statement Attachment Attached
+
+```rust
+pub struct BankStatementAttachmentAttached {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Direct Fees Installment Assign Child Added
+
+```rust
+pub struct DirectFeesInstallmentAssignChildAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Expense Approval Recorded
+
+```rust
+pub struct ExpenseApprovalRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Fees Installment Assign Discount Added
+
+```rust
+pub struct FeesInstallmentAssignDiscountAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Fm Fees Invoice Line Note Added
+
+```rust
+pub struct FmFeesInvoiceLineNoteAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Fm Fees Transaction Line Note Added
+
+```rust
+pub struct FmFeesTransactionLineNoteAdded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Income Approval Recorded
+
+```rust
+pub struct IncomeApprovalRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Payment Approval Recorded
+
+```rust
+pub struct PayrollPaymentApprovalRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Payroll Payment Recorded
+
+```rust
+pub struct PayrollPaymentRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Wallet Created
+
+```rust
+pub struct WalletCreated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Wallet Debited
+
+```rust
+pub struct WalletDebited {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Wallet Refund Requested
+
+```rust
+pub struct WalletRefundRequested {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Wallet Transaction Approval Recorded
+
+```rust
+pub struct WalletTransactionApprovalRecorded {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Wallet Transaction Approved
+
+```rust
+pub struct WalletTransactionApproved {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Wallet Transaction Rejected
+
+```rust
+pub struct WalletTransactionRejected {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+

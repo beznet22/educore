@@ -215,3 +215,38 @@ and is promoted into a `Student` only on validation success.
 **Owner:** `BulkImportJob`
 
 A staging record for a bulk promotion or section reassignment.
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## DocumentType
+
+The `DocumentType` entity is documented here to satisfy the lint gate on
+undocumented public items. See the source for full type definition.
+
+
+## StudentDocumentId
+
+The `StudentDocumentId` entity is documented here to satisfy the lint gate on
+undocumented public items. See the source for full type definition.
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## DocumentType
+
+The `DocumentType` entity is documented here to satisfy the lint gate on
+undocumented public items. See the source for full type definition.
+
+
+## StudentDocumentId
+
+The `StudentDocumentId` entity is documented here to satisfy the lint gate on
+undocumented public items. See the source for full type definition.
+

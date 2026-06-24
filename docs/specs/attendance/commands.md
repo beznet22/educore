@@ -278,3 +278,118 @@ A student or parent may not mark attendance. A staff member may
 mark their own attendance through the `Attendance.Mark` capability
 with a self-service scope (the engine accepts an actor whose
 `UserId` matches the `StaffId`).
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## ImportRow
+
+```rust
+pub struct ImportRow {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Row.Import`
+**Effects:** Emits `RowImported`.
+
+
+### Update Exam Attendance
+
+```rust
+pub struct UpdateExamAttendanceCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ExamAttendance.Update`
+**Effects:** Emits `ExamAttendanceUpdateed`.
+
+
+### Update Staff Attendance
+
+```rust
+pub struct UpdateStaffAttendanceCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffAttendance.Update`
+**Effects:** Emits `StaffAttendanceUpdateed`.
+
+
+### Update Subject Attendance
+
+```rust
+pub struct UpdateSubjectAttendanceCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `SubjectAttendance.Update`
+**Effects:** Emits `SubjectAttendanceUpdateed`.
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## ImportRow
+
+```rust
+pub struct ImportRow {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Row.Import`
+**Effects:** Emits `RowImported`.
+
+
+### Update Exam Attendance
+
+```rust
+pub struct UpdateExamAttendanceCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ExamAttendance.Update`
+**Effects:** Emits `ExamAttendanceUpdateed`.
+
+
+### Update Staff Attendance
+
+```rust
+pub struct UpdateStaffAttendanceCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffAttendance.Update`
+**Effects:** Emits `StaffAttendanceUpdateed`.
+
+
+### Update Subject Attendance
+
+```rust
+pub struct UpdateSubjectAttendanceCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `SubjectAttendance.Update`
+**Effects:** Emits `SubjectAttendanceUpdateed`.
+

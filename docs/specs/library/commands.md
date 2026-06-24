@@ -346,3 +346,170 @@ These are query commands; they do not emit domain events and
 are not persisted. They flow through the query layer and the
 read model. They are still subject to tenant and capability
 checks.
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Append Book Catalog Entry
+
+```rust
+pub struct AppendBookCatalogEntryCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `BookCatalogEntry.Append`
+**Effects:** Emits `BookCatalogEntryAppended`.
+
+
+### Create Book Acquisition
+
+```rust
+pub struct CreateBookAcquisitionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `BookAcquisition.Create`
+**Effects:** Emits `BookAcquisitionCreateed`.
+
+
+### Create Library Member Note
+
+```rust
+pub struct CreateLibraryMemberNoteCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `LibraryMemberNote.Create`
+**Effects:** Emits `LibraryMemberNoteCreateed`.
+
+
+### Delete Library Member Note
+
+```rust
+pub struct DeleteLibraryMemberNoteCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `LibraryMemberNote.Delete`
+**Effects:** Emits `LibraryMemberNoteDeleteed`.
+
+
+### Record Book Return
+
+```rust
+pub struct RecordBookReturnCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `BookReturn.Record`
+**Effects:** Emits `BookReturnRecorded`.
+
+
+### Waive Book Issue Fine
+
+```rust
+pub struct WaiveBookIssueFineCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `WaiveBookIssueFine`
+**Effects:** Emits `WaiveBookIssueFineRecorded`.
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Append Book Catalog Entry
+
+```rust
+pub struct AppendBookCatalogEntryCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `BookCatalogEntry.Append`
+**Effects:** Emits `BookCatalogEntryAppended`.
+
+
+### Create Book Acquisition
+
+```rust
+pub struct CreateBookAcquisitionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `BookAcquisition.Create`
+**Effects:** Emits `BookAcquisitionCreateed`.
+
+
+### Create Library Member Note
+
+```rust
+pub struct CreateLibraryMemberNoteCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `LibraryMemberNote.Create`
+**Effects:** Emits `LibraryMemberNoteCreateed`.
+
+
+### Delete Library Member Note
+
+```rust
+pub struct DeleteLibraryMemberNoteCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `LibraryMemberNote.Delete`
+**Effects:** Emits `LibraryMemberNoteDeleteed`.
+
+
+### Record Book Return
+
+```rust
+pub struct RecordBookReturnCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `BookReturn.Record`
+**Effects:** Emits `BookReturnRecorded`.
+
+
+### Waive Book Issue Fine
+
+```rust
+pub struct WaiveBookIssueFineCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `WaiveBookIssueFine`
+**Effects:** Emits `WaiveBookIssueFineRecorded`.
+

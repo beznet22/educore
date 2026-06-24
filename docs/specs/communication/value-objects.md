@@ -160,3 +160,69 @@ let body = NoticeBody::new("School closed tomorrow")?;
 
 Parsing returns `Result<NoticeBody, ValueError>`. There are no setters
 that bypass validation.
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+| `AbsentNotificationDispatchId` | `Id<AbsentNotificationDispatch>` | A `AbsentNotificationDispatch` identifier |
+| `ChatConversationLastReadId` | `Id<ChatConversationLastRead>` | A `ChatConversationLastRead` identifier |
+| `ChatGroupAvatarId` | `Id<ChatGroupAvatar>` | A `ChatGroupAvatar` identifier |
+| `ChatGroupMessageId` | `Id<ChatGroupMessage>` | A `ChatGroupMessage` identifier |
+| `ComplaintNoteId` | `Id<ComplaintNote>` | A `ComplaintNote` identifier |
+| `ContactMessageReplyId` | `Id<ContactMessageReply>` | A `ContactMessageReply` identifier |
+| `EmailSettingSecretId` | `Id<EmailSettingSecret>` | A `EmailSettingSecret` identifier |
+| `MessageId` | `Id<Message>` | A `Message` identifier |
+| `NoticeAttachmentId` | `Id<NoticeAttachment>` | A `NoticeAttachment` identifier |
+| `NotificationDeliveryAttemptId` | `Id<NotificationDeliveryAttempt>` | A `NotificationDeliveryAttempt` identifier |
+| `SendMessageRecipientId` | `Id<SendMessageRecipient>` | A `SendMessageRecipient` identifier |
+| `SmsGatewayCredentialId` | `Id<SmsGatewayCredential>` | A `SmsGatewayCredential` identifier |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `ComplaintAction` | (status/classification enum, see code) |
+| `CustomSmsSettingParam` | (status/classification enum, see code) |
+| `GatewayName` | (status/classification enum, see code) |
+| `MailDriverName` | (status/classification enum, see code) |
+| `NoticeAudience` | (status/classification enum, see code) |
+| `NoticeType` | (status/classification enum, see code) |
+| `NotificationMessage` | (status/classification enum, see code) |
+| `NotificationType` | (status/classification enum, see code) |
+| `RenderWarning` | (status/classification enum, see code) |
+| `SmsGatewayCredentials` | (status/classification enum, see code) |
+| `SmsTemplateVariable` | (status/classification enum, see code) |
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+| `AbsentNotificationDispatchId` | `Id<AbsentNotificationDispatch>` | A `AbsentNotificationDispatch` identifier |
+| `ChatConversationLastReadId` | `Id<ChatConversationLastRead>` | A `ChatConversationLastRead` identifier |
+| `ChatGroupAvatarId` | `Id<ChatGroupAvatar>` | A `ChatGroupAvatar` identifier |
+| `ChatGroupMessageId` | `Id<ChatGroupMessage>` | A `ChatGroupMessage` identifier |
+| `ComplaintNoteId` | `Id<ComplaintNote>` | A `ComplaintNote` identifier |
+| `ContactMessageReplyId` | `Id<ContactMessageReply>` | A `ContactMessageReply` identifier |
+| `EmailSettingSecretId` | `Id<EmailSettingSecret>` | A `EmailSettingSecret` identifier |
+| `MessageId` | `Id<Message>` | A `Message` identifier |
+| `NoticeAttachmentId` | `Id<NoticeAttachment>` | A `NoticeAttachment` identifier |
+| `NotificationDeliveryAttemptId` | `Id<NotificationDeliveryAttempt>` | A `NotificationDeliveryAttempt` identifier |
+| `SendMessageRecipientId` | `Id<SendMessageRecipient>` | A `SendMessageRecipient` identifier |
+| `SmsGatewayCredentialId` | `Id<SmsGatewayCredential>` | A `SmsGatewayCredential` identifier |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `ComplaintAction` | (status/classification enum, see code) |
+| `CustomSmsSettingParam` | (status/classification enum, see code) |
+| `GatewayName` | (status/classification enum, see code) |
+| `MailDriverName` | (status/classification enum, see code) |
+| `NoticeAudience` | (status/classification enum, see code) |
+| `NoticeType` | (status/classification enum, see code) |
+| `NotificationMessage` | (status/classification enum, see code) |
+| `NotificationType` | (status/classification enum, see code) |
+| `RenderWarning` | (status/classification enum, see code) |
+| `SmsGatewayCredentials` | (status/classification enum, see code) |
+| `SmsTemplateVariable` | (status/classification enum, see code) |

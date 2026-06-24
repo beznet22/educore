@@ -129,3 +129,35 @@ strings or numerics where a value object exists.
 | `AcademicYearId`  | From `educore-academic` (read-only reference)            |
 | `RoleId`          | From `educore-rbac` (read-only reference)                |
 | `SubjectId`       | From `educore-academic` (read-only reference)            |
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+| `BookReturnId` | `Id<BookReturn>` | A `BookReturn` identifier |
+| `FineId` | `Id<Fine>` | A `Fine` identifier |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `FineKind` | (status/classification enum, see code) |
+| `FineReason` | (status/classification enum, see code) |
+| `FineSettings` | (status/classification enum, see code) |
+| `StockAdjustmentReason` | (status/classification enum, see code) |
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+| `BookReturnId` | `Id<BookReturn>` | A `BookReturn` identifier |
+| `FineId` | `Id<Fine>` | A `Fine` identifier |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `FineKind` | (status/classification enum, see code) |
+| `FineReason` | (status/classification enum, see code) |
+| `FineSettings` | (status/classification enum, see code) |
+| `StockAdjustmentReason` | (status/classification enum, see code) |

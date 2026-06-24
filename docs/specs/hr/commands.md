@@ -713,3 +713,742 @@ exists.
 **Effects:** Emits `SubjectTeacherAssigned`. (The underlying class-
 section-subject row is owned by the academic domain; this command
 projects the assignment to the HR roster.)
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Assign Department Head
+
+```rust
+pub struct AssignDepartmentHeadCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `DepartmentHead.Assign`
+**Effects:** Emits `DepartmentHeadAssigned`.
+
+
+### Assign Staff Role
+
+```rust
+pub struct AssignStaffRoleCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffRole.Assign`
+**Effects:** Emits `StaffRoleAssigned`.
+
+
+### Create Assign Class Teacher Scope
+
+```rust
+pub struct CreateAssignClassTeacherScopeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `AssignClassTeacherScope.Create`
+**Effects:** Emits `AssignClassTeacherScopeCreateed`.
+
+
+### Create Bulk Import Job
+
+```rust
+pub struct CreateBulkImportJobCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `BulkImportJob.Create`
+**Effects:** Emits `BulkImportJobCreateed`.
+
+
+### Create Designation Grade
+
+```rust
+pub struct CreateDesignationGradeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `DesignationGrade.Create`
+**Effects:** Emits `DesignationGradeCreateed`.
+
+
+### Create Leave Define Adjustment
+
+```rust
+pub struct CreateLeaveDefineAdjustmentCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `LeaveDefineAdjustment.Create`
+**Effects:** Emits `LeaveDefineAdjustmentCreateed`.
+
+
+### Create Leave Request Attachment
+
+```rust
+pub struct CreateLeaveRequestAttachmentCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `LeaveRequestAttachment.Create`
+**Effects:** Emits `LeaveRequestAttachmentCreateed`.
+
+
+### Create Payroll Payment Link
+
+```rust
+pub struct CreatePayrollPaymentLinkCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `PayrollPaymentLink.Create`
+**Effects:** Emits `PayrollPaymentLinkCreateed`.
+
+
+### Create Staff Address
+
+```rust
+pub struct CreateStaffAddressCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffAddress.Create`
+**Effects:** Emits `StaffAddressCreateed`.
+
+
+### Create Staff Attendance Import Batch
+
+```rust
+pub struct CreateStaffAttendanceImportBatchCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffAttendanceImportBatch.Create`
+**Effects:** Emits `StaffAttendanceImportBatchCreateed`.
+
+
+### Create Staff Bank Detail
+
+```rust
+pub struct CreateStaffBankDetailCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffBankDetail.Create`
+**Effects:** Emits `StaffBankDetailCreateed`.
+
+
+### Create Staff Document
+
+```rust
+pub struct CreateStaffDocumentCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffDocument.Create`
+**Effects:** Emits `StaffDocumentCreateed`.
+
+
+### Create Staff Driving License
+
+```rust
+pub struct CreateStaffDrivingLicenseCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffDrivingLicense.Create`
+**Effects:** Emits `StaffDrivingLicenseCreateed`.
+
+
+### Create Staff Profile Photo
+
+```rust
+pub struct CreateStaffProfilePhotoCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffProfilePhoto.Create`
+**Effects:** Emits `StaffProfilePhotoCreateed`.
+
+
+### Create Staff Registration Field Option
+
+```rust
+pub struct CreateStaffRegistrationFieldOptionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffRegistrationFieldOption.Create`
+**Effects:** Emits `StaffRegistrationFieldOptionCreateed`.
+
+
+### Create Staff Social Link
+
+```rust
+pub struct CreateStaffSocialLinkCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffSocialLink.Create`
+**Effects:** Emits `StaffSocialLinkCreateed`.
+
+
+### Delete Assign Class Teacher
+
+```rust
+pub struct DeleteAssignClassTeacherCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `AssignClassTeacher.Delete`
+**Effects:** Emits `AssignClassTeacherDeleteed`.
+
+
+### Record Leave Request Approval
+
+```rust
+pub struct RecordLeaveRequestApprovalCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `LeaveRequestApproval.Record`
+**Effects:** Emits `LeaveRequestApprovalRecorded`.
+
+
+### Record Payroll Generate Audit
+
+```rust
+pub struct RecordPayrollGenerateAuditCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `PayrollGenerateAudit.Record`
+**Effects:** Emits `PayrollGenerateAuditRecorded`.
+
+
+### Record Staff Attendance Punch
+
+```rust
+pub struct RecordStaffAttendancePunchCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffAttendancePunch.Record`
+**Effects:** Emits `StaffAttendancePunchRecorded`.
+
+
+### Record Staff Import Resolution
+
+```rust
+pub struct RecordStaffImportResolutionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffImportResolution.Record`
+**Effects:** Emits `StaffImportResolutionRecorded`.
+
+
+### Record Staff Leave History
+
+```rust
+pub struct RecordStaffLeaveHistoryCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffLeaveHistory.Record`
+**Effects:** Emits `StaffLeaveHistoryRecorded`.
+
+
+### Record Staff Payroll History
+
+```rust
+pub struct RecordStaffPayrollHistoryCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffPayrollHistory.Record`
+**Effects:** Emits `StaffPayrollHistoryRecorded`.
+
+
+### Refresh Staff Leave Balance
+
+```rust
+pub struct RefreshStaffLeaveBalanceCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffLeaveBalance.Refresh`
+**Effects:** Emits `StaffLeaveBalanceRefreshed`.
+
+
+### Refresh Staff Timeline
+
+```rust
+pub struct RefreshStaffTimelineCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffTimeline.Refresh`
+**Effects:** Emits `StaffTimelineRefreshed`.
+
+
+### Set Hourly Rate Override
+
+```rust
+pub struct SetHourlyRateOverrideCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `HourlyRateOverride.Set`
+**Effects:** Emits `HourlyRateOverrideSeted`.
+
+
+### Set Staff Custom Field
+
+```rust
+pub struct SetStaffCustomFieldCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffCustomField.Set`
+**Effects:** Emits `StaffCustomFieldSeted`.
+
+
+## StaffImportRow
+
+```rust
+pub struct StaffImportRow {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffImportRow`
+**Effects:** Emits `StaffImportRowRecorded`.
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Assign Department Head
+
+```rust
+pub struct AssignDepartmentHeadCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `DepartmentHead.Assign`
+**Effects:** Emits `DepartmentHeadAssigned`.
+
+
+### Assign Staff Role
+
+```rust
+pub struct AssignStaffRoleCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffRole.Assign`
+**Effects:** Emits `StaffRoleAssigned`.
+
+
+### Create Assign Class Teacher Scope
+
+```rust
+pub struct CreateAssignClassTeacherScopeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `AssignClassTeacherScope.Create`
+**Effects:** Emits `AssignClassTeacherScopeCreateed`.
+
+
+### Create Bulk Import Job
+
+```rust
+pub struct CreateBulkImportJobCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `BulkImportJob.Create`
+**Effects:** Emits `BulkImportJobCreateed`.
+
+
+### Create Designation Grade
+
+```rust
+pub struct CreateDesignationGradeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `DesignationGrade.Create`
+**Effects:** Emits `DesignationGradeCreateed`.
+
+
+### Create Leave Define Adjustment
+
+```rust
+pub struct CreateLeaveDefineAdjustmentCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `LeaveDefineAdjustment.Create`
+**Effects:** Emits `LeaveDefineAdjustmentCreateed`.
+
+
+### Create Leave Request Attachment
+
+```rust
+pub struct CreateLeaveRequestAttachmentCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `LeaveRequestAttachment.Create`
+**Effects:** Emits `LeaveRequestAttachmentCreateed`.
+
+
+### Create Payroll Payment Link
+
+```rust
+pub struct CreatePayrollPaymentLinkCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `PayrollPaymentLink.Create`
+**Effects:** Emits `PayrollPaymentLinkCreateed`.
+
+
+### Create Staff Address
+
+```rust
+pub struct CreateStaffAddressCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffAddress.Create`
+**Effects:** Emits `StaffAddressCreateed`.
+
+
+### Create Staff Attendance Import Batch
+
+```rust
+pub struct CreateStaffAttendanceImportBatchCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffAttendanceImportBatch.Create`
+**Effects:** Emits `StaffAttendanceImportBatchCreateed`.
+
+
+### Create Staff Bank Detail
+
+```rust
+pub struct CreateStaffBankDetailCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffBankDetail.Create`
+**Effects:** Emits `StaffBankDetailCreateed`.
+
+
+### Create Staff Document
+
+```rust
+pub struct CreateStaffDocumentCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffDocument.Create`
+**Effects:** Emits `StaffDocumentCreateed`.
+
+
+### Create Staff Driving License
+
+```rust
+pub struct CreateStaffDrivingLicenseCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffDrivingLicense.Create`
+**Effects:** Emits `StaffDrivingLicenseCreateed`.
+
+
+### Create Staff Profile Photo
+
+```rust
+pub struct CreateStaffProfilePhotoCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffProfilePhoto.Create`
+**Effects:** Emits `StaffProfilePhotoCreateed`.
+
+
+### Create Staff Registration Field Option
+
+```rust
+pub struct CreateStaffRegistrationFieldOptionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffRegistrationFieldOption.Create`
+**Effects:** Emits `StaffRegistrationFieldOptionCreateed`.
+
+
+### Create Staff Social Link
+
+```rust
+pub struct CreateStaffSocialLinkCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffSocialLink.Create`
+**Effects:** Emits `StaffSocialLinkCreateed`.
+
+
+### Delete Assign Class Teacher
+
+```rust
+pub struct DeleteAssignClassTeacherCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `AssignClassTeacher.Delete`
+**Effects:** Emits `AssignClassTeacherDeleteed`.
+
+
+### Record Leave Request Approval
+
+```rust
+pub struct RecordLeaveRequestApprovalCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `LeaveRequestApproval.Record`
+**Effects:** Emits `LeaveRequestApprovalRecorded`.
+
+
+### Record Payroll Generate Audit
+
+```rust
+pub struct RecordPayrollGenerateAuditCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `PayrollGenerateAudit.Record`
+**Effects:** Emits `PayrollGenerateAuditRecorded`.
+
+
+### Record Staff Attendance Punch
+
+```rust
+pub struct RecordStaffAttendancePunchCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffAttendancePunch.Record`
+**Effects:** Emits `StaffAttendancePunchRecorded`.
+
+
+### Record Staff Import Resolution
+
+```rust
+pub struct RecordStaffImportResolutionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffImportResolution.Record`
+**Effects:** Emits `StaffImportResolutionRecorded`.
+
+
+### Record Staff Leave History
+
+```rust
+pub struct RecordStaffLeaveHistoryCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffLeaveHistory.Record`
+**Effects:** Emits `StaffLeaveHistoryRecorded`.
+
+
+### Record Staff Payroll History
+
+```rust
+pub struct RecordStaffPayrollHistoryCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffPayrollHistory.Record`
+**Effects:** Emits `StaffPayrollHistoryRecorded`.
+
+
+### Refresh Staff Leave Balance
+
+```rust
+pub struct RefreshStaffLeaveBalanceCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffLeaveBalance.Refresh`
+**Effects:** Emits `StaffLeaveBalanceRefreshed`.
+
+
+### Refresh Staff Timeline
+
+```rust
+pub struct RefreshStaffTimelineCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffTimeline.Refresh`
+**Effects:** Emits `StaffTimelineRefreshed`.
+
+
+### Set Hourly Rate Override
+
+```rust
+pub struct SetHourlyRateOverrideCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `HourlyRateOverride.Set`
+**Effects:** Emits `HourlyRateOverrideSeted`.
+
+
+### Set Staff Custom Field
+
+```rust
+pub struct SetStaffCustomFieldCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffCustomField.Set`
+**Effects:** Emits `StaffCustomFieldSeted`.
+
+
+## StaffImportRow
+
+```rust
+pub struct StaffImportRow {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StaffImportRow`
+**Effects:** Emits `StaffImportRowRecorded`.
+

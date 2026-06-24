@@ -185,3 +185,25 @@ let rate = HourlyRate::new(Amount::new(Money::USD, 2500)?)?;
 
 Parsing returns `Result<T, ValueError>`. There are no setters that
 bypass validation.
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `PayrollPaymentStatus` | (status/classification enum, see code) |
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `PayrollPaymentStatus` | (status/classification enum, see code) |

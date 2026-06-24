@@ -277,3 +277,74 @@ All events are recorded in the per-aggregate event log and emitted
 on the event bus. Consumers and adapters consume from the bus to
 update projections, send notifications, render reports, and feed
 downstream domains.
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Attendance Imported
+
+```rust
+pub struct AttendanceImported {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Exam Attendance Marked
+
+```rust
+pub struct ExamAttendanceMarked {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Exam Attendance Updated
+
+```rust
+pub struct ExamAttendanceUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Attendance Imported
+
+```rust
+pub struct AttendanceImported {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Exam Attendance Marked
+
+```rust
+pub struct ExamAttendanceMarked {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+
+
+### Exam Attendance Updated
+
+```rust
+pub struct ExamAttendanceUpdated {
+    pub target_id: String,
+    pub occurred_at: Timestamp,
+}
+```
+

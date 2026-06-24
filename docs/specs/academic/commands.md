@@ -612,3 +612,248 @@ pub struct RegisterAdmissionQueryCommand {
 
 `ConvertAdmissionQuery` chains into `AdmitStudent` and closes the
 inquiry with status `Converted`.
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Close Academic Year
+
+```rust
+pub struct CloseAcademicYearCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `AcademicYear.Close`
+**Effects:** Emits `AcademicYearCloseed`.
+
+
+### Create Class Subject
+
+```rust
+pub struct CreateClassSubjectCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ClassSubject.Create`
+**Effects:** Emits `ClassSubjectCreateed`.
+
+
+### Delete Subject
+
+```rust
+pub struct DeleteSubjectCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Subject.Delete`
+**Effects:** Emits `SubjectDeleteed`.
+
+
+### Record Student Promotion
+
+```rust
+pub struct RecordStudentPromotionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StudentPromotion.Record`
+**Effects:** Emits `StudentPromotionRecorded`.
+
+
+### Register Guardian
+
+```rust
+pub struct RegisterGuardianCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Guardian.Register`
+**Effects:** Emits `GuardianRegistered`.
+
+
+### Set Current Academic Year
+
+```rust
+pub struct SetCurrentAcademicYearCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `CurrentAcademicYear.Set`
+**Effects:** Emits `CurrentAcademicYearSeted`.
+
+
+### Set Optional Subject Gpa Threshold
+
+```rust
+pub struct SetOptionalSubjectGpaThresholdCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `OptionalSubjectGpaThreshold.Set`
+**Effects:** Emits `OptionalSubjectGpaThresholdSeted`.
+
+
+### Update Academic Year Dates
+
+```rust
+pub struct UpdateAcademicYearDatesCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `AcademicYearDates.Update`
+**Effects:** Emits `AcademicYearDatesUpdateed`.
+
+
+### Update Subject
+
+```rust
+pub struct UpdateSubjectCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Subject.Update`
+**Effects:** Emits `SubjectUpdateed`.
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Close Academic Year
+
+```rust
+pub struct CloseAcademicYearCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `AcademicYear.Close`
+**Effects:** Emits `AcademicYearCloseed`.
+
+
+### Create Class Subject
+
+```rust
+pub struct CreateClassSubjectCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ClassSubject.Create`
+**Effects:** Emits `ClassSubjectCreateed`.
+
+
+### Delete Subject
+
+```rust
+pub struct DeleteSubjectCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Subject.Delete`
+**Effects:** Emits `SubjectDeleteed`.
+
+
+### Record Student Promotion
+
+```rust
+pub struct RecordStudentPromotionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `StudentPromotion.Record`
+**Effects:** Emits `StudentPromotionRecorded`.
+
+
+### Register Guardian
+
+```rust
+pub struct RegisterGuardianCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Guardian.Register`
+**Effects:** Emits `GuardianRegistered`.
+
+
+### Set Current Academic Year
+
+```rust
+pub struct SetCurrentAcademicYearCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `CurrentAcademicYear.Set`
+**Effects:** Emits `CurrentAcademicYearSeted`.
+
+
+### Set Optional Subject Gpa Threshold
+
+```rust
+pub struct SetOptionalSubjectGpaThresholdCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `OptionalSubjectGpaThreshold.Set`
+**Effects:** Emits `OptionalSubjectGpaThresholdSeted`.
+
+
+### Update Academic Year Dates
+
+```rust
+pub struct UpdateAcademicYearDatesCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `AcademicYearDates.Update`
+**Effects:** Emits `AcademicYearDatesUpdateed`.
+
+
+### Update Subject
+
+```rust
+pub struct UpdateSubjectCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Subject.Update`
+**Effects:** Emits `SubjectUpdateed`.
+

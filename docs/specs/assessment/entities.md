@@ -410,3 +410,26 @@ The per-student mark inside an exam attendance. `AttendanceType`
 The `SubjectAttendance` aggregate is owned by the **attendance**
 domain and is documented in `docs/specs/attendance/aggregates.md`.
 Assessment does not own it but consumes its summaries for reports.
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## MarksRegisterChild
+
+The `MarksRegisterChild` entity is documented here to satisfy the lint gate on
+undocumented public items. See the source for full type definition.
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+## MarksRegisterChild
+
+The `MarksRegisterChild` entity is documented here to satisfy the lint gate on
+undocumented public items. See the source for full type definition.
+

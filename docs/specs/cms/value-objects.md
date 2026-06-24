@@ -150,3 +150,51 @@ let title = NewsTitle::new("Annual sports day announced")?;
 
 Parsing returns `Result<NewsTitle, ValueError>`. There are no setters
 that bypass validation.
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+| `ContentRevisionId` | `Id<ContentRevision>` | A `ContentRevision` identifier |
+| `ContentShareListAudienceId` | `Id<ContentShareListAudience>` | A `ContentShareListAudience` identifier |
+| `ContentShareListContentId` | `Id<ContentShareListContent>` | A `ContentShareListContent` identifier |
+| `NewsImageId` | `Id<NewsImage>` | A `NewsImage` identifier |
+| `NewsRevisionId` | `Id<NewsRevision>` | A `NewsRevision` identifier |
+| `PageRevisionId` | `Id<PageRevision>` | A `PageRevision` identifier |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `ContentTypeName` | (status/classification enum, see code) |
+| `Designation` | (status/classification enum, see code) |
+| `HomePage` | (status/classification enum, see code) |
+| `InstitutionName` | (status/classification enum, see code) |
+| `NoticeMessage` | (status/classification enum, see code) |
+| `NoticeTitle` | (status/classification enum, see code) |
+| `PersonName` | (status/classification enum, see code) |
+| `TeacherContentType` | (status/classification enum, see code) |
+
+## Additional Identifiers
+
+| Identifier | Backing Type | Notes |
+| ---------- | ------------ | ----- |
+| `ContentRevisionId` | `Id<ContentRevision>` | A `ContentRevision` identifier |
+| `ContentShareListAudienceId` | `Id<ContentShareListAudience>` | A `ContentShareListAudience` identifier |
+| `ContentShareListContentId` | `Id<ContentShareListContent>` | A `ContentShareListContent` identifier |
+| `NewsImageId` | `Id<NewsImage>` | A `NewsImage` identifier |
+| `NewsRevisionId` | `Id<NewsRevision>` | A `NewsRevision` identifier |
+| `PageRevisionId` | `Id<PageRevision>` | A `PageRevision` identifier |
+
+## Additional Enums
+
+| Type | Values |
+| ---- | ------ |
+| `ContentTypeName` | (status/classification enum, see code) |
+| `Designation` | (status/classification enum, see code) |
+| `HomePage` | (status/classification enum, see code) |
+| `InstitutionName` | (status/classification enum, see code) |
+| `NoticeMessage` | (status/classification enum, see code) |
+| `NoticeTitle` | (status/classification enum, see code) |
+| `PersonName` | (status/classification enum, see code) |
+| `TeacherContentType` | (status/classification enum, see code) |

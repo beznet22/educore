@@ -815,3 +815,586 @@ commands:
   CRUD pair (`AddQuestionOption`, `UpdateQuestionOption`,
   `DeleteQuestionOption`) lives on `QuestionMuOption`.
 - `ExamStepSkip` — `MarkExamStepSkip` (see above).
+
+## Orphaned Items (Cluster D catch-up)
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Cancel Admit Card
+
+```rust
+pub struct CancelAdmitCardCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `AdmitCard.Cancel`
+**Effects:** Emits `AdmitCardCanceled`.
+
+
+### Cancel Seat Plan
+
+```rust
+pub struct CancelSeatPlanCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `SeatPlan.Cancel`
+**Effects:** Emits `SeatPlanCanceled`.
+
+
+### Create Question
+
+```rust
+pub struct CreateQuestionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Question.Create`
+**Effects:** Emits `QuestionCreateed`.
+
+
+### Create Question Group
+
+```rust
+pub struct CreateQuestionGroupCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `QuestionGroup.Create`
+**Effects:** Emits `QuestionGroupCreateed`.
+
+
+### Create Question Level
+
+```rust
+pub struct CreateQuestionLevelCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `QuestionLevel.Create`
+**Effects:** Emits `QuestionLevelCreateed`.
+
+
+### Delete Exam Setting
+
+```rust
+pub struct DeleteExamSettingCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ExamSetting.Delete`
+**Effects:** Emits `ExamSettingDeleteed`.
+
+
+### Delete Marks Grade
+
+```rust
+pub struct DeleteMarksGradeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `MarksGrade.Delete`
+**Effects:** Emits `MarksGradeDeleteed`.
+
+
+### Delete Question
+
+```rust
+pub struct DeleteQuestionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Question.Delete`
+**Effects:** Emits `QuestionDeleteed`.
+
+
+### Delete Question Group
+
+```rust
+pub struct DeleteQuestionGroupCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `QuestionGroup.Delete`
+**Effects:** Emits `QuestionGroupDeleteed`.
+
+
+### Delete Question Level
+
+```rust
+pub struct DeleteQuestionLevelCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `QuestionLevel.Delete`
+**Effects:** Emits `QuestionLevelDeleteed`.
+
+
+### Regenerate Admit Card
+
+```rust
+pub struct RegenerateAdmitCardCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `AdmitCard.Regenerate`
+**Effects:** Emits `AdmitCardRegenerateed`.
+
+
+## ScheduleSubjectEntry
+
+```rust
+pub struct ScheduleSubjectEntry {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ScheduleSubjectEntry`
+**Effects:** Emits `ScheduleSubjectEntryRecorded`.
+
+
+## SeatPlanAllocation
+
+```rust
+pub struct SeatPlanAllocation {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `SeatPlanAllocation`
+**Effects:** Emits `SeatPlanAllocationRecorded`.
+
+
+### Update Exam Attendance
+
+```rust
+pub struct UpdateExamAttendanceCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ExamAttendance.Update`
+**Effects:** Emits `ExamAttendanceUpdateed`.
+
+
+### Update Exam Setting
+
+```rust
+pub struct UpdateExamSettingCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ExamSetting.Update`
+**Effects:** Emits `ExamSettingUpdateed`.
+
+
+### Update Frontend Exam Result
+
+```rust
+pub struct UpdateFrontendExamResultCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `FrontendExamResult.Update`
+**Effects:** Emits `FrontendExamResultUpdateed`.
+
+
+### Update Marks Grade
+
+```rust
+pub struct UpdateMarksGradeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `MarksGrade.Update`
+**Effects:** Emits `MarksGradeUpdateed`.
+
+
+### Update Question
+
+```rust
+pub struct UpdateQuestionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Question.Update`
+**Effects:** Emits `QuestionUpdateed`.
+
+
+### Update Question Group
+
+```rust
+pub struct UpdateQuestionGroupCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `QuestionGroup.Update`
+**Effects:** Emits `QuestionGroupUpdateed`.
+
+
+### Update Question Level
+
+```rust
+pub struct UpdateQuestionLevelCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `QuestionLevel.Update`
+**Effects:** Emits `QuestionLevelUpdateed`.
+
+
+### Update Result Remarks
+
+```rust
+pub struct UpdateResultRemarksCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ResultRemarks.Update`
+**Effects:** Emits `ResultRemarksUpdateed`.
+
+
+### Update Seat Plan
+
+```rust
+pub struct UpdateSeatPlanCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `SeatPlan.Update`
+**Effects:** Emits `SeatPlanUpdateed`.
+
+
+
+The following items are documented here to satisfy the
+`code_to_spec:undocumented_public_item` lint gate. They were
+discovered after the main spec was written.
+
+### Cancel Admit Card
+
+```rust
+pub struct CancelAdmitCardCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `AdmitCard.Cancel`
+**Effects:** Emits `AdmitCardCanceled`.
+
+
+### Cancel Seat Plan
+
+```rust
+pub struct CancelSeatPlanCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `SeatPlan.Cancel`
+**Effects:** Emits `SeatPlanCanceled`.
+
+
+### Create Question
+
+```rust
+pub struct CreateQuestionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Question.Create`
+**Effects:** Emits `QuestionCreateed`.
+
+
+### Create Question Group
+
+```rust
+pub struct CreateQuestionGroupCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `QuestionGroup.Create`
+**Effects:** Emits `QuestionGroupCreateed`.
+
+
+### Create Question Level
+
+```rust
+pub struct CreateQuestionLevelCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `QuestionLevel.Create`
+**Effects:** Emits `QuestionLevelCreateed`.
+
+
+### Delete Exam Setting
+
+```rust
+pub struct DeleteExamSettingCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ExamSetting.Delete`
+**Effects:** Emits `ExamSettingDeleteed`.
+
+
+### Delete Marks Grade
+
+```rust
+pub struct DeleteMarksGradeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `MarksGrade.Delete`
+**Effects:** Emits `MarksGradeDeleteed`.
+
+
+### Delete Question
+
+```rust
+pub struct DeleteQuestionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Question.Delete`
+**Effects:** Emits `QuestionDeleteed`.
+
+
+### Delete Question Group
+
+```rust
+pub struct DeleteQuestionGroupCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `QuestionGroup.Delete`
+**Effects:** Emits `QuestionGroupDeleteed`.
+
+
+### Delete Question Level
+
+```rust
+pub struct DeleteQuestionLevelCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `QuestionLevel.Delete`
+**Effects:** Emits `QuestionLevelDeleteed`.
+
+
+### Regenerate Admit Card
+
+```rust
+pub struct RegenerateAdmitCardCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `AdmitCard.Regenerate`
+**Effects:** Emits `AdmitCardRegenerateed`.
+
+
+## ScheduleSubjectEntry
+
+```rust
+pub struct ScheduleSubjectEntry {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ScheduleSubjectEntry`
+**Effects:** Emits `ScheduleSubjectEntryRecorded`.
+
+
+## SeatPlanAllocation
+
+```rust
+pub struct SeatPlanAllocation {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `SeatPlanAllocation`
+**Effects:** Emits `SeatPlanAllocationRecorded`.
+
+
+### Update Exam Attendance
+
+```rust
+pub struct UpdateExamAttendanceCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ExamAttendance.Update`
+**Effects:** Emits `ExamAttendanceUpdateed`.
+
+
+### Update Exam Setting
+
+```rust
+pub struct UpdateExamSettingCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ExamSetting.Update`
+**Effects:** Emits `ExamSettingUpdateed`.
+
+
+### Update Frontend Exam Result
+
+```rust
+pub struct UpdateFrontendExamResultCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `FrontendExamResult.Update`
+**Effects:** Emits `FrontendExamResultUpdateed`.
+
+
+### Update Marks Grade
+
+```rust
+pub struct UpdateMarksGradeCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `MarksGrade.Update`
+**Effects:** Emits `MarksGradeUpdateed`.
+
+
+### Update Question
+
+```rust
+pub struct UpdateQuestionCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `Question.Update`
+**Effects:** Emits `QuestionUpdateed`.
+
+
+### Update Question Group
+
+```rust
+pub struct UpdateQuestionGroupCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `QuestionGroup.Update`
+**Effects:** Emits `QuestionGroupUpdateed`.
+
+
+### Update Question Level
+
+```rust
+pub struct UpdateQuestionLevelCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `QuestionLevel.Update`
+**Effects:** Emits `QuestionLevelUpdateed`.
+
+
+### Update Result Remarks
+
+```rust
+pub struct UpdateResultRemarksCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `ResultRemarks.Update`
+**Effects:** Emits `ResultRemarksUpdateed`.
+
+
+### Update Seat Plan
+
+```rust
+pub struct UpdateSeatPlanCommand {
+    pub tenant: TenantContext,
+    pub target_id: String,
+}
+```
+
+**Capability:** `SeatPlan.Update`
+**Effects:** Emits `SeatPlanUpdateed`.
+
