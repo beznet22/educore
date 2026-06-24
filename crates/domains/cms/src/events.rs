@@ -3719,6 +3719,67 @@ fn c_school_id_of(_: educore_core::ids::SchoolId) -> educore_core::ids::SchoolId
 }
 
 // =============================================================================
+// Newly added events (Cluster D final — minimal placeholder structs so the
+// `educore-core::lint` spec_to_code check passes). Each carries the typed
+// fields declared in `docs/specs/cms/events.md` plus the standard
+// `event_id` / `correlation_id` / `occurred_at` envelope fields. The full
+// event payload (factory constructors, causation metadata, storage-side
+// publish paths) lands alongside the owning aggregates in later workstreams.
+// =============================================================================
+
+/// Emitted when a new [`HomePageSetting`] is created.
+///
+/// Per `docs/specs/cms/events.md` § HomePageSetting.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HomePageSettingCreated {
+    /// The home-page setting id.
+    pub home_page_setting_id: HomePageSettingId,
+    /// The school anchor.
+    pub school_id: SchoolId,
+    /// The title.
+    pub title: crate::value_objects::HomePageTitle,
+    /// The unique event id.
+    pub event_id: EventId,
+    /// The correlation id.
+    pub correlation_id: CorrelationId,
+    /// The clock time the event occurred.
+    pub occurred_at: Timestamp,
+}
+
+impl HomePageSettingCreated {
+    /// Constructs a `HomePageSettingCreated`.
+    #[must_use]
+    pub fn new(p: &HomePageSetting, correlation_id: CorrelationId, at: Timestamp) -> Self {
+        Self {
+            home_page_setting_id: p.id,
+            school_id: p.school_id,
+            title: p.title.clone(),
+            event_id: EventId(Uuid::now_v7()),
+            correlation_id,
+            occurred_at: at,
+        }
+    }
+}
+
+impl DomainEvent for HomePageSettingCreated {
+    const EVENT_TYPE: &'static str = "cms.home_page_setting.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "home_page_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.home_page_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
 // Tests
 // =============================================================================
 
