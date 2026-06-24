@@ -26,19 +26,38 @@ use educore_core::value_objects::ActiveStatus;
 use crate::aggregate::{AdmitCard, Exam, ExamSchedule, SeatPlan};
 use crate::commands::{
     validate_exam_code, validate_exam_mark, validate_exam_name, validate_pass_mark,
-    AssessmentUniquenessChecker, CancelAdmitCardCommand, CancelExamScheduleCommand,
-    CancelSeatPlanCommand, CreateExamCommand, DeleteExamCommand, EnterMarksCommand,
+    AddTeacherRemarkCommand, ApproveTeacherEvaluationCommand, AssessmentUniquenessChecker,
+    CancelAdmitCardCommand, CancelExamScheduleCommand, CancelSeatPlanCommand,
+    ConfigureAdmitCardSettingsCommand, ConfigureCustomResultSettingsCommand,
+    CreateExamCommand, CreateExamSettingCommand, CreateMarksGradeCommand,
+    CreateOnlineExamCommand, CreateQuestionCommand, CreateQuestionGroupCommand,
+    CreateQuestionLevelCommand, DeleteExamCommand, DeleteExamSettingCommand,
+    DeleteMarksGradeCommand, DeleteQuestionCommand, DeleteQuestionGroupCommand,
+    DeleteQuestionLevelCommand, EnterMarksCommand, EvaluateOnlineExamCommand,
     GenerateAdmitCardCommand, GenerateReportCardCommand, GenerateSeatPlanCommand,
-    InitializeMarksRegisterCommand, PublishResultCommand, RegenerateAdmitCardCommand,
-    RepublishResultCommand, ScheduleExamCommand, SubmitMarksCommand, UpdateExamCommand,
-    UpdateExamScheduleCommand, UpdateResultRemarksCommand, UpdateSeatPlanCommand,
+    InitializeMarksRegisterCommand, MarkExamAttendanceCommand, MarkExamStepSkipCommand,
+    MarkTeacherEvaluationCommand, PublishExamRoutineCommand, PublishFrontResultCommand,
+    PublishOnlineExamCommand, PublishResultCommand, RegenerateAdmitCardCommand,
+    RejectTeacherEvaluationCommand, RepublishResultCommand, ScheduleExamCommand,
+    SetExamSignatureCommand, StartOnlineExamCommand, SubmitMarksCommand,
+    SubmitOnlineExamAnswerCommand, UpdateExamAttendanceCommand, UpdateExamCommand,
+    UpdateExamRoutinePageCommand, UpdateExamScheduleCommand, UpdateExamSettingCommand,
+    UpdateFrontendExamResultCommand,
+    UpdateMarksGradeCommand, UpdateQuestionCommand, UpdateQuestionGroupCommand,
+    UpdateQuestionLevelCommand, UpdateResultRemarksCommand, UpdateSeatPlanCommand,
+    UpdateTeacherRemarkCommand,
 };
 use crate::events::{
-    AdmitCardCancelled, AdmitCardGenerated, AdmitCardRegenerated, ExamCreated, ExamDeleted,
-    ExamScheduleCancelled, ExamScheduleUpdated, ExamScheduled, ExamUpdated, MarksEntered,
-    MarksRegisterCancelled, MarksRegisterCreated, MarksSubmitted, ReportCardGenerated,
-    ResultPublished, ResultRemarksUpdated, ResultRepublished, SeatPlanCancelled, SeatPlanGenerated,
-    SeatPlanUpdated,
+    AdmitCardCancelled, AdmitCardGenerated, AdmitCardRegenerated, AdmitCardSettingCreated,
+    CustomResultSettingCreated, ExamAttendanceCreated, ExamCreated, ExamDeleted,
+    ExamRoutinePageCreated, ExamScheduleCancelled, ExamScheduleUpdated, ExamScheduled,
+    ExamSettingCreated, ExamSignatureCreated, ExamStepSkipCreated, ExamUpdated,
+    FrontendExamResultCreated, FrontendExamRoutineCreated, FrontendResultCreated,
+    MarksEntered, MarksGradeCreated, MarksRegisterCancelled, MarksRegisterCreated,
+    MarksSubmitted, OnlineExamCreated, QuestionBankCreated, QuestionGroupCreated,
+    QuestionLevelCreated, ReportCardGenerated, ResultPublished, ResultRemarksUpdated,
+    ResultRepublished, SeatPlanCancelled, SeatPlanGenerated, SeatPlanUpdated,
+    StudentTakeOnlineExamCreated, TeacherEvaluationCreated, TeacherRemarkCreated,
 };
 use crate::value_objects::ExamId;
 use educore_academic::value_objects::AcademicYearId;
@@ -1146,6 +1165,242 @@ where
         cmd.tenant.correlation_id,
         now,
     ))
+}
+
+// =============================================================================
+// Cluster C handler skeletons (Phase 10 follow-up)
+// -----------------------------------------------------------------------------
+// One skeleton per command added in commit 9a91d06, paired with the
+// corresponding event stub from commit 8a0705c. These are TODO stubs
+// that return `DomainError::not_supported`; the real implementations
+// land in their respective domain phases.
+// =============================================================================
+
+/// Handler skeleton for [`CreateMarksGradeCommand`].
+pub async fn create_marks_grade(_cmd: CreateMarksGradeCommand) -> Result<MarksGradeCreated> {
+    Err(DomainError::not_supported("TODO: create_marks_grade"))
+}
+
+/// Handler skeleton for [`UpdateMarksGradeCommand`].
+pub async fn update_marks_grade(_cmd: UpdateMarksGradeCommand) -> Result<MarksGradeCreated> {
+    Err(DomainError::not_supported("TODO: update_marks_grade"))
+}
+
+/// Handler skeleton for [`DeleteMarksGradeCommand`].
+pub async fn delete_marks_grade(_cmd: DeleteMarksGradeCommand) -> Result<MarksGradeCreated> {
+    Err(DomainError::not_supported("TODO: delete_marks_grade"))
+}
+
+/// Handler skeleton for [`CreateExamSettingCommand`].
+pub async fn create_exam_setting(_cmd: CreateExamSettingCommand) -> Result<ExamSettingCreated> {
+    Err(DomainError::not_supported("TODO: create_exam_setting"))
+}
+
+/// Handler skeleton for [`UpdateExamSettingCommand`].
+pub async fn update_exam_setting(_cmd: UpdateExamSettingCommand) -> Result<ExamSettingCreated> {
+    Err(DomainError::not_supported("TODO: update_exam_setting"))
+}
+
+/// Handler skeleton for [`DeleteExamSettingCommand`].
+pub async fn delete_exam_setting(_cmd: DeleteExamSettingCommand) -> Result<ExamSettingCreated> {
+    Err(DomainError::not_supported("TODO: delete_exam_setting"))
+}
+
+/// Handler skeleton for [`SetExamSignatureCommand`].
+pub async fn set_exam_signature(_cmd: SetExamSignatureCommand) -> Result<ExamSignatureCreated> {
+    Err(DomainError::not_supported("TODO: set_exam_signature"))
+}
+
+/// Handler skeleton for [`UpdateExamRoutinePageCommand`].
+pub async fn update_exam_routine_page(
+    _cmd: UpdateExamRoutinePageCommand,
+) -> Result<ExamRoutinePageCreated> {
+    Err(DomainError::not_supported("TODO: update_exam_routine_page"))
+}
+
+/// Handler skeleton for [`PublishExamRoutineCommand`].
+pub async fn publish_exam_routine(
+    _cmd: PublishExamRoutineCommand,
+) -> Result<FrontendExamRoutineCreated> {
+    Err(DomainError::not_supported("TODO: publish_exam_routine"))
+}
+
+/// Handler skeleton for [`PublishFrontResultCommand`].
+pub async fn publish_front_result(
+    _cmd: PublishFrontResultCommand,
+) -> Result<FrontendResultCreated> {
+    Err(DomainError::not_supported("TODO: publish_front_result"))
+}
+
+/// Handler skeleton for [`UpdateFrontendExamResultCommand`].
+pub async fn update_frontend_exam_result(
+    _cmd: UpdateFrontendExamResultCommand,
+) -> Result<FrontendExamResultCreated> {
+    Err(DomainError::not_supported("TODO: update_frontend_exam_result"))
+}
+
+/// Handler skeleton for [`CreateOnlineExamCommand`].
+pub async fn create_online_exam(_cmd: CreateOnlineExamCommand) -> Result<OnlineExamCreated> {
+    Err(DomainError::not_supported("TODO: create_online_exam"))
+}
+
+/// Handler skeleton for [`PublishOnlineExamCommand`].
+pub async fn publish_online_exam(_cmd: PublishOnlineExamCommand) -> Result<OnlineExamCreated> {
+    Err(DomainError::not_supported("TODO: publish_online_exam"))
+}
+
+/// Handler skeleton for [`StartOnlineExamCommand`].
+pub async fn start_online_exam(
+    _cmd: StartOnlineExamCommand,
+) -> Result<StudentTakeOnlineExamCreated> {
+    Err(DomainError::not_supported("TODO: start_online_exam"))
+}
+
+/// Handler skeleton for [`SubmitOnlineExamAnswerCommand`].
+pub async fn submit_online_exam_answer(
+    _cmd: SubmitOnlineExamAnswerCommand,
+) -> Result<StudentTakeOnlineExamCreated> {
+    Err(DomainError::not_supported("TODO: submit_online_exam_answer"))
+}
+
+/// Handler skeleton for [`EvaluateOnlineExamCommand`].
+pub async fn evaluate_online_exam(
+    _cmd: EvaluateOnlineExamCommand,
+) -> Result<StudentTakeOnlineExamCreated> {
+    Err(DomainError::not_supported("TODO: evaluate_online_exam"))
+}
+
+/// Handler skeleton for [`CreateQuestionCommand`].
+pub async fn create_question(_cmd: CreateQuestionCommand) -> Result<QuestionBankCreated> {
+    Err(DomainError::not_supported("TODO: create_question"))
+}
+
+/// Handler skeleton for [`UpdateQuestionCommand`].
+pub async fn update_question(_cmd: UpdateQuestionCommand) -> Result<QuestionBankCreated> {
+    Err(DomainError::not_supported("TODO: update_question"))
+}
+
+/// Handler skeleton for [`DeleteQuestionCommand`].
+pub async fn delete_question(_cmd: DeleteQuestionCommand) -> Result<QuestionBankCreated> {
+    Err(DomainError::not_supported("TODO: delete_question"))
+}
+
+/// Handler skeleton for [`CreateQuestionGroupCommand`].
+pub async fn create_question_group(
+    _cmd: CreateQuestionGroupCommand,
+) -> Result<QuestionGroupCreated> {
+    Err(DomainError::not_supported("TODO: create_question_group"))
+}
+
+/// Handler skeleton for [`UpdateQuestionGroupCommand`].
+pub async fn update_question_group(
+    _cmd: UpdateQuestionGroupCommand,
+) -> Result<QuestionGroupCreated> {
+    Err(DomainError::not_supported("TODO: update_question_group"))
+}
+
+/// Handler skeleton for [`DeleteQuestionGroupCommand`].
+pub async fn delete_question_group(
+    _cmd: DeleteQuestionGroupCommand,
+) -> Result<QuestionGroupCreated> {
+    Err(DomainError::not_supported("TODO: delete_question_group"))
+}
+
+/// Handler skeleton for [`CreateQuestionLevelCommand`].
+pub async fn create_question_level(
+    _cmd: CreateQuestionLevelCommand,
+) -> Result<QuestionLevelCreated> {
+    Err(DomainError::not_supported("TODO: create_question_level"))
+}
+
+/// Handler skeleton for [`UpdateQuestionLevelCommand`].
+pub async fn update_question_level(
+    _cmd: UpdateQuestionLevelCommand,
+) -> Result<QuestionLevelCreated> {
+    Err(DomainError::not_supported("TODO: update_question_level"))
+}
+
+/// Handler skeleton for [`DeleteQuestionLevelCommand`].
+pub async fn delete_question_level(
+    _cmd: DeleteQuestionLevelCommand,
+) -> Result<QuestionLevelCreated> {
+    Err(DomainError::not_supported("TODO: delete_question_level"))
+}
+
+/// Handler skeleton for [`ConfigureAdmitCardSettingsCommand`].
+pub async fn configure_admit_card_settings(
+    _cmd: ConfigureAdmitCardSettingsCommand,
+) -> Result<AdmitCardSettingCreated> {
+    Err(DomainError::not_supported(
+        "TODO: configure_admit_card_settings",
+    ))
+}
+
+/// Handler skeleton for [`MarkTeacherEvaluationCommand`].
+pub async fn mark_teacher_evaluation(
+    _cmd: MarkTeacherEvaluationCommand,
+) -> Result<TeacherEvaluationCreated> {
+    Err(DomainError::not_supported("TODO: mark_teacher_evaluation"))
+}
+
+/// Handler skeleton for [`ApproveTeacherEvaluationCommand`].
+pub async fn approve_teacher_evaluation(
+    _cmd: ApproveTeacherEvaluationCommand,
+) -> Result<TeacherEvaluationCreated> {
+    Err(DomainError::not_supported(
+        "TODO: approve_teacher_evaluation",
+    ))
+}
+
+/// Handler skeleton for [`RejectTeacherEvaluationCommand`].
+pub async fn reject_teacher_evaluation(
+    _cmd: RejectTeacherEvaluationCommand,
+) -> Result<TeacherEvaluationCreated> {
+    Err(DomainError::not_supported("TODO: reject_teacher_evaluation"))
+}
+
+/// Handler skeleton for [`AddTeacherRemarkCommand`].
+pub async fn add_teacher_remark(
+    _cmd: AddTeacherRemarkCommand,
+) -> Result<TeacherRemarkCreated> {
+    Err(DomainError::not_supported("TODO: add_teacher_remark"))
+}
+
+/// Handler skeleton for [`UpdateTeacherRemarkCommand`].
+pub async fn update_teacher_remark(
+    _cmd: UpdateTeacherRemarkCommand,
+) -> Result<TeacherRemarkCreated> {
+    Err(DomainError::not_supported("TODO: update_teacher_remark"))
+}
+
+/// Handler skeleton for [`ConfigureCustomResultSettingsCommand`].
+pub async fn configure_custom_result_settings(
+    _cmd: ConfigureCustomResultSettingsCommand,
+) -> Result<CustomResultSettingCreated> {
+    Err(DomainError::not_supported(
+        "TODO: configure_custom_result_settings",
+    ))
+}
+
+/// Handler skeleton for [`MarkExamStepSkipCommand`].
+pub async fn mark_exam_step_skip(
+    _cmd: MarkExamStepSkipCommand,
+) -> Result<ExamStepSkipCreated> {
+    Err(DomainError::not_supported("TODO: mark_exam_step_skip"))
+}
+
+/// Handler skeleton for [`MarkExamAttendanceCommand`].
+pub async fn mark_exam_attendance(
+    _cmd: MarkExamAttendanceCommand,
+) -> Result<ExamAttendanceCreated> {
+    Err(DomainError::not_supported("TODO: mark_exam_attendance"))
+}
+
+/// Handler skeleton for [`UpdateExamAttendanceCommand`].
+pub async fn update_exam_attendance(
+    _cmd: UpdateExamAttendanceCommand,
+) -> Result<ExamAttendanceCreated> {
+    Err(DomainError::not_supported("TODO: update_exam_attendance"))
 }
 
 // =============================================================================
