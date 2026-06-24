@@ -40,8 +40,10 @@ use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
-    AcademicYearId, ClassId, ResultStatus, SectionId, StudentId, StudentStatus, SubjectId,
-    SubjectType,
+    AcademicYearId, CertificateId, ClassId, ClassRoutineId, ClassSectionId, ClassSubjectId,
+    GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
+    RegistrationFieldId, ResultStatus, SectionId, StudentCategoryId, StudentGroupId, StudentId,
+    StudentPromotionId, StudentStatus, SubjectId, SubjectType,
 };
 
 // =============================================================================
@@ -1452,6 +1454,206 @@ impl DomainEvent for AcademicYearCopied {
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at
+    }
+}
+
+// =============================================================================
+// Placeholder events for the remaining 14 academic aggregates
+// (introduced in commit 18d67df).
+//
+// Minimal `id + school_id + aggregate_id + occurred_at` stubs so
+// the spec is exhaustively representable in code and so that the
+// `DomainEvent` trait is satisfied for downstream subscribers and
+// envelope emission. The full impl (domain payload fields,
+// causation metadata, factory constructors) lands in subsequent
+// workstreams per `docs/build-plan.md`.
+//
+// Each stub carries:
+//   - `event_id`:      the canonical EventId stamped on mint
+//   - `school_id`:     the tenant anchor (must match
+//                      `aggregate_id.school_id()`)
+//   - `aggregate_id`:  the typed id of the owning aggregate
+//                      (school_id + uuid, derived)
+//   - `occurred_at`:   the mint-time timestamp required by the
+//                      `DomainEvent` trait
+//
+// The type system catches cross-tenant confusion at compile time:
+// the typed aggregate id embeds `school_id`, and the explicit
+// `school_id` field is asserted to match in the eventual full impl.
+// =============================================================================
+
+macro_rules! academic_event_stub {
+    (
+        $(#[$attr:meta])*
+        $vis:vis struct $name:ident {
+            aggregate_id: $id_ty:ty,
+            event_type: $event_type:expr,
+            aggregate_type: $aggregate_type:expr $(,)?
+        }
+    ) => {
+        $(#[$attr])*
+        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+        $vis struct $name {
+            /// The canonical event id.
+            pub event_id: EventId,
+            /// The owning school (derived from
+            /// `aggregate_id.school_id()` in real impl; held
+            /// explicitly here so the placeholder is
+            /// self-contained).
+            pub school_id: SchoolId,
+            /// The typed id (school_id + uuid) of the owning
+            /// aggregate.
+            pub aggregate_id: $id_ty,
+            /// Clock time of the event (required by
+            /// `DomainEvent`).
+            pub occurred_at: Timestamp,
+        }
+
+        impl DomainEvent for $name {
+            const EVENT_TYPE: &'static str = $event_type;
+            const SCHEMA_VERSION: u32 = 1;
+            const AGGREGATE_TYPE: &'static str = $aggregate_type;
+
+            fn event_id(&self) -> EventId {
+                self.event_id
+            }
+            fn aggregate_id(&self) -> Uuid {
+                self.aggregate_id.as_uuid()
+            }
+            fn school_id(&self) -> SchoolId {
+                self.school_id
+            }
+            fn occurred_at(&self) -> Timestamp {
+                self.occurred_at
+            }
+        }
+    };
+}
+
+academic_event_stub! {
+    /// Event stub: a guardian was registered. See
+    /// `docs/specs/academic/aggregates.md` § Guardian.
+    pub struct GuardianRegistered {
+        aggregate_id: GuardianId,
+        event_type: "academic.guardian.registered",
+        aggregate_type: "guardian",
+    }
+}
+academic_event_stub! {
+    /// Event stub: a class-section pairing was created. See
+    /// `docs/specs/academic/aggregates.md` § ClassSection.
+    pub struct ClassSectionCreated {
+        aggregate_id: ClassSectionId,
+        event_type: "academic.class_section.created",
+        aggregate_type: "class_section",
+    }
+}
+academic_event_stub! {
+    /// Event stub: a subject was assigned to a class. See
+    /// `docs/specs/academic/aggregates.md` § ClassSubject.
+    pub struct ClassSubjectAssigned {
+        aggregate_id: ClassSubjectId,
+        event_type: "academic.class_subject.assigned",
+        aggregate_type: "class_subject",
+    }
+}
+academic_event_stub! {
+    /// Event stub: a class-routine period was scheduled. See
+    /// `docs/specs/academic/aggregates.md` § ClassRoutine.
+    pub struct ClassRoutineScheduled {
+        aggregate_id: ClassRoutineId,
+        event_type: "academic.class_routine.scheduled",
+        aggregate_type: "class_routine",
+    }
+}
+academic_event_stub! {
+    /// Event stub: a homework assignment was issued. See
+    /// `docs/specs/academic/aggregates.md` § Homework.
+    pub struct HomeworkAssigned {
+        aggregate_id: HomeworkId,
+        event_type: "academic.homework.assigned",
+        aggregate_type: "homework",
+    }
+}
+academic_event_stub! {
+    /// Event stub: a lesson plan was drafted. See
+    /// `docs/specs/academic/aggregates.md` § LessonPlan.
+    pub struct LessonPlanCreated {
+        aggregate_id: LessonPlanId,
+        event_type: "academic.lesson_plan.created",
+        aggregate_type: "lesson_plan",
+    }
+}
+academic_event_stub! {
+    /// Event stub: a lesson was created. See
+    /// `docs/specs/academic/aggregates.md` § Lesson.
+    pub struct LessonCreated {
+        aggregate_id: LessonId,
+        event_type: "academic.lesson.created",
+        aggregate_type: "lesson",
+    }
+}
+academic_event_stub! {
+    /// Event stub: a lesson topic was created. See
+    /// `docs/specs/academic/aggregates.md` § LessonTopic.
+    pub struct LessonTopicCreated {
+        aggregate_id: LessonTopicId,
+        event_type: "academic.lesson_topic.created",
+        aggregate_type: "lesson_topic",
+    }
+}
+academic_event_stub! {
+    /// Event stub: a student promotion was recorded. See
+    /// `docs/specs/academic/aggregates.md` § StudentPromotion.
+    pub struct StudentPromotionRecorded {
+        aggregate_id: StudentPromotionId,
+        event_type: "academic.student_promotion.recorded",
+        aggregate_type: "student_promotion",
+    }
+}
+academic_event_stub! {
+    /// Event stub: a student category was created. See
+    /// `docs/specs/academic/aggregates.md` § StudentCategory.
+    pub struct StudentCategoryCreated {
+        aggregate_id: StudentCategoryId,
+        event_type: "academic.student_category.created",
+        aggregate_type: "student_category",
+    }
+}
+academic_event_stub! {
+    /// Event stub: a student group was created. See
+    /// `docs/specs/academic/aggregates.md` § StudentGroup.
+    pub struct StudentGroupCreated {
+        aggregate_id: StudentGroupId,
+        event_type: "academic.student_group.created",
+        aggregate_type: "student_group",
+    }
+}
+academic_event_stub! {
+    /// Event stub: a registration custom field was created. See
+    /// `docs/specs/academic/aggregates.md` § RegistrationField.
+    pub struct RegistrationFieldCreated {
+        aggregate_id: RegistrationFieldId,
+        event_type: "academic.registration_field.created",
+        aggregate_type: "registration_field",
+    }
+}
+academic_event_stub! {
+    /// Event stub: a certificate template was created. See
+    /// `docs/specs/academic/aggregates.md` § Certificate.
+    pub struct CertificateCreated {
+        aggregate_id: CertificateId,
+        event_type: "academic.certificate.created",
+        aggregate_type: "certificate",
+    }
+}
+academic_event_stub! {
+    /// Event stub: an ID card template was created. See
+    /// `docs/specs/academic/aggregates.md` § IdCard.
+    pub struct IdCardCreated {
+        aggregate_id: IdCardId,
+        event_type: "academic.id_card.created",
+        aggregate_type: "id_card",
     }
 }
 
