@@ -30,8 +30,12 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 use educore_academic::value_objects::PassMark;
 
 use crate::value_objects::{
-    AcademicYearId, AdmitCardId, ClassId, ExamCode, ExamId, ExamMark, ExamName, ExamScheduleId,
-    ExamTypeId, SeatPlanId, SectionId, StaffId, SubjectId,
+    AcademicYearId, AdmitCardId, AllExamWisePositionId, ClassId, ExamAttendanceChildId, ExamCode,
+    ExamId, ExamMark, ExamName, ExamScheduleId, ExamScheduleSubjectId, ExamTypeId,
+    ExamWisePositionId, MarkStoreEntryId, MarksRegisterChildId, MeritPositionId,
+    OnlineExamMarkId, OnlineExamQuestionId, OnlineExamStudentAnswerMarkingId,
+    QuestionAssignmentId, QuestionMuOptionId, SeatPlanChildId, SeatPlanId, SectionId, StaffId,
+    SubjectId,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -868,4 +872,40 @@ pub struct ExamAttendance {
     pub id: crate::value_objects::ExamAttendanceId,
     pub school_id: SchoolId,
 }
+
+// =============================================================================
+// Cluster D final 20% — minimal `id + school_id` stubs for the 14
+// remaining aggregates declared in `docs/specs/assessment/aggregates.md`
+// that did not yet have a corresponding `pub struct` in this file.
+// Skipped: `SubjectAttendance (overlap with Attendance)` — malformed
+// heading text in spec; `SeatPlanSetting` — typed id not yet added.
+// =============================================================================
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExamType { pub id: ExamTypeId, pub school_id: SchoolId }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExamScheduleSubject { pub id: ExamScheduleSubjectId, pub school_id: SchoolId }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MarksRegisterChild { pub id: MarksRegisterChildId, pub school_id: SchoolId }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MarkStoreEntry { pub id: MarkStoreEntryId, pub school_id: SchoolId }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct QuestionAssignment { pub id: QuestionAssignmentId, pub school_id: SchoolId }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OnlineExamQuestion { pub id: OnlineExamQuestionId, pub school_id: SchoolId }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct QuestionMuOption { pub id: QuestionMuOptionId, pub school_id: SchoolId }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OnlineExamMark { pub id: OnlineExamMarkId, pub school_id: SchoolId }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OnlineExamStudentAnswerMarking { pub id: OnlineExamStudentAnswerMarkingId, pub school_id: SchoolId }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SeatPlanChild { pub id: SeatPlanChildId, pub school_id: SchoolId }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MeritPosition { pub id: MeritPositionId, pub school_id: SchoolId }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExamWisePosition { pub id: ExamWisePositionId, pub school_id: SchoolId }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AllExamWisePosition { pub id: AllExamWisePositionId, pub school_id: SchoolId }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExamAttendanceChild { pub id: ExamAttendanceChildId, pub school_id: SchoolId }
 
