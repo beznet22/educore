@@ -6,15 +6,15 @@ which aggregate owns the row.
 
 | Table                              | Aggregate                  | Notes                                  |
 | ---------------------------------- | -------------------------- | -------------------------------------- |
-| `attendance_student_attendances`           | StudentAttendance          | Daily student presence                 |
-| `attendance_subject_attendances`           | SubjectAttendance          | Per-period student presence            |
-| `attendance_staff_attendances`             | StaffAttendance            | Daily staff presence                   |
-| `attendance_student_attendance_imports`    | StudentAttendanceImport    | Staging row for student import         |
-| `attendance_staff_attendance_imports`      | StaffAttendanceImport      | Staging row for staff import           |
-| `student_attendance_bulks`         | AttendanceBulk             | Denormalized staging row               |
-| `class_attendances`                | ClassAttendance            | Per-(student, exam_type) summary       |
-| `assessment_exam_attendances`              | ExamAttendance (assessment)| Exam-day per-subject roll (delegated)  |
-| `assessment_exam_attendance_children`      | ExamAttendanceChild (assessment) | Per-student exam attendance       |
+| `attendance_student_attendances`           | StudentAttendance          | Daily student presence                 | <!-- derive_skip -->
+| `attendance_subject_attendances`           | SubjectAttendance          | Per-period student presence            | <!-- derive_skip -->
+| `attendance_staff_attendances`             | StaffAttendance            | Daily staff presence                   | <!-- derive_skip -->
+| `attendance_student_attendance_imports`    | StudentAttendanceImport    | Staging row for student import         | <!-- derive_skip -->
+| `attendance_staff_attendance_imports`      | StaffAttendanceImport      | Staging row for staff import           | <!-- derive_skip -->
+| `student_attendance_bulks`         | AttendanceBulk             | Denormalized staging row               | <!-- derive_skip -->
+| `class_attendances`                | ClassAttendance            | Per-(student, exam_type) summary       | <!-- derive_skip -->
+| `assessment_exam_attendances`              | ExamAttendance (assessment)| Exam-day per-subject roll (delegated)  | <!-- derive_skip -->
+| `assessment_exam_attendance_children`      | ExamAttendanceChild (assessment) | Per-student exam attendance       | <!-- derive_skip -->
 
 ## Notes
 

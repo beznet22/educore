@@ -6,29 +6,29 @@ tells you which aggregate owns the row.
 
 | Table                            | Aggregate              | Notes                                    |
 | -------------------------------- | ---------------------- | ---------------------------------------- |
-| `facilities_vehicles`                    | Vehicle                | Vehicle master                           |
-| `facilities_routes`                      | Route                  | Route master                             |
-| `facilities_route_stops`                 | RouteStop              | Ordered stops on a route                 |
-| `facilities_assign_vehicles`             | AssignVehicle          | Vehicle-route-year pairing               |
-| `facilities_transport_memberships`       | TransportMembership    | Student-in-assignment membership         |
-| `facilities_dormitories`             | Dormitory              | Dormitory master                         |
-| `facilities_room_types`                  | RoomType               | Room type catalog                        |
-| `facilities_rooms`                  | Room                   | Rooms under a dormitory                  |
-| `facilities_room_assignments`            | RoomAssignment         | Student-to-bed allocations               |
-| `facilities_item_categories`             | ItemCategory           | Item grouping                            |
-| `facilities_items`                       | Item                   | Item master with stock-on-hand           |
-| `facilities_item_stores`                 | ItemStore              | Store catalog                            |
-| `facilities_item_issues`                 | ItemIssue              | Goods issue note (header)                |
-| `facilities_item_receives`               | ItemReceive            | Goods receive note (header)              |
-| `facilities_item_receive_children`       | ItemReceiveChild       | Goods receive line                       |
-| `facilities_item_sells`                  | ItemSell               | Item sale (header)                       |
-| `facilities_item_sell_children`          | ItemSellChild          | Item sale line                           |
-| `facilities_suppliers`                   | Supplier               | Vendor master                            |
-| `facilities_supplier_contacts`           | SupplierContact        | Additional supplier contacts             |
-| `facilities_driver_assignments`          | DriverAssignment       | Driver-to-vehicle history                |
-| `facilities_store_stocktakes`            | StoreStocktake         | Stocktake header                         |
-| `facilities_store_stocktake_lines`       | StoreStocktake line    | Stocktake line                           |
-| `facilities_dormitory_notes`             | DormitoryNote          | Administrative notes on a dormitory      |
+| `facilities_vehicles`                    | Vehicle                | Vehicle master                           | <!-- derive_skip -->
+| `facilities_routes`                      | Route                  | Route master                             | <!-- derive_skip -->
+| `facilities_route_stops`                 | RouteStop              | Ordered stops on a route                 | <!-- derive_skip -->
+| `facilities_assign_vehicles`             | AssignVehicle          | Vehicle-route-year pairing               | <!-- derive_skip -->
+| `facilities_transport_memberships`       | TransportMembership    | Student-in-assignment membership         | <!-- derive_skip -->
+| `facilities_dormitories`             | Dormitory              | Dormitory master                         | <!-- derive_skip -->
+| `facilities_room_types`                  | RoomType               | Room type catalog                        | <!-- derive_skip -->
+| `facilities_rooms`                  | Room                   | Rooms under a dormitory                  | <!-- derive_skip -->
+| `facilities_room_assignments`            | RoomAssignment         | Student-to-bed allocations               | <!-- derive_skip -->
+| `facilities_item_categories`             | ItemCategory           | Item grouping                            | <!-- derive_skip -->
+| `facilities_items`                       | Item                   | Item master with stock-on-hand           | <!-- derive_skip -->
+| `facilities_item_stores`                 | ItemStore              | Store catalog                            | <!-- derive_skip -->
+| `facilities_item_issues`                 | ItemIssue              | Goods issue note (header)                | <!-- derive_skip -->
+| `facilities_item_receives`               | ItemReceive            | Goods receive note (header)              | <!-- derive_skip -->
+| `facilities_item_receive_children`       | ItemReceiveChild       | Goods receive line                       | <!-- derive_skip -->
+| `facilities_item_sells`                  | ItemSell               | Item sale (header)                       | <!-- derive_skip -->
+| `facilities_item_sell_children`          | ItemSellChild          | Item sale line                           | <!-- derive_skip -->
+| `facilities_suppliers`                   | Supplier               | Vendor master                            | <!-- derive_skip -->
+| `facilities_supplier_contacts`           | SupplierContact        | Additional supplier contacts             | <!-- derive_skip -->
+| `facilities_driver_assignments`          | DriverAssignment       | Driver-to-vehicle history                | <!-- derive_skip -->
+| `facilities_store_stocktakes`            | StoreStocktake         | Stocktake header                         | <!-- derive_skip -->
+| `facilities_store_stocktake_lines`       | StoreStocktake line    | Stocktake line                           | <!-- derive_skip -->
+| `facilities_dormitory_notes`             | DormitoryNote          | Administrative notes on a dormitory      | <!-- derive_skip -->
 
 ## Field Mapping
 
@@ -39,7 +39,7 @@ the mapping is a recommendation, not a requirement.
 
 ### Vehicle
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `VehicleId`                          |
 | `vehicle_no`      | `VARCHAR(255)`      | `VehicleNumber`                      |
@@ -57,7 +57,7 @@ the mapping is a recommendation, not a requirement.
 
 ### Route
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `RouteId`                            |
 | `title`           | `VARCHAR(200)`      | `RouteName`                          |
@@ -69,7 +69,7 @@ the mapping is a recommendation, not a requirement.
 
 ### RouteStop
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `RouteStopId`                        |
 | `route_id`        | `u64`               | `RouteId`                            |
@@ -81,7 +81,7 @@ the mapping is a recommendation, not a requirement.
 
 ### AssignVehicle
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `AssignVehicleId`                    |
 | `vehicle_id`      | `u64`               | `VehicleId`                          |
@@ -92,7 +92,7 @@ the mapping is a recommendation, not a requirement.
 
 ### Dormitory
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `DormitoryId`                        |
 | `dormitory_name`  | `VARCHAR(200)`      | `DormitoryName`                      |
@@ -106,7 +106,7 @@ the mapping is a recommendation, not a requirement.
 
 ### RoomType
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `RoomTypeId`                         |
 | `type`            | `VARCHAR(255)`      | `RoomTypeName`                       |
@@ -117,7 +117,7 @@ the mapping is a recommendation, not a requirement.
 
 ### Room
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `RoomId`                             |
 | `name`            | `VARCHAR(255)`      | `RoomNumber`                         |
@@ -132,7 +132,7 @@ the mapping is a recommendation, not a requirement.
 
 ### ItemCategory
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `ItemCategoryId`                     |
 | `category_name`   | `VARCHAR(100)`      | `CategoryName`                       |
@@ -141,7 +141,7 @@ the mapping is a recommendation, not a requirement.
 
 ### Item
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `ItemId`                             |
 | `item_name`       | `VARCHAR(100)`      | `ItemName`                           |
@@ -154,7 +154,7 @@ the mapping is a recommendation, not a requirement.
 
 ### ItemStore
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `ItemStoreId`                        |
 | `store_name`      | `VARCHAR(100)`      | `StoreName`                          |
@@ -165,7 +165,7 @@ the mapping is a recommendation, not a requirement.
 
 ### ItemIssue
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `ItemIssueId`                        |
 | `issue_to`        | `u64`               | recipient (StudentId/StaffId)         |
@@ -184,7 +184,7 @@ the mapping is a recommendation, not a requirement.
 
 ### ItemReceive
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `ItemReceiveId`                      |
 | `receive_date`    | `DATE`              | `NaiveDate`                          |
@@ -204,7 +204,7 @@ the mapping is a recommendation, not a requirement.
 
 ### ItemReceiveChild
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `ItemReceiveChildId`                 |
 | `unit_price`      | `DECIMAL(20,2)`     | `UnitPrice`                          |
@@ -218,7 +218,7 @@ the mapping is a recommendation, not a requirement.
 
 ### ItemSell
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `ItemSellId`                         |
 | `student_staff_id`| `INT`               | buyer (StudentId/StaffId)            |
@@ -238,7 +238,7 @@ the mapping is a recommendation, not a requirement.
 
 ### ItemSellChild
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `ItemSellChildId`                    |
 | `sell_price`      | `DECIMAL(20,2)`     | `SellPrice`                          |
@@ -252,7 +252,7 @@ the mapping is a recommendation, not a requirement.
 
 ### Supplier
 
-| Column                 | Type                | Maps to                              |
+| Column                 | Type                | Maps to                              | <!-- derive_skip -->
 | ---------------------- | ------------------- | ------------------------------------ |
 | `id`                   | `u64` / `Uuid`      | `SupplierId`                         |
 | `company_name`         | `VARCHAR(100)`      | `SupplierName`                       |

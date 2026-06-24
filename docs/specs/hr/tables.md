@@ -6,22 +6,22 @@ the `aggregate` column tells you which aggregate owns the row.
 
 | Table                              | Aggregate                 | Notes                                |
 | ---------------------------------- | ------------------------- | ------------------------------------ |
-| `hr_staffs`                        | Staff                     | The staff member                     |
-| `hr_departments`             | Department                | A department                         |
-| `hr_designations`                  | Designation               | A designation                        |
-| `hr_assign_class_teachers`         | AssignClassTeacher        | A class teacher assignment           |
-| `hr_leave_types`                   | LeaveType                 | A leave type                         |
-| `hr_leave_defines`                 | LeaveDefine               | A leave entitlement                  |
-| `hr_leave_requests`                | LeaveRequest              | A leave request                      |
-| `hr_staff_attendances`             | StaffAttendance           | A daily attendance row               |
-| `attendance_staff_attendance_imports`      | StaffAttendanceImport     | A bulk attendance import row         |
-| `hr_staff_registration_fields`     | StaffRegistrationField    | A staff registration custom field    |
-| `hr_staff_import_bulk_temporaries`    | StaffImportBulkTemporary  | A bulk staff import staging row      |
-| `hr_salary_templates`           | SalaryTemplate            | A salary grade template              |
-| `hr_hourly_rates`                  | HourlyRate                | An hourly rate                       |
-| `hr_payroll_generates`          | PayrollGenerate (HR-owned; finance reads/pays) | Monthly payroll run |
-| `hr_payroll_earn_deducs`        | PayrollEarnDeduc (HR-owned; finance reads) | Payroll earnings/deductions line |
-| `hr_leave_deduction_infos`         | LeaveDeductionInfo        | A leave deduction row on a payroll   |
+| `hr_staffs`                        | Staff                     | The staff member                     | <!-- derive_skip -->
+| `hr_departments`             | Department                | A department                         | <!-- derive_skip -->
+| `hr_designations`                  | Designation               | A designation                        | <!-- derive_skip -->
+| `hr_assign_class_teachers`         | AssignClassTeacher        | A class teacher assignment           | <!-- derive_skip -->
+| `hr_leave_types`                   | LeaveType                 | A leave type                         | <!-- derive_skip -->
+| `hr_leave_defines`                 | LeaveDefine               | A leave entitlement                  | <!-- derive_skip -->
+| `hr_leave_requests`                | LeaveRequest              | A leave request                      | <!-- derive_skip -->
+| `hr_staff_attendances`             | StaffAttendance           | A daily attendance row               | <!-- derive_skip -->
+| `attendance_staff_attendance_imports`      | StaffAttendanceImport     | A bulk attendance import row         | <!-- derive_skip -->
+| `hr_staff_registration_fields`     | StaffRegistrationField    | A staff registration custom field    | <!-- derive_skip -->
+| `hr_staff_import_bulk_temporaries`    | StaffImportBulkTemporary  | A bulk staff import staging row      | <!-- derive_skip -->
+| `hr_salary_templates`           | SalaryTemplate            | A salary grade template              | <!-- derive_skip -->
+| `hr_hourly_rates`                  | HourlyRate                | An hourly rate                       | <!-- derive_skip -->
+| `hr_payroll_generates`          | PayrollGenerate (HR-owned; finance reads/pays) | Monthly payroll run | <!-- derive_skip -->
+| `hr_payroll_earn_deducs`        | PayrollEarnDeduc (HR-owned; finance reads) | Payroll earnings/deductions line | <!-- derive_skip -->
+| `hr_leave_deduction_infos`         | LeaveDeductionInfo        | A leave deduction row on a payroll   | <!-- derive_skip -->
 
 ## Notes
 

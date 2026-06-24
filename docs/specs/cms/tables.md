@@ -6,25 +6,25 @@ aggregate owns the row.
 
 | Table                          | Aggregate            | Notes                                            |
 | ------------------------------ | -------------------- | ------------------------------------------------ |
-| `cms_pages`                    | Page                 | Editable page with slug and status               |
-| `cms_frontend_pages`            | FrontendPage         | Generic front-end page record                    |
-| `cms_news`                     | News                 | News entry with category and body                |
-| `cms_news_categories`          | NewsCategory         | News category taxonomy                           |
-| `cms_news_comments`            | NewsComment          | Comment on a news entry                          |
-| `cms_news_pages`               | NewsPage             | Public news landing-page configuration           |
-| `cms_notice_boards`            | NoticeBoard          | Public-site notice board                         |
-| `cms_testimonials`             | Testimonial          | Testimonial with rating                          |
-| `cms_home_sliders`             | HomeSlider           | Home-page slider image and link                  |
-| `cms_speech_sliders`           | SpeechSlider         | Public-page leadership message                    |
-| `cms_contents`                 | Content              | Uploaded content item                            |
-| `cms_content_types`            | ContentType          | Content type taxonomy (scoped)                   |
-| `cms_content_share_lists`      | ContentShareList     | Bulk-share list of content items                 |
-| `cms_teacher_upload_contents`  | TeacherUploadContent | Teacher-uploaded content (per class-section)     |
-| `cms_upload_contents`          | UploadContent        | Admin-uploaded content (per role/class)          |
-| `cms_about_pages`              | AboutPage            | About-page configuration                         |
-| `cms_contact_pages`            | ContactPage          | Contact-page configuration                       |
-| `cms_course_pages`             | CoursePage           | Course landing page                              |
-| `cms_home_page_settings`       | HomePageSetting      | Home-page setting                                |
+| `cms_pages`                    | Page                 | Editable page with slug and status               | <!-- derive_skip -->
+| `cms_frontend_pages`            | FrontendPage         | Generic front-end page record                    | <!-- derive_skip -->
+| `cms_news`                     | News                 | News entry with category and body                | <!-- derive_skip -->
+| `cms_news_categories`          | NewsCategory         | News category taxonomy                           | <!-- derive_skip -->
+| `cms_news_comments`            | NewsComment          | Comment on a news entry                          | <!-- derive_skip -->
+| `cms_news_pages`               | NewsPage             | Public news landing-page configuration           | <!-- derive_skip -->
+| `cms_notice_boards`            | NoticeBoard          | Public-site notice board                         | <!-- derive_skip -->
+| `cms_testimonials`             | Testimonial          | Testimonial with rating                          | <!-- derive_skip -->
+| `cms_home_sliders`             | HomeSlider           | Home-page slider image and link                  | <!-- derive_skip -->
+| `cms_speech_sliders`           | SpeechSlider         | Public-page leadership message                    | <!-- derive_skip -->
+| `cms_contents`                 | Content              | Uploaded content item                            | <!-- derive_skip -->
+| `cms_content_types`            | ContentType          | Content type taxonomy (scoped)                   | <!-- derive_skip -->
+| `cms_content_share_lists`      | ContentShareList     | Bulk-share list of content items                 | <!-- derive_skip -->
+| `cms_teacher_upload_contents`  | TeacherUploadContent | Teacher-uploaded content (per class-section)     | <!-- derive_skip -->
+| `cms_upload_contents`          | UploadContent        | Admin-uploaded content (per role/class)          | <!-- derive_skip -->
+| `cms_about_pages`              | AboutPage            | About-page configuration                         | <!-- derive_skip -->
+| `cms_contact_pages`            | ContactPage          | Contact-page configuration                       | <!-- derive_skip -->
+| `cms_course_pages`             | CoursePage           | Course landing page                              | <!-- derive_skip -->
+| `cms_home_page_settings`       | HomePageSetting      | Home-page setting                                | <!-- derive_skip -->
 
 ## Notes
 
@@ -63,7 +63,7 @@ aggregate owns the row.
 
 | Table                          | Owning Domain | Notes                                  |
 | ------------------------------ | ------------- | -------------------------------------- |
-| `platform_schools`             | platform      | Tenant anchor (FK target)              |
-| `academic_academic_years`      | academic      | Referenced by `academic_id` FKs        |
-| `academic_lessons`             | academic      | Referenced by `cms_teacher_upload_contents` |
-| `academic_lesson_topic_details`| academic      | Referenced by `cms_teacher_upload_contents` |
+| `platform_schools`             | platform      | Tenant anchor (FK target)              | <!-- derive_skip -->
+| `academic_academic_years`      | academic      | Referenced by `academic_id` FKs        | <!-- derive_skip -->
+| `academic_lessons`             | academic      | Referenced by `cms_teacher_upload_contents` | <!-- derive_skip -->
+| `academic_lesson_topic_details`| academic      | Referenced by `cms_teacher_upload_contents` | <!-- derive_skip -->

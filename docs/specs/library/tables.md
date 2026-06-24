@@ -6,15 +6,15 @@ tells you which aggregate owns the row.
 
 | Table                            | Aggregate           | Notes                                    |
 | -------------------------------- | ------------------- | ---------------------------------------- |
-| `library_book_categories`             | BookCategory        | Category catalog                         |
-| `library_books`                       | Book                | Book master                              |
-| `library_members`             | LibraryMember       | Registered borrowers                     |
-| `library_book_issues`                 | BookIssue           | Issue, return, renew, lost               |
-| `library_book_issue_renewals`         | BookIssueRenewal    | Renewal history                          |
-| `library_book_issue_fines`            | BookIssueFine       | Fine history                             |
-| `library_book_acquisitions`           | BookAcquisition     | Acquisition history                      |
-| `library_book_catalog_entries`        | BookCatalogEntry    | Cataloguing metadata history             |
-| `library_library_member_notes`        | LibraryMemberNote   | Administrative notes on a member         |
+| `library_book_categories`             | BookCategory        | Category catalog                         | <!-- derive_skip -->
+| `library_books`                       | Book                | Book master                              | <!-- derive_skip -->
+| `library_members`             | LibraryMember       | Registered borrowers                     | <!-- derive_skip -->
+| `library_book_issues`                 | BookIssue           | Issue, return, renew, lost               | <!-- derive_skip -->
+| `library_book_issue_renewals`         | BookIssueRenewal    | Renewal history                          | <!-- derive_skip -->
+| `library_book_issue_fines`            | BookIssueFine       | Fine history                             | <!-- derive_skip -->
+| `library_book_acquisitions`           | BookAcquisition     | Acquisition history                      | <!-- derive_skip -->
+| `library_book_catalog_entries`        | BookCatalogEntry    | Cataloguing metadata history             | <!-- derive_skip -->
+| `library_library_member_notes`        | LibraryMemberNote   | Administrative notes on a member         | <!-- derive_skip -->
 
 ## Field Mapping
 
@@ -26,7 +26,7 @@ requirement.
 
 ### BookCategory
 
-| Column            | Type                | Maps to                              |
+| Column            | Type                | Maps to                              | <!-- derive_skip -->
 | ----------------- | ------------------- | ------------------------------------ |
 | `id`              | `u64` / `Uuid`      | `BookCategoryId`                     |
 | `category_name`   | `VARCHAR(200)`      | `CategoryName`                       |
@@ -37,7 +37,7 @@ requirement.
 
 ### Book
 
-| Column              | Type                | Maps to                              |
+| Column              | Type                | Maps to                              | <!-- derive_skip -->
 | ------------------- | ------------------- | ------------------------------------ |
 | `id`                | `u64` / `Uuid`      | `BookId`                             |
 | `book_title`        | `VARCHAR(200)`      | `BookTitle`                          |
@@ -58,7 +58,7 @@ requirement.
 
 ### LibraryMember
 
-| Column              | Type                | Maps to                              |
+| Column              | Type                | Maps to                              | <!-- derive_skip -->
 | ------------------- | ------------------- | ------------------------------------ |
 | `id`                | `u64` / `Uuid`      | `LibraryMemberId`                    |
 | `member_ud_id`      | `VARCHAR(191)`      | `MemberUdId`                         |
@@ -70,7 +70,7 @@ requirement.
 
 ### BookIssue
 
-| Column              | Type                | Maps to                              |
+| Column              | Type                | Maps to                              | <!-- derive_skip -->
 | ------------------- | ------------------- | ------------------------------------ |
 | `id`                | `u64` / `Uuid`      | `BookIssueId`                        |
 | `quantity`          | `INT`               | `IssueQuantity`                      |

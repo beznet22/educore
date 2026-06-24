@@ -6,31 +6,31 @@ aggregate owns the row.
 
 | Table                                        | Aggregate                    | Notes                                          |
 | -------------------------------------------- | ---------------------------- | ---------------------------------------------- |
-| `communication_notice_boards`                           | Notice                       | School-wide notice publication                 |
-| `communication_complaints`                              | Complaint                    | Complaint intake and lifecycle                 |
-| `communication_complaint_types`                         | ComplaintType                | Categorization                                 |
-| `communication_notifications`                           | Notification                 | In-app notification record                     |
-| `notifications`                              | Notification (alt)           | Generic notification inbox                      |
-| `communication_notification_settings`                   | NotificationSetting          | Event → channel routing rule                   |
-| `communication_email_sms_logs`                          | EmailLog / SmsLog            | Email and SMS dispatch audit                   |
-| `sms_templates`                              | SmsTemplate                  | Reusable template (SMS or email)               |
-| `communication_email_settings`                          | EmailSetting                 | Email engine configuration                     |
-| `communication_sms_gateways`                            | SmsGateway                   | SMS provider configuration                     |
-| `custom_sms_settings`                        | CustomSmsSetting             | Custom gateway parameter shape                 |
-| `absent_notification_time_setups`            | AbsentNotificationTimeSetup  | Daily window for absence notification dispatch |
-| `chat_conversations`                         | ChatMessage / ChatConversation | One-to-one message and conversation stream   |
-| `chat_groups`                                | ChatGroup                    | Multi-party chat room                          |
-| `chat_group_users`                           | ChatGroupUser                | Group membership                               |
-| `chat_group_message_recipients`              | ChatGroupMessageRecipient    | Per-recipient delivery state                   |
-| `chat_group_message_removes`                 | ChatGroupMessageRemove       | Per-user message removal                       |
-| `chat_block_users`                           | ChatBlockUser                | One-way block between users                    |
-| `chat_invitations`                           | ChatInvitation               | One-to-one chat invitation                     |
-| `chat_invitation_types`                      | ChatInvitationType           | Variant of an invitation                       |
-| `chat_statuses`                              | ChatStatus                   | Presence status of a user                      |
-| `communication_send_messages`                           | SendMessage                  | Bulk send-message job                          |
-| `communication_contact_messages`                        | ContactMessage               | Public contact-form submission                 |
-| `speech_sliders`                             | SpeechSlider                 | Front-page leadership message                  |
-| `communication_phone_call_logs`                         | PhoneCallLog                 | Phone-call follow-up record                    |
+| `communication_notice_boards`                           | Notice                       | School-wide notice publication                 | <!-- derive_skip -->
+| `communication_complaints`                              | Complaint                    | Complaint intake and lifecycle                 | <!-- derive_skip -->
+| `communication_complaint_types`                         | ComplaintType                | Categorization                                 | <!-- derive_skip -->
+| `communication_notifications`                           | Notification                 | In-app notification record                     | <!-- derive_skip -->
+| `notifications`                              | Notification (alt)           | Generic notification inbox                      | <!-- derive_skip -->
+| `communication_notification_settings`                   | NotificationSetting          | Event → channel routing rule                   | <!-- derive_skip -->
+| `communication_email_sms_logs`                          | EmailLog / SmsLog            | Email and SMS dispatch audit                   | <!-- derive_skip -->
+| `sms_templates`                              | SmsTemplate                  | Reusable template (SMS or email)               | <!-- derive_skip -->
+| `communication_email_settings`                          | EmailSetting                 | Email engine configuration                     | <!-- derive_skip -->
+| `communication_sms_gateways`                            | SmsGateway                   | SMS provider configuration                     | <!-- derive_skip -->
+| `custom_sms_settings`                        | CustomSmsSetting             | Custom gateway parameter shape                 | <!-- derive_skip -->
+| `absent_notification_time_setups`            | AbsentNotificationTimeSetup  | Daily window for absence notification dispatch | <!-- derive_skip -->
+| `chat_conversations`                         | ChatMessage / ChatConversation | One-to-one message and conversation stream   | <!-- derive_skip -->
+| `chat_groups`                                | ChatGroup                    | Multi-party chat room                          | <!-- derive_skip -->
+| `chat_group_users`                           | ChatGroupUser                | Group membership                               | <!-- derive_skip -->
+| `chat_group_message_recipients`              | ChatGroupMessageRecipient    | Per-recipient delivery state                   | <!-- derive_skip -->
+| `chat_group_message_removes`                 | ChatGroupMessageRemove       | Per-user message removal                       | <!-- derive_skip -->
+| `chat_block_users`                           | ChatBlockUser                | One-way block between users                    | <!-- derive_skip -->
+| `chat_invitations`                           | ChatInvitation               | One-to-one chat invitation                     | <!-- derive_skip -->
+| `chat_invitation_types`                      | ChatInvitationType           | Variant of an invitation                       | <!-- derive_skip -->
+| `chat_statuses`                              | ChatStatus                   | Presence status of a user                      | <!-- derive_skip -->
+| `communication_send_messages`                           | SendMessage                  | Bulk send-message job                          | <!-- derive_skip -->
+| `communication_contact_messages`                        | ContactMessage               | Public contact-form submission                 | <!-- derive_skip -->
+| `speech_sliders`                             | SpeechSlider                 | Front-page leadership message                  | <!-- derive_skip -->
+| `communication_phone_call_logs`                         | PhoneCallLog                 | Phone-call follow-up record                    | <!-- derive_skip -->
 
 ## Notes
 

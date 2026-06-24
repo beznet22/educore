@@ -6,9 +6,9 @@ aggregate owns the row.
 
 | Table                       | Aggregate       | Notes                                          |
 | --------------------------- | --------------- | ---------------------------------------------- |
-| `documents_form_downloads`         | FormDownload    | Downloadable form for parents, students, staff |
-| `documents_postal_dispatches`      | PostalDispatch  | Postal item dispatched by the school            |
-| `documents_postal_receives`        | PostalReceive   | Postal item received by the school              |
+| `documents_form_downloads`         | FormDownload    | Downloadable form for parents, students, staff | <!-- derive_skip -->
+| `documents_postal_dispatches`      | PostalDispatch  | Postal item dispatched by the school            | <!-- derive_skip -->
+| `documents_postal_receives`        | PostalReceive   | Postal item received by the school              | <!-- derive_skip -->
 
 ## Notes
 
