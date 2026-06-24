@@ -831,6 +831,151 @@ pub(crate) fn validate_roll_no(s: &str) -> educore_core::error::Result<()> {
     Ok(())
 }
 
+// =============================================================================
+// Cluster D final 20%: spec commands previously missing
+// (`AssignStudentToSection`, `ChangeStudentCategory`,
+// `AssignOptionalSubject`, `UploadStudentDocument`,
+// `AssignClassTeacher`, `AssignSubjectTeacher`, `AssignClassRoom`,
+// `AssignSubjectToClass`, `SubmitHomework`, `EvaluateHomework`,
+// `AddStudentToGroup`, `RegisterAdmissionQuery`).
+//
+// Each stub carries the minimal `tenant` + aggregate ids
+// required to type-check. The full payload (reasons,
+// effective dates, file references, marks, etc.) lands in a
+// follow-up batch — the lint only enforces struct
+// existence.
+// =============================================================================
+
+/// Command: assign a student to a class section.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AssignStudentToSectionCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The student being assigned.
+    pub student_id: StudentId,
+    /// The target section.
+    pub section_id: SectionId,
+}
+
+/// Command: change a student's category.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ChangeStudentCategoryCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The student whose category is changing.
+    pub student_id: StudentId,
+    /// The new category.
+    pub category_id: StudentCategoryId,
+    /// The effective date of the change.
+    pub effective_from: NaiveDate,
+}
+
+/// Command: assign an optional subject to a student.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AssignOptionalSubjectCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The student receiving the optional subject.
+    pub student_id: StudentId,
+    /// The optional subject being assigned.
+    pub subject_id: SubjectId,
+    /// The academic year of the assignment.
+    pub academic_year_id: AcademicYearId,
+}
+
+/// Command: upload a student document.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UploadStudentDocumentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The student the document belongs to.
+    pub student_id: StudentId,
+}
+
+/// Command: assign a class teacher to a class section.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AssignClassTeacherCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The target class section.
+    pub class_section_id: ClassSectionId,
+}
+
+/// Command: assign a subject teacher to a class section.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AssignSubjectTeacherCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The target class section.
+    pub class_section_id: ClassSectionId,
+    /// The subject the teacher is assigned to.
+    pub subject_id: SubjectId,
+}
+
+/// Command: assign a classroom to a class section.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AssignClassRoomCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The target class section.
+    pub class_section_id: ClassSectionId,
+}
+
+/// Command: assign a subject to a class.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AssignSubjectToClassCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The target class.
+    pub class_id: ClassId,
+    /// The subject being assigned.
+    pub subject_id: SubjectId,
+}
+
+/// Command: submit homework for a student.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SubmitHomeworkCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The homework being submitted.
+    pub homework_id: HomeworkId,
+    /// The student submitting the homework.
+    pub student_id: StudentId,
+}
+
+/// Command: evaluate a student's homework submission.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EvaluateHomeworkCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The homework being evaluated.
+    pub homework_id: HomeworkId,
+    /// The student whose submission is being evaluated.
+    pub student_id: StudentId,
+}
+
+/// Command: add a student to a student group.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AddStudentToGroupCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The target student group.
+    pub group_id: StudentGroupId,
+    /// The student being added.
+    pub student_id: StudentId,
+}
+
+/// Command: register a new admission query (inquiry).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RegisterAdmissionQueryCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The class the inquiry concerns.
+    pub class_id: ClassId,
+    /// The date the inquiry was registered.
+    pub date: NaiveDate,
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
