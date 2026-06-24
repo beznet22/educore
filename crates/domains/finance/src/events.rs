@@ -25,11 +25,14 @@ use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
-    BankAccountId, BankPaymentSlipAuditId, BankStatementAttachmentId, Currency,
-    DirectFeesInstallmentAssignChildId, ExpenseApprovalId, ExpenseHeadId, ExpenseId,
-    FeesInstallmentAssignDiscountId, FmFeesInvoiceLineNoteId, FmFeesTransactionLineNoteId,
-    IncomeApprovalId, PaymentMethodId, PaymentMethodKind, PayrollPaymentApprovalId,
-    PayrollPaymentId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
+    BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
+    Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentId, DueFeesLoginPreventId,
+    ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
+    FeesCarryForwardId, FeesGroupId, FeesInstallmentId, FeesInstallmentAssignDiscountId,
+    FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId,
+    FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId, IncomeId, PaymentMethodId,
+    PaymentMethodKind, PayrollGenerateId, PayrollPaymentApprovalId, PayrollPaymentId, WalletId,
+    WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 
 use educore_academic::{ClassId, SectionId};
@@ -609,6 +612,216 @@ impl DomainEvent for PayrollPaymentRecorded {
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at
     }
+}
+
+// =============================================================================
+// Aggregate headline event stubs (Cluster D final 20%).
+// Each stub carries only `event_id`, `school_id`, `aggregate_id`,
+// `correlation_id`, and `occurred_at`. Real payload fields land with the
+// workstream that fills in the corresponding aggregate. The lint in
+// `educore-core::lint::spec_to_code` requires that every event declared
+// in `docs/specs/finance/events.md` has a `pub struct` of the same name
+// in this file; the macro below generates the minimal conformant shape.
+// =============================================================================
+
+/// Generates a stub `DomainEvent` for a finance aggregate headline.
+/// Mirrors the hand-written child-entity stubs below but condensed into
+/// a single macro invocation per event.
+macro_rules! finance_event_stub {
+    (
+        $(#[$attr:meta])*
+        $vis:vis struct $name:ident;
+        event_type: $event_type:expr,
+        aggregate_type: $aggregate_type:expr,
+        aggregate_id: $agg_id:ty $(,)?
+    ) => {
+        $(#[$attr])*
+        #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+        $vis struct $name {
+            pub event_id: EventId,
+            pub school_id: SchoolId,
+            pub aggregate_id: $agg_id,
+            pub correlation_id: CorrelationId,
+            pub occurred_at: Timestamp,
+        }
+
+        impl $name {
+            pub fn new(
+                event_id: EventId,
+                school_id: SchoolId,
+                aggregate_id: $agg_id,
+                correlation_id: CorrelationId,
+                occurred_at: Timestamp,
+            ) -> Self {
+                Self {
+                    event_id,
+                    school_id,
+                    aggregate_id,
+                    correlation_id,
+                    occurred_at,
+                }
+            }
+        }
+
+        impl DomainEvent for $name {
+            const EVENT_TYPE: &'static str = $event_type;
+            const SCHEMA_VERSION: u32 = 1;
+            const AGGREGATE_TYPE: &'static str = $aggregate_type;
+            fn event_id(&self) -> EventId {
+                self.event_id
+            }
+            fn aggregate_id(&self) -> Uuid {
+                self.aggregate_id.as_uuid()
+            }
+            fn school_id(&self) -> SchoolId {
+                self.school_id
+            }
+            fn occurred_at(&self) -> Timestamp {
+                self.occurred_at
+            }
+        }
+    };
+}
+
+finance_event_stub! {
+    /// Emitted when a new `FeesGroup` aggregate is created.
+    pub struct FeesGroupCreated;
+    event_type: "finance.fees_group.created",
+    aggregate_type: "fees_group",
+    aggregate_id: FeesGroupId,
+}
+
+finance_event_stub! {
+    /// Emitted when a new `FeesType` aggregate is created.
+    pub struct FeesTypeCreated;
+    event_type: "finance.fees_type.created",
+    aggregate_type: "fees_type",
+    aggregate_id: FeesTypeId,
+}
+
+finance_event_stub! {
+    /// Emitted when a new `FeesMaster` aggregate is created.
+    pub struct FeesMasterCreated;
+    event_type: "finance.fees_master.created",
+    aggregate_type: "fees_master",
+    aggregate_id: FeesMasterId,
+}
+
+finance_event_stub! {
+    /// Emitted when a `FeesMaster` is assigned to a class (or class+section).
+    pub struct FeesAssignedToClass;
+    event_type: "finance.fees_master.assigned_to_class",
+    aggregate_type: "fees_master",
+    aggregate_id: FeesMasterId,
+}
+
+finance_event_stub! {
+    /// Emitted when a `FeesAssign` is created for a student.
+    pub struct FeesAssignedToStudent;
+    event_type: "finance.fees_assign.assigned_to_student",
+    aggregate_type: "fees_assign",
+    aggregate_id: FeesAssignId,
+}
+
+finance_event_stub! {
+    /// Emitted when a `FeesAssignDiscount` row is assigned to a student.
+    pub struct FeesDiscountAssigned;
+    event_type: "finance.fees_assign_discount.assigned",
+    aggregate_type: "fees_assign_discount",
+    aggregate_id: FeesAssignDiscountId,
+}
+
+finance_event_stub! {
+    /// Emitted when a `FeesInstallment` is created for a `FeesMaster`.
+    pub struct FeesInstallmentCreated;
+    event_type: "finance.fees_installment.created",
+    aggregate_type: "fees_installment",
+    aggregate_id: FeesInstallmentId,
+}
+
+finance_event_stub! {
+    /// Emitted when a `FeesPayment` is reversed (e.g. duplicate / wrong
+    /// payer / bank chargeback).
+    pub struct PaymentReversed;
+    event_type: "finance.fees_payment.reversed",
+    aggregate_type: "fees_payment",
+    aggregate_id: FeesPaymentId,
+}
+
+finance_event_stub! {
+    /// Emitted when an `FmFeesInvoice` is generated (FM invoice scheme).
+    pub struct FmFeesInvoiceGenerated;
+    event_type: "finance.fm_fees_invoice.generated",
+    aggregate_type: "fm_fees_invoice",
+    aggregate_id: FmFeesInvoiceId,
+}
+
+finance_event_stub! {
+    /// Emitted when a `DirectFeesInstallment` is created.
+    pub struct DirectFeesInstallmentCreated;
+    event_type: "finance.direct_fees_installment.created",
+    aggregate_type: "direct_fees_installment",
+    aggregate_id: DirectFeesInstallmentId,
+}
+
+finance_event_stub! {
+    /// Emitted when a student's balance is carried forward between
+    /// academic years.
+    pub struct FeesCarriedForward;
+    event_type: "finance.fees_carry_forward.carried",
+    aggregate_type: "fees_carry_forward",
+    aggregate_id: FeesCarryForwardId,
+}
+
+finance_event_stub! {
+    /// Emitted when a user login is blocked due to overdue fees.
+    /// `rbac` subscribes to enforce the block at the auth port.
+    pub struct DueFeesLoginPrevented;
+    event_type: "finance.due_fees_login_prevent.prevented",
+    aggregate_type: "due_fees_login_prevent",
+    aggregate_id: DueFeesLoginPreventId,
+}
+
+finance_event_stub! {
+    /// Emitted when a `BankAccount` is opened.
+    pub struct BankAccountOpened;
+    event_type: "finance.bank_account.opened",
+    aggregate_type: "bank_account",
+    aggregate_id: BankAccountId,
+}
+
+finance_event_stub! {
+    /// Emitted when a `BankPaymentSlip` is generated.
+    pub struct BankPaymentSlipGenerated;
+    event_type: "finance.bank_payment_slip.generated",
+    aggregate_type: "bank_payment_slip",
+    aggregate_id: BankPaymentSlipId,
+}
+
+finance_event_stub! {
+    /// Emitted when a `BankPaymentSlip` is approved (the bank
+    /// confirmed the deposit).
+    pub struct BankPaymentApproved;
+    event_type: "finance.bank_payment_slip.approved",
+    aggregate_type: "bank_payment_slip",
+    aggregate_id: BankPaymentSlipId,
+}
+
+finance_event_stub! {
+    /// Emitted when an `Income` row is recorded.
+    pub struct IncomeRecorded;
+    event_type: "finance.income.recorded",
+    aggregate_type: "income",
+    aggregate_id: IncomeId,
+}
+
+finance_event_stub! {
+    /// Emitted when a `PayrollGenerate` (HR-side payroll run) is
+    /// generated; finance-side consumes it to record the `Expense`.
+    pub struct PayrollGenerated;
+    event_type: "finance.payroll_generate.generated",
+    aggregate_type: "payroll_generate",
+    aggregate_id: PayrollGenerateId,
 }
 
 // =============================================================================
