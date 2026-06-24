@@ -11,12 +11,19 @@
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
-use educore_core::ids::UserId;
+use educore_core::ids::{SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 use educore_rbac::ids::RoleId;
 
 use crate::value_objects::{
-    AssignClassTeacherId, DepartmentId, DesignationId, LeaveRequestId, LeaveTypeId, StaffId,
+    AssignClassTeacherId, AssignClassTeacherScopeId, BulkImportJobId, DepartmentHeadId,
+    DepartmentId, DesignationGradeId, DesignationId, HourlyRateOverrideId, LeaveDefineAdjustmentId,
+    LeaveRequestApprovalId, LeaveRequestAttachmentId, LeaveRequestId, LeaveTypeId,
+    PayrollGenerateAuditId, PayrollPaymentLinkId, StaffAddressId, StaffAttendanceImportBatchId,
+    StaffAttendancePunchId, StaffBankDetailId, StaffCustomFieldId, StaffDocumentId,
+    StaffDrivingLicenseId, StaffId, StaffImportResolutionId, StaffLeaveBalanceId,
+    StaffLeaveHistoryId, StaffPayrollHistoryId, StaffProfilePhotoId,
+    StaffRegistrationFieldOptionId, StaffRoleAssignmentId, StaffSocialLinkId, StaffTimelineId,
 };
 
 // -- Command-type constants (the idempotency sub-port key) --
@@ -266,4 +273,207 @@ pub struct StaffImportRow {
     pub department: Option<String>,
     pub designation: Option<String>,
     pub role: Option<String>,
+}
+
+// =============================================================================
+// Cluster C: minimal command stubs (id + school_id)
+//
+// Each command struct mirrors the matching aggregate stub added in
+// commit bc938cd (`Cluster C (hr): add missing aggregate structs`).
+// They carry only the typed id and the derived `school_id`
+// anchor; the full payload (tenant context, payload fields, audit
+// metadata) is left for the owning Workstream to fill in. These
+// stubs exist so downstream code (events.rs subscribers, repository
+// ports, integration tests) can wire type-safe handles to the
+// owning Workstream's command shape without forcing an
+// all-at-once refactor.
+// =============================================================================
+
+/// Create-or-replace the bank-account detail row for a staff member.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateStaffBankDetailCommand {
+    pub id: StaffBankDetailId,
+    pub school_id: SchoolId,
+}
+
+/// Add a postal address (permanent / current / emergency) to a staff profile.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateStaffAddressCommand {
+    pub id: StaffAddressId,
+    pub school_id: SchoolId,
+}
+
+/// Attach a social-profile link (LinkedIn, GitHub, etc.) to a staff profile.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateStaffSocialLinkCommand {
+    pub id: StaffSocialLinkId,
+    pub school_id: SchoolId,
+}
+
+/// Register an uploaded document (CV, ID copy) attached to a staff profile.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateStaffDocumentCommand {
+    pub id: StaffDocumentId,
+    pub school_id: SchoolId,
+}
+
+/// Marker command for the projection recomputed from the staff event log.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RefreshStaffTimelineCommand {
+    pub id: StaffTimelineId,
+    pub school_id: SchoolId,
+}
+
+/// Set a per-staff custom-field value.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SetStaffCustomFieldCommand {
+    pub id: StaffCustomFieldId,
+    pub school_id: SchoolId,
+}
+
+/// Marker command for the leave-balance snapshot (recomputed from events).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RefreshStaffLeaveBalanceCommand {
+    pub id: StaffLeaveBalanceId,
+    pub school_id: SchoolId,
+}
+
+/// Record an approval / rejection event on a leave request.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordLeaveRequestApprovalCommand {
+    pub id: LeaveRequestApprovalId,
+    pub school_id: SchoolId,
+}
+
+/// Link a payroll run to an external payment record.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreatePayrollPaymentLinkCommand {
+    pub id: PayrollPaymentLinkId,
+    pub school_id: SchoolId,
+}
+
+/// Marker command for the resolved foreign-key mapping of a bulk import.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordStaffImportResolutionCommand {
+    pub id: StaffImportResolutionId,
+    pub school_id: SchoolId,
+}
+
+/// Snapshot a staff member's payroll row when a payroll run reaches Paid.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordStaffPayrollHistoryCommand {
+    pub id: StaffPayrollHistoryId,
+    pub school_id: SchoolId,
+}
+
+/// Snapshot a staff member's leave row when a leave request reaches a
+/// terminal state.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordStaffLeaveHistoryCommand {
+    pub id: StaffLeaveHistoryId,
+    pub school_id: SchoolId,
+}
+
+/// Attach additional sections / subjects to a class-teacher assignment.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateAssignClassTeacherScopeCommand {
+    pub id: AssignClassTeacherScopeId,
+    pub school_id: SchoolId,
+}
+
+/// Promote a staff member to head of a department (a department may
+/// have multiple historical heads).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AssignDepartmentHeadCommand {
+    pub id: DepartmentHeadId,
+    pub school_id: SchoolId,
+}
+
+/// Attach a salary grade to a designation.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateDesignationGradeCommand {
+    pub id: DesignationGradeId,
+    pub school_id: SchoolId,
+}
+
+/// Override the hourly rate for a single staff member.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SetHourlyRateOverrideCommand {
+    pub id: HourlyRateOverrideId,
+    pub school_id: SchoolId,
+}
+
+/// Adjust a leave entitlement (carry-forward, special grant, manual correction).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateLeaveDefineAdjustmentCommand {
+    pub id: LeaveDefineAdjustmentId,
+    pub school_id: SchoolId,
+}
+
+/// Attach a file (medical certificate, travel ticket) to a leave request.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateLeaveRequestAttachmentCommand {
+    pub id: LeaveRequestAttachmentId,
+    pub school_id: SchoolId,
+}
+
+/// Record a raw biometric / RFID punch before it is folded into an
+/// attendance day row.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordStaffAttendancePunchCommand {
+    pub id: StaffAttendancePunchId,
+    pub school_id: SchoolId,
+}
+
+/// Marker command for the append-only audit trail of payroll-run
+/// state transitions.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordPayrollGenerateAuditCommand {
+    pub id: PayrollGenerateAuditId,
+    pub school_id: SchoolId,
+}
+
+/// Assign a role to a staff member (a staff member may hold several
+/// roles over time).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AssignStaffRoleCommand {
+    pub id: StaffRoleAssignmentId,
+    pub school_id: SchoolId,
+}
+
+/// Upload (or replace) a staff profile photo.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateStaffProfilePhotoCommand {
+    pub id: StaffProfilePhotoId,
+    pub school_id: SchoolId,
+}
+
+/// Register (or update) a staff member's driving license metadata.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateStaffDrivingLicenseCommand {
+    pub id: StaffDrivingLicenseId,
+    pub school_id: SchoolId,
+}
+
+/// Add a select-option row to a staff-registration field.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateStaffRegistrationFieldOptionCommand {
+    pub id: StaffRegistrationFieldOptionId,
+    pub school_id: SchoolId,
+}
+
+/// Start a bulk staff-import job (file hash + status); per-row
+/// rows live in [`StaffImportBulkTemporary`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateBulkImportJobCommand {
+    pub id: BulkImportJobId,
+    pub school_id: SchoolId,
+}
+
+/// Start a bulk staff-attendance import job; per-row rows live in
+/// [`StaffAttendanceImport`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateStaffAttendanceImportBatchCommand {
+    pub id: StaffAttendanceImportBatchId,
+    pub school_id: SchoolId,
 }
