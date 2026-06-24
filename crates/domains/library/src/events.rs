@@ -28,10 +28,11 @@ use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::MemberId;
 use crate::value_objects::{
-    Author, BookCategoryId, BookId, BookIssueId, BookNumber, BookReturnId, BookTitle, CategoryName,
-    DueDate, Edition, FineAmount, FineId, FinePerDay, FineReason, GivenDate, Isbn, IssueNote,
-    IssueQuantity, LibraryMemberId, RackNumber, ReturnDate, RoleId, StockAdjustmentReason,
-    StockCopies, SubjectId,
+    Author, BookAcquisitionId, BookCatalogEntryId, BookCategoryId, BookId, BookIssueFineId,
+    BookIssueId, BookIssueRenewalId, BookNumber, BookReturnId, BookTitle, CategoryName, DueDate,
+    Edition, FineAmount, FineId, FinePerDay, FineReason, GivenDate, Isbn, IssueNote,
+    IssueQuantity, LibraryMemberId, LibraryMemberNoteId, RackNumber, ReturnDate, RoleId,
+    StockAdjustmentReason, StockCopies, SubjectId,
 };
 
 // =============================================================================
@@ -1044,6 +1045,269 @@ impl DomainEvent for FineWaived {
     }
     fn school_id(&self) -> SchoolId {
         self.fine_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// Cluster C: minimal event stubs (id + school_id + aggregate_id)
+//
+// Each event stub mirrors a child entity typed id added in commit
+// c8a29a1 (`Cluster C (library): add missing ID types to
+// value_objects`). They carry only the typed id, the derived
+// `school_id` anchor, the aggregate_id pointer, and the standard
+// envelope metadata (`event_id`, `correlation_id`, `occurred_at`).
+// The full payload (changed fields, actor, reason, ...) is left for
+// the owning Workstream to fill in. These stubs exist so downstream
+// code (subscribers, projection rebuilders, integration tests) can
+// wire type-safe handles to the owning Workstream's event shape
+// without forcing an all-at-once refactor.
+//
+// `school_id` is derived from `id.school_id()`, never taken from
+// the caller, matching the engine's tenant-anchor invariant.
+// =============================================================================
+
+/// Emitted when a new [`BookCatalogEntry`](crate::entities::BookCatalogEntry)
+/// is appended to a book's cataloguing history.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BookCatalogEntryAppended {
+    pub id: BookCatalogEntryId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BookCatalogEntryAppended {
+    /// Constructs a new `BookCatalogEntryAppended` stub.
+    pub fn new(
+        id: BookCatalogEntryId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BookCatalogEntryAppended {
+    const EVENT_TYPE: &'static str = "library.book_catalog_entry.appended";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "book_catalog_entry";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a [`BookAcquisition`](crate::entities::BookAcquisition)
+/// procurement row is recorded against a book.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BookAcquisitionRecorded {
+    pub id: BookAcquisitionId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BookAcquisitionRecorded {
+    /// Constructs a new `BookAcquisitionRecorded` stub.
+    pub fn new(
+        id: BookAcquisitionId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BookAcquisitionRecorded {
+    const EVENT_TYPE: &'static str = "library.book_acquisition.recorded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "book_acquisition";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a [`LibraryMemberNote`](crate::entities::LibraryMemberNote)
+/// is attached to a library member.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LibraryMemberNoteAdded {
+    pub id: LibraryMemberNoteId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl LibraryMemberNoteAdded {
+    /// Constructs a new `LibraryMemberNoteAdded` stub.
+    pub fn new(
+        id: LibraryMemberNoteId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for LibraryMemberNoteAdded {
+    const EVENT_TYPE: &'static str = "library.member_note.added";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "library_member_note";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a [`BookIssueRenewal`](crate::entities::BookIssueRenewal)
+/// history row is appended for a `BookIssue`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BookIssueRenewalAppended {
+    pub id: BookIssueRenewalId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BookIssueRenewalAppended {
+    /// Constructs a new `BookIssueRenewalAppended` stub.
+    pub fn new(
+        id: BookIssueRenewalId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BookIssueRenewalAppended {
+    const EVENT_TYPE: &'static str = "library.book_issue_renewal.appended";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "book_issue_renewal";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a [`BookIssueFine`](crate::entities::BookIssueFine)
+/// history row is appended for a `BookIssue`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BookIssueFineAppended {
+    pub id: BookIssueFineId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BookIssueFineAppended {
+    /// Constructs a new `BookIssueFineAppended` stub.
+    pub fn new(
+        id: BookIssueFineId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BookIssueFineAppended {
+    const EVENT_TYPE: &'static str = "library.book_issue_fine.appended";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "book_issue_fine";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at
