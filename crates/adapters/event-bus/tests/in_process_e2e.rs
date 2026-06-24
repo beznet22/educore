@@ -58,15 +58,15 @@ fn sample_envelope(aggregate_topic_domain: &str, aggregate_type: &str) -> EventE
     // filters in a way that's distinguishable from the
     // SyncStarted default ("sync_session").
     env.aggregate_type = match aggregate_type {
-        "sync_session" => "sync_session",
-        "student" => "student",
+        "sync_session" => "sync_session".to_string(),
+        "student" => "student".to_string(),
         other => panic!("unknown aggregate_type in test fixture: {other}"),
     };
     // Override event_type to drive the `aggregate_topic()` routing
     // key into the requested domain.
     env.event_type = match aggregate_topic_domain {
-        "sync" => "sync.session.started",
-        "academic" => "academic.student.admitted",
+        "sync" => "sync.session.started".to_string(),
+        "academic" => "academic.student.admitted".to_string(),
         other => panic!("unknown domain in test fixture: {other}"),
     };
     env
@@ -174,7 +174,7 @@ async fn topic_filter_matches_aggregate_type() {
     // fixture helper only emits "sync_session" or "student";
     // we patch one envelope's aggregate_type by hand.
     let mut school_env = sample_envelope("sync", "sync_session");
-    school_env.aggregate_type = "school";
+    school_env.aggregate_type = "school".to_string();
     bus.publish(school_env.clone())
         .await
         .expect("publish school");
