@@ -29,12 +29,12 @@ use crate::value_objects::{
     DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId,
-    FeesGroupId, FeesInstallmentCreditId, FeesInstallmentId, FeesInvoiceId, FeesInvoiceSettingId,
+    FeesGroupId, FeesInstallmentAssignId, FeesInstallmentCreditId, FeesInstallmentId, FeesInvoiceId, FeesInvoiceSettingId,
     FeesMasterId, FeesPaymentId, FeesPaymentSlipId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceChildId,
     FmFeesInvoiceId, FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId,
     FmFeesTypeId, FmFeesWeaverId, GatewayMode, IncomeHeadId, IncomeId, InventoryPaymentId,
     InvoiceSettingId, PaymentGatewaySettingId, PaymentMethodId, PaymentMethodKind,
-    PayrollPaymentId, PreventReason, ProductPurchaseId, TransactionId, WalletId,
+    PayrollPaymentId, PreventReason, ProductPurchaseId, SalaryTemplateId, TransactionId, WalletId,
     WalletTransactionId, WalletTxType,
 };
 
@@ -256,10 +256,20 @@ pub const FINANCE_REPORT_REFUND_COMMAND_TYPE: &str = "finance.report.refund.read
 // Re-exports of the canonical command shapes from services.rs
 // =============================================================================
 
+// =============================================================================
+// Re-exports of the canonical command shapes from services.rs
+//
+// `ConfigureInvoiceNumberingCommand`, `DeductWalletCreditCommand`, and
+// `RecordExpenseCommand` are NOT re-exported here because commands.rs now
+// owns the canonical `pub struct` definitions (see the Cluster D catch-up
+// block at the end of this file). The services.rs copies remain in place
+// for the service-function parameter types so `crate::services::X` resolves
+// correctly. External callers should import these three via `educore_finance`
+// (the umbrella re-export in `lib.rs`).
+// =============================================================================
+
 pub use crate::services::{
-    ConfigureInvoiceNumberingCommand, CreateWalletCommand, CreditWalletCommand,
-    DeductWalletCreditCommand, RecordExpenseCommand, RecordPaymentCommand,
-    RequestWalletRefundCommand,
+    CreateWalletCommand, CreditWalletCommand, RecordPaymentCommand, RequestWalletRefundCommand,
 };
 
 // =============================================================================
@@ -1477,4 +1487,223 @@ pub struct CreateInventoryPaymentCommand {
 pub struct ReadInventoryPaymentCommand {
     pub tenant: TenantContext,
     pub inventory_payment_id: InventoryPaymentId,
+}
+
+// =============================================================================
+// Cluster D — 35 missing finance commands (minimal typed shapes).
+//
+// These commands were declared in `docs/specs/finance/commands.md` but had
+// no matching `*Command` struct. Each struct carries `tenant: TenantContext`
+// plus the aggregate identifier the command operates on. Full field shapes
+// (amounts, dates, method ids, etc.) are filled in by the per-aggregate
+// workstream that owns the action.
+// =============================================================================
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateFeesMasterAmountCommand {
+    pub tenant: TenantContext,
+    pub fees_master_id: FeesMasterId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AssignFeesToClassCommand {
+    pub tenant: TenantContext,
+    pub fees_assign_id: FeesAssignId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AssignFeesToStudentCommand {
+    pub tenant: TenantContext,
+    pub fees_assign_id: FeesAssignId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateFeesAssignDiscountCommand {
+    pub tenant: TenantContext,
+    pub fees_assign_discount_id: FeesAssignDiscountId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CloseFeesAssignCommand {
+    pub tenant: TenantContext,
+    pub fees_assign_id: FeesAssignId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AssignInstallmentToStudentCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_assign_id: FeesInstallmentAssignId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ConfigureInvoiceNumberingCommand {
+    pub tenant: TenantContext,
+    pub fees_invoice_setting_id: FeesInvoiceSettingId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PayInvoiceCommand {
+    pub tenant: TenantContext,
+    pub fees_assign_id: FeesAssignId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PayInstallmentCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_assign_id: FeesInstallmentAssignId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ConfigureDirectFeesInstallmentCommand {
+    pub tenant: TenantContext,
+    pub direct_fees_installment_id: DirectFeesInstallmentId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AssignDirectInstallmentCommand {
+    pub tenant: TenantContext,
+    pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PayDirectInstallmentCommand {
+    pub tenant: TenantContext,
+    pub direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ConfigureDirectFeesCommand {
+    pub tenant: TenantContext,
+    pub direct_fees_setting_id: DirectFeesSettingId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ConfigureFeesReminderCommand {
+    pub tenant: TenantContext,
+    pub direct_fees_reminder_id: DirectFeesReminderId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordBankStatementCommand {
+    pub tenant: TenantContext,
+    pub bank_statement_id: BankStatementId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GenerateBankPaymentSlipCommand {
+    pub tenant: TenantContext,
+    pub bank_payment_slip_id: BankPaymentSlipId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ApproveBankPaymentCommand {
+    pub tenant: TenantContext,
+    pub bank_payment_slip_id: BankPaymentSlipId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RejectBankPaymentCommand {
+    pub tenant: TenantContext,
+    pub bank_payment_slip_id: BankPaymentSlipId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TransferFundsCommand {
+    pub tenant: TenantContext,
+    pub amount_transfer_id: AmountTransferId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordExpenseCommand {
+    pub tenant: TenantContext,
+    pub expense_id: ExpenseId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordIncomeCommand {
+    pub tenant: TenantContext,
+    pub income_id: IncomeId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AddWalletCreditCommand {
+    pub tenant: TenantContext,
+    pub wallet_transaction_id: WalletTransactionId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeductWalletCreditCommand {
+    pub tenant: TenantContext,
+    pub wallet_transaction_id: WalletTransactionId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordPayrollPaymentCommand {
+    pub tenant: TenantContext,
+    pub payroll_payment_id: PayrollPaymentId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordInventoryPaymentCommand {
+    pub tenant: TenantContext,
+    pub inventory_payment_id: InventoryPaymentId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordProductPurchaseCommand {
+    pub tenant: TenantContext,
+    pub product_purchase_id: ProductPurchaseId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordProductPaymentCommand {
+    pub tenant: TenantContext,
+    pub product_purchase_id: ProductPurchaseId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ConfigureInvoiceSettingsCommand {
+    pub tenant: TenantContext,
+    pub invoice_setting_id: InvoiceSettingId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ConfigurePaymentGatewayCommand {
+    pub tenant: TenantContext,
+    pub payment_gateway_setting_id: PaymentGatewaySettingId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AttachFeesToQuestionBankCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_weaver_id: FmFeesWeaverId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateChartOfAccountCommand {
+    pub tenant: TenantContext,
+    pub chart_of_account_id: ChartOfAccountId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateSalaryTemplateCommand {
+    pub tenant: TenantContext,
+    pub salary_template_id: SalaryTemplateId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SetHourlyRateCommand {
+    pub tenant: TenantContext,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AddFeesInstallmentCreditCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_credit_id: FeesInstallmentCreditId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ConsumeFeesInstallmentCreditCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_credit_id: FeesInstallmentCreditId,
 }
