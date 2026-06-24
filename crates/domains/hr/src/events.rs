@@ -32,9 +32,16 @@ use educore_events::domain_event::DomainEvent;
 use educore_rbac::ids::RoleId;
 
 use crate::value_objects::{
-    AssignClassTeacherId, AttendanceSource, AttendanceType, DepartmentId, DesignationId,
-    HourlyRateId, LeaveDefineId, LeaveRequestId, LeaveTypeId, PayrollEarnDeducId,
-    PayrollGenerateId, SalaryTemplateId, StaffAttendanceId, StaffId,
+    AssignClassTeacherId, AssignClassTeacherScopeId, AttendanceSource, AttendanceType,
+    BulkImportJobId, DepartmentHeadId, DepartmentId, DesignationGradeId, DesignationId,
+    HourlyRateId, HourlyRateOverrideId, LeaveDefineAdjustmentId, LeaveDefineId,
+    LeaveRequestApprovalId, LeaveRequestAttachmentId, LeaveRequestId, LeaveTypeId,
+    PayrollEarnDeducId, PayrollGenerateAuditId, PayrollGenerateId, PayrollPaymentLinkId,
+    SalaryTemplateId, StaffAddressId, StaffAttendanceId, StaffAttendanceImportBatchId,
+    StaffAttendancePunchId, StaffBankDetailId, StaffCustomFieldId, StaffDocumentId,
+    StaffDrivingLicenseId, StaffId, StaffImportResolutionId, StaffLeaveBalanceId,
+    StaffLeaveHistoryId, StaffPayrollHistoryId, StaffProfilePhotoId,
+    StaffRegistrationFieldOptionId, StaffRoleAssignmentId, StaffSocialLinkId, StaffTimelineId,
 };
 
 use educore_academic::{AcademicYearId, ClassId, SectionId};
@@ -2395,5 +2402,1247 @@ impl StaffImportPromoted {
             correlation_id,
             occurred_at,
         }
+    }
+}
+
+// =============================================================================
+// Cluster C: minimal event stubs (id + school_id + aggregate_id)
+//
+// Each event struct mirrors the matching aggregate stub added in
+// commit bc938cd (`Cluster C (hr): add missing aggregate structs`)
+// and the matching command stub added in commit 71578b5
+// (`Cluster C (hr): add command stubs`). They carry only the
+// typed id, the derived `school_id` anchor, the aggregate_id
+// pointer, and the standard `event_id` / `correlation_id` /
+// `occurred_at` envelope metadata; the full payload (changed
+// fields, actor, reason, ...) is left for the owning Workstream
+// to fill in. These stubs exist so downstream code (subscribers,
+// projection rebuilders, integration tests) can wire type-safe
+// handles to the owning Workstream's event shape without forcing
+// an all-at-once refactor.
+//
+// `school_id` is derived from `id.school_id()`, never taken from
+// the caller, matching the engine's tenant-anchor invariant.
+// =============================================================================
+
+/// Bank-account detail created or replaced for a staff member.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffBankDetailUpserted {
+    pub id: StaffBankDetailId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffBankDetailUpserted {
+    pub fn new(
+        id: StaffBankDetailId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffBankDetailUpserted {
+    const EVENT_TYPE: &'static str = "hr.staff_bank_detail.upserted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_bank_detail";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Postal address added to a staff profile.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffAddressAdded {
+    pub id: StaffAddressId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffAddressAdded {
+    pub fn new(
+        id: StaffAddressId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffAddressAdded {
+    const EVENT_TYPE: &'static str = "hr.staff_address.added";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_address";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Social-profile link attached to a staff profile.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffSocialLinkAdded {
+    pub id: StaffSocialLinkId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffSocialLinkAdded {
+    pub fn new(
+        id: StaffSocialLinkId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffSocialLinkAdded {
+    const EVENT_TYPE: &'static str = "hr.staff_social_link.added";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_social_link";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Uploaded document registered against a staff profile.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffDocumentRegistered {
+    pub id: StaffDocumentId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffDocumentRegistered {
+    pub fn new(
+        id: StaffDocumentId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffDocumentRegistered {
+    const EVENT_TYPE: &'static str = "hr.staff_document.registered";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_document";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Per-staff timeline projection refreshed from the event log.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffTimelineRefreshed {
+    pub id: StaffTimelineId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffTimelineRefreshed {
+    pub fn new(
+        id: StaffTimelineId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffTimelineRefreshed {
+    const EVENT_TYPE: &'static str = "hr.staff_timeline.refreshed";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_timeline";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Per-staff custom-field value set.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffCustomFieldSet {
+    pub id: StaffCustomFieldId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffCustomFieldSet {
+    pub fn new(
+        id: StaffCustomFieldId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffCustomFieldSet {
+    const EVENT_TYPE: &'static str = "hr.staff_custom_field.set";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_custom_field";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Per-staff, per-leave-type balance snapshot refreshed.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffLeaveBalanceRefreshed {
+    pub id: StaffLeaveBalanceId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffLeaveBalanceRefreshed {
+    pub fn new(
+        id: StaffLeaveBalanceId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffLeaveBalanceRefreshed {
+    const EVENT_TYPE: &'static str = "hr.staff_leave_balance.refreshed";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_leave_balance";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Approval / rejection row appended to a [`LeaveRequest`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LeaveRequestApprovalRecorded {
+    pub id: LeaveRequestApprovalId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl LeaveRequestApprovalRecorded {
+    pub fn new(
+        id: LeaveRequestApprovalId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for LeaveRequestApprovalRecorded {
+    const EVENT_TYPE: &'static str = "hr.leave_request_approval.recorded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "leave_request_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Link row created between a payroll run and an external payment record.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PayrollPaymentLinkCreated {
+    pub id: PayrollPaymentLinkId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl PayrollPaymentLinkCreated {
+    pub fn new(
+        id: PayrollPaymentLinkId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for PayrollPaymentLinkCreated {
+    const EVENT_TYPE: &'static str = "hr.payroll_payment_link.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "payroll_payment_link";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Resolved foreign-key mapping produced by a bulk staff import.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffImportResolutionRecorded {
+    pub id: StaffImportResolutionId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffImportResolutionRecorded {
+    pub fn new(
+        id: StaffImportResolutionId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffImportResolutionRecorded {
+    const EVENT_TYPE: &'static str = "hr.staff_import_resolution.recorded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_import_resolution";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Per-staff, per-period payroll history row snapshotted.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffPayrollHistorySnapshotted {
+    pub id: StaffPayrollHistoryId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffPayrollHistorySnapshotted {
+    pub fn new(
+        id: StaffPayrollHistoryId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffPayrollHistorySnapshotted {
+    const EVENT_TYPE: &'static str = "hr.staff_payroll_history.snapshotted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_payroll_history";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Per-staff, per-period leave history row snapshotted.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffLeaveHistorySnapshotted {
+    pub id: StaffLeaveHistoryId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffLeaveHistorySnapshotted {
+    pub fn new(
+        id: StaffLeaveHistoryId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffLeaveHistorySnapshotted {
+    const EVENT_TYPE: &'static str = "hr.staff_leave_history.snapshotted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_leave_history";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Additional scope row attached to an [`AssignClassTeacher`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AssignClassTeacherScopeAdded {
+    pub id: AssignClassTeacherScopeId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl AssignClassTeacherScopeAdded {
+    pub fn new(
+        id: AssignClassTeacherScopeId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for AssignClassTeacherScopeAdded {
+    const EVENT_TYPE: &'static str = "hr.assign_class_teacher_scope.added";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "assign_class_teacher_scope";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Head-of-department row recorded.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DepartmentHeadRecorded {
+    pub id: DepartmentHeadId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DepartmentHeadRecorded {
+    pub fn new(
+        id: DepartmentHeadId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DepartmentHeadRecorded {
+    const EVENT_TYPE: &'static str = "hr.department_head.recorded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "department_head";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Salary grade row attached to a [`Designation`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DesignationGradeRecorded {
+    pub id: DesignationGradeId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DesignationGradeRecorded {
+    pub fn new(
+        id: DesignationGradeId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DesignationGradeRecorded {
+    const EVENT_TYPE: &'static str = "hr.designation_grade.recorded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "designation_grade";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Per-staff override of an [`HourlyRate`] row.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HourlyRateOverrideSet {
+    pub id: HourlyRateOverrideId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl HourlyRateOverrideSet {
+    pub fn new(
+        id: HourlyRateOverrideId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for HourlyRateOverrideSet {
+    const EVENT_TYPE: &'static str = "hr.hourly_rate_override.set";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "hourly_rate_override";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Adjustment applied to a [`LeaveDefine`] entitlement.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LeaveDefineAdjustmentApplied {
+    pub id: LeaveDefineAdjustmentId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl LeaveDefineAdjustmentApplied {
+    pub fn new(
+        id: LeaveDefineAdjustmentId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for LeaveDefineAdjustmentApplied {
+    const EVENT_TYPE: &'static str = "hr.leave_define_adjustment.applied";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "leave_define_adjustment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// File attachment registered against a [`LeaveRequest`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LeaveRequestAttachmentRegistered {
+    pub id: LeaveRequestAttachmentId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl LeaveRequestAttachmentRegistered {
+    pub fn new(
+        id: LeaveRequestAttachmentId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for LeaveRequestAttachmentRegistered {
+    const EVENT_TYPE: &'static str = "hr.leave_request_attachment.registered";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "leave_request_attachment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Raw biometric / RFID punch row captured.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffAttendancePunchCaptured {
+    pub id: StaffAttendancePunchId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffAttendancePunchCaptured {
+    pub fn new(
+        id: StaffAttendancePunchId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffAttendancePunchCaptured {
+    const EVENT_TYPE: &'static str = "hr.staff_attendance_punch.captured";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_attendance_punch";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// State-transition row appended to a [`PayrollGenerate`] audit trail.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PayrollGenerateAuditAppended {
+    pub id: PayrollGenerateAuditId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl PayrollGenerateAuditAppended {
+    pub fn new(
+        id: PayrollGenerateAuditId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for PayrollGenerateAuditAppended {
+    const EVENT_TYPE: &'static str = "hr.payroll_generate_audit.appended";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "payroll_generate_audit";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Role-assignment row recorded against a staff member.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffRoleAssignmentRecorded {
+    pub id: StaffRoleAssignmentId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffRoleAssignmentRecorded {
+    pub fn new(
+        id: StaffRoleAssignmentId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffRoleAssignmentRecorded {
+    const EVENT_TYPE: &'static str = "hr.staff_role_assignment.recorded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_role_assignment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Profile-photo metadata row registered for a staff member.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffProfilePhotoRegistered {
+    pub id: StaffProfilePhotoId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffProfilePhotoRegistered {
+    pub fn new(
+        id: StaffProfilePhotoId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffProfilePhotoRegistered {
+    const EVENT_TYPE: &'static str = "hr.staff_profile_photo.registered";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_profile_photo";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Driving-license metadata row registered for a staff member.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffDrivingLicenseRegistered {
+    pub id: StaffDrivingLicenseId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffDrivingLicenseRegistered {
+    pub fn new(
+        id: StaffDrivingLicenseId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffDrivingLicenseRegistered {
+    const EVENT_TYPE: &'static str = "hr.staff_driving_license.registered";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_driving_license";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Select-option row attached to a [`StaffRegistrationField`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffRegistrationFieldOptionAdded {
+    pub id: StaffRegistrationFieldOptionId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffRegistrationFieldOptionAdded {
+    pub fn new(
+        id: StaffRegistrationFieldOptionId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffRegistrationFieldOptionAdded {
+    const EVENT_TYPE: &'static str = "hr.staff_registration_field_option.added";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_registration_field_option";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Top-level metadata row for a bulk staff import job.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BulkImportJobRecorded {
+    pub id: BulkImportJobId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BulkImportJobRecorded {
+    pub fn new(
+        id: BulkImportJobId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BulkImportJobRecorded {
+    const EVENT_TYPE: &'static str = "hr.bulk_import_job.recorded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bulk_import_job";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Top-level metadata row for a bulk staff-attendance import job.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffAttendanceImportBatchRecorded {
+    pub id: StaffAttendanceImportBatchId,
+    pub school_id: SchoolId,
+    pub aggregate_id: Uuid,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffAttendanceImportBatchRecorded {
+    pub fn new(
+        id: StaffAttendanceImportBatchId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            school_id: id.school_id(),
+            aggregate_id: id.as_uuid(),
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffAttendanceImportBatchRecorded {
+    const EVENT_TYPE: &'static str = "hr.staff_attendance_import_batch.recorded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff_attendance_import_batch";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
     }
 }
