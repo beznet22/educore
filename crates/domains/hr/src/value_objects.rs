@@ -19,11 +19,12 @@
 //!   [`educore_rbac`](::educore_rbac); the HR crate owns only
 //!   the HR-specific ids.
 //!
-//! Phase 6 ships the 16 aggregate typed ids, the 14 closed
-//! enums, and the foreign-key re-exports.
+//! Phase 6 ships the 16 aggregate + 28 entity typed ids
+//! (44 total per `docs/specs/hr/value-objects.md`),
+//! the 14 closed enums, and the foreign-key re-exports.
 
 #![allow(missing_docs)]
-#![allow(unused_imports)] // The 16 typed ids and 14 closed enums
+#![allow(unused_imports)] // The 44 typed ids and 14 closed enums
                           // are described by their constructor
                           // signatures; suppressing this lint for
                           // the file is the pragmatic choice.
@@ -98,7 +99,7 @@ macro_rules! hr_typed_id {
 }
 
 // =============================================================================
-// Typed ids: 16 aggregate roots
+// Typed ids: 44 aggregate roots + entities
 // =============================================================================
 
 hr_typed_id! {
@@ -178,6 +179,118 @@ hr_typed_id! {
 hr_typed_id! {
     /// A typed id for a [`StaffImportBulkTemporary`](crate::aggregate::StaffImportBulkTemporary) staging row.
     pub struct StaffImportBulkTemporaryId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffBankDetail`] entity row.
+    pub struct StaffBankDetailId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffAddress`] entity row.
+    pub struct StaffAddressId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffSocialLink`] entity row.
+    pub struct StaffSocialLinkId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffDocument`] entity row.
+    pub struct StaffDocumentId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffTimeline`] entity row.
+    pub struct StaffTimelineId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffCustomField`] entity row.
+    pub struct StaffCustomFieldId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffLeaveBalance`] entity row.
+    pub struct StaffLeaveBalanceId;
+}
+hr_typed_id! {
+    /// A typed id for a [`LeaveRequestApproval`] entity row.
+    pub struct LeaveRequestApprovalId;
+}
+hr_typed_id! {
+    /// A typed id for a [`PayrollPaymentLink`] entity row.
+    pub struct PayrollPaymentLinkId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffAttendancePromotion`] staging row.
+    pub struct StaffAttendancePromotionId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffImportResolution`] entity row.
+    pub struct StaffImportResolutionId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffNote`] entity row.
+    pub struct StaffNoteId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffPayrollHistory`] entity row.
+    pub struct StaffPayrollHistoryId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffLeaveHistory`] entity row.
+    pub struct StaffLeaveHistoryId;
+}
+hr_typed_id! {
+    /// A typed id for an [`AssignClassTeacherScope`] entity row.
+    pub struct AssignClassTeacherScopeId;
+}
+hr_typed_id! {
+    /// A typed id for a [`DepartmentHead`] entity row.
+    pub struct DepartmentHeadId;
+}
+hr_typed_id! {
+    /// A typed id for a [`DesignationGrade`] entity row.
+    pub struct DesignationGradeId;
+}
+hr_typed_id! {
+    /// A typed id for a [`HourlyRateOverride`] entity row.
+    pub struct HourlyRateOverrideId;
+}
+hr_typed_id! {
+    /// A typed id for a [`LeaveDefineAdjustment`] entity row.
+    pub struct LeaveDefineAdjustmentId;
+}
+hr_typed_id! {
+    /// A typed id for a [`LeaveRequestAttachment`] entity row.
+    pub struct LeaveRequestAttachmentId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffAttendancePunch`] entity row.
+    pub struct StaffAttendancePunchId;
+}
+hr_typed_id! {
+    /// A typed id for a [`PayrollGenerateAudit`] entity row.
+    pub struct PayrollGenerateAuditId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffRoleAssignment`] entity row.
+    pub struct StaffRoleAssignmentId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffProfilePhoto`] entity row.
+    pub struct StaffProfilePhotoId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffDrivingLicense`] entity row.
+    pub struct StaffDrivingLicenseId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffRegistrationFieldOption`] entity row.
+    pub struct StaffRegistrationFieldOptionId;
+}
+hr_typed_id! {
+    /// A typed id for a [`BulkImportJob`] entity row.
+    pub struct BulkImportJobId;
+}
+hr_typed_id! {
+    /// A typed id for a [`StaffAttendanceImportBatch`] entity row.
+    pub struct StaffAttendanceImportBatchId;
 }
 
 // =============================================================================
