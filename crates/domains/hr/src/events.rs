@@ -1571,6 +1571,79 @@ impl DomainEvent for StaffImportPromoted {
     }
 }
 
+// =============================================================================
+// Newly added events (Cluster D final — minimal placeholder structs so the
+// `educore-core::lint` spec_to_code check passes). Each carries the typed
+// fields declared in `docs/specs/hr/events.md` plus the standard
+// `event_id` / `correlation_id` / `occurred_at` envelope fields. The full
+// event payload (factory constructors, causation metadata, storage-side
+// publish paths) lands alongside the owning aggregates in later workstreams.
+// =============================================================================
+
+/// A staff member's department assignment changed.
+///
+/// Per `docs/specs/hr/events.md` § StaffDepartmentChanged.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StaffDepartmentChanged {
+    /// The staff member's typed id.
+    pub staff_id: StaffId,
+    /// The department the staff member is moving from (if any).
+    pub from_department_id: Option<DepartmentId>,
+    /// The department the staff member is being assigned to.
+    pub to_department_id: DepartmentId,
+    /// The first day the new department assignment is effective.
+    pub effective_from: NaiveDate,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl StaffDepartmentChanged {
+    /// Mints a fresh `StaffDepartmentChanged`.
+    #[must_use]
+    pub const fn new(
+        staff_id: StaffId,
+        from_department_id: Option<DepartmentId>,
+        to_department_id: DepartmentId,
+        effective_from: NaiveDate,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            staff_id,
+            from_department_id,
+            to_department_id,
+            effective_from,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffDepartmentChanged {
+    const EVENT_TYPE: &'static str = "hr.staff.department_changed";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.staff_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.staff_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod tests {
