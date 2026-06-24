@@ -98,7 +98,7 @@ pub struct AuditLogEntry {
     /// `"reason"`, `"ticket"`, `"request_id"`. Carried as raw
     /// JSON bytes (mirroring the `before` / `after` snapshot
     /// encoding) so the port stays serialisation-agnostic.
-    pub metadata: bytes::Bytes,
+    pub metadata: serde_json::Value,
 }
 
 impl AuditLogEntry {
@@ -124,7 +124,7 @@ impl AuditLogEntry {
             correlation_id,
             occurred_at: Timestamp::now(),
             active_status: ActiveStatus::Active,
-            metadata: bytes::Bytes::new(),
+            metadata: serde_json::Value::Null,
         }
     }
 }
