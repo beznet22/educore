@@ -178,8 +178,10 @@ impl Outbox for OutboxHandle {
     }
 
     async fn pending(&self, limit: u32) -> Result<Vec<SerializedEnvelope>> {
+        let limit = usize::try_from(limit)
+            .map_err(|_| DomainError::validation("outbox pending limit exceeds usize"))?;
         let outbox = self.0.outbox.lock();
-        Ok(outbox.iter().take(limit as usize).cloned().collect())
+        Ok(outbox.iter().take(limit).cloned().collect())
     }
 
     async fn mark_published(&self, ids: &[educore_core::ids::EventId]) -> Result<()> {
@@ -204,11 +206,14 @@ impl educore_events::relay::OutboxSource for OutboxHandle {
         school_id: educore_core::ids::SchoolId,
         limit: u32,
     ) -> Result<Vec<educore_events::relay_envelope::SerializedEnvelope>> {
+        let limit = usize::try_from(limit).map_err(|_| {
+            DomainError::validation("outbox pending_for_school limit exceeds usize")
+        })?;
         let outbox = self.0.outbox.lock();
         Ok(outbox
             .iter()
             .filter(|e| e.school_id == school_id)
-            .take(limit as usize)
+            .take(limit)
             .cloned()
             .map(to_relay_envelope)
             .collect())
@@ -240,6 +245,9 @@ impl AuditLog for AuditLogHandle {
         target_id: Uuid,
         limit: u32,
     ) -> Result<Vec<AuditLogEntry>> {
+        let limit = usize::try_from(limit).map_err(|_| {
+            DomainError::validation("audit read_for_target limit exceeds usize")
+        })?;
         let log = self.0.audit_log.lock();
         let mut out: Vec<AuditLogEntry> = log
             .iter()
@@ -247,7 +255,7 @@ impl AuditLog for AuditLogHandle {
             .cloned()
             .collect();
         out.sort_by_key(|e| e.occurred_at);
-        out.truncate(limit as usize);
+        out.truncate(limit);
         Ok(out)
     }
 }
@@ -266,6 +274,8 @@ impl EventLog for EventLogHandle {
     }
 
     async fn read(&self, filter: EventLogFilter) -> Result<Vec<EventLogEntry>> {
+        let limit = usize::try_from(filter.limit)
+            .map_err(|_| DomainError::validation("event log read limit exceeds usize"))?;
         let log = self.0.event_log.lock();
         let mut out: Vec<EventLogEntry> = log
             .iter()
@@ -285,7 +295,7 @@ impl EventLog for EventLogHandle {
             .cloned()
             .collect();
         out.sort_by_key(|e| e.recorded_at);
-        out.truncate(filter.limit as usize);
+        out.truncate(limit);
         Ok(out)
     }
 
@@ -307,7 +317,8 @@ impl EventLog for EventLogHandle {
                     .map_or(true, |a| e.aggregate_id == *a)
             })
             .count();
-        Ok(n as u64)
+        u64::try_from(n)
+            .map_err(|_| DomainError::validation("event log count exceeds u64"))
     }
 }
 
@@ -389,8 +400,11 @@ impl Outbox for StagingOutbox {
     async fn pending(&self, limit: u32) -> Result<Vec<SerializedEnvelope>> {
         // Reads always pass through to the inner state; the
         // staging buffer is invisible to other transactions.
+        let limit = usize::try_from(limit).map_err(|_| {
+            DomainError::validation("staging outbox pending limit exceeds usize")
+        })?;
         let outbox = self.inner.outbox.lock();
-        Ok(outbox.iter().take(limit as usize).cloned().collect())
+        Ok(outbox.iter().take(limit).cloned().collect())
     }
 
     async fn mark_published(&self, ids: &[educore_core::ids::EventId]) -> Result<()> {
@@ -420,6 +434,9 @@ impl AuditLog for StagingAuditLog {
         target_id: Uuid,
         limit: u32,
     ) -> Result<Vec<AuditLogEntry>> {
+        let limit = usize::try_from(limit).map_err(|_| {
+            DomainError::validation("staging audit read_for_target limit exceeds usize")
+        })?;
         let log = self.inner.audit_log.lock();
         let mut out: Vec<AuditLogEntry> = log
             .iter()
@@ -427,7 +444,7 @@ impl AuditLog for StagingAuditLog {
             .cloned()
             .collect();
         out.sort_by_key(|e| e.occurred_at);
-        out.truncate(limit as usize);
+        out.truncate(limit);
         Ok(out)
     }
 }
@@ -447,6 +464,8 @@ impl EventLog for StagingEventLog {
     }
 
     async fn read(&self, filter: EventLogFilter) -> Result<Vec<EventLogEntry>> {
+        let limit = usize::try_from(filter.limit)
+            .map_err(|_| DomainError::validation("staging event log read limit exceeds usize"))?;
         let log = self.inner.event_log.lock();
         let mut out: Vec<EventLogEntry> = log
             .iter()
@@ -466,7 +485,7 @@ impl EventLog for StagingEventLog {
             .cloned()
             .collect();
         out.sort_by_key(|e| e.recorded_at);
-        out.truncate(filter.limit as usize);
+        out.truncate(limit);
         Ok(out)
     }
 
@@ -488,7 +507,8 @@ impl EventLog for StagingEventLog {
                     .map_or(true, |a| e.aggregate_id == *a)
             })
             .count();
-        Ok(n as u64)
+        u64::try_from(n)
+            .map_err(|_| DomainError::validation("staging event log count exceeds u64"))
     }
 }
 
