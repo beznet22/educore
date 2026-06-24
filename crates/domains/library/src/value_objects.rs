@@ -86,7 +86,7 @@ macro_rules! library_typed_id {
 }
 
 // =============================================================================
-// Typed ids: 6 aggregate roots + 2 child ids
+// Typed ids: 6 aggregate roots + 5 child ids
 // =============================================================================
 
 library_typed_id! {
@@ -120,6 +120,18 @@ library_typed_id! {
 library_typed_id! {
     /// A typed id for a [`BookIssueFine`](crate::entities::BookIssueFine).
     pub struct BookIssueFineId;
+}
+library_typed_id! {
+    /// A typed id for a [`BookAcquisition`](crate::entities::BookAcquisition).
+    pub struct BookAcquisitionId;
+}
+library_typed_id! {
+    /// A typed id for a [`BookCatalogEntry`](crate::entities::BookCatalogEntry).
+    pub struct BookCatalogEntryId;
+}
+library_typed_id! {
+    /// A typed id for a [`LibraryMemberNote`](crate::entities::LibraryMemberNote).
+    pub struct LibraryMemberNoteId;
 }
 
 // =============================================================================
