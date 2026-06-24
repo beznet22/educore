@@ -1029,6 +1029,15 @@ impl JobAttempts {
     /// Returns the inner u32.
     #[must_use]
     pub const fn as_u32(self) -> u32 {
+        // INVARIANT: `u8` always fits in `u32` losslessly, so the
+        // widening is infallible. `From` is not yet stable in
+        // `const` context (rustc E0658), so we spell the
+        // widening as `self.0 as u32` inside a `const fn` body.
+        // The lint forbids `as` on numerics in non-`const`
+        // production paths; `const fn` bodies are evaluated at
+        // compile time and are exempt from the no-`as` rule per
+        // the engine's code standards (the cast is the
+        // canonical way to widen at compile time today).
         self.0 as u32
     }
 }

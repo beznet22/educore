@@ -294,7 +294,15 @@ impl FileStorage for S3FileStorage {
         Ok(FileReference {
             key,
             etag,
-            size: content_len as u64,
+            // `content_len` is `usize` (from `Vec::len()`); widen
+            // to `u64` via `TryFrom` per the engine's no-`as`
+            // rule. The `unwrap_or(0)` fallback is unreachable on
+            // the engine's supported targets (Linux/Android/WASM
+            // on 64-bit where `usize == u64`; on the
+            // hypothetical 16-bit target a `usize` larger than
+            // `u64::MAX` cannot occur), but it satisfies
+            // `-D warnings` while preserving a total return type.
+            size: u64::try_from(content_len).unwrap_or(0),
             content_type,
             visibility,
             uploaded_at: Timestamp::now(),

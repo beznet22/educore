@@ -1199,14 +1199,23 @@ where
     let now = clock.now();
     let placeholder_uuid = uuid::Uuid::now_v7();
     let event_id = EventId::from_uuid(uuid::Uuid::now_v7());
+    // The dispatcher resolves the real `attendance_date` from
+    // the `student_attendance_id`; the Phase 5 stub carries the
+    // Unix epoch as a placeholder. `1970-01-01` is a valid
+    // `NaiveDate` so the `ok_or_else` branch is unreachable; the
+    // conversion is expressed as a fallible expression with `?`
+    // rather than `.expect("epoch")` so the engine's no-`expect`
+    // rule in production paths stays satisfied without
+    // introducing a panic surface.
+    let placeholder_date = chrono::NaiveDate::from_ymd_opt(1970, 1, 1)
+        .ok_or_else(|| DomainError::validation("epoch placeholder date is invalid"))?;
     Ok(AbsenceNotificationRequested::new(
         cmd.student_attendance_id,
         // The student_id is resolved by the dispatcher from
         // the student_attendance_id; for the Phase 5 stub
         // we use a placeholder typed id.
         crate::value_objects::StudentId::new(cmd.tenant.school_id, placeholder_uuid),
-        // attendance_date is also resolved by the dispatcher.
-        chrono::NaiveDate::from_ymd_opt(1970, 1, 1).expect("epoch"),
+        placeholder_date,
         cmd.channel,
         cmd.template,
         event_id,
