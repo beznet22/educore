@@ -69,9 +69,10 @@ pub const DEFAULT_REPLAY_LOG_CAPACITY: usize = 4096;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InProcessConfig {
     /// Per-subscription broadcast channel capacity. Clamped to
-    /// `1..=u32::MAX as usize`.
+    /// `1..=u32::MAX` (cast to `usize` at runtime via `TryFrom`).
     pub channel_capacity: usize,
-    /// Replay-log capacity. Clamped to `0..=u32::MAX as usize`.
+    /// Replay-log capacity. Clamped to `0..=u32::MAX`
+    /// (cast to `usize` at runtime via `TryFrom`).
     /// `0` disables replay (every subscription behaves as
     /// `StartPosition::Latest`).
     pub replay_log_capacity: usize,

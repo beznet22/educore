@@ -515,8 +515,14 @@ fn hex_lower(bytes: &[u8]) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut s = String::with_capacity(bytes.len() * 2);
     for &b in bytes {
-        s.push(HEX[(b >> 4) as usize] as char);
-        s.push(HEX[(b & 0x0f) as usize] as char);
+        // `b >> 4` and `b & 0x0f` are bounded to `0..=15` by the
+        // masks, so the `usize::try_from(...).unwrap_or(0)` branch
+        // is unreachable for any value of `b`; the `TryFrom` form
+        // documents the invariant and satisfies the engine lint.
+        let hi = usize::try_from(b >> 4).unwrap_or(0);
+        let lo = usize::try_from(b & 0x0f).unwrap_or(0);
+        s.push(HEX[hi] as char);
+        s.push(HEX[lo] as char);
     }
     s
 }
