@@ -212,16 +212,24 @@ fn deterministic_v7(counter: u64) -> Uuid {
     bytes[4] = 0;
     bytes[5] = 0;
     // version: 7 in the high nibble of byte 6
-    bytes[6] = 0x70 | (counter & 0x0f) as u8;
-    bytes[7] = ((counter >> 4) & 0xff) as u8;
+    //
+    // Every masked value below is bounded by its mask
+    // (`0x0f`, `0xff`, `0x3f`, `0x03`) to a non-negative integer
+    // no greater than `u8::MAX`. The `u8::try_from(...).unwrap_or(0)`
+    // pattern therefore cannot fail for any caller that obeys
+    // the mask contract; the `unwrap_or(0)` documents the
+    // unreachable branch instead of using a forbidden `as` cast
+    // (per `docs/code-standards.md` § "Code Standards").
+    bytes[6] = 0x70 | u8::try_from(counter & 0x0f).unwrap_or(0);
+    bytes[7] = u8::try_from((counter >> 4) & 0xff).unwrap_or(0);
     // variant: 10xxxxxx in byte 8
-    bytes[8] = 0x80 | ((counter >> 12) & 0x3f) as u8;
-    bytes[9] = ((counter >> 18) & 0xff) as u8;
-    bytes[10] = ((counter >> 26) & 0xff) as u8;
-    bytes[11] = ((counter >> 34) & 0xff) as u8;
-    bytes[12] = ((counter >> 42) & 0xff) as u8;
-    bytes[13] = ((counter >> 50) & 0xff) as u8;
-    bytes[14] = ((counter >> 58) & 0x03) as u8;
+    bytes[8] = 0x80 | u8::try_from((counter >> 12) & 0x3f).unwrap_or(0);
+    bytes[9] = u8::try_from((counter >> 18) & 0xff).unwrap_or(0);
+    bytes[10] = u8::try_from((counter >> 26) & 0xff).unwrap_or(0);
+    bytes[11] = u8::try_from((counter >> 34) & 0xff).unwrap_or(0);
+    bytes[12] = u8::try_from((counter >> 42) & 0xff).unwrap_or(0);
+    bytes[13] = u8::try_from((counter >> 50) & 0xff).unwrap_or(0);
+    bytes[14] = u8::try_from((counter >> 58) & 0x03).unwrap_or(0);
     bytes[15] = 0;
     Uuid::from_bytes(bytes)
 }
