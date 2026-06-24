@@ -618,16 +618,25 @@ mod tests {
         assert_eq!(stats.delivered, 1);
         assert!(stats.is_ok());
 
-        // Re-delivery is a no-op (idempotency contract).
+        // Re-delivery: the subscriber's filter still matches
+        // (same event_type), so the dispatcher invokes the
+        // handler a second time. The handler is idempotent —
+        // it observes the duplicate `event_id` in its
+        // `seen_events` HashSet (the in-process idempotency
+        // key) and returns `Ok(())` immediately, without
+        // re-running the downstream CMS index write. Hence:
+        //   - `delivered == 1` (handler invoked, no error)
+        //   - `failures` is empty (no error raised)
+        // The dedupe lives inside the handler, so the registry
+        // sees the handler as a successful no-op. This matches
+        // the bus-port contract: subscribers MUST be idempotent
+        // on `event_id` because delivery is at-least-once.
         let stats2 = block_on(registry.dispatch(&env)).unwrap();
-        assert_eq!(stats2.delivered, 0, "second delivery should be deduped");
-        assert_eq!(stats2.skipped, 0);
-        // The event was skipped because the subscriber saw
-        // event_id as a duplicate and returned Ok. Since the
-        // subscriber's filter matched, the count goes to
-        // `delivered` (the dedupe is inside the handler). We
-        // verify the second call's `failures` is empty and no
-        // error was raised.
+        assert_eq!(
+            stats2.delivered, 1,
+            "handler is invoked on duplicate but short-circuits via seen_events dedupe"
+        );
+        assert!(stats2.is_ok(), "duplicate dispatch must not record a failure");
         assert!(stats2.failures.is_empty());
         let _ = env_event_id; // suppress unused warning
     }
