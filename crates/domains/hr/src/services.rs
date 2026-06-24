@@ -25,11 +25,41 @@ use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
 use educore_rbac::ids::RoleId;
 
-use crate::aggregate::{Department, Designation, LeaveRequest, LeaveType, PayrollGenerate, Staff};
+use crate::aggregate::{
+    AssignClassTeacherScope, BulkImportJob, Department, DepartmentHead, Designation,
+    DesignationGrade, HourlyRateOverride, LeaveDefineAdjustment, LeaveRequest, LeaveRequestApproval,
+    LeaveRequestAttachment, LeaveType, PayrollGenerate, PayrollGenerateAudit,
+    PayrollPaymentLink, Staff, StaffAddress, StaffAttendanceImportBatch, StaffAttendancePunch,
+    StaffBankDetail, StaffCustomField, StaffDocument, StaffDrivingLicense, StaffImportResolution,
+    StaffLeaveBalance, StaffLeaveHistory, StaffPayrollHistory, StaffProfilePhoto,
+    StaffRegistrationFieldOption, StaffRoleAssignment, StaffSocialLink, StaffTimeline,
+};
+use crate::commands::{
+    AssignDepartmentHeadCommand, AssignStaffRoleCommand, CreateAssignClassTeacherScopeCommand,
+    CreateBulkImportJobCommand, CreateDesignationGradeCommand, CreateLeaveDefineAdjustmentCommand,
+    CreateLeaveRequestAttachmentCommand, CreatePayrollPaymentLinkCommand,
+    CreateStaffAddressCommand, CreateStaffAttendanceImportBatchCommand,
+    CreateStaffBankDetailCommand, CreateStaffDrivingLicenseCommand, CreateStaffDocumentCommand,
+    CreateStaffProfilePhotoCommand, CreateStaffRegistrationFieldOptionCommand,
+    CreateStaffSocialLinkCommand, RecordLeaveRequestApprovalCommand,
+    RecordPayrollGenerateAuditCommand, RecordStaffAttendancePunchCommand,
+    RecordStaffImportResolutionCommand, RecordStaffLeaveHistoryCommand,
+    RecordStaffPayrollHistoryCommand, RefreshStaffLeaveBalanceCommand, RefreshStaffTimelineCommand,
+    SetHourlyRateOverrideCommand, SetStaffCustomFieldCommand,
+};
 use educore_events::domain_event::DomainEvent;
 
 use crate::events::{
-    DepartmentCreated, LeaveApproved, LeaveRequested, PayrollGenerated, StaffRegistered,
+    AssignClassTeacherScopeAdded, BulkImportJobRecorded, DepartmentCreated, DepartmentHeadRecorded,
+    DesignationGradeRecorded, HourlyRateOverrideSet, LeaveApproved, LeaveDefineAdjustmentApplied,
+    LeaveRequestApprovalRecorded, LeaveRequestAttachmentRegistered, LeaveRequested,
+    PayrollGenerateAuditAppended, PayrollGenerated, PayrollPaymentLinkCreated, StaffAddressAdded,
+    StaffAttendanceImportBatchRecorded, StaffAttendancePunchCaptured, StaffBankDetailUpserted,
+    StaffCustomFieldSet, StaffDocumentRegistered, StaffDrivingLicenseRegistered,
+    StaffImportResolutionRecorded, StaffLeaveBalanceRefreshed, StaffLeaveHistorySnapshotted,
+    StaffPayrollHistorySnapshotted, StaffProfilePhotoRegistered, StaffRegistered,
+    StaffRegistrationFieldOptionAdded, StaffRoleAssignmentRecorded, StaffSocialLinkAdded,
+    StaffTimelineRefreshed,
 };
 use crate::value_objects::{
     AttendanceType, EarnDeducType, LeaveStatus, PayrollStatus, StaffStatus,
@@ -672,6 +702,587 @@ pub trait ReferenceDataUniquenessChecker: Send + Sync {
     fn department_name_exists(&self, school: SchoolId, name: &str) -> bool;
     fn designation_title_exists(&self, school: SchoolId, title: &str) -> bool;
     fn leave_type_name_exists(&self, school: SchoolId, name: &str) -> bool;
+}
+
+// =============================================================================
+// Cluster C: handler skeletons
+//
+// Each handler below is a minimal skeleton that wires the
+// matching command stub (added in commit 71578b5) to the
+// matching aggregate stub (added in commit bc938cd) and the
+// matching event stub (added in commit bbbd8a1). The bodies
+// mint a fresh event_id + correlation_id + timestamp from
+// the supplied `Clock` + `IdGenerator`, construct the
+// aggregate from the typed id, and return the matching event.
+//
+// The full payload (validation, uniqueness checks, state-
+// machine transitions, command field wiring) is left for the
+// owning Workstream to fill in. These skeletons exist so
+// downstream code (subscribers, projections, integration
+// tests) can wire type-safe handles to the owning
+// Workstream's handler shape without forcing an
+// all-at-once refactor.
+// =============================================================================
+
+/// Handler skeleton: create or replace a staff member's
+/// bank-account detail row.
+pub fn create_staff_bank_detail<C, G>(
+    cmd: CreateStaffBankDetailCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffBankDetail, StaffBankDetailUpserted)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffBankDetail {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffBankDetailUpserted::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: add a postal address to a staff profile.
+pub fn create_staff_address<C, G>(
+    cmd: CreateStaffAddressCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffAddress, StaffAddressAdded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffAddress {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffAddressAdded::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: attach a social-profile link to a staff profile.
+pub fn create_staff_social_link<C, G>(
+    cmd: CreateStaffSocialLinkCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffSocialLink, StaffSocialLinkAdded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffSocialLink {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffSocialLinkAdded::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: register an uploaded document attached to a
+/// staff profile.
+pub fn create_staff_document<C, G>(
+    cmd: CreateStaffDocumentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffDocument, StaffDocumentRegistered)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffDocument {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffDocumentRegistered::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: marker for the staff-timeline projection
+/// recomputed from the event log.
+pub fn refresh_staff_timeline<C, G>(
+    cmd: RefreshStaffTimelineCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffTimeline, StaffTimelineRefreshed)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffTimeline {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffTimelineRefreshed::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: set a per-staff custom-field value.
+pub fn set_staff_custom_field<C, G>(
+    cmd: SetStaffCustomFieldCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffCustomField, StaffCustomFieldSet)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffCustomField {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffCustomFieldSet::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: marker for the leave-balance snapshot
+/// recomputed from events.
+pub fn refresh_staff_leave_balance<C, G>(
+    cmd: RefreshStaffLeaveBalanceCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffLeaveBalance, StaffLeaveBalanceRefreshed)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffLeaveBalance {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffLeaveBalanceRefreshed::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: record an approval / rejection event on a
+/// leave request.
+pub fn record_leave_request_approval<C, G>(
+    cmd: RecordLeaveRequestApprovalCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(LeaveRequestApproval, LeaveRequestApprovalRecorded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = LeaveRequestApproval {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = LeaveRequestApprovalRecorded::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: link a payroll run to an external payment record.
+pub fn create_payroll_payment_link<C, G>(
+    cmd: CreatePayrollPaymentLinkCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(PayrollPaymentLink, PayrollPaymentLinkCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = PayrollPaymentLink {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = PayrollPaymentLinkCreated::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: marker for the resolved foreign-key mapping of
+/// a bulk staff import.
+pub fn record_staff_import_resolution<C, G>(
+    cmd: RecordStaffImportResolutionCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffImportResolution, StaffImportResolutionRecorded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffImportResolution {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffImportResolutionRecorded::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: snapshot a staff member's payroll row when a
+/// payroll run reaches Paid.
+pub fn record_staff_payroll_history<C, G>(
+    cmd: RecordStaffPayrollHistoryCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffPayrollHistory, StaffPayrollHistorySnapshotted)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffPayrollHistory {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffPayrollHistorySnapshotted::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: snapshot a staff member's leave row when a
+/// leave request reaches a terminal state.
+pub fn record_staff_leave_history<C, G>(
+    cmd: RecordStaffLeaveHistoryCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffLeaveHistory, StaffLeaveHistorySnapshotted)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffLeaveHistory {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffLeaveHistorySnapshotted::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: attach additional sections / subjects to a
+/// class-teacher assignment.
+pub fn create_assign_class_teacher_scope<C, G>(
+    cmd: CreateAssignClassTeacherScopeCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(AssignClassTeacherScope, AssignClassTeacherScopeAdded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = AssignClassTeacherScope {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = AssignClassTeacherScopeAdded::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: promote a staff member to head of a department.
+pub fn assign_department_head<C, G>(
+    cmd: AssignDepartmentHeadCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(DepartmentHead, DepartmentHeadRecorded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = DepartmentHead {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = DepartmentHeadRecorded::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: attach a salary grade to a designation.
+pub fn create_designation_grade<C, G>(
+    cmd: CreateDesignationGradeCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(DesignationGrade, DesignationGradeRecorded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = DesignationGrade {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = DesignationGradeRecorded::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: override the hourly rate for a single staff
+/// member.
+pub fn set_hourly_rate_override<C, G>(
+    cmd: SetHourlyRateOverrideCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(HourlyRateOverride, HourlyRateOverrideSet)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = HourlyRateOverride {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = HourlyRateOverrideSet::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: adjust a leave entitlement (carry-forward,
+/// special grant, manual correction).
+pub fn create_leave_define_adjustment<C, G>(
+    cmd: CreateLeaveDefineAdjustmentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(LeaveDefineAdjustment, LeaveDefineAdjustmentApplied)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = LeaveDefineAdjustment {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = LeaveDefineAdjustmentApplied::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: attach a file to a leave request.
+pub fn create_leave_request_attachment<C, G>(
+    cmd: CreateLeaveRequestAttachmentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(LeaveRequestAttachment, LeaveRequestAttachmentRegistered)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = LeaveRequestAttachment {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = LeaveRequestAttachmentRegistered::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: record a raw biometric / RFID punch before it
+/// is folded into an attendance day row.
+pub fn record_staff_attendance_punch<C, G>(
+    cmd: RecordStaffAttendancePunchCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffAttendancePunch, StaffAttendancePunchCaptured)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffAttendancePunch {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffAttendancePunchCaptured::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: marker for the append-only audit trail of
+/// payroll-run state transitions.
+pub fn record_payroll_generate_audit<C, G>(
+    cmd: RecordPayrollGenerateAuditCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(PayrollGenerateAudit, PayrollGenerateAuditAppended)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = PayrollGenerateAudit {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = PayrollGenerateAuditAppended::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: assign a role to a staff member.
+pub fn assign_staff_role<C, G>(
+    cmd: AssignStaffRoleCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffRoleAssignment, StaffRoleAssignmentRecorded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffRoleAssignment {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffRoleAssignmentRecorded::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: upload (or replace) a staff profile photo.
+pub fn create_staff_profile_photo<C, G>(
+    cmd: CreateStaffProfilePhotoCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffProfilePhoto, StaffProfilePhotoRegistered)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffProfilePhoto {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffProfilePhotoRegistered::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: register (or update) a staff member's driving
+/// license metadata.
+pub fn create_staff_driving_license<C, G>(
+    cmd: CreateStaffDrivingLicenseCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffDrivingLicense, StaffDrivingLicenseRegistered)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffDrivingLicense {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffDrivingLicenseRegistered::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: add a select-option row to a staff-
+/// registration field.
+pub fn create_staff_registration_field_option<C, G>(
+    cmd: CreateStaffRegistrationFieldOptionCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffRegistrationFieldOption, StaffRegistrationFieldOptionAdded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffRegistrationFieldOption {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffRegistrationFieldOptionAdded::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: start a bulk staff-import job.
+pub fn create_bulk_import_job<C, G>(
+    cmd: CreateBulkImportJobCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(BulkImportJob, BulkImportJobRecorded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = BulkImportJob {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = BulkImportJobRecorded::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
+}
+
+/// Handler skeleton: start a bulk staff-attendance import job.
+pub fn create_staff_attendance_import_batch<C, G>(
+    cmd: CreateStaffAttendanceImportBatchCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StaffAttendanceImportBatch, StaffAttendanceImportBatchRecorded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation_id = ids.next_correlation_id();
+    let agg = StaffAttendanceImportBatch {
+        id: cmd.id,
+        school_id: cmd.school_id,
+    };
+    let event = StaffAttendanceImportBatchRecorded::new(cmd.id, event_id, correlation_id, now);
+    Ok((agg, event))
 }
 
 #[cfg(test)]
