@@ -40,25 +40,37 @@ use educore_core::ids::{EventId, Identifier, SchoolId};
 use educore_core::tenant::TenantContext;
 use educore_core::value_objects::ActiveStatus;
 
-use crate::aggregate::{AcademicYear, Class, Section, Student, Subject};
+use crate::aggregate::{
+    AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
+    IdCard, Lesson, LessonPlan, LessonTopic, RegistrationField, Section, Student, StudentCategory,
+    StudentGroup, StudentPromotion, Subject,
+};
 use crate::commands::{
     validate_admission_no, validate_class_name, validate_email_optional, validate_first_name,
     validate_gpa_threshold, validate_last_name, validate_mobile_optional, validate_pass_mark,
     validate_roll_no, validate_section_name, validate_subject_code, validate_subject_name,
     validate_suspension_reason, validate_transfer_reason, validate_withdrawal_reason,
     validate_year_label, validate_year_title, AdmitStudentCommand, CloseAcademicYearCommand,
-    CreateAcademicYearCommand, CreateClassCommand, CreateSectionCommand, CreateSubjectCommand,
+    CreateAcademicYearCommand, CreateCertificateCommand, CreateClassCommand,
+    CreateClassRoutineCommand, CreateClassSectionCommand, CreateClassSubjectCommand,
+    CreateHomeworkCommand, CreateIdCardCommand, CreateLessonCommand, CreateLessonPlanCommand,
+    CreateLessonTopicCommand, CreateRegistrationFieldCommand, CreateSectionCommand,
+    CreateStudentCategoryCommand, CreateStudentGroupCommand, CreateSubjectCommand,
     DeleteClassCommand, DeleteSectionCommand, DeleteSubjectCommand, GraduateStudentCommand,
-    PromoteStudentCommand, ReinstateStudentCommand, SetCurrentAcademicYearCommand,
+    PromoteStudentCommand, RecordStudentPromotionCommand, RegisterGuardianCommand,
+    ReinstateStudentCommand, SetCurrentAcademicYearCommand,
     SetOptionalSubjectGpaThresholdCommand, SuspendStudentCommand, TransferStudentCommand,
     UniquenessChecker, UpdateAcademicYearDatesCommand, UpdateClassCommand, UpdateSectionCommand,
     UpdateStudentProfileCommand, UpdateSubjectCommand, WithdrawStudentCommand,
 };
 use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
-    ClassCreated, ClassDeleted, ClassUpdated, CurrentAcademicYearSet,
-    OptionalSubjectGpaThresholdSet, SectionCreated, SectionDeleted, SectionUpdated,
-    StudentAdmitted, StudentGraduated, StudentProfileUpdated, StudentPromoted, StudentReinstated,
+    CertificateCreated, ClassCreated, ClassDeleted, ClassRoutineScheduled, ClassSectionCreated,
+    ClassSubjectAssigned, ClassUpdated, CurrentAcademicYearSet, GuardianRegistered,
+    HomeworkAssigned, IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
+    OptionalSubjectGpaThresholdSet, RegistrationFieldCreated, SectionCreated, SectionDeleted,
+    SectionUpdated, StudentAdmitted, StudentCategoryCreated, StudentGraduated, StudentGroupCreated,
+    StudentProfileUpdated, StudentPromoted, StudentPromotionRecorded, StudentReinstated,
     StudentSuspended, StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted,
     SubjectUpdated,
 };
@@ -1210,6 +1222,431 @@ where
 /// `school_id` invariant at the command boundary.
 pub fn school_matches(ctx: &TenantContext, school: SchoolId) -> bool {
     ctx.school_id == school
+}
+
+// =============================================================================
+// Placeholder handler skeletons for the remaining 14 academic aggregates
+// (commands introduced in commit 1af809b; event stubs in 66bee45;
+// aggregate stubs in 18d67df).
+//
+// Each skeleton:
+//   - validates that `cmd.school_id == cmd.id.school_id()` (basic
+//     tenant-anchor invariant),
+//   - constructs the placeholder aggregate from the typed id,
+//   - mints and returns the corresponding event stub.
+//
+// The full impl (capability check, domain fields, invariants,
+// persistence wiring) lands in subsequent workstreams per
+// `docs/build-plan.md`. The `Clock` and `IdGenerator` bounds mirror
+// the create-flow signature used by the prompt-named handlers
+// above so the dispatcher glue does not need to special-case them.
+// =============================================================================
+
+/// Register a [`Guardian`] and emit a [`GuardianRegistered`] event.
+pub fn register_guardian<C, G>(
+    cmd: RegisterGuardianCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(Guardian, GuardianRegistered)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let RegisterGuardianCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "guardian id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = Guardian { id, school_id };
+    let event = GuardianRegistered {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Create a [`ClassSection`] pairing and emit a [`ClassSectionCreated`] event.
+pub fn create_class_section<C, G>(
+    cmd: CreateClassSectionCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(ClassSection, ClassSectionCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let CreateClassSectionCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "class section id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = ClassSection { id, school_id };
+    let event = ClassSectionCreated {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Assign a subject to a class via [`ClassSubject`] and emit a
+/// [`ClassSubjectAssigned`] event.
+pub fn create_class_subject<C, G>(
+    cmd: CreateClassSubjectCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(ClassSubject, ClassSubjectAssigned)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let CreateClassSubjectCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "class subject id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = ClassSubject { id, school_id };
+    let event = ClassSubjectAssigned {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Schedule a [`ClassRoutine`] period and emit a [`ClassRoutineScheduled`] event.
+pub fn create_class_routine<C, G>(
+    cmd: CreateClassRoutineCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(ClassRoutine, ClassRoutineScheduled)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let CreateClassRoutineCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "class routine id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = ClassRoutine { id, school_id };
+    let event = ClassRoutineScheduled {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Issue a [`Homework`] assignment and emit a [`HomeworkAssigned`] event.
+pub fn create_homework<C, G>(
+    cmd: CreateHomeworkCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(Homework, HomeworkAssigned)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let CreateHomeworkCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "homework id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = Homework { id, school_id };
+    let event = HomeworkAssigned {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Draft a [`LessonPlan`] and emit a [`LessonPlanCreated`] event.
+pub fn create_lesson_plan<C, G>(
+    cmd: CreateLessonPlanCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(LessonPlan, LessonPlanCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let CreateLessonPlanCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "lesson plan id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = LessonPlan { id, school_id };
+    let event = LessonPlanCreated {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Create a [`Lesson`] and emit a [`LessonCreated`] event.
+pub fn create_lesson<C, G>(
+    cmd: CreateLessonCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(Lesson, LessonCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let CreateLessonCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "lesson id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = Lesson { id, school_id };
+    let event = LessonCreated {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Create a [`LessonTopic`] and emit a [`LessonTopicCreated`] event.
+pub fn create_lesson_topic<C, G>(
+    cmd: CreateLessonTopicCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(LessonTopic, LessonTopicCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let CreateLessonTopicCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "lesson topic id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = LessonTopic { id, school_id };
+    let event = LessonTopicCreated {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Record a [`StudentPromotion`] and emit a [`StudentPromotionRecorded`] event.
+pub fn record_student_promotion<C, G>(
+    cmd: RecordStudentPromotionCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StudentPromotion, StudentPromotionRecorded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let RecordStudentPromotionCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "student promotion id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = StudentPromotion { id, school_id };
+    let event = StudentPromotionRecorded {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Create a [`StudentCategory`] and emit a [`StudentCategoryCreated`] event.
+pub fn create_student_category<C, G>(
+    cmd: CreateStudentCategoryCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StudentCategory, StudentCategoryCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let CreateStudentCategoryCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "student category id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = StudentCategory { id, school_id };
+    let event = StudentCategoryCreated {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Create a [`StudentGroup`] and emit a [`StudentGroupCreated`] event.
+pub fn create_student_group<C, G>(
+    cmd: CreateStudentGroupCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(StudentGroup, StudentGroupCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let CreateStudentGroupCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "student group id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = StudentGroup { id, school_id };
+    let event = StudentGroupCreated {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Create a [`RegistrationField`] and emit a [`RegistrationFieldCreated`] event.
+pub fn create_registration_field<C, G>(
+    cmd: CreateRegistrationFieldCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RegistrationField, RegistrationFieldCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let CreateRegistrationFieldCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "registration field id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = RegistrationField { id, school_id };
+    let event = RegistrationFieldCreated {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Create a [`Certificate`] template and emit a [`CertificateCreated`] event.
+pub fn create_certificate<C, G>(
+    cmd: CreateCertificateCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(Certificate, CertificateCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let CreateCertificateCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "certificate id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = Certificate { id, school_id };
+    let event = CertificateCreated {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Create an [`IdCard`] template and emit an [`IdCardCreated`] event.
+pub fn create_id_card<C, G>(
+    cmd: CreateIdCardCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(IdCard, IdCardCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let CreateIdCardCommand { id, school_id } = cmd;
+    if id.school_id() != school_id {
+        return Err(DomainError::Validation(format!(
+            "id card id {id} is in school {}, command school_id is {school_id}",
+            id.school_id(),
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let aggregate = IdCard { id, school_id };
+    let event = IdCardCreated {
+        event_id,
+        school_id,
+        aggregate_id: id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
 }
 
 #[cfg(test)]
