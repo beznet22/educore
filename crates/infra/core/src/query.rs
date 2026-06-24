@@ -11,7 +11,7 @@
 //!   macro emission and the storage adapter's translator are
 //!   exhaustive at compile time.
 //! - `QueryNode` is **not** runtime-introspectable: there is no
-//!   `Box<dyn Any>` and no `serde_json::Value` here. The macro
+//!   `Box<dyn Any>` and no untyped JSON value here. The macro
 //!   guarantees the field set at compile time.
 //!
 //! The `EntityDescriptor` (the macro's table/column/index output)
@@ -57,7 +57,7 @@ pub trait HasRelations: Field {
 
 /// A filter value carried by `QueryNode::Eq`, `In`, `Between`, etc.
 ///
-/// The engine never uses `serde_json::Value` for filter values
+/// The engine never uses an untyped JSON value for filter values
 /// (per `AGENTS.md` and `docs/code-standards.md`). Each storage
 /// adapter translates the typed variant into its dialect.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -553,7 +553,7 @@ pub enum ColumnType {
     Bool,
     /// UTC timestamp with microsecond precision.
     Timestamp,
-    /// JSON document. The engine forbids `serde_json::Value` in
+    /// JSON document. The engine forbids untyped JSON values in
     /// domain code; this variant exists for adapter-level JSON
     /// payloads (event metadata, audit metadata).
     Json,
