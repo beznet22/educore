@@ -558,7 +558,7 @@ spec = "docs/specs/assessment/aggregates.md"
 crate = "educore-assessment"
 phase = 4
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/assessment_integration.rs,crates/domains/assessment/tests/workflows.rs"
+tests = "crates/tools/storage-parity/tests/assessment_integration.rs,crates/domains/assessment/tests/workflows.rs,crates/domains/assessment/tests/exam.rs"
 
 [[row]]
 id = "assessment_marks_registers_aggregate"
@@ -774,7 +774,7 @@ spec = "docs/specs/hr/aggregates.md"
 crate = "educore-hr"
 phase = 6
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs,crates/domains/hr/tests/department.rs"
 
 [[row]]
 id = "hr_designation_aggregate"
@@ -1132,7 +1132,7 @@ spec = "docs/specs/finance/aggregates.md"
 crate = "educore-finance"
 phase = 7
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/finance_integration.rs"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs,crates/domains/finance/tests/wallet.rs"
 
 [[row]]
 id = "finance_wallet_transaction_aggregate"
