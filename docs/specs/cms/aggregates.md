@@ -58,6 +58,14 @@ The `PageStatusAction` enum represents a transition action applied to a `Page` t
 
 ---
 
+---
+
+## PageStatusAction
+
+The `PageStatusAction` enum represents a transition action applied to a `Page` to change its `PageStatus`. Variants: `Publish`, `Archive` (per `crates/domains/cms/src/aggregate.rs`).
+
+---
+
 ## News
 
 **Root type:** `News`

@@ -184,14 +184,18 @@ pub mod runner {
             return;
         };
         for agg in extract_h2_headings(&spec) {
-            if !item_defined(&src, "struct", &agg) {
+            // An aggregate may be a struct or an enum (e.g. domain
+            // state machines like `PageStatusAction`). Accept either.
+            if !item_defined(&src, "struct", &agg)
+                && !item_defined(&src, "enum", &agg)
+            {
                 report.violations.push(missing_spec_item(
                     repo_root,
                     &spec_file,
                     "spec_to_code:missing_aggregate",
                     "aggregate",
                     &agg,
-                    &format!("pub struct {agg}"),
+                    &format!("pub (struct|enum) {agg}"),
                     &src_file,
                 ));
             }
