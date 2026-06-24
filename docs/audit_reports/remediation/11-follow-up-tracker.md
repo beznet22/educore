@@ -104,7 +104,24 @@ Per `08-dependency-graph.md`: B follows A. With Cluster A stage 3 in flight, B i
 
 ---
 
-## F. Cluster C (spec↔code drift) — partial (4 of 10 domains filled: attendance, communication, documents, facilities)
+## F. Cluster C (spec↔code drift) — ~50% complete (8 of 10 domains filled with structural plumbing)
+
+### Cluster C microtask batch 2 — atomic file-by-file pattern (4 biggest domains × 5 file types)
+
+| Domain | IDs | Aggregates | Commands | Events | Handlers | Total |
+|---|---|---|---|---|---|---|
+| assessment | 33 | 23 | 35 | 23 | 35 | 149 |
+| finance | 15 | 10 | 32 | 10 | 32 | 99 |
+| hr | 26 | 42 | 26 | 26 | 26 | 146 |
+| academic | 14 | 14 | 14 | 14 | 14 | 70 |
+
+Total: 464 new types/handlers across 4 domains, in 20 commits.
+
+### Cluster C microtask batch 3 (smallest domain: library)
+
+Library still has a moderate gap. Plan: 5-file atomic pattern (IDs,
+aggregates, commands, events, services) per the batch 2 pattern.
+
 
 ### Cluster C microtask batch 1 (4 of 10 domains)
 
@@ -386,5 +403,9 @@ Result: 3 of 4 isolated-scope agents completed cleanly; 1 needed a small test-fi
 | `remediation-checkpoint-3` | `e700c67` (Cluster F storage transaction) | Cluster A, B, D, F (complete) done; ~1,500 lib tests pass |
 | `remediation-checkpoint-4` | `5a6e37c` (Cluster E final mop-up) | Cluster A, B, D, E, F done; 0 anti-pattern violations; ~1,440 lib tests pass |
 | `remediation-checkpoint-5` | `e7c7f6b` (Cluster C batch 1) | Cluster A, B, C (partial), D, E, F, G done; 1,479 lib tests pass; lint 938 |
+| `remediation-checkpoint-6` | `bc938cd` (Cluster C batch 2 value_objects+aggregates) | 4 IDs+aggregates commits; +108 new types |
+| `remediation-checkpoint-7` | `8d851a5` (Cluster C batch 2 commands) | +107 commands |
+| `remediation-checkpoint-8` | `8a0705c` (Cluster C batch 2 events) | +73 events |
+| `remediation-checkpoint-9` | `227576f` (Cluster C batch 2 services) | +107 handlers |
 
 
