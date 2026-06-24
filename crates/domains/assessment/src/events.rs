@@ -35,9 +35,10 @@ use crate::value_objects::{
     CustomTemporaryResultId, ExamAttendanceId, ExamCode, ExamId, ExamMark, ExamName,
     ExamRoutinePageId, ExamScheduleId, ExamSettingId, ExamSetupId, ExamSignatureId,
     ExamStepSkipId, ExamTypeId, FrontendExamResultId, FrontExamRoutineId, FrontResultId,
-    MarkStoreId, MarksGradeId, OnlineExamId, QuestionBankId, QuestionGroupId, QuestionLevelId,
-    ResultSettingId, SeatPlanId, SectionId, StudentTakeOnlineExamId, SubjectId,
-    TeacherEvaluationId, TeacherRemarkId, TemporaryMeritListId,
+    MarkStoreId, MarksGradeId, OnlineExamId, OnlineExamMarkId, OnlineExamQuestionId,
+    QuestionBankId, QuestionGroupId, QuestionLevelId, QuestionMuOptionId, ResultSettingId,
+    SeatPlanId, SectionId, StudentTakeOnlineExamId, SubjectId, TeacherEvaluationId,
+    TeacherRemarkId, TemporaryMeritListId,
 };
 
 // =============================================================================
@@ -1578,4 +1579,500 @@ pub struct ExamAttendanceCreated {
     pub event_id: EventId,
     pub school_id: SchoolId,
     pub exam_attendance_id: ExamAttendanceId,
+}
+
+// =============================================================================
+// Cluster D: closing the spec_to_code:missing_event lint gap.
+//
+// Each stub carries the minimal `event_id` + `school_id` + aggregate id
+// (no payload, no `DomainEvent` impl). The full event body and
+// `DomainEvent` impl land in subsequent workstreams.
+//
+// Note: `SeatPlanSettingId` is not yet declared in `value_objects.rs`; this
+// stub uses a raw `uuid::Uuid` for the aggregate id until the typed id
+// lands. Same applies to `TeacherEvaluationConfigured`, which has no
+// aggregate in the spec.
+// =============================================================================
+
+// --- ExamType cluster -------------------------------------------------------
+
+/// Event stub emitted when an `ExamType` is created.
+#[derive(Debug, Clone)]
+pub struct ExamTypeCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_type_id: ExamTypeId,
+}
+
+/// Event stub emitted when an `ExamType` is updated.
+#[derive(Debug, Clone)]
+pub struct ExamTypeUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_type_id: ExamTypeId,
+}
+
+/// Event stub emitted when an `ExamType` is deleted.
+#[derive(Debug, Clone)]
+pub struct ExamTypeDeleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_type_id: ExamTypeId,
+}
+
+// --- MarkStore cluster (additional) -----------------------------------------
+
+/// Event stub emitted when a [`MarkStore`](crate::aggregate::MarkStore)
+/// row is deleted.
+#[derive(Debug, Clone)]
+pub struct MarkStoreDeleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub mark_store_id: MarkStoreId,
+}
+
+// --- Result publication cluster (additional) -------------------------------
+
+/// Event stub emitted when a [`ResultSetting`](crate::aggregate::ResultSetting)
+/// is updated.
+#[derive(Debug, Clone)]
+pub struct ResultSettingUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub result_setting_id: ResultSettingId,
+}
+
+// --- Marks Grade cluster (additional) --------------------------------------
+
+/// Event stub emitted when a [`MarksGrade`](crate::aggregate::MarksGrade)
+/// row is updated.
+#[derive(Debug, Clone)]
+pub struct MarksGradeUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub marks_grade_id: MarksGradeId,
+}
+
+/// Event stub emitted when a [`MarksGrade`](crate::aggregate::MarksGrade)
+/// row is deleted.
+#[derive(Debug, Clone)]
+pub struct MarksGradeDeleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub marks_grade_id: MarksGradeId,
+}
+
+// --- Exam publication cluster (additional) ---------------------------------
+
+/// Event stub emitted when an [`ExamSetting`](crate::aggregate::ExamSetting)
+/// is updated.
+#[derive(Debug, Clone)]
+pub struct ExamSettingUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_setting_id: ExamSettingId,
+}
+
+/// Event stub emitted when an [`ExamSetting`](crate::aggregate::ExamSetting)
+/// is deleted.
+#[derive(Debug, Clone)]
+pub struct ExamSettingDeleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_setting_id: ExamSettingId,
+}
+
+/// Event stub emitted when an [`ExamSignature`](crate::aggregate::ExamSignature)
+/// is updated.
+#[derive(Debug, Clone)]
+pub struct ExamSignatureUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_signature_id: ExamSignatureId,
+}
+
+/// Event stub emitted when an [`ExamSignature`](crate::aggregate::ExamSignature)
+/// is deleted.
+#[derive(Debug, Clone)]
+pub struct ExamSignatureDeleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_signature_id: ExamSignatureId,
+}
+
+/// Event stub emitted when an [`ExamRoutinePage`](crate::aggregate::ExamRoutinePage)
+/// is updated.
+#[derive(Debug, Clone)]
+pub struct ExamRoutinePageUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_routine_page_id: ExamRoutinePageId,
+}
+
+/// Event stub emitted when a [`FrontendExamRoutine`](crate::aggregate::FrontendExamRoutine)
+/// is published.
+#[derive(Debug, Clone)]
+pub struct FrontendExamRoutinePublished {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub front_exam_routine_id: FrontExamRoutineId,
+}
+
+/// Event stub emitted when a [`FrontendResult`](crate::aggregate::FrontendResult)
+/// is published.
+#[derive(Debug, Clone)]
+pub struct FrontendResultPublished {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub front_result_id: FrontResultId,
+}
+
+/// Event stub emitted when a [`FrontendExamResult`](crate::aggregate::FrontendExamResult)
+/// block is updated.
+#[derive(Debug, Clone)]
+pub struct FrontendExamResultUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub frontend_exam_result_id: FrontendExamResultId,
+}
+
+// --- Custom result cluster (additional) -------------------------------------
+
+/// Event stub emitted when a [`CustomResultSetting`](crate::aggregate::CustomResultSetting)
+/// is updated.
+#[derive(Debug, Clone)]
+pub struct CustomResultSettingUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub custom_result_setting_id: CustomResultSettingId,
+}
+
+// --- Exam Setup cluster (additional) ----------------------------------------
+
+/// Event stub emitted when an [`ExamSetup`](crate::aggregate::ExamSetup)
+/// is updated.
+#[derive(Debug, Clone)]
+pub struct ExamSetupUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_setup_id: ExamSetupId,
+}
+
+/// Event stub emitted when an [`ExamSetup`](crate::aggregate::ExamSetup)
+/// is deleted.
+#[derive(Debug, Clone)]
+pub struct ExamSetupDeleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_setup_id: ExamSetupId,
+}
+
+// --- OnlineExam cluster (additional) ----------------------------------------
+
+/// Event stub emitted when an [`OnlineExam`](crate::aggregate::OnlineExam)
+/// is updated.
+#[derive(Debug, Clone)]
+pub struct OnlineExamUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub online_exam_id: OnlineExamId,
+}
+
+/// Event stub emitted when an [`OnlineExam`](crate::aggregate::OnlineExam)
+/// is published.
+#[derive(Debug, Clone)]
+pub struct OnlineExamPublished {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub online_exam_id: OnlineExamId,
+}
+
+/// Event stub emitted when a student starts an online exam.
+#[derive(Debug, Clone)]
+pub struct OnlineExamStarted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub online_exam_id: OnlineExamId,
+    pub student_id: crate::value_objects::StudentId,
+}
+
+/// Event stub emitted when a student answers an online exam question.
+#[derive(Debug, Clone)]
+pub struct OnlineExamAnswered {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub online_exam_id: OnlineExamId,
+    pub student_id: crate::value_objects::StudentId,
+    pub question_id: OnlineExamQuestionId,
+}
+
+/// Event stub emitted when a student's online exam attempt is evaluated.
+#[derive(Debug, Clone)]
+pub struct OnlineExamEvaluated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub online_exam_id: OnlineExamId,
+    pub student_id: crate::value_objects::StudentId,
+}
+
+/// Event stub emitted when an [`OnlineExam`](crate::aggregate::OnlineExam)
+/// is closed (exam window has ended).
+#[derive(Debug, Clone)]
+pub struct OnlineExamClosed {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub online_exam_id: OnlineExamId,
+}
+
+/// Event stub emitted when an [`OnlineExam`](crate::aggregate::OnlineExam)
+/// is deleted.
+#[derive(Debug, Clone)]
+pub struct OnlineExamDeleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub online_exam_id: OnlineExamId,
+}
+
+// --- Question Bank cluster (additional) -------------------------------------
+
+/// Event stub emitted when a [`QuestionBank`](crate::aggregate::QuestionBank)
+/// entry is created.
+#[derive(Debug, Clone)]
+pub struct QuestionCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub question_id: QuestionBankId,
+}
+
+/// Event stub emitted when a [`QuestionBank`](crate::aggregate::QuestionBank)
+/// entry is updated.
+#[derive(Debug, Clone)]
+pub struct QuestionUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub question_id: QuestionBankId,
+}
+
+/// Event stub emitted when a [`QuestionBank`](crate::aggregate::QuestionBank)
+/// entry is deleted.
+#[derive(Debug, Clone)]
+pub struct QuestionDeleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub question_id: QuestionBankId,
+}
+
+/// Event stub emitted when a [`QuestionGroup`](crate::aggregate::QuestionGroup)
+/// is updated.
+#[derive(Debug, Clone)]
+pub struct QuestionGroupUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub question_group_id: QuestionGroupId,
+}
+
+/// Event stub emitted when a [`QuestionGroup`](crate::aggregate::QuestionGroup)
+/// is deleted.
+#[derive(Debug, Clone)]
+pub struct QuestionGroupDeleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub question_group_id: QuestionGroupId,
+}
+
+/// Event stub emitted when a [`QuestionLevel`](crate::aggregate::QuestionLevel)
+/// is updated.
+#[derive(Debug, Clone)]
+pub struct QuestionLevelUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub question_level_id: QuestionLevelId,
+}
+
+/// Event stub emitted when a [`QuestionLevel`](crate::aggregate::QuestionLevel)
+/// is deleted.
+#[derive(Debug, Clone)]
+pub struct QuestionLevelDeleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub question_level_id: QuestionLevelId,
+}
+
+// --- Online Exam Question + Option cluster ---------------------------------
+
+/// Event stub emitted when an `OnlineExamQuestion` is added to an online exam.
+#[derive(Debug, Clone)]
+pub struct OnlineExamQuestionAdded {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub question_id: OnlineExamQuestionId,
+    pub online_exam_id: OnlineExamId,
+}
+
+/// Event stub emitted when an `OnlineExamQuestion` is updated.
+#[derive(Debug, Clone)]
+pub struct OnlineExamQuestionUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub question_id: OnlineExamQuestionId,
+}
+
+/// Event stub emitted when an `OnlineExamQuestion` is deleted.
+#[derive(Debug, Clone)]
+pub struct OnlineExamQuestionDeleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub question_id: OnlineExamQuestionId,
+}
+
+/// Event stub emitted when a `QuestionMuOption` is added to a question.
+#[derive(Debug, Clone)]
+pub struct QuestionOptionAdded {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub option_id: QuestionMuOptionId,
+    pub question_id: OnlineExamQuestionId,
+}
+
+/// Event stub emitted when a `QuestionMuOption` is updated.
+#[derive(Debug, Clone)]
+pub struct QuestionOptionUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub option_id: QuestionMuOptionId,
+}
+
+/// Event stub emitted when a `QuestionMuOption` is deleted.
+#[derive(Debug, Clone)]
+pub struct QuestionOptionDeleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub option_id: QuestionMuOptionId,
+}
+
+/// Event stub emitted when a per-student `OnlineExamMark` is created.
+#[derive(Debug, Clone)]
+pub struct OnlineExamMarkCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub mark_id: OnlineExamMarkId,
+}
+
+// --- Seat Plan setting cluster ---------------------------------------------
+
+/// Event stub emitted when a `SeatPlanSetting` is updated. Uses a raw
+/// `uuid::Uuid` for the aggregate id because `SeatPlanSettingId` is not yet
+/// declared in `value_objects.rs`.
+#[derive(Debug, Clone)]
+pub struct SeatPlanSettingUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub setting_id: uuid::Uuid,
+}
+
+// --- AdmitCard setting cluster (additional) --------------------------------
+
+/// Event stub emitted when an [`AdmitCardSetting`](crate::aggregate::AdmitCardSetting)
+/// is updated.
+#[derive(Debug, Clone)]
+pub struct AdmitCardSettingUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub setting_id: AdmitCardSettingId,
+}
+
+// --- Teacher review cluster (additional) ------------------------------------
+
+/// Event stub emitted when a [`TeacherEvaluation`](crate::aggregate::TeacherEvaluation)
+/// is completed by a student.
+#[derive(Debug, Clone)]
+pub struct TeacherEvaluationCompleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub evaluation_id: TeacherEvaluationId,
+}
+
+/// Event stub emitted when a [`TeacherEvaluation`](crate::aggregate::TeacherEvaluation)
+/// is approved.
+#[derive(Debug, Clone)]
+pub struct TeacherEvaluationApproved {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub evaluation_id: TeacherEvaluationId,
+}
+
+/// Event stub emitted when a [`TeacherEvaluation`](crate::aggregate::TeacherEvaluation)
+/// is rejected.
+#[derive(Debug, Clone)]
+pub struct TeacherEvaluationRejected {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub evaluation_id: TeacherEvaluationId,
+}
+
+/// Event stub emitted when the teacher-evaluation subsystem is configured.
+/// This is a configuration event with no aggregate id; only the
+/// `event_id` and `school_id` are stamped.
+#[derive(Debug, Clone)]
+pub struct TeacherEvaluationConfigured {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+}
+
+/// Event stub emitted when a [`TeacherRemark`](crate::aggregate::TeacherRemark)
+/// is added.
+#[derive(Debug, Clone)]
+pub struct TeacherRemarkAdded {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub remark_id: TeacherRemarkId,
+}
+
+/// Event stub emitted when a [`TeacherRemark`](crate::aggregate::TeacherRemark)
+/// is updated.
+#[derive(Debug, Clone)]
+pub struct TeacherRemarkUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub remark_id: TeacherRemarkId,
+}
+
+/// Event stub emitted when a [`TeacherRemark`](crate::aggregate::TeacherRemark)
+/// is deleted.
+#[derive(Debug, Clone)]
+pub struct TeacherRemarkDeleted {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub remark_id: TeacherRemarkId,
+}
+
+// --- Exam attendance cluster (additional) -----------------------------------
+
+/// Event stub emitted when an [`ExamAttendance`](crate::aggregate::ExamAttendance)
+/// roll is marked.
+#[derive(Debug, Clone)]
+pub struct ExamAttendanceMarked {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_attendance_id: ExamAttendanceId,
+}
+
+/// Event stub emitted when an [`ExamAttendance`](crate::aggregate::ExamAttendance)
+/// roll is updated.
+#[derive(Debug, Clone)]
+pub struct ExamAttendanceUpdated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_attendance_id: ExamAttendanceId,
+}
+
+// --- Wizard-skip cluster (additional) ---------------------------------------
+
+/// Event stub emitted when an [`ExamStepSkip`](crate::aggregate::ExamStepSkip)
+/// flag is set.
+#[derive(Debug, Clone)]
+pub struct ExamStepSkipSet {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub skip_id: ExamStepSkipId,
 }
