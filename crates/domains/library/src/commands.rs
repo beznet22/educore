@@ -28,10 +28,11 @@ use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
 
 use crate::value_objects::{
-    AcademicYearId, Author, BookCategoryId, BookId, BookIssueId, BookNumber, BookPrice,
-    BookReturnId, BookTitle, CategoryName, Details, DueDate, Edition, FineAmount, FineId,
-    FinePerDay, FineReason, GivenDate, Isbn, IssueNote, IssueQuantity, LibraryMemberId, MemberId,
-    MemberUdId, RackNumber, ReturnDate, RoleId, StockAdjustmentReason, StockCopies, SubjectId,
+    AcademicYearId, Author, BookAcquisitionId, BookCategoryId, BookCatalogEntryId, BookId,
+    BookIssueId, BookNumber, BookPrice, BookReturnId, BookTitle, CategoryName, Details, DueDate,
+    Edition, FineAmount, FineId, FinePerDay, FineReason, GivenDate, Isbn, IssueNote,
+    IssueQuantity, LibraryMemberId, LibraryMemberNoteId, MemberId, MemberUdId, RackNumber,
+    ReturnDate, RoleId, StockAdjustmentReason, StockCopies, SubjectId,
 };
 
 #[allow(dead_code)]
@@ -566,3 +567,56 @@ fn _unused_imports(_: Timestamp, _: event_id_to_uuid_marker, _: FineAmount, _: D
 /// Phantom type to keep `event_id_to_uuid` in the import list.
 #[allow(non_camel_case_types)]
 struct event_id_to_uuid_marker;
+
+// =============================================================================
+// Cluster C: minimal command stubs (id + school_id)
+//
+// Each command struct mirrors the matching entity stub added in
+// commit c8a29a1 (`Cluster C (library): add missing ID types to
+// value_objects`). They carry only the typed id and the derived
+// `school_id` anchor; the full payload (tenant context, payload
+// fields, audit metadata) is left for the owning Workstream to
+// fill in. These stubs exist so downstream code (events.rs
+// subscribers, repository ports, integration tests) can wire
+// type-safe handles to the owning Workstream's command shape
+// without forcing an all-at-once refactor.
+// =============================================================================
+
+/// Record a single procurement event for a book (vendor,
+/// invoice, unit cost, quantity, acquired_at).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateBookAcquisitionCommand {
+    /// The typed id.
+    pub id: BookAcquisitionId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+}
+
+/// Append a new entry to a book's versioned cataloguing history.
+/// A new entry is appended on every `AddBook` / `UpdateBook`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AppendBookCatalogEntryCommand {
+    /// The typed id.
+    pub id: BookCatalogEntryId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+}
+
+/// Add a free-text administrative note about a member (overdue
+/// pattern, lost book, account hold).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateLibraryMemberNoteCommand {
+    /// The typed id.
+    pub id: LibraryMemberNoteId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+}
+
+/// Delete a library member note (admin correction).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeleteLibraryMemberNoteCommand {
+    /// The typed id.
+    pub id: LibraryMemberNoteId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+}
