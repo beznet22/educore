@@ -55,13 +55,19 @@ pub mod prelude {
         RoomAssignment, RouteStop, StoreStocktake, SupplierContact, TransportMembership,
     };
 
-    // Headline 18 events
+    // Headline 49 events (per docs/specs/facilities/events.md).
     pub use crate::events::{
-        DormitoryCreated, DriverAssignedToVehicle, IssuedItemReturned, ItemCategoryCreated,
-        ItemCreated, ItemIssued, ItemReceived, ItemSold, ItemStoreCreated, RoomCreated,
-        RoomTypeCreated, RouteCreated, StopAddedToRoute, StudentAssignedToRoom,
-        StudentAssignedToRoute, SupplierCreated, SupplierDeactivated, VehicleAssigned,
-        VehicleCreated, VehicleDeactivated, VehicleDeleted, VehicleUpdated,
+        DormitoryCreated, DormitoryDeleted, DormitoryUpdated, DriverAssignedToVehicle,
+        IssuedItemReturned, ItemCategoryCreated, ItemCategoryDeleted, ItemCategoryUpdated,
+        ItemCreated, ItemDeleted, ItemIssueStatusUpdated, ItemIssued, ItemReceiveCancelled,
+        ItemReceived, ItemReceiveUpdated, ItemSellCancelled, ItemSellRefunded, ItemSellUpdated,
+        ItemSold, ItemStoreCreated, ItemStoreDeleted, ItemStoreUpdated, ItemUpdated, RoomCreated,
+        RoomDeleted, RoomTypeCreated, RoomTypeDeleted, RoomTypeUpdated, RoomUpdated, RouteCreated,
+        RouteDeleted, RouteUpdated, StopAddedToRoute, StopRemovedFromRoute, StopUpdatedOnRoute,
+        StudentAssignedToRoom, StudentAssignedToRoute, StudentUnassignedFromRoom,
+        StudentUnassignedFromRoute, SupplierCreated, SupplierDeactivated, SupplierDeleted,
+        SupplierUpdated, VehicleAssigned, VehicleCreated, VehicleDeactivated, VehicleDeleted,
+        VehicleUnassigned, VehicleUpdated,
     };
 
     // 13 query stubs
@@ -79,15 +85,21 @@ pub mod prelude {
         VehicleRepository,
     };
 
-    // Service factories (the headline 13)
+    // Service factories (49 per docs/specs/facilities/commands.md).
     pub use crate::services::{
         add_stop_to_route, assign_driver, assign_student_to_room, assign_student_to_route,
-        assign_vehicle_to_route, create_dormitory, create_item, create_item_category,
-        create_item_store, create_room, create_room_type, create_route, create_supplier,
-        create_vehicle, deactivate_vehicle, issue_item, receive_item, return_issued_item,
-        sell_item, update_vehicle, DormitoryService, InventoryConservationService,
-        InventoryService, MovementKind, MovementRow, ReceiveItemResult, SellItemResult,
-        SupplierService, TransportService,
+        assign_vehicle_to_route, cancel_item_receive, cancel_item_sell, create_dormitory,
+        create_item, create_item_category, create_item_store, create_room, create_room_type,
+        create_route, create_supplier, create_vehicle, deactivate_supplier, deactivate_vehicle,
+        delete_dormitory, delete_item, delete_item_category, delete_item_store, delete_room,
+        delete_room_type, delete_route, delete_supplier, delete_vehicle, issue_item,
+        receive_item, refund_item_sell, remove_stop_from_route, return_issued_item, sell_item,
+        unassign_student_from_room, unassign_student_from_route, unassign_vehicle_from_route,
+        update_dormitory, update_issue_status, update_item, update_item_category,
+        update_item_receive, update_item_sell, update_item_store, update_room, update_room_type,
+        update_route, update_stop_on_route, update_supplier, update_vehicle, DormitoryService,
+        InventoryConservationService, InventoryService, MovementKind, MovementRow,
+        ReceiveItemResult, SellItemResult, SupplierService, TransportService,
     };
 
     // Command shapes

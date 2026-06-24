@@ -958,6 +958,913 @@ where
 }
 
 // =============================================================================
+// Update / Delete / Unassign services (Phase 8 gap-fill).
+//
+// These factory functions complement the 13 create-only factories
+// shipped in Phase 8 with the Update / Delete / Unassign handlers
+// required by `docs/specs/facilities/commands.md`. Each function
+// follows the same signature pattern:
+//   - takes a command + a clock + an id generator
+//   - mutates the aggregate in place OR returns a fresh aggregate
+//   - returns the typed event to be appended to the event log
+// The dispatcher is responsible for persistence + outbox + audit
+// rows in a single transaction (see `services.rs` docstring).
+// =============================================================================
+
+/// Deletes a [`Vehicle`] + emits a [`VehicleDeleted`] event. The
+/// dispatcher must reject the call if any `AssignVehicle` row
+/// still references the vehicle.
+#[allow(clippy::too_many_arguments)]
+pub fn delete_vehicle<C, G>(
+    vehicle: &Vehicle,
+    cmd: crate::commands::DeleteVehicleCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::VehicleDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    Ok(crate::events::VehicleDeleted::new(
+        vehicle.id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Updates a [`Route`] + emits a [`RouteUpdated`] event.
+pub fn update_route<C, G>(
+    route: &mut crate::aggregate::Route,
+    cmd: crate::commands::UpdateRouteCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::RouteUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let mut changes: Vec<&'static str> = Vec::new();
+    if let Some(title) = cmd.title {
+        route.title = title;
+        changes.push("title");
+    }
+    if let Some(fare) = cmd.fare {
+        route.fare = fare;
+        changes.push("fare");
+    }
+    if let Some(distance) = cmd.distance {
+        route.distance = Some(distance);
+        changes.push("distance");
+    }
+    route.updated_at = now;
+    route.updated_by = cmd.tenant.actor_id;
+    route.version = route.version.next();
+    route.last_event_id = Some(event_id);
+    Ok(crate::events::RouteUpdated::new(
+        route.id,
+        changes,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Updates a stop on a [`Route`] + emits a [`StopUpdatedOnRoute`] event.
+pub fn update_stop_on_route<C, G>(
+    route: &mut crate::aggregate::Route,
+    cmd: crate::commands::UpdateStopOnRouteCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::StopUpdatedOnRoute>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let mut changes: Vec<&'static str> = Vec::new();
+    if let Some(spec) = route.stops.iter_mut().find(|s| s.stop_order == cmd.stop_order) {
+        if let Some(name) = cmd.stop_name {
+            spec.stop_name = name;
+            changes.push("stop_name");
+        }
+        if cmd.pickup_time.is_some() {
+            spec.pickup_time = cmd.pickup_time;
+            changes.push("pickup_time");
+        }
+        if cmd.fare_override.is_some() {
+            spec.fare_override = cmd.fare_override;
+            changes.push("fare_override");
+        }
+    }
+    route.updated_at = now;
+    route.updated_by = cmd.tenant.actor_id;
+    route.version = route.version.next();
+    route.last_event_id = Some(event_id);
+    Ok(crate::events::StopUpdatedOnRoute::new(
+        route.id,
+        cmd.stop_order,
+        changes,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Removes a stop from a [`Route`] + emits a [`StopRemovedFromRoute`] event.
+pub fn remove_stop_from_route<C, G>(
+    route: &mut crate::aggregate::Route,
+    cmd: crate::commands::RemoveStopFromRouteCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::StopRemovedFromRoute>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    route.stops.retain(|s| s.stop_order != cmd.stop_order);
+    route.updated_at = now;
+    route.updated_by = cmd.tenant.actor_id;
+    route.version = route.version.next();
+    route.last_event_id = Some(event_id);
+    Ok(crate::events::StopRemovedFromRoute::new(
+        route.id,
+        cmd.stop_order,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Deletes a [`Route`] + emits a [`RouteDeleted`] event.
+pub fn delete_route<C, G>(
+    route: &crate::aggregate::Route,
+    cmd: crate::commands::DeleteRouteCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::RouteDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    Ok(crate::events::RouteDeleted::new(
+        route.id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Unassigns a [`Vehicle`] from a [`Route`] + emits a [`VehicleUnassigned`] event.
+pub fn unassign_vehicle_from_route<C, G>(
+    av: &AssignVehicle,
+    cmd: crate::commands::UnassignVehicleFromRouteCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::VehicleUnassigned>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    Ok(crate::events::VehicleUnassigned::new(
+        av.id,
+        av.vehicle_id,
+        av.route_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Records a student unassignment from a vehicle-route pair +
+/// emits a [`StudentUnassignedFromRoute`] event.
+pub fn unassign_student_from_route<C, G>(
+    assign_vehicle_id: crate::value_objects::AssignVehicleId,
+    cmd: crate::commands::UnassignStudentFromRouteCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::StudentUnassignedFromRoute>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let today = chrono::NaiveDate::from_ymd_opt(
+        now.as_datetime().year(),
+        now.as_datetime().month(),
+        now.as_datetime().day(),
+    )
+    .unwrap_or_default();
+    Ok(crate::events::StudentUnassignedFromRoute::new(
+        assign_vehicle_id,
+        cmd.student_id,
+        today,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Updates a [`RoomType`] + emits a [`RoomTypeUpdated`] event.
+pub fn update_room_type<C, G>(
+    rt: &mut RoomType,
+    cmd: crate::commands::UpdateRoomTypeCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::RoomTypeUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let mut changes: Vec<&'static str> = Vec::new();
+    if let Some(name) = cmd.name {
+        rt.name = name;
+        changes.push("name");
+    }
+    if let Some(desc) = cmd.description {
+        rt.description = Some(desc);
+        changes.push("description");
+    }
+    rt.updated_at = now;
+    rt.updated_by = cmd.tenant.actor_id;
+    rt.version = rt.version.next();
+    rt.last_event_id = Some(event_id);
+    Ok(crate::events::RoomTypeUpdated::new(
+        rt.id,
+        changes,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Deletes a [`RoomType`] + emits a [`RoomTypeDeleted`] event.
+pub fn delete_room_type<C, G>(
+    rt: &RoomType,
+    cmd: crate::commands::DeleteRoomTypeCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::RoomTypeDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    Ok(crate::events::RoomTypeDeleted::new(
+        rt.id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Updates a [`Dormitory`] + emits a [`DormitoryUpdated`] event.
+pub fn update_dormitory<C, G>(
+    d: &mut Dormitory,
+    cmd: crate::commands::UpdateDormitoryCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::DormitoryUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let mut changes: Vec<&'static str> = Vec::new();
+    if let Some(name) = cmd.name {
+        d.name = name;
+        changes.push("name");
+    }
+    if let Some(address) = cmd.address {
+        d.address = Some(address);
+        changes.push("address");
+    }
+    if let Some(intake) = cmd.intake {
+        d.intake = intake;
+        changes.push("intake");
+    }
+    if let Some(description) = cmd.description {
+        d.description = Some(description);
+        changes.push("description");
+    }
+    d.updated_at = now;
+    d.updated_by = cmd.tenant.actor_id;
+    d.version = d.version.next();
+    d.last_event_id = Some(event_id);
+    Ok(crate::events::DormitoryUpdated::new(
+        d.id,
+        changes,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Deletes a [`Dormitory`] + emits a [`DormitoryDeleted`] event.
+pub fn delete_dormitory<C, G>(
+    d: &Dormitory,
+    cmd: crate::commands::DeleteDormitoryCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::DormitoryDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    Ok(crate::events::DormitoryDeleted::new(
+        d.id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Updates a [`Room`] + emits a [`RoomUpdated`] event.
+pub fn update_room<C, G>(
+    room: &mut Room,
+    cmd: crate::commands::UpdateRoomCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::RoomUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let mut changes: Vec<&'static str> = Vec::new();
+    if let Some(rt) = cmd.room_type_id {
+        room.room_type_id = rt;
+        changes.push("room_type_id");
+    }
+    if let Some(b) = cmd.number_of_bed {
+        room.number_of_bed = b;
+        changes.push("number_of_bed");
+    }
+    if let Some(c) = cmd.cost_per_bed {
+        room.cost_per_bed = c;
+        changes.push("cost_per_bed");
+    }
+    if let Some(desc) = cmd.description {
+        room.description = Some(desc);
+        changes.push("description");
+    }
+    room.updated_at = now;
+    room.updated_by = cmd.tenant.actor_id;
+    room.version = room.version.next();
+    room.last_event_id = Some(event_id);
+    Ok(crate::events::RoomUpdated::new(
+        room.id,
+        changes,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Deletes a [`Room`] + emits a [`RoomDeleted`] event.
+pub fn delete_room<C, G>(
+    room: &Room,
+    cmd: crate::commands::DeleteRoomCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::RoomDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    Ok(crate::events::RoomDeleted::new(
+        room.id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Releases a student from a [`Room`] + emits a [`StudentUnassignedFromRoom`] event.
+pub fn unassign_student_from_room<C, G>(
+    cmd: crate::commands::UnassignStudentFromRoomCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::StudentUnassignedFromRoom>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    Ok(crate::events::StudentUnassignedFromRoom::new(
+        cmd.room_id,
+        cmd.student_id,
+        now,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Updates an [`ItemCategory`] + emits an [`ItemCategoryUpdated`] event.
+pub fn update_item_category<C, G>(
+    cat: &mut crate::aggregate::ItemCategory,
+    cmd: crate::commands::UpdateItemCategoryCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::ItemCategoryUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let mut changes: Vec<&'static str> = Vec::new();
+    if let Some(name) = cmd.category_name {
+        cat.category_name = name;
+        changes.push("category_name");
+    }
+    cat.updated_at = now;
+    cat.updated_by = cmd.tenant.actor_id;
+    cat.version = cat.version.next();
+    cat.last_event_id = Some(event_id);
+    Ok(crate::events::ItemCategoryUpdated::new(
+        cat.id,
+        changes,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Deletes an [`ItemCategory`] + emits an [`ItemCategoryDeleted`] event.
+pub fn delete_item_category<C, G>(
+    cat: &crate::aggregate::ItemCategory,
+    cmd: crate::commands::DeleteItemCategoryCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::ItemCategoryDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    Ok(crate::events::ItemCategoryDeleted::new(
+        cat.id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Updates an [`Item`] + emits an [`ItemUpdated`] event.
+pub fn update_item<C, G>(
+    item: &mut Item,
+    cmd: crate::commands::UpdateItemCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::ItemUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let mut changes: Vec<&'static str> = Vec::new();
+    if let Some(name) = cmd.item_name {
+        item.item_name = name;
+        changes.push("item_name");
+    }
+    if let Some(cat) = cmd.item_category_id {
+        item.item_category_id = cat;
+        changes.push("item_category_id");
+    }
+    if let Some(desc) = cmd.description {
+        item.description = Some(desc);
+        changes.push("description");
+    }
+    item.updated_at = now;
+    item.updated_by = cmd.tenant.actor_id;
+    item.version = item.version.next();
+    item.last_event_id = Some(event_id);
+    Ok(crate::events::ItemUpdated::new(
+        item.id,
+        changes,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Deletes an [`Item`] + emits an [`ItemDeleted`] event.
+pub fn delete_item<C, G>(
+    item: &Item,
+    cmd: crate::commands::DeleteItemCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::ItemDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    Ok(crate::events::ItemDeleted::new(
+        item.id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Updates an [`ItemStore`] + emits an [`ItemStoreUpdated`] event.
+pub fn update_item_store<C, G>(
+    store: &mut ItemStore,
+    cmd: crate::commands::UpdateItemStoreCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::ItemStoreUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let mut changes: Vec<&'static str> = Vec::new();
+    if let Some(name) = cmd.store_name {
+        store.store_name = name;
+        changes.push("store_name");
+    }
+    if let Some(num) = cmd.store_number {
+        store.store_number = Some(num);
+        changes.push("store_number");
+    }
+    if let Some(desc) = cmd.description {
+        store.description = Some(desc);
+        changes.push("description");
+    }
+    store.updated_at = now;
+    store.updated_by = cmd.tenant.actor_id;
+    store.version = store.version.next();
+    store.last_event_id = Some(event_id);
+    Ok(crate::events::ItemStoreUpdated::new(
+        store.id,
+        changes,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Deletes an [`ItemStore`] + emits an [`ItemStoreDeleted`] event.
+pub fn delete_item_store<C, G>(
+    store: &ItemStore,
+    cmd: crate::commands::DeleteItemStoreCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::ItemStoreDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    Ok(crate::events::ItemStoreDeleted::new(
+        store.id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Updates an existing [`ItemReceive`] + emits an [`ItemReceiveUpdated`]
+/// event. The dispatcher is responsible for re-applying stock
+/// deltas and re-validating totals.
+pub fn update_item_receive<C, G>(
+    recv: &mut ItemReceive,
+    cmd: crate::commands::UpdateItemReceiveCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::ItemReceiveUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let mut changes: Vec<&'static str> = Vec::new();
+    if !cmd.lines_to_add.is_empty() || !cmd.lines_to_remove.is_empty() {
+        changes.push("lines");
+    }
+    if let Some(p) = cmd.total_paid {
+        recv.total_paid = p;
+        recv.total_due = recv.grand_total.saturating_sub(p);
+        changes.push("total_paid");
+    }
+    if let Some(pm) = cmd.payment_method {
+        recv.payment_method = pm;
+        changes.push("payment_method");
+    }
+    if let Some(s) = cmd.paid_status {
+        recv.paid_status = s;
+        changes.push("paid_status");
+    }
+    recv.updated_at = now;
+    recv.updated_by = cmd.tenant.actor_id;
+    recv.version = recv.version.next();
+    recv.last_event_id = Some(event_id);
+    Ok(crate::events::ItemReceiveUpdated::new(
+        recv.id,
+        changes,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Cancels an [`ItemReceive`] + emits an [`ItemReceiveCancelled`] event.
+pub fn cancel_item_receive<C, G>(
+    recv: &ItemReceive,
+    cmd: crate::commands::CancelItemReceiveCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::ItemReceiveCancelled>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    // Reversed lines are populated by the dispatcher from the
+    // existing child rows; the service emits the event shell.
+    Ok(crate::events::ItemReceiveCancelled::new(
+        recv.id,
+        cmd.reason,
+        Vec::new(),
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Updates an issue's [`IssueStatus`] + emits an
+/// [`ItemIssueStatusUpdated`] event.
+pub fn update_issue_status<C, G>(
+    issue: &mut ItemIssue,
+    cmd: crate::commands::UpdateIssueStatusCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::ItemIssueStatusUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let from = issue.issue_status;
+    issue.issue_status = cmd.new_status;
+    issue.updated_at = now;
+    issue.updated_by = cmd.tenant.actor_id;
+    issue.version = issue.version.next();
+    issue.last_event_id = Some(event_id);
+    Ok(crate::events::ItemIssueStatusUpdated::new(
+        issue.id,
+        from,
+        cmd.new_status,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Updates an existing [`ItemSell`] + emits an [`ItemSellUpdated`] event.
+pub fn update_item_sell<C, G>(
+    sell: &mut ItemSell,
+    cmd: crate::commands::UpdateItemSellCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::ItemSellUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let mut changes: Vec<&'static str> = Vec::new();
+    if !cmd.lines_to_add.is_empty() || !cmd.lines_to_remove.is_empty() {
+        changes.push("lines");
+    }
+    if let Some(p) = cmd.total_paid {
+        sell.total_paid = p;
+        sell.total_due = sell.grand_total.saturating_sub(p);
+        changes.push("total_paid");
+    }
+    if let Some(pm) = cmd.payment_method {
+        sell.payment_method = pm;
+        changes.push("payment_method");
+    }
+    if let Some(s) = cmd.paid_status {
+        sell.paid_status = s;
+        changes.push("paid_status");
+    }
+    sell.updated_at = now;
+    sell.updated_by = cmd.tenant.actor_id;
+    sell.version = sell.version.next();
+    sell.last_event_id = Some(event_id);
+    Ok(crate::events::ItemSellUpdated::new(
+        sell.id,
+        changes,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Cancels an [`ItemSell`] + emits an [`ItemSellCancelled`] event.
+pub fn cancel_item_sell<C, G>(
+    sell: &ItemSell,
+    cmd: crate::commands::CancelItemSellCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::ItemSellCancelled>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    Ok(crate::events::ItemSellCancelled::new(
+        sell.id,
+        cmd.reason,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Refunds (fully or partially) an [`ItemSell`] + emits an
+/// [`ItemSellRefunded`] event. The dispatcher is responsible for
+/// reversing the corresponding stock decrement.
+pub fn refund_item_sell<C, G>(
+    sell: &mut ItemSell,
+    cmd: crate::commands::RefundItemSellCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::ItemSellRefunded>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    if cmd.amount < 0 {
+        return Err(DomainError::validation("refund amount must be non-negative"));
+    }
+    if cmd.amount > sell.total_paid {
+        return Err(DomainError::conflict(format!(
+            "refund amount {} exceeds total_paid {}",
+            cmd.amount, sell.total_paid
+        )));
+    }
+    let new_paid_status = if cmd.amount == sell.total_paid {
+        crate::value_objects::PaidStatus::Refunded
+    } else {
+        crate::value_objects::PaidStatus::Partial
+    };
+    sell.paid_status = new_paid_status;
+    sell.updated_at = now;
+    sell.updated_by = cmd.tenant.actor_id;
+    sell.version = sell.version.next();
+    sell.last_event_id = Some(event_id);
+    Ok(crate::events::ItemSellRefunded::new(
+        sell.id,
+        cmd.amount,
+        new_paid_status,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Updates a [`Supplier`] + emits a [`SupplierUpdated`] event.
+#[allow(clippy::too_many_arguments)]
+pub fn update_supplier<C, G>(
+    s: &mut Supplier,
+    cmd: crate::commands::UpdateSupplierCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::SupplierUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let mut changes: Vec<&'static str> = Vec::new();
+    if let Some(name) = cmd.company_name {
+        s.company_name = name;
+        changes.push("company_name");
+    }
+    if let Some(addr) = cmd.company_address {
+        s.company_address = Some(addr);
+        changes.push("company_address");
+    }
+    if let Some(name) = cmd.contact_person_name {
+        s.contact_person_name = Some(name);
+        changes.push("contact_person_name");
+    }
+    if let Some(m) = cmd.contact_person_mobile {
+        s.contact_person_mobile = Some(m);
+        changes.push("contact_person_mobile");
+    }
+    if let Some(e) = cmd.contact_person_email {
+        s.contact_person_email = Some(e);
+        changes.push("contact_person_email");
+    }
+    if let Some(a) = cmd.contact_person_address {
+        s.contact_person_address = Some(a);
+        changes.push("contact_person_address");
+    }
+    if let Some(d) = cmd.description {
+        s.description = Some(d);
+        changes.push("description");
+    }
+    s.updated_at = now;
+    s.updated_by = cmd.tenant.actor_id;
+    s.version = s.version.next();
+    s.last_event_id = Some(event_id);
+    Ok(crate::events::SupplierUpdated::new(
+        s.id,
+        changes,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Deactivates a [`Supplier`] + emits a [`SupplierDeactivated`] event.
+pub fn deactivate_supplier<C, G>(
+    s: &mut Supplier,
+    cmd: crate::commands::DeactivateSupplierCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::SupplierDeactivated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    s.deactivate(cmd.new_status, cmd.tenant.actor_id, now, event_id)?;
+    Ok(crate::events::SupplierDeactivated::new(
+        s.id,
+        cmd.reason,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Deletes a [`Supplier`] + emits a [`SupplierDeleted`] event.
+pub fn delete_supplier<C, G>(
+    s: &Supplier,
+    cmd: crate::commands::DeleteSupplierCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<crate::events::SupplierDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    Ok(crate::events::SupplierDeleted::new(
+        s.id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+// =============================================================================
 // Helpers: TransportService, DormitoryService, InventoryService,
 // SupplierService
 // =============================================================================
@@ -1186,6 +2093,10 @@ impl InventoryConservationService {
 mod tests {
     use super::*;
     use crate::prelude::IssueStatus;
+    use crate::value_objects::{
+        DormitoryId, ItemIssueId, ItemReceiveId, ItemSellId, RoomId, RouteId, StudentId,
+        VehicleId,
+    };
     use educore_core::clock::{IdGenerator, SystemClock, SystemIdGen};
     use educore_core::ids::Identifier;
     use educore_hr::value_objects::RoleId;
@@ -1363,6 +2274,600 @@ mod tests {
         let event = return_issued_item(&mut issue, cmd, &SystemClock, &SystemIdGen).unwrap();
         assert_eq!(event.returned_quantity, 4);
         assert_eq!(event.new_status, IssueStatus::PartiallyReturned);
+    }
+
+    // -------------------------------------------------------------------------
+    // Gap-fill happy-path tests (Phase 8 Update / Delete / Unassign services).
+    // Each test exercises the constructor + happy path of one of the
+    // 29 new factory functions.
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn delete_vehicle_emits_event() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let v = Vehicle::fresh(
+            VehicleId::new(school, uuid::Uuid::now_v7()),
+            year(),
+            VehicleNumber::new("V-1").unwrap(),
+            VehicleModel::new("Bus").unwrap(),
+            None,
+            None,
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let cmd = crate::commands::DeleteVehicleCommand {
+            tenant,
+            vehicle_id: v.id,
+        };
+        let ev = delete_vehicle(&v, cmd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(
+            <crate::events::VehicleDeleted as educore_events::domain_event::DomainEvent>::EVENT_TYPE,
+            "facilities.vehicle.deleted"
+        );
+        assert_eq!(ev.vehicle_id, v.id);
+    }
+
+    #[test]
+    fn update_route_emits_event() {
+        let (_, _, _at, _corr, tenant) = ctx();
+        let mut route = crate::aggregate::Route::fresh(
+            crate::value_objects::RouteId::new(SystemIdGen.next_school_id(), uuid::Uuid::now_v7()),
+            year(),
+            RouteName::new("Route 1").unwrap(),
+            Fare(100),
+            None,
+            Vec::new(),
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let cmd = crate::commands::UpdateRouteCommand {
+            tenant,
+            route_id: route.id,
+            title: Some(RouteName::new("Route 1 Renamed").unwrap()),
+            fare: Some(Fare(150)),
+            distance: None,
+        };
+        let ev = update_route(&mut route, cmd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(route.fare.value(), 150);
+        assert!(ev.changes.iter().any(|c| c == "fare"));
+        assert_eq!(
+            <crate::events::RouteUpdated as educore_events::domain_event::DomainEvent>::EVENT_TYPE,
+            "facilities.route.updated"
+        );
+    }
+
+    #[test]
+    fn update_stop_on_route_emits_event() {
+        let (_, _, _at, _corr, tenant) = ctx();
+        let mut route = crate::aggregate::Route::fresh(
+            crate::value_objects::RouteId::new(SystemIdGen.next_school_id(), uuid::Uuid::now_v7()),
+            year(),
+            RouteName::new("Route 1").unwrap(),
+            Fare(100),
+            None,
+            vec![RouteStopSpec {
+                stop_order: 1,
+                stop_name: StopName::new("Stop 1").unwrap(),
+                pickup_time: None,
+                fare_override: None,
+            }],
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let cmd = crate::commands::UpdateStopOnRouteCommand {
+            tenant,
+            route_id: route.id,
+            stop_order: 1,
+            stop_name: Some(StopName::new("Stop 1 Renamed").unwrap()),
+            pickup_time: None,
+            fare_override: None,
+        };
+        let ev = update_stop_on_route(&mut route, cmd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(route.stops[0].stop_name.as_str(), "Stop 1 Renamed");
+        assert_eq!(ev.stop_order, 1);
+    }
+
+    #[test]
+    fn remove_stop_from_route_emits_event() {
+        let (_, _, _at, _corr, tenant) = ctx();
+        let mut route = crate::aggregate::Route::fresh(
+            crate::value_objects::RouteId::new(SystemIdGen.next_school_id(), uuid::Uuid::now_v7()),
+            year(),
+            RouteName::new("R").unwrap(),
+            Fare(0),
+            None,
+            vec![
+                RouteStopSpec {
+                    stop_order: 1,
+                    stop_name: StopName::new("A").unwrap(),
+                    pickup_time: None,
+                    fare_override: None,
+                },
+                RouteStopSpec {
+                    stop_order: 2,
+                    stop_name: StopName::new("B").unwrap(),
+                    pickup_time: None,
+                    fare_override: None,
+                },
+            ],
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let cmd = crate::commands::RemoveStopFromRouteCommand {
+            tenant,
+            route_id: route.id,
+            stop_order: 1,
+        };
+        let _ = remove_stop_from_route(&mut route, cmd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(route.stops.len(), 1);
+        assert_eq!(route.stops[0].stop_order, 2);
+    }
+
+    #[test]
+    fn delete_route_emits_event() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let route = crate::aggregate::Route::fresh(
+            crate::value_objects::RouteId::new(school, uuid::Uuid::now_v7()),
+            year(),
+            RouteName::new("R").unwrap(),
+            Fare(0),
+            None,
+            Vec::new(),
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let cmd = crate::commands::DeleteRouteCommand {
+            tenant,
+            route_id: route.id,
+        };
+        let ev = delete_route(&route, cmd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev.route_id, route.id);
+        assert_eq!(
+            <crate::events::RouteDeleted as educore_events::domain_event::DomainEvent>::EVENT_TYPE,
+            "facilities.route.deleted"
+        );
+    }
+
+    #[test]
+    fn unassign_vehicle_from_route_emits_event() {
+        let (school, _, _at, _corr, _tenant) = ctx();
+        let av = AssignVehicle::fresh(
+            crate::value_objects::AssignVehicleId::new(school, uuid::Uuid::now_v7()),
+            VehicleId::new(school, uuid::Uuid::now_v7()),
+            RouteId::new(school, uuid::Uuid::now_v7()),
+            year(),
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let tenant = TenantContext::for_user(
+            school,
+            SystemIdGen.next_user_id(),
+            SystemIdGen.next_correlation_id(),
+            educore_core::tenant::UserType::SchoolAdmin,
+        );
+        let cmd = crate::commands::UnassignVehicleFromRouteCommand {
+            tenant,
+            assign_vehicle_id: av.id,
+        };
+        let ev = unassign_vehicle_from_route(&av, cmd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev.vehicle_id, av.vehicle_id);
+    }
+
+    #[test]
+    fn unassign_student_from_route_emits_event() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let av = crate::value_objects::AssignVehicleId::new(school, uuid::Uuid::now_v7());
+        let stu = StudentId::new(school, uuid::Uuid::now_v7());
+        let cmd = crate::commands::UnassignStudentFromRouteCommand {
+            tenant,
+            assign_vehicle_id: av,
+            student_id: stu,
+        };
+        let ev = unassign_student_from_route(av, cmd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev.student_id, stu);
+        assert_eq!(ev.assign_vehicle_id, av);
+    }
+
+    #[test]
+    fn update_and_delete_room_type_emit_events() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let mut rt = RoomType::fresh(
+            RoomTypeId::new(school, uuid::Uuid::now_v7()),
+            RoomTypeName::new("Single").unwrap(),
+            None,
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let upd = crate::commands::UpdateRoomTypeCommand {
+            tenant: tenant.clone(),
+            room_type_id: rt.id,
+            name: Some(RoomTypeName::new("Single AC").unwrap()),
+            description: None,
+        };
+        let ev = update_room_type(&mut rt, upd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(rt.name.as_str(), "Single AC");
+        assert!(ev.changes.iter().any(|c| c == "name"));
+        let del = crate::commands::DeleteRoomTypeCommand {
+            tenant,
+            room_type_id: rt.id,
+        };
+        let ev2 = delete_room_type(&rt, del, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev2.room_type_id, rt.id);
+    }
+
+    #[test]
+    fn update_and_delete_dormitory_emit_events() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let mut d = Dormitory::fresh(
+            DormitoryId::new(school, uuid::Uuid::now_v7()),
+            year(),
+            DormitoryName::new("Block A").unwrap(),
+            DormitoryType::Boys,
+            None,
+            Intake(50),
+            None,
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let upd = crate::commands::UpdateDormitoryCommand {
+            tenant: tenant.clone(),
+            dormitory_id: d.id,
+            name: None,
+            address: None,
+            intake: Some(Intake(75)),
+            description: None,
+        };
+        let ev = update_dormitory(&mut d, upd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(d.intake.value(), 75);
+        assert!(ev.changes.iter().any(|c| c == "intake"));
+        let del = crate::commands::DeleteDormitoryCommand {
+            tenant,
+            dormitory_id: d.id,
+        };
+        let ev2 = delete_dormitory(&d, del, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev2.dormitory_id, d.id);
+    }
+
+    #[test]
+    fn update_and_delete_room_emit_events() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let mut room = Room::fresh(
+            RoomId::new(school, uuid::Uuid::now_v7()),
+            DormitoryId::new(school, uuid::Uuid::now_v7()),
+            RoomNumber::new("101").unwrap(),
+            RoomTypeId::new(school, uuid::Uuid::now_v7()),
+            NumberOfBed(2),
+            CostPerBed(1000),
+            None,
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let upd = crate::commands::UpdateRoomCommand {
+            tenant: tenant.clone(),
+            room_id: room.id,
+            room_type_id: None,
+            number_of_bed: Some(NumberOfBed(3)),
+            cost_per_bed: Some(CostPerBed(1500)),
+            description: None,
+        };
+        let ev = update_room(&mut room, upd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(room.number_of_bed.value(), 3);
+        assert_eq!(room.cost_per_bed.value(), 1500);
+        assert!(ev.changes.iter().any(|c| c == "number_of_bed"));
+        let del = crate::commands::DeleteRoomCommand {
+            tenant,
+            room_id: room.id,
+        };
+        let ev2 = delete_room(&room, del, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev2.room_id, room.id);
+    }
+
+    #[test]
+    fn unassign_student_from_room_emits_event() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let room = RoomId::new(school, uuid::Uuid::now_v7());
+        let stu = StudentId::new(school, uuid::Uuid::now_v7());
+        let cmd = crate::commands::UnassignStudentFromRoomCommand {
+            tenant,
+            room_id: room,
+            student_id: stu,
+        };
+        let ev = unassign_student_from_room(cmd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev.room_id, room);
+        assert_eq!(ev.student_id, stu);
+    }
+
+    #[test]
+    fn update_and_delete_item_category_emit_events() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let mut cat = crate::aggregate::ItemCategory::fresh(
+            crate::value_objects::ItemCategoryId::new(school, uuid::Uuid::now_v7()),
+            CategoryName::new("Stationery").unwrap(),
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let upd = crate::commands::UpdateItemCategoryCommand {
+            tenant: tenant.clone(),
+            item_category_id: cat.id,
+            category_name: Some(CategoryName::new("Stationery Plus").unwrap()),
+        };
+        let ev = update_item_category(&mut cat, upd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(cat.category_name.as_str(), "Stationery Plus");
+        assert!(ev.changes.iter().any(|c| c == "category_name"));
+        let del = crate::commands::DeleteItemCategoryCommand {
+            tenant,
+            item_category_id: cat.id,
+        };
+        let ev2 = delete_item_category(&cat, del, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev2.item_category_id, cat.id);
+    }
+
+    #[test]
+    fn update_and_delete_item_emit_events() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let mut item = Item::fresh(
+            ItemId::new(school, uuid::Uuid::now_v7()),
+            year(),
+            ItemName::new("Pen").unwrap(),
+            ItemSku::new("PEN-001").unwrap(),
+            crate::value_objects::ItemCategoryId::new(school, uuid::Uuid::now_v7()),
+            None,
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let upd = crate::commands::UpdateItemCommand {
+            tenant: tenant.clone(),
+            item_id: item.id,
+            item_name: Some(ItemName::new("Blue Pen").unwrap()),
+            item_category_id: None,
+            description: None,
+        };
+        let ev = update_item(&mut item, upd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(item.item_name.as_str(), "Blue Pen");
+        assert!(ev.changes.iter().any(|c| c == "item_name"));
+        let del = crate::commands::DeleteItemCommand {
+            tenant,
+            item_id: item.id,
+        };
+        let ev2 = delete_item(&item, del, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev2.item_id, item.id);
+    }
+
+    #[test]
+    fn update_and_delete_item_store_emit_events() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let mut store = ItemStore::fresh(
+            ItemStoreId::new(school, uuid::Uuid::now_v7()),
+            StoreName::new("Main").unwrap(),
+            None,
+            None,
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let upd = crate::commands::UpdateItemStoreCommand {
+            tenant: tenant.clone(),
+            item_store_id: store.id,
+            store_name: Some(StoreName::new("Main Store").unwrap()),
+            store_number: None,
+            description: None,
+        };
+        let ev = update_item_store(&mut store, upd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(store.store_name.as_str(), "Main Store");
+        let del = crate::commands::DeleteItemStoreCommand {
+            tenant,
+            item_store_id: store.id,
+        };
+        let ev2 = delete_item_store(&store, del, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev2.item_store_id, store.id);
+    }
+
+    #[test]
+    fn update_and_cancel_item_receive_emit_events() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let mut recv = ItemReceive::fresh(
+            ItemReceiveId::new(school, uuid::Uuid::now_v7()),
+            year(),
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 24).unwrap(),
+            None,
+            SupplierId::new(school, uuid::Uuid::now_v7()),
+            ItemStoreId::new(school, uuid::Uuid::now_v7()),
+            ItemQuantity(10),
+            500,
+            200,
+            PaymentMethod::Cash,
+            PaidStatus::Partial,
+            None,
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let initial_paid = recv.total_paid;
+        let upd = crate::commands::UpdateItemReceiveCommand {
+            tenant: tenant.clone(),
+            item_receive_id: recv.id,
+            lines_to_add: Vec::new(),
+            lines_to_remove: Vec::new(),
+            total_paid: Some(500),
+            payment_method: None,
+            paid_status: Some(PaidStatus::Paid),
+        };
+        let ev = update_item_receive(&mut recv, upd, &SystemClock, &SystemIdGen).unwrap();
+        assert_ne!(recv.total_paid, initial_paid);
+        assert_eq!(recv.paid_status, PaidStatus::Paid);
+        assert!(ev.changes.iter().any(|c| c == "total_paid"));
+        let cancel = crate::commands::CancelItemReceiveCommand {
+            tenant,
+            item_receive_id: recv.id,
+            reason: "supplier return".to_owned(),
+        };
+        let ev2 = cancel_item_receive(&recv, cancel, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev2.reason, "supplier return");
+    }
+
+    #[test]
+    fn update_issue_status_emits_event() {
+        let (school, _, at, corr, tenant) = ctx();
+        let id = ItemIssueId::new(school, uuid::Uuid::now_v7());
+        let mut issue = ItemIssue::fresh(
+            id,
+            year(),
+            ItemId::new(school, uuid::Uuid::now_v7()),
+            crate::value_objects::ItemCategoryId::new(school, uuid::Uuid::now_v7()),
+            IssueRecipient::Role(RoleId::new(school, uuid::Uuid::now_v7())),
+            SystemIdGen.next_user_id(),
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 24).unwrap(),
+            None,
+            ItemQuantity(5),
+            None,
+            SystemIdGen.next_user_id(),
+            at,
+            corr,
+        );
+        let cmd = crate::commands::UpdateIssueStatusCommand {
+            tenant,
+            item_issue_id: id,
+            new_status: IssueStatus::Lost,
+        };
+        let ev = update_issue_status(&mut issue, cmd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(issue.issue_status, IssueStatus::Lost);
+        assert_eq!(ev.from_status, IssueStatus::Issued);
+        assert_eq!(ev.to_status, IssueStatus::Lost);
+    }
+
+    #[test]
+    fn update_cancel_refund_item_sell_emit_events() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let mut sell = ItemSell::fresh(
+            ItemSellId::new(school, uuid::Uuid::now_v7()),
+            year(),
+            IssueRecipient::Role(RoleId::new(school, uuid::Uuid::now_v7())),
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 24).unwrap(),
+            None,
+            ItemQuantity(2),
+            1000,
+            1000,
+            PaymentMethod::Cash,
+            PaidStatus::Paid,
+            None,
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let upd = crate::commands::UpdateItemSellCommand {
+            tenant: tenant.clone(),
+            item_sell_id: sell.id,
+            lines_to_add: Vec::new(),
+            lines_to_remove: Vec::new(),
+            total_paid: Some(500),
+            payment_method: None,
+            paid_status: Some(PaidStatus::Partial),
+        };
+        let _ = update_item_sell(&mut sell, upd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(sell.paid_status, PaidStatus::Partial);
+        let cancel = crate::commands::CancelItemSellCommand {
+            tenant: tenant.clone(),
+            item_sell_id: sell.id,
+            reason: "customer changed mind".to_owned(),
+        };
+        let ev = cancel_item_sell(&sell, cancel, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev.reason, "customer changed mind");
+        let refund = crate::commands::RefundItemSellCommand {
+            tenant,
+            item_sell_id: sell.id,
+            amount: 500,
+        };
+        let ev2 = refund_item_sell(&mut sell, refund, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev2.refund_amount, 500);
+        // After refund, total_paid was 500 and refund amount is 500,
+        // so the new paid status is `Refunded` (full refund).
+        assert_eq!(ev2.new_paid_status, PaidStatus::Refunded);
+    }
+
+    #[test]
+    fn refund_item_sell_rejects_exceeding_paid() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let mut sell = ItemSell::fresh(
+            ItemSellId::new(school, uuid::Uuid::now_v7()),
+            year(),
+            IssueRecipient::Role(RoleId::new(school, uuid::Uuid::now_v7())),
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 24).unwrap(),
+            None,
+            ItemQuantity(2),
+            1000,
+            100,
+            PaymentMethod::Cash,
+            PaidStatus::Partial,
+            None,
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let cmd = crate::commands::RefundItemSellCommand {
+            tenant,
+            item_sell_id: sell.id,
+            amount: 5000,
+        };
+        let err = refund_item_sell(&mut sell, cmd, &SystemClock, &SystemIdGen).unwrap_err();
+        assert!(matches!(err, DomainError::Conflict(_)));
+    }
+
+    #[test]
+    fn update_deactivate_delete_supplier_emit_events() {
+        let (school, _, _at, _corr, tenant) = ctx();
+        let mut s = Supplier::fresh(
+            SupplierId::new(school, uuid::Uuid::now_v7()),
+            SupplierName::new("Acme").unwrap(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            SystemIdGen.next_user_id(),
+            Timestamp::now(),
+            SystemIdGen.next_correlation_id(),
+        );
+        let upd = crate::commands::UpdateSupplierCommand {
+            tenant: tenant.clone(),
+            supplier_id: s.id,
+            company_name: Some(SupplierName::new("Acme Inc").unwrap()),
+            company_address: None,
+            contact_person_name: None,
+            contact_person_mobile: None,
+            contact_person_email: None,
+            contact_person_address: None,
+            description: None,
+        };
+        let ev = update_supplier(&mut s, upd, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(s.company_name.as_str(), "Acme Inc");
+        assert!(ev.changes.iter().any(|c| c == "company_name"));
+        let deact = crate::commands::DeactivateSupplierCommand {
+            tenant: tenant.clone(),
+            supplier_id: s.id,
+            new_status: crate::value_objects::SupplierStatus::Inactive,
+            reason: "out of business".to_owned(),
+        };
+        let ev = deactivate_supplier(&mut s, deact, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(s.status, crate::value_objects::SupplierStatus::Inactive);
+        assert_eq!(ev.reason, "out of business");
+        let del = crate::commands::DeleteSupplierCommand {
+            tenant,
+            supplier_id: s.id,
+        };
+        let ev2 = delete_supplier(&s, del, &SystemClock, &SystemIdGen).unwrap();
+        assert_eq!(ev2.supplier_id, s.id);
     }
 
     #[test]
