@@ -17,8 +17,9 @@
 //!   [`educore_hr`](::educore_hr); the finance crate owns only the
 //!   finance-specific ids.
 //!
-//! Phase 7 ships 44 typed ids, the 14 closed enums from the spec,
-//! and the `Money` value object.
+//! Phase 7 ships 51 finance-defined typed ids (plus 3 HR re-exports
+//! for `PayrollGenerateId`, `PayrollEarnDeducId`, `SalaryTemplateId`),
+//! the closed enums from the spec, and the `Money` value object.
 
 #![allow(missing_docs)]
 #![allow(unused_imports)]
@@ -313,6 +314,55 @@ finance_typed_id! {
 finance_typed_id! {
     /// A typed id for a [`DueFeesLoginPrevent`](crate::aggregate::DueFeesLoginPrevent).
     pub struct DueFeesLoginPreventId;
+}
+
+// =============================================================================
+// Typed ids: spec'd child-entity identities (per
+// `docs/specs/finance/entities.md`). The corresponding child-entity
+// structs live in `entities.rs` (or are slated for later workstreams);
+// the ID types must exist now so that downstream aggregates can
+// reference them in their event payloads and command shapes.
+// =============================================================================
+
+finance_typed_id! {
+    /// A typed id for a `FeesInstallmentAssignDiscount` child entity.
+    pub struct FeesInstallmentAssignDiscountId;
+}
+finance_typed_id! {
+    /// A typed id for a `DirectFeesInstallmentAssignChild` child entity.
+    pub struct DirectFeesInstallmentAssignChildId;
+}
+finance_typed_id! {
+    /// A typed id for an `FmFeesInvoiceLineNote` child entity.
+    pub struct FmFeesInvoiceLineNoteId;
+}
+finance_typed_id! {
+    /// A typed id for an `FmFeesTransactionLineNote` child entity.
+    pub struct FmFeesTransactionLineNoteId;
+}
+finance_typed_id! {
+    /// A typed id for a `BankStatementAttachment` child entity.
+    pub struct BankStatementAttachmentId;
+}
+finance_typed_id! {
+    /// A typed id for a `PayrollPaymentApproval` child entity.
+    pub struct PayrollPaymentApprovalId;
+}
+finance_typed_id! {
+    /// A typed id for a `BankPaymentSlipAudit` child entity.
+    pub struct BankPaymentSlipAuditId;
+}
+finance_typed_id! {
+    /// A typed id for an `ExpenseApproval` child entity.
+    pub struct ExpenseApprovalId;
+}
+finance_typed_id! {
+    /// A typed id for an `IncomeApproval` child entity.
+    pub struct IncomeApprovalId;
+}
+finance_typed_id! {
+    /// A typed id for a `WalletTransactionApproval` child entity.
+    pub struct WalletTransactionApprovalId;
 }
 
 // =============================================================================
