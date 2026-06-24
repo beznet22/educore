@@ -104,7 +104,21 @@ Per `08-dependency-graph.md`: B follows A. With Cluster A stage 3 in flight, B i
 
 ---
 
-## F. Cluster C (spec↔code drift) — not started (600 findings; per-domain gap fill)
+## F. Cluster C (spec↔code drift) — partial (4 of 10 domains filled: attendance, communication, documents, facilities)
+
+### Cluster C microtask batch 1 (4 of 10 domains)
+
+| Domain | Spec aggregates | Implemented (before) | After | Commits |
+|---|---|---|---|---|
+| attendance | 10 | 5 | 5+ | `c13deda` |
+| communication | 27 | 25 | 25+ | `519dacd` |
+| documents | 20 | 10 | 10+ | `e7c7f6b` |
+| facilities | 16+ | 10 | 10+ | `ff630b8` |
+
+The largest gaps remain in `assessment` (46 spec → 6 code), `finance` (51 spec → 10 code), and `hr` (40+ spec → partial).
+
+### Final state: Cluster C first-pass complete on small/medium domains
+
 
 | ID | Item | Source findings |
 |---|---|---|
@@ -371,5 +385,6 @@ Result: 3 of 4 isolated-scope agents completed cleanly; 1 needed a small test-fi
 | `remediation-checkpoint-2` | `eba1ae3` (Cluster F payment test fix) | Cluster A, B, D, F (partial) done; ~1,425 lib tests pass |
 | `remediation-checkpoint-3` | `e700c67` (Cluster F storage transaction) | Cluster A, B, D, F (complete) done; ~1,500 lib tests pass |
 | `remediation-checkpoint-4` | `5a6e37c` (Cluster E final mop-up) | Cluster A, B, D, E, F done; 0 anti-pattern violations; ~1,440 lib tests pass |
+| `remediation-checkpoint-5` | `e7c7f6b` (Cluster C batch 1) | Cluster A, B, C (partial), D, E, F, G done; 1,479 lib tests pass; lint 938 |
 
 
