@@ -20,7 +20,6 @@
 
 use std::sync::Mutex;
 
-use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -853,7 +852,7 @@ impl AuditWriter {
             // that need metadata can extend `AuditWriter` in
             // Phase 3 (the `to_audit_value` projection will land
             // alongside the per-aggregate emit hook).
-            metadata: Bytes::new(),
+            metadata: serde_json::Value::Null,
         };
         self.audit_log.append(entry).await?;
         self.maybe_sweep(school_id).await?;
