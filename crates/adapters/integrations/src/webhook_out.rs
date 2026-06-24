@@ -198,20 +198,25 @@ impl WebhookOutIntegration {
     ///
     /// Returns the hex-encoded digest prefixed with `sha256=`,
     /// matching the wire format documented in
-    /// `docs/ports/integrations.md`.
-    #[allow(clippy::expect_used)]
-    pub fn compute_signature(secret: &str, payload: &[u8]) -> String {
-        let mut mac =
-            HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC accepts any key length");
+    /// `docs/ports/integrations.md`. The `Result` wrapper exists
+    /// to thread HMAC key errors through without `unwrap`; in
+    /// practice HMAC-SHA256 accepts any key length, so the
+    /// `Err` arm is unreachable for well-formed inputs.
+    pub fn compute_signature(secret: &str, payload: &[u8]) -> Result<String> {
+        let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).map_err(|e| {
+            IntegrationError::Infrastructure(
+                format!("webhook HMAC key rejected: {e}").into(),
+            )
+        })?;
         mac.update(payload);
         let bytes = mac.finalize().into_bytes();
-        format!("sha256={}", hex_encode(&bytes))
+        Ok(format!("sha256={}", hex_encode(&bytes)))
     }
 
     /// Delivers a single payload to a single target. Internal —
     /// the public surface is [`IntegrationGateway::invoke`].
     async fn deliver(&self, target: &WebhookTarget, payload: &[u8]) -> Result<reqwest::Response> {
-        let signature = Self::compute_signature(&target.secret, payload);
+        let signature = Self::compute_signature(&target.secret, payload)?;
 
         self.http
             .post(&target.url)
@@ -379,17 +384,26 @@ impl WebhookOutIntegrationBuilder {
     }
 
     /// Assembles the final [`WebhookOutIntegration`].
-    #[must_use]
-    #[allow(clippy::expect_used)]
-    pub fn build(self) -> WebhookOutIntegration {
+    ///
+    /// The `Result` wrapper exists to thread `reqwest::Client`
+    /// construction failures through without `unwrap`; in
+    /// practice a builder configured with a valid timeout always
+    /// succeeds, so the `Err` arm is unreachable for
+    /// well-formed configurations. `Result` is already
+    /// `#[must_use]`, so no extra attribute is needed.
+    pub fn build(self) -> Result<WebhookOutIntegration> {
         let http = Client::builder()
             .timeout(std::time::Duration::from_secs(HTTP_TIMEOUT_SECS))
             .build()
-            .expect("reqwest client construction with a valid timeout cannot fail");
-        WebhookOutIntegration {
+            .map_err(|e| {
+                IntegrationError::Infrastructure(
+                    format!("webhook reqwest client construction failed: {e}").into(),
+                )
+            })?;
+        Ok(WebhookOutIntegration {
             http,
             targets: self.targets,
-        }
+        })
     }
 }
 
@@ -398,12 +412,17 @@ impl WebhookOutIntegrationBuilder {
 // ---------------------------------------------------------------------------
 
 /// Lower-case hex encoding without pulling in the `hex` crate.
+///
+/// `usize::from` is used instead of `as usize` to satisfy the
+/// engine rule that forbids numeric `as` casts; `u8 → usize` is
+/// a lossless widening that is always defined on every platform
+/// the engine targets.
 fn hex_encode(bytes: &[u8]) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut out = String::with_capacity(bytes.len() * 2);
     for byte in bytes {
-        out.push(HEX[(byte >> 4) as usize] as char);
-        out.push(HEX[(byte & 0x0f) as usize] as char);
+        out.push(HEX[usize::from(byte >> 4)] as char);
+        out.push(HEX[usize::from(byte & 0x0f)] as char);
     }
     out
 }
@@ -438,7 +457,8 @@ mod tests {
 
         let integration = WebhookOutIntegrationBuilder::new()
             .target(target.clone())
-            .build();
+            .build()
+            .expect("builder with valid timeout succeeds");
 
         assert_eq!(integration.target_count(), 1);
         assert_eq!(integration.targets()[0], target);
@@ -462,7 +482,8 @@ mod tests {
                 secret: "s2".into(),
                 event_filter: Some("InvoicePaid".into()),
             })
-            .build();
+            .build()
+            .expect("builder with valid timeout succeeds");
 
         assert_eq!(integration.target_count(), 2);
         assert_eq!(
@@ -476,7 +497,8 @@ mod tests {
         let secret = "shared-secret";
         let payload = br#"{"event":"InvoicePaid","amount_minor":12500}"#;
 
-        let sig = WebhookOutIntegration::compute_signature(secret, payload);
+        let sig = WebhookOutIntegration::compute_signature(secret, payload)
+            .expect("HMAC-SHA256 accepts any key length");
 
         assert!(
             sig.starts_with("sha256="),
@@ -500,16 +522,20 @@ mod tests {
     #[test]
     fn test_webhook_signature_changes_with_payload() {
         let secret = "k";
-        let sig_a = WebhookOutIntegration::compute_signature(secret, b"alpha");
-        let sig_b = WebhookOutIntegration::compute_signature(secret, b"beta");
+        let sig_a = WebhookOutIntegration::compute_signature(secret, b"alpha")
+            .expect("HMAC-SHA256 accepts any key length");
+        let sig_b = WebhookOutIntegration::compute_signature(secret, b"beta")
+            .expect("HMAC-SHA256 accepts any key length");
         assert_ne!(sig_a, sig_b);
     }
 
     #[test]
     fn test_webhook_signature_changes_with_secret() {
         let payload = b"payload";
-        let sig_a = WebhookOutIntegration::compute_signature("secret-a", payload);
-        let sig_b = WebhookOutIntegration::compute_signature("secret-b", payload);
+        let sig_a = WebhookOutIntegration::compute_signature("secret-a", payload)
+            .expect("HMAC-SHA256 accepts any key length");
+        let sig_b = WebhookOutIntegration::compute_signature("secret-b", payload)
+            .expect("HMAC-SHA256 accepts any key length");
         assert_ne!(sig_a, sig_b);
     }
 
@@ -543,7 +569,8 @@ mod tests {
                 secret: "s".into(),
                 event_filter: None,
             })
-            .build();
+            .build()
+            .expect("builder with valid timeout succeeds");
 
         let caps = integration.list_capabilities().await.expect("caps");
         assert_eq!(caps.len(), 1);
@@ -554,7 +581,9 @@ mod tests {
 
     #[tokio::test]
     async fn health_reports_healthy_with_current_timestamp() {
-        let integration = WebhookOutIntegrationBuilder::new().build();
+        let integration = WebhookOutIntegrationBuilder::new()
+            .build()
+            .expect("builder with valid timeout succeeds");
         let health = integration.health().await.expect("health");
         assert_eq!(health.status, HealthStatus::Healthy);
         assert!(health.message.is_none());
