@@ -1253,12 +1253,24 @@ impl AttendanceService {
 
     /// Returns the `StudentAbsentForDay` event that should
     /// fire for a given `StudentAttendance` row, or `None`
-    /// if the row is not absent.
+    /// if the row is not absent (or lacks the `last_event_id`
+    /// invariant required to mint the event).
     #[must_use]
     pub fn emit_absence_event(row: &StudentAttendance) -> Option<StudentAbsentForDay> {
         if !row.is_absent() {
             return None;
         }
+        // INVARIANT: an absent `StudentAttendance` row must carry
+        // a `last_event_id` (the `StudentAttendanceMarked` event
+        // that produced the absence). If the invariant is
+        // violated we cannot mint a `StudentAbsentForDay` with
+        // a stable event-id lineage, so we return `None` instead
+        // of silently minting a fresh UUID (the previous
+        // `.unwrap_or_else(|| EventId::from_uuid(...))` masked
+        // the invariant violation). The caller falls back to
+        // surfacing the absence via the storage port's
+        // integrity check.
+        let last_event_id = row.last_event_id?;
         Some(StudentAbsentForDay::new(
             row.id,
             row.student_id,
@@ -1267,8 +1279,7 @@ impl AttendanceService {
             row.section_id,
             row.attendance_date,
             row.notes.clone(),
-            row.last_event_id
-                .unwrap_or_else(|| EventId::from_uuid(uuid::Uuid::now_v7())),
+            last_event_id,
             row.correlation_id,
             row.marked_at,
         ))
