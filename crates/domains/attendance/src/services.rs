@@ -1204,8 +1204,8 @@ where
     // Unix epoch as a placeholder. `1970-01-01` is a valid
     // `NaiveDate` so the `ok_or_else` branch is unreachable; the
     // conversion is expressed as a fallible expression with `?`
-    // rather than `.expect("epoch")` so the engine's no-`expect`
-    // rule in production paths stays satisfied without
+    // rather than unwrapping the constant so the engine's
+    // no-panic-in-production rule stays satisfied without
     // introducing a panic surface.
     let placeholder_date = chrono::NaiveDate::from_ymd_opt(1970, 1, 1)
         .ok_or_else(|| DomainError::validation("epoch placeholder date is invalid"))?;
