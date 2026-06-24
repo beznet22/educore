@@ -207,8 +207,11 @@ impl HmacSha256Verifier {
         const HEX: &[u8; 16] = b"0123456789abcdef";
         let mut out = String::with_capacity(bytes.len() * 2);
         for &b in bytes {
-            out.push(HEX[(b >> 4) as usize] as char);
-            out.push(HEX[(b & 0x0f) as usize] as char);
+            // `usize::from` is infallible for `u8`, avoiding the
+            // engine's forbidden `as usize` numeric cast while
+            // preserving the nibble lookup.
+            out.push(HEX[usize::from(b >> 4)] as char);
+            out.push(HEX[usize::from(b & 0x0f)] as char);
         }
         out
     }
