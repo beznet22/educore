@@ -32,12 +32,14 @@ use educore_core::ids::SchoolId;
 use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
-    BulkAttendanceImport, ExamAttendance, StaffAttendance, StudentAttendance, SubjectAttendance,
+    AttendanceBulk, BulkAttendanceImport, ClassAttendance, ExamAttendance, StaffAttendance,
+    StudentAttendance, SubjectAttendance,
 };
 use crate::entities::{StaffAttendanceImport, StudentAttendanceImport};
 use crate::value_objects::{
-    AcademicYearId, AttendanceSource, BulkAttendanceImportId, ClassId, ExamAttendanceId, SectionId,
-    StaffAttendanceId, StaffId, StudentAttendanceId, StudentId, SubjectAttendanceId,
+    AcademicYearId, AttendanceSource, BulkAttendanceImportId, ClassId, ExamAttendanceId,
+    ExamTypeId, SectionId, StaffAttendanceId, StaffId, StudentAttendanceId, StudentId,
+    SubjectAttendanceId,
 };
 
 // =============================================================================
@@ -328,6 +330,73 @@ pub trait AttendanceImportRepository: Send + Sync {
         ctx: &TenantContext,
         rows: &[StaffAttendanceImport],
     ) -> Result<()>;
+
+    /// Inserts a single [`AttendanceBulk`] denormalized
+    /// staging row (per the spec, `attendance_bulks` is a
+    /// sibling of `student_attendance_imports`).
+    async fn insert_bulk_row(
+        &self,
+        ctx: &TenantContext,
+        row: &AttendanceBulk,
+    ) -> Result<()>;
+
+    /// Returns every [`AttendanceBulk`] row belonging to
+    /// the given bulk import job.
+    async fn list_bulk_rows(
+        &self,
+        ctx: &TenantContext,
+        bulk_id: BulkAttendanceImportId,
+    ) -> Result<Vec<AttendanceBulk>>;
+}
+
+// =============================================================================
+// ClassAttendanceRepository (spec repositories.md:149-180 — projection)
+// =============================================================================
+
+/// The storage-port contract for the [`ClassAttendance`]
+/// projection. The engine recomputes a `ClassAttendance`
+/// row on demand from `StudentAttendanceMarked` and
+/// `ExamAttendanceMarked` events; the `upsert` method is
+/// invoked by `AttendanceService::recompute_class_attendance`.
+#[allow(dead_code)]
+#[async_trait]
+pub trait ClassAttendanceRepository: Send + Sync {
+    /// Returns the [`ClassAttendance`] row for the unique
+    /// key `(school_id, student_id, exam_type_id,
+    /// academic_year_id)` (or `Ok(None)` if not yet
+    /// materialised).
+    async fn get(
+        &self,
+        school: SchoolId,
+        student: StudentId,
+        exam_type: ExamTypeId,
+        year: AcademicYearId,
+    ) -> Result<Option<ClassAttendance>>;
+
+    /// Returns every [`ClassAttendance`] row for the given
+    /// `(school, student, year)`. Stable ordering by
+    /// `exam_type_id`.
+    async fn list_for_student(
+        &self,
+        school: SchoolId,
+        student: StudentId,
+        year: AcademicYearId,
+    ) -> Result<Vec<ClassAttendance>>;
+
+    /// Returns every [`ClassAttendance`] row for the given
+    /// `(school, exam_type, year)`. Stable ordering by
+    /// `student_id`.
+    async fn list_for_exam_type(
+        &self,
+        school: SchoolId,
+        exam_type: ExamTypeId,
+        year: AcademicYearId,
+    ) -> Result<Vec<ClassAttendance>>;
+
+    /// Inserts or updates the [`ClassAttendance`] row for
+    /// the `(school_id, student_id, exam_type_id,
+    /// academic_year_id)` key.
+    async fn upsert(&self, ctx: &TenantContext, c: &ClassAttendance) -> Result<()>;
 }
 
 // =============================================================================
@@ -355,5 +424,20 @@ mod tests {
         fn _staff_attendance_repository(_: Box<dyn StaffAttendanceRepository>) {}
         fn _exam_attendance_repository(_: Box<dyn ExamAttendanceRepository>) {}
         fn _attendance_import_repository(_: Box<dyn AttendanceImportRepository>) {}
+        fn _class_attendance_repository(_: Box<dyn ClassAttendanceRepository>) {}
+    }
+
+    /// Happy-path: `ClassAttendanceId::new` round-trips
+    /// the school anchor through the typed id (the wiring
+    /// test that proves the new `ClassAttendanceRepository`
+    /// trait compiles against `ClassAttendance`).
+    #[test]
+    fn class_attendance_repository_id_round_trip() {
+        use educore_core::clock::{IdGenerator, SystemIdGen};
+        use crate::value_objects::ClassAttendanceId;
+        let gen = SystemIdGen;
+        let school = gen.next_school_id();
+        let id = ClassAttendanceId::new(school, gen.next_uuid());
+        assert_eq!(id.school_id(), school);
     }
 }

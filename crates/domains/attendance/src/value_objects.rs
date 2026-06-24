@@ -462,6 +462,7 @@ pub use educore_academic::{ClassId, SectionId, StudentId, StudentRecordId, Subje
 pub use educore_academic::value_objects::AcademicYearId;
 
 pub use educore_assessment::ExamId;
+pub use educore_assessment::ExamTypeId;
 
 // =============================================================================
 // Tests

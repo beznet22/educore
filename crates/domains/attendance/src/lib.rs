@@ -46,7 +46,8 @@ pub mod prelude {
     pub use educore_rbac::value_objects::Capability;
 
     pub use crate::aggregate::{
-        BulkAttendanceImport, ExamAttendance, StaffAttendance, StudentAttendance, SubjectAttendance,
+        AttendanceBulk, BulkAttendanceImport, ClassAttendance, ExamAttendance, StaffAttendance,
+        StudentAttendance, SubjectAttendance,
     };
     pub use crate::commands::{
         AttendanceUniquenessChecker, BulkMarkStudentAttendanceCommand, CancelBulkImportCommand,
@@ -78,8 +79,8 @@ pub mod prelude {
         StudentAttendanceQuery, SubjectAttendanceQuery,
     };
     pub use crate::repository::{
-        AttendanceImportRepository, ExamAttendanceRepository, StaffAttendanceRepository,
-        StudentAttendanceRepository, SubjectAttendanceRepository,
+        AttendanceImportRepository, ClassAttendanceRepository, ExamAttendanceRepository,
+        StaffAttendanceRepository, StudentAttendanceRepository, SubjectAttendanceRepository,
     };
     pub use crate::services::{
         bulk_mark_student_attendance, cancel_bulk_import, commit_bulk_import, import_attendance,
@@ -90,9 +91,10 @@ pub mod prelude {
     };
     pub use crate::value_objects::{
         AcademicYearId, AttendanceBulkId, AttendanceSource, AttendanceStatus, AttendanceType,
-        BulkAttendanceImportId, ClassAttendanceId, ClassId, ExamAttendanceId, ExamId, ImportStatus,
-        SectionId, StaffAttendanceId, StaffAttendanceImportId, StaffId, StudentAttendanceId,
-        StudentAttendanceImportId, StudentId, StudentRecordId, SubjectAttendanceId, SubjectId,
+        BulkAttendanceImportId, ClassAttendanceId, ClassId, ExamAttendanceId, ExamId, ExamTypeId,
+        ImportStatus, SectionId, StaffAttendanceId, StaffAttendanceImportId, StaffId,
+        StudentAttendanceId, StudentAttendanceImportId, StudentId, StudentRecordId,
+        SubjectAttendanceId, SubjectId,
     };
 }
 

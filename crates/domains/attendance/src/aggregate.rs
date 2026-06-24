@@ -34,9 +34,9 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 use educore_assessment::ExamId;
 
 use crate::value_objects::{
-    AcademicYearId, AttendanceSource, AttendanceType, BulkAttendanceImportId, ClassId,
-    ExamAttendanceId, SectionId, StaffAttendanceId, StaffId, StudentAttendanceId, StudentId,
-    StudentRecordId, SubjectAttendanceId, SubjectId,
+    AcademicYearId, AttendanceBulkId, AttendanceSource, AttendanceType, BulkAttendanceImportId,
+    ClassAttendanceId, ClassId, ExamAttendanceId, ExamTypeId, SectionId, StaffAttendanceId,
+    StaffId, StudentAttendanceId, StudentId, StudentRecordId, SubjectAttendanceId, SubjectId,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -622,5 +622,319 @@ impl BulkAttendanceImport {
     #[must_use]
     pub fn is_active(&self) -> bool {
         self.active_status.is_active()
+    }
+}
+
+// =============================================================================
+// ClassAttendance (projection aggregate — spec aggregates.md:210-232)
+// =============================================================================
+
+/// A per-(student, exam_type, academic_year) summary of
+/// days opened, days present, days absent, etc. Used in
+/// report cards and reports. The engine recomputes this
+/// projection on demand from `StudentAttendanceMarked` and
+/// `ExamAttendanceMarked` events.
+///
+/// **Spec invariant:**
+/// `days_opened = days_present + days_absent + days_on_leave
+/// + days_half_day * 0.5 + days_late`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ClassAttendance {
+    /// The summary row's typed id.
+    pub id: ClassAttendanceId,
+    /// The school (tenant anchor; also embedded in the typed id).
+    pub school_id: SchoolId,
+    /// The student the summary is for.
+    pub student_id: StudentId,
+    /// The exam type the summary is scoped to.
+    pub exam_type_id: ExamTypeId,
+    /// The academic year the summary is scoped to.
+    pub academic_year_id: AcademicYearId,
+    /// The total number of school days opened in the year.
+    pub days_opened: u32,
+    /// The number of days the student was present.
+    pub days_present: u32,
+    /// The number of days the student was absent.
+    pub days_absent: u32,
+    /// The number of days the student was late.
+    pub days_late: u32,
+    /// The number of half-days the student logged.
+    pub days_half_day: u32,
+    /// The number of days the student was on approved leave.
+    pub days_on_leave: u32,
+    /// The wall-clock instant the summary was last recomputed.
+    pub recomputed_at: Timestamp,
+    /// Standard 10-field audit-metadata footer.
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl ClassAttendance {
+    /// Constructs a new [`ClassAttendance`] projection row.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn fresh(
+        id: ClassAttendanceId,
+        student_id: StudentId,
+        exam_type_id: ExamTypeId,
+        academic_year_id: AcademicYearId,
+        days_opened: u32,
+        days_present: u32,
+        days_absent: u32,
+        days_late: u32,
+        days_half_day: u32,
+        days_on_leave: u32,
+        recomputed_at: Timestamp,
+        recomputed_by: UserId,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        Self {
+            school_id: id.school_id(),
+            id,
+            student_id,
+            exam_type_id,
+            academic_year_id,
+            days_opened,
+            days_present,
+            days_absent,
+            days_late,
+            days_half_day,
+            days_on_leave,
+            recomputed_at,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: recomputed_at,
+            updated_at: recomputed_at,
+            created_by: recomputed_by,
+            updated_by: recomputed_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        }
+    }
+
+    /// Returns `true` if the row is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Handler skeleton: validate the spec invariant
+    /// `days_opened = days_present + days_absent +
+    /// days_on_leave + days_half_day * 0.5 + days_late`.
+    ///
+    /// **TODO:** The full invariant check (and the
+    /// `ClassAttendanceRecomputed` event emission) lands in
+    /// Phase 5 Workstream C. This skeleton reserves the
+    /// method signature so the storage-parity test
+    /// `attendance_class_attendances_aggregate` can wire up
+    /// against it.
+    pub fn verify_invariants(&self) -> educore_core::error::Result<()> {
+        Err(educore_core::error::DomainError::not_supported(
+            "ClassAttendance::verify_invariants TODO: wire invariant check + emit ClassAttendanceRecomputed",
+        ))
+    }
+}
+
+// =============================================================================
+// AttendanceBulk (bulk-import staging aggregate — spec aggregates.md:235-248)
+// =============================================================================
+
+/// A per-(student, date) row materialized during a bulk
+/// import. This is the denormalized staging representation
+/// used by the consumer's import wizard; on commit, the
+/// engine promotes each row into a [`StudentAttendance`].
+///
+/// **Spec invariant:** belongs to exactly one
+/// [`BulkAttendanceImport`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AttendanceBulk {
+    /// The bulk row's typed id.
+    pub id: AttendanceBulkId,
+    /// The school (tenant anchor; also embedded in the typed id).
+    pub school_id: SchoolId,
+    /// The parent bulk-import job.
+    pub bulk_import_id: BulkAttendanceImportId,
+    /// The student this row records attendance for.
+    pub student_id: StudentId,
+    /// The calendar day the row records attendance for.
+    pub attendance_date: NaiveDate,
+    /// The single-character attendance code.
+    pub attendance_type: AttendanceType,
+    /// Optional wall-clock sign-in time (string form, e.g. `"08:45"`).
+    pub in_time: Option<String>,
+    /// Optional wall-clock sign-out time.
+    pub out_time: Option<String>,
+    /// Free-form notes.
+    pub notes: Option<String>,
+    /// Standard 10-field audit-metadata footer.
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl AttendanceBulk {
+    /// Constructs a new [`AttendanceBulk`] staging row.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn fresh(
+        id: AttendanceBulkId,
+        bulk_import_id: BulkAttendanceImportId,
+        student_id: StudentId,
+        attendance_date: NaiveDate,
+        attendance_type: AttendanceType,
+        in_time: Option<String>,
+        out_time: Option<String>,
+        notes: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        Self {
+            school_id: id.school_id(),
+            id,
+            bulk_import_id,
+            student_id,
+            attendance_date,
+            attendance_type,
+            in_time,
+            out_time,
+            notes,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        }
+    }
+
+    /// Returns `true` if the row is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Handler skeleton: promote the staging row into a
+    /// fully-fledged [`StudentAttendance`].
+    ///
+    /// **TODO:** The promote logic (and the
+    /// `StudentAttendanceImported` event emission) lands in
+    /// Phase 5 Workstream C. This skeleton reserves the
+    /// method signature so the storage-parity test
+    /// `attendance_attendance_bulks_aggregate` can wire up
+    /// against it.
+    pub fn promote_to_student_attendance(
+        &self,
+    ) -> educore_core::error::Result<crate::aggregate::StudentAttendance> {
+        Err(educore_core::error::DomainError::not_supported(
+            "AttendanceBulk::promote_to_student_attendance TODO: build StudentAttendance + emit StudentAttendanceImported",
+        ))
+    }
+}
+
+// =============================================================================
+// Happy-path tests for the 2 new aggregates
+// =============================================================================
+
+#[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::dbg_macro
+)]
+mod tests {
+    use super::*;
+    use educore_core::clock::{IdGenerator, SystemIdGen};
+
+    /// Happy-path: `ClassAttendance::fresh` populates all
+    /// required fields and `verify_invariants` returns
+    /// `Err(not_supported)` (the Phase 5 Workstream C stub).
+    #[test]
+    fn class_attendance_fresh_and_verify_invariants_stub() {
+        let gen = SystemIdGen;
+        let school = gen.next_school_id();
+        let id = ClassAttendanceId::new(school, gen.next_uuid());
+        let student = StudentId::new(school, gen.next_uuid());
+        let exam_type = ExamTypeId::new(school, gen.next_uuid());
+        let year = AcademicYearId::new(school, gen.next_uuid());
+        let actor = UserId(uuid::Uuid::now_v7());
+        let now = Timestamp::now();
+        let corr = CorrelationId(uuid::Uuid::now_v7());
+
+        let row = ClassAttendance::fresh(
+            id,
+            student,
+            exam_type,
+            year,
+            200, // days_opened
+            180, // days_present
+            10,  // days_absent
+            5,   // days_late
+            4,   // days_half_day
+            1,   // days_on_leave
+            now,
+            actor,
+            corr,
+        );
+
+        assert_eq!(row.school_id, school);
+        assert_eq!(row.student_id, student);
+        assert_eq!(row.days_opened, 200);
+        assert!(row.is_active());
+        assert!(row.verify_invariants().is_err());
+    }
+
+    /// Happy-path: `AttendanceBulk::fresh` populates all
+    /// required fields and `promote_to_student_attendance`
+    /// returns `Err(not_supported)` (the Phase 5 Workstream C
+    /// stub).
+    #[test]
+    fn attendance_bulk_fresh_and_promote_stub() {
+        let gen = SystemIdGen;
+        let school = gen.next_school_id();
+        let id = AttendanceBulkId::new(school, gen.next_uuid());
+        let job = BulkAttendanceImportId::new(school, gen.next_uuid());
+        let student = StudentId::new(school, gen.next_uuid());
+        let actor = UserId(uuid::Uuid::now_v7());
+        let now = Timestamp::now();
+        let corr = CorrelationId(uuid::Uuid::now_v7());
+
+        let row = AttendanceBulk::fresh(
+            id,
+            job,
+            student,
+            NaiveDate::from_ymd_opt(2026, 5, 14).unwrap(),
+            AttendanceType::Present,
+            Some("08:45".to_string()),
+            Some("15:30".to_string()),
+            None,
+            actor,
+            now,
+            corr,
+        );
+
+        assert_eq!(row.school_id, school);
+        assert_eq!(row.bulk_import_id, job);
+        assert_eq!(row.attendance_type, AttendanceType::Present);
+        assert!(row.is_active());
+        assert!(row.promote_to_student_attendance().is_err());
     }
 }
