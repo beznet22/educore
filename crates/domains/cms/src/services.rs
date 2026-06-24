@@ -161,6 +161,76 @@ where
     Ok(page)
 }
 
+/// Service factory: update an existing [`Page`]. Capability-gates
+/// on [`Capability::CmsPageUpdate`], re-loads the page, applies
+/// the requested changes, persists the updated row, writes the
+/// audit row, and publishes the [`PageUpdated`] event to the bus.
+#[allow(clippy::too_many_arguments)]
+pub async fn update_page_service<R, B>(
+    cmd: crate::commands::UpdatePageCommand,
+    repo: Arc<R>,
+    bus: Arc<B>,
+    audit: Arc<AuditWriter>,
+    cap: &dyn CapabilityCheck,
+) -> Result<Page>
+where
+    R: PageRepository + 'static,
+    B: EventBus + 'static,
+{
+    require_capability(cap, &cmd.tenant, Capability::CmsPageUpdate).await?;
+    let mut page = repo
+        .get(cmd.page_id)
+        .await
+        .map_err(|e| CmsError::Infrastructure(e.to_string()))?
+        .ok_or_else(|| {
+            CmsError::Validation(format!("page not found: {}", cmd.page_id.as_uuid()))
+        })?;
+    let before = snapshot(&page);
+
+    // Track the list of changed field names for the `PageUpdated`
+    // event payload.
+    let mut changes: Vec<String> = Vec::new();
+    if cmd.title.is_some() {
+        changes.push("title".to_owned());
+    }
+    if cmd.description.is_some() {
+        changes.push("description".to_owned());
+    }
+    if cmd.slug.is_some() {
+        changes.push("slug".to_owned());
+    }
+
+    let tenant = cmd.tenant.clone();
+    let event_id = EventId(uuid::Uuid::now_v7());
+    let update_cmd = cmd.into_update_page(event_id);
+    page.update(update_cmd)?;
+    repo.update(&page)
+        .await
+        .map_err(|e| CmsError::Infrastructure(e.to_string()))?;
+    let after = snapshot(&page);
+    audit
+        .write(
+            &tenant,
+            AuditAction::Update,
+            AuditTarget::Page(page.id.as_uuid()),
+            Some(before),
+            Some(after),
+        )
+        .await
+        .map_err(|e| CmsError::Infrastructure(e.to_string()))?;
+    let event = crate::events::PageUpdated::new(
+        &page,
+        changes,
+        tenant.actor_id,
+        tenant.correlation_id,
+        Timestamp::now(),
+    );
+    bus.publish(event.into_envelope(&tenant))
+        .await
+        .map_err(CmsError::from)?;
+    Ok(page)
+}
+
 /// Service factory: publish an existing [`Page`].
 #[allow(clippy::too_many_arguments)]
 pub async fn publish_page_service<R, B>(

@@ -86,8 +86,9 @@ pub mod prelude {
     pub use crate::services::{
         configure_home_page_service, content_service, content_share_list_service,
         create_news_service, create_page_service, create_testimonial_service,
-        form_uploaded_public_indexing_subscriber, ContentService, ContentShareListService,
-        FormIndexAction, HomeSliderService, NewsService, PageService, TestimonialService,
+        form_uploaded_public_indexing_subscriber, update_page_service, ContentService,
+        ContentShareListService, FormIndexAction, HomeSliderService, NewsService, PageService,
+        TestimonialService,
     };
 
     // 20 typed root ids + 6 child ids (re-exported for the public surface).

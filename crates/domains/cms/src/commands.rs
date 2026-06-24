@@ -543,12 +543,48 @@ mod tests {
 // =============================================================================
 
 /// Command: update an existing [`Page`](crate::aggregate::Page).
+///
+/// Per the spec, an `UpdatePage` command may change one or more
+/// of the page's editable fields. The 3-state `Option<Option<T>>`
+/// pattern on `description` / `slug` / `settings` mirrors the
+/// pattern used by the documents domain's `UpdateFormCommand`:
+/// outer `None` = "no change", `Some(None)` = "clear the field",
+/// `Some(Some(_))` = "set the field".
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdatePageCommand {
     /// The active tenant.
     pub tenant: TenantContext,
     /// The page being updated.
     pub page_id: crate::value_objects::PageId,
+    /// The new title, if changing.
+    pub title: Option<PageTitle>,
+    /// The new description, if changing or clearing.
+    pub description: Option<Option<PageDescription>>,
+    /// The new slug, if changing or clearing.
+    pub slug: Option<Option<Slug>>,
+}
+
+impl UpdatePageCommand {
+    /// Wire-form command type.
+    pub const COMMAND_TYPE: &'static str = "cms.page.update";
+
+    /// Converts the wire-level command into the aggregate-local
+    /// [`UpdatePage`](crate::aggregate::UpdatePage) input expected
+    /// by [`Page::update`](crate::aggregate::Page::update).
+    /// The `event_id` is the caller's pre-minted event id.
+    #[must_use]
+    pub fn into_update_page(self, event_id: educore_core::ids::EventId) -> crate::aggregate::UpdatePage {
+        crate::aggregate::UpdatePage {
+            title: self.title,
+            description: self.description,
+            slug: self.slug,
+            settings: None,
+            home_page: None,
+            actor: self.tenant.actor_id,
+            at: Timestamp::now(),
+            event_id,
+        }
+    }
 }
 
 /// Command: update an existing [`News`](crate::aggregate::News).

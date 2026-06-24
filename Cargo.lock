@@ -1994,13 +1994,16 @@ dependencies = [
  "educore-academic",
  "educore-audit",
  "educore-core",
+ "educore-event-bus",
  "educore-events",
  "educore-platform",
  "educore-rbac",
  "educore-settings",
+ "educore-storage",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+ "tokio",
  "uuid",
 ]
 

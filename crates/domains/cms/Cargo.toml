@@ -29,3 +29,12 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 uuid = { workspace = true }
 
+[dev-dependencies]
+# Required for the integration tests in `tests/page.rs` (see
+# `crates/domains/documents/tests/form_handlers.rs` for the
+# same pattern). The cms src/ does not depend on the adapter
+# or storage-port crates — only the test suite does.
+educore-event-bus = { workspace = true }
+educore-storage = { workspace = true }
+tokio = { workspace = true }
+
