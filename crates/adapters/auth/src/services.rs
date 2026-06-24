@@ -466,8 +466,16 @@ fn totp_code(key: &[u8], counter: u64) -> Result<String, AuthError> {
     let counter_bytes = counter.to_be_bytes();
     let mac = hmac_sha1(key, &counter_bytes);
 
-    // RFC 4226 § 5.3 dynamic truncation.
-    let offset = (mac[mac.len() - 1] & 0x0f) as usize;
+    // RFC 4226 § 5.3 dynamic truncation. The low nibble of an
+    // HMAC-SHA1 byte is in 0..=15, which always fits in `usize`
+    // (a `u8 -> usize` widening is infallible, so `From::from`
+    // is the right tool — not `try_from`, which clippy
+    // `-D warnings` flags as an unnecessary fallible
+    // conversion). The `From::from` form replaces the
+    // `as usize` cast that the engine's lint forbids without
+    // introducing a panic surface or an unreachable error
+    // branch.
+    let offset = usize::from(mac[mac.len() - 1] & 0x0f);
     if offset + 4 > mac.len() {
         return Err(AuthError::Malformed(
             "hmac-sha1 output too short for dynamic truncation".to_owned(),
@@ -524,9 +532,20 @@ fn sha1(message: &[u8]) -> [u8; 20] {
 /// bit, then zeros, then the 64-bit big-endian length in bits,
 /// to a multiple of 64 bytes (512 bits).
 fn sha1_concat(prefix: &[u8], message: &[u8]) -> [u8; 20] {
-    let bit_len = (prefix.len() as u64)
-        .wrapping_add(message.len() as u64)
-        .wrapping_mul(8);
+    // The bit-length is computed in `u64` to match FIPS 180-4
+    // § 5.1.1's 64-bit big-endian length field. The `usize -> u64`
+    // conversions are lossless on every supported target (the
+    // engine targets 64-bit Linux/Android/WASM where `usize ==
+    // u64`; on 32-bit targets `usize` is at most `u32`); the
+    // `try_from(...).unwrap_or(0)` form replaces the `as u64`
+    // casts that the engine's lint forbids in production code.
+    // The `unwrap_or(0)` fallback is unreachable on supported
+    // targets (the `try_from` always succeeds); it is the
+    // lint-clean way to carry the invariant through a pure
+    // helper that returns `[u8; 20]` directly.
+    let prefix_len = u64::try_from(prefix.len()).unwrap_or(0);
+    let message_len = u64::try_from(message.len()).unwrap_or(0);
+    let bit_len = prefix_len.wrapping_add(message_len).wrapping_mul(8);
 
     // Build the padded message: prefix || message || 0x80 ||
     // zeros || 8-byte big-endian bit length. The total length
@@ -625,12 +644,19 @@ fn base32_encode(input: &[u8]) -> String {
         bits_in_buffer += 8;
         while bits_in_buffer >= 5 {
             bits_in_buffer -= 5;
-            let idx = ((buffer >> bits_in_buffer) & 0x1f) as usize;
+            // INVARIANT: the 5-bit mask yields a value in
+            // 0..=31, which always fits in `usize`; the
+            // `try_from(...).unwrap_or(0)` form replaces the
+            // `as usize` cast that the engine's lint forbids
+            // without introducing a panic surface in this
+            // pure helper.
+            let idx = usize::try_from((buffer >> bits_in_buffer) & 0x1f).unwrap_or(0);
             out.push(BASE32_ALPHABET[idx] as char);
         }
     }
     if bits_in_buffer > 0 {
-        let idx = ((buffer << (5 - bits_in_buffer)) & 0x1f) as usize;
+        // Same invariant as the loop body above.
+        let idx = usize::try_from((buffer << (5 - bits_in_buffer)) & 0x1f).unwrap_or(0);
         out.push(BASE32_ALPHABET[idx] as char);
     }
     out
@@ -650,19 +676,36 @@ fn base32_decode(input: &str) -> Result<Vec<u8>, AuthError> {
     let mut buffer: u64 = 0;
     let mut bits_in_buffer: usize = 0;
     for byte in cleaned {
-        let value = match BASE32_ALPHABET.iter().position(|c| *c == byte) {
-            Some(v) => v as u64,
+        let pos = match BASE32_ALPHABET.iter().position(|c| *c == byte) {
+            Some(v) => v,
             None => {
                 return Err(AuthError::Malformed(format!(
                     "base32: invalid character {byte:?}"
                 )));
             }
         };
+        // INVARIANT (sort of): `pos` is a position in a 32-entry
+        // alphabet, so 0..=31, which fits in `u64` on every
+        // supported target. We use `try_from(...)?` so the lint
+        // sees a structured `AuthError::Malformed` path rather
+        // than an `as u64` cast; if the alphabet were ever
+        // expanded past 64 entries the conversion would surface
+        // as a domain error rather than a silent truncation.
+        let value = u64::try_from(pos).map_err(|e| {
+            AuthError::Malformed(format!("base32 alphabet index overflow: {e}"))
+        })?;
         buffer = (buffer << 5) | value;
         bits_in_buffer += 5;
         if bits_in_buffer >= 8 {
             bits_in_buffer -= 8;
-            out.push(((buffer >> bits_in_buffer) & 0xff) as u8);
+            // The 8-bit mask yields a value in 0..=255, which
+            // always fits in `u8`; the `try_from(...)?` form
+            // replaces the `as u8` cast that the engine's lint
+            // forbids while preserving the structured error path.
+            let byte = u8::try_from((buffer >> bits_in_buffer) & 0xff).map_err(|e| {
+                AuthError::Malformed(format!("base32 byte overflow: {e}"))
+            })?;
+            out.push(byte);
         }
     }
     Ok(out)
