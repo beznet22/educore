@@ -25,8 +25,11 @@ use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
-    BankAccountId, Currency, ExpenseHeadId, ExpenseId, PaymentMethodId, PaymentMethodKind,
-    PayrollPaymentId, WalletId, WalletTransactionId, WalletTxType,
+    BankAccountId, BankPaymentSlipAuditId, BankStatementAttachmentId, Currency,
+    DirectFeesInstallmentAssignChildId, ExpenseApprovalId, ExpenseHeadId, ExpenseId,
+    FeesInstallmentAssignDiscountId, FmFeesInvoiceLineNoteId, FmFeesTransactionLineNoteId,
+    IncomeApprovalId, PaymentMethodId, PaymentMethodKind, PayrollPaymentApprovalId,
+    PayrollPaymentId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 
 use educore_academic::{ClassId, SectionId};
@@ -602,6 +605,474 @@ impl DomainEvent for PayrollPaymentRecorded {
     }
     fn school_id(&self) -> SchoolId {
         self.payroll_payment_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// Spec'd child-entity event stubs
+// (Phase 7 Workstreams D-M; ids added in commit d82cd22, structs in 429f74f).
+// Each stub carries only `event_id`, `school_id`, `aggregate_id`,
+// `correlation_id`, and `occurred_at`. Real payload fields land with the
+// workstream that fills in the corresponding aggregate.
+// =============================================================================
+
+/// Emitted when a `FeesInstallmentAssignDiscount` child entity is added.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesInstallmentAssignDiscountAdded {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub aggregate_id: FeesInstallmentAssignDiscountId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesInstallmentAssignDiscountAdded {
+    pub fn new(
+        event_id: EventId,
+        school_id: SchoolId,
+        aggregate_id: FeesInstallmentAssignDiscountId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            event_id,
+            school_id,
+            aggregate_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesInstallmentAssignDiscountAdded {
+    const EVENT_TYPE: &'static str = "finance.fees_installment_assign_discount.added";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_installment_assign_discount";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `DirectFeesInstallmentAssignChild` child entity is added.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesInstallmentAssignChildAdded {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub aggregate_id: DirectFeesInstallmentAssignChildId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesInstallmentAssignChildAdded {
+    pub fn new(
+        event_id: EventId,
+        school_id: SchoolId,
+        aggregate_id: DirectFeesInstallmentAssignChildId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            event_id,
+            school_id,
+            aggregate_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesInstallmentAssignChildAdded {
+    const EVENT_TYPE: &'static str = "finance.direct_fees_installment_assign_child.added";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_installment_assign_child";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when an `FmFeesInvoiceLineNote` child entity is added.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesInvoiceLineNoteAdded {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub aggregate_id: FmFeesInvoiceLineNoteId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesInvoiceLineNoteAdded {
+    pub fn new(
+        event_id: EventId,
+        school_id: SchoolId,
+        aggregate_id: FmFeesInvoiceLineNoteId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            event_id,
+            school_id,
+            aggregate_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesInvoiceLineNoteAdded {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_invoice_line_note.added";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_invoice_line_note";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when an `FmFeesTransactionLineNote` child entity is added.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesTransactionLineNoteAdded {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub aggregate_id: FmFeesTransactionLineNoteId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesTransactionLineNoteAdded {
+    pub fn new(
+        event_id: EventId,
+        school_id: SchoolId,
+        aggregate_id: FmFeesTransactionLineNoteId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            event_id,
+            school_id,
+            aggregate_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesTransactionLineNoteAdded {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_transaction_line_note.added";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_transaction_line_note";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `BankStatementAttachment` child entity is attached.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankStatementAttachmentAttached {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub aggregate_id: BankStatementAttachmentId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankStatementAttachmentAttached {
+    pub fn new(
+        event_id: EventId,
+        school_id: SchoolId,
+        aggregate_id: BankStatementAttachmentId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            event_id,
+            school_id,
+            aggregate_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankStatementAttachmentAttached {
+    const EVENT_TYPE: &'static str = "finance.bank_statement_attachment.attached";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_statement_attachment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `PayrollPaymentApproval` child entity is recorded.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PayrollPaymentApprovalRecorded {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub aggregate_id: PayrollPaymentApprovalId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl PayrollPaymentApprovalRecorded {
+    pub fn new(
+        event_id: EventId,
+        school_id: SchoolId,
+        aggregate_id: PayrollPaymentApprovalId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            event_id,
+            school_id,
+            aggregate_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for PayrollPaymentApprovalRecorded {
+    const EVENT_TYPE: &'static str = "finance.payroll_payment_approval.recorded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "payroll_payment_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `BankPaymentSlipAudit` child entity is recorded.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankPaymentSlipAuditRecorded {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub aggregate_id: BankPaymentSlipAuditId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankPaymentSlipAuditRecorded {
+    pub fn new(
+        event_id: EventId,
+        school_id: SchoolId,
+        aggregate_id: BankPaymentSlipAuditId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            event_id,
+            school_id,
+            aggregate_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankPaymentSlipAuditRecorded {
+    const EVENT_TYPE: &'static str = "finance.bank_payment_slip_audit.recorded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_payment_slip_audit";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when an `ExpenseApproval` child entity is recorded.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExpenseApprovalRecorded {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub aggregate_id: ExpenseApprovalId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ExpenseApprovalRecorded {
+    pub fn new(
+        event_id: EventId,
+        school_id: SchoolId,
+        aggregate_id: ExpenseApprovalId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            event_id,
+            school_id,
+            aggregate_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ExpenseApprovalRecorded {
+    const EVENT_TYPE: &'static str = "finance.expense_approval.recorded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "expense_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when an `IncomeApproval` child entity is recorded.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct IncomeApprovalRecorded {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub aggregate_id: IncomeApprovalId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl IncomeApprovalRecorded {
+    pub fn new(
+        event_id: EventId,
+        school_id: SchoolId,
+        aggregate_id: IncomeApprovalId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            event_id,
+            school_id,
+            aggregate_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for IncomeApprovalRecorded {
+    const EVENT_TYPE: &'static str = "finance.income_approval.recorded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "income_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `WalletTransactionApproval` child entity is recorded.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WalletTransactionApprovalRecorded {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub aggregate_id: WalletTransactionApprovalId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl WalletTransactionApprovalRecorded {
+    pub fn new(
+        event_id: EventId,
+        school_id: SchoolId,
+        aggregate_id: WalletTransactionApprovalId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            event_id,
+            school_id,
+            aggregate_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for WalletTransactionApprovalRecorded {
+    const EVENT_TYPE: &'static str = "finance.wallet_transaction_approval.recorded";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "wallet_transaction_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.aggregate_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at
