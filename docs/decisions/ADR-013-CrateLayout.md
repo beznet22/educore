@@ -152,6 +152,31 @@ names; only directory paths changed. The full path
 mapping is in the table above and in `AGENTS.md` §
 "Tier System".
 
+**Drift note (2026-06-24):** the original 34-crate count
+has drifted to **37 internal crates + 1 umbrella = 38**
+as three crates were added by later ADRs:
+
+- `educore-storage-surrealdb` (adapters tier) — added by
+  [ADR-017](./ADR-017-SurrealDBFirst.md) as the Phase 0
+  primary storage adapter.
+- `educore-event-bus` (adapters tier) — added by
+  Phase 2 workstream B (NATS/Redis bus adapters).
+- `educore-sync` and `educore-sync-inprocess` (both
+  cross-cutting tier) — added by
+  [ADR-018](./ADR-018-SyncEngineArchitecture.md) for the
+  sync engine. Note that ADR-018 places `sync-inprocess`
+  under `crates/adapters/` but the on-disk location is
+  `crates/cross-cutting/sync-inprocess/`; see the
+  reconciliation note in ADR-018.
+
+The table above counts (3 / 7 / 10 / 9 / 4 = 33 internal
++ 1 umbrella = 34) were correct at the time of writing
+but no longer match the filesystem; the actual current
+counts are 3 / 9 / 10 / 10 / 4 = 36 internal + 1
+umbrella = 37. The 5-tier model and dependency direction
+remain unchanged; only the per-tier counts have drifted.
+**Last verified:** 2026-06-24 against `find crates -name Cargo.toml`.
+
 ## Rationale
 
 ### Why 5 tiers, not 3 (foundation/business/edges)

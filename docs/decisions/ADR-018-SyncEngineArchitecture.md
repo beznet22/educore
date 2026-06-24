@@ -171,6 +171,32 @@ non-sync crates (domains, audit, events) do not need
 it. A consumer using only the audit log should not
 pay the dependency cost of the sync adapters.
 
+**Feature-flag reconciliation note (2026-06-24):** the
+`[features]` block shown above (`default = []; sync = [...]`)
+has not landed in `crates/educore/Cargo.toml`. As of the
+2026-06-24 audit the umbrella's `Cargo.toml` lists
+`educore-sync` and `educore-sync-inprocess` as unconditional
+dependencies (no `[features]` block, no `cfg(feature =
+"sync")` gates on the SDK). See FINDING 27 in
+`docs/audit_reports/findings/wave5-docs-2.md`. The feature
+flag is the correct design but is a follow-up implementation
+item, not part of this ADR's acceptance.
+
+**Sync-crate location note (2026-06-24):** the directory
+paths quoted in section 3 above
+(`crates/cross-cutting/sync/`,
+`crates/adapters/sync-inprocess/`,
+`crates/adapters/sync-http/`,
+`crates/adapters/sync-null/`) disagree with the filesystem
+in two ways. (a) `educore-sync-inprocess` lives at
+`crates/cross-cutting/sync-inprocess/`, not
+`crates/adapters/sync-inprocess/`. (b) The `sync-http`
+and `sync-null` crates named in section 3 do not yet
+exist on disk — only `educore-sync` and
+`educore-sync-inprocess` are scaffolded. The
+`crates/cross-cutting/sync/` location for the primitives
+crate is correct.
+
 ### 5. Four new methods on `StorageAdapter`
 
 The sync engine needs to observe local changes and
@@ -220,6 +246,26 @@ The methods **do not** bypass the command path:
 command layer for validation. A snapshot from an
 untrusted source is rejected by the same domain rules
 as a live event.
+
+**Signature reconciliation note (2026-06-24):** the
+signatures sketched in section 5 above
+(`watch_changes() -> Result<ChangeStream>` with no
+parameters; `cursor_for() -> Result<Cursor>` and
+`advance_cursor(cursor)` likewise parameter-less)
+disagree with the more detailed sketches in
+[ADR-017 § "Four new methods on `StorageAdapter`"](./ADR-017-SurrealDBFirst.md#four-new-methods-on-storageadapter)
+(which carry explicit `school_id` and `since` / `stream`
+parameters). The two ADRs were drafted in parallel and
+neither was canonicalised against the implementation.
+The **authoritative signatures** live in
+[`crates/infra/storage/src/port.rs`](../../crates/infra/storage/src/port.rs):
+`watch_changes(filter: ChangeFilter)` (carries `school_id`
+inside the filter struct), `apply_snapshot(snapshot:
+SchoolSnapshot)`, `cursor_for(school_id: SchoolId)`,
+`advance_cursor(school_id: SchoolId, to: VersionCursor)`.
+Both ADR sketches must be treated as illustrative; consult
+`port.rs` before implementing a new storage adapter. See
+FINDING 28 in `docs/audit_reports/findings/wave5-docs-2.md`.
 
 ### 6. Conflict model: server-authoritative
 

@@ -198,6 +198,24 @@ port.
   "dialect-agnostic; default returns `NotSupported`; sync engine
   consumers must check capability at startup."
 
+**Signature reconciliation note (2026-06-24):** the
+signatures sketched in the table above (`watch_changes`
+takes `school_id` and `since`; `cursor_for` and
+`advance_cursor` take `school_id` and `stream`) disagree
+with the simpler sketches in
+[ADR-018 § "5. Four new methods on `StorageAdapter`"](./ADR-018-SyncEngineArchitecture.md)
+(`watch_changes` no params; `cursor_for` no params;
+`advance_cursor` takes a bare `cursor`). The two ADRs were
+written in parallel and neither was canonicalised against
+the implementation. The **authoritative signatures** live
+in [`crates/infra/storage/src/port.rs`](../../crates/infra/storage/src/port.rs):
+`watch_changes(filter: ChangeFilter)` (carries `school_id`
+inside the filter struct), `apply_snapshot(snapshot:
+SchoolSnapshot)`, `cursor_for(school_id: SchoolId)`,
+`advance_cursor(school_id: SchoolId, to: VersionCursor)`.
+Treat the sketches in this table as illustrative; consult
+`port.rs` before implementing a new storage adapter.
+
 ### MSRV / external crate impact
 
 - The `surrealdb` crate is added to
