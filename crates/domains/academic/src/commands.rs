@@ -25,7 +25,10 @@ use educore_core::ids::SchoolId;
 use educore_core::tenant::TenantContext;
 
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, ClassId, ResultStatus, SectionId, StudentId, SubjectId,
+    AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoutineId, ClassSectionId,
+    ClassSubjectId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
+    RegistrationFieldId, ResultStatus, SectionId, StudentCategoryId, StudentGroupId, StudentId,
+    StudentPromotionId, SubjectId,
 };
 
 // =============================================================================
@@ -463,6 +466,113 @@ pub struct CloseAcademicYearCommand {
     pub tenant: TenantContext,
     /// The academic year's typed id.
     pub academic_year_id: AcademicYearId,
+}
+
+// =============================================================================
+// Placeholder commands for the remaining 14 academic aggregates.
+//
+// Minimal `id + school_id` stubs so the spec is exhaustively
+// representable in code. The full impl (capability check,
+// domain fields, invariants, events) lands in subsequent
+// workstreams per `docs/build-plan.md`.
+//
+// Each stub uses the typed id from `crate::value_objects` so the
+// type system catches cross-tenant confusion at compile time
+// (the `school_id` is derived from `id.school_id()` in real impl;
+// it is held explicitly here so the placeholder round-trips
+// through Serde without depending on a `Default::default` for
+// the id).
+// =============================================================================
+
+macro_rules! academic_command_stub {
+    (
+        $(#[$attr:meta])*
+        $vis:vis struct $name:ident {
+            id: $id_ty:ty $(,)?
+        }
+    ) => {
+        $(#[$attr])*
+        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+        $vis struct $name {
+            /// The typed id (school_id + uuid).
+            pub id: $id_ty,
+            /// The owning school (derived from `id.school_id()` in
+            /// real impl; held explicitly here so the placeholder
+            /// is self-contained).
+            pub school_id: SchoolId,
+        }
+    };
+}
+
+academic_command_stub! {
+    /// Command stub: register a guardian. See
+    /// `docs/specs/academic/aggregates.md` § Guardian.
+    pub struct RegisterGuardianCommand { id: GuardianId }
+}
+academic_command_stub! {
+    /// Command stub: create a class-section pairing. See
+    /// `docs/specs/academic/aggregates.md` § ClassSection.
+    pub struct CreateClassSectionCommand { id: ClassSectionId }
+}
+academic_command_stub! {
+    /// Command stub: assign a subject to a class. See
+    /// `docs/specs/academic/aggregates.md` § ClassSubject.
+    pub struct CreateClassSubjectCommand { id: ClassSubjectId }
+}
+academic_command_stub! {
+    /// Command stub: create a class routine period. See
+    /// `docs/specs/academic/aggregates.md` § ClassRoutine.
+    pub struct CreateClassRoutineCommand { id: ClassRoutineId }
+}
+academic_command_stub! {
+    /// Command stub: create a homework assignment. See
+    /// `docs/specs/academic/aggregates.md` § Homework.
+    pub struct CreateHomeworkCommand { id: HomeworkId }
+}
+academic_command_stub! {
+    /// Command stub: create a lesson plan. See
+    /// `docs/specs/academic/aggregates.md` § LessonPlan.
+    pub struct CreateLessonPlanCommand { id: LessonPlanId }
+}
+academic_command_stub! {
+    /// Command stub: create a lesson. See
+    /// `docs/specs/academic/aggregates.md` § Lesson.
+    pub struct CreateLessonCommand { id: LessonId }
+}
+academic_command_stub! {
+    /// Command stub: create a lesson topic. See
+    /// `docs/specs/academic/aggregates.md` § LessonTopic.
+    pub struct CreateLessonTopicCommand { id: LessonTopicId }
+}
+academic_command_stub! {
+    /// Command stub: record a student promotion. See
+    /// `docs/specs/academic/aggregates.md` § StudentPromotion.
+    pub struct RecordStudentPromotionCommand { id: StudentPromotionId }
+}
+academic_command_stub! {
+    /// Command stub: create a student category. See
+    /// `docs/specs/academic/aggregates.md` § StudentCategory.
+    pub struct CreateStudentCategoryCommand { id: StudentCategoryId }
+}
+academic_command_stub! {
+    /// Command stub: create a student group. See
+    /// `docs/specs/academic/aggregates.md` § StudentGroup.
+    pub struct CreateStudentGroupCommand { id: StudentGroupId }
+}
+academic_command_stub! {
+    /// Command stub: create a registration custom field. See
+    /// `docs/specs/academic/aggregates.md` § RegistrationField.
+    pub struct CreateRegistrationFieldCommand { id: RegistrationFieldId }
+}
+academic_command_stub! {
+    /// Command stub: create a certificate template. See
+    /// `docs/specs/academic/aggregates.md` § Certificate.
+    pub struct CreateCertificateCommand { id: CertificateId }
+}
+academic_command_stub! {
+    /// Command stub: create an ID card template. See
+    /// `docs/specs/academic/aggregates.md` § IdCard.
+    pub struct CreateIdCardCommand { id: IdCardId }
 }
 
 // =============================================================================
