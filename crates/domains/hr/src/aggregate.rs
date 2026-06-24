@@ -16,10 +16,11 @@
 //! taken from the caller.
 
 #![allow(missing_docs)]
-#![allow(unused_imports)] // The 16 aggregates each carry the
-                          // 10 audit-metadata fields; suppressing
-                          // the file-level missing_docs lint is
-                          // the pragmatic Phase 5/6 pattern.
+#![allow(unused_imports)]
+// The 16 aggregates each carry the
+// 10 audit-metadata fields; suppressing
+// the file-level missing_docs lint is
+// the pragmatic Phase 5/6 pattern.
 #![allow(dead_code)] // The 26 Cluster-C minimal stubs (id +
                      // school_id) are not constructed yet —
                      // they exist as type-level scaffolding

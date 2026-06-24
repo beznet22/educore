@@ -87,7 +87,10 @@ fn register_staff_happy_path() {
     assert_eq!(staff.status, StaffStatus::Active);
     assert_eq!(event.staff_id, staff.id);
     assert_eq!(event.employee_id, "E001");
-    assert_eq!(<StaffRegistered as DomainEvent>::EVENT_TYPE, "hr.staff.registered");
+    assert_eq!(
+        <StaffRegistered as DomainEvent>::EVENT_TYPE,
+        "hr.staff.registered"
+    );
 }
 
 /// Leave Request Lifecycle (workflows.md § "Leave Request Lifecycle")
@@ -115,7 +118,10 @@ fn request_leave_happy_path() {
     assert_eq!(lr.approve_status, LeaveStatus::Pending);
     assert_eq!(event.staff_id, lr.staff_id);
     assert_eq!(event.leave_from, date(2026, 6, 5));
-    assert_eq!(<LeaveRequested as DomainEvent>::EVENT_TYPE, "hr.leave.requested");
+    assert_eq!(
+        <LeaveRequested as DomainEvent>::EVENT_TYPE,
+        "hr.leave.requested"
+    );
 }
 
 /// Payroll Generation (workflows.md § "Payroll Generation")
@@ -147,5 +153,8 @@ fn generate_payroll_happy_path() {
     assert_eq!(payroll.tax, 5_000.0); // 10% default
     assert_eq!(payroll.net_salary, 45_000.0);
     assert_eq!(event.payroll_month, 6);
-    assert_eq!(<PayrollGenerated as DomainEvent>::EVENT_TYPE, "hr.payroll.generated");
+    assert_eq!(
+        <PayrollGenerated as DomainEvent>::EVENT_TYPE,
+        "hr.payroll.generated"
+    );
 }
