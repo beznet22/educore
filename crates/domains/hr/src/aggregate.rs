@@ -20,6 +20,10 @@
                           // 10 audit-metadata fields; suppressing
                           // the file-level missing_docs lint is
                           // the pragmatic Phase 5/6 pattern.
+#![allow(dead_code)] // The 26 Cluster-C minimal stubs (id +
+                     // school_id) are not constructed yet —
+                     // they exist as type-level scaffolding
+                     // for the owning Workstreams.
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
@@ -31,18 +35,23 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 use educore_rbac::ids::RoleId;
 
 use crate::value_objects::{
-    AssignClassTeacherId, AttendanceSource, AttendanceType, BloodGroup, ContractType, DepartmentId,
-    DepartmentStatus, DesignationId, DesignationStatus, EarnDeducType, Gender,
-    LeaveDeductionInfoId, LeaveDefineId, LeaveDefineStatus, LeaveRequestId, LeaveStatus,
-    LeaveTypeId, LeaveTypeStatus, MaritalStatus, PayrollEarnDeducId, PayrollGenerateId,
-    PayrollPaymentStatus, PayrollStatus, RequiredType, SalaryTemplateId, StaffAttendanceId,
-    StaffAttendanceImportId, StaffId, StaffImportBulkTemporaryId, StaffRegistrationFieldId,
-    StaffStatus,
+    AssignClassTeacherId, AssignClassTeacherScopeId, AttendanceSource, AttendanceType, BloodGroup,
+    BulkImportJobId, ContractType, DepartmentHeadId, DepartmentId, DepartmentStatus,
+    DesignationGradeId, DesignationId, DesignationStatus, EarnDeducType, Gender, HourlyRateId,
+    HourlyRateOverrideId, LeaveDeductionInfoId, LeaveDefineAdjustmentId, LeaveDefineId,
+    LeaveDefineStatus, LeaveRequestApprovalId, LeaveRequestAttachmentId, LeaveRequestId,
+    LeaveStatus, LeaveTypeId, LeaveTypeStatus, MaritalStatus, PayrollEarnDeducId,
+    PayrollGenerateAuditId, PayrollGenerateId, PayrollPaymentLinkId, PayrollPaymentStatus,
+    PayrollStatus, RequiredType, SalaryTemplateId, StaffAddressId, StaffAttendanceId,
+    StaffAttendanceImportBatchId, StaffAttendanceImportId, StaffAttendancePromotionId,
+    StaffAttendancePunchId, StaffBankDetailId, StaffCustomFieldId, StaffDocumentId,
+    StaffDrivingLicenseId, StaffId, StaffImportBulkTemporaryId, StaffImportResolutionId,
+    StaffLeaveBalanceId, StaffLeaveHistoryId, StaffNoteId, StaffPayrollHistoryId,
+    StaffProfilePhotoId, StaffRegistrationFieldId, StaffRegistrationFieldOptionId,
+    StaffRoleAssignmentId, StaffSocialLinkId, StaffStatus, StaffTimelineId,
 };
 
 use educore_academic::{AcademicYearId, ClassId, SectionId, SubjectId};
-
-use crate::value_objects::HourlyRateId;
 
 fn fresh_etag() -> Etag {
     Etag::placeholder()
@@ -1179,6 +1188,246 @@ impl StaffImportBulkTemporary {
             correlation_id,
         }
     }
+}
+
+// =============================================================================
+// Cluster C: minimal aggregate stubs (id + school_id)
+//
+// These 26 typed-id structs were introduced in commit 98b47fd
+// (`Cluster C (hr): add missing ID types to value_objects`)
+// but the corresponding aggregate roots were not landed at the
+// same time. Each stub carries only the typed id and the
+// derived `school_id` anchor; the full audit-metadata footer
+// and domain fields are left for the owning Workstream to fill
+// in. `school_id` is derived from `id.school_id()`, never
+// taken from the caller.
+//
+// Two IDs added in 98b47fd (`StaffAttendancePromotionId`,
+// `StaffNoteId`) reference entity names already defined in
+// `entities.rs`; they are intentionally **not** redefined
+// here to avoid a same-crate name collision. The owning
+// Workstream can decide whether to migrate the entity into
+// `aggregate.rs` (with the typed id) or keep it in
+// `entities.rs` (with the legacy fields).
+// =============================================================================
+
+/// Bank account information for a staff member.
+///
+/// Owned child of [`Staff`]. Created during onboarding and
+/// updated when the staff member changes banks.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffBankDetail {
+    pub id: StaffBankDetailId,
+    pub school_id: SchoolId,
+}
+
+/// Postal address for a staff member.
+///
+/// Owned child of [`Staff`]. A staff member may have several
+/// addresses (permanent, current, emergency).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffAddress {
+    pub id: StaffAddressId,
+    pub school_id: SchoolId,
+}
+
+/// Social-profile link (LinkedIn, GitHub, etc.) for a staff member.
+///
+/// Owned child of [`Staff`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffSocialLink {
+    pub id: StaffSocialLinkId,
+    pub school_id: SchoolId,
+}
+
+/// Uploaded document attached to a staff profile (CV, ID copy, etc.).
+///
+/// Owned child of [`Staff`]. The blob payload lives in the
+/// files adapter; this row carries the metadata + pointer.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffDocument {
+    pub id: StaffDocumentId,
+    pub school_id: SchoolId,
+}
+
+/// Per-staff timeline event (promotion, transfer, leave, etc.).
+///
+/// Projection aggregate; the engine recomputes it from the
+/// event log.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffTimeline {
+    pub id: StaffTimelineId,
+    pub school_id: SchoolId,
+}
+
+/// Per-staff custom-field value row.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffCustomField {
+    pub id: StaffCustomFieldId,
+    pub school_id: SchoolId,
+}
+
+/// Per-staff, per-leave-type balance snapshot.
+///
+/// Recomputed from `LeaveRequestApproved` events.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffLeaveBalance {
+    pub id: StaffLeaveBalanceId,
+    pub school_id: SchoolId,
+}
+
+/// Approval/rejection event row attached to a [`LeaveRequest`].
+///
+/// One leave request may be approved, rejected, then reopened,
+/// so this is a history row rather than a single field on the
+/// request itself.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LeaveRequestApproval {
+    pub id: LeaveRequestApprovalId,
+    pub school_id: SchoolId,
+}
+
+/// Link between a payroll run and an external payment-record
+/// (bank advice, payment gateway transaction, etc.).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PayrollPaymentLink {
+    pub id: PayrollPaymentLinkId,
+    pub school_id: SchoolId,
+}
+
+/// Resolved foreign-key mapping produced by a bulk staff import.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffImportResolution {
+    pub id: StaffImportResolutionId,
+    pub school_id: SchoolId,
+}
+
+/// Per-staff, per-period payroll history row.
+///
+/// Snapshotted when a payroll row advances to `Paid`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffPayrollHistory {
+    pub id: StaffPayrollHistoryId,
+    pub school_id: SchoolId,
+}
+
+/// Per-staff, per-period leave history row.
+///
+/// Snapshotted when a leave row reaches a terminal state.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffLeaveHistory {
+    pub id: StaffLeaveHistoryId,
+    pub school_id: SchoolId,
+}
+
+/// Scope row that attaches additional sections / subjects to an
+/// [`AssignClassTeacher`] assignment.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AssignClassTeacherScope {
+    pub id: AssignClassTeacherScopeId,
+    pub school_id: SchoolId,
+}
+
+/// Head-of-department row (a department may have multiple
+/// historical heads; the current head is the latest active row).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DepartmentHead {
+    pub id: DepartmentHeadId,
+    pub school_id: SchoolId,
+}
+
+/// Salary grade attached to a [`Designation`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DesignationGrade {
+    pub id: DesignationGradeId,
+    pub school_id: SchoolId,
+}
+
+/// Per-staff override of an [`HourlyRate`] row.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HourlyRateOverride {
+    pub id: HourlyRateOverrideId,
+    pub school_id: SchoolId,
+}
+
+/// Adjustment to a [`LeaveDefine`] entitlement (carry-forward,
+/// special grant, manual correction).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LeaveDefineAdjustment {
+    pub id: LeaveDefineAdjustmentId,
+    pub school_id: SchoolId,
+}
+
+/// File attachment (medical certificate, travel ticket) attached
+/// to a [`LeaveRequest`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LeaveRequestAttachment {
+    pub id: LeaveRequestAttachmentId,
+    pub school_id: SchoolId,
+}
+
+/// Raw biometric / RFID punch row, before it is folded into a
+/// [`StaffAttendance`] day row.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffAttendancePunch {
+    pub id: StaffAttendancePunchId,
+    pub school_id: SchoolId,
+}
+
+/// Append-only audit trail of every state transition on a
+/// [`PayrollGenerate`] row.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PayrollGenerateAudit {
+    pub id: PayrollGenerateAuditId,
+    pub school_id: SchoolId,
+}
+
+/// Role assignment row (a staff member may hold several roles
+/// over time; the current role is the latest active row).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffRoleAssignment {
+    pub id: StaffRoleAssignmentId,
+    pub school_id: SchoolId,
+}
+
+/// Profile-photo metadata row. The blob lives in the files
+/// adapter; this row carries the pointer + crop metadata.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffProfilePhoto {
+    pub id: StaffProfilePhotoId,
+    pub school_id: SchoolId,
+}
+
+/// Driving-license metadata row (number, expiry, file pointer).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffDrivingLicense {
+    pub id: StaffDrivingLicenseId,
+    pub school_id: SchoolId,
+}
+
+/// Select-option row for a [`StaffRegistrationField`] of type
+/// `select` / `multi_select`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffRegistrationFieldOption {
+    pub id: StaffRegistrationFieldOptionId,
+    pub school_id: SchoolId,
+}
+
+/// Top-level metadata row for a bulk staff import job (file
+/// hash, status, totals). The individual rows live in
+/// [`StaffImportBulkTemporary`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BulkImportJob {
+    pub id: BulkImportJobId,
+    pub school_id: SchoolId,
+}
+
+/// Top-level metadata row for a bulk staff-attendance import
+/// job. The individual rows live in [`StaffAttendanceImport`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffAttendanceImportBatch {
+    pub id: StaffAttendanceImportBatchId,
+    pub school_id: SchoolId,
 }
 
 #[cfg(test)]
