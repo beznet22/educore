@@ -50,7 +50,7 @@ spec = "migrations/engine/0000_engine_core.postgres.sql"
 crate = "educore-storage-postgres"
 phase = 1
 status = "Tested"
-tests = "crates/adapters/storage-postgres/tests/outbox_e2e.rs"
+tests = "crates/adapters/storage-postgres/tests/outbox_e2e.rs,crates/adapters/storage-postgres/tests/idempotency_e2e.rs,crates/adapters/storage-postgres/tests/school_id_indexes_e2e.rs"
 
 [[row]]
 id = "outbox_ddl_mysql"
@@ -59,7 +59,7 @@ spec = "migrations/engine/0000_engine_core.mysql.sql"
 crate = "educore-storage-mysql"
 phase = 1
 status = "Tested"
-tests = "crates/adapters/storage-mysql/tests/outbox_e2e.rs"
+tests = "crates/adapters/storage-mysql/tests/outbox_e2e.rs,crates/adapters/storage-mysql/tests/schema_e2e.rs"
 
 [[row]]
 id = "outbox_ddl_sqlite"
@@ -408,7 +408,7 @@ spec = "docs/specs/rbac/aggregates.md"
 crate = "educore-rbac"
 phase = 2
 status = "Tested"
-tests = "crates/cross-cutting/rbac/tests/rbac_e2e.rs"
+tests = "crates/cross-cutting/rbac/tests/rbac_e2e.rs,crates/cross-cutting/rbac/tests/auth_caps.rs,crates/cross-cutting/rbac/tests/files_caps.rs,crates/cross-cutting/rbac/tests/integrations_caps.rs,crates/cross-cutting/rbac/tests/notify_caps.rs,crates/cross-cutting/rbac/tests/payment_caps.rs"
 
 [[row]]
 id = "events_envelope_trait"
@@ -461,7 +461,7 @@ spec = "docs/specs/academic/aggregates.md"
 crate = "educore-academic"
 phase = 3
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/academic_integration.rs"
+tests = "crates/tools/storage-parity/tests/academic_integration.rs,crates/domains/academic/tests/workflows.rs"
 
 [[row]]
 id = "academic_classes_aggregate"
@@ -558,7 +558,7 @@ spec = "docs/specs/assessment/aggregates.md"
 crate = "educore-assessment"
 phase = 4
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/assessment_integration.rs"
+tests = "crates/tools/storage-parity/tests/assessment_integration.rs,crates/domains/assessment/tests/workflows.rs"
 
 [[row]]
 id = "assessment_marks_registers_aggregate"
@@ -634,7 +634,7 @@ spec = "docs/specs/attendance/aggregates.md"
 crate = "educore-attendance"
 phase = 5
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/attendance_integration.rs"
+tests = "crates/tools/storage-parity/tests/attendance_integration.rs,crates/domains/attendance/tests/workflows.rs"
 
 [[row]]
 id = "attendance_subject_attendances_aggregate"
@@ -765,7 +765,7 @@ spec = "docs/specs/hr/aggregates.md"
 crate = "educore-hr"
 phase = 6
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs,crates/domains/hr/tests/workflows.rs"
 
 [[row]]
 id = "hr_department_aggregate"
@@ -1068,7 +1068,7 @@ spec = "docs/specs/finance/aggregates.md"
 crate = "educore-finance"
 phase = 7
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/finance_integration.rs"
+tests = "crates/tools/storage-parity/tests/finance_integration.rs,crates/domains/finance/tests/workflows.rs"
 
 [[row]]
 id = "finance_fees_payments_aggregate"
@@ -1247,6 +1247,7 @@ spec = "docs/specs/facilities/aggregates.md"
 crate = "educore-facilities"
 phase = 8
 status = "Pending"
+tests = "crates/domains/facilities/tests/workflows.rs"
 
 # =============================================================================
 # Library domain (Phase 9)
@@ -1259,7 +1260,7 @@ spec = "docs/specs/library/aggregates.md"
 crate = "educore-library"
 phase = 9
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/library_integration.rs"
+tests = "crates/tools/storage-parity/tests/library_integration.rs,crates/domains/library/tests/workflows.rs"
 
 [[row]]
 id = "library_book_categories_aggregate"
@@ -1376,7 +1377,7 @@ spec = "docs/specs/communication/aggregates.md"
 crate = "educore-communication"
 phase = 10
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/communication_integration.rs"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs,crates/domains/communication/tests/aggregates.rs,crates/domains/communication/tests/workflows.rs"
 
 [[row]]
 id = "communication_complaints_aggregate"
@@ -1522,7 +1523,7 @@ spec = "docs/specs/documents/aggregates.md#postaldispatch"
 crate = "educore-documents"
 phase = 11
 status = "Tested"
-tests = "crates/domains/documents/src/aggregate.rs,crates/tools/storage-parity/tests/documents_integration.rs"
+tests = "crates/domains/documents/src/aggregate.rs,crates/tools/storage-parity/tests/documents_integration.rs,crates/domains/documents/tests/workflows.rs"
 notes = "Phase 11: spec-faithful; owns PostalDispatchAttachment child; 3 commands, 3 events, reference_no unique within (school_id, academic_id), reference_no immutable once set, soft-delete only."
 
 [[row]]
@@ -1556,7 +1557,7 @@ spec = "docs/specs/cms/aggregates.md#page"
 crate = "educore-cms"
 phase = 12
 status = "Tested"
-tests = "crates/domains/cms/src/aggregate.rs,crates/tools/storage-parity/tests/cms_integration.rs"
+tests = "crates/domains/cms/src/aggregate.rs,crates/tools/storage-parity/tests/cms_integration.rs,crates/domains/cms/tests/workflows.rs"
 notes = "Phase 12: spec-faithful; 5 events (PageCreated/Updated/Published/Archived/Deleted) + 5 commands (Create/Update/Publish/Archive/Delete); 10-method PageRepository; PageService + create_page_service factory fn; non-empty title, slug-uniqueness, at-most-one home_page, is_default immutability, soft-delete invariants; bus subscriber for documents.form_download.uploaded (Phase 11 OQ #6)."
 
 [[row]]
@@ -1782,7 +1783,7 @@ spec = "docs/specs/events/aggregates.md#holiday"
 crate = "educore-events-domain"
 phase = 13
 status = "Tested"
-tests = "crates/cross-cutting/events-domain/src/aggregate.rs"
+tests = "crates/cross-cutting/events-domain/src/aggregate.rs,crates/cross-cutting/events-domain/tests/workflows.rs"
 notes = "Phase 13: spec-faithful; 3 events (Created/Updated/Deleted) + 3 commands; non-empty title, from_date <= to_date; HolidayService::is_instructional is the canonical 'is school in session on date X?' answer (false if weekend day or holiday)."
 
 [[row]]
@@ -2138,6 +2139,7 @@ spec = "docs/ports/authentication.md"
 crate = "educore-auth"
 phase = 15
 status = "Tested"
+tests = "crates/adapters/auth/tests/auth_integration.rs"
 
 [[row]]
 id = "auth_provider_jwt_impl"
@@ -2146,6 +2148,7 @@ spec = "docs/ports/authentication.md"
 crate = "educore-auth"
 phase = 15
 status = "Tested"
+tests = "crates/adapters/auth/tests/auth_integration.rs"
 
 [[row]]
 id = "notification_provider_port"
@@ -2154,6 +2157,7 @@ spec = "docs/ports/notifications.md"
 crate = "educore-notify"
 phase = 15
 status = "Tested"
+tests = "crates/adapters/notify/tests/notify_integration.rs,crates/adapters/notify/tests/reliability_e2e.rs"
 
 [[row]]
 id = "payment_provider_port"
@@ -2162,6 +2166,7 @@ spec = "docs/ports/payments.md"
 crate = "educore-payment"
 phase = 15
 status = "Tested"
+tests = "crates/adapters/payment/tests/payment_integration.rs,crates/adapters/payment/tests/webhook_security_e2e.rs"
 
 [[row]]
 id = "file_storage_port"
@@ -2170,6 +2175,7 @@ spec = "docs/ports/file-storage.md"
 crate = "educore-files"
 phase = 15
 status = "Tested"
+tests = "crates/adapters/files/tests/files_integration.rs,crates/adapters/files/tests/policy_e2e.rs"
 
 [[row]]
 id = "integration_gateway_port"
@@ -2178,6 +2184,7 @@ spec = "docs/ports/integrations.md"
 crate = "educore-integrations"
 phase = 15
 status = "Tested"
+tests = "crates/adapters/integrations/tests/integrations_integration.rs,crates/adapters/integrations/tests/reliability_e2e.rs"
 
 # =============================================================================
 # Test infrastructure + SDK (Phase 16)
@@ -2190,7 +2197,7 @@ spec = "docs/ports/storage.md"
 crate = "educore-testkit"
 phase = 16
 status = "Tested"
-tests = "crates/tools/testkit/src/{storage,auth,notify,payment,files,integrations,event_bus,sync}.rs"
+tests = "crates/tools/testkit/src/storage.rs,crates/tools/testkit/src/auth.rs,crates/tools/testkit/src/notify.rs,crates/tools/testkit/src/payment.rs,crates/tools/testkit/src/files.rs,crates/tools/testkit/src/integrations.rs,crates/tools/testkit/src/event_bus.rs,crates/tools/testkit/src/sync.rs"
 
 [[row]]
 id = "sdk_high_level_facade"
@@ -2199,7 +2206,7 @@ spec = "docs/library-docs.md"
 crate = "educore-sdk"
 phase = 16
 status = "Tested"
-tests = "crates/tools/sdk/src/{engine,facade,errors}.rs"
+tests = "crates/tools/sdk/src/engine.rs,crates/tools/sdk/src/facade.rs,crates/tools/sdk/src/errors.rs"
 
 [[row]]
 id = "cli_sample_binary"
@@ -2208,7 +2215,7 @@ spec = "docs/guides/saas-backend.md"
 crate = "educore-cli"
 phase = 16
 status = "Tested"
-tests = "crates/tools/cli/src/{main,lib,commands}.rs"
+tests = "crates/tools/cli/src/main.rs,crates/tools/cli/src/lib.rs,crates/tools/cli/src/commands.rs"
 
 [[row]]
 id = "parity_cross_backend_equivalence"
@@ -2217,7 +2224,7 @@ spec = "docs/ports/storage.md"
 crate = "educore-storage-parity"
 phase = 16
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/parity_cross_backend_equivalence.rs"
+tests = "crates/tools/storage-parity/tests/parity_cross_backend_equivalence.rs,crates/tools/storage-parity/tests/common/mod.rs,crates/tools/storage-parity/tests/facilities_integration.rs,crates/tools/storage-parity/tests/parity_audit_cross_tenant_isolation.rs,crates/tools/storage-parity/tests/parity_event_log_filter.rs,crates/tools/storage-parity/tests/parity_idempotency_collision.rs,crates/tools/storage-parity/tests/parity_outbox_to_event_log_relay.rs,crates/tools/storage-parity/tests/parity_transaction_commit_rollback.rs,crates/tools/storage-parity/tests/port_auth_integration.rs,crates/tools/storage-parity/tests/port_files_integration.rs,crates/tools/storage-parity/tests/port_integrations_integration.rs,crates/tools/storage-parity/tests/port_notify_integration.rs,crates/tools/storage-parity/tests/port_payment_integration.rs"
 
 [[row]]
 id = "parity_behavior_matrix"
