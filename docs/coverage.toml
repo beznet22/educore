@@ -634,7 +634,7 @@ spec = "docs/specs/attendance/aggregates.md"
 crate = "educore-attendance"
 phase = 5
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/attendance_integration.rs,crates/domains/attendance/tests/workflows.rs"
+tests = "crates/tools/storage-parity/tests/attendance_integration.rs,crates/domains/attendance/tests/workflows.rs,crates/domains/attendance/tests/aggregates.rs"
 
 [[row]]
 id = "attendance_subject_attendances_aggregate"
@@ -1269,7 +1269,7 @@ spec = "docs/specs/library/aggregates.md"
 crate = "educore-library"
 phase = 9
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/library_integration.rs"
+tests = "crates/tools/storage-parity/tests/library_integration.rs,crates/domains/library/tests/aggregates.rs"
 
 [[row]]
 id = "library_members_aggregate"
@@ -1377,7 +1377,7 @@ spec = "docs/specs/communication/aggregates.md"
 crate = "educore-communication"
 phase = 10
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/communication_integration.rs,crates/domains/communication/tests/aggregates.rs,crates/domains/communication/tests/workflows.rs"
+tests = "crates/tools/storage-parity/tests/communication_integration.rs,crates/domains/communication/tests/aggregates.rs,crates/domains/communication/tests/workflows.rs,crates/domains/communication/tests/notice.rs"
 
 [[row]]
 id = "communication_complaints_aggregate"
@@ -1527,13 +1527,14 @@ tests = "crates/domains/documents/src/aggregate.rs,crates/tools/storage-parity/t
 notes = "Phase 11: spec-faithful; owns PostalDispatchAttachment child; 3 commands, 3 events, reference_no unique within (school_id, academic_id), reference_no immutable once set, soft-delete only."
 
 [[row]]
+[[row]]
 id = "documents_form_downloads_aggregate"
 item = "FormDownload aggregate root"
 spec = "docs/specs/documents/aggregates.md#formdownload"
 crate = "educore-documents"
 phase = 11
 status = "Tested"
-tests = "crates/domains/documents/src/aggregate.rs,crates/tools/storage-parity/tests/documents_integration.rs"
+tests = "crates/domains/documents/src/aggregate.rs,crates/tools/storage-parity/tests/documents_integration.rs,crates/domains/documents/tests/form_handlers.rs"
 notes = "Phase 11: spec-faithful; owns FormDownloadFile + FormDownloadLink children; 3 commands, 3 events, soft-delete only."
 
 [[row]]
