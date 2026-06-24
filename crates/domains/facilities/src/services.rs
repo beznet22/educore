@@ -338,7 +338,15 @@ where
         now.as_datetime().month(),
         now.as_datetime().day(),
     )
-    .unwrap_or(chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("epoch fallback is valid"));
+    .unwrap_or_else(|| {
+        // `now` came from the system clock and is always inside
+        // chrono's calendar range (year -9999..9999), so the
+        // `from_ymd_opt` above is guaranteed to succeed in
+        // practice. The fallback below is defensive
+        // defense-in-depth; chrono's `NaiveDate::default()` is
+        // the Unix epoch (1970-01-01).
+        chrono::NaiveDate::default()
+    });
 
     Ok(StudentAssignedToRoute::new(
         assign_vehicle_id,

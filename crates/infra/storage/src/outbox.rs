@@ -16,7 +16,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use educore_core::error::Result;
+use educore_core::error::{DomainError, Result};
 use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
 use educore_core::value_objects::Timestamp;
 
@@ -197,7 +197,9 @@ pub trait Outbox: Send + Sync {
         // length. Adapters with efficient `COUNT(*)` support may
         // override.
         let _ = school_id;
-        Ok(self.pending(u32::MAX).await?.len() as u64)
+        let n = self.pending(u32::MAX).await?.len();
+        u64::try_from(n)
+            .map_err(|_| DomainError::validation("pending count exceeds u64::MAX"))
     }
 }
 
