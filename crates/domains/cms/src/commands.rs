@@ -514,3 +514,476 @@ mod tests {
     #[allow(dead_code)]
     fn _anchor(_: educore_core::ids::SchoolId, _: educore_core::ids::UserId) {}
 }
+
+// =============================================================================
+// Cluster D final 20%: spec commands previously missing
+// (`UpdatePage`, `UpdateNews`, `PublishNews`, `UnpublishNews`,
+// `DeleteNews`, `CommentOnNews`, `ModerateNewsComment`,
+// `DeleteNewsComment`, `CreateNoticeBoard`, `PublishNoticeBoard`,
+// `UpdateNoticeBoard`, `UnpublishNoticeBoard`, `DeleteNoticeBoard`,
+// `UpdateTestimonial`, `DeleteTestimonial`, `UpdateHomeSlider`,
+// `DeleteHomeSlider`, `UpdateContent`, `DeleteContent`,
+// `DispatchContentShareList`, `CancelContentShareList`,
+// `DeleteContentShareList`, `CreateTeacherUploadContent`,
+// `UpdateTeacherUploadContent`, `DeleteTeacherUploadContent`,
+// `CreateUploadContent`, `UpdateUploadContent`, `DeleteUploadContent`,
+// `CreateAboutPage`, `UpdateAboutPage`, `DeleteAboutPage`,
+// `CreateContactPage`, `UpdateContactPage`, `DeleteContactPage`,
+// `CreateCoursePage`, `UpdateCoursePage`, `DeleteCoursePage`,
+// `CreateFrontendPage`, `UpdateFrontendPage`, `DeleteFrontendPage`,
+// `CreateNewsPage`, `UpdateNewsPage`, `DeleteNewsPage`,
+// `CreateNewsCategory`, `UpdateNewsCategory`, `DeleteNewsCategory`,
+// `CreateContentType`, `UpdateContentType`, `DeleteContentType`,
+// `CreateSpeechSlider`, `UpdateSpeechSlider`, `DeleteSpeechSlider`).
+//
+// Each stub carries the minimal `tenant` + aggregate id required
+// to type-check. The full payload (reasons, effective dates, file
+// references, marks, etc.) lands in a follow-up batch — the lint
+// only enforces struct existence.
+// =============================================================================
+
+/// Command: update an existing [`Page`](crate::aggregate::Page).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdatePageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The page being updated.
+    pub page_id: crate::value_objects::PageId,
+}
+
+/// Command: update an existing [`News`](crate::aggregate::News).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateNewsCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The news being updated.
+    pub news_id: crate::value_objects::NewsId,
+}
+
+/// Command: publish a [`News`](crate::aggregate::News).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PublishNewsCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The news being published.
+    pub news_id: crate::value_objects::NewsId,
+}
+
+/// Command: unpublish a [`News`](crate::aggregate::News).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UnpublishNewsCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The news being unpublished.
+    pub news_id: crate::value_objects::NewsId,
+}
+
+/// Command: delete a [`News`](crate::aggregate::News).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteNewsCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The news being deleted.
+    pub news_id: crate::value_objects::NewsId,
+}
+
+/// Command: comment on a [`News`](crate::aggregate::News).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CommentOnNewsCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The news being commented on.
+    pub news_id: crate::value_objects::NewsId,
+}
+
+/// Command: moderate a [`NewsComment`](crate::aggregate::NewsComment).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ModerateNewsCommentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The comment being moderated.
+    pub comment_id: crate::value_objects::NewsCommentId,
+}
+
+/// Command: delete a [`NewsComment`](crate::aggregate::NewsComment).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteNewsCommentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The comment being deleted.
+    pub comment_id: crate::value_objects::NewsCommentId,
+}
+
+/// Command: create a [`NoticeBoard`](crate::aggregate::NoticeBoard).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateNoticeBoardCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+}
+
+/// Command: publish a [`NoticeBoard`](crate::aggregate::NoticeBoard).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PublishNoticeBoardCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The notice board being published.
+    pub notice_board_id: crate::value_objects::NoticeBoardId,
+}
+
+/// Command: update a [`NoticeBoard`](crate::aggregate::NoticeBoard).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateNoticeBoardCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The notice board being updated.
+    pub notice_board_id: crate::value_objects::NoticeBoardId,
+}
+
+/// Command: unpublish a [`NoticeBoard`](crate::aggregate::NoticeBoard).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UnpublishNoticeBoardCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The notice board being unpublished.
+    pub notice_board_id: crate::value_objects::NoticeBoardId,
+}
+
+/// Command: delete a [`NoticeBoard`](crate::aggregate::NoticeBoard).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteNoticeBoardCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The notice board being deleted.
+    pub notice_board_id: crate::value_objects::NoticeBoardId,
+}
+
+/// Command: update a [`Testimonial`](crate::aggregate::Testimonial).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateTestimonialCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The testimonial being updated.
+    pub testimonial_id: crate::value_objects::TestimonialId,
+}
+
+/// Command: delete a [`Testimonial`](crate::aggregate::Testimonial).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteTestimonialCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The testimonial being deleted.
+    pub testimonial_id: crate::value_objects::TestimonialId,
+}
+
+/// Command: update a [`HomeSlider`](crate::aggregate::HomeSlider).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateHomeSliderCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The home slider being updated.
+    pub home_slider_id: crate::value_objects::HomeSliderId,
+}
+
+/// Command: delete a [`HomeSlider`](crate::aggregate::HomeSlider).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteHomeSliderCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The home slider being deleted.
+    pub home_slider_id: crate::value_objects::HomeSliderId,
+}
+
+/// Command: update a [`Content`](crate::aggregate::Content).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateContentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The content being updated.
+    pub content_id: crate::value_objects::ContentId,
+}
+
+/// Command: delete a [`Content`](crate::aggregate::Content).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteContentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The content being deleted.
+    pub content_id: crate::value_objects::ContentId,
+}
+
+/// Command: dispatch a [`ContentShareList`](crate::aggregate::ContentShareList).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DispatchContentShareListCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The share list being dispatched.
+    pub share_list_id: crate::value_objects::ContentShareListId,
+}
+
+/// Command: cancel a [`ContentShareList`](crate::aggregate::ContentShareList).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CancelContentShareListCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The share list being cancelled.
+    pub share_list_id: crate::value_objects::ContentShareListId,
+}
+
+/// Command: delete a [`ContentShareList`](crate::aggregate::ContentShareList).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteContentShareListCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The share list being deleted.
+    pub share_list_id: crate::value_objects::ContentShareListId,
+}
+
+/// Command: create a [`TeacherUploadContent`](crate::aggregate::TeacherUploadContent).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateTeacherUploadContentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+}
+
+/// Command: update a [`TeacherUploadContent`](crate::aggregate::TeacherUploadContent).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateTeacherUploadContentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The teacher upload content being updated.
+    pub teacher_upload_content_id: crate::value_objects::TeacherUploadContentId,
+}
+
+/// Command: delete a [`TeacherUploadContent`](crate::aggregate::TeacherUploadContent).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteTeacherUploadContentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The teacher upload content being deleted.
+    pub teacher_upload_content_id: crate::value_objects::TeacherUploadContentId,
+}
+
+/// Command: create a [`UploadContent`](crate::aggregate::UploadContent).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateUploadContentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+}
+
+/// Command: update a [`UploadContent`](crate::aggregate::UploadContent).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateUploadContentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The upload content being updated.
+    pub upload_content_id: crate::value_objects::UploadContentId,
+}
+
+/// Command: delete a [`UploadContent`](crate::aggregate::UploadContent).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteUploadContentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The upload content being deleted.
+    pub upload_content_id: crate::value_objects::UploadContentId,
+}
+
+/// Command: create an [`AboutPage`](crate::aggregate::AboutPage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateAboutPageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+}
+
+/// Command: update an [`AboutPage`](crate::aggregate::AboutPage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateAboutPageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The about page being updated.
+    pub about_page_id: crate::value_objects::AboutPageId,
+}
+
+/// Command: delete an [`AboutPage`](crate::aggregate::AboutPage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteAboutPageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The about page being deleted.
+    pub about_page_id: crate::value_objects::AboutPageId,
+}
+
+/// Command: create a [`ContactPage`](crate::aggregate::ContactPage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateContactPageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+}
+
+/// Command: update a [`ContactPage`](crate::aggregate::ContactPage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateContactPageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The contact page being updated.
+    pub contact_page_id: crate::value_objects::ContactPageId,
+}
+
+/// Command: delete a [`ContactPage`](crate::aggregate::ContactPage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteContactPageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The contact page being deleted.
+    pub contact_page_id: crate::value_objects::ContactPageId,
+}
+
+/// Command: create a [`CoursePage`](crate::aggregate::CoursePage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateCoursePageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+}
+
+/// Command: update a [`CoursePage`](crate::aggregate::CoursePage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateCoursePageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The course page being updated.
+    pub course_page_id: crate::value_objects::CoursePageId,
+}
+
+/// Command: delete a [`CoursePage`](crate::aggregate::CoursePage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteCoursePageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The course page being deleted.
+    pub course_page_id: crate::value_objects::CoursePageId,
+}
+
+/// Command: create a [`FrontendPage`](crate::aggregate::FrontendPage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateFrontendPageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+}
+
+/// Command: update a [`FrontendPage`](crate::aggregate::FrontendPage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateFrontendPageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The frontend page being updated.
+    pub frontend_page_id: crate::value_objects::FrontendPageId,
+}
+
+/// Command: delete a [`FrontendPage`](crate::aggregate::FrontendPage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteFrontendPageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The frontend page being deleted.
+    pub frontend_page_id: crate::value_objects::FrontendPageId,
+}
+
+/// Command: create a [`NewsPage`](crate::aggregate::NewsPage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateNewsPageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+}
+
+/// Command: update a [`NewsPage`](crate::aggregate::NewsPage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateNewsPageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The news page being updated.
+    pub news_page_id: crate::value_objects::NewsPageId,
+}
+
+/// Command: delete a [`NewsPage`](crate::aggregate::NewsPage).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteNewsPageCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The news page being deleted.
+    pub news_page_id: crate::value_objects::NewsPageId,
+}
+
+/// Command: create a [`NewsCategory`](crate::aggregate::NewsCategory).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateNewsCategoryCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+}
+
+/// Command: update a [`NewsCategory`](crate::aggregate::NewsCategory).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateNewsCategoryCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The news category being updated.
+    pub news_category_id: crate::value_objects::NewsCategoryId,
+}
+
+/// Command: delete a [`NewsCategory`](crate::aggregate::NewsCategory).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteNewsCategoryCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The news category being deleted.
+    pub news_category_id: crate::value_objects::NewsCategoryId,
+}
+
+/// Command: create a [`ContentType`](crate::aggregate::ContentType).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateContentTypeCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+}
+
+/// Command: update a [`ContentType`](crate::aggregate::ContentType).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateContentTypeCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The content type being updated.
+    pub content_type_id: crate::value_objects::ContentTypeId,
+}
+
+/// Command: delete a [`ContentType`](crate::aggregate::ContentType).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteContentTypeCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The content type being deleted.
+    pub content_type_id: crate::value_objects::ContentTypeId,
+}
+
+/// Command: create a [`SpeechSlider`](crate::aggregate::SpeechSlider).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateSpeechSliderCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+}
+
+/// Command: update a [`SpeechSlider`](crate::aggregate::SpeechSlider).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateSpeechSliderCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The speech slider being updated.
+    pub speech_slider_id: crate::value_objects::SpeechSliderId,
+}
+
+/// Command: delete a [`SpeechSlider`](crate::aggregate::SpeechSlider).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteSpeechSliderCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The speech slider being deleted.
+    pub speech_slider_id: crate::value_objects::SpeechSliderId,
+}
