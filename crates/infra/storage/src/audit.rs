@@ -54,9 +54,8 @@ mod option_bytes_via_vec {
 }
 
 /// One row in the audit log. The struct is intentionally narrow:
-/// `before` and `after` are serialised `serde_json::Value`
-/// (adapters are free to use any serializable type via
-/// `to_audit_value`). The `action` is a short verb (`"create"`,
+/// `before` and `after` carry serialised snapshots of the
+/// aggregate (typically JSON bytes). The `action` is a short verb (`"create"`,
 /// `"update"`, `"delete"`, `"approve"`, …); `target_type` is the
 /// aggregate name (`"student"`); `target_id` is the aggregate id.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -96,8 +95,10 @@ pub struct AuditLogEntry {
     pub active_status: ActiveStatus,
     /// Free-form metadata. Per `docs/schemas/audit-schema.md`, the
     /// `metadata` column is open-ended; common keys are
-    /// `"reason"`, `"ticket"`, `"request_id"`.
-    pub metadata: serde_json::Value,
+    /// `"reason"`, `"ticket"`, `"request_id"`. Carried as raw
+    /// JSON bytes (mirroring the `before` / `after` snapshot
+    /// encoding) so the port stays serialisation-agnostic.
+    pub metadata: bytes::Bytes,
 }
 
 impl AuditLogEntry {
@@ -123,7 +124,7 @@ impl AuditLogEntry {
             correlation_id,
             occurred_at: Timestamp::now(),
             active_status: ActiveStatus::Active,
-            metadata: serde_json::Value::Null,
+            metadata: bytes::Bytes::new(),
         }
     }
 }
