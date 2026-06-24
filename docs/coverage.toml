@@ -488,7 +488,7 @@ spec = "docs/specs/academic/aggregates.md"
 crate = "educore-academic"
 phase = 3
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/academic_integration.rs"
+tests = "crates/tools/storage-parity/tests/academic_integration.rs,crates/domains/academic/tests/subject.rs"
 
 [[row]]
 id = "academic_academic_years_aggregate"
@@ -1241,6 +1241,16 @@ tests = "crates/cross-cutting/audit/src/writer.rs"
 # =============================================================================
 
 [[row]]
+[[row]]
+id = "facilities_vehicles_aggregate"
+item = "facilities_vehicles aggregate"
+spec = "docs/specs/facilities/aggregates.md"
+crate = "educore-facilities"
+phase = 8
+status = "Tested"
+tests = "crates/domains/facilities/tests/vehicle.rs"
+
+[[row]]
 id = "facilities_items_aggregate"
 item = "facilities_items aggregate"
 spec = "docs/specs/facilities/aggregates.md"
@@ -1558,7 +1568,7 @@ spec = "docs/specs/cms/aggregates.md#page"
 crate = "educore-cms"
 phase = 12
 status = "Tested"
-tests = "crates/domains/cms/src/aggregate.rs,crates/tools/storage-parity/tests/cms_integration.rs,crates/domains/cms/tests/workflows.rs"
+tests = "crates/tools/storage-parity/tests/cms_integration.rs,crates/domains/cms/tests/page.rs,crates/domains/cms/tests/workflows.rs"
 notes = "Phase 12: spec-faithful; 5 events (PageCreated/Updated/Published/Archived/Deleted) + 5 commands (Create/Update/Publish/Archive/Delete); 10-method PageRepository; PageService + create_page_service factory fn; non-empty title, slug-uniqueness, at-most-one home_page, is_default immutability, soft-delete invariants; bus subscriber for documents.form_download.uploaded (Phase 11 OQ #6)."
 
 [[row]]
