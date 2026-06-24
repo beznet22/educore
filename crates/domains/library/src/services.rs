@@ -52,12 +52,19 @@ use educore_core::value_objects::Timestamp;
 
 use crate::aggregate::{Book, BookCategory, BookIssue, BookReturn, Fine, LibraryMember};
 use crate::commands::{
-    AddBookCommand, CalculateFineCommand, CreateBookCategoryCommand, IssueBookCommand,
-    RecordBookReturnCommand, RegisterLibraryMemberCommand, ReturnBookCommand,
+    AddBookCommand, AdjustBookQuantityCommand, CalculateFineCommand, CreateBookCategoryCommand,
+    DeactivateLibraryMemberCommand, DeleteBookCategoryCommand, DeleteBookCommand,
+    DeleteLibraryMemberCommand, IssueBookCommand, ListMemberIssuesCommand,
+    ListOverdueIssuesCommand, MarkBookLostCommand, ReactivateLibraryMemberCommand,
+    RecordBookReturnCommand, RegisterLibraryMemberCommand, RenewBookCommand, ReturnBookCommand,
+    SearchBooksCommand, UpdateBookCategoryCommand, UpdateBookCommand, UpdateLibraryMemberCommand,
+    WaiveBookIssueFineCommand,
 };
 use crate::events::{
-    BookAdded, BookCategoryCreated, BookIssued, BookReturnRecorded, BookReturned, FineCalculated,
-    LibraryMemberRegistered,
+    BookAdded, BookCategoryCreated, BookCategoryDeleted, BookCategoryUpdated, BookDeleted,
+    BookIssued, BookMarkedLost, BookQuantityAdjusted, BookRenewed, BookReturnRecorded, BookReturned,
+    BookUpdated, FineCalculated, FineWaived, LibraryMemberDeactivated, LibraryMemberDeleted,
+    LibraryMemberReactivated, LibraryMemberRegistered, LibraryMemberUpdated,
 };
 use crate::value_objects::{
     AcademicYearId, Author, BookCategoryId, BookId, BookIssueId, BookReturnId, BookTitle,
@@ -624,6 +631,224 @@ impl BookService {
             .sum();
         StockCopies(book.available_copies(sum))
     }
+}
+
+// =============================================================================
+// Cluster C: handler skeletons
+//
+// Each handler below is a minimal skeleton that returns
+// `Err(not_supported("TODO"))` until the owning Workstream
+// implements the full handler. The signatures match the
+// existing factory handlers (cmd + clock + ids -> Result) so
+// downstream code (subscribers, projections, integration
+// tests, dispatchers) can wire type-safe handles to the
+// owning Workstream's handler shape without forcing an
+// all-at-once refactor.
+// =============================================================================
+
+/// Handler skeleton: update a [`BookCategory`].
+pub fn update_book_category<C, G>(
+    _cmd: UpdateBookCategoryCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<(BookCategory, BookCategoryUpdated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: delete a [`BookCategory`].
+pub fn delete_book_category<C, G>(
+    _cmd: DeleteBookCategoryCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<(BookCategory, BookCategoryDeleted)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: update a [`Book`].
+pub fn update_book<C, G>(
+    _cmd: UpdateBookCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<(Book, BookUpdated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: delete a [`Book`].
+pub fn delete_book<C, G>(
+    _cmd: DeleteBookCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<(Book, BookDeleted)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: adjust the stock count of a [`Book`].
+pub fn adjust_book_quantity<C, G>(
+    _cmd: AdjustBookQuantityCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<(Book, BookQuantityAdjusted)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: update a [`LibraryMember`].
+pub fn update_library_member<C, G>(
+    _cmd: UpdateLibraryMemberCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<(LibraryMember, LibraryMemberUpdated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: deactivate a [`LibraryMember`].
+pub fn deactivate_library_member<C, G>(
+    _cmd: DeactivateLibraryMemberCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<(LibraryMember, LibraryMemberDeactivated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: reactivate a [`LibraryMember`].
+pub fn reactivate_library_member<C, G>(
+    _cmd: ReactivateLibraryMemberCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<(LibraryMember, LibraryMemberReactivated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: delete a [`LibraryMember`].
+pub fn delete_library_member<C, G>(
+    _cmd: DeleteLibraryMemberCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<(LibraryMember, LibraryMemberDeleted)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: renew a [`BookIssue`].
+pub fn renew_book<C, G>(
+    _cmd: RenewBookCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<(BookIssue, BookRenewed)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: mark a [`BookIssue`] as lost.
+pub fn mark_book_lost<C, G>(
+    _cmd: MarkBookLostCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<(BookIssue, BookMarkedLost)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: record a [`BookReturn`] row for an
+/// existing [`BookIssue`].
+pub fn record_book_return<C, G>(
+    _cmd: RecordBookReturnCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<(BookReturn, BookReturnRecorded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: waive an existing [`Fine`].
+pub fn waive_book_issue_fine<C, G>(
+    _cmd: WaiveBookIssueFineCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<(Fine, FineWaived)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: search the book catalog.
+pub fn search_books<C, G>(_cmd: SearchBooksCommand, _clock: &C, _ids: &G) -> Result<Vec<Book>>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: list overdue book issues.
+pub fn list_overdue_issues<C, G>(
+    _cmd: ListOverdueIssuesCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<Vec<BookIssue>>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
+}
+
+/// Handler skeleton: list issues for a library member.
+pub fn list_member_issues<C, G>(
+    _cmd: ListMemberIssuesCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<Vec<BookIssue>>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    Err(DomainError::not_supported("TODO"))
 }
 
 // =============================================================================
