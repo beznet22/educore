@@ -126,7 +126,10 @@ impl HolidayService {
     /// (i.e. the date is not a weekend day and not a holiday).
     #[must_use]
     pub fn is_instructional(weekends: &[Weekend], holidays: &[Holiday], date: NaiveDate) -> bool {
-        let weekday = date.weekday().num_days_from_monday() as i32;
+        // `num_days_from_monday()` returns `u32` in 0..=6; `Weekend.order` is
+        // `i32`. Use `TryFrom` rather than `as` (engine rule). The conversion
+        // is always `Ok` for the documented range; fall back to `0` defensively.
+        let weekday = i32::try_from(date.weekday().num_days_from_monday()).unwrap_or(0);
         let is_weekend_day = weekends.iter().any(|w| w.is_weekend && w.order == weekday);
         let is_holiday = holidays.iter().any(|h| Self::contains(h, date));
         !is_weekend_day && !is_holiday
@@ -298,7 +301,10 @@ impl WeekendService {
     /// (matches the configured weekend entries).
     #[must_use]
     pub fn is_weekend(weekends: &[Weekend], date: NaiveDate) -> bool {
-        let weekday = date.weekday().num_days_from_monday() as i32;
+        // See `HolidayService::is_instructional` for the rationale on
+        // `TryFrom` over `as`. `num_days_from_monday()` returns `u32` in
+        // 0..=6 and `Weekend.order` is `i32`.
+        let weekday = i32::try_from(date.weekday().num_days_from_monday()).unwrap_or(0);
         weekends.iter().any(|w| w.is_weekend && w.order == weekday)
     }
 

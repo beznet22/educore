@@ -73,13 +73,19 @@ impl BackupService {
     /// window (keep N most recent). Stable order by `created_at`.
     #[must_use]
     pub fn retention_cutoff(backups: &[Backup], keep: u32) -> Vec<BackupId> {
-        if backups.len() <= keep as usize {
+        // Convert `keep: u32` to `usize` without `as` (engine rule: no `as` on
+        // numerics). `TryFrom` only fails on platforms where `usize < u32`,
+        // which the engine does not target; fall back to `usize::MAX` so a
+        // hypothetical 16-bit build still returns the full set rather than
+        // panicking or silently dropping data.
+        let keep_usize = usize::try_from(keep).unwrap_or(usize::MAX);
+        if backups.len() <= keep_usize {
             return Vec::new();
         }
         // Order by `created_at` ascending (oldest first); the tail is "keep".
         let mut sorted: Vec<&Backup> = backups.iter().collect();
         sorted.sort_by_key(|b| b.created_at);
-        let drop_count = sorted.len().saturating_sub(keep as usize);
+        let drop_count = sorted.len().saturating_sub(keep_usize);
         sorted.iter().take(drop_count).map(|b| b.id).collect()
     }
 }
