@@ -18,8 +18,16 @@
 //! [`StudentId`], [`ClassId`], [`SectionId`], [`SubjectId`],
 //! [`AcademicYearId`]; value objects for the student
 //! lifecycle; the class/section/subject/academic-year
-//! value objects. The full list (GuardianId, ClassSectionId,
-//! ClassSubjectId, ClassRoutineId, …) lands in later phases.
+//! value objects. The full set of typed ids for all 20
+//! academic aggregates (`StudentId`, `GuardianId`, `ClassId`,
+//! `SectionId`, `ClassSectionId`, `SubjectId`,
+//! `ClassSubjectId`, `AcademicYearId`, `ClassRoutineId`,
+//! `HomeworkId`, `LessonId`, `LessonTopicId`, `LessonPlanId`,
+//! `StudentRecordId`, `StudentPromotionId`,
+//! `StudentCategoryId`, `StudentGroupId`,
+//! `RegistrationFieldId`, `CertificateId`, `IdCardId`) is
+//! defined here; the corresponding aggregate structs land
+//! in later phases per `docs/build-plan.md`.
 
 use std::fmt;
 
@@ -85,12 +93,19 @@ macro_rules! academic_typed_id {
 }
 
 // =============================================================================
-// Typed ids (5 prompt-named)
+// Typed ids (20 academic aggregates)
 // =============================================================================
 
 academic_typed_id! {
     /// A typed id for a [`Student`](crate::aggregate::Student) row.
     pub struct StudentId;
+}
+
+academic_typed_id! {
+    /// A typed id for a `Guardian` row (parent, legal guardian,
+    /// or authorized contact). See
+    /// `docs/specs/academic/aggregates.md` § Guardian.
+    pub struct GuardianId;
 }
 
 academic_typed_id! {
@@ -104,13 +119,65 @@ academic_typed_id! {
 }
 
 academic_typed_id! {
+    /// A typed id for a `ClassSection` row (the pairing of a
+    /// class and a section in a specific academic year that
+    /// students are enrolled into). See
+    /// `docs/specs/academic/aggregates.md` § ClassSection.
+    pub struct ClassSectionId;
+}
+
+academic_typed_id! {
     /// A typed id for a [`Subject`](crate::aggregate::Subject) row.
     pub struct SubjectId;
 }
 
 academic_typed_id! {
+    /// A typed id for a `ClassSubject` row (the assignment of a
+    /// subject to a class, with a teacher, in a specific
+    /// academic year). See `docs/specs/academic/aggregates.md`
+    /// § ClassSubject.
+    pub struct ClassSubjectId;
+}
+
+academic_typed_id! {
     /// A typed id for an [`AcademicYear`](crate::aggregate::AcademicYear) row.
     pub struct AcademicYearId;
+}
+
+academic_typed_id! {
+    /// A typed id for a `ClassRoutine` row (the weekly schedule
+    /// for a class-section-subject combination). See
+    /// `docs/specs/academic/aggregates.md` § ClassRoutine.
+    pub struct ClassRoutineId;
+}
+
+academic_typed_id! {
+    /// A typed id for a `Homework` row (an assignment given to
+    /// students in a class-section, for a subject, with a
+    /// submission deadline). See
+    /// `docs/specs/academic/aggregates.md` § Homework.
+    pub struct HomeworkId;
+}
+
+academic_typed_id! {
+    /// A typed id for a `LessonPlan` row (a teacher's plan for a
+    /// specific lesson topic on a specific date). See
+    /// `docs/specs/academic/aggregates.md` § LessonPlan.
+    pub struct LessonPlanId;
+}
+
+academic_typed_id! {
+    /// A typed id for a `Lesson` row (a unit of study within a
+    /// subject, owned by a class-section). See
+    /// `docs/specs/academic/aggregates.md` § Lesson.
+    pub struct LessonId;
+}
+
+academic_typed_id! {
+    /// A typed id for a `LessonTopic` row (a topic within a
+    /// lesson, trackable through a syllabus). See
+    /// `docs/specs/academic/aggregates.md` § LessonTopic.
+    pub struct LessonTopicId;
 }
 
 academic_typed_id! {
@@ -125,6 +192,50 @@ academic_typed_id! {
     /// so the assessment domain can declare its foreign-key
     /// fields against a stable type from the academic crate.
     pub struct StudentRecordId;
+}
+
+academic_typed_id! {
+    /// A typed id for a `StudentPromotion` row (a historical
+    /// record of a promotion event). See
+    /// `docs/specs/academic/aggregates.md` § StudentPromotion.
+    pub struct StudentPromotionId;
+}
+
+academic_typed_id! {
+    /// A typed id for a `StudentCategory` row (a categorization
+    /// for students, used for fee discounts and reporting). See
+    /// `docs/specs/academic/aggregates.md` § StudentCategory.
+    pub struct StudentCategoryId;
+}
+
+academic_typed_id! {
+    /// A typed id for a `StudentGroup` row (a grouping of
+    /// students for non-academic purposes such as clubs or
+    /// sports teams). See `docs/specs/academic/aggregates.md`
+    /// § StudentGroup.
+    pub struct StudentGroupId;
+}
+
+academic_typed_id! {
+    /// A typed id for a `RegistrationField` row (a custom field
+    /// on the student or staff registration form). See
+    /// `docs/specs/academic/aggregates.md` § RegistrationField.
+    pub struct RegistrationFieldId;
+}
+
+academic_typed_id! {
+    /// A typed id for a `Certificate` row (a configurable
+    /// certificate template: transfer, character, course
+    /// completion, etc.). See
+    /// `docs/specs/academic/aggregates.md` § Certificate.
+    pub struct CertificateId;
+}
+
+academic_typed_id! {
+    /// A typed id for an `IdCard` row (a configurable student ID
+    /// card template). See `docs/specs/academic/aggregates.md`
+    /// § IdCard.
+    pub struct IdCardId;
 }
 
 // =============================================================================
