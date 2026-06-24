@@ -34,6 +34,22 @@ use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{Expense, FeesInvoice, FeesPayment, Wallet, WalletTransaction};
+use crate::commands::{
+    CreateDirectFeesInstallmentChildPaymentCommand, CreateDonorCommand,
+    CreateFeesAssignDiscountCommand, CreateFeesInstallmentCreditCommand,
+    CreateFeesInvoiceSettingCommand, CreateFmFeesGroupCommand,
+    CreateFmFeesInvoiceChildCommand, CreateFmFeesInvoiceCommand,
+    CreateFmFeesInvoiceSettingCommand, CreateFmFeesTransactionChildCommand,
+    CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand, CreateFmFeesWeaverCommand,
+    CreateInventoryPaymentCommand, CreateProductPurchaseCommand, CreateTransactionCommand,
+    ReadDirectFeesInstallmentChildPaymentCommand, ReadDonorCommand,
+    ReadFeesAssignDiscountCommand, ReadFeesInstallmentCreditCommand,
+    ReadFeesInvoiceSettingCommand, ReadFmFeesGroupCommand, ReadFmFeesInvoiceChildCommand,
+    ReadFmFeesInvoiceCommand, ReadFmFeesInvoiceSettingCommand,
+    ReadFmFeesTransactionChildCommand, ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
+    ReadFmFeesWeaverCommand, ReadInventoryPaymentCommand, ReadProductPurchaseCommand,
+    ReadTransactionCommand,
+};
 use crate::events::{
     ExpenseRecorded, InvoiceNumberingConfigured, PaymentReceived, WalletCreated, WalletCredited,
     WalletDebited, WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
@@ -962,6 +978,529 @@ impl DoubleEntryService {
         }
         Ok(())
     }
+}
+
+// =============================================================================
+// Cluster C handler skeletons
+// (added for the 16 new aggregates from commit 429f74f;
+// commands from commit 0ca5a9c). Each skeleton takes the typed
+// command + clock + id-generator and returns `Result<()>`. The
+// aggregate payload + typed event land with the Phase 7 workstream
+// that fills in the corresponding aggregate (Workstreams B, C, D,
+// F, G, L). The dispatcher is responsible for routing the
+// `Ok(())` to the typed event-emission path once it lands.
+// =============================================================================
+
+/// Handler skeleton: create a `FeesAssignDiscount` aggregate.
+/// Full implementation lands in Phase 7 Workstream F.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_fees_assign_discount<C, G>(
+    cmd: CreateFeesAssignDiscountCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read a `FeesAssignDiscount` aggregate.
+/// Full implementation lands in Phase 7 Workstream F.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_fees_assign_discount<C, G>(
+    cmd: ReadFeesAssignDiscountCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create a `DirectFeesInstallmentChildPayment` aggregate.
+/// Full implementation lands in Phase 7 Workstream F.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_direct_fees_installment_child_payment<C, G>(
+    cmd: CreateDirectFeesInstallmentChildPaymentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read a `DirectFeesInstallmentChildPayment` aggregate.
+/// Full implementation lands in Phase 7 Workstream F.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_direct_fees_installment_child_payment<C, G>(
+    cmd: ReadDirectFeesInstallmentChildPaymentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create an `FmFeesGroup` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_fm_fees_group<C, G>(
+    cmd: CreateFmFeesGroupCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read an `FmFeesGroup` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_fm_fees_group<C, G>(
+    cmd: ReadFmFeesGroupCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create an `FmFeesType` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_fm_fees_type<C, G>(
+    cmd: CreateFmFeesTypeCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read an `FmFeesType` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_fm_fees_type<C, G>(
+    cmd: ReadFmFeesTypeCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create an `FmFeesInvoice` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_fm_fees_invoice<C, G>(
+    cmd: CreateFmFeesInvoiceCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read an `FmFeesInvoice` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_fm_fees_invoice<C, G>(
+    cmd: ReadFmFeesInvoiceCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create an `FmFeesInvoiceChild` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_fm_fees_invoice_child<C, G>(
+    cmd: CreateFmFeesInvoiceChildCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read an `FmFeesInvoiceChild` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_fm_fees_invoice_child<C, G>(
+    cmd: ReadFmFeesInvoiceChildCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create an `FmFeesInvoiceSetting` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_fm_fees_invoice_setting<C, G>(
+    cmd: CreateFmFeesInvoiceSettingCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read an `FmFeesInvoiceSetting` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_fm_fees_invoice_setting<C, G>(
+    cmd: ReadFmFeesInvoiceSettingCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create an `FmFeesTransaction` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_fm_fees_transaction<C, G>(
+    cmd: CreateFmFeesTransactionCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read an `FmFeesTransaction` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_fm_fees_transaction<C, G>(
+    cmd: ReadFmFeesTransactionCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create an `FmFeesTransactionChild` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_fm_fees_transaction_child<C, G>(
+    cmd: CreateFmFeesTransactionChildCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read an `FmFeesTransactionChild` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_fm_fees_transaction_child<C, G>(
+    cmd: ReadFmFeesTransactionChildCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create an `FmFeesWeaver` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_fm_fees_weaver<C, G>(
+    cmd: CreateFmFeesWeaverCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read an `FmFeesWeaver` aggregate.
+/// Full implementation lands in Phase 7 Workstream G.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_fm_fees_weaver<C, G>(
+    cmd: ReadFmFeesWeaverCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create a `FeesInvoiceSetting` aggregate.
+/// Full implementation lands in Phase 7 Workstream B.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_fees_invoice_setting<C, G>(
+    cmd: CreateFeesInvoiceSettingCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read a `FeesInvoiceSetting` aggregate.
+/// Full implementation lands in Phase 7 Workstream B.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_fees_invoice_setting<C, G>(
+    cmd: ReadFeesInvoiceSettingCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create a `FeesInstallmentCredit` aggregate.
+/// Full implementation lands in Phase 7 Workstream F.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_fees_installment_credit<C, G>(
+    cmd: CreateFeesInstallmentCreditCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read a `FeesInstallmentCredit` aggregate.
+/// Full implementation lands in Phase 7 Workstream F.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_fees_installment_credit<C, G>(
+    cmd: ReadFeesInstallmentCreditCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create a `Transaction` aggregate (double-entry journal).
+/// Full implementation lands in Phase 7 Workstream C.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_transaction<C, G>(
+    cmd: CreateTransactionCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read a `Transaction` aggregate (double-entry journal).
+/// Full implementation lands in Phase 7 Workstream C.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_transaction<C, G>(
+    cmd: ReadTransactionCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create a `Donor` aggregate.
+/// Full implementation lands in Phase 7 Workstream D.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_donor<C, G>(
+    cmd: CreateDonorCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read a `Donor` aggregate.
+/// Full implementation lands in Phase 7 Workstream D.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_donor<C, G>(
+    cmd: ReadDonorCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create a `ProductPurchase` aggregate.
+/// Full implementation lands in Phase 7 Workstream L.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_product_purchase<C, G>(
+    cmd: CreateProductPurchaseCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read a `ProductPurchase` aggregate.
+/// Full implementation lands in Phase 7 Workstream L.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_product_purchase<C, G>(
+    cmd: ReadProductPurchaseCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: create an `InventoryPayment` aggregate.
+/// Full implementation lands in Phase 7 Workstream L.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_inventory_payment<C, G>(
+    cmd: CreateInventoryPaymentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Handler skeleton: read an `InventoryPayment` aggregate.
+/// Full implementation lands in Phase 7 Workstream L.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_inventory_payment<C, G>(
+    cmd: ReadInventoryPaymentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
 }
 
 #[cfg(test)]
