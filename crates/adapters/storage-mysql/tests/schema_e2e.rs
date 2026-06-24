@@ -105,7 +105,7 @@ async fn create_schema_is_idempotent_against_live_mysql() {
             .await
             .expect("connect adapter_a");
     adapter_a
-        .create_schema(&[descriptor])
+        .create_schema()
         .await
         .expect("first create_schema");
 
@@ -117,7 +117,7 @@ async fn create_schema_is_idempotent_against_live_mysql() {
             .await
             .expect("connect adapter_b");
     adapter_b
-        .create_schema(&[descriptor])
+        .create_schema()
         .await
         .expect("second create_schema must be idempotent");
 }
