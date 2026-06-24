@@ -21,12 +21,12 @@ documentation.
 
 ## Workspace Layout
 
-The 34 crates are organized into 5 tiers + 1 umbrella. Tier
-boundaries are enforced at the filesystem level (the
-`educore-core::lint` sub-module verifies that a crate in
-`crates/domains/` does not import from `crates/adapters/` or
-`crates/tools/`). Each tier has a clear purpose documented in
-[§ Tier System](#tier-system) below.
+The 36 internal crates are organized into 5 tiers + 1 umbrella
+(= 37 packages total). Tier boundaries are enforced at the
+filesystem level (the `educore-core::lint` sub-module verifies
+that a crate in `crates/domains/` does not import from
+`crates/adapters/` or `crates/tools/`). Each tier has a clear
+purpose documented in [§ Tier System](#tier-system) below.
 
 ```text
 <workspace-root>/                   <-- repository root on disk
@@ -43,7 +43,9 @@ boundaries are enforced at the filesystem level (the
 │   │   ├── events-domain/           <-- package: educore-events-domain (calendar)
 │   │   ├── settings/                <-- package: educore-settings
 │   │   ├── operations/              <-- package: educore-operations
-│   │   └── audit/                   <-- package: educore-audit
+│   │   ├── audit/                   <-- package: educore-audit
+│   │   ├── sync/                    <-- package: educore-sync (port trait, per ADR-018)
+│   │   └── sync-inprocess/          <-- package: educore-sync-inprocess (in-process reference adapter)
 │   ├── domains/                     <-- domains tier (the 10 domain bounded contexts)
 │   │   ├── academic/                <-- package: educore-academic
 │   │   ├── assessment/              <-- package: educore-assessment
@@ -56,6 +58,7 @@ boundaries are enforced at the filesystem level (the
 │   │   ├── hr/                      <-- package: educore-hr
 │   │   └── library/                 <-- package: educore-library
 │   ├── adapters/                    <-- adapters tier (port implementations)
+│   │   ├── storage-surrealdb/       <-- package: educore-storage-surrealdb (primary per ADR-017)
 │   │   ├── storage-postgres/        <-- package: educore-storage-postgres
 │   │   ├── storage-mysql/           <-- package: educore-storage-mysql
 │   │   ├── storage-sqlite/          <-- package: educore-storage-sqlite
@@ -103,11 +106,12 @@ boundaries are enforced at the filesystem level (the
 │   └── guides/                      <-- 17 implementation guides + README (18 files)
 ├── migrations/                      <-- SQL migration scripts
 │   ├── README.md                    <-- engine target schema, gap, plan
-│   ├── engine/                      <-- canonical DDL for 6 cross-cutting tables, 3 dialects
-│   │   ├── README.md                <-- index of the 3 dialect files
+│   ├── engine/                      <-- canonical DDL for 6 cross-cutting tables, 4 dialect files
+│   │   ├── README.md                <-- index of the 4 dialect files
 │   │   ├── 0000_engine_core.mysql.sql    <-- MySQL 8+ reference
 │   │   ├── 0000_engine_core.postgres.sql <-- PostgreSQL 14+ reference
-│   │   └── 0000_engine_core.sqlite.sql    <-- SQLite 3.x reference
+│   │   ├── 0000_engine_core.sqlite.sql    <-- SQLite 3.x reference
+│   │   └── 0000_engine_core.surreal.surql <-- SurrealDB reference
 │   └── 0001_*.sql..0015_*.sql       <-- legacy Schoolify dump (research source)
 ├── .gitignore                       <-- excludes target/, .DS_Store, etc.
 ├── .graphifyignore                  <-- graphify exclude list (schoolify/, docs_guidlines/, target/, .git/, graphify-out/cache/, graphify-out/cost.json)
@@ -139,19 +143,19 @@ need to know the internal `educore-` prefix on the package name.
 
 ## Tier System
 
-The 34 crates are organized into 5 tiers. Each tier has a
+The 36 internal crates are organized into 5 tiers. Each tier has a
 distinct purpose, dependency direction, and lifecycle.
 
 | Tier | Path | Count | Purpose | Depends on |
 | --- | --- | --- | --- | --- |
 | `infra` | `crates/infra/` | 3 | Infrastructure: errors, identifiers, value objects, query AST, proc-macro, storage port | (none) |
-| `cross-cutting` | `crates/cross-cutting/` | 7 | Cross-domain foundations: platform, rbac, events, audit, settings, operations, calendar | `infra` |
+| `cross-cutting` | `crates/cross-cutting/` | 9 | Cross-domain foundations: platform, rbac, events envelope, events-domain (calendar), audit, settings, operations, sync port, sync-inprocess | `infra` |
 | `domains` | `crates/domains/` | 10 | The 10 domain bounded contexts (academic, finance, hr, ...) | `infra`, `cross-cutting` |
-| `adapters` | `crates/adapters/` | 10 | Port implementations: 4 storage adapters + 6 port adapters (auth, event-bus, files, integrations, notify, payment) | `infra`, `cross-cutting` |
+| `adapters` | `crates/adapters/` | 10 | Port implementations: 4 storage adapters (surrealdb, postgres, mysql, sqlite) + 6 port adapters (auth, event-bus, files, integrations, notify, payment) | `infra`, `cross-cutting` |
 | `tools` | `crates/tools/` | 4 | Dev tooling: testkit, storage-parity, cli (binary), sdk | `infra`, `cross-cutting`, `domains` |
 
 The umbrella crate `educore` re-exports the public surface of
-all 34 internal crates.
+all 36 internal crates.
 
 **Layered dependency direction** (no cycles, no upward deps):
 
@@ -411,16 +415,16 @@ implementation, never as an afterthought.
 
 ## Storage Adapters
 
-Three reference adapters are shipped:
+Four reference adapters are shipped:
 
-- `educore-storage-surrealdb` (primary target)
+- `educore-storage-surrealdb` (primary target — embedded + server modes; see ADR-017)
+- `educore-storage-postgres` (production target, PostgreSQL 14+)
 - `educore-storage-mysql` (production target, MySQL 8.0+)
 - `educore-storage-sqlite` (embedded / offline mode)
 
-The SurrealDB and MongoDB adapters are **deferred to a future release**
-and are **not** shipped from the engine. See
-`docs/ports/storage.md#future-storage-backends-deferred` for the
-rationale and the path for consumers who need a deferred adapter.
+All four are scaffolded in `crates/adapters/` and shipped from
+the engine. See `docs/ports/storage.md` for the port contract and
+`docs/decisions/ADR-017-SurrealDBFirst.md` for the rationale.
 
 ## Engine Graph (graphify)
 
@@ -454,35 +458,39 @@ topology is documented in
 
 - Documentation: **complete** (~302 markdown files, 15 domain
   specs × 11 files each = 165 spec files).
-- Workspace scaffold: **complete** (34 crates, virtual workspace).
-- Storage adapters shipped: **PostgreSQL, MySQL, SQLite**.
-- Storage adapters deferred: **SurrealDB, MongoDB** (consumer may
-  implement in-tree on demand).
-- Implementation: **not started** — scaffold only. Domain logic,
-  aggregates, value objects, commands, events, repositories, and
-  storage translations are pending.
+- Workspace scaffold: **complete** (37 packages = 36 internal
+  crates + 1 umbrella, virtual workspace).
+- Storage adapters shipped: **SurrealDB (primary), PostgreSQL,
+  MySQL, SQLite** — all four scaffolded in `crates/adapters/`.
+- Implementation: **partial**. Phase 0 (foundation + SurrealDB
+  adapter + sync engine port) and Phase 12 (CMS, per the
+  per-crate annotations below) are landed; remaining phases are
+  scaffolded with pending domain logic per `docs/build-plan.md`.
 - Domain spec cleanup: **complete**. All legacy-prefixed table
   references (the seven common Laravel/InfixEdu prefixes plus
   the brand-tainted Rust type names) have been removed from
   `docs/specs/` and replaced with engine
   `<domain>_<aggregate>` names. 77 spec files updated,
   ~1033 insertions / ~1102 deletions.
-- Build plan: **17 phases** (Phase 0..17) with coverage matrix and
-  no-gaps gates documented in `docs/build-plan.md`. The 5 new
+- Build plan: **18 phases** (Phase 0..17) with coverage matrix and
+  no-gaps gates documented in `docs/build-plan.md`. The 7 new
   crates are scaffolded and assigned to:
   - `educore-storage-parity` → Phase 0 (cross-adapter test suite)
   - `educore-audit` → Phase 2 (cross-cutting foundations)
   - `educore-operations` → Phase 14 (Settings + Operations)
   - `educore-testkit` → Phase 16 (Test infrastructure + SDK)
   - `educore-cli` → Phase 16 (Test infrastructure + SDK)
+  - `educore-sync` → Phase 0 (sync engine port trait, per ADR-018)
+  - `educore-sync-inprocess` → Phase 0 (in-process SyncAdapter reference)
 
 ## Crate Inventory (per-crate phase assignment)
 
-Every one of the 34 workspace crates is scaffolded. Implementation
-begins in Phase 0 of `docs/build-plan.md`. The table below maps
-each crate to the phase that implements it. **This is the
-authoritative source** — do not rely on the directory tree or the
-umbrella re-exports to determine phase assignment.
+Every one of the 36 internal workspace crates is scaffolded
+(plus 1 umbrella = 37 packages). Implementation begins in
+Phase 0 of `docs/build-plan.md`. The table below maps each crate
+to the phase that implements it. **This is the authoritative
+source** — do not rely on the directory tree or the umbrella
+re-exports to determine phase assignment.
 
 | # | Tier | Crate | Phase | Title |
 | --- | --- | --- | --- | --- |
@@ -491,36 +499,38 @@ umbrella re-exports to determine phase assignment.
 | 3 | infra | `educore-storage` | 0 | Foundation (port trait) |
 | 4 | adapters | `educore-storage-surrealdb` | 0 | Foundation (SurrealDB adapter, primary) |
 | 5 | tools | `educore-storage-parity` | 0 | Foundation (cross-adapter test suite) |
-| 6 | adapters | `educore-storage-postgres` | 1 | Adapter parity |
-| 7 | adapters | `educore-storage-mysql` | 1 | Adapter parity |
-| 8 | adapters | `educore-storage-sqlite` | 1 | Adapter parity |
-| 9 | cross-cutting | `educore-platform` | 2 | Cross-cutting foundations |
-| 10 | cross-cutting | `educore-rbac` | 2 | Cross-cutting foundations |
-| 11 | cross-cutting | `educore-events` | 2 | Cross-cutting foundations (envelope) |
-| 12 | adapters | `educore-event-bus` | 2 | Cross-cutting foundations (bus port) |
-| 13 | cross-cutting | `educore-audit` | 2 | Cross-cutting foundations (audit log) |
-| 14 | domains | `educore-academic` | 3 | Academic |
-| 15 | domains | `educore-assessment` | 4 | Assessment |
-| 16 | domains | `educore-attendance` | 5 | Attendance |
-| 17 | domains | `educore-hr` | 6 | HR |
-| 18 | domains | `educore-finance` | 7 | Finance |
-| 19 | domains | `educore-facilities` | 8 | Facilities |
-| 20 | domains | `educore-library` | 9 | Library |
-| 21 | domains | `educore-communication` | 10 | Communication |
-| 22 | domains | `educore-documents` | 11 | Documents |
-| 23 | domains | `educore-cms` | 12 | CMS — spec-faithful (20 root aggregates per `docs/specs/cms/aggregates.md`); 9-file layout; ~67 events, ~67 commands, 86 Cms caps (4 retained Phase 2 placeholders + 82 net-new), 21 Cms audit targets, 19 repos, 19 query stubs, 6 service factory fns + 6 service structs (PageService, NewsService, ContentService, TestimonialService, HomeSliderService, ContentShareListService); `form_uploaded_public_indexing_subscriber` for `documents.form_download.uploaded` (Phase 11 OQ #6); `educore-academic` dep for `ClassId`/`SectionId`/`AcademicYearId`; 183 unit tests in crate + 7-scenario integration test in `storage-parity` (2 env-gated PG/MySQL variants); `SchoolId::PUBLIC` constant added to `educore-core`; 20 `coverage.toml` rows flipped; see `PHASE-12-HANDOFF.md` |
-| 24 | domains | `educore-events-domain` | 13 | Events domain (calendar) |
-| 25 | cross-cutting | `educore-settings` | 14 | Settings + Operations |
-| 26 | cross-cutting | `educore-operations` | 14 | Settings + Operations |
-| 27 | adapters | `educore-auth` | 15 | Port adapters |
-| 28 | adapters | `educore-notify` | 15 | Port adapters |
-| 29 | adapters | `educore-payment` | 15 | Port adapters |
-| 30 | adapters | `educore-files` | 15 | Port adapters |
-| 31 | adapters | `educore-integrations` | 15 | Port adapters |
-| 32 | tools | `educore-testkit` | 16 | Test infrastructure + SDK |
-| 33 | tools | `educore-storage-parity` | 16 | (Test infrastructure + SDK) |
-| 34 | tools | `educore-sdk` | 16 | Test infrastructure + SDK |
-| 35 | tools | `educore-cli` | 16 | Test infrastructure + SDK |
+| 6 | cross-cutting | `educore-sync` | 0 | Foundation (sync engine port trait, per ADR-018) |
+| 7 | cross-cutting | `educore-sync-inprocess` | 0 | Foundation (in-process SyncAdapter reference, per ADR-018) |
+| 8 | adapters | `educore-storage-postgres` | 1 | Adapter parity |
+| 9 | adapters | `educore-storage-mysql` | 1 | Adapter parity |
+| 10 | adapters | `educore-storage-sqlite` | 1 | Adapter parity |
+| 11 | cross-cutting | `educore-platform` | 2 | Cross-cutting foundations |
+| 12 | cross-cutting | `educore-rbac` | 2 | Cross-cutting foundations |
+| 13 | cross-cutting | `educore-events` | 2 | Cross-cutting foundations (envelope) |
+| 14 | adapters | `educore-event-bus` | 2 | Cross-cutting foundations (bus port) |
+| 15 | cross-cutting | `educore-audit` | 2 | Cross-cutting foundations (audit log) |
+| 16 | domains | `educore-academic` | 3 | Academic |
+| 17 | domains | `educore-assessment` | 4 | Assessment |
+| 18 | domains | `educore-attendance` | 5 | Attendance |
+| 19 | domains | `educore-hr` | 6 | HR |
+| 20 | domains | `educore-finance` | 7 | Finance |
+| 21 | domains | `educore-facilities` | 8 | Facilities |
+| 22 | domains | `educore-library` | 9 | Library |
+| 23 | domains | `educore-communication` | 10 | Communication |
+| 24 | domains | `educore-documents` | 11 | Documents |
+| 25 | domains | `educore-cms` | 12 | CMS — spec-faithful (20 root aggregates per `docs/specs/cms/aggregates.md`); 9-file layout; ~67 events, ~67 commands, 86 Cms caps (4 retained Phase 2 placeholders + 82 net-new), 21 Cms audit targets, 19 repos, 19 query stubs, 6 service factory fns + 6 service structs (PageService, NewsService, ContentService, TestimonialService, HomeSliderService, ContentShareListService); `form_uploaded_public_indexing_subscriber` for `documents.form_download.uploaded` (Phase 11 OQ #6); `educore-academic` dep for `ClassId`/`SectionId`/`AcademicYearId`; 183 unit tests in crate + 7-scenario integration test in `storage-parity` (2 env-gated PG/MySQL variants); `SchoolId::PUBLIC` constant added to `educore-core`; 20 `coverage.toml` rows flipped; see `PHASE-12-HANDOFF.md` |
+| 26 | domains | `educore-events-domain` | 13 | Events domain (calendar) |
+| 27 | cross-cutting | `educore-settings` | 14 | Settings + Operations |
+| 28 | cross-cutting | `educore-operations` | 14 | Settings + Operations |
+| 29 | adapters | `educore-auth` | 15 | Port adapters |
+| 30 | adapters | `educore-notify` | 15 | Port adapters |
+| 31 | adapters | `educore-payment` | 15 | Port adapters |
+| 32 | adapters | `educore-files` | 15 | Port adapters |
+| 33 | adapters | `educore-integrations` | 15 | Port adapters |
+| 34 | tools | `educore-testkit` | 16 | Test infrastructure + SDK |
+| 35 | tools | `educore-storage-parity` | 16 | (Test infrastructure + SDK) |
+| 36 | tools | `educore-sdk` | 16 | Test infrastructure + SDK |
+| 37 | tools | `educore-cli` | 16 | Test infrastructure + SDK |
 | — | umbrella | `educore` | 0 | re-exports only; first usable at Phase 0+ |
 
 **Note on duplicates:** `educore-storage-parity` is listed at
@@ -563,9 +573,10 @@ in
    dominates the cost (~6 s for ~310 tables on MySQL); string
    build time is <10 ms.
 
-The 6 cross-cutting tables have canonical DDL in three dialects under
-`migrations/engine/` (`0000_engine_core.mysql.sql`,
-`0000_engine_core.postgres.sql`, `0000_engine_core.sqlite.sql`).
+The 6 cross-cutting tables have canonical DDL in four dialect
+files under `migrations/engine/` (`0000_engine_core.mysql.sql`,
+`0000_engine_core.postgres.sql`, `0000_engine_core.sqlite.sql`,
+`0000_engine_core.surreal.surql`).
 The `educore-storage-<db>` adapter crates `include_str!` these
 files at compile time. The `migrations/0001_*.sql`–
 `migrations/0015_*.sql` files are the legacy Schoolify/InfixEdu
