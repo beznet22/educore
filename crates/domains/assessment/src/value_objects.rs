@@ -184,6 +184,250 @@ assessment_typed_id! {
 }
 
 // =============================================================================
+// Typed ids (Cluster C: gap-fill — every spec aggregate below
+// has its own root identity in `docs/specs/assessment/aggregates.md`;
+// the matching typed id lives here so downstream workstreams can
+// declare foreign-key fields against a stable type even before the
+// aggregate's full implementation lands).
+// =============================================================================
+
+// --- Exam + ExamSetup cluster ----------------------------------------------
+
+assessment_typed_id! {
+    /// A typed id for an [`ExamSetup`](crate::aggregate::ExamSetup)
+    /// row (the per-section configuration that augments an `Exam`).
+    pub struct ExamSetupId;
+}
+
+// --- MarkStore cluster ------------------------------------------------------
+
+assessment_typed_id! {
+    /// A typed id for a [`MarkStore`](crate::aggregate::MarkStore)
+    /// row (the consolidated marks row produced by the result
+    /// computation service).
+    pub struct MarkStoreId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a
+    /// [`MarkStoreEntry`](crate::entities::MarkStoreEntry)
+    /// child row (per-subject entry under a `MarkStore`).
+    pub struct MarkStoreEntryId;
+}
+
+// --- Result publication cluster --------------------------------------------
+
+assessment_typed_id! {
+    /// A typed id for a [`ResultSetting`](crate::aggregate::ResultSetting)
+    /// row (per-school result publication settings).
+    pub struct ResultSettingId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a [`MarksGrade`](crate::aggregate::MarksGrade)
+    /// row (a school-defined grade boundary).
+    pub struct MarksGradeId;
+}
+
+// --- Exam publication cluster ----------------------------------------------
+
+assessment_typed_id! {
+    /// A typed id for an [`ExamSetting`](crate::aggregate::ExamSetting)
+    /// row (a school-wide publication of an exam).
+    pub struct ExamSettingId;
+}
+
+assessment_typed_id! {
+    /// A typed id for an [`ExamSignature`](crate::aggregate::ExamSignature)
+    /// row (a signature used on report cards / admit cards).
+    pub struct ExamSignatureId;
+}
+
+assessment_typed_id! {
+    /// A typed id for an [`ExamRoutinePage`](crate::aggregate::ExamRoutinePage)
+    /// row (the public-facing exam-routine content block).
+    pub struct ExamRoutinePageId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a [`FrontendExamRoutine`](crate::aggregate::FrontendExamRoutine)
+    /// row (a front-end publication of a specific exam routine).
+    pub struct FrontExamRoutineId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a [`FrontendResult`](crate::aggregate::FrontendResult)
+    /// row (a front-end publication of a result).
+    pub struct FrontResultId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a
+    /// [`FrontendExamResult`](crate::aggregate::FrontendExamResult)
+    /// row (marketing block for the exam-results landing page).
+    pub struct FrontendExamResultId;
+}
+
+// --- OnlineExam cluster -----------------------------------------------------
+
+assessment_typed_id! {
+    /// A typed id for an [`OnlineExam`](crate::aggregate::OnlineExam)
+    /// row (a digital exam for a class/section/subject).
+    pub struct OnlineExamId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a [`QuestionBank`](crate::aggregate::QuestionBank)
+    /// row (a reusable pool of questions).
+    pub struct QuestionBankId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a [`QuestionGroup`](crate::aggregate::QuestionGroup)
+    /// row (a grouping for questions).
+    pub struct QuestionGroupId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a [`QuestionLevel`](crate::aggregate::QuestionLevel)
+    /// row (a difficulty level for questions).
+    pub struct QuestionLevelId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a
+    /// [`QuestionAssignment`](crate::entities::QuestionAssignment)
+    /// link (an `OnlineExam` ↔ `QuestionBank` join row).
+    pub struct QuestionAssignmentId;
+}
+
+assessment_typed_id! {
+    /// A typed id for an
+    /// [`OnlineExamQuestion`](crate::entities::OnlineExamQuestion)
+    /// child row (a per-online-exam question instance).
+    pub struct OnlineExamQuestionId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a
+    /// [`QuestionMuOption`](crate::entities::QuestionMuOption)
+    /// child row (a multiple-choice / multi-select option).
+    pub struct QuestionMuOptionId;
+}
+
+assessment_typed_id! {
+    /// A typed id for an
+    /// [`OnlineExamMark`](crate::entities::OnlineExamMark)
+    /// child row (the per-student final mark on an online exam).
+    pub struct OnlineExamMarkId;
+}
+
+assessment_typed_id! {
+    /// A typed id for an
+    /// [`OnlineExamStudentAnswerMarking`](crate::entities::OnlineExamStudentAnswerMarking)
+    /// child row (the per-question per-student answer).
+    pub struct OnlineExamStudentAnswerMarkingId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a
+    /// [`StudentTakeOnlineExam`](crate::aggregate::StudentTakeOnlineExam)
+    /// row (a student's attempt at an `OnlineExam`).
+    pub struct StudentTakeOnlineExamId;
+}
+
+// --- AdmitCard cluster ------------------------------------------------------
+
+assessment_typed_id! {
+    /// A typed id for an
+    /// [`AdmitCardSetting`](crate::aggregate::AdmitCardSetting)
+    /// row (branding/layout flags for admit cards).
+    pub struct AdmitCardSettingId;
+}
+
+// --- Teacher review cluster -------------------------------------------------
+
+assessment_typed_id! {
+    /// A typed id for a
+    /// [`TeacherEvaluation`](crate::aggregate::TeacherEvaluation)
+    /// row (a student rating of a teacher).
+    pub struct TeacherEvaluationId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a [`TeacherRemark`](crate::aggregate::TeacherRemark)
+    /// row (a teacher's narrative remark for a student).
+    pub struct TeacherRemarkId;
+}
+
+// --- Merit + position cluster -----------------------------------------------
+
+assessment_typed_id! {
+    /// A typed id for a
+    /// [`TemporaryMeritList`](crate::aggregate::TemporaryMeritList)
+    /// row (a staging table populated during merit computation).
+    pub struct TemporaryMeritListId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a [`MeritPosition`](crate::entities::MeritPosition)
+    /// row (the computed per-section merit position).
+    pub struct MeritPositionId;
+}
+
+assessment_typed_id! {
+    /// A typed id for an [`ExamWisePosition`](crate::entities::ExamWisePosition)
+    /// row (a per-section per-exam position record).
+    pub struct ExamWisePositionId;
+}
+
+assessment_typed_id! {
+    /// A typed id for an
+    /// [`AllExamWisePosition`](crate::entities::AllExamWisePosition)
+    /// row (an aggregated cross-section per-exam position).
+    pub struct AllExamWisePositionId;
+}
+
+// --- Custom result cluster --------------------------------------------------
+
+assessment_typed_id! {
+    /// A typed id for a
+    /// [`CustomResultSetting`](crate::aggregate::CustomResultSetting)
+    /// row (per-school per-exam-type branding for the result).
+    pub struct CustomResultSettingId;
+}
+
+assessment_typed_id! {
+    /// A typed id for a
+    /// [`CustomTemporaryResult`](crate::aggregate::CustomTemporaryResult)
+    /// row (a staging row produced during custom result publication).
+    pub struct CustomTemporaryResultId;
+}
+
+// --- Wizard-skip cluster ----------------------------------------------------
+
+assessment_typed_id! {
+    /// A typed id for an [`ExamStepSkip`](crate::aggregate::ExamStepSkip)
+    /// row (a wizard-skip flag for the exam-setup wizard).
+    pub struct ExamStepSkipId;
+}
+
+// --- Exam attendance cluster ------------------------------------------------
+
+assessment_typed_id! {
+    /// A typed id for an [`ExamAttendance`](crate::aggregate::ExamAttendance)
+    /// row (exam-day per-subject attendance roll).
+    pub struct ExamAttendanceId;
+}
+
+assessment_typed_id! {
+    /// A typed id for an
+    /// [`ExamAttendanceChild`](crate::entities::ExamAttendanceChild)
+    /// child row (per-student exam attendance entry).
+    pub struct ExamAttendanceChildId;
+}
+
+// =============================================================================
 // Names (1..=N chars, validated at construction)
 // =============================================================================
 
