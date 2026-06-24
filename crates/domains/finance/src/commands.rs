@@ -25,13 +25,17 @@ use educore_core::tenant::TenantContext;
 
 use crate::value_objects::{
     AccountType, AmountTransferId, BankAccountId, BankMode, BankPaymentSlipId, BankStatementId,
-    ChartOfAccountId, Currency, DirectFeesInstallmentAssignId, DirectFeesInstallmentId,
-    DirectFeesReminderId, DirectFeesSettingId, DonorId, DueFeesLoginPreventId, ExpenseHeadId,
-    ExpenseId, FeesAssignId, FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
-    FeesDiscountId, FeesGroupId, FeesInstallmentId, FeesInvoiceId, FeesMasterId, FeesPaymentId,
-    FeesPaymentSlipId, FeesTypeId, GatewayMode, IncomeHeadId, IncomeId, InvoiceSettingId,
-    PaymentGatewaySettingId, PaymentMethodId, PaymentMethodKind, PayrollPaymentId, PreventReason,
-    WalletId, WalletTransactionId, WalletTxType,
+    ChartOfAccountId, Currency, DirectFeesInstallmentAssignId, DirectFeesInstallmentChildPaymentId,
+    DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
+    DueFeesLoginPreventId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
+    FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId,
+    FeesGroupId, FeesInstallmentCreditId, FeesInstallmentId, FeesInvoiceId, FeesInvoiceSettingId,
+    FeesMasterId, FeesPaymentId, FeesPaymentSlipId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceChildId,
+    FmFeesInvoiceId, FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId,
+    FmFeesTypeId, FmFeesWeaverId, GatewayMode, IncomeHeadId, IncomeId, InventoryPaymentId,
+    InvoiceSettingId, PaymentGatewaySettingId, PaymentMethodId, PaymentMethodKind,
+    PayrollPaymentId, PreventReason, ProductPurchaseId, TransactionId, WalletId,
+    WalletTransactionId, WalletTxType,
 };
 
 // =============================================================================
@@ -1240,4 +1244,237 @@ pub struct CarryForwardFeesBalanceCommand {
     pub student_id: educore_academic::StudentId,
     pub from: educore_academic::AcademicYearId,
     pub to: educore_academic::AcademicYearId,
+}
+
+// =============================================================================
+// Minimal command stubs — new aggregates added in commit 429f74f
+// (Cluster C: finance aggregate gap-fill). These stubs carry the
+// school_id anchor (`tenant`) and the typed id only; real field
+// shapes land in subsequent Phase 7 workstreams (B–L). The
+// idempotency sub-port keys each command by `command_type`; the
+// matching constants above are the canonical values.
+// =============================================================================
+
+// -- FeesAssignDiscount (Phase 7 Workstream F) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFeesAssignDiscountCommand {
+    pub tenant: TenantContext,
+    pub fees_assign_discount_id: FeesAssignDiscountId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFeesAssignDiscountCommand {
+    pub tenant: TenantContext,
+    pub fees_assign_discount_id: FeesAssignDiscountId,
+}
+
+// -- DirectFeesInstallmentChildPayment (Phase 7 Workstream F) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateDirectFeesInstallmentChildPaymentCommand {
+    pub tenant: TenantContext,
+    pub direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadDirectFeesInstallmentChildPaymentCommand {
+    pub tenant: TenantContext,
+    pub direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
+}
+
+// -- FmFeesGroup (Phase 7 Workstream G) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFmFeesGroupCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_group_id: FmFeesGroupId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFmFeesGroupCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_group_id: FmFeesGroupId,
+}
+
+// -- FmFeesType (Phase 7 Workstream G) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFmFeesTypeCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_type_id: FmFeesTypeId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFmFeesTypeCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_type_id: FmFeesTypeId,
+}
+
+// -- FmFeesInvoice (Phase 7 Workstream G) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFmFeesInvoiceCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_invoice_id: FmFeesInvoiceId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFmFeesInvoiceCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_invoice_id: FmFeesInvoiceId,
+}
+
+// -- FmFeesInvoiceChild (Phase 7 Workstream G) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFmFeesInvoiceChildCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_invoice_child_id: FmFeesInvoiceChildId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFmFeesInvoiceChildCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_invoice_child_id: FmFeesInvoiceChildId,
+}
+
+// -- FmFeesInvoiceSetting (Phase 7 Workstream G) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFmFeesInvoiceSettingCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFmFeesInvoiceSettingCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
+}
+
+// -- FmFeesTransaction (Phase 7 Workstream G) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFmFeesTransactionCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFmFeesTransactionCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+}
+
+// -- FmFeesTransactionChild (Phase 7 Workstream G) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFmFeesTransactionChildCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_transaction_child_id: FmFeesTransactionChildId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFmFeesTransactionChildCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_transaction_child_id: FmFeesTransactionChildId,
+}
+
+// -- FmFeesWeaver (Phase 7 Workstream G) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFmFeesWeaverCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_weaver_id: FmFeesWeaverId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFmFeesWeaverCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_weaver_id: FmFeesWeaverId,
+}
+
+// -- FeesInvoiceSetting (Phase 7 Workstream B) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFeesInvoiceSettingCommand {
+    pub tenant: TenantContext,
+    pub fees_invoice_setting_id: FeesInvoiceSettingId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFeesInvoiceSettingCommand {
+    pub tenant: TenantContext,
+    pub fees_invoice_setting_id: FeesInvoiceSettingId,
+}
+
+// -- FeesInstallmentCredit (Phase 7 Workstream F) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFeesInstallmentCreditCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_credit_id: FeesInstallmentCreditId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFeesInstallmentCreditCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_credit_id: FeesInstallmentCreditId,
+}
+
+// -- Transaction (Phase 7 Workstream C — double-entry journal line) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateTransactionCommand {
+    pub tenant: TenantContext,
+    pub transaction_id: TransactionId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadTransactionCommand {
+    pub tenant: TenantContext,
+    pub transaction_id: TransactionId,
+}
+
+// -- Donor (Phase 7 Workstream D) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateDonorCommand {
+    pub tenant: TenantContext,
+    pub donor_id: DonorId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadDonorCommand {
+    pub tenant: TenantContext,
+    pub donor_id: DonorId,
+}
+
+// -- ProductPurchase (Phase 7 Workstream L) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateProductPurchaseCommand {
+    pub tenant: TenantContext,
+    pub product_purchase_id: ProductPurchaseId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadProductPurchaseCommand {
+    pub tenant: TenantContext,
+    pub product_purchase_id: ProductPurchaseId,
+}
+
+// -- InventoryPayment (Phase 7 Workstream L) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateInventoryPaymentCommand {
+    pub tenant: TenantContext,
+    pub inventory_payment_id: InventoryPaymentId,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadInventoryPaymentCommand {
+    pub tenant: TenantContext,
+    pub inventory_payment_id: InventoryPaymentId,
 }
