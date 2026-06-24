@@ -33,16 +33,20 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
 use crate::value_objects::{
     validate_discount_name, validate_donor_name, validate_ledger_name, AccountType, Amount,
-    ApprovalStatus, BalanceType, BankAccountId, ChartOfAccountId, Currency, DiscountType, DonorId,
-    DueFeesLoginPreventId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
+    ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId,
+    BankStatementAttachmentId, ChartOfAccountId, Currency,
+    DirectFeesInstallmentAssignChildId, DiscountType, DonorId, DueFeesLoginPreventId,
+    ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId,
-    FeesGroupId, FeesInstallmentAssignId, FeesInstallmentCreditId, FeesInstallmentId,
-    FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId, FeesPaymentId, FeesPaymentStatus,
-    FeesTypeId, FineAmount, FmFeesGroupId, FmFeesInvoiceChildId, FmFeesInvoiceId,
-    FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId,
-    FmFeesWeaverId, FmInvoiceType, IncomeHeadId, InvoiceSettingId, Money, PaymentGatewaySettingId,
-    PaymentMethodId, PaymentMethodKind, PayrollPaymentId, ProductPurchaseId, QuestionBankFeeId,
-    StatementType, WalletId, WalletTransactionId, WalletTxType,
+    FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId,
+    FeesInstallmentCreditId, FeesInstallmentId, FeesInvoiceId, FeesInvoiceSettingId,
+    FeesMasterId, FeesPaymentId, FeesPaymentStatus, FeesTypeId, FineAmount, FmFeesGroupId,
+    FmFeesInvoiceChildId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId,
+    FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId,
+    FmFeesWeaverId, FmInvoiceType, IncomeApprovalId, IncomeHeadId, InvoiceSettingId, Money,
+    PaymentGatewaySettingId, PaymentMethodId, PaymentMethodKind, PayrollPaymentApprovalId,
+    PayrollPaymentId, ProductPurchaseId, QuestionBankFeeId, StatementType, WalletId,
+    WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 
 fn fresh_etag() -> Etag {
@@ -832,6 +836,53 @@ finance_aggregate_stub! {
     /// FeesInstallmentCredit (Phase 7 Workstream F).
     pub struct FeesInstallmentCredit { _id: () }
 }
+// -----------------------------------------------------------------------------
+// Spec'd child-entity stubs (per `docs/specs/finance/entities.md`). These
+// 10 child-entity id types were added in commit d82cd22 (Cluster C); the
+// corresponding minimal structs live here in `aggregate.rs` so that
+// downstream aggregates can reference them in their event payloads and
+// command shapes. Real impl lands in Workstreams D-M.
+// -----------------------------------------------------------------------------
+finance_aggregate_stub! {
+    /// FeesInstallmentAssignDiscount — child entity (Phase 7 Workstream F).
+    pub struct FeesInstallmentAssignDiscount { _id: () }
+}
+finance_aggregate_stub! {
+    /// DirectFeesInstallmentAssignChild — child entity (Phase 7 Workstream F).
+    pub struct DirectFeesInstallmentAssignChild { _id: () }
+}
+finance_aggregate_stub! {
+    /// FmFeesInvoiceLineNote — child entity (Phase 7 Workstream G).
+    pub struct FmFeesInvoiceLineNote { _id: () }
+}
+finance_aggregate_stub! {
+    /// FmFeesTransactionLineNote — child entity (Phase 7 Workstream G).
+    pub struct FmFeesTransactionLineNote { _id: () }
+}
+finance_aggregate_stub! {
+    /// BankStatementAttachment — child entity (Phase 7 Workstream D).
+    pub struct BankStatementAttachment { _id: () }
+}
+finance_aggregate_stub! {
+    /// PayrollPaymentApproval — child entity (Phase 7 Workstream I).
+    pub struct PayrollPaymentApproval { _id: () }
+}
+finance_aggregate_stub! {
+    /// BankPaymentSlipAudit — child entity (Phase 7 Workstream H).
+    pub struct BankPaymentSlipAudit { _id: () }
+}
+finance_aggregate_stub! {
+    /// ExpenseApproval — child entity (Phase 7 Workstream D).
+    pub struct ExpenseApproval { _id: () }
+}
+finance_aggregate_stub! {
+    /// IncomeApproval — child entity (Phase 7 Workstream D).
+    pub struct IncomeApproval { _id: () }
+}
+finance_aggregate_stub! {
+    /// WalletTransactionApproval — child entity (Phase 7 Workstream K).
+    pub struct WalletTransactionApproval { _id: () }
+}
 
 #[cfg(test)]
 #[allow(
@@ -1006,17 +1057,23 @@ mod tests {
     // InventoryPayment, QuestionBankFee, PaymentGatewaySetting,
     // PaymentMethod, DueFeesLoginPrevent, FeesCarryForward,
     // FeesCarryForwardLog, FeesCarryForwardSetting,
-    // FeesInstallmentCredit) are intentionally left as 1-field
-    // placeholder stubs. They will be filled in by Workstreams
-    // D/E/F/G/H/I/J/K/L/M. The acceptance tests for these
-    // aggregates will be added when each is implemented.
+    // FeesInstallmentCredit) plus the 10 spec'd child-entity stubs
+    // (FeesInstallmentAssignDiscount, DirectFeesInstallmentAssignChild,
+    // FmFeesInvoiceLineNote, FmFeesTransactionLineNote,
+    // BankStatementAttachment, PayrollPaymentApproval,
+    // BankPaymentSlipAudit, ExpenseApproval, IncomeApproval,
+    // WalletTransactionApproval — IDs added in commit d82cd22) are
+    // intentionally left as 1-field placeholder stubs. They will be
+    // filled in by Workstreams D/E/F/G/H/I/J/K/L/M. The acceptance
+    // tests for these aggregates will be added when each is
+    // implemented.
     // -------------------------------------------------------------------------
 
     #[test]
-    #[ignore = "backlog: 33 placeholder aggregates need Workstreams D-M"]
+    #[ignore = "backlog: 33 placeholder aggregates + 10 child-entity stubs need Workstreams D-M"]
     fn unimplemented_placeholder_aggregates_backlog() {
-        // Documents the 33 placeholder aggregates above. When
-        // each is implemented, the corresponding test is added
-        // and this ignore attribute is removed.
+        // Documents the 33 placeholder aggregates and 10 child-entity
+        // stubs above. When each is implemented, the corresponding test
+        // is added and this ignore attribute is removed.
     }
 }
