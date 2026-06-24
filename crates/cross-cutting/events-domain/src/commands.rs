@@ -5,6 +5,7 @@
 
 #![allow(dead_code, clippy::all)]
 #![allow(missing_docs)]
+#![allow(clippy::unwrap_used)]
 
 use chrono::NaiveDate;
 use educore_core::ids::{CorrelationId, Identifier, SchoolId, UserId};

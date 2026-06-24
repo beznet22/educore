@@ -6,6 +6,7 @@
 
 #![allow(dead_code, clippy::all)]
 #![allow(missing_docs)]
+#![allow(clippy::unwrap_used)]
 
 use chrono::{Datelike, NaiveDate};
 
