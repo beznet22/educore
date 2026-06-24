@@ -52,6 +52,12 @@ with its events in a single transaction.
 
 ---
 
+### PageStatusAction (enum, not aggregate)
+
+The `PageStatusAction` enum represents a transition action applied to a `Page` to change its `PageStatus`. Variants: `Publish`, `Archive` (per `crates/domains/cms/src/aggregate.rs`).
+
+---
+
 ## News
 
 **Root type:** `News`

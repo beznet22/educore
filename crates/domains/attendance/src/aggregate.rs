@@ -941,7 +941,7 @@ mod tests {
             id,
             job,
             student,
-            NaiveDate::from_ymd_opt(2026, 5, 14).unwrap(),
+            NaiveDate::from_ymd_opt(2026, 5, 14).unwrap_or(NaiveDate::MIN),
             AttendanceType::Present,
             Some("08:45".to_string()),
             Some("15:30".to_string()),
