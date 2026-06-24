@@ -855,7 +855,7 @@ fn expand(input: DeriveInput) -> syn::Result<TokenStream2> {
 
         // -------- EntityDescriptor emission --------
         //
-        // Emit a `pub const ENTITY_DESCRIPTOR: EntityDescriptor` on
+        // Emit a `pub fn entity_descriptor() -> EntityDescriptor` on
         // the derived struct. The table name is the struct name in
         // snake_case (with a trailing "s" — naive pluralization;
         // adapters may override via a future `#[query(table = "...")]`
@@ -867,6 +867,12 @@ fn expand(input: DeriveInput) -> syn::Result<TokenStream2> {
         // the audit's CORE-002 finding noted these need to be derived
         // from `#[query(...)]` attributes. That follow-up is tracked
         // under Cluster A stage 2.
+        //
+        // Note: this is a *function*, not a `const`, because
+        // `EntityDescriptor` contains `Vec` fields and Rust forbids
+        // heap allocation in `const` contexts. The function returns
+        // a fresh descriptor on each call; storage adapters
+        // cache the result internally as needed.
         let table_name = snake_case(&struct_name.to_string()) + "s";
         let table_name_lit: LitStr = syn::parse_quote!(#table_name);
 
@@ -892,16 +898,17 @@ fn expand(input: DeriveInput) -> syn::Result<TokenStream2> {
                 /// The dialect-agnostic schema descriptor for this
                 /// aggregate. Storage adapters walk this at
                 /// `create_schema()` time to emit DDL.
-                pub const ENTITY_DESCRIPTOR: ::educore_core::query::EntityDescriptor =
+                pub fn entity_descriptor() -> ::educore_core::query::EntityDescriptor {
                     ::educore_core::query::EntityDescriptor {
                         table: #table_name_lit,
                         columns: ::std::vec![
                             #(#column_entries),*
                         ],
-                        indexes: ::std::vec::[],
-                        foreign_keys: ::std::vec::[],
+                        indexes: ::std::vec![],
+                        foreign_keys: ::std::vec![],
                         rls: ::std::vec![],
-                    };
+                    }
+                }
             }
         };
 
