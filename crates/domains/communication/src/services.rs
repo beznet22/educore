@@ -59,11 +59,29 @@ fn event_id_to_uuid(e: EventId) -> uuid::Uuid {
 
 /// Builds a new [`Notice`] aggregate + a [`NoticeCreated`]
 /// event.
+///
+/// Cross-field validation enforced here (single-field
+/// constraints live on the value-object constructors):
+///
+/// - `publish_on` must be on or after `notice_date`. A
+///   scheduled publish date that precedes the notice date is
+///   nonsensical and rejected with `DomainError::Validation`.
 pub fn create_notice<C: Clock, G: IdGenerator>(
     cmd: CreateNoticeCommand,
     clock: &C,
     ids: &G,
 ) -> Result<(Notice, NoticeCreated)> {
+    // Cross-field rule: scheduled publish date cannot be
+    // earlier than the notice date itself.
+    if let Some(publish_on) = cmd.publish_on {
+        if publish_on < cmd.notice_date {
+            return Err(DomainError::validation(format!(
+                "publish_on ({publish_on}) must be on or after notice_date ({})",
+                cmd.notice_date
+            )));
+        }
+    }
+
     let now = clock.now();
     let event_id = ids.next_event_id();
     let school = cmd.tenant.school_id;
@@ -96,12 +114,27 @@ pub fn create_notice<C: Clock, G: IdGenerator>(
 
 /// Mutates a [`Notice`] aggregate and emits a [`NoticeUpdated`]
 /// event.
+///
+/// State guards enforced here:
+///
+/// - The notice must not be retired. Once a notice has been
+///   soft-deleted (`ActiveStatus::Retired`), no further
+///   mutations are accepted; consumers must create a new
+///   notice instead. The aggregate's `update` method has no
+///   knowledge of the actor's intent, so the gate lives at
+///   the service boundary.
 pub fn update_notice<C: Clock, G: IdGenerator>(
     cmd: UpdateNoticeCommand,
     clock: &C,
     ids: &G,
     notice: &mut Notice,
 ) -> Result<NoticeUpdated> {
+    if notice.active_status == ActiveStatus::Retired {
+        return Err(DomainError::validation(
+            "cannot update a retired notice; create a new one instead",
+        ));
+    }
+
     let now = clock.now();
     let event_id = ids.next_event_id();
     let changes = notice.update(
