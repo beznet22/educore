@@ -52,7 +52,7 @@ engine organized as a Cargo workspace.
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                       Adapters (consumer-supplied)                       │
 │                                                                          │
-│   PostgreSQL/MySQL/SQLite (+ SurrealDB, MongoDB deferred)   OAuth/SAML/Local                         │
+│   SurrealDB (primary) / PostgreSQL / MySQL / SQLite (+ MongoDB deferred)   OAuth/SAML/Local                         │
 │   SMTP/SMS/Push/FCM              Stripe/PayPal/Cash/Bank                │
 │   S3/GCS/Local                   Inproc/Redis/NATS                       │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -319,9 +319,11 @@ contract) to the runtime DDL string (executable contract) is
 documented in
 [`docs/schemas/sql-dialects/README.md` § "Runtime DDL emission"](../schemas/sql-dialects/README.md#runtime-ddl-emission--end-to-end-flow).
 The engine emits DDL **at schema-creation time** (once per process
-lifetime, via `storage.create_schema().await`) from a typed macro
-AST and the `include_str!`-embedded canonical SQL for the 6
-engine cross-cutting tables.
+lifetime, via `storage.create_schema().await`) from the
+macro-emitted `EntityDescriptor` AST (per `docs/query_layer.md` — the
+typed `{ table, columns, indexes, foreign_keys, rls }` shape that
+`#[derive(DomainQuery)]` produces) and the `include_str!`-embedded
+canonical SQL for the 6 engine cross-cutting tables.
 
 ## Sync Strategy
 

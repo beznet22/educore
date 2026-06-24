@@ -78,7 +78,15 @@ column) so the per-PR gate surfaces it.
 
 ---
 
-## The 17 phases
+## The 18 phases (Phase 0..17)
+
+Note: this section lists **18 entries** (Phase 0 foundation + Phase 1..17
+main phases). The framing "17 phases" used in `AGENTS.md` and
+`docs/progress-tracker.md` counts Phase 1..17 as the 17 main
+implementation phases; Phase 0 is the foundation phase that primes
+them. Both framings refer to the same build plan; the discrepancy is
+counting convention, not substance. Per `AGENTS.md` Status:
+`Build plan: **17 phases** (Phase 0..17)`.
 
 1. Phase 0 — Foundation: `core`, `query-derive`, `storage` port, `storage-surrealdb`, `sync` (port + inprocess) + outbox e2e
 2. Phase 1 — Adapter parity: `storage-postgres`, `storage-mysql`, `storage-sqlite` + cross-adapter test
