@@ -387,8 +387,10 @@ fn hex_encode(bytes: &[u8]) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut out = String::with_capacity(bytes.len() * 2);
     for &b in bytes {
-        out.push(HEX[(b >> 4) as usize] as char);
-        out.push(HEX[(b & 0x0f) as usize] as char);
+        let hi = usize::try_from(b >> 4).unwrap_or(0);
+        let lo = usize::try_from(b & 0x0f).unwrap_or(0);
+        out.push(HEX[hi] as char);
+        out.push(HEX[lo] as char);
     }
     out
 }
@@ -424,7 +426,10 @@ fn constant_time_eq_str(a: &str, b: &str) -> bool {
 /// expiry (sub-second precision would be lost to the HMAC's whole-
 /// second format anyway).
 fn unix_secs_to_rfc3339(secs: u64) -> String {
-    let secs = i64::try_from(secs.min(i64::MAX as u64)).unwrap_or(0);
+    // Clamp to `i64::MAX` so the day-arithmetic below cannot overflow.
+    // `try_from` covers the cast; on the (unreachable for valid timestamps)
+    // error branch we fall back to `i64::MAX` to keep the function total.
+    let secs = i64::try_from(secs).unwrap_or(i64::MAX);
     let days = secs.div_euclid(86_400);
     let time_secs_i64 = secs.rem_euclid(86_400);
     let time_secs = u32::try_from(time_secs_i64).unwrap_or(0);
