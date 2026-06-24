@@ -31,8 +31,13 @@ use educore_events::domain_event::DomainEvent;
 use educore_academic::value_objects::PassMark;
 
 use crate::value_objects::{
-    AcademicYearId, AdmitCardId, ClassId, ExamCode, ExamId, ExamMark, ExamName, ExamScheduleId,
-    ExamTypeId, SeatPlanId, SectionId, SubjectId,
+    AcademicYearId, AdmitCardId, AdmitCardSettingId, ClassId, CustomResultSettingId,
+    CustomTemporaryResultId, ExamAttendanceId, ExamCode, ExamId, ExamMark, ExamName,
+    ExamRoutinePageId, ExamScheduleId, ExamSettingId, ExamSetupId, ExamSignatureId,
+    ExamStepSkipId, ExamTypeId, FrontendExamResultId, FrontExamRoutineId, FrontResultId,
+    MarkStoreId, MarksGradeId, OnlineExamId, QuestionBankId, QuestionGroupId, QuestionLevelId,
+    ResultSettingId, SeatPlanId, SectionId, StudentTakeOnlineExamId, SubjectId,
+    TeacherEvaluationId, TeacherRemarkId, TemporaryMeritListId,
 };
 
 // =============================================================================
@@ -1336,4 +1341,241 @@ impl ReportCardGenerated {
             occurred_at,
         }
     }
+}
+
+// =============================================================================
+// Cluster C: event stubs for the structural-skeleton aggregates.
+//
+// Each stub carries the minimal `event_id` + `school_id` + aggregate id
+// (no payload, no `DomainEvent` impl). The full event body and
+// `DomainEvent` impl land in subsequent workstreams.
+// =============================================================================
+
+// --- Exam + ExamSetup cluster ----------------------------------------------
+
+/// Event stub emitted when an [`ExamSetup`](crate::aggregate::ExamSetup)
+/// is created.
+#[derive(Debug, Clone)]
+pub struct ExamSetupCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_setup_id: ExamSetupId,
+}
+
+// --- MarkStore cluster ------------------------------------------------------
+
+/// Event stub emitted when a [`MarkStore`](crate::aggregate::MarkStore)
+/// row is inserted.
+#[derive(Debug, Clone)]
+pub struct MarkStoreCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub mark_store_id: MarkStoreId,
+}
+
+// --- Result publication cluster --------------------------------------------
+
+/// Event stub emitted when a [`ResultSetting`](crate::aggregate::ResultSetting)
+/// is created or updated.
+#[derive(Debug, Clone)]
+pub struct ResultSettingCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub result_setting_id: ResultSettingId,
+}
+
+/// Event stub emitted when a [`MarksGrade`](crate::aggregate::MarksGrade)
+/// row is created.
+#[derive(Debug, Clone)]
+pub struct MarksGradeCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub marks_grade_id: MarksGradeId,
+}
+
+// --- Exam publication cluster ----------------------------------------------
+
+/// Event stub emitted when an [`ExamSetting`](crate::aggregate::ExamSetting)
+/// is created or updated.
+#[derive(Debug, Clone)]
+pub struct ExamSettingCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_setting_id: ExamSettingId,
+}
+
+/// Event stub emitted when an [`ExamSignature`](crate::aggregate::ExamSignature)
+/// is created or replaced.
+#[derive(Debug, Clone)]
+pub struct ExamSignatureCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_signature_id: ExamSignatureId,
+}
+
+/// Event stub emitted when an [`ExamRoutinePage`](crate::aggregate::ExamRoutinePage)
+/// is created or updated.
+#[derive(Debug, Clone)]
+pub struct ExamRoutinePageCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_routine_page_id: ExamRoutinePageId,
+}
+
+/// Event stub emitted when a [`FrontendExamRoutine`](crate::aggregate::FrontendExamRoutine)
+/// is published.
+#[derive(Debug, Clone)]
+pub struct FrontendExamRoutineCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub front_exam_routine_id: FrontExamRoutineId,
+}
+
+/// Event stub emitted when a [`FrontendResult`](crate::aggregate::FrontendResult)
+/// is published.
+#[derive(Debug, Clone)]
+pub struct FrontendResultCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub front_result_id: FrontResultId,
+}
+
+/// Event stub emitted when a [`FrontendExamResult`](crate::aggregate::FrontendExamResult)
+/// block is updated.
+#[derive(Debug, Clone)]
+pub struct FrontendExamResultCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub frontend_exam_result_id: FrontendExamResultId,
+}
+
+// --- OnlineExam cluster -----------------------------------------------------
+
+/// Event stub emitted when an [`OnlineExam`](crate::aggregate::OnlineExam)
+/// is created.
+#[derive(Debug, Clone)]
+pub struct OnlineExamCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub online_exam_id: OnlineExamId,
+}
+
+/// Event stub emitted when a [`QuestionBank`](crate::aggregate::QuestionBank)
+/// entry is created.
+#[derive(Debug, Clone)]
+pub struct QuestionBankCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub question_bank_id: QuestionBankId,
+}
+
+/// Event stub emitted when a [`QuestionGroup`](crate::aggregate::QuestionGroup)
+/// is created.
+#[derive(Debug, Clone)]
+pub struct QuestionGroupCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub question_group_id: QuestionGroupId,
+}
+
+/// Event stub emitted when a [`QuestionLevel`](crate::aggregate::QuestionLevel)
+/// is created.
+#[derive(Debug, Clone)]
+pub struct QuestionLevelCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub question_level_id: QuestionLevelId,
+}
+
+/// Event stub emitted when a [`StudentTakeOnlineExam`](crate::aggregate::StudentTakeOnlineExam)
+/// attempt is created.
+#[derive(Debug, Clone)]
+pub struct StudentTakeOnlineExamCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub student_take_online_exam_id: StudentTakeOnlineExamId,
+}
+
+// --- AdmitCard cluster ------------------------------------------------------
+
+/// Event stub emitted when an [`AdmitCardSetting`](crate::aggregate::AdmitCardSetting)
+/// is created or updated.
+#[derive(Debug, Clone)]
+pub struct AdmitCardSettingCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub admit_card_setting_id: AdmitCardSettingId,
+}
+
+// --- Teacher review cluster -------------------------------------------------
+
+/// Event stub emitted when a [`TeacherEvaluation`](crate::aggregate::TeacherEvaluation)
+/// is recorded.
+#[derive(Debug, Clone)]
+pub struct TeacherEvaluationCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub teacher_evaluation_id: TeacherEvaluationId,
+}
+
+/// Event stub emitted when a [`TeacherRemark`](crate::aggregate::TeacherRemark)
+/// is recorded.
+#[derive(Debug, Clone)]
+pub struct TeacherRemarkCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub teacher_remark_id: TeacherRemarkId,
+}
+
+// --- Merit + position cluster -----------------------------------------------
+
+/// Event stub emitted when a [`TemporaryMeritList`](crate::aggregate::TemporaryMeritList)
+/// row is staged.
+#[derive(Debug, Clone)]
+pub struct TemporaryMeritListCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub temporary_merit_list_id: TemporaryMeritListId,
+}
+
+// --- Custom result cluster --------------------------------------------------
+
+/// Event stub emitted when a [`CustomResultSetting`](crate::aggregate::CustomResultSetting)
+/// is created or updated.
+#[derive(Debug, Clone)]
+pub struct CustomResultSettingCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub custom_result_setting_id: CustomResultSettingId,
+}
+
+/// Event stub emitted when a [`CustomTemporaryResult`](crate::aggregate::CustomTemporaryResult)
+/// row is staged.
+#[derive(Debug, Clone)]
+pub struct CustomTemporaryResultCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub custom_temporary_result_id: CustomTemporaryResultId,
+}
+
+// --- Wizard-skip cluster ----------------------------------------------------
+
+/// Event stub emitted when an [`ExamStepSkip`](crate::aggregate::ExamStepSkip)
+/// flag is created or updated.
+#[derive(Debug, Clone)]
+pub struct ExamStepSkipCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_step_skip_id: ExamStepSkipId,
+}
+
+// --- Exam attendance cluster ------------------------------------------------
+
+/// Event stub emitted when an [`ExamAttendance`](crate::aggregate::ExamAttendance)
+/// roll is opened.
+#[derive(Debug, Clone)]
+pub struct ExamAttendanceCreated {
+    pub event_id: EventId,
+    pub school_id: SchoolId,
+    pub exam_attendance_id: ExamAttendanceId,
 }
