@@ -34,8 +34,11 @@ use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
 
 use crate::value_objects::{
-    AcademicYearId, AdmitCardId, ClassId, ExamCode, ExamId, ExamMark, ExamName, ExamScheduleId,
-    ExamTypeId, SeatPlanId, SectionId, SubjectId,
+    AcademicYearId, AdmitCardId, AdmitCardSettingId, ClassId, CustomResultSettingId, ExamAttendanceId,
+    ExamCode, ExamId, ExamMark, ExamName, ExamRoutinePageId, ExamScheduleId, ExamSettingId,
+    ExamSignatureId, ExamStepSkipId, ExamTypeId, FrontendExamResultId, FrontExamRoutineId,
+    FrontResultId, MarksGradeId, OnlineExamId, QuestionBankId, QuestionGroupId, QuestionLevelId,
+    SeatPlanId, SectionId, SubjectId, TeacherEvaluationId, TeacherRemarkId,
 };
 
 // =============================================================================
@@ -686,4 +689,290 @@ pub trait MarksGradeScale: Send + Sync {
     fn lookup(&self, percent: f32) -> Option<crate::value_objects::MarksGradeRow>;
     /// Returns `true` if the scale is valid (no overlaps, no gaps).
     fn validate(&self) -> bool;
+}
+
+// =============================================================================
+// Cluster C: command stubs for the new aggregates.
+//
+// Each stub carries the minimal `school_id` + aggregate id (plus 1-2
+// common fields where the spec makes the dominant scalar obvious).
+// The full TenantContext + payload lands in a follow-up batch.
+//
+// See `docs/specs/assessment/commands.md` for the canonical
+// command shapes; aggregates without a corresponding spec
+// command (`ExamSetup`, `MarkStore`, `ResultSetting`,
+// `StudentTakeOnlineExam`, `TemporaryMeritList`,
+// `CustomTemporaryResult`) are skipped because they are
+// service-internal staging / projection roots.
+// =============================================================================
+
+// --- MarksGrade cluster -----------------------------------------------------
+
+/// The `create_marks_grade` command.
+#[derive(Debug, Clone)]
+pub struct CreateMarksGradeCommand {
+    pub school_id: SchoolId,
+    pub marks_grade_id: MarksGradeId,
+}
+
+/// The `update_marks_grade` command.
+#[derive(Debug, Clone)]
+pub struct UpdateMarksGradeCommand {
+    pub school_id: SchoolId,
+    pub marks_grade_id: MarksGradeId,
+}
+
+/// The `delete_marks_grade` command.
+#[derive(Debug, Clone)]
+pub struct DeleteMarksGradeCommand {
+    pub school_id: SchoolId,
+    pub marks_grade_id: MarksGradeId,
+}
+
+// --- ExamSetting cluster ----------------------------------------------------
+
+/// The `create_exam_setting` command.
+#[derive(Debug, Clone)]
+pub struct CreateExamSettingCommand {
+    pub school_id: SchoolId,
+    pub exam_setting_id: ExamSettingId,
+}
+
+/// The `update_exam_setting` command.
+#[derive(Debug, Clone)]
+pub struct UpdateExamSettingCommand {
+    pub school_id: SchoolId,
+    pub exam_setting_id: ExamSettingId,
+}
+
+/// The `delete_exam_setting` command.
+#[derive(Debug, Clone)]
+pub struct DeleteExamSettingCommand {
+    pub school_id: SchoolId,
+    pub exam_setting_id: ExamSettingId,
+}
+
+/// The `set_exam_signature` command.
+#[derive(Debug, Clone)]
+pub struct SetExamSignatureCommand {
+    pub school_id: SchoolId,
+    pub exam_signature_id: ExamSignatureId,
+}
+
+// --- ExamRoutinePage cluster ------------------------------------------------
+
+/// The `update_exam_routine_page` command.
+#[derive(Debug, Clone)]
+pub struct UpdateExamRoutinePageCommand {
+    pub school_id: SchoolId,
+    pub exam_routine_page_id: ExamRoutinePageId,
+}
+
+/// The `publish_exam_routine` command.
+#[derive(Debug, Clone)]
+pub struct PublishExamRoutineCommand {
+    pub school_id: SchoolId,
+    pub front_exam_routine_id: FrontExamRoutineId,
+}
+
+/// The `publish_front_result` command.
+#[derive(Debug, Clone)]
+pub struct PublishFrontResultCommand {
+    pub school_id: SchoolId,
+    pub front_result_id: FrontResultId,
+}
+
+/// The `update_frontend_exam_result` command.
+#[derive(Debug, Clone)]
+pub struct UpdateFrontendExamResultCommand {
+    pub school_id: SchoolId,
+    pub frontend_exam_result_id: FrontendExamResultId,
+}
+
+// --- OnlineExam cluster -----------------------------------------------------
+
+/// The `create_online_exam` command.
+#[derive(Debug, Clone)]
+pub struct CreateOnlineExamCommand {
+    pub school_id: SchoolId,
+    pub online_exam_id: OnlineExamId,
+}
+
+/// The `publish_online_exam` command.
+#[derive(Debug, Clone)]
+pub struct PublishOnlineExamCommand {
+    pub school_id: SchoolId,
+    pub online_exam_id: OnlineExamId,
+}
+
+/// The `start_online_exam` command.
+#[derive(Debug, Clone)]
+pub struct StartOnlineExamCommand {
+    pub school_id: SchoolId,
+    pub online_exam_id: OnlineExamId,
+}
+
+/// The `submit_online_exam_answer` command.
+#[derive(Debug, Clone)]
+pub struct SubmitOnlineExamAnswerCommand {
+    pub school_id: SchoolId,
+    pub online_exam_id: OnlineExamId,
+}
+
+/// The `evaluate_online_exam` command.
+#[derive(Debug, Clone)]
+pub struct EvaluateOnlineExamCommand {
+    pub school_id: SchoolId,
+    pub online_exam_id: OnlineExamId,
+}
+
+// --- QuestionBank cluster ---------------------------------------------------
+
+/// The `create_question` command.
+#[derive(Debug, Clone)]
+pub struct CreateQuestionCommand {
+    pub school_id: SchoolId,
+    pub question_bank_id: QuestionBankId,
+}
+
+/// The `update_question` command.
+#[derive(Debug, Clone)]
+pub struct UpdateQuestionCommand {
+    pub school_id: SchoolId,
+    pub question_bank_id: QuestionBankId,
+}
+
+/// The `delete_question` command.
+#[derive(Debug, Clone)]
+pub struct DeleteQuestionCommand {
+    pub school_id: SchoolId,
+    pub question_bank_id: QuestionBankId,
+}
+
+// --- QuestionGroup cluster --------------------------------------------------
+
+/// The `create_question_group` command.
+#[derive(Debug, Clone)]
+pub struct CreateQuestionGroupCommand {
+    pub school_id: SchoolId,
+    pub question_group_id: QuestionGroupId,
+}
+
+/// The `update_question_group` command.
+#[derive(Debug, Clone)]
+pub struct UpdateQuestionGroupCommand {
+    pub school_id: SchoolId,
+    pub question_group_id: QuestionGroupId,
+}
+
+/// The `delete_question_group` command.
+#[derive(Debug, Clone)]
+pub struct DeleteQuestionGroupCommand {
+    pub school_id: SchoolId,
+    pub question_group_id: QuestionGroupId,
+}
+
+// --- QuestionLevel cluster --------------------------------------------------
+
+/// The `create_question_level` command.
+#[derive(Debug, Clone)]
+pub struct CreateQuestionLevelCommand {
+    pub school_id: SchoolId,
+    pub question_level_id: QuestionLevelId,
+}
+
+/// The `update_question_level` command.
+#[derive(Debug, Clone)]
+pub struct UpdateQuestionLevelCommand {
+    pub school_id: SchoolId,
+    pub question_level_id: QuestionLevelId,
+}
+
+/// The `delete_question_level` command.
+#[derive(Debug, Clone)]
+pub struct DeleteQuestionLevelCommand {
+    pub school_id: SchoolId,
+    pub question_level_id: QuestionLevelId,
+}
+
+// --- AdmitCardSetting cluster -----------------------------------------------
+
+/// The `configure_admit_card_settings` command.
+#[derive(Debug, Clone)]
+pub struct ConfigureAdmitCardSettingsCommand {
+    pub school_id: SchoolId,
+    pub admit_card_setting_id: AdmitCardSettingId,
+}
+
+// --- TeacherEvaluation cluster ----------------------------------------------
+
+/// The `mark_teacher_evaluation` command.
+#[derive(Debug, Clone)]
+pub struct MarkTeacherEvaluationCommand {
+    pub school_id: SchoolId,
+    pub teacher_evaluation_id: TeacherEvaluationId,
+}
+
+/// The `approve_teacher_evaluation` command.
+#[derive(Debug, Clone)]
+pub struct ApproveTeacherEvaluationCommand {
+    pub school_id: SchoolId,
+    pub teacher_evaluation_id: TeacherEvaluationId,
+}
+
+/// The `reject_teacher_evaluation` command.
+#[derive(Debug, Clone)]
+pub struct RejectTeacherEvaluationCommand {
+    pub school_id: SchoolId,
+    pub teacher_evaluation_id: TeacherEvaluationId,
+}
+
+// --- TeacherRemark cluster --------------------------------------------------
+
+/// The `add_teacher_remark` command.
+#[derive(Debug, Clone)]
+pub struct AddTeacherRemarkCommand {
+    pub school_id: SchoolId,
+    pub teacher_remark_id: TeacherRemarkId,
+}
+
+/// The `update_teacher_remark` command.
+#[derive(Debug, Clone)]
+pub struct UpdateTeacherRemarkCommand {
+    pub school_id: SchoolId,
+    pub teacher_remark_id: TeacherRemarkId,
+}
+
+// --- CustomResultSetting cluster --------------------------------------------
+
+/// The `configure_custom_result_settings` command.
+#[derive(Debug, Clone)]
+pub struct ConfigureCustomResultSettingsCommand {
+    pub school_id: SchoolId,
+    pub custom_result_setting_id: CustomResultSettingId,
+}
+
+// --- ExamStepSkip cluster ---------------------------------------------------
+
+/// The `mark_exam_step_skip` command.
+#[derive(Debug, Clone)]
+pub struct MarkExamStepSkipCommand {
+    pub school_id: SchoolId,
+    pub exam_step_skip_id: ExamStepSkipId,
+}
+
+// --- ExamAttendance cluster -------------------------------------------------
+
+/// The `mark_exam_attendance` command.
+#[derive(Debug, Clone)]
+pub struct MarkExamAttendanceCommand {
+    pub school_id: SchoolId,
+    pub exam_attendance_id: ExamAttendanceId,
+}
+
+/// The `update_exam_attendance` command.
+#[derive(Debug, Clone)]
+pub struct UpdateExamAttendanceCommand {
+    pub school_id: SchoolId,
+    pub exam_attendance_id: ExamAttendanceId,
 }
