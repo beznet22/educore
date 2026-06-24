@@ -4,9 +4,34 @@ This document is the consumer-facing entry point. It demonstrates how a
 consumer application constructs an engine, plugs in adapters, and drives the
 school domain.
 
+> **Status: aspirational / Phase 3-16 target API.**
+>
+> Every code sample in this document describes the **planned** consumer-facing
+> surface that lands incrementally across Phases 3 (academic), 4 (assessment),
+> 5 (attendance), 6 (hr), 7 (finance), 8 (facilities), 9 (library), 10
+> (communication), 11 (documents), 12 (cms), 13 (events-domain), 14
+> (settings + operations), and 15-16 (port adapters + SDK facade wiring).
+> At the current scaffold stage only the crate re-exports, the
+> `educore-sdk::Engine` / `EngineBuilder` wiring surface, the
+> `educore-storage` port, and the typed command/query stub shapes are
+> implemented (see `crates/educore/src/lib.rs`, `crates/tools/sdk/src/engine.rs`,
+> `crates/tools/sdk/src/facade.rs`, and each domain's `lib.rs`).
+>
+> All code samples are intentionally marked `rust,ignore`: they are the
+> design contract that the engine will expose once Phase 3-16 lands, not
+> runnable snippets. Do not copy a sample verbatim into a consumer crate
+> today; instead, consult the per-crate `lib.rs` for the actually-exported
+> types and the per-phase `PHASE-N-HANDOFF.md` for the runtime status of
+> each piece. The Day-1 wave-5 audit (`docs/audit_reports/findings/wave5-docs-2.md`,
+> FINDING 14..18) flagged every sample here as containing at least one
+> phantom API (e.g. `engine.<domain>()` accessors, `JwtAuthProvider::from_env()`,
+> `GuardianSpec`, `StudentField`, `StudentRelation`, `BillingStatus`); the
+> intent is to keep the doc readable as a north-star while the
+> implementation catches up.
+
 ## Construction
 
-```rust
+```rust,ignore
 use educore::prelude::*;
 
 #[tokio::main]
@@ -30,7 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 Every command and query runs in a tenant context. The tenant is taken from
 the authenticated session.
 
-```rust
+```rust,ignore
 let session = engine
     .auth()
     .authenticate("Bearer eyJhbGciOi...").await?;
@@ -40,7 +65,7 @@ let tenant = TenantContext::new(session.school_id(), session.user_id());
 
 ## Calling a Command
 
-```rust
+```rust,ignore
 use educore::academic::commands::*;
 
 let student = engine
@@ -83,7 +108,7 @@ but semantically neutral builder; humans author the vocabulary.
 
 ### A typed, scoped query
 
-```rust
+```rust,ignore
 use educore::academic::query::*;
 
 let page = engine
@@ -108,7 +133,7 @@ entity's macro-generated builder. The closure compiles into a typed
 storage adapter is responsible for translating that node into the
 storage dialect.
 
-```rust
+```rust,ignore
 let students = engine
     .students()
     .query()
@@ -129,7 +154,7 @@ before returning. Omitting `.with(...)` leaves the field `None` (or
 empty for `Vec<T>`). Lazy accessors and async getters on domain
 models do not exist.
 
-```rust
+```rust,ignore
 let students = engine
     .students()
     .query()
@@ -151,7 +176,7 @@ for s in students {
 
 ## Subscribing to Events
 
-```rust
+```rust,ignore
 use educore::events::*;
 
 let mut sub = engine
@@ -166,7 +191,7 @@ while let Some(event) = sub.next().await {
 
 ## Capability Check
 
-```rust
+```rust,ignore
 if !engine
     .rbac()
     .has_capability(tenant.user_id(), Capability::StudentAdmit)
@@ -189,16 +214,27 @@ if !engine
 
 ## Error Handling
 
-```rust
+```rust,ignore
 match engine.students().admit(cmd).await {
     Ok(student) => { /* ... */ }
-    Err(DomainError::Validation { field, reason }) => { /* ... */ }
-    Err(DomainError::Conflict { entity, reason }) => { /* ... */ }
-    Err(DomainError::NotFound { entity, id }) => { /* ... */ }
-    Err(DomainError::Forbidden { reason }) => { /* ... */ }
+    Err(DomainError::Validation(reason)) => { /* ... */ }
+    Err(DomainError::Conflict(reason)) => { /* ... */ }
+    Err(DomainError::NotFound(reason)) => { /* ... */ }
+    Err(DomainError::Forbidden(reason)) => { /* ... */ }
+    Err(DomainError::TenantViolation(reason)) => { /* ... */ }
+    Err(DomainError::NotSupported(reason)) => { /* ... */ }
     Err(DomainError::Infrastructure(source)) => { /* ... */ }
 }
 ```
+
+> **Note.** The actual [`DomainError`](crates/infra/core/src/error.rs) variants
+> carry a single `String` payload (`Validation(String)`, `NotFound(String)`,
+> `Conflict(String)`, `Forbidden(String)`, `TenantViolation(String)`,
+> `NotSupported(String)`) plus `Infrastructure(Box<dyn Error + Send + Sync>)`
+> — there are no struct-shaped variants with named `field` / `entity` / `id`
+> / `reason` fields. Use `DomainError::validation(reason)` /
+> `DomainError::forbidden(reason)` constructors (lowercase, both
+> `impl Into<String>`) when constructing from a caller-facing message.
 
 ## Lifetimes
 
@@ -207,7 +243,14 @@ for the life of the consumer process. There is no global state.
 
 ## Sample Programs
 
-A complete `examples/admit_and_enroll.rs` is provided in the workspace that:
+An end-to-end smoke test that exercises the academic + attendance +
+assessment + finance commands against an in-memory `Engine::test_world()`
+lives in `crates/tools/sdk/src/facade.rs` (the
+`attendance_service_marks_bulk_rows` / `payment_service_charges_cash` /
+`notification_service_sends_email` tests) and in the per-domain
+`crates/domains/<domain>/src/services.rs` integration tests. Once Phase 3
+lands the academic admission flow end-to-end, a workspace-root
+`examples/admit_and_enroll.rs` will be added that:
 
 - Constructs an engine with an in-memory storage adapter.
 - Admits a student.
