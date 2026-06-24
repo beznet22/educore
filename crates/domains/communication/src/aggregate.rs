@@ -2207,7 +2207,10 @@ impl SendMessage {
     /// records the dispatch timestamp, and computes the
     /// recipient count. Returns the computed recipient count.
     pub fn dispatch(&mut self, actor: UserId, at: Timestamp, event_id: EventId) -> u32 {
-        let count = self.audience.len() as u32;
+        // `self.audience` is bounded by the dispatcher input cap
+        // (well below `u32::MAX` in practice); the `TryFrom` form
+        // documents the invariant and satisfies the engine lint.
+        let count = u32::try_from(self.audience.len()).unwrap_or(u32::MAX);
         self.status = SendMessageStatus::Dispatched;
         self.recipient_count = Some(count);
         self.dispatched_at = Some(at);

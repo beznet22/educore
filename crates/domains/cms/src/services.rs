@@ -840,7 +840,7 @@ pub fn form_uploaded_public_indexing_subscriber(
     let show_public = envelope
         .payload
         .get("show_public")
-        .and_then(serde_json::Value::as_bool)
+        .and_then(|v| v.as_bool())
         .unwrap_or(false);
     if show_public {
         FormIndexAction::Index
