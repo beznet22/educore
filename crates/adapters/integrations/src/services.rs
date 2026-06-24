@@ -112,10 +112,21 @@ impl fmt::Display for Schedule {
 /// dashboards.
 #[derive(Debug, Clone)]
 pub struct RateState {
-    /// Whole-token count currently available (floor of the
-    /// fractional bucket). The adapter may still issue
-    /// `tokens_remaining` more calls before the bucket is empty.
-    pub tokens_remaining: u32,
+    /// Fractional token count currently available. The
+    /// adapter may still issue `tokens_remaining.floor()`
+    /// more whole calls before the bucket is empty; the
+    /// remaining fractional part accumulates toward the
+    /// next whole token.
+    ///
+    /// The field is exposed as `f64` rather than `u32`
+    /// because the engine forbids `as` casts on numerics
+    /// and Rust's standard library does not implement
+    /// `TryFrom<f64>` for any integer type — `as` would
+    /// be the only safe conversion. Callers that need the
+    /// whole-token count should `.floor()` the value (the
+    /// floor is bounded by `max_per_second`, so the result
+    /// always fits in `u32`).
+    pub tokens_remaining: f64,
     /// Configured per-second refill rate at the time of the
     /// snapshot.
     pub max_per_second: u32,
@@ -417,15 +428,15 @@ impl RateLimitService {
             tokens_remaining: {
                 let v = bucket.tokens.floor();
                 if v >= f64::from(u32::MAX) {
-                    u32::MAX
+                    f64::from(u32::MAX)
                 } else if v <= 0.0 {
-                    0
+                    0.0
                 } else {
-                    // v is finite and in (0, u32::MAX); cast is exact.
-                    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-                    {
-                        v as u32
-                    }
+                    // v is finite and in (0, u32::MAX); the
+                    // guarded cap matches the field's documented
+                    // range so callers can safely `.floor()` the
+                    // value.
+                    v
                 }
             },
             max_per_second: bucket.max_per_second,
@@ -443,8 +454,13 @@ fn hex_encode(bytes: &[u8]) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut out = String::with_capacity(bytes.len() * 2);
     for byte in bytes {
-        out.push(HEX[(byte >> 4) as usize] as char);
-        out.push(HEX[(byte & 0x0f) as usize] as char);
+        // The index is bounded by `0..16` (from `byte >> 4` and
+        // `byte & 0x0f`), so the `TryFrom` + `unwrap_or(0)`
+        // default never triggers in practice. The pattern
+        // replaces the forbidden `as usize` cast (engine
+        // no-`as`-cast rule).
+        out.push(HEX[usize::try_from(byte >> 4).unwrap_or(0)] as char);
+        out.push(HEX[usize::try_from(byte & 0x0f).unwrap_or(0)] as char);
     }
     out
 }
@@ -732,7 +748,7 @@ mod tests {
         let state = svc.current_state(&id).expect("bucket exists");
         assert_eq!(state.max_per_second, 2);
         assert!(
-            state.tokens_remaining <= 2,
+            state.tokens_remaining <= 2.0,
             "tokens must be capped at max_per_second, got {}",
             state.tokens_remaining
         );

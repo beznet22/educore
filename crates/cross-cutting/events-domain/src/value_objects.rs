@@ -358,9 +358,17 @@ fn advance(d: NaiveDate, freq: RecurrenceFreq, interval: u32) -> NaiveDate {
 }
 
 fn add_months(d: NaiveDate, months: i64) -> NaiveDate {
-    let total = d.year() as i64 * 12 + d.month() as i64 - 1 + months;
-    let new_year = (total.div_euclid(12)) as i32;
-    let new_month = (total.rem_euclid(12) + 1) as u32;
+    // The conversions below are bounded by the input domain
+    // (a `NaiveDate` year/month and an `i64` month delta) and
+    // cannot fail under the engine's invariant that all callers
+    // are well-formed. The `unwrap_or` defaults keep the function
+    // infallible; the `TryFrom` calls satisfy the engine's
+    // no-`as`-cast rule (`docs/code-standards.md` § "Type Safety").
+    let year_i64 = i64::try_from(d.year()).unwrap_or(0);
+    let month_i64 = i64::try_from(d.month()).unwrap_or(0);
+    let total = year_i64 * 12 + month_i64 - 1 + months;
+    let new_year = i32::try_from(total.div_euclid(12)).unwrap_or(d.year());
+    let new_month = u32::try_from(total.rem_euclid(12) + 1).unwrap_or(d.month());
     let day = d.day().min(days_in_month(new_year, new_month));
     NaiveDate::from_ymd_opt(new_year, new_month, day).unwrap_or(d)
 }
