@@ -58,9 +58,9 @@ use crate::commands::{
     CreateStudentCategoryCommand, CreateStudentGroupCommand, CreateSubjectCommand,
     DeleteClassCommand, DeleteSectionCommand, DeleteSubjectCommand, GraduateStudentCommand,
     PromoteStudentCommand, RecordStudentPromotionCommand, RegisterGuardianCommand,
-    ReinstateStudentCommand, SetCurrentAcademicYearCommand,
-    SetOptionalSubjectGpaThresholdCommand, SuspendStudentCommand, TransferStudentCommand,
-    UniquenessChecker, UpdateAcademicYearDatesCommand, UpdateClassCommand, UpdateSectionCommand,
+    ReinstateStudentCommand, SetCurrentAcademicYearCommand, SetOptionalSubjectGpaThresholdCommand,
+    SuspendStudentCommand, TransferStudentCommand, UniquenessChecker,
+    UpdateAcademicYearDatesCommand, UpdateClassCommand, UpdateSectionCommand,
     UpdateStudentProfileCommand, UpdateSubjectCommand, WithdrawStudentCommand,
 };
 use crate::events::{

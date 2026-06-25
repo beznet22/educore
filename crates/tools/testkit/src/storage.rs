@@ -180,7 +180,11 @@ fn to_relay_envelope(
 
 #[async_trait]
 impl Outbox for OutboxHandle {
-    async fn append(&self, _school_id: educore_core::ids::SchoolId, envelope: SerializedEnvelope) -> Result<()> {
+    async fn append(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        envelope: SerializedEnvelope,
+    ) -> Result<()> {
         let mut outbox = self.0.outbox.lock();
         if outbox.iter().any(|e| e.event_id == envelope.event_id) {
             return Err(DomainError::conflict(format!(
@@ -192,14 +196,22 @@ impl Outbox for OutboxHandle {
         Ok(())
     }
 
-    async fn pending(&self, _school_id: educore_core::ids::SchoolId, limit: u32) -> Result<Vec<SerializedEnvelope>> {
+    async fn pending(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        limit: u32,
+    ) -> Result<Vec<SerializedEnvelope>> {
         let limit = usize::try_from(limit)
             .map_err(|_| DomainError::validation("outbox pending limit exceeds usize"))?;
         let outbox = self.0.outbox.lock();
         Ok(outbox.iter().take(limit).cloned().collect())
     }
 
-    async fn mark_published(&self, _school_id: educore_core::ids::SchoolId, ids: &[educore_core::ids::EventId]) -> Result<()> {
+    async fn mark_published(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        ids: &[educore_core::ids::EventId],
+    ) -> Result<()> {
         let mut outbox = self.0.outbox.lock();
         outbox.retain(|e| !ids.contains(&e.event_id));
         Ok(())
@@ -216,18 +228,29 @@ impl Outbox for OutboxHandle {
 /// which matches the relay's contract.
 #[async_trait]
 impl educore_events::relay::OutboxSource for OutboxHandle {
-
     async fn pending_for_school(
         &self,
         _school_id: educore_core::ids::SchoolId,
         limit: u32,
-    ) -> std::result::Result<Vec<educore_events::relay_envelope::SerializedEnvelope>, educore_core::error::DomainError> {
+    ) -> std::result::Result<
+        Vec<educore_events::relay_envelope::SerializedEnvelope>,
+        educore_core::error::DomainError,
+    > {
         let outbox = self.0.outbox.lock();
         let n: usize = usize::try_from(limit).unwrap_or(usize::MAX);
-        Ok(outbox.iter().take(n).cloned().map(to_relay_envelope).collect())
+        Ok(outbox
+            .iter()
+            .take(n)
+            .cloned()
+            .map(to_relay_envelope)
+            .collect())
     }
 
-    async fn mark_published(&self, _school_id: educore_core::ids::SchoolId, ids: &[educore_core::ids::EventId]) -> Result<()> {
+    async fn mark_published(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        ids: &[educore_core::ids::EventId],
+    ) -> Result<()> {
         let mut outbox = self.0.outbox.lock();
         outbox.retain(|e| !ids.contains(&e.event_id));
         Ok(())
@@ -253,9 +276,8 @@ impl AuditLog for AuditLogHandle {
         target_id: Uuid,
         limit: u32,
     ) -> Result<Vec<AuditLogEntry>> {
-        let limit = usize::try_from(limit).map_err(|_| {
-            DomainError::validation("audit read_for_target limit exceeds usize")
-        })?;
+        let limit = usize::try_from(limit)
+            .map_err(|_| DomainError::validation("audit read_for_target limit exceeds usize"))?;
         let log = self.0.audit_log.lock();
         let mut out: Vec<AuditLogEntry> = log
             .iter()
@@ -325,8 +347,7 @@ impl EventLog for EventLogHandle {
                     .map_or(true, |a| e.aggregate_id == *a)
             })
             .count();
-        u64::try_from(n)
-            .map_err(|_| DomainError::validation("event log count exceeds u64"))
+        u64::try_from(n).map_err(|_| DomainError::validation("event log count exceeds u64"))
     }
 }
 
@@ -393,7 +414,11 @@ pub(crate) struct StagingOutbox {
 
 #[async_trait]
 impl Outbox for StagingOutbox {
-    async fn append(&self, _school_id: educore_core::ids::SchoolId, envelope: SerializedEnvelope) -> Result<()> {
+    async fn append(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        envelope: SerializedEnvelope,
+    ) -> Result<()> {
         let mut staging = self.staging.outbox.lock();
         if staging.iter().any(|e| e.event_id == envelope.event_id) {
             return Err(DomainError::conflict(format!(
@@ -405,17 +430,24 @@ impl Outbox for StagingOutbox {
         Ok(())
     }
 
-    async fn pending(&self, _school_id: educore_core::ids::SchoolId, limit: u32) -> Result<Vec<SerializedEnvelope>> {
+    async fn pending(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        limit: u32,
+    ) -> Result<Vec<SerializedEnvelope>> {
         // Reads always pass through to the inner state; the
         // staging buffer is invisible to other transactions.
-        let limit = usize::try_from(limit).map_err(|_| {
-            DomainError::validation("staging outbox pending limit exceeds usize")
-        })?;
+        let limit = usize::try_from(limit)
+            .map_err(|_| DomainError::validation("staging outbox pending limit exceeds usize"))?;
         let outbox = self.inner.outbox.lock();
         Ok(outbox.iter().take(limit).cloned().collect())
     }
 
-    async fn mark_published(&self, _school_id: educore_core::ids::SchoolId, ids: &[educore_core::ids::EventId]) -> Result<()> {
+    async fn mark_published(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        ids: &[educore_core::ids::EventId],
+    ) -> Result<()> {
         let mut outbox = self.inner.outbox.lock();
         outbox.retain(|e| !ids.contains(&e.event_id));
         Ok(())
@@ -515,8 +547,7 @@ impl EventLog for StagingEventLog {
                     .map_or(true, |a| e.aggregate_id == *a)
             })
             .count();
-        u64::try_from(n)
-            .map_err(|_| DomainError::validation("staging event log count exceeds u64"))
+        u64::try_from(n).map_err(|_| DomainError::validation("staging event log count exceeds u64"))
     }
 }
 
@@ -1589,11 +1620,7 @@ mod tests {
             // without `commit`/`rollback`, so it triggers the
             // implicit-rollback Drop path (no observable side
             // effects: staging buffer is empty).
-            let tx = InMemoryTransaction::new(
-                adapter.inner.clone(),
-                make_bus(),
-                school,
-            );
+            let tx = InMemoryTransaction::new(adapter.inner.clone(), make_bus(), school);
             assert_eq!(tx.school_id(), school);
             // Verify the trait surface: the concrete type
             // implements both `Transaction` and
@@ -1830,7 +1857,11 @@ mod tests {
             let idem_composite =
                 IdempotencyRecord::composite_key(school, "academic.student.admit", idem_key);
             assert!(
-                tx2.idempotency().lookup(idem_composite).await.unwrap().is_some(),
+                tx2.idempotency()
+                    .lookup(idem_composite)
+                    .await
+                    .unwrap()
+                    .is_some(),
                 "idempotency record committed"
             );
             let mut filter = EventLogFilter::for_school(school);
@@ -1918,7 +1949,11 @@ mod tests {
             let idem_composite =
                 IdempotencyRecord::composite_key(school, "academic.student.admit", idem_key);
             assert!(
-                tx2.idempotency().lookup(idem_composite).await.unwrap().is_none(),
+                tx2.idempotency()
+                    .lookup(idem_composite)
+                    .await
+                    .unwrap()
+                    .is_none(),
                 "rolled-back idempotency record is discarded"
             );
             let mut filter = EventLogFilter::for_school(school);

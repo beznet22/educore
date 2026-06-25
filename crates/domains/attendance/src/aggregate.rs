@@ -861,7 +861,6 @@ impl AttendanceBulk {
     clippy::panic,
     clippy::dbg_macro
 )]
-
 // =============================================================================
 // StudentAttendanceImport / StaffAttendanceImport (Cluster D mop-up)
 // =============================================================================
@@ -900,19 +899,13 @@ mod tests {
         let corr = CorrelationId(uuid::Uuid::now_v7());
 
         let row = ClassAttendance::fresh(
-            id,
-            student,
-            exam_type,
-            year,
-            200, // days_opened
+            id, student, exam_type, year, 200, // days_opened
             180, // days_present
             10,  // days_absent
             5,   // days_late
             4,   // days_half_day
             1,   // days_on_leave
-            now,
-            actor,
-            corr,
+            now, actor, corr,
         );
 
         assert_eq!(row.school_id, school);

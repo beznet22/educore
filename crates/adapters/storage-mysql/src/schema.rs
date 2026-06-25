@@ -187,7 +187,8 @@ pub fn build_schema_statements(descriptors: &[&EntityDescriptor]) -> Vec<String>
             // CHECK that composes cleanly with the engine's
             // partition-pruning, requires DEFINER grants).
             // Defer to a follow-up PR.
-            let mut comment = String::from("-- TODO: MySQL RLS — skipped (out of scope for this PR)\n");
+            let mut comment =
+                String::from("-- TODO: MySQL RLS — skipped (out of scope for this PR)\n");
             for policy in &desc.rls {
                 comment.push_str(&format!(
                     "--   policy: {} USING {} (with_check: {})\n",
@@ -587,7 +588,10 @@ mod tests {
         ];
         for ct in &cases {
             let mapped = column_type_to_mysql(ct);
-            assert!(!mapped.is_empty(), "ColumnType {ct:?} must map to a non-empty type");
+            assert!(
+                !mapped.is_empty(),
+                "ColumnType {ct:?} must map to a non-empty type"
+            );
         }
     }
 
@@ -663,7 +667,10 @@ mod tests {
         ];
         for a in &actions {
             let mapped = fk_action_to_mysql(a);
-            assert!(!mapped.is_empty(), "FK action {a:?} must map to a non-empty keyword");
+            assert!(
+                !mapped.is_empty(),
+                "FK action {a:?} must map to a non-empty keyword"
+            );
         }
         // Spot-check the cascade keyword.
         assert_eq!(fk_action_to_mysql(&ForeignKeyAction::Cascade), "CASCADE");

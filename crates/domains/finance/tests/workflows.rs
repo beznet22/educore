@@ -366,8 +366,8 @@ fn invoice_lifecycle_max_length_prefix_is_accepted() {
         prefix: "ABCDEFGHIJ".to_owned(), // exactly 10 chars
         start_form: 0,
     };
-    let (invoice, event) =
-        fin_services::configure_invoice_numbering(cmd, &clock, &g).expect("10-char prefix must succeed");
+    let (invoice, event) = fin_services::configure_invoice_numbering(cmd, &clock, &g)
+        .expect("10-char prefix must succeed");
     assert_eq!(invoice.prefix.len(), 10);
     assert_eq!(event.prefix.len(), 10);
     assert_eq!(invoice.start_form, 0);
@@ -411,8 +411,7 @@ fn payment_lifecycle_record_emits_payment_received() {
         note: None,
         payment_date: date(2026, 6, 13),
     };
-    let (payment, event) =
-        fin_services::record_payment(cmd, &clock, &g).expect("record_payment");
+    let (payment, event) = fin_services::record_payment(cmd, &clock, &g).expect("record_payment");
 
     assert_eq!(
         <PaymentReceived as DomainEvent>::EVENT_TYPE,
@@ -514,8 +513,7 @@ fn payment_lifecycle_fine_is_recorded_but_not_netted() {
         note: None,
         payment_date: date(2026, 6, 13),
     };
-    let (payment, event) =
-        fin_services::record_payment(cmd, &clock, &g).expect("record_payment");
+    let (payment, event) = fin_services::record_payment(cmd, &clock, &g).expect("record_payment");
 
     // fine is recorded on the aggregate + event
     assert_eq!(payment.fine_minor, 1_500);
@@ -919,14 +917,9 @@ fn fee_structure_lifecycle_approve_then_reject_returns_conflict() {
     );
 
     fin_services::approve_wallet_transaction(&mut tx, actor, &clock, &g).expect("approve");
-    let err = fin_services::reject_wallet_transaction(
-        &mut tx,
-        actor,
-        "too late".to_owned(),
-        &clock,
-        &g,
-    )
-    .expect_err("approve-then-reject must be rejected");
+    let err =
+        fin_services::reject_wallet_transaction(&mut tx, actor, "too late".to_owned(), &clock, &g)
+            .expect_err("approve-then-reject must be rejected");
     assert!(
         matches!(err, educore_core::error::DomainError::Conflict(_)),
         "got {err:?}"
@@ -955,8 +948,14 @@ fn fee_structure_lifecycle_reject_then_approve_returns_conflict() {
         WalletTxType::Deposit,
     );
 
-    fin_services::reject_wallet_transaction(&mut tx, actor, "initial reject".to_owned(), &clock, &g)
-        .expect("reject");
+    fin_services::reject_wallet_transaction(
+        &mut tx,
+        actor,
+        "initial reject".to_owned(),
+        &clock,
+        &g,
+    )
+    .expect("reject");
     let err = fin_services::approve_wallet_transaction(&mut tx, actor, &clock, &g)
         .expect_err("reject-then-approve must be rejected");
     assert!(

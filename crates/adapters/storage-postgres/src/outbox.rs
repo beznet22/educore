@@ -104,7 +104,11 @@ impl PostgresOutbox {
 #[async_trait]
 impl Outbox for PostgresOutbox {
     #[instrument(skip(self, envelope), fields(event_id = %envelope.event_id))]
-    async fn append(&self, _school_id: educore_core::ids::SchoolId, envelope: SerializedEnvelope) -> Result<()> {
+    async fn append(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        envelope: SerializedEnvelope,
+    ) -> Result<()> {
         // `enqueued_at` and `published_at` are handled at the DB
         // level (`NOW()` and `NULL` respectively) per the
         // canonical DDL. `attempts` defaults to 0,
@@ -137,7 +141,11 @@ impl Outbox for PostgresOutbox {
     }
 
     #[instrument(skip(self))]
-    async fn pending(&self, _school_id: educore_core::ids::SchoolId, limit: u32) -> Result<Vec<SerializedEnvelope>> {
+    async fn pending(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        limit: u32,
+    ) -> Result<Vec<SerializedEnvelope>> {
         // QW-13 / school-partitioning contract: the `WHERE
         // school_id = $1` predicate is the engine's tenant-isolation
         // guarantee for this handle. `$1` is bound to
@@ -163,9 +171,12 @@ impl Outbox for PostgresOutbox {
         Ok(envelopes)
     }
 
-
     #[instrument(skip(self, ids))]
-    async fn mark_published(&self, _school_id: educore_core::ids::SchoolId, ids: &[EventId]) -> Result<()> {
+    async fn mark_published(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        ids: &[EventId],
+    ) -> Result<()> {
         if ids.is_empty() {
             return Ok(());
         }

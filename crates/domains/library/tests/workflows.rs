@@ -102,7 +102,10 @@ fn issue_book_happy_path() {
     assert!(created.book_issue.is_open());
     assert_eq!(created.book_issue.quantity, IssueQuantity(1));
     assert_eq!(created.event.book_id, created.book_issue.book_id);
-    assert_eq!(<BookIssued as DomainEvent>::EVENT_TYPE, "library.book_issue.issued");
+    assert_eq!(
+        <BookIssued as DomainEvent>::EVENT_TYPE,
+        "library.book_issue.issued"
+    );
 }
 
 /// Book Return (workflows.md § "Book Issue Workflow" step 7):

@@ -320,11 +320,7 @@ pub fn build_index_sql(index: &IndexDescriptor, table: &str) -> String {
 /// re-run is a no-op.
 #[must_use]
 pub fn build_foreign_key_sql(fk: &ForeignKeyDescriptor, table: &str) -> String {
-    let constraint_name = format!(
-        "{table}_{col}_fk",
-        table = table,
-        col = fk.column
-    );
+    let constraint_name = format!("{table}_{col}_fk", table = table, col = fk.column);
     let on_delete = foreign_key_action_sql(&fk.on_delete);
     let on_update = foreign_key_action_sql(&fk.on_update);
     format!(
@@ -498,24 +494,15 @@ mod tests {
     #[test]
     fn column_type_maps_known_variants_to_pg_types() {
         assert_eq!(column_type_to_pg_sql(&ColumnType::Uuid), "UUID");
-        assert_eq!(
-            column_type_to_pg_sql(&ColumnType::String),
-            "VARCHAR(255)"
-        );
+        assert_eq!(column_type_to_pg_sql(&ColumnType::String), "VARCHAR(255)");
         assert_eq!(column_type_to_pg_sql(&ColumnType::Text), "TEXT");
         assert_eq!(column_type_to_pg_sql(&ColumnType::I64), "BIGINT");
         assert_eq!(column_type_to_pg_sql(&ColumnType::U64), "BIGINT");
         assert_eq!(column_type_to_pg_sql(&ColumnType::I32), "INTEGER");
         assert_eq!(column_type_to_pg_sql(&ColumnType::U32), "INTEGER");
-        assert_eq!(
-            column_type_to_pg_sql(&ColumnType::F64),
-            "DOUBLE PRECISION"
-        );
+        assert_eq!(column_type_to_pg_sql(&ColumnType::F64), "DOUBLE PRECISION");
         assert_eq!(column_type_to_pg_sql(&ColumnType::Bool), "BOOLEAN");
-        assert_eq!(
-            column_type_to_pg_sql(&ColumnType::Timestamp),
-            "TIMESTAMPTZ"
-        );
+        assert_eq!(column_type_to_pg_sql(&ColumnType::Timestamp), "TIMESTAMPTZ");
         assert_eq!(column_type_to_pg_sql(&ColumnType::Json), "JSONB");
         assert_eq!(column_type_to_pg_sql(&ColumnType::Bytes), "BYTEA");
     }
@@ -688,7 +675,10 @@ mod tests {
             unique: false,
         };
         let sql = build_index_sql(&idx, "students");
-        assert_eq!(sql, "CREATE INDEX IF NOT EXISTS students_school_id_idx ON students (school_id);\n");
+        assert_eq!(
+            sql,
+            "CREATE INDEX IF NOT EXISTS students_school_id_idx ON students (school_id);\n"
+        );
     }
 
     #[test]
@@ -747,9 +737,7 @@ mod tests {
         assert!(sql.contains("ENABLE ROW LEVEL SECURITY"));
         assert!(sql.contains("FORCE ROW LEVEL SECURITY"));
         assert!(sql.contains("CREATE POLICY students_school_isolation ON students"));
-        assert!(sql.contains(
-            "USING (school_id = current_setting('app.current_school_id')::UUID)"
-        ));
+        assert!(sql.contains("USING (school_id = current_setting('app.current_school_id')::UUID)"));
         // with_check defaults to the using expression when
         // the caller does not supply a separate check.
         assert!(sql.contains("WITH CHECK (school_id = current_setting"));

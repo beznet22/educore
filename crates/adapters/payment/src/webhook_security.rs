@@ -222,7 +222,10 @@ impl fmt::Debug for HmacSha256Verifier {
         // PCI-SCOPE: signature-verification — redact secret +
         // tolerance to keep the `Debug` output safe for logs.
         f.debug_struct("HmacSha256Verifier")
-            .field("secret", &format_args!("<redacted {} bytes>", self.secret.len()))
+            .field(
+                "secret",
+                &format_args!("<redacted {} bytes>", self.secret.len()),
+            )
             .field("tolerance_seconds", &self.tolerance_seconds)
             .finish()
     }
@@ -351,18 +354,14 @@ impl SigningKeyRing {
     /// [`verify_with_rotation`](Self::verify_with_rotation) with
     /// the same `key_id` will use this verifier.
     pub fn add_key(&mut self, key_id: impl Into<String>, secret: impl Into<Vec<u8>>) {
-        let verifier = HmacSha256Verifier::new(secret)
-            .with_tolerance_seconds(self.default_tolerance_seconds);
+        let verifier =
+            HmacSha256Verifier::new(secret).with_tolerance_seconds(self.default_tolerance_seconds);
         self.keys.insert(key_id.into(), verifier);
     }
 
     /// Register a pre-built verifier under `key_id`. Useful when
     /// a key needs a custom clock (e.g. for tests).
-    pub fn add_verifier(
-        &mut self,
-        key_id: impl Into<String>,
-        verifier: HmacSha256Verifier,
-    ) {
+    pub fn add_verifier(&mut self, key_id: impl Into<String>, verifier: HmacSha256Verifier) {
         self.keys.insert(key_id.into(), verifier);
     }
 
@@ -473,7 +472,10 @@ mod tests {
         mac.update(timestamp.to_string().as_bytes());
         mac.update(b".");
         mac.update(payload);
-        format!("sha256={}", HmacSha256Verifier::hex_encode(&mac.finalize().into_bytes()))
+        format!(
+            "sha256={}",
+            HmacSha256Verifier::hex_encode(&mac.finalize().into_bytes())
+        )
     }
 
     #[test]
@@ -493,7 +495,8 @@ mod tests {
     #[tokio::test]
     async fn hmac_sha256_verifier_accepts_valid_signature() {
         let secret = b"whsec_test_secret".to_vec();
-        let verifier = HmacSha256Verifier::new(secret.clone()).with_clock(FrozenClock(1_700_000_000));
+        let verifier =
+            HmacSha256Verifier::new(secret.clone()).with_clock(FrozenClock(1_700_000_000));
         let payload = b"{\"id\":\"evt_001\"}";
         let ts = 1_700_000_000;
         let sig = make_signature(&secret, ts, payload);
@@ -517,8 +520,8 @@ mod tests {
 
     #[tokio::test]
     async fn hmac_sha256_verifier_rejects_missing_header() {
-        let verifier =
-            HmacSha256Verifier::new(b"whsec_test_secret".to_vec()).with_clock(FrozenClock(1_700_000_000));
+        let verifier = HmacSha256Verifier::new(b"whsec_test_secret".to_vec())
+            .with_clock(FrozenClock(1_700_000_000));
         assert_eq!(
             verifier.verify(b"{}", "", 1_700_000_000).await,
             Err(SignatureError::MissingHeader)
@@ -527,13 +530,11 @@ mod tests {
 
     #[tokio::test]
     async fn hmac_sha256_verifier_rejects_malformed_header() {
-        let verifier =
-            HmacSha256Verifier::new(b"whsec_test_secret".to_vec()).with_clock(FrozenClock(1_700_000_000));
+        let verifier = HmacSha256Verifier::new(b"whsec_test_secret".to_vec())
+            .with_clock(FrozenClock(1_700_000_000));
         // Wrong prefix.
         assert_eq!(
-            verifier
-                .verify(b"{}", "md5=abcdef", 1_700_000_000)
-                .await,
+            verifier.verify(b"{}", "md5=abcdef", 1_700_000_000).await,
             Err(SignatureError::MalformedHeader)
         );
         // Right prefix, wrong length.
@@ -594,11 +595,13 @@ mod tests {
 
         // Each signature verifies against its own key.
         assert_eq!(
-            ring.verify_with_rotation(payload, &sig_old, ts, "k_old").await,
+            ring.verify_with_rotation(payload, &sig_old, ts, "k_old")
+                .await,
             Ok(())
         );
         assert_eq!(
-            ring.verify_with_rotation(payload, &sig_new, ts, "k_new").await,
+            ring.verify_with_rotation(payload, &sig_new, ts, "k_new")
+                .await,
             Ok(())
         );
 
@@ -606,11 +609,13 @@ mod tests {
         // MalformedHeader) — the ring found the key, just the
         // HMAC didn't match.
         assert_eq!(
-            ring.verify_with_rotation(payload, &sig_old, ts, "k_new").await,
+            ring.verify_with_rotation(payload, &sig_old, ts, "k_new")
+                .await,
             Err(SignatureError::Mismatch)
         );
         assert_eq!(
-            ring.verify_with_rotation(payload, &sig_new, ts, "k_old").await,
+            ring.verify_with_rotation(payload, &sig_new, ts, "k_old")
+                .await,
             Err(SignatureError::Mismatch)
         );
 
@@ -618,7 +623,8 @@ mod tests {
         // so the audit trail distinguishes "misconfigured
         // consumer" from "tampered request").
         assert_eq!(
-            ring.verify_with_rotation(payload, &sig_new, ts, "k_unknown").await,
+            ring.verify_with_rotation(payload, &sig_new, ts, "k_unknown")
+                .await,
             Err(SignatureError::MalformedHeader)
         );
     }

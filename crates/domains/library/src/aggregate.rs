@@ -56,12 +56,12 @@ use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
 use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
 use crate::value_objects::{
-    AcademicYearId, Author, BookAcquisitionId, BookCategoryId, BookCatalogEntryId, BookId,
+    AcademicYearId, Author, BookAcquisitionId, BookCatalogEntryId, BookCategoryId, BookId,
     BookIssueFineId, BookIssueId, BookIssueRenewalId, BookNumber, BookPrice, BookReturnId,
-    BookStatus, BookTitle, CategoryName, Details, DueDate, Edition, FineAmount, FineId,
-    FinePerDay, FineReason, GivenDate, Isbn, IssueNote, IssueQuantity, IssueStatus,
-    LibraryMemberId, LibraryMemberNoteId, MemberStatus, MemberUdId, RackNumber, ReturnDate,
-    RoleId, StaffId, StockAdjustmentReason, StockCopies, StudentId, SubjectId,
+    BookStatus, BookTitle, CategoryName, Details, DueDate, Edition, FineAmount, FineId, FinePerDay,
+    FineReason, GivenDate, Isbn, IssueNote, IssueQuantity, IssueStatus, LibraryMemberId,
+    LibraryMemberNoteId, MemberStatus, MemberUdId, RackNumber, ReturnDate, RoleId, StaffId,
+    StockAdjustmentReason, StockCopies, StudentId, SubjectId,
 };
 
 use crate::value_objects::MemberId;

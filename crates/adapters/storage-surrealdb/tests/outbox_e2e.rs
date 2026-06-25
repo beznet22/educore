@@ -115,8 +115,7 @@ async fn pending_returns_only_rows_for_the_requested_school() {
         payload: bytes::Bytes::from_static(br#"{"id":"b"}"#),
     };
     let event_id_b = env_b.event_id;
-    let outbox_b =
-        educore_storage_surrealdb::SurrealOutbox::new(adapter.db().clone(), school_b);
+    let outbox_b = educore_storage_surrealdb::SurrealOutbox::new(adapter.db().clone(), school_b);
 
     let tx = adapter.begin().await.unwrap();
     tx.outbox().append(env_a).await.unwrap();

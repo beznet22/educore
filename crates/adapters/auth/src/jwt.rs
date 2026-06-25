@@ -353,10 +353,7 @@ impl JwtAuthProviderBuilder {
     ///
     /// Errors are propagated via `Result` — this method does
     /// **not** panic on a missing or unreadable secret.
-    pub fn signing_key_source(
-        mut self,
-        source: JwtSecretSource,
-    ) -> Result<Self, AuthError> {
+    pub fn signing_key_source(mut self, source: JwtSecretSource) -> Result<Self, AuthError> {
         let bytes = source.into_bytes()?;
         if bytes.len() < 32 {
             return Err(AuthError::Malformed(format!(
@@ -943,10 +940,8 @@ mod tests {
     #[test]
     fn test_jwt_secret_source_file_into_bytes_reads_file() {
         // Write a temp file with 32 bytes of 'b'.
-        let dir = std::env::temp_dir().join(format!(
-            "educore-auth-jwt-secret-test-{}",
-            Uuid::now_v7()
-        ));
+        let dir =
+            std::env::temp_dir().join(format!("educore-auth-jwt-secret-test-{}", Uuid::now_v7()));
         std::fs::create_dir_all(&dir).expect("create temp dir");
         let path = dir.join("secret");
         let contents = "b".repeat(32).into_bytes();
@@ -987,7 +982,10 @@ mod tests {
                 .expect("debug build falls back to random");
             assert_eq!(a.len(), 32);
             assert_eq!(b.len(), 32);
-            assert_ne!(a, b, "two consecutive fallbacks must produce different bytes");
+            assert_ne!(
+                a, b,
+                "two consecutive fallbacks must produce different bytes"
+            );
         }
     }
 

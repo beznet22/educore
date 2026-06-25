@@ -78,9 +78,11 @@ pub mod prelude {
         AckOutcome, BatchReceipt, ConsumerId, EventBus, EventFilter, EventFilterExpr,
         EventSubscription, PublishReceipt, StartPosition, SubscribeOptions, Topic,
     };
-    pub use crate::subscribe::{DispatchStats, Subscriber, SubscriberFailure, SubscriberRegistry, SubscriptionFilter};
-    pub use crate::sync::{SyncPaused, SyncResumed, SyncStarted, SyncStopped};
     pub use crate::relay::{OutboxRelay, RelayStats, DEFAULT_BATCH_SIZE, DEFAULT_IDLE_DELAY};
+    pub use crate::subscribe::{
+        DispatchStats, Subscriber, SubscriberFailure, SubscriberRegistry, SubscriptionFilter,
+    };
+    pub use crate::sync::{SyncPaused, SyncResumed, SyncStarted, SyncStopped};
 }
 
 #[cfg(test)]

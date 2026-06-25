@@ -258,7 +258,10 @@ impl<O: OutboxSource, B: EventBus + Send + Sync> OutboxRelay<O, B> {
     /// [`RelayStats::failed`] so the caller can decide whether
     /// to back off.
     pub async fn run_once(&self, school_id: SchoolId) -> Result<RelayStats> {
-        let pending = self.outbox.pending_for_school(school_id, self.batch_size).await?;
+        let pending = self
+            .outbox
+            .pending_for_school(school_id, self.batch_size)
+            .await?;
         let mut stats = RelayStats::default();
         let mut published_ids: Vec<EventId> = Vec::with_capacity(pending.len());
 
@@ -396,16 +399,16 @@ impl<O: OutboxSource, B: EventBus + Send + Sync> OutboxRelay<O, B> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use async_trait::async_trait;
-    use bytes::Bytes;
-    use educore_core::clock::{IdGenerator, SystemIdGen};
-    use educore_core::error::DomainError;
-    use educore_core::value_objects::Timestamp;
     use crate::envelope::EventEnvelope;
     use crate::event_bus::{
         AckOutcome, BatchReceipt, EventBus, EventSubscription, PublishReceipt, SubscribeOptions,
     };
     use crate::relay_envelope::SerializedEnvelope;
+    use async_trait::async_trait;
+    use bytes::Bytes;
+    use educore_core::clock::{IdGenerator, SystemIdGen};
+    use educore_core::error::DomainError;
+    use educore_core::value_objects::Timestamp;
     use std::convert::TryFrom;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
@@ -479,7 +482,11 @@ mod tests {
         async fn ack(&mut self, _id: educore_core::ids::EventId) -> Result<AckOutcome> {
             Ok(AckOutcome::Accepted)
         }
-        async fn nack(&mut self, _id: educore_core::ids::EventId, _requeue: bool) -> Result<AckOutcome> {
+        async fn nack(
+            &mut self,
+            _id: educore_core::ids::EventId,
+            _requeue: bool,
+        ) -> Result<AckOutcome> {
             Ok(AckOutcome::Accepted)
         }
         async fn close(self: Box<Self>) -> Result<()> {
@@ -504,19 +511,15 @@ mod tests {
             ))
         }
 
-        async fn publish_batch(
-            &self,
-            envelopes: Vec<EventEnvelope>,
-        ) -> Result<BatchReceipt> {
+        async fn publish_batch(&self, envelopes: Vec<EventEnvelope>) -> Result<BatchReceipt> {
             let mut receipts = Vec::with_capacity(envelopes.len());
             let mut failures = Vec::new();
             for env in envelopes {
                 match self.publish(env).await {
                     Ok(r) => receipts.push(r),
-                    Err(e) => failures.push(crate::event_bus::BatchFailure::new(
-                        None,
-                        e.to_string(),
-                    )),
+                    Err(e) => {
+                        failures.push(crate::event_bus::BatchFailure::new(None, e.to_string()))
+                    }
                 }
             }
             Ok(BatchReceipt::new(receipts, failures))
@@ -608,10 +611,7 @@ mod tests {
         }
     }
 
-    fn relay(
-        outbox: Arc<VecOutbox>,
-        bus: Arc<CountingBus>,
-    ) -> OutboxRelay<VecOutbox, CountingBus> {
+    fn relay(outbox: Arc<VecOutbox>, bus: Arc<CountingBus>) -> OutboxRelay<VecOutbox, CountingBus> {
         OutboxRelay::new(outbox, bus)
     }
 
@@ -716,8 +716,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn run_once_empty_outbox_is_noop(
-    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    async fn run_once_empty_outbox_is_noop() -> std::result::Result<(), Box<dyn std::error::Error>>
+    {
         let g = SystemIdGen;
         let school = g.next_school_id();
         let outbox = Arc::new(VecOutbox::new());
@@ -842,8 +842,8 @@ mod tests {
         let bus = Arc::new(CountingBus::new());
         outbox.append_envelope(sample_envelope(school, "academic.student.admitted"));
 
-        let r = OutboxRelay::new(outbox.clone(), bus.clone())
-            .with_idle_delay(Duration::from_secs(10));
+        let r =
+            OutboxRelay::new(outbox.clone(), bus.clone()).with_idle_delay(Duration::from_secs(10));
         let token = CancellationToken::new();
         // Pre-cancel the token: the first select arm should
         // fire immediately on the first iteration.

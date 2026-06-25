@@ -130,10 +130,7 @@ fn book_issue_create_emits_event_and_populates_aggregate() {
         <BookIssued as DomainEvent>::EVENT_TYPE,
         "library.book_issue.issued"
     );
-    assert_eq!(
-        <BookIssued as DomainEvent>::AGGREGATE_TYPE,
-        "book_issue"
-    );
+    assert_eq!(<BookIssued as DomainEvent>::AGGREGATE_TYPE, "book_issue");
     assert_eq!(<BookIssued as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(event.aggregate_id(), book_issue.id.as_uuid());
     assert_eq!(event.school_id(), school);

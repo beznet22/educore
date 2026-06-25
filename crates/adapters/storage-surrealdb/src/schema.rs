@@ -107,23 +107,19 @@ pub async fn create_schema_for(
     descriptors: &[&'static EntityDescriptor],
 ) -> Result<()> {
     let db: &Db = adapter.db();
-    db.query(ENGINE_CORE_SURQL)
-        .await
-        .map_err(|e| {
-            educore_core::error::DomainError::infrastructure(StringError(format!(
-                "create_schema: engine-core surql failed: {e}"
-            )))
-        })?;
+    db.query(ENGINE_CORE_SURQL).await.map_err(|e| {
+        educore_core::error::DomainError::infrastructure(StringError(format!(
+            "create_schema: engine-core surql failed: {e}"
+        )))
+    })?;
     for descriptor in descriptors {
         let ddl = render_descriptor(descriptor);
-        db.query(&ddl)
-            .await
-            .map_err(|e| {
-                educore_core::error::DomainError::infrastructure(StringError(format!(
-                    "create_schema: aggregate `{}` DDL failed: {e}",
-                    descriptor.table
-                )))
-            })?;
+        db.query(&ddl).await.map_err(|e| {
+            educore_core::error::DomainError::infrastructure(StringError(format!(
+                "create_schema: aggregate `{}` DDL failed: {e}",
+                descriptor.table
+            )))
+        })?;
     }
     Ok(())
 }
@@ -138,7 +134,11 @@ pub fn render_descriptor(descriptor: &EntityDescriptor) -> String {
     out.push_str(&render_table(descriptor.table));
     for column in &descriptor.columns {
         out.push('\n');
-        out.push_str(&render_field(descriptor.table, column, &descriptor.foreign_keys));
+        out.push_str(&render_field(
+            descriptor.table,
+            column,
+            &descriptor.foreign_keys,
+        ));
     }
     for index in &descriptor.indexes {
         out.push('\n');
@@ -249,7 +249,9 @@ fn render_fk_type(fk: &educore_core::query::ForeignKeyDescriptor) -> String {
 fn render_assert(column: &ColumnDescriptor) -> Option<String> {
     match (&column.column_type, column.name) {
         // UUIDs are stored as 36-char strings.
-        (ColumnType::Uuid, _) => Some("ASSERT $value != NONE AND string::len($value) = 36".to_owned()),
+        (ColumnType::Uuid, _) => {
+            Some("ASSERT $value != NONE AND string::len($value) = 36".to_owned())
+        }
         // The engine's enums (event_type, aggregate_type, etc.)
         // carry a length cap on the cross-cutting tables. We
         // don't yet have the cap from the AST; the dialect
@@ -273,9 +275,7 @@ const _: Option<ForeignKeyAction> = None;
 )]
 mod tests {
     use super::*;
-    use educore_core::query::{
-        ColumnDescriptor, ColumnType, EntityDescriptor, IndexDescriptor,
-    };
+    use educore_core::query::{ColumnDescriptor, ColumnType, EntityDescriptor, IndexDescriptor};
 
     fn sample_descriptor() -> EntityDescriptor {
         EntityDescriptor {
@@ -362,9 +362,13 @@ mod tests {
         // gets the 36-char length assertion.
         assert!(sql.contains("DEFINE FIELD IF NOT EXISTS id ON TABLE students TYPE string"));
         assert!(sql.contains("string::len($value) = 36"));
-        assert!(sql.contains("DEFINE FIELD IF NOT EXISTS display_name ON TABLE students TYPE string"));
+        assert!(
+            sql.contains("DEFINE FIELD IF NOT EXISTS display_name ON TABLE students TYPE string")
+        );
         assert!(sql.contains("DEFINE FIELD IF NOT EXISTS school_id ON TABLE students TYPE string"));
-        assert!(sql.contains("DEFINE FIELD IF NOT EXISTS created_at ON TABLE students TYPE datetime"));
+        assert!(
+            sql.contains("DEFINE FIELD IF NOT EXISTS created_at ON TABLE students TYPE datetime")
+        );
     }
 
     #[test]
@@ -470,7 +474,11 @@ mod tests {
             (ColumnType::Json, false, "object"),
             (ColumnType::Bytes, false, "bytes"),
             (ColumnType::Custom("UNKNOWN"), false, "string"),
-            (ColumnType::Custom("geometry(point)"), false, "geometry(point)"),
+            (
+                ColumnType::Custom("geometry(point)"),
+                false,
+                "geometry(point)",
+            ),
             (ColumnType::Uuid, true, "option<string>"),
         ];
         for (typ, nullable, expected_inner) in cases {

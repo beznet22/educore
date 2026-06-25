@@ -253,7 +253,10 @@ fn room_lifecycle_create_emits_room_created() {
         clock.now(),
     );
 
-    assert_eq!(<RoomCreated as DomainEvent>::EVENT_TYPE, "facilities.room.created");
+    assert_eq!(
+        <RoomCreated as DomainEvent>::EVENT_TYPE,
+        "facilities.room.created"
+    );
     assert_eq!(event.school_id(), school);
     assert_eq!(event.dormitory_id, dorm);
     assert_eq!(event.room_number, "101");
@@ -279,12 +282,7 @@ fn room_lifecycle_assign_student_emits_student_assigned_to_room() {
     let student = student_id(&g, school);
 
     let cmd = AssignStudentToRoomCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         room_id: room.id,
         student_id: student,
         bed_number: BedNumber::new(1).unwrap(),
@@ -469,12 +467,7 @@ fn asset_lifecycle_assign_driver_emits_driver_assigned_to_vehicle() {
     let driver = staff_id(&g, school);
 
     let cmd = AssignDriverToVehicleCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         vehicle_id: vehicle.id,
         driver_id: driver,
     };
@@ -508,12 +501,7 @@ fn asset_lifecycle_mark_out_of_service_emits_vehicle_deactivated() {
     assert_eq!(vehicle.status, VehicleStatus::Active);
 
     let cmd = DeactivateVehicleCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         vehicle_id: vehicle.id,
         new_status: VehicleStatus::Maintenance,
         reason: "Engine overhaul".to_owned(),
@@ -551,12 +539,7 @@ fn asset_lifecycle_restore_from_maintenance_transitions_back_to_active() {
 
     // 1) Mark out-of-service (maintenance).
     let cmd = DeactivateVehicleCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         vehicle_id: vehicle.id,
         new_status: VehicleStatus::Maintenance,
         reason: "Engine overhaul".to_owned(),
@@ -566,12 +549,7 @@ fn asset_lifecycle_restore_from_maintenance_transitions_back_to_active() {
 
     // 2) Restore to active.
     let restore = DeactivateVehicleCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         vehicle_id: vehicle.id,
         new_status: VehicleStatus::Active,
         reason: "Maintenance complete".to_owned(),
@@ -604,12 +582,7 @@ fn asset_lifecycle_double_retire_returns_conflict() {
 
     // Retire.
     let cmd = DeactivateVehicleCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         vehicle_id: vehicle.id,
         new_status: VehicleStatus::Retired,
         reason: "End of life".to_owned(),
@@ -619,12 +592,7 @@ fn asset_lifecycle_double_retire_returns_conflict() {
 
     // Second retire must be rejected.
     let second = DeactivateVehicleCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         vehicle_id: vehicle.id,
         new_status: VehicleStatus::Retired,
         reason: "Already retired".to_owned(),
@@ -716,12 +684,7 @@ fn booking_lifecycle_issue_emits_item_issued() {
     let quantity = 10_i64;
 
     let cmd = IssueItemCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         academic_year_id: year_id(&g, school),
         issue_to: IssueRecipient::Role(recipient_role),
         issue_by: actor,
@@ -769,12 +732,7 @@ fn booking_lifecycle_partial_return_emits_issued_item_returned() {
     assert_eq!(issue.outstanding_quantity().value(), 10);
 
     let cmd = ReturnIssuedItemCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         item_issue_id: issue.id,
         returned_quantity: ItemQuantity::new(4).unwrap(),
     };
@@ -813,12 +771,7 @@ fn booking_lifecycle_complete_return_emits_full_returned_status() {
 
     // First return: 6 of 10 → PartiallyReturned.
     let cmd_partial = ReturnIssuedItemCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         item_issue_id: issue.id,
         returned_quantity: ItemQuantity::new(6).unwrap(),
     };
@@ -828,12 +781,7 @@ fn booking_lifecycle_complete_return_emits_full_returned_status() {
 
     // Final return: the remaining 4 → Returned.
     let cmd_final = ReturnIssuedItemCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         item_issue_id: issue.id,
         returned_quantity: ItemQuantity::new(4).unwrap(),
     };
@@ -868,12 +816,7 @@ fn booking_lifecycle_return_exceeds_outstanding_returns_conflict() {
     assert_eq!(issue.outstanding_quantity().value(), 5);
 
     let cmd = ReturnIssuedItemCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         item_issue_id: issue.id,
         returned_quantity: ItemQuantity::new(10).unwrap(),
     };
@@ -904,12 +847,7 @@ fn booking_lifecycle_zero_quantity_return_returns_validation_error() {
     let mut issue = new_item_issue_aggregate(&g, school, actor, item, cat, 5);
 
     let cmd = ReturnIssuedItemCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         item_issue_id: issue.id,
         returned_quantity: ItemQuantity::ZERO,
     };
@@ -937,12 +875,7 @@ fn booking_lifecycle_zero_quantity_issue_returns_validation_error() {
     let item = item_id(&g, school);
     let cat = item_category_id(&g, school);
     let cmd = IssueItemCommand {
-        tenant: TenantContext::for_user(
-            school,
-            actor,
-            correlation,
-            UserType::SchoolAdmin,
-        ),
+        tenant: TenantContext::for_user(school, actor, correlation, UserType::SchoolAdmin),
         academic_year_id: year_id(&g, school),
         issue_to: IssueRecipient::Role(educore_hr::value_objects::RoleId::new(
             school,
@@ -1008,7 +941,8 @@ fn inventory_validate_issue_rejects_overdraw() {
 
     // Add stock via `apply_stock_delta`; then validate again.
     let ev = g.next_event_id();
-    item.apply_stock_delta(50, actor, Timestamp::now(), ev).unwrap();
+    item.apply_stock_delta(50, actor, Timestamp::now(), ev)
+        .unwrap();
     assert_eq!(item.total_in_stock.value(), 50);
     InventoryService::validate_issue(&item, ItemQuantity::new(50).unwrap())
         .expect("issue of exactly available stock must pass");

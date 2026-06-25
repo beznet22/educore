@@ -57,10 +57,9 @@ async fn create_schema_is_idempotent_against_live_mysql() {
     // idempotent.
 
     // First run: bootstraps the 6 cross-cutting tables.
-    let adapter_a =
-        educore_storage_mysql::MysqlStorageAdapter::connect(&url, school)
-            .await
-            .expect("connect adapter_a");
+    let adapter_a = educore_storage_mysql::MysqlStorageAdapter::connect(&url, school)
+        .await
+        .expect("connect adapter_a");
     adapter_a
         .create_schema()
         .await
@@ -69,10 +68,9 @@ async fn create_schema_is_idempotent_against_live_mysql() {
     // Second run: same database. The IF NOT EXISTS clauses
     // and the FOREIGN_KEY_CHECKS=0/1 wrapper must make this a
     // no-op (every statement succeeds).
-    let adapter_b =
-        educore_storage_mysql::MysqlStorageAdapter::connect(&url, school)
-            .await
-            .expect("connect adapter_b");
+    let adapter_b = educore_storage_mysql::MysqlStorageAdapter::connect(&url, school)
+        .await
+        .expect("connect adapter_b");
     adapter_b
         .create_schema()
         .await

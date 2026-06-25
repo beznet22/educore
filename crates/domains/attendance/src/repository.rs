@@ -334,11 +334,7 @@ pub trait AttendanceImportRepository: Send + Sync {
     /// Inserts a single [`AttendanceBulk`] denormalized
     /// staging row (per the spec, `attendance_bulks` is a
     /// sibling of `student_attendance_imports`).
-    async fn insert_bulk_row(
-        &self,
-        ctx: &TenantContext,
-        row: &AttendanceBulk,
-    ) -> Result<()>;
+    async fn insert_bulk_row(&self, ctx: &TenantContext, row: &AttendanceBulk) -> Result<()>;
 
     /// Returns every [`AttendanceBulk`] row belonging to
     /// the given bulk import job.
@@ -433,8 +429,8 @@ mod tests {
     /// trait compiles against `ClassAttendance`).
     #[test]
     fn class_attendance_repository_id_round_trip() {
-        use educore_core::clock::{IdGenerator, SystemIdGen};
         use crate::value_objects::ClassAttendanceId;
+        use educore_core::clock::{IdGenerator, SystemIdGen};
         let gen = SystemIdGen;
         let school = gen.next_school_id();
         let id = ClassAttendanceId::new(school, gen.next_uuid());

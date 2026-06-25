@@ -37,15 +37,13 @@
     missing_docs
 )]
 
+use educore_cms::aggregate::{NewContent, NewContentShareList, NewNews, NewPage};
+use educore_cms::prelude::*;
+use educore_cms::value_objects::{HomePage, IsDefault};
 use educore_core::clock::{Clock as _, IdGenerator as _, SystemIdGen, TestClock};
 use educore_core::ids::CorrelationId;
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::Timestamp;
-use educore_cms::aggregate::{
-    NewContent, NewContentShareList, NewNews, NewPage,
-};
-use educore_cms::prelude::*;
-use educore_cms::value_objects::{HomePage, IsDefault};
 use educore_events::domain_event::DomainEvent;
 
 // =============================================================================
@@ -84,10 +82,7 @@ fn content_type_id(g: &SystemIdGen, school: educore_core::ids::SchoolId) -> Cont
     ContentTypeId::new(school, g.next_uuid())
 }
 
-fn share_list_id(
-    g: &SystemIdGen,
-    school: educore_core::ids::SchoolId,
-) -> ContentShareListId {
+fn share_list_id(g: &SystemIdGen, school: educore_core::ids::SchoolId) -> ContentShareListId {
     ContentShareListId::new(school, g.next_uuid())
 }
 
@@ -203,7 +198,15 @@ fn page_lifecycle_create_emits_page_created() {
     let clock = TestClock::new();
     let correlation = CorrelationId::from(g.next_uuid());
 
-    let page = new_draft_page(&g, school, actor, "About Us", Some("about-us"), false, false);
+    let page = new_draft_page(
+        &g,
+        school,
+        actor,
+        "About Us",
+        Some("about-us"),
+        false,
+        false,
+    );
     let event: PageCreated = PageCreated::new(&page, correlation, clock.now());
 
     assert_eq!(<PageCreated as DomainEvent>::EVENT_TYPE, "cms.page.created");
@@ -225,14 +228,25 @@ fn page_lifecycle_publish_transitions_to_published() {
     let clock = TestClock::new();
     let correlation = CorrelationId::from(g.next_uuid());
 
-    let mut page = new_draft_page(&g, school, actor, "Admissions", Some("admissions"), false, false);
+    let mut page = new_draft_page(
+        &g,
+        school,
+        actor,
+        "Admissions",
+        Some("admissions"),
+        false,
+        false,
+    );
     assert!(matches!(page.status, PageStatus::Draft));
 
     page.publish(actor, clock.now(), g.next_event_id()).unwrap();
 
     let event: PagePublished = PagePublished::new(&page, actor, correlation, clock.now());
 
-    assert_eq!(<PagePublished as DomainEvent>::EVENT_TYPE, "cms.page.published");
+    assert_eq!(
+        <PagePublished as DomainEvent>::EVENT_TYPE,
+        "cms.page.published"
+    );
     assert!(matches!(page.status, PageStatus::Published));
     assert!(page.is_published());
     assert!(!page.is_home_page());
@@ -260,7 +274,10 @@ fn page_lifecycle_archive_transitions_back_to_draft() {
 
     let event: PageArchived = PageArchived::new(&page, actor, correlation, clock.now());
 
-    assert_eq!(<PageArchived as DomainEvent>::EVENT_TYPE, "cms.page.archived");
+    assert_eq!(
+        <PageArchived as DomainEvent>::EVENT_TYPE,
+        "cms.page.archived"
+    );
     assert!(matches!(page.status, PageStatus::Draft));
     assert!(!page.is_published());
     assert_eq!(event.archived_by, actor);
@@ -277,7 +294,15 @@ fn page_lifecycle_soft_delete_emits_page_deleted() {
     let clock = TestClock::new();
     let correlation = CorrelationId::from(g.next_uuid());
 
-    let mut page = new_draft_page(&g, school, actor, "Old Page", Some("old-page"), false, false);
+    let mut page = new_draft_page(
+        &g,
+        school,
+        actor,
+        "Old Page",
+        Some("old-page"),
+        false,
+        false,
+    );
     assert!(page.is_active());
 
     page.soft_delete(actor, clock.now()).unwrap();
@@ -300,7 +325,15 @@ fn page_lifecycle_default_page_cannot_be_deleted() {
     let actor = tenant.actor_id;
     let clock = TestClock::new();
 
-    let mut page = new_draft_page(&g, school, actor, "Default Page", Some("default"), false, true);
+    let mut page = new_draft_page(
+        &g,
+        school,
+        actor,
+        "Default Page",
+        Some("default"),
+        false,
+        true,
+    );
     assert!(page.is_active());
 
     let err = page
@@ -386,7 +419,10 @@ fn news_lifecycle_publish_emits_news_published_and_is_visible() {
     news.publish(actor, clock.now(), g.next_event_id());
     let event: NewsPublished = NewsPublished::new(&news, actor, correlation, clock.now());
 
-    assert_eq!(<NewsPublished as DomainEvent>::EVENT_TYPE, "cms.news.published");
+    assert_eq!(
+        <NewsPublished as DomainEvent>::EVENT_TYPE,
+        "cms.news.published"
+    );
     assert_eq!(event.published_by, actor);
     assert_eq!(event.news_id, news.id);
 
@@ -506,8 +542,24 @@ fn content_workflow_create_emits_content_share_list_created() {
     let academic = academic_year_id(&g, school);
 
     // Seed a couple of content ids for the share list.
-    let _c1 = new_content_aggregate(&g, school, actor, content_type, "math-syllabus.pdf", 4096, academic);
-    let c2 = new_content_aggregate(&g, school, actor, content_type, "physics-syllabus.pdf", 2048, academic);
+    let _c1 = new_content_aggregate(
+        &g,
+        school,
+        actor,
+        content_type,
+        "math-syllabus.pdf",
+        4096,
+        academic,
+    );
+    let c2 = new_content_aggregate(
+        &g,
+        school,
+        actor,
+        content_type,
+        "physics-syllabus.pdf",
+        2048,
+        academic,
+    );
 
     let at = Timestamp::now();
     let list = ContentShareList::new(NewContentShareList {
@@ -530,7 +582,8 @@ fn content_workflow_create_emits_content_share_list_created() {
     })
     .expect("ContentShareList::new must succeed for valid window");
 
-    let event: ContentShareListCreated = ContentShareListCreated::new(&list, correlation, clock.now());
+    let event: ContentShareListCreated =
+        ContentShareListCreated::new(&list, correlation, clock.now());
 
     assert_eq!(
         <ContentShareListCreated as DomainEvent>::EVENT_TYPE,
@@ -625,7 +678,8 @@ fn content_workflow_dispatch_emits_content_share_list_dispatched() {
         .map(|v| u32::try_from(v.len()).unwrap_or(u32::MAX))
         .unwrap_or(0);
 
-    list.dispatch(actor, clock.now(), g.next_event_id()).unwrap();
+    list.dispatch(actor, clock.now(), g.next_event_id())
+        .unwrap();
     let event: ContentShareListDispatched =
         ContentShareListDispatched::new(&list, recipient_count, correlation, clock.now());
 
@@ -670,7 +724,8 @@ fn content_workflow_double_dispatch_returns_conflict() {
     })
     .unwrap();
 
-    list.dispatch(actor, clock.now(), g.next_event_id()).unwrap();
+    list.dispatch(actor, clock.now(), g.next_event_id())
+        .unwrap();
     let err = list
         .dispatch(actor, clock.now(), g.next_event_id())
         .expect_err("re-dispatch must be rejected");
@@ -711,7 +766,8 @@ fn content_workflow_cancel_after_dispatch_returns_conflict() {
     })
     .unwrap();
 
-    list.dispatch(actor, clock.now(), g.next_event_id()).unwrap();
+    list.dispatch(actor, clock.now(), g.next_event_id())
+        .unwrap();
     let err = list
         .cancel(actor, clock.now(), g.next_event_id())
         .expect_err("cancel-after-dispatch must be rejected");

@@ -199,7 +199,11 @@ async fn signing_key_ring_rotates_to_next_key_on_mismatch() {
     let r_old = ring
         .verify_with_rotation(payload, &sig_old, ts, "k_old")
         .await;
-    assert_eq!(r_old, Ok(()), "old key must still verify old-signed payload");
+    assert_eq!(
+        r_old,
+        Ok(()),
+        "old key must still verify old-signed payload"
+    );
 
     // New key verifies new-signed webhooks.
     let r_new = ring

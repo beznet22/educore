@@ -1048,7 +1048,11 @@ where
     let now = clock.now();
     let event_id = ids.next_event_id();
     let mut changes: Vec<&'static str> = Vec::new();
-    if let Some(spec) = route.stops.iter_mut().find(|s| s.stop_order == cmd.stop_order) {
+    if let Some(spec) = route
+        .stops
+        .iter_mut()
+        .find(|s| s.stop_order == cmd.stop_order)
+    {
         if let Some(name) = cmd.stop_name {
             spec.stop_name = name;
             changes.push("stop_name");
@@ -1736,7 +1740,9 @@ where
     let now = clock.now();
     let event_id = ids.next_event_id();
     if cmd.amount < 0 {
-        return Err(DomainError::validation("refund amount must be non-negative"));
+        return Err(DomainError::validation(
+            "refund amount must be non-negative",
+        ));
     }
     if cmd.amount > sell.total_paid {
         return Err(DomainError::conflict(format!(
@@ -2094,8 +2100,7 @@ mod tests {
     use super::*;
     use crate::prelude::IssueStatus;
     use crate::value_objects::{
-        DormitoryId, ItemIssueId, ItemReceiveId, ItemSellId, RoomId, RouteId, StudentId,
-        VehicleId,
+        DormitoryId, ItemIssueId, ItemReceiveId, ItemSellId, RoomId, RouteId, StudentId, VehicleId,
     };
     use educore_core::clock::{IdGenerator, SystemClock, SystemIdGen};
     use educore_core::ids::Identifier;

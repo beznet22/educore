@@ -235,10 +235,7 @@ impl Idempotency for StubIdempotency {
         Ok(None)
     }
 
-    async fn record(
-        &self,
-        _record: IdempotencyRecord,
-    ) -> educore_core::error::Result<()> {
+    async fn record(&self, _record: IdempotencyRecord) -> educore_core::error::Result<()> {
         Err(educore_core::error::DomainError::not_supported(
             "Idempotency stub: AuditWriter does not record idempotency keys",
         ))
@@ -253,10 +250,7 @@ struct StubEventLog;
 
 #[async_trait]
 impl EventLog for StubEventLog {
-    async fn append(
-        &self,
-        _entry: EventLogEntry,
-    ) -> educore_core::error::Result<()> {
+    async fn append(&self, _entry: EventLogEntry) -> educore_core::error::Result<()> {
         Err(educore_core::error::DomainError::not_supported(
             "EventLog stub: AuditWriter does not append to the event log",
         ))
@@ -269,10 +263,7 @@ impl EventLog for StubEventLog {
         Ok(Vec::new())
     }
 
-    async fn count(
-        &self,
-        _filter: EventLogFilter,
-    ) -> educore_core::error::Result<u64> {
+    async fn count(&self, _filter: EventLogFilter) -> educore_core::error::Result<u64> {
         Ok(0)
     }
 }
@@ -513,8 +504,14 @@ async fn audit_writer_emits_sweep_due_when_threshold_reached() {
         retention_days: 90,
         sweep_check_interval: std::time::Duration::from_secs(60),
     };
-    let writer = AuditWriter::new(school, audit_log.clone(), bus.clone(), clock.clone(), policy)
-        .expect("valid school_id for test writer");
+    let writer = AuditWriter::new(
+        school,
+        audit_log.clone(),
+        bus.clone(),
+        clock.clone(),
+        policy,
+    )
+    .expect("valid school_id for test writer");
 
     // First write — seed the sweep clock, no event published.
     let txn = test_txn(audit_log.clone(), school);

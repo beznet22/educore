@@ -573,7 +573,10 @@ impl UpdatePageCommand {
     /// by [`Page::update`](crate::aggregate::Page::update).
     /// The `event_id` is the caller's pre-minted event id.
     #[must_use]
-    pub fn into_update_page(self, event_id: educore_core::ids::EventId) -> crate::aggregate::UpdatePage {
+    pub fn into_update_page(
+        self,
+        event_id: educore_core::ids::EventId,
+    ) -> crate::aggregate::UpdatePage {
         crate::aggregate::UpdatePage {
             title: self.title,
             description: self.description,

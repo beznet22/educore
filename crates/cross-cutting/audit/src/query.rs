@@ -419,11 +419,7 @@ pub trait AuditQuery: Send + Sync {
     /// - [`AuditError::NotFound`] if no audit row with that id
     ///   exists in the active tenant.
     /// - [`AuditError::Infrastructure`] for storage failures.
-    async fn get(
-        &self,
-        tenant: &TenantContext,
-        audit_id: AuditId,
-    ) -> Result<AuditRecord>;
+    async fn get(&self, tenant: &TenantContext, audit_id: AuditId) -> Result<AuditRecord>;
 
     /// Returns the full mutation history of a single aggregate,
     /// ordered by `occurred_at` ascending and paginated by

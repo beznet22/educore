@@ -34,11 +34,11 @@ use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
 
 use crate::value_objects::{
-    AcademicYearId, AdmitCardId, AdmitCardSettingId, ClassId, CustomResultSettingId, ExamAttendanceId,
-    ExamCode, ExamId, ExamMark, ExamName, ExamRoutinePageId, ExamScheduleId, ExamSettingId,
-    ExamSignatureId, ExamStepSkipId, ExamTypeId, FrontendExamResultId, FrontExamRoutineId,
-    FrontResultId, MarksGradeId, OnlineExamId, QuestionBankId, QuestionGroupId, QuestionLevelId,
-    SeatPlanId, SectionId, SubjectId, TeacherEvaluationId, TeacherRemarkId,
+    AcademicYearId, AdmitCardId, AdmitCardSettingId, ClassId, CustomResultSettingId,
+    ExamAttendanceId, ExamCode, ExamId, ExamMark, ExamName, ExamRoutinePageId, ExamScheduleId,
+    ExamSettingId, ExamSignatureId, ExamStepSkipId, ExamTypeId, FrontExamRoutineId, FrontResultId,
+    FrontendExamResultId, MarksGradeId, OnlineExamId, QuestionBankId, QuestionGroupId,
+    QuestionLevelId, SeatPlanId, SectionId, SubjectId, TeacherEvaluationId, TeacherRemarkId,
 };
 
 // =============================================================================

@@ -2753,7 +2753,8 @@ mod tests {
             <ItemReceiveUpdated as DomainEvent>::EVENT_TYPE,
             "facilities.item_receive.updated"
         );
-        let canc = ItemReceiveCancelled::new(id, "supplier return".to_owned(), Vec::new(), eid, corr, at);
+        let canc =
+            ItemReceiveCancelled::new(id, "supplier return".to_owned(), Vec::new(), eid, corr, at);
         assert_eq!(
             <ItemReceiveCancelled as DomainEvent>::EVENT_TYPE,
             "facilities.item_receive.cancelled"
@@ -2765,14 +2766,8 @@ mod tests {
     fn item_issue_status_updated_event_happy_path() {
         let (school, _, eid, corr, at) = fixture();
         let id = ItemIssueId::new(school, uuid::Uuid::now_v7());
-        let ev = ItemIssueStatusUpdated::new(
-            id,
-            IssueStatus::Issued,
-            IssueStatus::Lost,
-            eid,
-            corr,
-            at,
-        );
+        let ev =
+            ItemIssueStatusUpdated::new(id, IssueStatus::Issued, IssueStatus::Lost, eid, corr, at);
         assert_eq!(
             <ItemIssueStatusUpdated as DomainEvent>::EVENT_TYPE,
             "facilities.item_issue.status_updated"

@@ -42,9 +42,9 @@ use educore_events::domain_event::DomainEvent;
 use crate::entities::StudentDocumentId;
 use crate::value_objects::{
     AcademicYearId, CertificateId, ClassId, ClassRoutineId, ClassSectionId, ClassSubjectId,
-    GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
-    RegistrationFieldId, ResultStatus, SectionId, StudentCategoryId, StudentGroupId, StudentId,
-    StudentPromotionId, StudentStatus, SubjectId, SubjectType,
+    GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId, RegistrationFieldId,
+    ResultStatus, SectionId, StudentCategoryId, StudentGroupId, StudentId, StudentPromotionId,
+    StudentStatus, SubjectId, SubjectType,
 };
 
 // =============================================================================

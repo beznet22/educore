@@ -4810,7 +4810,6 @@ impl Capability {
             Self::PollingIn,
             Self::VideoSchedule,
             Self::WebhookOut,
-
         ]
     }
 
@@ -6255,8 +6254,7 @@ mod tests {
     }
 
     #[test]
-    fn assignment_status_byte_round_trip(
-    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    fn assignment_status_byte_round_trip() -> std::result::Result<(), Box<dyn std::error::Error>> {
         assert_eq!(AssignmentStatus::from_byte(1)?, AssignmentStatus::Granted);
         assert_eq!(AssignmentStatus::from_byte(0)?, AssignmentStatus::Revoked);
         assert!(AssignmentStatus::from_byte(7).is_err());
@@ -6272,8 +6270,7 @@ mod tests {
     }
 
     #[test]
-    fn permission_type_byte_round_trip(
-    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    fn permission_type_byte_round_trip() -> std::result::Result<(), Box<dyn std::error::Error>> {
         assert_eq!(PermissionType::from_byte(1)?, PermissionType::Menu);
         assert_eq!(PermissionType::from_byte(2)?, PermissionType::SubMenu);
         assert_eq!(PermissionType::from_byte(3)?, PermissionType::Action);
@@ -6282,8 +6279,7 @@ mod tests {
     }
 
     #[test]
-    fn two_factor_mode_byte_round_trip(
-    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    fn two_factor_mode_byte_round_trip() -> std::result::Result<(), Box<dyn std::error::Error>> {
         assert_eq!(TwoFactorMode::from_byte(1)?, TwoFactorMode::Required);
         assert_eq!(TwoFactorMode::from_byte(2)?, TwoFactorMode::Optional);
         assert_eq!(TwoFactorMode::from_byte(3)?, TwoFactorMode::Disabled);

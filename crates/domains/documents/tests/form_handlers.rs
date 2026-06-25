@@ -67,7 +67,13 @@ struct InMemoryFormRepo {
 #[async_trait]
 impl FormDownloadRepository for InMemoryFormRepo {
     async fn get(&self, id: FormDownloadId) -> educore_core::error::Result<Option<FormDownload>> {
-        Ok(self.rows.lock().unwrap().iter().find(|f| f.id == id).cloned())
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|f| f.id == id)
+            .cloned())
     }
 
     async fn list(
@@ -183,8 +189,14 @@ impl TestEnv {
         // `fresh_tenant()` so each test gets a writer bound to
         // its own tenant.
         let audit_writer = Arc::new(
-            AuditWriter::new(school, audit_log_dyn, bus_dyn, clock, RetentionPolicy::default())
-                .expect("test school_id is a valid (non-nil) UUID"),
+            AuditWriter::new(
+                school,
+                audit_log_dyn,
+                bus_dyn,
+                clock,
+                RetentionPolicy::default(),
+            )
+            .expect("test school_id is a valid (non-nil) UUID"),
         );
         let capability_check = Arc::new(InMemoryCapabilityCheck::new());
         let form_repo = Arc::new(InMemoryFormRepo::default());

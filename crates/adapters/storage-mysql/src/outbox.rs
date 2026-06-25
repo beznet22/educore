@@ -115,7 +115,11 @@ impl MysqlOutbox {
 #[async_trait]
 impl Outbox for MysqlOutbox {
     #[instrument(skip(self, envelope), fields(event_id = %envelope.event_id))]
-    async fn append(&self, _school_id: educore_core::ids::SchoolId, envelope: SerializedEnvelope) -> Result<()> {
+    async fn append(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        envelope: SerializedEnvelope,
+    ) -> Result<()> {
         // `enqueued_at` and `published_at` are handled at the DB
         // level (`UTC_TIMESTAMP(6)` and `NULL` respectively) per
         // the canonical DDL. `attempts` defaults to 0,
@@ -148,7 +152,11 @@ impl Outbox for MysqlOutbox {
     }
 
     #[instrument(skip(self))]
-    async fn pending(&self, _school_id: educore_core::ids::SchoolId, limit: u32) -> Result<Vec<SerializedEnvelope>> {
+    async fn pending(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        limit: u32,
+    ) -> Result<Vec<SerializedEnvelope>> {
         // School partition: the `WHERE school_id = ?` clause
         // scopes the drain to the adapter's bound `self.school`
         // (set at `MysqlStorageAdapter::connect` time).
@@ -177,9 +185,12 @@ impl Outbox for MysqlOutbox {
         Ok(envelopes)
     }
 
-
     #[instrument(skip(self, ids))]
-    async fn mark_published(&self, _school_id: educore_core::ids::SchoolId, ids: &[EventId]) -> Result<()> {
+    async fn mark_published(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        ids: &[EventId],
+    ) -> Result<()> {
         if ids.is_empty() {
             return Ok(());
         }

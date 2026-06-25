@@ -95,8 +95,7 @@ fn wallet_create_emits_event_and_initialises_aggregate() {
         user_id: tenant.actor_id,
         currency,
     };
-    let (wallet, created_event) =
-        create_wallet(create_cmd, &clock, &ids).expect("create_wallet");
+    let (wallet, created_event) = create_wallet(create_cmd, &clock, &ids).expect("create_wallet");
 
     // Aggregate fields are populated from the command.
     assert_eq!(wallet.school_id, school);
@@ -127,10 +126,7 @@ fn wallet_create_emits_event_and_initialises_aggregate() {
         <WalletCreated as DomainEvent>::EVENT_TYPE,
         "finance.wallet.created"
     );
-    assert_eq!(
-        <WalletCreated as DomainEvent>::AGGREGATE_TYPE,
-        "wallet"
-    );
+    assert_eq!(<WalletCreated as DomainEvent>::AGGREGATE_TYPE, "wallet");
     assert_eq!(<WalletCreated as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(created_event.aggregate_id(), wallet.id.as_uuid());
     assert_eq!(created_event.school_id(), school);
@@ -165,24 +161,22 @@ fn wallet_create_emits_event_and_initialises_aggregate() {
 #[test]
 fn wallet_create_with_invalid_currency_returns_validation_error() {
     // Length != 3 -> Validation.
-    let err_short = Currency::new("US")
-        .expect_err("2-char currency code must fail validation");
+    let err_short = Currency::new("US").expect_err("2-char currency code must fail validation");
     assert!(
         matches!(err_short, DomainError::Validation(_)),
         "expected Validation for short code, got {err_short:?}"
     );
 
     // Lowercase ASCII letters -> Validation.
-    let err_lower = Currency::new("usd")
-        .expect_err("lowercase currency code must fail validation");
+    let err_lower = Currency::new("usd").expect_err("lowercase currency code must fail validation");
     assert!(
         matches!(err_lower, DomainError::Validation(_)),
         "expected Validation for lowercase code, got {err_lower:?}"
     );
 
     // Non-alphabetic ASCII -> Validation.
-    let err_digit = Currency::new("U5D")
-        .expect_err("digit-bearing currency code must fail validation");
+    let err_digit =
+        Currency::new("U5D").expect_err("digit-bearing currency code must fail validation");
     assert!(
         matches!(err_digit, DomainError::Validation(_)),
         "expected Validation for digit-bearing code, got {err_digit:?}"

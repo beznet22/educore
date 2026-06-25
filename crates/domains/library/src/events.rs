@@ -30,9 +30,9 @@ use crate::value_objects::MemberId;
 use crate::value_objects::{
     Author, BookAcquisitionId, BookCatalogEntryId, BookCategoryId, BookId, BookIssueFineId,
     BookIssueId, BookIssueRenewalId, BookNumber, BookReturnId, BookTitle, CategoryName, DueDate,
-    Edition, FineAmount, FineId, FinePerDay, FineReason, GivenDate, Isbn, IssueNote,
-    IssueQuantity, LibraryMemberId, LibraryMemberNoteId, RackNumber, ReturnDate, RoleId,
-    StockAdjustmentReason, StockCopies, SubjectId,
+    Edition, FineAmount, FineId, FinePerDay, FineReason, GivenDate, Isbn, IssueNote, IssueQuantity,
+    LibraryMemberId, LibraryMemberNoteId, RackNumber, ReturnDate, RoleId, StockAdjustmentReason,
+    StockCopies, SubjectId,
 };
 
 // =============================================================================

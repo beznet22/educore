@@ -46,9 +46,7 @@ pub enum DomainError {
     /// (ADR-014 § 4). The stored outcome reference is returned so
     /// callers can fetch the canonical prior result rather than
     /// re-running the side effects.
-    #[error(
-        "idempotency conflict: key={key} existing_outcome_ref={existing_outcome_ref}"
-    )]
+    #[error("idempotency conflict: key={key} existing_outcome_ref={existing_outcome_ref}")]
     IdempotencyConflict {
         /// The idempotency key the client replayed.
         key: String,

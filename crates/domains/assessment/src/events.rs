@@ -33,12 +33,11 @@ use educore_academic::value_objects::PassMark;
 use crate::value_objects::{
     AcademicYearId, AdmitCardId, AdmitCardSettingId, ClassId, CustomResultSettingId,
     CustomTemporaryResultId, ExamAttendanceId, ExamCode, ExamId, ExamMark, ExamName,
-    ExamRoutinePageId, ExamScheduleId, ExamSettingId, ExamSetupId, ExamSignatureId,
-    ExamStepSkipId, ExamTypeId, FrontendExamResultId, FrontExamRoutineId, FrontResultId,
-    MarkStoreId, MarksGradeId, OnlineExamId, OnlineExamMarkId, OnlineExamQuestionId,
-    QuestionBankId, QuestionGroupId, QuestionLevelId, QuestionMuOptionId, ResultSettingId,
-    SeatPlanId, SectionId, StudentTakeOnlineExamId, SubjectId, TeacherEvaluationId,
-    TeacherRemarkId, TemporaryMeritListId,
+    ExamRoutinePageId, ExamScheduleId, ExamSettingId, ExamSetupId, ExamSignatureId, ExamStepSkipId,
+    ExamTypeId, FrontExamRoutineId, FrontResultId, FrontendExamResultId, MarkStoreId, MarksGradeId,
+    OnlineExamId, OnlineExamMarkId, OnlineExamQuestionId, QuestionBankId, QuestionGroupId,
+    QuestionLevelId, QuestionMuOptionId, ResultSettingId, SeatPlanId, SectionId,
+    StudentTakeOnlineExamId, SubjectId, TeacherEvaluationId, TeacherRemarkId, TemporaryMeritListId,
 };
 
 // =============================================================================

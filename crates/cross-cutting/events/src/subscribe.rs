@@ -278,11 +278,7 @@ impl SubscriberRegistry {
     /// Registrations are dispatched in the order they were
     /// added. Callers that need a deterministic fan-out
     /// (e.g. tests) should register in the desired order.
-    pub fn register(
-        &mut self,
-        filter: SubscriptionFilter,
-        subscriber: Arc<dyn Subscriber>,
-    ) {
+    pub fn register(&mut self, filter: SubscriptionFilter, subscriber: Arc<dyn Subscriber>) {
         self.registrations.push(Registration { filter, subscriber });
     }
 
@@ -438,7 +434,10 @@ mod tests {
         let env = envelope("documents.form_download.uploaded", "form_download");
         let f = SubscriptionFilter::on_event("documents.form_download.uploaded");
         assert!(f.matches(&env));
-        assert!(!f.matches(&envelope("documents.form_download.updated", "form_download")));
+        assert!(!f.matches(&envelope(
+            "documents.form_download.updated",
+            "form_download"
+        )));
         assert!(!f.matches(&envelope("academic.student.admitted", "student")));
 
         // School-pinned filter rejects other schools.

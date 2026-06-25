@@ -106,9 +106,7 @@ pub struct AuditLogEntry {
     // consume this type at the row boundary and the lint
     // cannot distinguish a transport-layer use from a
     // domain-data use).
-    pub metadata:
-        serde_json
-        ::Value,
+    pub metadata: serde_json::Value,
 }
 
 impl AuditLogEntry {
@@ -134,9 +132,7 @@ impl AuditLogEntry {
             correlation_id,
             occurred_at: Timestamp::now(),
             active_status: ActiveStatus::Active,
-            metadata:
-                serde_json
-                ::Value::Null,
+            metadata: serde_json::Value::Null,
         }
     }
 }

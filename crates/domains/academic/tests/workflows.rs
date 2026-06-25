@@ -77,11 +77,7 @@ impl UniquenessChecker for TestUniqueness {
             .unwrap()
             .contains(admission_no)
     }
-    fn student_email_exists(
-        &self,
-        _school: educore_core::ids::SchoolId,
-        email: &str,
-    ) -> bool {
+    fn student_email_exists(&self, _school: educore_core::ids::SchoolId, email: &str) -> bool {
         self.emails.lock().unwrap().contains(email)
     }
 }
@@ -155,7 +151,10 @@ fn admit_student_happy_path_emits_student_admitted() {
         admit_student(cmd, &clock, &g, &uniqueness).unwrap();
 
     assert_eq!(student.status, StudentStatus::Active);
-    assert_eq!(<StudentAdmitted as DomainEvent>::EVENT_TYPE, "academic.student.admitted");
+    assert_eq!(
+        <StudentAdmitted as DomainEvent>::EVENT_TYPE,
+        "academic.student.admitted"
+    );
     assert_eq!(student.admission_no, "ADM-2026-001");
     assert_eq!(student.first_name, "Ada");
     assert_eq!(student.last_name, "Lovelace");
@@ -269,7 +268,10 @@ fn suspend_student_happy_path_emits_student_suspended() {
         expected_return: Some(naive(2026, 12, 1)),
     };
     let event = suspend_student(&mut student, cmd, &clock, &g).unwrap();
-    assert_eq!(<StudentSuspended as DomainEvent>::EVENT_TYPE, "academic.student.suspended");
+    assert_eq!(
+        <StudentSuspended as DomainEvent>::EVENT_TYPE,
+        "academic.student.suspended"
+    );
     assert_eq!(event.student_id, student.id);
 }
 
@@ -349,7 +351,10 @@ fn withdraw_student_happy_path_emits_student_withdrawn() {
         note: Some("Graduating cohort".to_owned()),
     };
     let event: StudentWithdrawn = withdraw_student(&mut student, cmd, &clock, &g).unwrap();
-    assert_eq!(<StudentWithdrawn as DomainEvent>::EVENT_TYPE, "academic.student.withdrawn");
+    assert_eq!(
+        <StudentWithdrawn as DomainEvent>::EVENT_TYPE,
+        "academic.student.withdrawn"
+    );
     assert_eq!(event.student_id, student.id);
 }
 
@@ -438,9 +443,11 @@ fn transfer_student_happy_path_emits_student_transferred() {
         reason: "Parent job relocation".to_owned(),
         effective_from: naive(2026, 9, 15),
     };
-    let event: StudentTransferred =
-        transfer_student(&mut student, cmd, &clock, &g).unwrap();
-    assert_eq!(<StudentTransferred as DomainEvent>::EVENT_TYPE, "academic.student.transferred");
+    let event: StudentTransferred = transfer_student(&mut student, cmd, &clock, &g).unwrap();
+    assert_eq!(
+        <StudentTransferred as DomainEvent>::EVENT_TYPE,
+        "academic.student.transferred"
+    );
     assert_eq!(event.destination_school_id, destination);
 }
 
@@ -529,7 +536,10 @@ fn promote_student_pass_status_emits_student_promoted() {
         result_status: ResultStatus::Pass,
     };
     let event: StudentPromoted = promote_student(&student, cmd, &clock, &g).unwrap();
-    assert_eq!(<StudentPromoted as DomainEvent>::EVENT_TYPE, "academic.student.promoted");
+    assert_eq!(
+        <StudentPromoted as DomainEvent>::EVENT_TYPE,
+        "academic.student.promoted"
+    );
     assert_eq!(event.to_class_id, to_class);
     assert_eq!(event.to_section_id, to_section);
     assert_eq!(event.to_roll_no, "12");
@@ -576,7 +586,10 @@ fn promote_student_manual_status_emits_event() {
     };
     let event: StudentPromoted = promote_student(&student, cmd, &clock, &g).unwrap();
     assert_eq!(event.result_status, ResultStatus::Manual);
-    assert_eq!(<StudentPromoted as DomainEvent>::EVENT_TYPE, "academic.student.promoted");
+    assert_eq!(
+        <StudentPromoted as DomainEvent>::EVENT_TYPE,
+        "academic.student.promoted"
+    );
 }
 
 // =============================================================================
@@ -615,7 +628,10 @@ fn graduate_student_happy_path_emits_student_graduated() {
         graduation_date: naive(2026, 6, 30),
     };
     let event: StudentGraduated = graduate_student(&mut student, cmd, &clock, &g).unwrap();
-    assert_eq!(<StudentGraduated as DomainEvent>::EVENT_TYPE, "academic.student.graduated");
+    assert_eq!(
+        <StudentGraduated as DomainEvent>::EVENT_TYPE,
+        "academic.student.graduated"
+    );
 }
 
 // =============================================================================
@@ -636,7 +652,10 @@ fn create_class_happy_path_emits_class_created() {
         pass_mark: 35.0,
     };
     let (_, event): (Class, ClassCreated) = create_class(cmd, &clock, &g).unwrap();
-    assert_eq!(<ClassCreated as DomainEvent>::EVENT_TYPE, "academic.class.created");
+    assert_eq!(
+        <ClassCreated as DomainEvent>::EVENT_TYPE,
+        "academic.class.created"
+    );
 }
 
 #[test]
@@ -680,7 +699,10 @@ fn update_class_happy_path_emits_class_updated() {
         pass_mark: Some(40.0),
     };
     let event: ClassUpdated = update_class(&mut class, cmd, &clock, &g).unwrap();
-    assert_eq!(<ClassUpdated as DomainEvent>::EVENT_TYPE, "academic.class.updated");
+    assert_eq!(
+        <ClassUpdated as DomainEvent>::EVENT_TYPE,
+        "academic.class.updated"
+    );
     assert_eq!(class.pass_mark.as_f32(), 40.0);
 }
 
@@ -708,7 +730,10 @@ fn delete_class_happy_path_emits_class_deleted() {
     };
     let mut class = class;
     let event: ClassDeleted = delete_class(&mut class, cmd, &clock, &g).unwrap();
-    assert_eq!(<ClassDeleted as DomainEvent>::EVENT_TYPE, "academic.class.deleted");
+    assert_eq!(
+        <ClassDeleted as DomainEvent>::EVENT_TYPE,
+        "academic.class.deleted"
+    );
 }
 
 // =============================================================================
@@ -726,7 +751,10 @@ fn create_section_happy_path_emits_section_created() {
         section_name: "A".to_owned(),
     };
     let (_, event): (Section, SectionCreated) = create_section(cmd, &clock, &g).unwrap();
-    assert_eq!(<SectionCreated as DomainEvent>::EVENT_TYPE, "academic.section.created");
+    assert_eq!(
+        <SectionCreated as DomainEvent>::EVENT_TYPE,
+        "academic.section.created"
+    );
 }
 
 // =============================================================================
@@ -747,7 +775,10 @@ fn create_subject_happy_path_emits_subject_created() {
         pass_mark: 35.0,
     };
     let (_, event): (Subject, SubjectCreated) = create_subject(cmd, &clock, &g).unwrap();
-    assert_eq!(<SubjectCreated as DomainEvent>::EVENT_TYPE, "academic.subject.created");
+    assert_eq!(
+        <SubjectCreated as DomainEvent>::EVENT_TYPE,
+        "academic.subject.created"
+    );
 }
 
 #[test]
@@ -777,7 +808,10 @@ fn update_subject_happy_path_emits_subject_updated() {
         pass_mark: Some(40.0),
     };
     let event: SubjectUpdated = update_subject(&mut subject, cmd, &clock, &g).unwrap();
-    assert_eq!(<SubjectUpdated as DomainEvent>::EVENT_TYPE, "academic.subject.updated");
+    assert_eq!(
+        <SubjectUpdated as DomainEvent>::EVENT_TYPE,
+        "academic.subject.updated"
+    );
 }
 
 #[test]
@@ -803,7 +837,10 @@ fn delete_subject_happy_path_emits_subject_deleted() {
         subject_id: subject.id,
     };
     let event: SubjectDeleted = delete_subject(&mut subject, cmd, &clock, &g).unwrap();
-    assert_eq!(<SubjectDeleted as DomainEvent>::EVENT_TYPE, "academic.subject.deleted");
+    assert_eq!(
+        <SubjectDeleted as DomainEvent>::EVENT_TYPE,
+        "academic.subject.deleted"
+    );
 }
 
 // =============================================================================

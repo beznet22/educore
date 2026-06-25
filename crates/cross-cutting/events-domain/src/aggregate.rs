@@ -825,8 +825,8 @@ mod tests {
     }
 
     #[test]
-    fn calendar_event_validates_date_range(
-    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    fn calendar_event_validates_date_range() -> std::result::Result<(), Box<dyn std::error::Error>>
+    {
         let school = SchoolId::from_uuid(Uuid::nil());
         let id = CalendarEventId::new(school, Uuid::nil());
         let cmd = NewCalendarEvent {
@@ -851,8 +851,8 @@ mod tests {
     }
 
     #[test]
-    fn calendar_event_with_rrule_constructs(
-    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    fn calendar_event_with_rrule_constructs() -> std::result::Result<(), Box<dyn std::error::Error>>
+    {
         let school = SchoolId::from_uuid(Uuid::nil());
         let id = CalendarEventId::new(school, Uuid::nil());
         let cmd = NewCalendarEvent {
@@ -932,8 +932,7 @@ mod tests {
     }
 
     #[test]
-    fn incident_resolve_immutability(
-    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    fn incident_resolve_immutability() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let school = SchoolId::from_uuid(Uuid::nil());
         let id = IncidentId::new(school, Uuid::nil());
         let cmd = NewIncident {

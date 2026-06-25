@@ -152,11 +152,7 @@ pub trait Outbox: Send + Sync {
     /// `pending(limit)` / `pending_for_school(school_id,
     /// limit)` pair — the unified API surfaces the tenant
     /// anchor at the port layer so callers cannot forget it.
-    async fn pending(
-        &self,
-        school_id: SchoolId,
-        limit: u32,
-    ) -> Result<Vec<SerializedEnvelope>>;
+    async fn pending(&self, school_id: SchoolId, limit: u32) -> Result<Vec<SerializedEnvelope>>;
 
     /// Marks the given envelopes as published. Idempotent:
     /// calling twice with the same id is a no-op.
@@ -198,8 +194,7 @@ pub trait Outbox: Send + Sync {
         // length. Adapters with efficient `COUNT(*)` support may
         // override.
         let n = self.pending(school_id, u32::MAX).await?.len();
-        u64::try_from(n)
-            .map_err(|_| DomainError::validation("pending count exceeds u64::MAX"))
+        u64::try_from(n).map_err(|_| DomainError::validation("pending count exceeds u64::MAX"))
     }
 }
 

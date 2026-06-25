@@ -181,15 +181,16 @@ pub mod runner {
     ) {
         let spec_file = domain_path.join("aggregates.md");
         let src_file = code_root.join("src").join("aggregate.rs");
-        let (Ok(spec), Ok(src)) = (fs::read_to_string(&spec_file), fs::read_to_string(&src_file)) else {
+        let (Ok(spec), Ok(src)) = (
+            fs::read_to_string(&spec_file),
+            fs::read_to_string(&src_file),
+        ) else {
             return;
         };
         for agg in extract_h2_headings(&spec) {
             // An aggregate may be a struct or an enum (e.g. domain
             // state machines like `PageStatusAction`). Accept either.
-            if !item_defined(&src, "struct", &agg)
-                && !item_defined(&src, "enum", &agg)
-            {
+            if !item_defined(&src, "struct", &agg) && !item_defined(&src, "enum", &agg) {
                 report.violations.push(missing_spec_item(
                     repo_root,
                     &spec_file,
@@ -211,7 +212,10 @@ pub mod runner {
     ) {
         let spec_file = domain_path.join("commands.md");
         let src_file = code_root.join("src").join("commands.rs");
-        let (Ok(spec), Ok(src)) = (fs::read_to_string(&spec_file), fs::read_to_string(&src_file)) else {
+        let (Ok(spec), Ok(src)) = (
+            fs::read_to_string(&spec_file),
+            fs::read_to_string(&src_file),
+        ) else {
             return;
         };
         for cmd in extract_struct_decls_after_first_heading(&spec, "Command") {
@@ -238,7 +242,10 @@ pub mod runner {
     ) {
         let spec_file = domain_path.join("events.md");
         let src_file = code_root.join("src").join("events.rs");
-        let (Ok(spec), Ok(src)) = (fs::read_to_string(&spec_file), fs::read_to_string(&src_file)) else {
+        let (Ok(spec), Ok(src)) = (
+            fs::read_to_string(&spec_file),
+            fs::read_to_string(&src_file),
+        ) else {
             return;
         };
         for evt in extract_event_struct_decls(&spec) {
@@ -268,7 +275,10 @@ pub mod runner {
     ) -> Violation {
         Violation {
             check: check.to_string(),
-            file: spec_file.strip_prefix(repo_root).unwrap_or(spec_file).to_path_buf(),
+            file: spec_file
+                .strip_prefix(repo_root)
+                .unwrap_or(spec_file)
+                .to_path_buf(),
             line: None,
             message: format!(
                 "{kind} `{name}` declared in spec but missing `{expected_signature}` in {}",
@@ -564,11 +574,7 @@ pub mod runner {
                     // type as undocumented.
                     for (kind, name) in extract_public_types(&src_contents) {
                         report.violations.push(undocumented_public_item(
-                            repo_root,
-                            &src_file,
-                            &spec_file,
-                            kind,
-                            &name,
+                            repo_root, &src_file, &spec_file, kind, &name,
                         ));
                     }
                     continue;
@@ -589,11 +595,7 @@ pub mod runner {
                         continue;
                     }
                     report.violations.push(undocumented_public_item(
-                        repo_root,
-                        &src_file,
-                        &spec_file,
-                        kind,
-                        &name,
+                        repo_root, &src_file, &spec_file, kind, &name,
                     ));
                 }
             }
@@ -664,11 +666,7 @@ pub mod runner {
             let name = &after_kind[..name_end];
             // Names start with an uppercase letter and contain
             // only identifier characters.
-            if !name
-                .chars()
-                .next()
-                .is_some_and(|c| c.is_ascii_uppercase())
-            {
+            if !name.chars().next().is_some_and(|c| c.is_ascii_uppercase()) {
                 continue;
             }
             if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
@@ -1510,18 +1508,9 @@ pub mod runner {
         // Step 2: forbidden tier matrix. `None` means no
         // restrictions for that tier.
         let forbidden_for_tier: &[(&str, &[&str])] = &[
-            (
-                "domains",
-                &["adapters", "tools"],
-            ),
-            (
-                "cross-cutting",
-                &["domains", "adapters", "tools"],
-            ),
-            (
-                "infra",
-                &["cross-cutting", "domains", "adapters", "tools"],
-            ),
+            ("domains", &["adapters", "tools"]),
+            ("cross-cutting", &["domains", "adapters", "tools"]),
+            ("infra", &["cross-cutting", "domains", "adapters", "tools"]),
             ("adapters", &["tools"]),
         ];
 
@@ -1606,8 +1595,8 @@ pub mod runner {
         // are exempt from these (e.g. ports and adapters may
         // legitimately use `serde_json::Value` for transport-layer
         // concerns).
-        let is_domain_code = rel_str.starts_with("crates/domains/")
-            || rel_str.starts_with("crates/infra/");
+        let is_domain_code =
+            rel_str.starts_with("crates/domains/") || rel_str.starts_with("crates/infra/");
         // Find `#[cfg(test)]` attributes. The test block is the
         // nearest `mod tests { ... }` opening that follows within
         // a small window (up to 10 lines, to accommodate the
@@ -1696,8 +1685,9 @@ pub mod runner {
                         check: "anti_pattern:serde_json_value".to_string(),
                         file: rel.to_path_buf(),
                         line: Some(idx + 1),
-                        message: "forbidden `serde_json::Value` in domain code (use typed wrappers)"
-                            .to_string(),
+                        message:
+                            "forbidden `serde_json::Value` in domain code (use typed wrappers)"
+                                .to_string(),
                     });
                 }
                 if line.contains("HashMap<String,") || line.contains("HashMap < String ,") {
@@ -1850,7 +1840,11 @@ mod tests {
         assert_eq!(r.violations.len(), 1, "violations = {:?}", r.violations);
         let v = &r.violations[0];
         assert_eq!(v.check, "spec_to_code:missing_command");
-        assert!(v.message.contains("DeleteWidget"), "message = {}", v.message);
+        assert!(
+            v.message.contains("DeleteWidget"),
+            "message = {}",
+            v.message
+        );
         assert!(
             v.message.contains("DeleteWidgetCommand"),
             "message = {}",
@@ -1874,11 +1868,7 @@ mod tests {
         .unwrap();
         let code_dir = tmp.0.join("crates/domains/test/src");
         std::fs::create_dir_all(&code_dir).unwrap();
-        std::fs::write(
-            code_dir.join("events.rs"),
-            "pub struct WidgetCreated {}\n",
-        )
-        .unwrap();
+        std::fs::write(code_dir.join("events.rs"), "pub struct WidgetCreated {}\n").unwrap();
 
         let r = run(&tmp.0);
         assert_eq!(r.violations.len(), 1, "violations = {:?}", r.violations);
@@ -1954,8 +1944,9 @@ mod tests {
             "pub struct Widget { value: u64 }\nimpl Widget { pub fn value(&self) -> u32 { self.value as u32 } }\n",
         );
         assert!(
-            v.iter()
-                .any(|x| x.check == "anti_pattern:as_u32" || x.check.starts_with("anti_pattern:as_")),
+            v.iter().any(
+                |x| x.check == "anti_pattern:as_u32" || x.check.starts_with("anti_pattern:as_")
+            ),
             "expected `as u32` violation, got: {:#?}",
             v
         );
@@ -1968,8 +1959,7 @@ mod tests {
             "pub struct Widget { payload: serde_json::Value }\n",
         );
         assert!(
-            v.iter()
-                .any(|x| x.check == "anti_pattern:serde_json_value"),
+            v.iter().any(|x| x.check == "anti_pattern:serde_json_value"),
             "expected `serde_json::Value` violation, got: {:#?}",
             v
         );
@@ -1982,8 +1972,7 @@ mod tests {
             "use std::collections::HashMap;\npub struct Widget { fields: HashMap<String, String> }\n",
         );
         assert!(
-            v.iter()
-                .any(|x| x.check == "anti_pattern:hashmap_string"),
+            v.iter().any(|x| x.check == "anti_pattern:hashmap_string"),
             "expected `HashMap<String,` violation, got: {:#?}",
             v
         );
@@ -2030,11 +2019,7 @@ mod tests {
 
     /// Helper: write a `commands.rs`-equivalent fixture with a
     /// matching `commands.md` spec, and run the lint.
-    fn scan_code_to_spec_commands(
-        label: &str,
-        spec_md: &str,
-        commands_rs: &str,
-    ) -> Vec<Violation> {
+    fn scan_code_to_spec_commands(label: &str, spec_md: &str, commands_rs: &str) -> Vec<Violation> {
         let tmp = fresh_tempdir(label);
         let spec_dir = tmp.0.join("docs/specs/test");
         std::fs::create_dir_all(&spec_dir).unwrap();
@@ -2078,8 +2063,9 @@ mod tests {
         let code = "pub struct CreateWidgetCommand {}\npub struct DeleteWidgetCommand {}\n";
         let v = scan_code_to_spec_commands("code-to-spec-undocumented", spec, code);
         assert!(
-            v.iter().any(|x| x.check == "code_to_spec:undocumented_public_item"
-                && x.message.contains("DeleteWidgetCommand")),
+            v.iter()
+                .any(|x| x.check == "code_to_spec:undocumented_public_item"
+                    && x.message.contains("DeleteWidgetCommand")),
             "expected undocumented violation for `DeleteWidgetCommand`, got: {:#?}",
             v
         );
@@ -2087,8 +2073,9 @@ mod tests {
         // matcher strips the `Command` suffix and finds
         // `pub struct CreateWidgetCommand` in the spec.
         assert!(
-            !v.iter().any(|x| x.check == "code_to_spec:undocumented_public_item"
-                && x.message.contains("CreateWidgetCommand")),
+            !v.iter()
+                .any(|x| x.check == "code_to_spec:undocumented_public_item"
+                    && x.message.contains("CreateWidgetCommand")),
             "did not expect undocumented violation for `CreateWidgetCommand`, got: {:#?}",
             v
         );
@@ -2102,7 +2089,8 @@ mod tests {
         let code = "pub struct CreateWidgetCommand {}\n";
         let v = scan_code_to_spec_commands("code-to-spec-clean", spec, code);
         assert!(
-            !v.iter().any(|x| x.check == "code_to_spec:undocumented_public_item"),
+            !v.iter()
+                .any(|x| x.check == "code_to_spec:undocumented_public_item"),
             "expected NO undocumented violations when spec and code match, got: {:#?}",
             v
         );
@@ -2204,7 +2192,10 @@ mod tests {
 pub struct Widget { _phantom: () }
 ";
         let v = scan_parity("parity-missing-macro", aggregate_rs, tables_md);
-        let parity: Vec<_> = v.iter().filter(|x| x.check.starts_with("parity:")).collect();
+        let parity: Vec<_> = v
+            .iter()
+            .filter(|x| x.check.starts_with("parity:"))
+            .collect();
         assert_eq!(parity.len(), 1, "violations = {:#?}", parity);
         let only = parity[0];
         assert_eq!(only.check, "parity:missing_macro");
@@ -2238,7 +2229,10 @@ pub struct Widget { _phantom: () }
 pub struct Orphan { _phantom: () }
 ";
         let v = scan_parity("parity-missing-spec-row", aggregate_rs, tables_md);
-        let parity: Vec<_> = v.iter().filter(|x| x.check.starts_with("parity:")).collect();
+        let parity: Vec<_> = v
+            .iter()
+            .filter(|x| x.check.starts_with("parity:"))
+            .collect();
         assert_eq!(parity.len(), 1, "violations = {:#?}", parity);
         let only = parity[0];
         assert_eq!(only.check, "parity:missing_spec_row");
@@ -2334,7 +2328,9 @@ tests = \"crates/domains/test/tests/referenced.rs\"
             only.message
         );
         assert!(
-            !matrix.iter().any(|x| x.message.contains("missing_tests_path")),
+            !matrix
+                .iter()
+                .any(|x| x.message.contains("missing_tests_path")),
             "did not expect missing_tests_path violation, got: {:#?}",
             matrix
         );

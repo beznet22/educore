@@ -32,10 +32,10 @@ use educore_academic::value_objects::PassMark;
 use crate::value_objects::{
     AcademicYearId, AdmitCardId, AllExamWisePositionId, ClassId, ExamAttendanceChildId, ExamCode,
     ExamId, ExamMark, ExamName, ExamScheduleId, ExamScheduleSubjectId, ExamTypeId,
-    ExamWisePositionId, MarkStoreEntryId, MarksRegisterChildId, MeritPositionId,
-    OnlineExamMarkId, OnlineExamQuestionId, OnlineExamStudentAnswerMarkingId,
-    QuestionAssignmentId, QuestionMuOptionId, SeatPlanChildId, SeatPlanId, SeatPlanSettingId,
-    SectionId, StaffId, SubjectId,
+    ExamWisePositionId, MarkStoreEntryId, MarksRegisterChildId, MeritPositionId, OnlineExamMarkId,
+    OnlineExamQuestionId, OnlineExamStudentAnswerMarkingId, QuestionAssignmentId,
+    QuestionMuOptionId, SeatPlanChildId, SeatPlanId, SeatPlanSettingId, SectionId, StaffId,
+    SubjectId,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -881,35 +881,78 @@ pub struct ExamAttendance {
 // heading text in spec; `SeatPlanSetting` — typed id not yet added.
 // =============================================================================
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ExamType { pub id: ExamTypeId, pub school_id: SchoolId }
+pub struct ExamType {
+    pub id: ExamTypeId,
+    pub school_id: SchoolId,
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ExamScheduleSubject { pub id: ExamScheduleSubjectId, pub school_id: SchoolId }
+pub struct ExamScheduleSubject {
+    pub id: ExamScheduleSubjectId,
+    pub school_id: SchoolId,
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct MarksRegisterChild { pub id: MarksRegisterChildId, pub school_id: SchoolId }
+pub struct MarksRegisterChild {
+    pub id: MarksRegisterChildId,
+    pub school_id: SchoolId,
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct MarkStoreEntry { pub id: MarkStoreEntryId, pub school_id: SchoolId }
+pub struct MarkStoreEntry {
+    pub id: MarkStoreEntryId,
+    pub school_id: SchoolId,
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct QuestionAssignment { pub id: QuestionAssignmentId, pub school_id: SchoolId }
+pub struct QuestionAssignment {
+    pub id: QuestionAssignmentId,
+    pub school_id: SchoolId,
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct OnlineExamQuestion { pub id: OnlineExamQuestionId, pub school_id: SchoolId }
+pub struct OnlineExamQuestion {
+    pub id: OnlineExamQuestionId,
+    pub school_id: SchoolId,
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct QuestionMuOption { pub id: QuestionMuOptionId, pub school_id: SchoolId }
+pub struct QuestionMuOption {
+    pub id: QuestionMuOptionId,
+    pub school_id: SchoolId,
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct OnlineExamMark { pub id: OnlineExamMarkId, pub school_id: SchoolId }
+pub struct OnlineExamMark {
+    pub id: OnlineExamMarkId,
+    pub school_id: SchoolId,
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct OnlineExamStudentAnswerMarking { pub id: OnlineExamStudentAnswerMarkingId, pub school_id: SchoolId }
+pub struct OnlineExamStudentAnswerMarking {
+    pub id: OnlineExamStudentAnswerMarkingId,
+    pub school_id: SchoolId,
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SeatPlanChild { pub id: SeatPlanChildId, pub school_id: SchoolId }
+pub struct SeatPlanChild {
+    pub id: SeatPlanChildId,
+    pub school_id: SchoolId,
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct MeritPosition { pub id: MeritPositionId, pub school_id: SchoolId }
+pub struct MeritPosition {
+    pub id: MeritPositionId,
+    pub school_id: SchoolId,
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ExamWisePosition { pub id: ExamWisePositionId, pub school_id: SchoolId }
+pub struct ExamWisePosition {
+    pub id: ExamWisePositionId,
+    pub school_id: SchoolId,
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AllExamWisePosition { pub id: AllExamWisePositionId, pub school_id: SchoolId }
+pub struct AllExamWisePosition {
+    pub id: AllExamWisePositionId,
+    pub school_id: SchoolId,
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ExamAttendanceChild { pub id: ExamAttendanceChildId, pub school_id: SchoolId }
+pub struct ExamAttendanceChild {
+    pub id: ExamAttendanceChildId,
+    pub school_id: SchoolId,
+}
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SeatPlanSetting { pub id: SeatPlanSettingId, pub school_id: SchoolId }
-
+pub struct SeatPlanSetting {
+    pub id: SeatPlanSettingId,
+    pub school_id: SchoolId,
+}

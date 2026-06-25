@@ -64,12 +64,7 @@ use educore_events::domain_event::DomainEvent;
 struct TestUniqueness;
 
 impl AttendanceUniquenessChecker for TestUniqueness {
-    fn student_day_exists(
-        &self,
-        _school: SchoolId,
-        _student: StudentId,
-        _date: NaiveDate,
-    ) -> bool {
+    fn student_day_exists(&self, _school: SchoolId, _student: StudentId, _date: NaiveDate) -> bool {
         false
     }
     fn subject_day_exists(
@@ -81,12 +76,7 @@ impl AttendanceUniquenessChecker for TestUniqueness {
     ) -> bool {
         false
     }
-    fn staff_day_exists(
-        &self,
-        _school: SchoolId,
-        _staff: StaffId,
-        _date: NaiveDate,
-    ) -> bool {
+    fn staff_day_exists(&self, _school: SchoolId, _staff: StaffId, _date: NaiveDate) -> bool {
         false
     }
     fn import_source_date_exists(
@@ -109,7 +99,6 @@ fn _unused_imports_anchors() {
     let _m: Option<Mutex<(SchoolId, StudentId, SubjectId, NaiveDate)>> = None;
     let _s: Option<StaffId> = None;
 }
-
 
 /// A fresh `TenantContext` for a `SchoolAdmin` acting on a
 /// freshly-minted school. Returns the context plus the
@@ -229,10 +218,7 @@ fn subject_attendance_create_emits_marked_event_v1() {
         <SubjectAttendanceMarked as DomainEvent>::AGGREGATE_TYPE,
         "subject_attendance"
     );
-    assert_eq!(
-        <SubjectAttendanceMarked as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<SubjectAttendanceMarked as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(marked_event.aggregate_id(), agg.id.as_uuid());
     assert_eq!(marked_event.school_id(), school);
     assert_eq!(marked_event.subject_attendance_id, agg.id);
