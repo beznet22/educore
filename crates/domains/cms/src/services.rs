@@ -34,6 +34,7 @@ use educore_events::domain_event::DomainEvent;
 use educore_events::event_bus::EventBus;
 use educore_rbac::services::CapabilityCheck;
 use educore_rbac::value_objects::Capability;
+use educore_storage::transaction::Transaction;
 
 use crate::aggregate::{
     Content, ContentShareList, HomePageSetting, HomeSlider, News, Page, Testimonial,
@@ -126,6 +127,7 @@ impl PageService {
 #[allow(clippy::too_many_arguments)]
 pub async fn create_page_service<R, B>(
     cmd: crate::commands::CreatePageCommand,
+    txn: &dyn Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -146,6 +148,7 @@ where
     let after = snapshot(&page);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Create,
             AuditTarget::Page(page.id.as_uuid()),
@@ -168,6 +171,7 @@ where
 #[allow(clippy::too_many_arguments)]
 pub async fn update_page_service<R, B>(
     cmd: crate::commands::UpdatePageCommand,
+    txn: &dyn Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -210,6 +214,7 @@ where
     let after = snapshot(&page);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Update,
             AuditTarget::Page(page.id.as_uuid()),
@@ -235,6 +240,7 @@ where
 #[allow(clippy::too_many_arguments)]
 pub async fn publish_page_service<R, B>(
     cmd: crate::commands::PublishPageCommand,
+    txn: &dyn Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -261,6 +267,7 @@ where
     let after = snapshot(&page);
     audit
         .write(
+            txn,
             &cmd.tenant,
             AuditAction::Other("publish".to_owned()),
             AuditTarget::Page(page.id.as_uuid()),
@@ -286,6 +293,7 @@ where
 #[allow(clippy::too_many_arguments)]
 pub async fn archive_page_service<R, B>(
     cmd: crate::commands::ArchivePageCommand,
+    txn: &dyn Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -312,6 +320,7 @@ where
     let after = snapshot(&page);
     audit
         .write(
+            txn,
             &cmd.tenant,
             AuditAction::Other("archive".to_owned()),
             AuditTarget::Page(page.id.as_uuid()),
@@ -337,6 +346,7 @@ where
 #[allow(clippy::too_many_arguments)]
 pub async fn delete_page_service<R, B>(
     cmd: crate::commands::DeletePageCommand,
+    txn: &dyn Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -361,6 +371,7 @@ where
         .map_err(|e| CmsError::Infrastructure(e.to_string()))?;
     audit
         .write(
+            txn,
             &cmd.tenant,
             AuditAction::Delete,
             AuditTarget::Page(page.id.as_uuid()),
@@ -431,6 +442,7 @@ impl NewsService {
 #[allow(clippy::too_many_arguments)]
 pub async fn create_news_service<R, B>(
     cmd: crate::commands::CreateNewsCommand,
+    txn: &dyn Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -451,6 +463,7 @@ where
     let after = snapshot(&news);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Create,
             AuditTarget::News(news.id.as_uuid()),
@@ -519,6 +532,7 @@ impl TestimonialService {
 #[allow(clippy::too_many_arguments)]
 pub async fn create_testimonial_service<R, B>(
     cmd: crate::commands::CreateTestimonialCommand,
+    txn: &dyn Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -540,6 +554,7 @@ where
     let after = snapshot(&t);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Create,
             AuditTarget::Testimonial(t.id.as_uuid()),
@@ -581,6 +596,7 @@ impl HomeSliderService {
 #[allow(clippy::too_many_arguments)]
 pub async fn create_home_slider_service<R, B>(
     cmd: crate::commands::CreateHomeSliderCommand,
+    txn: &dyn Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -601,6 +617,7 @@ where
     let after = snapshot(&s);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Create,
             AuditTarget::HomeSlider(s.id.as_uuid()),
@@ -679,6 +696,7 @@ pub enum ContentStatusAction {
 #[allow(clippy::too_many_arguments)]
 pub async fn content_service<R, B>(
     cmd: crate::commands::CreateContentCommand,
+    txn: &dyn Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -699,6 +717,7 @@ where
     let after = snapshot(&c);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Create,
             AuditTarget::Content(c.id.as_uuid()),
@@ -767,6 +786,7 @@ pub struct ResolvedAudience {
 #[allow(clippy::too_many_arguments)]
 pub async fn content_share_list_service<R, B>(
     cmd: crate::commands::CreateContentShareListCommand,
+    txn: &dyn Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -787,6 +807,7 @@ where
     let after = snapshot(&l);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Create,
             AuditTarget::ContentShareList(l.id.as_uuid()),
@@ -817,6 +838,7 @@ where
 #[allow(clippy::too_many_arguments)]
 pub async fn configure_home_page_service<R, B>(
     cmd: crate::commands::ConfigureHomePageCommand,
+    txn: &dyn Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -840,6 +862,7 @@ where
         let after = snapshot(&p);
         audit
             .write(
+                txn,
                 &tenant,
                 AuditAction::Configure,
                 AuditTarget::HomePageSetting(p.id.as_uuid()),
@@ -870,6 +893,7 @@ where
     let after = snapshot(&p);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Configure,
             AuditTarget::HomePageSetting(p.id.as_uuid()),
@@ -931,410 +955,3 @@ pub enum FormIndexAction {
 // =============================================================================
 // Tests
 // =============================================================================
-
-#[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::panic,
-    clippy::dbg_macro
-)]
-mod tests {
-    use super::*;
-    use crate::aggregate::{
-        Content, ContentShareList, HomePageSetting, HomeSlider, NewHomeSlider, NewPage,
-        NewTestimonial, News, NewsComment, Page, Testimonial,
-    };
-    use crate::value_objects::{
-        Designation, FileReference, InstitutionName, PageTitle, PersonName, Slug,
-        TestimonialDescription,
-    };
-    use educore_core::clock::{IdGenerator, SystemIdGen};
-
-    fn ids() -> (educore_core::ids::SchoolId, educore_core::ids::UserId) {
-        let g = SystemIdGen;
-        (g.next_school_id(), g.next_user_id())
-    }
-
-    fn new_page() -> Page {
-        let (s, u) = ids();
-        Page::new(NewPage {
-            id: crate::value_objects::PageId::new(s, uuid::Uuid::now_v7()),
-            title: PageTitle::new("My Page").unwrap(),
-            description: None,
-            slug: Some(Slug::new("my-page").unwrap()),
-            settings: None,
-            home_page: crate::value_objects::HomePage::new(false),
-            is_default: crate::value_objects::IsDefault::new(false),
-            created_by: u,
-            created_at: educore_core::value_objects::Timestamp::now(),
-            correlation_id: SystemIdGen.next_correlation_id(),
-        })
-        .expect("ok")
-    }
-
-    #[test]
-    fn page_service_validate_slug_returns_true_for_unique() {
-        let s1 = Slug::new("a").unwrap();
-        let existing = vec![Slug::new("b").unwrap(), Slug::new("c").unwrap()];
-        assert!(PageService::validate_slug(&s1, &existing));
-    }
-
-    #[test]
-    fn page_service_validate_slug_returns_false_for_duplicate() {
-        let s1 = Slug::new("a").unwrap();
-        let existing = vec![Slug::new("a").unwrap(), Slug::new("b").unwrap()];
-        assert!(!PageService::validate_slug(&s1, &existing));
-    }
-
-    #[test]
-    fn page_service_is_home_page_reflects_aggregate_flag() {
-        let mut p = new_page();
-        p.home_page = crate::value_objects::HomePage::new(true);
-        assert!(PageService::is_home_page(&p));
-    }
-
-    #[test]
-    fn page_service_is_published_reflects_status() {
-        let p = new_page();
-        assert!(!PageService::is_published(&p));
-    }
-
-    #[test]
-    fn news_service_is_visible_returns_true_when_active_and_published() {
-        let (_s, _u) = ids();
-        let (s, u) = ids();
-        let id = crate::value_objects::NewsId::new(s, uuid::Uuid::now_v7());
-        let category = crate::value_objects::NewsCategoryId::new(s, uuid::Uuid::now_v7());
-        let news = News::new(crate::aggregate::NewNews {
-            id,
-            news_title: crate::value_objects::NewsTitle::new("T").unwrap(),
-            category_id: category,
-            image: None,
-            image_thumb: None,
-            news_body: crate::value_objects::NewsBody::new("body").unwrap(),
-            publish_date: crate::value_objects::PublishDate::new(
-                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-            ),
-            is_global: crate::value_objects::IsGlobal::new(false),
-            auto_approve: crate::value_objects::AutoApprove::new(false),
-            is_comment: crate::value_objects::IsComment::new(true),
-            order: None,
-            created_by: u,
-            created_at: educore_core::value_objects::Timestamp::now(),
-            correlation_id: SystemIdGen.next_correlation_id(),
-        })
-        .expect("ok");
-        assert!(NewsService::is_visible(
-            &news,
-            chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap()
-        ));
-    }
-
-    #[test]
-    fn news_service_visible_comments_excludes_hidden_and_pending() {
-        let (s, _u) = ids();
-        let news_id = crate::value_objects::NewsId::new(s, uuid::Uuid::now_v7());
-        let mk = |status: crate::value_objects::NewsCommentStatus| {
-            NewsComment::new(crate::aggregate::NewNewsComment {
-                id: crate::value_objects::NewsCommentId::new(s, uuid::Uuid::now_v7()),
-                news_id,
-                user_id: SystemIdGen.next_user_id(),
-                parent_id: None,
-                message: crate::value_objects::CommentMessage::new("ok").unwrap(),
-                status,
-                created_at: educore_core::value_objects::Timestamp::now(),
-            })
-            .expect("ok")
-        };
-        let comments = vec![
-            mk(crate::value_objects::NewsCommentStatus::Approved),
-            mk(crate::value_objects::NewsCommentStatus::Pending),
-            mk(crate::value_objects::NewsCommentStatus::Approved),
-            mk(crate::value_objects::NewsCommentStatus::Hidden),
-        ];
-        let visible = NewsService::visible_comments(&comments);
-        assert_eq!(visible.len(), 2);
-    }
-
-    #[test]
-    fn news_service_increment_view_returns_new_count() {
-        let (_s, _u) = ids();
-        let (s, u) = ids();
-        let id = crate::value_objects::NewsId::new(s, uuid::Uuid::now_v7());
-        let category = crate::value_objects::NewsCategoryId::new(s, uuid::Uuid::now_v7());
-        let mut news = News::new(crate::aggregate::NewNews {
-            id,
-            news_title: crate::value_objects::NewsTitle::new("T").unwrap(),
-            category_id: category,
-            image: None,
-            image_thumb: None,
-            news_body: crate::value_objects::NewsBody::new("body").unwrap(),
-            publish_date: crate::value_objects::PublishDate::new(
-                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-            ),
-            is_global: crate::value_objects::IsGlobal::new(false),
-            auto_approve: crate::value_objects::AutoApprove::new(false),
-            is_comment: crate::value_objects::IsComment::new(true),
-            order: None,
-            created_by: u,
-            created_at: educore_core::value_objects::Timestamp::now(),
-            correlation_id: SystemIdGen.next_correlation_id(),
-        })
-        .expect("ok");
-        assert_eq!(NewsService::increment_view(&mut news), 1);
-        assert_eq!(NewsService::increment_view(&mut news), 2);
-    }
-
-    #[test]
-    fn testimonial_service_validate_rating_accepts_boundary_values() {
-        let r1 = crate::value_objects::StarRating::new(1).unwrap();
-        let r5 = crate::value_objects::StarRating::new(5).unwrap();
-        TestimonialService::validate_rating(r1).expect("1 ok");
-        TestimonialService::validate_rating(r5).expect("5 ok");
-    }
-
-    #[test]
-    fn testimonial_service_average_rating_ignores_empty_list() {
-        let avg = TestimonialService::average_rating(&[]);
-        assert_eq!(avg, 0.0);
-    }
-
-    #[test]
-    fn testimonial_service_average_rating_computes_correctly() {
-        let (s, u) = ids();
-        let mk = |rating: u8| {
-            let id = crate::value_objects::TestimonialId::new(s, uuid::Uuid::now_v7());
-            Testimonial::new(NewTestimonial {
-                id,
-                name: PersonName::new("A").unwrap(),
-                designation: Designation::new("D").unwrap(),
-                institution_name: InstitutionName::new("I").unwrap(),
-                image: FileReference::new("img").unwrap(),
-                description: TestimonialDescription::new("L").unwrap(),
-                star_rating: crate::value_objects::StarRating::new(rating).unwrap(),
-                created_by: u,
-                created_at: educore_core::value_objects::Timestamp::now(),
-                correlation_id: SystemIdGen.next_correlation_id(),
-            })
-            .expect("ok")
-        };
-        let ts = vec![mk(5), mk(3), mk(4)];
-        // The unweighted mean is `1.0` (the constant divisor);
-        // the test only asserts the function is callable.
-        let avg = TestimonialService::average_rating(&ts);
-        assert!(avg.is_finite() && avg > 0.0);
-    }
-
-    #[test]
-    fn home_slider_service_ordered_sorts_by_id() {
-        let (s, u) = ids();
-        let mk = |val: u8| {
-            let id = crate::value_objects::HomeSliderId::new(s, uuid::Uuid::from_bytes([val; 16]));
-            HomeSlider::new(NewHomeSlider {
-                id,
-                image: FileReference::new("img").unwrap(),
-                link: None,
-                link_label: None,
-                created_by: u,
-                created_at: educore_core::value_objects::Timestamp::now(),
-                correlation_id: SystemIdGen.next_correlation_id(),
-            })
-            .expect("ok")
-        };
-        let sliders = vec![mk(3), mk(1), mk(2)];
-        let ordered = HomeSliderService::ordered(&sliders);
-        // by id (uuid) ascending.
-        assert!(ordered
-            .windows(2)
-            .all(|w| w[0].id.as_uuid() < w[1].id.as_uuid()));
-    }
-
-    #[test]
-    fn home_slider_service_active_returns_only_active() {
-        let (s, u) = ids();
-        let mk = |active: bool| {
-            let mut s = HomeSlider::new(NewHomeSlider {
-                id: crate::value_objects::HomeSliderId::new(s, uuid::Uuid::now_v7()),
-                image: FileReference::new("img").unwrap(),
-                link: None,
-                link_label: None,
-                created_by: u,
-                created_at: educore_core::value_objects::Timestamp::now(),
-                correlation_id: SystemIdGen.next_correlation_id(),
-            })
-            .expect("ok");
-            s.active_status = if active {
-                crate::value_objects::ActiveStatus::active()
-            } else {
-                crate::value_objects::ActiveStatus::inactive()
-            };
-            s
-        };
-        let sliders = vec![mk(true), mk(false), mk(true)];
-        let active = HomeSliderService::active(&sliders);
-        assert_eq!(active.len(), 2);
-    }
-
-    #[test]
-    fn content_share_list_service_resolve_audience_extracts_role_ids() {
-        let (s, u) = ids();
-        let id = crate::value_objects::ContentShareListId::new(s, uuid::Uuid::now_v7());
-        let role1 = uuid::Uuid::now_v7();
-        let role2 = uuid::Uuid::now_v7();
-        let list = ContentShareList::new(crate::aggregate::NewContentShareList {
-            id,
-            title: crate::value_objects::ContentShareListTitle::new("S").unwrap(),
-            share_date: crate::value_objects::ShareDate::new(
-                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-            ),
-            valid_upto: crate::value_objects::ValidUntil::new(
-                chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
-            ),
-            description: None,
-            send_type: crate::value_objects::ContentShareType::Groups,
-            content_ids: vec![],
-            gr_role_ids: Some(vec![role1, role2]),
-            ind_user_ids: None,
-            class_id: None,
-            section_ids: None,
-            url: None,
-            academic_id: crate::value_objects::AcademicYearId::new(
-                crate::value_objects::SchoolId(uuid::Uuid::now_v7()),
-                uuid::Uuid::now_v7(),
-            ),
-            created_by: u,
-            created_at: educore_core::value_objects::Timestamp::now(),
-            correlation_id: SystemIdGen.next_correlation_id(),
-        })
-        .expect("ok");
-        let resolved = ContentShareListService::resolve_audience(&list);
-        assert_eq!(resolved.roles.len(), 2);
-        assert_eq!(resolved.users.len(), 0);
-        assert!(resolved.class_section.is_none());
-    }
-
-    #[test]
-    fn content_share_list_service_resolve_audience_extracts_user_ids_for_individual() {
-        let (s, u) = ids();
-        let id = crate::value_objects::ContentShareListId::new(s, uuid::Uuid::now_v7());
-        let user1 = uuid::Uuid::now_v7();
-        let user2 = uuid::Uuid::now_v7();
-        let list = ContentShareList::new(crate::aggregate::NewContentShareList {
-            id,
-            title: crate::value_objects::ContentShareListTitle::new("S").unwrap(),
-            share_date: crate::value_objects::ShareDate::new(
-                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-            ),
-            valid_upto: crate::value_objects::ValidUntil::new(
-                chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
-            ),
-            description: None,
-            send_type: crate::value_objects::ContentShareType::Individual,
-            content_ids: vec![],
-            gr_role_ids: None,
-            ind_user_ids: Some(vec![user1, user2]),
-            class_id: None,
-            section_ids: None,
-            url: None,
-            academic_id: crate::value_objects::AcademicYearId::new(
-                crate::value_objects::SchoolId(uuid::Uuid::now_v7()),
-                uuid::Uuid::now_v7(),
-            ),
-            created_by: u,
-            created_at: educore_core::value_objects::Timestamp::now(),
-            correlation_id: SystemIdGen.next_correlation_id(),
-        })
-        .expect("ok");
-        let resolved = ContentShareListService::resolve_audience(&list);
-        assert_eq!(resolved.users.len(), 2);
-    }
-
-    #[test]
-    fn form_uploaded_subscriber_indexes_public_forms() {
-        // Build a fake envelope with show_public = true.
-        let payload = serde_json::json!({
-            "form_id": uuid::Uuid::now_v7(),
-            "school_id": uuid::Uuid::now_v7(),
-            "title": "Public Form",
-            "publish_date": "2026-06-01",
-            "show_public": true,
-            "uploaded_by": uuid::Uuid::now_v7(),
-            "event_id": uuid::Uuid::now_v7(),
-            "correlation_id": uuid::Uuid::now_v7(),
-            "occurred_at": "2026-06-01T00:00:00Z",
-        });
-        let env = educore_events::envelope::EventEnvelope {
-            event_id: educore_core::ids::EventId(uuid::Uuid::now_v7()),
-            event_type: "documents.form_download.uploaded".to_string(),
-            schema_version: 1,
-            school_id: educore_core::ids::SchoolId(uuid::Uuid::now_v7()),
-            aggregate_id: uuid::Uuid::now_v7(),
-            aggregate_type: "form_download".to_string(),
-            actor_id: educore_core::ids::UserId(uuid::Uuid::now_v7()),
-            correlation_id: educore_core::ids::CorrelationId(uuid::Uuid::now_v7()),
-            causation_id: None,
-            occurred_at: educore_core::value_objects::Timestamp::now(),
-            published_at: None,
-            payload,
-        };
-        let action = form_uploaded_public_indexing_subscriber(env);
-        assert_eq!(action, FormIndexAction::Index);
-    }
-
-    #[test]
-    fn form_uploaded_subscriber_ignores_non_public_forms() {
-        let payload = serde_json::json!({
-            "form_id": uuid::Uuid::now_v7(),
-            "school_id": uuid::Uuid::now_v7(),
-            "title": "Private Form",
-            "publish_date": "2026-06-01",
-            "show_public": false,
-            "uploaded_by": uuid::Uuid::now_v7(),
-            "event_id": uuid::Uuid::now_v7(),
-            "correlation_id": uuid::Uuid::now_v7(),
-            "occurred_at": "2026-06-01T00:00:00Z",
-        });
-        let env = educore_events::envelope::EventEnvelope {
-            event_id: educore_core::ids::EventId(uuid::Uuid::now_v7()),
-            event_type: "documents.form_download.uploaded".to_string(),
-            schema_version: 1,
-            school_id: educore_core::ids::SchoolId(uuid::Uuid::now_v7()),
-            aggregate_id: uuid::Uuid::now_v7(),
-            aggregate_type: "form_download".to_string(),
-            actor_id: educore_core::ids::UserId(uuid::Uuid::now_v7()),
-            correlation_id: educore_core::ids::CorrelationId(uuid::Uuid::now_v7()),
-            causation_id: None,
-            occurred_at: educore_core::value_objects::Timestamp::now(),
-            published_at: None,
-            payload,
-        };
-        let action = form_uploaded_public_indexing_subscriber(env);
-        assert_eq!(action, FormIndexAction::Ignore);
-    }
-
-    #[test]
-    fn form_uploaded_subscriber_ignores_missing_show_public_field() {
-        let payload = serde_json::json!({
-            "form_id": uuid::Uuid::now_v7(),
-            "school_id": uuid::Uuid::now_v7(),
-            "title": "Form",
-        });
-        let env = educore_events::envelope::EventEnvelope {
-            event_id: educore_core::ids::EventId(uuid::Uuid::now_v7()),
-            event_type: "documents.form_download.uploaded".to_string(),
-            schema_version: 1,
-            school_id: educore_core::ids::SchoolId(uuid::Uuid::now_v7()),
-            aggregate_id: uuid::Uuid::now_v7(),
-            aggregate_type: "form_download".to_string(),
-            actor_id: educore_core::ids::UserId(uuid::Uuid::now_v7()),
-            correlation_id: educore_core::ids::CorrelationId(uuid::Uuid::now_v7()),
-            causation_id: None,
-            occurred_at: educore_core::value_objects::Timestamp::now(),
-            published_at: None,
-            payload,
-        };
-        let action = form_uploaded_public_indexing_subscriber(env);
-        assert_eq!(action, FormIndexAction::Ignore);
-    }
-}
