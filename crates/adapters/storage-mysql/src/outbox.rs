@@ -115,7 +115,7 @@ impl MysqlOutbox {
 #[async_trait]
 impl Outbox for MysqlOutbox {
     #[instrument(skip(self, envelope), fields(event_id = %envelope.event_id))]
-    async fn append(&self, envelope: SerializedEnvelope) -> Result<()> {
+    async fn append(&self, _school_id: educore_core::ids::SchoolId, envelope: SerializedEnvelope) -> Result<()> {
         // `enqueued_at` and `published_at` are handled at the DB
         // level (`UTC_TIMESTAMP(6)` and `NULL` respectively) per
         // the canonical DDL. `attempts` defaults to 0,
@@ -148,7 +148,7 @@ impl Outbox for MysqlOutbox {
     }
 
     #[instrument(skip(self))]
-    async fn pending(&self, limit: u32) -> Result<Vec<SerializedEnvelope>> {
+    async fn pending(&self, _school_id: educore_core::ids::SchoolId, limit: u32) -> Result<Vec<SerializedEnvelope>> {
         // School partition: the `WHERE school_id = ?` clause
         // scopes the drain to the adapter's bound `self.school`
         // (set at `MysqlStorageAdapter::connect` time).
@@ -177,33 +177,9 @@ impl Outbox for MysqlOutbox {
         Ok(envelopes)
     }
 
-    #[instrument(skip(self))]
-    async fn pending_for_school(
-        &self,
-        school_id: SchoolId,
-        limit: u32,
-    ) -> Result<Vec<SerializedEnvelope>> {
-        // QW-13 / ADAPT-MY-OUTBOX-*: the explicit school
-        // argument MUST match the handle's scope. A mismatched
-        // `school_id` is a cross-tenant read attempt and is
-        // rejected with `TenantViolation` (per
-        // `docs/schemas/tenancy-schema.md` § 2). Once the
-        // assertion passes, the underlying `pending` query is
-        // already partitioned by `self.school`, so no extra
-        // SQL is needed.
-        if school_id != self.school {
-            return Err(DomainError::tenant_violation(format!(
-                "outbox::pending_for_school called with school_id {} but \
-                 handle is scoped to school_id {}",
-                school_id.as_uuid(),
-                self.school.as_uuid(),
-            )));
-        }
-        self.pending(limit).await
-    }
 
     #[instrument(skip(self, ids))]
-    async fn mark_published(&self, ids: &[EventId]) -> Result<()> {
+    async fn mark_published(&self, _school_id: educore_core::ids::SchoolId, ids: &[EventId]) -> Result<()> {
         if ids.is_empty() {
             return Ok(());
         }

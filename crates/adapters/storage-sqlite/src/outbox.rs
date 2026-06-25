@@ -136,7 +136,7 @@ impl IntoUuid for Hyphenated {
 
 #[async_trait]
 impl Outbox for SqliteOutbox {
-    async fn append(&self, envelope: SerializedEnvelope) -> Result<()> {
+    async fn append(&self, _school_id: educore_core::ids::SchoolId, envelope: SerializedEnvelope) -> Result<()> {
         // SurrealDB outbox pattern: `u32` -> `i32` for the
         // SQLite INTEGER column, with a default of `0` on
         // overflow. Schema versions are small positive
@@ -174,7 +174,7 @@ impl Outbox for SqliteOutbox {
         Ok(())
     }
 
-    async fn pending(&self, limit: u32) -> Result<Vec<SerializedEnvelope>> {
+    async fn pending(&self, _school_id: educore_core::ids::SchoolId, limit: u32) -> Result<Vec<SerializedEnvelope>> {
         // QW-13 / school-partitioning contract: the `WHERE
         // school_id = ?1` predicate is the engine's tenant-isolation
         // guarantee for this handle. `?1` is bound to
@@ -201,31 +201,8 @@ impl Outbox for SqliteOutbox {
         Ok(rows.iter().map(OutboxRow::to_envelope).collect())
     }
 
-    async fn pending_for_school(
-        &self,
-        school_id: SchoolId,
-        limit: u32,
-    ) -> Result<Vec<SerializedEnvelope>> {
-        // QW-13 / ADAPTER-SQ-OUTBOX-001: the explicit school
-        // argument MUST match the handle's scope. A mismatched
-        // `school_id` is a cross-tenant read attempt and is
-        // rejected with `TenantViolation` (per
-        // `docs/schemas/tenancy-schema.md` § 2). Once the
-        // assertion passes, the underlying `pending` query is
-        // already partitioned by `self.school`, so no extra
-        // SQL is needed.
-        if school_id != self.school {
-            return Err(DomainError::tenant_violation(format!(
-                "outbox::pending_for_school called with school_id {} but \
-                 handle is scoped to school_id {}",
-                school_id.as_uuid(),
-                self.school.as_uuid(),
-            )));
-        }
-        self.pending(limit).await
-    }
 
-    async fn mark_published(&self, ids: &[EventId]) -> Result<()> {
+    async fn mark_published(&self, _school_id: educore_core::ids::SchoolId, ids: &[EventId]) -> Result<()> {
         if ids.is_empty() {
             return Ok(());
         }
