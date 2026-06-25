@@ -112,14 +112,14 @@ CREATE TABLE IF NOT EXISTS audit_log (
     metadata        JSON             NULL,
     cross_tenant    BOOLEAN      NOT NULL DEFAULT FALSE,
     source          VARCHAR(16)  NOT NULL,
-    PRIMARY KEY (audit_id),
+    PRIMARY KEY (audit_id, school_id),
     KEY idx_audit_log_school_time (school_id, occurred_at),
     KEY audit_log_school_id_idx (school_id),
     KEY idx_audit_log_actor (actor_id, occurred_at),
     KEY idx_audit_log_resource (resource_type, resource_id, occurred_at),
     KEY idx_audit_log_correlation (correlation_id),
     KEY idx_audit_log_action (action, occurred_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci PARTITION BY KEY (school_id) PARTITIONS 12;
 
 -- -----------------------------------------------------------------------------
 -- 3. idempotency — command replay safety
