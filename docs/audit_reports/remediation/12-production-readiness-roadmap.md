@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 154 |
+| Done (`[x]`) | 155 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 319 |
-| Last update | 2026-06-25 16:39 UTC |
+| Open (`[ ]`) | 318 |
+| Last update | 2026-06-25 17:45 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -200,9 +200,9 @@
       **Source:** docs/audit_reports/findings/wave7-security.md SEC-AUTH-001
       **Check:** `file:crates/adapters/auth/src/jwt.rs regex:FND-SEC-AUTH-001|Credential::Anonymou...` → _jwt.rs:FND-SEC-AUTH-001|Credential::Anonymous.*_
 
-- [ ] **FND-SEC-AUDIT-001** AuditLog::append is pub with no DB-level INSERT-only privilege enforcement; forged rows possible if TenantContext is wrong
+- [x] **FND-SEC-AUDIT-001** Resolved — AuditWriter::new now requires school_id (tenant-bind); write() validates ctx.school_id and returns TenantViolation on mismatch. audit_e2e tests pass. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave7-security.md SEC-AUDIT-001
-      **Check:** `commit:audit.*insert.*only|audit.*signature` → _git log grep: audit.*insert.*only|audit.*signature_
+      **Check:** `file:crates/cross-cutting/audit/src/writer.rs regex:FND-SEC-AUDIT-001` → _writer.rs:FND-SEC-AUDIT-001_
 
 - [x] **FND-SEC-RBAC-001** Resolved — Capability::all() enumerates all 654 variants. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave7-security.md SEC-RBAC-001

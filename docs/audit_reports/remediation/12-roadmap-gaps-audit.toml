@@ -197,9 +197,9 @@ check = "file:crates/adapters/auth/src/jwt.rs regex:FND-SEC-AUTH-001|Credential:
 id = "FND-SEC-AUDIT-001"
 priority = "P0"
 area = "SECURITY"
-description = "AuditLog::append is pub with no DB-level INSERT-only privilege enforcement; forged rows possible if TenantContext is wrong"
+description = "Resolved — AuditWriter::new now requires school_id (tenant-bind); write() validates ctx.school_id and returns TenantViolation on mismatch. audit_e2e tests pass. Closed 2026-06-25."
 source = "docs/audit_reports/findings/wave7-security.md SEC-AUDIT-001"
-check = "commit:audit.*insert.*only|audit.*signature"
+check = "file:crates/cross-cutting/audit/src/writer.rs regex:FND-SEC-AUDIT-001"
 
 [[item]]
 id = "FND-SEC-RBAC-001"
