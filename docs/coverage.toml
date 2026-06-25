@@ -562,6 +562,7 @@ status = "Tested"
 tests = "crates/tools/storage-parity/tests/assessment_integration.rs,crates/domains/assessment/tests/workflows.rs,crates/domains/assessment/tests/exam.rs"
 
 [[row]]
+[[row]]
 id = "assessment_marks_registers_aggregate"
 item = "assessment_marks_registers aggregate"
 spec = "docs/specs/assessment/aggregates.md"
@@ -569,6 +570,15 @@ crate = "educore-assessment"
 phase = 4
 status = "Tested"
 tests = "crates/tools/storage-parity/tests/assessment_integration.rs"
+
+[[row]]
+id = "assessment_marks_grades_aggregate"
+item = "MarksGrade aggregate root"
+spec = "docs/specs/assessment/aggregates.md#marksgrade"
+crate = "educore-assessment"
+phase = 4
+status = "Tested"
+tests = "crates/domains/assessment/tests/marks_grade.rs"
 
 [[row]]
 id = "assessment_exam_schedules_aggregate"
@@ -784,7 +794,7 @@ spec = "docs/specs/hr/aggregates.md"
 crate = "educore-hr"
 phase = 6
 status = "Tested"
-tests = "crates/tools/storage-parity/tests/hr_integration.rs"
+tests = "crates/tools/storage-parity/tests/hr_integration.rs,crates/domains/hr/tests/designation.rs"
 
 [[row]]
 id = "hr_leave_type_aggregate"
@@ -1136,6 +1146,15 @@ status = "Tested"
 tests = "crates/tools/storage-parity/tests/finance_integration.rs,crates/domains/finance/tests/wallet.rs"
 
 [[row]]
+id = "finance_fees_groups_aggregate"
+item = "FmFeesGroup aggregate root"
+spec = "docs/specs/finance/aggregates.md#feesgroup"
+crate = "educore-finance"
+phase = 7
+status = "Tested"
+tests = "crates/domains/finance/tests/fm_fees_group.rs"
+
+[[row]]
 id = "finance_wallet_transaction_aggregate"
 item = "wallet_transaction aggregate"
 spec = "docs/specs/finance/aggregates.md#wallettransaction"
@@ -1250,6 +1269,15 @@ crate = "educore-facilities"
 phase = 8
 status = "Tested"
 tests = "crates/domains/facilities/tests/vehicle.rs"
+
+[[row]]
+id = "facilities_routes_aggregate"
+item = "facilities_routes aggregate"
+spec = "docs/specs/facilities/aggregates.md"
+crate = "educore-facilities"
+phase = 8
+status = "Tested"
+tests = "crates/domains/facilities/tests/route.rs"
 
 [[row]]
 id = "facilities_items_aggregate"
@@ -1580,7 +1608,7 @@ spec = "docs/specs/cms/aggregates.md#news"
 crate = "educore-cms"
 phase = 12
 status = "Tested"
-tests = "crates/domains/cms/src/aggregate.rs,crates/tools/storage-parity/tests/cms_integration.rs"
+tests = "crates/domains/cms/src/aggregate.rs,crates/tools/storage-parity/tests/cms_integration.rs,crates/domains/cms/tests/news.rs"
 notes = "Phase 12: spec-faithful; 6 events + 6 commands; non-empty title, news anchor + category anchor, is_global visibility, auto_approve/is_comment flags, non-decreasing view_count, soft-delete; NewsService + create_news_service factory fn."
 
 [[row]]
