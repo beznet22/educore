@@ -127,7 +127,7 @@ check = "file:docs/decisions/ADR-017-SurrealDBFirst.md regex:SQLite row-level se
 id = "B-3"
 priority = "P0"
 area = "ENGINE"
-description = "Pre-existing clippy warnings in `crates/infra/core/src/lint.rs:83/44/394`"
+description = "Resolved — clippy on educore-core clean (verified 2026-06-25). B-3 audit stale."
 source = "docs/audit_reports/findings/wave1-lint.md"
 check = "cmd:cargo clippy -p educore-core --lib -- -D warnings"
 
@@ -135,7 +135,7 @@ check = "cmd:cargo clippy -p educore-core --lib -- -D warnings"
 id = "D-9"
 priority = "P0"
 area = "ENGINE"
-description = "`educore-auth` has unresolved clippy warnings"
+description = "Resolved — clippy on educore-auth clean (verified 2026-06-25). D-9 audit stale."
 source = "docs/audit_reports/findings/wave5-docs-1.md"
 check = "cmd:cargo clippy -p educore-auth --all-targets -- -D warnings"
 

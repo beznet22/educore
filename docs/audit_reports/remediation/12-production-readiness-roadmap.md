@@ -26,7 +26,7 @@
 | Done (`[x]`) | 144 |
 | In-progress (`[~]`) | 12 |
 | Open (`[ ]`) | 329 |
-| Last update | 2026-06-25 12:08 UTC |
+| Last update | 2026-06-25 12:11 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -80,11 +80,11 @@
       **Source:** docs/decisions/ADR-017-SurrealDBFirst.md
       **Check:** `file:docs/decisions/ADR-017-SurrealDBFirst.md regex:SQLite row-level security` → _ADR-017-SurrealDBFirst.md:SQLite row-level security_
 
-- [x] **B-3** Pre-existing clippy warnings in `crates/infra/core/src/lint.rs:83/44/394`
+- [x] **B-3** Resolved — clippy on educore-core clean (verified 2026-06-25). B-3 audit stale.
       **Source:** docs/audit_reports/findings/wave1-lint.md
       **Check:** `cmd:cargo clippy -p educore-core --lib -- -D warnings` → _exit 0_
 
-- [x] **D-9** `educore-auth` has unresolved clippy warnings
+- [x] **D-9** Resolved — clippy on educore-auth clean (verified 2026-06-25). D-9 audit stale.
       **Source:** docs/audit_reports/findings/wave5-docs-1.md
       **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 0_
 
