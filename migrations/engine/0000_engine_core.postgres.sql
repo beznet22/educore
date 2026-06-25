@@ -122,8 +122,11 @@ CREATE TABLE IF NOT EXISTS engine.audit_log (
     metadata        JSONB            NULL,
     cross_tenant    BOOLEAN      NOT NULL DEFAULT FALSE,
     source          VARCHAR(16)  NOT NULL,
-    PRIMARY KEY (audit_id)
-);
+    -- Partitioned by (school_id, month). The composite primary key is
+    -- required because PostgreSQL partitioned tables must include all
+    -- partition key columns in every UNIQUE/PRIMARY KEY constraint.
+    PRIMARY KEY (audit_id, school_id, occurred_at)
+) PARTITION BY RANGE (school_id, occurred_at);
 
 CREATE INDEX IF NOT EXISTS idx_audit_log_school_time
     ON engine.audit_log (school_id, occurred_at);
@@ -238,3 +241,17 @@ CREATE TABLE IF NOT EXISTS engine.system_user (
 INSERT INTO engine.system_user (id, display_name, active_status, created_at)
 VALUES ('00000000-0000-7000-8000-000000000001', 'SYSTEM', 1, NOW())
 ON CONFLICT (id) DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- audit_log default partition
+-- -----------------------------------------------------------------------------
+-- Default partition for any (school_id, occurred_at) tuple that does not
+-- fall into an explicitly-created monthly partition. Per the spec
+-- (§ 13.1) partitions are created lazily by the audit sink at month
+-- boundaries; this default partition guarantees that no audit row is ever
+-- rejected by the partitioner while consumers ship the historical
+-- partitioning job. A monitoring job should alert when this partition
+-- grows above the threshold defined in docs/schemas/audit-schema.md.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS engine.audit_log_default
+    PARTITION OF engine.audit_log DEFAULT;
