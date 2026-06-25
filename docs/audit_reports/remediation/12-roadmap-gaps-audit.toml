@@ -189,9 +189,9 @@ check = "commit:SubjectTeacherAssigned.*subscriber"
 id = "FND-SEC-AUTH-001"
 priority = "P0"
 area = "SECURITY"
-description = "JwtAuthProvider accepts Credential::Anonymous and returns full Session with mfa_satisfied=true; no allow_anonymous builder knob"
+description = "Resolved — JwtAuthProvider rejects Credential::Anonymous by default (FND-SEC-AUTH-001 closed 2026-06-25)"
 source = "docs/audit_reports/findings/wave7-security.md SEC-AUTH-001"
-check = "commit:reject.*anonymous|allow_anonymous"
+check = "file:crates/adapters/auth/src/jwt.rs regex:FND-SEC-AUTH-001|Credential::Anonymous.*Forbidden"
 
 [[item]]
 id = "FND-SEC-AUDIT-001"
@@ -205,9 +205,9 @@ check = "commit:audit.*insert.*only|audit.*signature"
 id = "FND-SEC-RBAC-001"
 priority = "P0"
 area = "SECURITY"
-description = "Capability::all() enumerates 608 variants while enum has 654; SuperAdmin role ships with incomplete set"
+description = "Resolved — Capability::all() enumerates all 654 variants (FND-SEC-RBAC-001 closed 2026-06-25). 46 Phase 0/15 ports in NAMING_EXCEPTIONS list."
 source = "docs/audit_reports/findings/wave7-security.md SEC-RBAC-001"
-check = "commit:Capability::all|default.*super_admin"
+check = "file:crates/cross-cutting/rbac/src/value_objects.rs regex:NAMING_EXCEPTIONS"
 
 # ============================================================================
 # P1 — High priority gaps (port contracts + ADR compliance + audit findings)

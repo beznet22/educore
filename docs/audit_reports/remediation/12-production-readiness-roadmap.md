@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 147 |
+| Done (`[x]`) | 149 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 326 |
-| Last update | 2026-06-25 12:55 UTC |
+| Open (`[ ]`) | 324 |
+| Last update | 2026-06-25 13:30 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -84,9 +84,9 @@
       **Source:** docs/audit_reports/findings/wave1-lint.md
       **Check:** `cmd:cargo clippy -p educore-core --lib -- -D warnings` → _exit 0_
 
-- [x] **D-9** Resolved — clippy on educore-auth clean (verified 2026-06-25). D-9 audit stale.
+- [ ] **D-9** Resolved — clippy on educore-auth clean (verified 2026-06-25). D-9 audit stale.
       **Source:** docs/audit_reports/findings/wave5-docs-1.md
-      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 0_
+      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 101_
 
 - [x] **D-10** Sync feature flag — `educore` umbrella has [features] block with sync dep opt-in (ADR-018 § 4, D-10 Option A, 2026-06-25)
       **Source:** ADR-018 § 4, crates/educore/Cargo.toml
@@ -100,9 +100,9 @@
       **Source:** docs/decisions/ADR-013-CrateLayout.md
       **Check:** `file:crates/infra/core/src/lint.rs regex:fn check_tier_boundaries` → _lint.rs:fn check_tier_boundaries_
 
-- [ ] **STD-CI-CROSS-COMPILE** No .github/workflows/; cross-compile mandate (Linux x86_64, aarch64, macOS, Windows) is unverified
+- [x] **STD-CI-CROSS-COMPILE** No .github/workflows/; cross-compile mandate (Linux x86_64, aarch64, macOS, Windows) is unverified
       **Source:** docs/code-standards.md § Cross-Compilation
-      **Check:** `file-exists:.github/workflows/ci.yml` → _ci.yml missing_
+      **Check:** `file-exists:.github/workflows/ci.yml` → _ci.yml exists_
 
 - [x] **FND-INFRA-QD-001** Resolved — where_has now invokes __build closure and pushes QueryNode::HasRelation onto filters. FND-INFRA-QD-001 closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave4-query-derive.md INFRA-QD-001
@@ -191,6 +191,22 @@
 - [x] **SCHEMA-AUDIT-ATOMIC** Resolved — AuditWriter::write takes &dyn Transaction; audit row staged on caller's txn (SCHEMA-AUDIT-ATOMIC closed 2026-06-25).
       **Source:** docs/schemas/audit-schema.md § 1, roadmap H-3
       **Check:** `file:crates/cross-cutting/audit/src/writer.rs regex:&dyn Transaction|impl.*Trans...` → _writer.rs:&dyn Transaction|impl.*Transaction_
+<!-- END COMPUTED -->
+
+### P0-SECURITY — Authentication + RBAC + Audit integrity
+
+<!-- COMPUTED:items.P0.SECURITY -->
+- [x] **FND-SEC-AUTH-001** Resolved — JwtAuthProvider rejects Credential::Anonymous by default (FND-SEC-AUTH-001 closed 2026-06-25)
+      **Source:** docs/audit_reports/findings/wave7-security.md SEC-AUTH-001
+      **Check:** `file:crates/adapters/auth/src/jwt.rs regex:FND-SEC-AUTH-001|Credential::Anonymou...` → _jwt.rs:FND-SEC-AUTH-001|Credential::Anonymous.*_
+
+- [ ] **FND-SEC-AUDIT-001** AuditLog::append is pub with no DB-level INSERT-only privilege enforcement; forged rows possible if TenantContext is wrong
+      **Source:** docs/audit_reports/findings/wave7-security.md SEC-AUDIT-001
+      **Check:** `commit:audit.*insert.*only|audit.*signature` → _git log grep: audit.*insert.*only|audit.*signature_
+
+- [x] **FND-SEC-RBAC-001** Resolved — Capability::all() enumerates all 654 variants (FND-SEC-RBAC-001 closed 2026-06-25). 46 Phase 0/15 ports in NAMING_EXCEPTIONS list.
+      **Source:** docs/audit_reports/findings/wave7-security.md SEC-RBAC-001
+      **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:NAMING_EXCEPTIONS` → _value_objects.rs:NAMING_EXCEPTIONS_
 <!-- END COMPUTED -->
 
 ---
