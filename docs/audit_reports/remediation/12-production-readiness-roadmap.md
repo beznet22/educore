@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 133 |
+| Done (`[x]`) | 136 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 340 |
-| Last update | 2026-06-25 10:32 UTC |
+| Open (`[ ]`) | 337 |
+| Last update | 2026-06-25 11:05 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -88,11 +88,11 @@
       **Source:** docs/audit_reports/findings/wave5-docs-1.md
       **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 0_
 
-- [x] **D-10** Verify proc-macro `as` cast in `crates/infra/query-derive/src/lib.rs` is fixed
-      **Source:** docs/build-plan.md:73
-      **Check:** `file:crates/infra/query-derive/src/lib.rs regex:as (i32|u32|u64|i64)!` → _lib.rs:as (i32|u32|u64|i64)_
+- [x] **D-10** Sync feature flag — `educore` umbrella has [features] block with sync dep opt-in (ADR-018 § 4, D-10 Option A, 2026-06-25)
+      **Source:** ADR-018 § 4, crates/educore/Cargo.toml
+      **Check:** `file:crates/educore/Cargo.toml regex:\[features\]|sync = \[` → _Cargo.toml:\[features\]|sync = \[_
 
-- [ ] **ADR-014-IDEM-CONFLICT-VARIANT** DomainError missing IdempotencyConflict + IdempotencyPending variants; ADR-014 § Decision 4,9 mandates both
+- [x] **ADR-014-IDEM-CONFLICT-VARIANT** DomainError missing IdempotencyConflict + IdempotencyPending variants; ADR-014 § Decision 4,9 mandates both
       **Source:** docs/decisions/ADR-014-Idempotency.md, docs/audit_reports/findings/wave4-core.md CORE-003
       **Check:** `file:crates/infra/core/src/error.rs regex:IdempotencyConflict|IdempotencyPending` → _error.rs:IdempotencyConflict|IdempotencyPending_
 
@@ -156,13 +156,13 @@
       **Source:** docs/build-plan.md; docs/audit_reports/remediation/13-decision-needed.md § D-4 (Option A locked)
       **Check:** `file:docs/build-plan.md regex:Phase 17|phase 17` → _build-plan.md:Phase 17|phase 17_
 
-- [ ] **D-5** Cross-domain ownership collisions — 3 ADRs needed (SubjectAttendance, ExamAttendance, SpeechSlider)
-      **Source:** wave6-specs-1.md
-      **Check:** `commit:cross-domain ownership|ADR.*ownership` → _git log grep: cross-domain ownership|ADR.*ownership_
+- [x] **D-5** Cross-domain ownership collisions — ADR-020 created (D-5 Option A: writable-owner rule)
+      **Source:** wave6-specs-1.md, ADR-020
+      **Check:** `file:docs/decisions/ADR-020-CrossDomainOwnership.md regex:writable-owner|Option ...` → _ADR-020-CrossDomainOwnership.md:writable-owner|Option A|Accepted_
 
-- [ ] **D-6** SurrealDB vs Postgres as primary backend
-      **Source:** wave5-docs-1.md; AGENTS.md vs ADR-017 vs ADR-018
-      **Check:** `commit:ADR.*primary.*backend|SurrealDB.*primary` → _git log grep: ADR.*primary.*backend|SurrealDB.*primary_
+- [x] **D-6** SurrealDB both server + sync — ADR-017 reconciled (D-6 Option D, 2026-06-25)
+      **Source:** wave5-docs-1.md, ADR-017
+      **Check:** `file:docs/decisions/ADR-017-SurrealDBFirst.md regex:Reconciled 2026-06-25|Sync e...` → _ADR-017-SurrealDBFirst.md:Reconciled 2026-06-25|Sync engine backen_
 
 - [x] **D-7** Public API renames — ADR-019 created (D-7 Option A: code is canonical; docs must match)
       **Source:** wave5-docs-2.md, ADR-019

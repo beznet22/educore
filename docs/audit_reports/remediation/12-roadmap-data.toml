@@ -143,9 +143,9 @@ check = "cmd:cargo clippy -p educore-auth --all-targets -- -D warnings"
 id = "D-10"
 priority = "P0"
 area = "ENGINE"
-description = "Verify proc-macro `as` cast in `crates/infra/query-derive/src/lib.rs` is fixed"
-source = "docs/build-plan.md:73"
-check = "file:crates/infra/query-derive/src/lib.rs regex:as (i32|u32|u64|i64)!"
+description = "Sync feature flag — `educore` umbrella has [features] block with sync dep opt-in (ADR-018 § 4, D-10 Option A, 2026-06-25)"
+source = "ADR-018 § 4, crates/educore/Cargo.toml"
+check = "file:crates/educore/Cargo.toml regex:\\[features\\]|sync = \\["
 
 # --- P0-STORAGE: All 4 adapters must work end-to-end ---
 
@@ -179,17 +179,17 @@ check = "file:docs/build-plan.md regex:Phase 17|phase 17"
 id = "D-5"
 priority = "P0"
 area = "DOCS"
-description = "Cross-domain ownership collisions — 3 ADRs needed (SubjectAttendance, ExamAttendance, SpeechSlider)"
-source = "wave6-specs-1.md"
-check = "commit:cross-domain ownership|ADR.*ownership"
+description = "Cross-domain ownership collisions — ADR-020 created (D-5 Option A: writable-owner rule)"
+source = "wave6-specs-1.md, ADR-020"
+check = "file:docs/decisions/ADR-020-CrossDomainOwnership.md regex:writable-owner|Option A|Accepted"
 
 [[item]]
 id = "D-6"
 priority = "P0"
 area = "DOCS"
-description = "SurrealDB vs Postgres as primary backend"
-source = "wave5-docs-1.md; AGENTS.md vs ADR-017 vs ADR-018"
-check = "commit:ADR.*primary.*backend|SurrealDB.*primary"
+description = "SurrealDB both server + sync — ADR-017 reconciled (D-6 Option D, 2026-06-25)"
+source = "wave5-docs-1.md, ADR-017"
+check = "file:docs/decisions/ADR-017-SurrealDBFirst.md regex:Reconciled 2026-06-25|Sync engine backend"
 
 [[item]]
 id = "D-7"
