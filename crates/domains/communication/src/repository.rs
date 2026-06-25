@@ -1,6 +1,6 @@
 //! # Communication domain repository ports
 //!
-//! The 26 repository traits that storage adapters implement
+//! The 27 repository traits that storage adapters implement
 //! for the `educore-communication` domain. Each trait takes a
 //! `SchoolId` (or operates on a typed identifier that already
 //! embeds it) and refuses to return data from another school.
@@ -11,9 +11,13 @@
 //! - `EmailLogRepository` and `SmsLogRepository` are
 //!   append-only; no `update()` method. Email/SMS log entries
 //!   are immutable records of dispatch and are auditable as-is.
-//! - `ChatStatusRepository` is append-only; the latest entry
-//!   per user is authoritative for the current presence
-//!   status. Historical rows are retained for audit.
+//! - `ChatStatusRepository` and `ChatStatusRecordRepository`
+//!   are append-only; the latest entry per user is authoritative
+//!   for the current presence status. Historical rows are
+//!   retained for audit. `ChatStatusRecordRepository` operates
+//!   on the full `ChatStatusRecord` aggregate row (with audit
+//!   footer), whereas `ChatStatusRepository` operates on the
+//!   `ChatStatus` enum value projection.
 //! - `PhoneCallLogRepository` has no generic `update()`
 //!   method, only `update_follow_up(id, next)` to bump the
 //!   next-follow-up date on an existing call log.
@@ -700,6 +704,32 @@ pub trait CustomSmsSettingRepository: Send + Sync {
     async fn update(&self, s: &CustomSmsSetting) -> Result<()>;
     /// Delete (soft) a custom SMS setting.
     async fn delete(&self, id: CustomSmsSettingId) -> Result<()>;
+}
+
+// =============================================================================
+// 27. ChatStatusRecordRepository (APPEND-ONLY — no update method)
+// =============================================================================
+
+/// Port for the `ChatStatusRecord` aggregate (a per-user
+/// presence row recording the user's chat status at a
+/// point in time, with a full audit footer).
+///
+/// **Append-only.** The latest row per user (ordered by
+/// `set_at`) is authoritative for the current presence
+/// status; older rows are retained for audit and replay.
+/// The trait deliberately omits any `update` method,
+/// mirroring `ChatStatusRepository` for the underlying
+/// `ChatStatus` enum projection.
+#[async_trait]
+pub trait ChatStatusRecordRepository: Send + Sync {
+    /// Fetch the most-recent chat status record for a user
+    /// within a school (if any).
+    async fn current(&self, school: SchoolId, user: UserId) -> Result<Option<ChatStatusRecord>>;
+    /// List all chat status records for a user within a
+    /// school, newest first by `set_at`.
+    async fn list_for(&self, school: SchoolId, user: UserId) -> Result<Vec<ChatStatusRecord>>;
+    /// Append a new chat status record row.
+    async fn insert(&self, r: &ChatStatusRecord) -> Result<()>;
 }
 
 // =============================================================================
@@ -1501,6 +1531,31 @@ mod tests {
         Box::new(Impl)
     }
 
+    fn _object_safety_check_chat_status_record() -> Box<dyn ChatStatusRecordRepository> {
+        struct Impl;
+        #[async_trait]
+        impl ChatStatusRecordRepository for Impl {
+            async fn current(
+                &self,
+                _school: SchoolId,
+                _user: UserId,
+            ) -> Result<Option<ChatStatusRecord>> {
+                unreachable!()
+            }
+            async fn list_for(
+                &self,
+                _school: SchoolId,
+                _user: UserId,
+            ) -> Result<Vec<ChatStatusRecord>> {
+                unreachable!()
+            }
+            async fn insert(&self, _r: &ChatStatusRecord) -> Result<()> {
+                unreachable!()
+            }
+        }
+        Box::new(Impl)
+    }
+
     #[test]
     fn repository_traits_are_object_safe() {
         // If any trait were not object-safe, these fn definitions
@@ -1535,5 +1590,6 @@ mod tests {
         let _x: Box<dyn SpeechSliderRepository> = _object_safety_check_speech_slider();
         let _y: Box<dyn PhoneCallLogRepository> = _object_safety_check_phone_call_log();
         let _z: Box<dyn CustomSmsSettingRepository> = _object_safety_check_custom_sms_setting();
+        let _aa: Box<dyn ChatStatusRecordRepository> = _object_safety_check_chat_status_record();
     }
 }
