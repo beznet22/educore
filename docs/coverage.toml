@@ -1824,7 +1824,7 @@ spec = "docs/specs/events/aggregates.md#holiday"
 crate = "educore-events-domain"
 phase = 13
 status = "Tested"
-tests = "crates/cross-cutting/events-domain/src/aggregate.rs,crates/cross-cutting/events-domain/tests/workflows.rs"
+tests = "crates/cross-cutting/events-domain/src/aggregate.rs,crates/cross-cutting/events-domain/tests/workflows.rs,crates/cross-cutting/events-domain/tests/holiday.rs"
 notes = "Phase 13: spec-faithful; 3 events (Created/Updated/Deleted) + 3 commands; non-empty title, from_date <= to_date; HolidayService::is_instructional is the canonical 'is school in session on date X?' answer (false if weekend day or holiday)."
 
 [[row]]
@@ -1834,7 +1834,7 @@ spec = "docs/specs/events/aggregates.md#weekend"
 crate = "educore-events-domain"
 phase = 13
 status = "Tested"
-tests = "crates/cross-cutting/events-domain/src/aggregate.rs,crates/tools/storage-parity/tests/events_integration.rs"
+tests = "crates/cross-cutting/events-domain/src/aggregate.rs,crates/tools/storage-parity/tests/events_integration.rs,crates/cross-cutting/events-domain/tests/weekend.rs"
 notes = "Phase 13: spec-faithful; 4 events (Created/Updated/Configured/Deleted) + 4 commands; unique name within school; order in 0..7; WeekendService::reconcile is the canonical diff for ConfigureWeekends (3-way create/update/delete)."
 
 [[row]]
@@ -1874,7 +1874,7 @@ spec = "docs/specs/events/aggregates.md#calendarsetting"
 crate = "educore-events-domain"
 phase = 13
 status = "Tested"
-tests = "crates/cross-cutting/events-domain/src/aggregate.rs"
+tests = "crates/cross-cutting/events-domain/src/aggregate.rs,crates/cross-cutting/events-domain/tests/calendar_setting.rs"
 notes = "Phase 13: spec-faithful; 5 events (Created/Updated/Enabled/Disabled/Deleted) + 5 commands; unique menu_name within school; validate_css_color accepts hex (#RGB/#RRGGBB/#RRGGBBAA), rgb()/rgba(), or alphabetic named colors."
 
 # Capability / audit surface (Phase 13)
