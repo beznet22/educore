@@ -24,7 +24,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use educore_core::clock::Clock;
-use educore_core::error::Result;
+use educore_core::error::{DomainError, Result};
 use educore_core::ids::SchoolId;
 use educore_core::tenant::TenantContext;
 use educore_core::value_objects::{ActiveStatus, Timestamp};
@@ -775,6 +775,15 @@ impl AuditTarget {
 /// thread-safe (the `last_sweep_at` lock is the only mutable
 /// shared state).
 pub struct AuditWriter {
+    /// The school (tenant) this writer is bound to. Constructed
+    /// once via [`AuditWriter::new`] and never mutated. Every
+    /// subsequent [`AuditWriter::write`] call verifies that the
+    /// caller's `TenantContext::school_id` matches this value;
+    /// a mismatch returns [`DomainError::TenantViolation`],
+    /// preventing cross-tenant forgery of audit rows.
+    ///
+    /// Per FND-SEC-AUDIT-001 (Wave 7 security audit closure).
+    school_id: SchoolId,
     audit_log: std::sync::Arc<dyn AuditLog>,
     bus: std::sync::Arc<dyn EventBus>,
     clock: std::sync::Arc<dyn Clock>,
@@ -790,26 +799,64 @@ pub struct AuditWriter {
 }
 
 impl AuditWriter {
-    /// Constructs a new `AuditWriter` with the given storage port,
-    /// event bus, clock, and retention policy.
-    #[must_use]
+    /// Constructs a new `AuditWriter` bound to a specific
+    /// `school_id`. The `school_id` is the tenant anchor: every
+    /// subsequent [`AuditWriter::write`] call verifies that the
+    /// caller's `TenantContext::school_id` matches this bound
+    /// value, and a mismatch returns
+    /// [`DomainError::TenantViolation`]. This prevents a
+    /// malicious or buggy caller from forging audit rows for a
+    /// tenant they do not belong to.
+    ///
+    /// Returns [`DomainError::Validation`] if `school_id` is the
+    /// well-known public (nil) UUID; the public content
+    /// tenant is reserved for read-only public-site aggregates
+    /// and MUST NOT carry audit history (per
+    /// `docs/schemas/tenancy-schema.md` § 3 and
+    /// `docs/build-plan.md` § Phase 12 RLS invariants).
+    ///
+    /// Per FND-SEC-AUDIT-001 (Wave 7 security audit closure).
+    ///
+    /// # Errors
+    ///
+    /// - [`DomainError::Validation`] if `school_id` is the
+    ///   nil/public UUID.
     pub fn new(
+        school_id: SchoolId,
         audit_log: std::sync::Arc<dyn AuditLog>,
         bus: std::sync::Arc<dyn EventBus>,
         clock: std::sync::Arc<dyn Clock>,
         policy: RetentionPolicy,
-    ) -> Self {
-        Self {
+    ) -> Result<Self> {
+        if school_id.is_public() {
+            return Err(DomainError::validation(
+                "AuditWriter cannot be bound to the public (nil) school_id; \
+                 use a real school id",
+            ));
+        }
+        Ok(Self {
+            school_id,
             audit_log,
             bus,
             clock,
             policy,
             last_sweep_at: Mutex::new(None),
-        }
+        })
     }
 
     /// Writes an audit row for a state change and then triggers
     /// an opportunistic sweep check.
+    ///
+    /// ## Tenant binding (FND-SEC-AUDIT-001)
+    ///
+    /// The writer is bound to a specific `school_id` at
+    /// construction time. This method verifies that
+    /// `ctx.school_id == self.school_id` and returns
+    /// [`DomainError::TenantViolation`] on mismatch. This
+    /// prevents a caller from using a single `AuditWriter`
+    /// instance to forge audit rows for a tenant other than
+    /// the one it was constructed for. Each tenant MUST own
+    /// its own `AuditWriter`.
     ///
     /// ## Atomicity (SCHEMA-AUDIT-ATOMIC)
     ///
@@ -832,6 +879,8 @@ impl AuditWriter {
     ///
     /// # Errors
     ///
+    /// - [`DomainError::TenantViolation`] if `ctx.school_id` does
+    ///   not match the writer's bound `school_id`.
     /// - [`DomainError::Infrastructure`] if the storage port or
     ///   event bus fails.
     pub async fn write(
@@ -843,6 +892,17 @@ impl AuditWriter {
         before: Option<bytes::Bytes>,
         after: Option<bytes::Bytes>,
     ) -> Result<()> {
+        // FND-SEC-AUDIT-001: enforce tenant binding. The writer
+        // is constructed for a specific school and MUST NOT be
+        // used to write audit rows for a different school.
+        // A mismatch indicates either a bug (wrong writer wired
+        // into the handler) or a cross-tenant forgery attempt.
+        if ctx.school_id != self.school_id {
+            return Err(DomainError::tenant_violation(format!(
+                "AuditWriter is bound to school_id={} but write was attempted for school_id={}",
+                self.school_id, ctx.school_id
+            )));
+        }
         let school_id = ctx.school_id;
         let entry = AuditLogEntry {
             school_id,

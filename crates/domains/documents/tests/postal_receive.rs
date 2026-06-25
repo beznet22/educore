@@ -173,18 +173,21 @@ struct TestEnv {
 }
 
 impl TestEnv {
-    fn new() -> Self {
+    fn new(school: SchoolId) -> Self {
         let bus = Arc::new(InProcessEventBus::new());
         let bus_dyn: Arc<dyn EventBus> = bus.clone();
         let audit_log = Arc::new(InMemoryAuditLog::default());
         let audit_log_dyn: Arc<dyn AuditLog> = audit_log.clone();
         let clock = Arc::new(TestClock::at(Timestamp::now()));
-        let audit_writer = Arc::new(AuditWriter::new(
-            audit_log_dyn,
-            bus_dyn,
-            clock,
-            RetentionPolicy::default(),
-        ));
+        // FND-SEC-AUDIT-001: AuditWriter is tenant-bound; the
+        // writer can only write audit rows for the school it
+        // was constructed for. `school` here comes from
+        // `fresh_tenant()` so each test gets a writer bound to
+        // its own tenant.
+        let audit_writer = Arc::new(
+            AuditWriter::new(school, audit_log_dyn, bus_dyn, clock, RetentionPolicy::default())
+                .expect("test school_id is a valid (non-nil) UUID"),
+        );
         let capability_check = Arc::new(InMemoryCapabilityCheck::new());
         let postal_repo = Arc::new(InMemoryPostalRepo::default());
         Self {
@@ -269,8 +272,8 @@ fn receive_cmd(
 /// receive date supplied on the command.
 #[tokio::test]
 async fn postal_receive_happy_path_persists_and_audits() {
-    let env = TestEnv::new();
     let ft = fresh_tenant();
+    let env = TestEnv::new(ft.school);
     env.grant(ft.school, Capability::PostalReceiveCreate);
 
     let academic_id = uuid::Uuid::now_v7();
@@ -350,8 +353,8 @@ async fn postal_receive_happy_path_persists_and_audits() {
 /// the audit log.
 #[tokio::test]
 async fn postal_receive_validation_failure_missing_capability_has_no_side_effects() {
-    let env = TestEnv::new();
     let ft = fresh_tenant();
+    let env = TestEnv::new(ft.school);
     // NOTE: deliberately do NOT grant PostalReceiveCreate.
     // The capability gate is the first check in
     // receive_postal_service; it must reject the call.
