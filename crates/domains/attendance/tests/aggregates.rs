@@ -72,12 +72,7 @@ impl TestUniqueness {
 }
 
 impl AttendanceUniquenessChecker for TestUniqueness {
-    fn student_day_exists(
-        &self,
-        school: SchoolId,
-        student: StudentId,
-        date: NaiveDate,
-    ) -> bool {
+    fn student_day_exists(&self, school: SchoolId, student: StudentId, date: NaiveDate) -> bool {
         self.student_day
             .lock()
             .expect("poisoned")
@@ -92,12 +87,7 @@ impl AttendanceUniquenessChecker for TestUniqueness {
     ) -> bool {
         false
     }
-    fn staff_day_exists(
-        &self,
-        _school: SchoolId,
-        _staff: StaffId,
-        _date: NaiveDate,
-    ) -> bool {
+    fn staff_day_exists(&self, _school: SchoolId, _staff: StaffId, _date: NaiveDate) -> bool {
         false
     }
     fn import_source_date_exists(
@@ -218,10 +208,7 @@ fn student_attendance_create_then_update_mutates_aggregate_and_emits_events() {
         <StudentAttendanceMarked as DomainEvent>::AGGREGATE_TYPE,
         "student_attendance"
     );
-    assert_eq!(
-        <StudentAttendanceMarked as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<StudentAttendanceMarked as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(marked_event.aggregate_id(), agg.id.as_uuid());
     assert_eq!(marked_event.school_id(), school);
     assert_eq!(marked_event.student_id, student);
@@ -237,8 +224,8 @@ fn student_attendance_create_then_update_mutates_aggregate_and_emits_events() {
         notes: Some("traffic delay".to_owned()),
         notify: Some(true),
     };
-    let updated_event = update_student_attendance(&tenant, &mut agg, update_cmd, &clock, &ids)
-        .expect("update");
+    let updated_event =
+        update_student_attendance(&tenant, &mut agg, update_cmd, &clock, &ids).expect("update");
 
     // The aggregate is mutated in place.
     assert_eq!(agg.attendance_type, AttendanceType::Late);
@@ -257,7 +244,9 @@ fn student_attendance_create_then_update_mutates_aggregate_and_emits_events() {
     );
     assert_eq!(updated_event.aggregate_id(), agg.id.as_uuid());
     assert_eq!(updated_event.school_id(), school);
-    assert!(updated_event.changes.contains(&"attendance_type".to_owned()));
+    assert!(updated_event
+        .changes
+        .contains(&"attendance_type".to_owned()));
     assert!(updated_event.changes.contains(&"notes".to_owned()));
     // `notify` is not a field on the StudentAttendance
     // aggregate (only on SubjectAttendance); the service

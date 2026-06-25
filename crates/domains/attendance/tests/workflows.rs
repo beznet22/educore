@@ -42,11 +42,11 @@ use chrono::NaiveDate;
 
 use educore_attendance::prelude::*;
 use educore_core::clock::{DeterministicIdGen, IdGenerator as _, SystemIdGen, TestClock};
-use educore_events::domain_event::DomainEvent;
 use educore_core::error::DomainError;
 use educore_core::ids::{CorrelationId, UserId};
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::Timestamp;
+use educore_events::domain_event::DomainEvent;
 // =============================================================================
 // Test fixtures
 // =============================================================================
@@ -68,12 +68,7 @@ impl TestUniqueness {
 }
 
 impl AttendanceUniquenessChecker for TestUniqueness {
-    fn student_day_exists(
-        &self,
-        school: SchoolId,
-        student: StudentId,
-        date: NaiveDate,
-    ) -> bool {
+    fn student_day_exists(&self, school: SchoolId, student: StudentId, date: NaiveDate) -> bool {
         self.student_day
             .lock()
             .unwrap()
@@ -206,9 +201,11 @@ fn daily_attendance_rollup_marks_section_and_emits_absent_events() {
             notify: false,
             marked_from: AttendanceSource::Manual,
         };
-        let (agg, event) =
-            mark_student_attendance(cmd, &clock, &ids, &uniqueness).expect("mark");
-        assert_eq!(<StudentAttendanceMarked as DomainEvent>::EVENT_TYPE, "attendance.student.marked");
+        let (agg, event) = mark_student_attendance(cmd, &clock, &ids, &uniqueness).expect("mark");
+        assert_eq!(
+            <StudentAttendanceMarked as DomainEvent>::EVENT_TYPE,
+            "attendance.student.marked"
+        );
         per_student_aggregates.push(agg);
         per_student_marked.push(event);
     }
@@ -239,8 +236,8 @@ fn daily_attendance_rollup_marks_section_and_emits_absent_events() {
         half_day_ids: vec![half_for_bulk],
         notes: None,
     };
-    let result = bulk_mark_student_attendance(bulk_cmd, &clock, &ids, &uniqueness)
-        .expect("bulk mark");
+    let result =
+        bulk_mark_student_attendance(bulk_cmd, &clock, &ids, &uniqueness).expect("bulk mark");
     // 1 default (Present) + 1 absent + 1 late + 1 half-day
     // = 4 aggregates.
     assert_eq!(result.aggregates.len(), 4);
@@ -393,7 +390,10 @@ fn bulk_attendance_import_validates_and_commits_promoting_staging_rows() {
     // Step 3..5: ImportAttendance → BulkImportStarted.
     let (mut bulk, mut staging, _started) =
         import_attendance(cmd, &clock, &ids, &uniqueness).expect("import");
-    assert_eq!(<BulkImportStarted as DomainEvent>::EVENT_TYPE, "attendance.bulk_import.started");
+    assert_eq!(
+        <BulkImportStarted as DomainEvent>::EVENT_TYPE,
+        "attendance.bulk_import.started"
+    );
     assert_eq!(bulk.row_count, 3);
     assert_eq!(staging.len(), 3);
     assert_eq!(bulk.status, ImportStatus::Pending);
@@ -407,7 +407,10 @@ fn bulk_attendance_import_validates_and_commits_promoting_staging_rows() {
         .expect("validate");
     match validated {
         EitherImportEvent::Validated(v) => {
-            assert_eq!(<BulkImportValidated as DomainEvent>::EVENT_TYPE, "attendance.bulk_import.validated");
+            assert_eq!(
+                <BulkImportValidated as DomainEvent>::EVENT_TYPE,
+                "attendance.bulk_import.validated"
+            );
             assert_eq!(v.row_count, 3);
             assert_eq!(v.absent_count, 1);
         }
@@ -427,13 +430,19 @@ fn bulk_attendance_import_validates_and_commits_promoting_staging_rows() {
     };
     let (aggregates, rollup, per_row) =
         commit_bulk_import(&mut bulk, staging, commit_cmd, &clock, &ids).expect("commit");
-    assert_eq!(<BulkImportCommitted as DomainEvent>::EVENT_TYPE, "attendance.bulk_import.committed");
+    assert_eq!(
+        <BulkImportCommitted as DomainEvent>::EVENT_TYPE,
+        "attendance.bulk_import.committed"
+    );
     assert_eq!(rollup.committed_count, 3);
     assert_eq!(aggregates.len(), 3);
     assert_eq!(per_row.len(), 3);
     assert_eq!(bulk.status, ImportStatus::Committed);
     for _ev in &per_row {
-        assert_eq!(<StudentAttendanceImported as DomainEvent>::EVENT_TYPE, "attendance.student.imported");
+        assert_eq!(
+            <StudentAttendanceImported as DomainEvent>::EVENT_TYPE,
+            "attendance.student.imported"
+        );
     }
     // The 1 absent row must surface as an absent aggregate.
     let absent_aggs: Vec<&StudentAttendance> = aggregates
@@ -519,11 +528,9 @@ fn attendance_reports_weekly_by_class_present_percentage() {
 
     // Class A: 4 students × 3 days = 12 marks; 2 absent (one
     // on day 1, one on day 3) → 10 present.
-    let class_a_students: Vec<StudentId> =
-        (0..4).map(|_| student_id(&g, school)).collect();
+    let class_a_students: Vec<StudentId> = (0..4).map(|_| student_id(&g, school)).collect();
     // Class B: 2 students × 3 days = 6 marks; all present.
-    let class_b_students: Vec<StudentId> =
-        (0..2).map(|_| student_id(&g, school)).collect();
+    let class_b_students: Vec<StudentId> = (0..2).map(|_| student_id(&g, school)).collect();
 
     let mut class_a_present: u32 = 0;
     let mut class_a_total: u32 = 0;
@@ -628,8 +635,7 @@ fn attendance_reports_daily_by_student_per_student_status() {
             notify: false,
             marked_from: AttendanceSource::Manual,
         };
-        let (_agg, event) =
-            mark_student_attendance(cmd, &clock, &ids, &uniqueness).expect("mark");
+        let (_agg, event) = mark_student_attendance(cmd, &clock, &ids, &uniqueness).expect("mark");
         assert_eq!(event.attendance_date, date);
         assert_eq!(event.class_id, class);
         assert_eq!(event.section_id, section);

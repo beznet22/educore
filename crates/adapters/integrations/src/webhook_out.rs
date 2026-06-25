@@ -204,9 +204,7 @@ impl WebhookOutIntegration {
     /// `Err` arm is unreachable for well-formed inputs.
     pub fn compute_signature(secret: &str, payload: &[u8]) -> Result<String> {
         let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).map_err(|e| {
-            IntegrationError::Infrastructure(
-                format!("webhook HMAC key rejected: {e}").into(),
-            )
+            IntegrationError::Infrastructure(format!("webhook HMAC key rejected: {e}").into())
         })?;
         mac.update(payload);
         let bytes = mac.finalize().into_bytes();

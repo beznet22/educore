@@ -139,10 +139,7 @@ fn route_create_emits_route_created_event_with_stops() {
         <RouteCreated as DomainEvent>::EVENT_TYPE,
         "facilities.route.created"
     );
-    assert_eq!(
-        <RouteCreated as DomainEvent>::AGGREGATE_TYPE,
-        "route"
-    );
+    assert_eq!(<RouteCreated as DomainEvent>::AGGREGATE_TYPE, "route");
     assert_eq!(<RouteCreated as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(created_event.aggregate_id(), route.id.as_uuid());
     assert_eq!(created_event.school_id(), school);

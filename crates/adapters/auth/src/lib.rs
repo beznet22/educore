@@ -65,9 +65,7 @@ pub mod rate_limit;
 /// once at the top of a file.
 pub mod prelude {
     pub use crate::errors::AuthError;
-    pub use crate::jwt::{
-        JwtAuthProvider, JwtAuthProviderBuilder, JwtClaims, JwtSecretSource,
-    };
+    pub use crate::jwt::{JwtAuthProvider, JwtAuthProviderBuilder, JwtClaims, JwtSecretSource};
     pub use crate::oauth_store::InMemoryOAuthStore;
     pub use crate::port::{
         AuthProvider, AuthScheme, AuthToken, BearerToken, Credential, RbacPort, Session,

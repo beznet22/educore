@@ -136,7 +136,11 @@ impl IntoUuid for Hyphenated {
 
 #[async_trait]
 impl Outbox for SqliteOutbox {
-    async fn append(&self, _school_id: educore_core::ids::SchoolId, envelope: SerializedEnvelope) -> Result<()> {
+    async fn append(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        envelope: SerializedEnvelope,
+    ) -> Result<()> {
         // SurrealDB outbox pattern: `u32` -> `i32` for the
         // SQLite INTEGER column, with a default of `0` on
         // overflow. Schema versions are small positive
@@ -174,7 +178,11 @@ impl Outbox for SqliteOutbox {
         Ok(())
     }
 
-    async fn pending(&self, _school_id: educore_core::ids::SchoolId, limit: u32) -> Result<Vec<SerializedEnvelope>> {
+    async fn pending(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        limit: u32,
+    ) -> Result<Vec<SerializedEnvelope>> {
         // QW-13 / school-partitioning contract: the `WHERE
         // school_id = ?1` predicate is the engine's tenant-isolation
         // guarantee for this handle. `?1` is bound to
@@ -201,8 +209,11 @@ impl Outbox for SqliteOutbox {
         Ok(rows.iter().map(OutboxRow::to_envelope).collect())
     }
 
-
-    async fn mark_published(&self, _school_id: educore_core::ids::SchoolId, ids: &[EventId]) -> Result<()> {
+    async fn mark_published(
+        &self,
+        _school_id: educore_core::ids::SchoolId,
+        ids: &[EventId],
+    ) -> Result<()> {
         if ids.is_empty() {
             return Ok(());
         }

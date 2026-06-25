@@ -39,12 +39,12 @@ use std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use educore_audit::prelude::{AuditLogEntry, AuditWriter, RetentionPolicy};
+use educore_cms::commands::CreateNewsCommand;
+use educore_cms::prelude::*;
 use educore_core::clock::{IdGenerator as _, SystemIdGen, TestClock};
 use educore_core::ids::SchoolId;
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::Timestamp;
-use educore_cms::commands::CreateNewsCommand;
-use educore_cms::prelude::*;
 use educore_event_bus::InProcessEventBus;
 use educore_events::event_bus::EventBus;
 use educore_rbac::ids::RoleId;
@@ -66,7 +66,13 @@ struct InMemoryNewsRepo {
 #[async_trait]
 impl NewsRepository for InMemoryNewsRepo {
     async fn get(&self, id: NewsId) -> educore_core::error::Result<Option<News>> {
-        Ok(self.rows.lock().unwrap().iter().find(|n| n.id == id).cloned())
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|n| n.id == id)
+            .cloned())
     }
 
     async fn list(
@@ -77,11 +83,9 @@ impl NewsRepository for InMemoryNewsRepo {
         Ok(self.rows.lock().unwrap().clone())
     }
 
-    async fn list_active(
-        &self,
-        _school: SchoolId,
-    ) -> educore_core::error::Result<Vec<News>> {
-        Ok(self.rows
+    async fn list_active(&self, _school: SchoolId) -> educore_core::error::Result<Vec<News>> {
+        Ok(self
+            .rows
             .lock()
             .unwrap()
             .iter()
@@ -91,7 +95,8 @@ impl NewsRepository for InMemoryNewsRepo {
     }
 
     async fn list_global(&self) -> educore_core::error::Result<Vec<News>> {
-        Ok(self.rows
+        Ok(self
+            .rows
             .lock()
             .unwrap()
             .iter()
@@ -206,8 +211,14 @@ impl TestEnv {
         // `fresh_tenant()` so each test gets a writer bound to
         // its own tenant.
         let audit_writer = Arc::new(
-            AuditWriter::new(school, audit_log_dyn, bus_dyn, clock, RetentionPolicy::default())
-                .expect("test school_id is a valid (non-nil) UUID"),
+            AuditWriter::new(
+                school,
+                audit_log_dyn,
+                bus_dyn,
+                clock,
+                RetentionPolicy::default(),
+            )
+            .expect("test school_id is a valid (non-nil) UUID"),
         );
         let capability_check = Arc::new(InMemoryCapabilityCheck::new());
         let news_repo = Arc::new(InMemoryNewsRepo::default());
@@ -265,8 +276,7 @@ fn create_cmd(tenant: &TenantContext, school: SchoolId) -> CreateNewsCommand {
     let category = NewsCategoryId::new(school, uuid::Uuid::now_v7());
     CreateNewsCommand {
         tenant: tenant.clone(),
-        news_title: NewsTitle::new("Back to School 2026")
-            .expect("non-empty title is valid"),
+        news_title: NewsTitle::new("Back to School 2026").expect("non-empty title is valid"),
         category_id: category,
         image: None,
         image_thumb: None,
@@ -308,10 +318,7 @@ async fn news_handler_happy_path_create_persists_and_audits() {
     .expect("create_news_service must succeed for valid input");
 
     assert_eq!(news.news_title.as_str(), "Back to School 2026");
-    assert_eq!(
-        news.news_body.as_str(),
-        "School reopens on Monday the 8th."
-    );
+    assert_eq!(news.news_body.as_str(), "School reopens on Monday the 8th.");
     assert_eq!(news.school_id, ft.school);
     assert_eq!(news.created_by, ft.actor);
     assert!(
@@ -323,10 +330,7 @@ async fn news_handler_happy_path_create_persists_and_audits() {
         !news.is_global.is_true(),
         "non-global flag must be preserved"
     );
-    assert!(
-        news.is_comment.is_true(),
-        "comment flag must be preserved"
-    );
+    assert!(news.is_comment.is_true(), "comment flag must be preserved");
 
     // The news must be persisted by the repo.
     let persisted = env
@@ -380,8 +384,7 @@ async fn news_handler_validation_failure_rejects_empty_title_without_side_effect
     // (`NewsTitle::MIN_LEN = 1`), the constructor MUST reject
     // this input with `DomainError::Validation`.
     let title_result = NewsTitle::new(String::new());
-    let err = title_result
-        .expect_err("NewsTitle::new must reject an empty title");
+    let err = title_result.expect_err("NewsTitle::new must reject an empty title");
     assert!(
         matches!(err, educore_core::error::DomainError::Validation(_)),
         "expected DomainError::Validation, got {err:?}"

@@ -208,7 +208,13 @@ fn message_lifecycle_create_emits_notice_created() {
     let clock = TestClock::new();
     let correlation = CorrelationId::from(g.next_uuid());
 
-    let notice = new_draft_notice(&g, school, actor, "Holiday notice", "School closed on Monday.");
+    let notice = new_draft_notice(
+        &g,
+        school,
+        actor,
+        "Holiday notice",
+        "School closed on Monday.",
+    );
     let event: NoticeCreated = NoticeCreated::new(
         notice.id,
         notice.title.clone(),
@@ -220,7 +226,10 @@ fn message_lifecycle_create_emits_notice_created() {
         clock.now(),
     );
 
-    assert_eq!(<NoticeCreated as DomainEvent>::EVENT_TYPE, "communication.notice.created");
+    assert_eq!(
+        <NoticeCreated as DomainEvent>::EVENT_TYPE,
+        "communication.notice.created"
+    );
     assert_eq!(event.school_id(), school);
     assert_eq!(event.title.as_str(), "Holiday notice");
     assert!(matches!(notice.status, NoticeStatus::Draft));
@@ -238,7 +247,13 @@ fn message_lifecycle_update_emits_notice_updated_with_changes() {
     let actor = tenant.actor_id;
     let clock = TestClock::new();
 
-    let mut notice = new_draft_notice(&g, school, actor, "Holiday notice", "School closed on Monday.");
+    let mut notice = new_draft_notice(
+        &g,
+        school,
+        actor,
+        "Holiday notice",
+        "School closed on Monday.",
+    );
     let changes = notice.update(
         None,
         Some(NoticeBody::new("School closed on Monday and Tuesday.").unwrap()),
@@ -260,7 +275,10 @@ fn message_lifecycle_update_emits_notice_updated_with_changes() {
         clock.now(),
     );
 
-    assert_eq!(<NoticeUpdated as DomainEvent>::EVENT_TYPE, "communication.notice.updated");
+    assert_eq!(
+        <NoticeUpdated as DomainEvent>::EVENT_TYPE,
+        "communication.notice.updated"
+    );
     assert_eq!(event.notice_id, notice.id);
     assert_eq!(event.changes, vec!["body".to_owned()]);
     assert_eq!(notice.body.as_str(), "School closed on Monday and Tuesday.");
@@ -277,7 +295,13 @@ fn message_lifecycle_publish_transitions_to_published() {
     let clock = TestClock::new();
     let correlation = CorrelationId::from(g.next_uuid());
 
-    let mut notice = new_draft_notice(&g, school, actor, "Holiday notice", "School closed on Monday.");
+    let mut notice = new_draft_notice(
+        &g,
+        school,
+        actor,
+        "Holiday notice",
+        "School closed on Monday.",
+    );
     assert!(matches!(notice.status, NoticeStatus::Draft));
 
     notice.publish(actor, clock.now(), g.next_event_id());
@@ -290,7 +314,10 @@ fn message_lifecycle_publish_transitions_to_published() {
         clock.now(),
     );
 
-    assert_eq!(<NoticePublished as DomainEvent>::EVENT_TYPE, "communication.notice.published");
+    assert_eq!(
+        <NoticePublished as DomainEvent>::EVENT_TYPE,
+        "communication.notice.published"
+    );
     assert!(matches!(notice.status, NoticeStatus::Published));
     assert_eq!(event.notice_id, notice.id);
 }
@@ -308,7 +335,13 @@ fn message_lifecycle_unpublish_transitions_to_unpublished() {
     let clock = TestClock::new();
     let correlation = CorrelationId::from(g.next_uuid());
 
-    let mut notice = new_draft_notice(&g, school, actor, "Holiday notice", "School closed on Monday.");
+    let mut notice = new_draft_notice(
+        &g,
+        school,
+        actor,
+        "Holiday notice",
+        "School closed on Monday.",
+    );
     notice.publish(actor, clock.now(), g.next_event_id());
     assert!(matches!(notice.status, NoticeStatus::Published));
 
@@ -328,7 +361,10 @@ fn message_lifecycle_unpublish_transitions_to_unpublished() {
     );
     assert!(matches!(notice.status, NoticeStatus::Unpublished));
     assert_eq!(event.notice_id, notice.id);
-    assert_eq!(event.reason.as_deref(), Some("Replaced by an updated notice"));
+    assert_eq!(
+        event.reason.as_deref(),
+        Some("Replaced by an updated notice")
+    );
 }
 
 /// Message lifecycle step 7: a draft notice can be
@@ -348,9 +384,13 @@ fn message_lifecycle_soft_delete_emits_notice_deleted() {
 
     notice.mark_deleted(actor, clock.now(), g.next_event_id());
 
-    let event: NoticeDeleted = NoticeDeleted::new(notice.id, g.next_event_id(), correlation, clock.now());
+    let event: NoticeDeleted =
+        NoticeDeleted::new(notice.id, g.next_event_id(), correlation, clock.now());
 
-    assert_eq!(<NoticeDeleted as DomainEvent>::EVENT_TYPE, "communication.notice.deleted");
+    assert_eq!(
+        <NoticeDeleted as DomainEvent>::EVENT_TYPE,
+        "communication.notice.deleted"
+    );
     assert!(!notice.active_status.is_active());
     assert_eq!(event.notice_id, notice.id);
 }
@@ -447,7 +487,10 @@ fn conversation_lifecycle_exchange_message_emits_chat_message_sent() {
         clock.now(),
     );
 
-    assert_eq!(<ChatMessageSent as DomainEvent>::EVENT_TYPE, "communication.chat_message.sent");
+    assert_eq!(
+        <ChatMessageSent as DomainEvent>::EVENT_TYPE,
+        "communication.chat_message.sent"
+    );
     assert_eq!(event.school_id(), school);
     assert_eq!(event.from_id, user_a);
     assert_eq!(event.to_id, user_b);
@@ -487,7 +530,10 @@ fn conversation_lifecycle_message_seen_emits_chat_message_seen() {
         clock.now(),
     );
 
-    assert_eq!(<ChatMessageSeen as DomainEvent>::EVENT_TYPE, "communication.chat_message.seen");
+    assert_eq!(
+        <ChatMessageSeen as DomainEvent>::EVENT_TYPE,
+        "communication.chat_message.seen"
+    );
     assert!(matches!(message.status, ChatMessageStatus::Seen));
     assert_eq!(message.seen_at, Some(seen_at));
     assert_eq!(event.seen_by, user_b);
@@ -513,12 +559,8 @@ fn conversation_lifecycle_close_emits_chat_conversation_closed() {
     let closed_at = clock.now();
     conv.close(user_a, closed_at, g.next_event_id());
 
-    let event: ChatConversationClosed = ChatConversationClosed::new(
-        conv.id,
-        g.next_event_id(),
-        correlation,
-        clock.now(),
-    );
+    let event: ChatConversationClosed =
+        ChatConversationClosed::new(conv.id, g.next_event_id(), correlation, clock.now());
 
     assert_eq!(
         <ChatConversationClosed as DomainEvent>::EVENT_TYPE,
@@ -571,7 +613,10 @@ fn conversation_lifecycle_soft_delete_message_emits_chat_message_deleted() {
     );
     assert!(!message.active_status.is_active());
     assert_eq!(event.deleted_by, user_a);
-    assert!(!conv.closed, "deleting a message must not close the conversation");
+    assert!(
+        !conv.closed,
+        "deleting a message must not close the conversation"
+    );
 }
 
 // =============================================================================
@@ -619,7 +664,10 @@ fn notification_dispatch_send_emits_notification_sent() {
         clock.now(),
     );
 
-    assert_eq!(<NotificationSent as DomainEvent>::EVENT_TYPE, "communication.notification.sent");
+    assert_eq!(
+        <NotificationSent as DomainEvent>::EVENT_TYPE,
+        "communication.notification.sent"
+    );
     assert_eq!(event.school_id(), school);
     assert_eq!(event.recipient_user_id, recipient);
     assert_eq!(event.channel, Channel::App);
@@ -663,7 +711,10 @@ fn notification_dispatch_read_emits_notification_read() {
         clock.now(),
     );
 
-    assert_eq!(<NotificationRead as DomainEvent>::EVENT_TYPE, "communication.notification.read");
+    assert_eq!(
+        <NotificationRead as DomainEvent>::EVENT_TYPE,
+        "communication.notification.read"
+    );
     assert!(matches!(notif.status, NotificationStatus::Read));
     assert_eq!(notif.read_at, Some(read_at));
     assert_eq!(event.notification_id, notif.id);
@@ -769,5 +820,8 @@ fn notification_dispatch_supports_all_channels() {
 #[test]
 fn notification_dispatch_empty_message_returns_validation_error() {
     let res = NotificationMessage::new(String::new());
-    assert!(res.is_err(), "empty NotificationMessage must fail validation");
+    assert!(
+        res.is_err(),
+        "empty NotificationMessage must fail validation"
+    );
 }

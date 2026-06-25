@@ -454,13 +454,9 @@ impl RateLimiter {
 
         record.count = record.count.saturating_add(1);
 
-        if record.count >= self.config.lockout_threshold
-            && record.locked_until.is_none()
-        {
-            record.locked_until = Some(
-                now.checked_add(self.config.lockout_duration)
-                    .unwrap_or(now),
-            );
+        if record.count >= self.config.lockout_threshold && record.locked_until.is_none() {
+            record.locked_until =
+                Some(now.checked_add(self.config.lockout_duration).unwrap_or(now));
         }
     }
 
@@ -535,12 +531,8 @@ mod tests {
     #[test]
     fn test_rate_limiter_allows_up_to_n_then_blocks() {
         // Limit = 3 per minute.
-        let (limiter, _clock) = limiter_with(
-            3,
-            100,
-            Duration::from_secs(60),
-            Duration::from_secs(900),
-        );
+        let (limiter, _clock) =
+            limiter_with(3, 100, Duration::from_secs(60), Duration::from_secs(900));
         let me = ip();
 
         // First 3 attempts pass.
@@ -562,12 +554,8 @@ mod tests {
 
     #[test]
     fn test_rate_limiter_resets_after_window_expires() {
-        let (limiter, clock) = limiter_with(
-            2,
-            100,
-            Duration::from_secs(60),
-            Duration::from_secs(900),
-        );
+        let (limiter, clock) =
+            limiter_with(2, 100, Duration::from_secs(60), Duration::from_secs(900));
         let me = ip();
 
         // Hit the limit.
@@ -575,9 +563,7 @@ mod tests {
         limiter.record_failure(me);
         limiter.check(me).expect("2nd passes");
         limiter.record_failure(me);
-        limiter
-            .check(me)
-            .expect_err("3rd must be rate-limited");
+        limiter.check(me).expect_err("3rd must be rate-limited");
 
         // Advance past the window.
         clock.advance(Duration::from_secs(61));
@@ -613,12 +599,8 @@ mod tests {
 
     #[test]
     fn test_rate_limiter_success_clears_record() {
-        let (limiter, _clock) = limiter_with(
-            2,
-            100,
-            Duration::from_secs(60),
-            Duration::from_secs(900),
-        );
+        let (limiter, _clock) =
+            limiter_with(2, 100, Duration::from_secs(60), Duration::from_secs(900));
         let me = ip();
 
         limiter.check(me).expect("1st passes");
@@ -627,9 +609,7 @@ mod tests {
         limiter.record_failure(me);
 
         // Now blocked.
-        limiter
-            .check(me)
-            .expect_err("3rd must be rate-limited");
+        limiter.check(me).expect_err("3rd must be rate-limited");
 
         // A successful attempt clears the record.
         limiter.record_success(me);
@@ -643,12 +623,8 @@ mod tests {
     #[test]
     fn test_rate_limiter_is_per_ip() {
         // One IP hitting the limit must not affect another IP.
-        let (limiter, _clock) = limiter_with(
-            2,
-            100,
-            Duration::from_secs(60),
-            Duration::from_secs(900),
-        );
+        let (limiter, _clock) =
+            limiter_with(2, 100, Duration::from_secs(60), Duration::from_secs(900));
         let a = ip();
         let b = ip2();
 

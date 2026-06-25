@@ -60,9 +60,7 @@ use std::sync::Mutex;
 
 use chrono::{NaiveDate, NaiveTime};
 
-use educore_academic::value_objects::{
-    AcademicYearId, ClassId, SectionId, SubjectId,
-};
+use educore_academic::value_objects::{AcademicYearId, ClassId, SectionId, SubjectId};
 use educore_assessment::commands::{PublishResultCommand, ScheduleSubjectEntry};
 use educore_assessment::prelude::*;
 use educore_core::clock::{DeterministicIdGen, SystemIdGen, TestClock};
@@ -111,10 +109,14 @@ impl AssessmentUniquenessChecker for InMemoryExamUniqueness {
         section: SectionId,
         subject: SubjectId,
     ) -> bool {
-        self.keys
-            .lock()
-            .unwrap()
-            .contains(&(school, academic_year, exam_type, class, section, subject))
+        self.keys.lock().unwrap().contains(&(
+            school,
+            academic_year,
+            exam_type,
+            class,
+            section,
+            subject,
+        ))
     }
 }
 
@@ -234,10 +236,12 @@ fn create_exam_happy_path_emits_exam_created() {
     let uniqueness = InMemoryExamUniqueness::new();
 
     let cmd = make_create_exam(tenant, &g, school);
-    let (exam, event): (Exam, ExamCreated) =
-        create_exam(cmd, &clock, &ids, &uniqueness).unwrap();
+    let (exam, event): (Exam, ExamCreated) = create_exam(cmd, &clock, &ids, &uniqueness).unwrap();
 
-    assert_eq!(<ExamCreated as DomainEvent>::EVENT_TYPE, "assessment.exam.created");
+    assert_eq!(
+        <ExamCreated as DomainEvent>::EVENT_TYPE,
+        "assessment.exam.created"
+    );
     assert_eq!(event.exam_id, exam.id);
     assert_eq!(event.aggregate_id(), exam.id.as_uuid());
     assert_eq!(event.school_id(), school);
@@ -277,7 +281,10 @@ fn update_exam_happy_path_emits_exam_updated() {
     };
     let event: ExamUpdated =
         update_exam(&exam_tenant(&exam), &mut exam, upd, &clock, &ids).unwrap();
-    assert_eq!(<ExamUpdated as DomainEvent>::EVENT_TYPE, "assessment.exam.updated");
+    assert_eq!(
+        <ExamUpdated as DomainEvent>::EVENT_TYPE,
+        "assessment.exam.updated"
+    );
     assert_eq!(event.aggregate_id(), exam.id.as_uuid());
     assert_eq!(exam.version.get(), initial_version + 1);
     assert_eq!(exam.exam_mark.as_f32(), 120.0);
@@ -307,7 +314,10 @@ fn delete_exam_happy_path_emits_exam_deleted() {
     };
     let event: ExamDeleted =
         delete_exam(&exam_tenant(&exam), &mut exam, del, &clock, &ids).unwrap();
-    assert_eq!(<ExamDeleted as DomainEvent>::EVENT_TYPE, "assessment.exam.deleted");
+    assert_eq!(
+        <ExamDeleted as DomainEvent>::EVENT_TYPE,
+        "assessment.exam.deleted"
+    );
     assert_eq!(event.aggregate_id(), exam.id.as_uuid());
     assert!(!exam.is_active());
 }
@@ -649,8 +659,7 @@ fn cancel_marks_register_happy_path_emits_event() {
         tenant,
         marks_register_id: marks_register_id(&g, school),
     };
-    let event: MarksRegisterCancelled =
-        cancel_marks_register(cmd, &clock, &ids).unwrap();
+    let event: MarksRegisterCancelled = cancel_marks_register(cmd, &clock, &ids).unwrap();
     assert_eq!(
         <MarksRegisterCancelled as DomainEvent>::EVENT_TYPE,
         "assessment.marks_register.cancelled"

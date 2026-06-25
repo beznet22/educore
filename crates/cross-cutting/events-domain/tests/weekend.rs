@@ -75,16 +75,8 @@ fn weekend_create_then_update_mutates_aggregate_and_bumps_version() {
     let id = WeekendId::new(school, g.next_uuid());
 
     // ---- Create flow ----
-    let mut weekend = Weekend::new(
-        id,
-        "Friday".to_owned(),
-        5,
-        true,
-        None,
-        actor,
-        ts,
-    )
-    .expect("Weekend::new must succeed for valid input");
+    let mut weekend = Weekend::new(id, "Friday".to_owned(), 5, true, None, actor, ts)
+        .expect("Weekend::new must succeed for valid input");
 
     // Aggregate fields are populated from the constructor.
     assert_eq!(weekend.id, id);
@@ -95,7 +87,10 @@ fn weekend_create_then_update_mutates_aggregate_and_bumps_version() {
     assert_eq!(weekend.academic_id, None);
     assert_eq!(weekend.created_by, actor);
     assert_eq!(weekend.updated_by, actor);
-    assert_eq!(weekend.version, educore_core::value_objects::Version::initial());
+    assert_eq!(
+        weekend.version,
+        educore_core::value_objects::Version::initial()
+    );
     assert!(weekend.active_status);
     assert_eq!(weekend.created_at, ts);
     assert_eq!(weekend.updated_at, ts);
@@ -104,7 +99,13 @@ fn weekend_create_then_update_mutates_aggregate_and_bumps_version() {
     let version_before = weekend.version;
     let updated_at = Timestamp::now();
     weekend
-        .update(Some("FRI".to_owned()), Some(5), Some(true), actor, updated_at)
+        .update(
+            Some("FRI".to_owned()),
+            Some(5),
+            Some(true),
+            actor,
+            updated_at,
+        )
         .expect("Weekend::update must succeed for valid input");
 
     // The aggregate is mutated in place.
@@ -134,15 +135,7 @@ fn weekend_create_with_order_out_of_range_returns_validation_error() {
     let g = SystemIdGen;
     let id = WeekendId::new(school, g.next_uuid());
 
-    let res = Weekend::new(
-        id,
-        "Bad".to_owned(),
-        8,
-        true,
-        None,
-        actor,
-        ts,
-    );
+    let res = Weekend::new(id, "Bad".to_owned(), 8, true, None, actor, ts);
     let err = res.expect_err("order = 8 must be rejected");
     assert!(
         matches!(err, EventsDomainError::Validation(_)),

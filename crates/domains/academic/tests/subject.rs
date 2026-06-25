@@ -105,8 +105,7 @@ fn subject_create_then_update_mutates_aggregate_and_emits_events() {
         subject_type: SubjectType::Theory,
         pass_mark: 35.0,
     };
-    let (mut agg, created_event) =
-        create_subject(create_cmd, &clock, &ids).expect("create");
+    let (mut agg, created_event) = create_subject(create_cmd, &clock, &ids).expect("create");
 
     // Aggregate fields are populated from the command.
     assert_eq!(agg.school_id, school);
@@ -135,14 +134,8 @@ fn subject_create_then_update_mutates_aggregate_and_emits_events() {
         <SubjectCreated as DomainEvent>::EVENT_TYPE,
         "academic.subject.created"
     );
-    assert_eq!(
-        <SubjectCreated as DomainEvent>::AGGREGATE_TYPE,
-        "subject"
-    );
-    assert_eq!(
-        <SubjectCreated as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<SubjectCreated as DomainEvent>::AGGREGATE_TYPE, "subject");
+    assert_eq!(<SubjectCreated as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(created_event.aggregate_id(), agg.id.as_uuid());
     assert_eq!(created_event.school_id(), school);
     assert_eq!(created_event.code, "MTH101");
@@ -159,8 +152,7 @@ fn subject_create_then_update_mutates_aggregate_and_emits_events() {
         subject_type: Some(SubjectType::Practical),
         pass_mark: Some(40.0),
     };
-    let updated_event =
-        update_subject(&mut agg, update_cmd, &clock, &ids).expect("update");
+    let updated_event = update_subject(&mut agg, update_cmd, &clock, &ids).expect("update");
 
     // The aggregate is mutated in place: every field moved,
     // the version bumped, and the `updated_by` footer tracks
@@ -180,10 +172,7 @@ fn subject_create_then_update_mutates_aggregate_and_emits_events() {
         <SubjectUpdated as DomainEvent>::EVENT_TYPE,
         "academic.subject.updated"
     );
-    assert_eq!(
-        <SubjectUpdated as DomainEvent>::AGGREGATE_TYPE,
-        "subject"
-    );
+    assert_eq!(<SubjectUpdated as DomainEvent>::AGGREGATE_TYPE, "subject");
     assert_eq!(updated_event.aggregate_id(), agg.id.as_uuid());
     assert_eq!(updated_event.school_id(), school);
     assert_eq!(updated_event.name.as_deref(), Some("Mathematics"));
@@ -243,8 +232,7 @@ fn subject_update_with_same_name_returns_no_op_event_and_preserves_version() {
         subject_type: SubjectType::Theory,
         pass_mark: 35.0,
     };
-    let (mut agg, created_event) =
-        create_subject(create_cmd, &clock, &ids).expect("create");
+    let (mut agg, created_event) = create_subject(create_cmd, &clock, &ids).expect("create");
     let initial_version = agg.version.get();
     let initial_updated_at = agg.updated_at;
     let initial_updated_by = agg.updated_by;
@@ -299,8 +287,7 @@ fn subject_update_with_same_name_returns_no_op_event_and_preserves_version() {
         subject_type: None,
         pass_mark: None,
     };
-    let _ = update_subject(&mut agg, real_update, &clock, &ids)
-        .expect("real update after no-op");
+    let _ = update_subject(&mut agg, real_update, &clock, &ids).expect("real update after no-op");
     assert_eq!(agg.name, "Mathematics");
     assert_eq!(
         agg.version.get(),

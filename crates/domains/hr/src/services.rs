@@ -27,8 +27,8 @@ use educore_rbac::ids::RoleId;
 
 use crate::aggregate::{
     AssignClassTeacherScope, BulkImportJob, Department, DepartmentHead, Designation,
-    DesignationGrade, HourlyRateOverride, LeaveDefineAdjustment, LeaveRequest, LeaveRequestApproval,
-    LeaveRequestAttachment, LeaveType, PayrollGenerate, PayrollGenerateAudit,
+    DesignationGrade, HourlyRateOverride, LeaveDefineAdjustment, LeaveRequest,
+    LeaveRequestApproval, LeaveRequestAttachment, LeaveType, PayrollGenerate, PayrollGenerateAudit,
     PayrollPaymentLink, Staff, StaffAddress, StaffAttendanceImportBatch, StaffAttendancePunch,
     StaffBankDetail, StaffCustomField, StaffDocument, StaffDrivingLicense, StaffImportResolution,
     StaffLeaveBalance, StaffLeaveHistory, StaffPayrollHistory, StaffProfilePhoto,
@@ -39,7 +39,7 @@ use crate::commands::{
     CreateBulkImportJobCommand, CreateDesignationGradeCommand, CreateLeaveDefineAdjustmentCommand,
     CreateLeaveRequestAttachmentCommand, CreatePayrollPaymentLinkCommand,
     CreateStaffAddressCommand, CreateStaffAttendanceImportBatchCommand,
-    CreateStaffBankDetailCommand, CreateStaffDrivingLicenseCommand, CreateStaffDocumentCommand,
+    CreateStaffBankDetailCommand, CreateStaffDocumentCommand, CreateStaffDrivingLicenseCommand,
     CreateStaffProfilePhotoCommand, CreateStaffRegistrationFieldOptionCommand,
     CreateStaffSocialLinkCommand, RecordLeaveRequestApprovalCommand,
     RecordPayrollGenerateAuditCommand, RecordStaffAttendancePunchCommand,
@@ -1227,7 +1227,10 @@ pub fn create_staff_registration_field_option<C, G>(
     cmd: CreateStaffRegistrationFieldOptionCommand,
     clock: &C,
     ids: &G,
-) -> Result<(StaffRegistrationFieldOption, StaffRegistrationFieldOptionAdded)>
+) -> Result<(
+    StaffRegistrationFieldOption,
+    StaffRegistrationFieldOptionAdded,
+)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -1269,7 +1272,10 @@ pub fn create_staff_attendance_import_batch<C, G>(
     cmd: CreateStaffAttendanceImportBatchCommand,
     clock: &C,
     ids: &G,
-) -> Result<(StaffAttendanceImportBatch, StaffAttendanceImportBatchRecorded)>
+) -> Result<(
+    StaffAttendanceImportBatch,
+    StaffAttendanceImportBatchRecorded,
+)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,

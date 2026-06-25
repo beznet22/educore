@@ -31,9 +31,7 @@
 
 use educore_communication::prelude::*;
 use educore_communication::services::{create_notice, update_notice};
-use educore_communication::value_objects::{
-    AudienceDescriptor, NoticeBody, NoticeTitle,
-};
+use educore_communication::value_objects::{AudienceDescriptor, NoticeBody, NoticeTitle};
 use educore_core::clock::{IdGenerator as _, SystemClock, SystemIdGen};
 use educore_core::error::DomainError;
 use educore_core::ids::Identifier;
@@ -43,7 +41,12 @@ fn fresh_tenant() -> TenantContext {
     let school = g.next_school_id();
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
-    TenantContext::for_user(school, actor, corr, educore_core::tenant::UserType::SchoolAdmin)
+    TenantContext::for_user(
+        school,
+        actor,
+        corr,
+        educore_core::tenant::UserType::SchoolAdmin,
+    )
 }
 
 fn notice_date() -> chrono::NaiveDate {
@@ -61,8 +64,7 @@ fn create_then_update_notice_round_trip() {
     let create_cmd = CreateNoticeCommand {
         tenant: tenant.clone(),
         title: NoticeTitle::new("Holiday notice").expect("title valid"),
-        body: NoticeBody::new("School closed on Monday for the holiday.")
-            .expect("body valid"),
+        body: NoticeBody::new("School closed on Monday for the holiday.").expect("body valid"),
         notice_date: notice_date(),
         publish_on: Some(notice_date()),
         audience: AudienceDescriptor::All,
@@ -94,8 +96,8 @@ fn create_then_update_notice_round_trip() {
         audience: Some(AudienceDescriptor::All),
     };
 
-    let updated_event =
-        update_notice(update_cmd, &SystemClock, &SystemIdGen, &mut notice).expect("update_notice ok");
+    let updated_event = update_notice(update_cmd, &SystemClock, &SystemIdGen, &mut notice)
+        .expect("update_notice ok");
 
     // The mutation must have been recorded on the aggregate.
     assert_eq!(notice.title.as_str(), "Holiday (revised)");

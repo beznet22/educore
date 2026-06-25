@@ -67,8 +67,7 @@ use crate::storage::SqliteStorageAdapter;
 /// tables. `include_str!`'d at compile time from the engine
 /// migration file (per
 /// `docs/schemas/sql-dialects/sqlite.md#the-6-engine-cross-cutting-tables--sqlite-ddl`).
-const SCHEMA_SQL: &str =
-    include_str!("../../../../migrations/engine/0000_engine_core.sqlite.sql");
+const SCHEMA_SQL: &str = include_str!("../../../../migrations/engine/0000_engine_core.sqlite.sql");
 
 // ============================================================================
 // Registry — process-global list of macro-emitted descriptors.
@@ -281,9 +280,8 @@ pub(crate) fn render_table_ddl(descriptor: &EntityDescriptor) -> String {
         .collect();
     let multi_column_pk = pk_columns.len() > 1;
 
-    let mut lines: Vec<String> = Vec::with_capacity(
-        descriptor.columns.len() + descriptor.foreign_keys.len() + 1,
-    );
+    let mut lines: Vec<String> =
+        Vec::with_capacity(descriptor.columns.len() + descriptor.foreign_keys.len() + 1);
     for col in &descriptor.columns {
         lines.push(render_column_line(col, multi_column_pk));
     }
@@ -703,13 +701,12 @@ mod tests {
 
     /// Returns the SQL `sqlite_master` entry for a table, if any.
     async fn master_entry(pool: &sqlx::SqlitePool, table: &str) -> Option<String> {
-        let row: Option<(String,)> = sqlx::query_as(
-            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?1",
-        )
-        .bind(table)
-        .fetch_optional(pool)
-        .await
-        .expect("sqlite_master query");
+        let row: Option<(String,)> =
+            sqlx::query_as("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?1")
+                .bind(table)
+                .fetch_optional(pool)
+                .await
+                .expect("sqlite_master query");
         row.map(|(sql,)| sql)
     }
 

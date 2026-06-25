@@ -37,18 +37,16 @@ use crate::aggregate::{Expense, FeesInvoice, FeesPayment, Wallet, WalletTransact
 use crate::commands::{
     CreateDirectFeesInstallmentChildPaymentCommand, CreateDonorCommand,
     CreateFeesAssignDiscountCommand, CreateFeesInstallmentCreditCommand,
-    CreateFeesInvoiceSettingCommand, CreateFmFeesGroupCommand,
-    CreateFmFeesInvoiceChildCommand, CreateFmFeesInvoiceCommand,
-    CreateFmFeesInvoiceSettingCommand, CreateFmFeesTransactionChildCommand,
-    CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand, CreateFmFeesWeaverCommand,
-    CreateInventoryPaymentCommand, CreateProductPurchaseCommand, CreateTransactionCommand,
-    ReadDirectFeesInstallmentChildPaymentCommand, ReadDonorCommand,
-    ReadFeesAssignDiscountCommand, ReadFeesInstallmentCreditCommand,
-    ReadFeesInvoiceSettingCommand, ReadFmFeesGroupCommand, ReadFmFeesInvoiceChildCommand,
-    ReadFmFeesInvoiceCommand, ReadFmFeesInvoiceSettingCommand,
-    ReadFmFeesTransactionChildCommand, ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
-    ReadFmFeesWeaverCommand, ReadInventoryPaymentCommand, ReadProductPurchaseCommand,
-    ReadTransactionCommand,
+    CreateFeesInvoiceSettingCommand, CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
+    CreateFmFeesInvoiceCommand, CreateFmFeesInvoiceSettingCommand,
+    CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
+    CreateFmFeesWeaverCommand, CreateInventoryPaymentCommand, CreateProductPurchaseCommand,
+    CreateTransactionCommand, ReadDirectFeesInstallmentChildPaymentCommand, ReadDonorCommand,
+    ReadFeesAssignDiscountCommand, ReadFeesInstallmentCreditCommand, ReadFeesInvoiceSettingCommand,
+    ReadFmFeesGroupCommand, ReadFmFeesInvoiceChildCommand, ReadFmFeesInvoiceCommand,
+    ReadFmFeesInvoiceSettingCommand, ReadFmFeesTransactionChildCommand,
+    ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand, ReadFmFeesWeaverCommand,
+    ReadInventoryPaymentCommand, ReadProductPurchaseCommand, ReadTransactionCommand,
 };
 use crate::events::{
     ExpenseRecorded, InvoiceNumberingConfigured, PaymentReceived, WalletCreated, WalletCredited,
@@ -1058,11 +1056,7 @@ where
 /// Handler skeleton: create an `FmFeesGroup` aggregate.
 /// Full implementation lands in Phase 7 Workstream G.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn create_fm_fees_group<C, G>(
-    cmd: CreateFmFeesGroupCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn create_fm_fees_group<C, G>(cmd: CreateFmFeesGroupCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -1074,11 +1068,7 @@ where
 /// Handler skeleton: read an `FmFeesGroup` aggregate.
 /// Full implementation lands in Phase 7 Workstream G.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_fm_fees_group<C, G>(
-    cmd: ReadFmFeesGroupCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn read_fm_fees_group<C, G>(cmd: ReadFmFeesGroupCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -1090,11 +1080,7 @@ where
 /// Handler skeleton: create an `FmFeesType` aggregate.
 /// Full implementation lands in Phase 7 Workstream G.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn create_fm_fees_type<C, G>(
-    cmd: CreateFmFeesTypeCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn create_fm_fees_type<C, G>(cmd: CreateFmFeesTypeCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -1106,11 +1092,7 @@ where
 /// Handler skeleton: read an `FmFeesType` aggregate.
 /// Full implementation lands in Phase 7 Workstream G.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_fm_fees_type<C, G>(
-    cmd: ReadFmFeesTypeCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn read_fm_fees_type<C, G>(cmd: ReadFmFeesTypeCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -1138,11 +1120,7 @@ where
 /// Handler skeleton: read an `FmFeesInvoice` aggregate.
 /// Full implementation lands in Phase 7 Workstream G.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_fm_fees_invoice<C, G>(
-    cmd: ReadFmFeesInvoiceCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn read_fm_fees_invoice<C, G>(cmd: ReadFmFeesInvoiceCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -1282,11 +1260,7 @@ where
 /// Handler skeleton: create an `FmFeesWeaver` aggregate.
 /// Full implementation lands in Phase 7 Workstream G.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn create_fm_fees_weaver<C, G>(
-    cmd: CreateFmFeesWeaverCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn create_fm_fees_weaver<C, G>(cmd: CreateFmFeesWeaverCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -1298,11 +1272,7 @@ where
 /// Handler skeleton: read an `FmFeesWeaver` aggregate.
 /// Full implementation lands in Phase 7 Workstream G.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_fm_fees_weaver<C, G>(
-    cmd: ReadFmFeesWeaverCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn read_fm_fees_weaver<C, G>(cmd: ReadFmFeesWeaverCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -1378,11 +1348,7 @@ where
 /// Handler skeleton: create a `Transaction` aggregate (double-entry journal).
 /// Full implementation lands in Phase 7 Workstream C.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn create_transaction<C, G>(
-    cmd: CreateTransactionCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn create_transaction<C, G>(cmd: CreateTransactionCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -1394,11 +1360,7 @@ where
 /// Handler skeleton: read a `Transaction` aggregate (double-entry journal).
 /// Full implementation lands in Phase 7 Workstream C.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_transaction<C, G>(
-    cmd: ReadTransactionCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn read_transaction<C, G>(cmd: ReadTransactionCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -1410,11 +1372,7 @@ where
 /// Handler skeleton: create a `Donor` aggregate.
 /// Full implementation lands in Phase 7 Workstream D.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn create_donor<C, G>(
-    cmd: CreateDonorCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn create_donor<C, G>(cmd: CreateDonorCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -1426,11 +1384,7 @@ where
 /// Handler skeleton: read a `Donor` aggregate.
 /// Full implementation lands in Phase 7 Workstream D.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_donor<C, G>(
-    cmd: ReadDonorCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn read_donor<C, G>(cmd: ReadDonorCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -1655,8 +1609,9 @@ mod tests {
     #[test]
     fn record_payment_returns_aggregate_and_event() -> educore_core::error::Result<()> {
         let (school, user, _at, _corr, tenant) = ctx();
-        let payment_date = chrono::NaiveDate::from_ymd_opt(2026, 6, 13)
-            .ok_or_else(|| DomainError::validation("INVARIANT: 2026-06-13 is a valid calendar date"))?;
+        let payment_date = chrono::NaiveDate::from_ymd_opt(2026, 6, 13).ok_or_else(|| {
+            DomainError::validation("INVARIANT: 2026-06-13 is a valid calendar date")
+        })?;
         let cmd = RecordPaymentCommand {
             tenant,
             amount_minor: 10_000,

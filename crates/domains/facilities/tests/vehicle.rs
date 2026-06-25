@@ -94,8 +94,7 @@ fn vehicle_create_then_update_mutates_aggregate_and_emits_events() {
         driver_id: None,
         note: None,
     };
-    let (mut vehicle, created_event) =
-        create_vehicle(create_cmd, &clock, &ids).expect("create");
+    let (mut vehicle, created_event) = create_vehicle(create_cmd, &clock, &ids).expect("create");
 
     // Aggregate fields are populated from the command.
     assert_eq!(vehicle.school_id, school);
@@ -114,10 +113,7 @@ fn vehicle_create_then_update_mutates_aggregate_and_emits_events() {
         <VehicleCreated as DomainEvent>::EVENT_TYPE,
         "facilities.vehicle.created"
     );
-    assert_eq!(
-        <VehicleCreated as DomainEvent>::AGGREGATE_TYPE,
-        "vehicle"
-    );
+    assert_eq!(<VehicleCreated as DomainEvent>::AGGREGATE_TYPE, "vehicle");
     assert_eq!(<VehicleCreated as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(created_event.aggregate_id(), vehicle.id.as_uuid());
     assert_eq!(created_event.school_id(), school);
@@ -135,8 +131,7 @@ fn vehicle_create_then_update_mutates_aggregate_and_emits_events() {
         status: None,
         note: None,
     };
-    let updated_event =
-        update_vehicle(&mut vehicle, update_cmd, &clock, &ids).expect("update");
+    let updated_event = update_vehicle(&mut vehicle, update_cmd, &clock, &ids).expect("update");
 
     // The aggregate is mutated in place.
     assert_eq!(vehicle.vehicle_model.as_str(), "Honda");
@@ -149,10 +144,7 @@ fn vehicle_create_then_update_mutates_aggregate_and_emits_events() {
         <VehicleUpdated as DomainEvent>::EVENT_TYPE,
         "facilities.vehicle.updated"
     );
-    assert_eq!(
-        <VehicleUpdated as DomainEvent>::AGGREGATE_TYPE,
-        "vehicle"
-    );
+    assert_eq!(<VehicleUpdated as DomainEvent>::AGGREGATE_TYPE, "vehicle");
     assert_eq!(<VehicleUpdated as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(updated_event.aggregate_id(), vehicle.id.as_uuid());
     assert_eq!(updated_event.school_id(), school);

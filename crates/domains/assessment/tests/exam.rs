@@ -140,10 +140,7 @@ fn exam_create_produces_aggregate_and_exam_created_event() {
         <ExamCreated as DomainEvent>::EVENT_TYPE,
         "assessment.exam.created"
     );
-    assert_eq!(
-        <ExamCreated as DomainEvent>::AGGREGATE_TYPE,
-        "exam"
-    );
+    assert_eq!(<ExamCreated as DomainEvent>::AGGREGATE_TYPE, "exam");
     assert_eq!(<ExamCreated as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(event.aggregate_id(), exam.id.as_uuid());
     assert_eq!(event.school_id(), school);

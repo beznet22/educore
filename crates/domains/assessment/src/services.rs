@@ -28,36 +28,34 @@ use crate::commands::{
     validate_exam_code, validate_exam_mark, validate_exam_name, validate_pass_mark,
     AddTeacherRemarkCommand, ApproveTeacherEvaluationCommand, AssessmentUniquenessChecker,
     CancelAdmitCardCommand, CancelExamScheduleCommand, CancelSeatPlanCommand,
-    ConfigureAdmitCardSettingsCommand, ConfigureCustomResultSettingsCommand,
-    CreateExamCommand, CreateExamSettingCommand, CreateMarksGradeCommand,
-    CreateOnlineExamCommand, CreateQuestionCommand, CreateQuestionGroupCommand,
-    CreateQuestionLevelCommand, DeleteExamCommand, DeleteExamSettingCommand,
-    DeleteMarksGradeCommand, DeleteQuestionCommand, DeleteQuestionGroupCommand,
-    DeleteQuestionLevelCommand, EnterMarksCommand, EvaluateOnlineExamCommand,
-    GenerateAdmitCardCommand, GenerateReportCardCommand, GenerateSeatPlanCommand,
-    InitializeMarksRegisterCommand, MarkExamAttendanceCommand, MarkExamStepSkipCommand,
-    MarkTeacherEvaluationCommand, PublishExamRoutineCommand, PublishFrontResultCommand,
-    PublishOnlineExamCommand, PublishResultCommand, RegenerateAdmitCardCommand,
-    RejectTeacherEvaluationCommand, RepublishResultCommand, ScheduleExamCommand,
-    SetExamSignatureCommand, StartOnlineExamCommand, SubmitMarksCommand,
+    ConfigureAdmitCardSettingsCommand, ConfigureCustomResultSettingsCommand, CreateExamCommand,
+    CreateExamSettingCommand, CreateMarksGradeCommand, CreateOnlineExamCommand,
+    CreateQuestionCommand, CreateQuestionGroupCommand, CreateQuestionLevelCommand,
+    DeleteExamCommand, DeleteExamSettingCommand, DeleteMarksGradeCommand, DeleteQuestionCommand,
+    DeleteQuestionGroupCommand, DeleteQuestionLevelCommand, EnterMarksCommand,
+    EvaluateOnlineExamCommand, GenerateAdmitCardCommand, GenerateReportCardCommand,
+    GenerateSeatPlanCommand, InitializeMarksRegisterCommand, MarkExamAttendanceCommand,
+    MarkExamStepSkipCommand, MarkTeacherEvaluationCommand, PublishExamRoutineCommand,
+    PublishFrontResultCommand, PublishOnlineExamCommand, PublishResultCommand,
+    RegenerateAdmitCardCommand, RejectTeacherEvaluationCommand, RepublishResultCommand,
+    ScheduleExamCommand, SetExamSignatureCommand, StartOnlineExamCommand, SubmitMarksCommand,
     SubmitOnlineExamAnswerCommand, UpdateExamAttendanceCommand, UpdateExamCommand,
     UpdateExamRoutinePageCommand, UpdateExamScheduleCommand, UpdateExamSettingCommand,
-    UpdateFrontendExamResultCommand,
-    UpdateMarksGradeCommand, UpdateQuestionCommand, UpdateQuestionGroupCommand,
-    UpdateQuestionLevelCommand, UpdateResultRemarksCommand, UpdateSeatPlanCommand,
-    UpdateTeacherRemarkCommand,
+    UpdateFrontendExamResultCommand, UpdateMarksGradeCommand, UpdateQuestionCommand,
+    UpdateQuestionGroupCommand, UpdateQuestionLevelCommand, UpdateResultRemarksCommand,
+    UpdateSeatPlanCommand, UpdateTeacherRemarkCommand,
 };
 use crate::events::{
     AdmitCardCancelled, AdmitCardGenerated, AdmitCardRegenerated, AdmitCardSettingCreated,
     CustomResultSettingCreated, ExamAttendanceCreated, ExamCreated, ExamDeleted,
     ExamRoutinePageCreated, ExamScheduleCancelled, ExamScheduleUpdated, ExamScheduled,
     ExamSettingCreated, ExamSignatureCreated, ExamStepSkipCreated, ExamUpdated,
-    FrontendExamResultCreated, FrontendExamRoutineCreated, FrontendResultCreated,
-    MarksEntered, MarksGradeCreated, MarksRegisterCancelled, MarksRegisterCreated,
-    MarksSubmitted, OnlineExamCreated, QuestionBankCreated, QuestionGroupCreated,
-    QuestionLevelCreated, ReportCardGenerated, ResultPublished, ResultRemarksUpdated,
-    ResultRepublished, SeatPlanCancelled, SeatPlanGenerated, SeatPlanUpdated,
-    StudentTakeOnlineExamCreated, TeacherEvaluationCreated, TeacherRemarkCreated,
+    FrontendExamResultCreated, FrontendExamRoutineCreated, FrontendResultCreated, MarksEntered,
+    MarksGradeCreated, MarksRegisterCancelled, MarksRegisterCreated, MarksSubmitted,
+    OnlineExamCreated, QuestionBankCreated, QuestionGroupCreated, QuestionLevelCreated,
+    ReportCardGenerated, ResultPublished, ResultRemarksUpdated, ResultRepublished,
+    SeatPlanCancelled, SeatPlanGenerated, SeatPlanUpdated, StudentTakeOnlineExamCreated,
+    TeacherEvaluationCreated, TeacherRemarkCreated,
 };
 use crate::value_objects::ExamId;
 use educore_academic::value_objects::AcademicYearId;
@@ -1236,7 +1234,9 @@ pub async fn publish_front_result(
 pub async fn update_frontend_exam_result(
     _cmd: UpdateFrontendExamResultCommand,
 ) -> Result<FrontendExamResultCreated> {
-    Err(DomainError::not_supported("TODO: update_frontend_exam_result"))
+    Err(DomainError::not_supported(
+        "TODO: update_frontend_exam_result",
+    ))
 }
 
 /// Handler skeleton for [`CreateOnlineExamCommand`].
@@ -1260,7 +1260,9 @@ pub async fn start_online_exam(
 pub async fn submit_online_exam_answer(
     _cmd: SubmitOnlineExamAnswerCommand,
 ) -> Result<StudentTakeOnlineExamCreated> {
-    Err(DomainError::not_supported("TODO: submit_online_exam_answer"))
+    Err(DomainError::not_supported(
+        "TODO: submit_online_exam_answer",
+    ))
 }
 
 /// Handler skeleton for [`EvaluateOnlineExamCommand`].
@@ -1356,13 +1358,13 @@ pub async fn approve_teacher_evaluation(
 pub async fn reject_teacher_evaluation(
     _cmd: RejectTeacherEvaluationCommand,
 ) -> Result<TeacherEvaluationCreated> {
-    Err(DomainError::not_supported("TODO: reject_teacher_evaluation"))
+    Err(DomainError::not_supported(
+        "TODO: reject_teacher_evaluation",
+    ))
 }
 
 /// Handler skeleton for [`AddTeacherRemarkCommand`].
-pub async fn add_teacher_remark(
-    _cmd: AddTeacherRemarkCommand,
-) -> Result<TeacherRemarkCreated> {
+pub async fn add_teacher_remark(_cmd: AddTeacherRemarkCommand) -> Result<TeacherRemarkCreated> {
     Err(DomainError::not_supported("TODO: add_teacher_remark"))
 }
 
@@ -1383,9 +1385,7 @@ pub async fn configure_custom_result_settings(
 }
 
 /// Handler skeleton for [`MarkExamStepSkipCommand`].
-pub async fn mark_exam_step_skip(
-    _cmd: MarkExamStepSkipCommand,
-) -> Result<ExamStepSkipCreated> {
+pub async fn mark_exam_step_skip(_cmd: MarkExamStepSkipCommand) -> Result<ExamStepSkipCreated> {
     Err(DomainError::not_supported("TODO: mark_exam_step_skip"))
 }
 

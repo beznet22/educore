@@ -41,12 +41,12 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use educore_audit::prelude::{AuditLogEntry, AuditWriter, RetentionPolicy};
+use educore_cms::commands::{CreatePageCommand, UpdatePageCommand};
+use educore_cms::prelude::*;
 use educore_core::clock::{IdGenerator as _, SystemIdGen, TestClock};
 use educore_core::ids::SchoolId;
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::Timestamp;
-use educore_cms::commands::{CreatePageCommand, UpdatePageCommand};
-use educore_cms::prelude::*;
 use educore_event_bus::InProcessEventBus;
 use educore_events::event_bus::EventBus;
 use educore_rbac::ids::RoleId;
@@ -68,7 +68,13 @@ struct InMemoryPageRepo {
 #[async_trait]
 impl PageRepository for InMemoryPageRepo {
     async fn get(&self, id: PageId) -> educore_core::error::Result<Option<Page>> {
-        Ok(self.rows.lock().unwrap().iter().find(|p| p.id == id).cloned())
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|p| p.id == id)
+            .cloned())
     }
 
     async fn find_by_slug(
@@ -79,11 +85,9 @@ impl PageRepository for InMemoryPageRepo {
         Ok(None)
     }
 
-    async fn find_home(
-        &self,
-        _school: SchoolId,
-    ) -> educore_core::error::Result<Option<Page>> {
-        Ok(self.rows
+    async fn find_home(&self, _school: SchoolId) -> educore_core::error::Result<Option<Page>> {
+        Ok(self
+            .rows
             .lock()
             .unwrap()
             .iter()
@@ -99,11 +103,9 @@ impl PageRepository for InMemoryPageRepo {
         Ok(self.rows.lock().unwrap().clone())
     }
 
-    async fn list_published(
-        &self,
-        _school: SchoolId,
-    ) -> educore_core::error::Result<Vec<Page>> {
-        Ok(self.rows
+    async fn list_published(&self, _school: SchoolId) -> educore_core::error::Result<Vec<Page>> {
+        Ok(self
+            .rows
             .lock()
             .unwrap()
             .iter()
@@ -135,11 +137,7 @@ impl PageRepository for InMemoryPageRepo {
         Ok(())
     }
 
-    async fn count(
-        &self,
-        _school: SchoolId,
-        _q: PageQuery,
-    ) -> educore_core::error::Result<u64> {
+    async fn count(&self, _school: SchoolId, _q: PageQuery) -> educore_core::error::Result<u64> {
         Ok(self.rows.lock().unwrap().len() as u64)
     }
 
@@ -206,8 +204,14 @@ impl TestEnv {
         // `fresh_tenant()` so each test gets a writer bound to
         // its own tenant.
         let audit_writer = Arc::new(
-            AuditWriter::new(school, audit_log_dyn, bus_dyn, clock, RetentionPolicy::default())
-                .expect("test school_id is a valid (non-nil) UUID"),
+            AuditWriter::new(
+                school,
+                audit_log_dyn,
+                bus_dyn,
+                clock,
+                RetentionPolicy::default(),
+            )
+            .expect("test school_id is a valid (non-nil) UUID"),
         );
         let capability_check = Arc::new(InMemoryCapabilityCheck::new());
         let page_repo = Arc::new(InMemoryPageRepo::default());
@@ -416,8 +420,7 @@ async fn page_handlers_validation_failure_rejects_empty_title_without_side_effec
     // (`PageTitle::MIN_LEN = 1`), the constructor MUST reject
     // this input with `DomainError::Validation`.
     let title_result = PageTitle::new(String::new());
-    let err = title_result
-        .expect_err("PageTitle::new must reject an empty title");
+    let err = title_result.expect_err("PageTitle::new must reject an empty title");
     assert!(
         matches!(err, educore_core::error::DomainError::Validation(_)),
         "expected DomainError::Validation, got {err:?}"

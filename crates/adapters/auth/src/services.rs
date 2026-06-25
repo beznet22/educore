@@ -691,9 +691,8 @@ fn base32_decode(input: &str) -> Result<Vec<u8>, AuthError> {
         // than an `as u64` cast; if the alphabet were ever
         // expanded past 64 entries the conversion would surface
         // as a domain error rather than a silent truncation.
-        let value = u64::try_from(pos).map_err(|e| {
-            AuthError::Malformed(format!("base32 alphabet index overflow: {e}"))
-        })?;
+        let value = u64::try_from(pos)
+            .map_err(|e| AuthError::Malformed(format!("base32 alphabet index overflow: {e}")))?;
         buffer = (buffer << 5) | value;
         bits_in_buffer += 5;
         if bits_in_buffer >= 8 {
@@ -702,9 +701,8 @@ fn base32_decode(input: &str) -> Result<Vec<u8>, AuthError> {
             // always fits in `u8`; the `try_from(...)?` form
             // replaces the `as u8` cast that the engine's lint
             // forbids while preserving the structured error path.
-            let byte = u8::try_from((buffer >> bits_in_buffer) & 0xff).map_err(|e| {
-                AuthError::Malformed(format!("base32 byte overflow: {e}"))
-            })?;
+            let byte = u8::try_from((buffer >> bits_in_buffer) & 0xff)
+                .map_err(|e| AuthError::Malformed(format!("base32 byte overflow: {e}")))?;
             out.push(byte);
         }
     }

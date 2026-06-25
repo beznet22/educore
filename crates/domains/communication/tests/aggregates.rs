@@ -94,9 +94,10 @@ fn complaint_register_creates_open_complaint() {
         Some(actor),
         complaint_type_id,
         ComplaintSource::InPerson,
-        Some(PhoneNumber::new("+15551234567").unwrap_or_else(|_| {
-            PhoneNumber::new("+1-555-1234").expect("fallback phone valid")
-        })),
+        Some(
+            PhoneNumber::new("+15551234567")
+                .unwrap_or_else(|_| PhoneNumber::new("+1-555-1234").expect("fallback phone valid")),
+        ),
         date(2026, 6, 1),
         ComplaintDescription::new("Broken window in room 12.").expect("description valid"),
         None,
@@ -230,9 +231,8 @@ fn sms_log_write_appends_immutable_row() {
         "Your child was absent.".to_owned(),
         date(2026, 6, 15),
         SmsGatewayId::new(school, g.next_uuid()),
-        PhoneNumber::new("+15551234567").unwrap_or_else(|_| {
-            PhoneNumber::new("+1-555-1234").expect("fallback phone valid")
-        }),
+        PhoneNumber::new("+15551234567")
+            .unwrap_or_else(|_| PhoneNumber::new("+1-555-1234").expect("fallback phone valid")),
         None,
         actor,
         clock.now(),
@@ -278,8 +278,7 @@ fn sms_template_enable_disable_round_trip() {
         Channel::Sms,
         "absent_notification".to_owned(),
         EmailSubject::new("Attendance alert").expect("subject valid"),
-        TemplateBody::new("Hi {{guardian}}, your child is absent today.")
-            .expect("body valid"),
+        TemplateBody::new("Hi {{guardian}}, your child is absent today.").expect("body valid"),
         "attendance".to_owned(),
         vec![TemplateVariable {
             name: "guardian".to_owned(),
@@ -462,10 +461,7 @@ fn absent_notification_setup_enable_disable_cycle() {
         clock.now(),
         g.next_correlation_id(),
     );
-    assert!(matches!(
-        setup.status,
-        AbsentNotificationStatus::Disabled
-    ));
+    assert!(matches!(setup.status, AbsentNotificationStatus::Disabled));
 
     let mut setup = setup;
     setup.enable(actor, clock.now(), g.next_event_id());
@@ -483,10 +479,7 @@ fn absent_notification_setup_enable_disable_cycle() {
     );
 
     setup.disable(actor, clock.now(), g.next_event_id());
-    assert!(matches!(
-        setup.status,
-        AbsentNotificationStatus::Disabled
-    ));
+    assert!(matches!(setup.status, AbsentNotificationStatus::Disabled));
 }
 
 // =============================================================================
@@ -846,9 +839,8 @@ fn contact_message_receive_emits_received_event() {
         ContactMessageId::new(school, g.next_uuid()),
         PersonName::new("Jane Doe").expect("name valid"),
         Some(
-            PhoneNumber::new("+15551234567").unwrap_or_else(|_| {
-                PhoneNumber::new("+1-555-1234").expect("fallback phone valid")
-            }),
+            PhoneNumber::new("+15551234567")
+                .unwrap_or_else(|_| PhoneNumber::new("+1-555-1234").expect("fallback phone valid")),
         ),
         Some(EmailAddress::new("jane@example.com").expect("email valid")),
         "Admissions inquiry".to_owned(),
@@ -934,9 +926,8 @@ fn phone_call_log_record_then_update_follow_up() {
     let mut log = PhoneCallLog::fresh(
         PhoneCallLogId::new(school, g.next_uuid()),
         PersonName::new("Mr. Parent").expect("name valid"),
-        PhoneNumber::new("+15551234567").unwrap_or_else(|_| {
-            PhoneNumber::new("+1-555-1234").expect("fallback phone valid")
-        }),
+        PhoneNumber::new("+15551234567")
+            .unwrap_or_else(|_| PhoneNumber::new("+1-555-1234").expect("fallback phone valid")),
         date(2026, 6, 1),
         CallDescription::new("Discussed grade promotion criteria.").expect("description valid"),
         None,

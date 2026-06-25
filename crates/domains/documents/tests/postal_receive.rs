@@ -67,11 +67,14 @@ struct InMemoryPostalRepo {
 
 #[async_trait]
 impl PostalReceiveRepository for InMemoryPostalRepo {
-    async fn get(
-        &self,
-        id: PostalReceiveId,
-    ) -> educore_core::error::Result<Option<PostalReceive>> {
-        Ok(self.rows.lock().unwrap().iter().find(|r| r.id == id).cloned())
+    async fn get(&self, id: PostalReceiveId) -> educore_core::error::Result<Option<PostalReceive>> {
+        Ok(self
+            .rows
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|r| r.id == id)
+            .cloned())
     }
 
     async fn list(
@@ -185,8 +188,14 @@ impl TestEnv {
         // `fresh_tenant()` so each test gets a writer bound to
         // its own tenant.
         let audit_writer = Arc::new(
-            AuditWriter::new(school, audit_log_dyn, bus_dyn, clock, RetentionPolicy::default())
-                .expect("test school_id is a valid (non-nil) UUID"),
+            AuditWriter::new(
+                school,
+                audit_log_dyn,
+                bus_dyn,
+                clock,
+                RetentionPolicy::default(),
+            )
+            .expect("test school_id is a valid (non-nil) UUID"),
         );
         let capability_check = Arc::new(InMemoryCapabilityCheck::new());
         let postal_repo = Arc::new(InMemoryPostalRepo::default());

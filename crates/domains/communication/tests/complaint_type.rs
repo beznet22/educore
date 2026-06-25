@@ -49,7 +49,12 @@ fn fresh_tenant() -> TenantContext {
     let school = g.next_school_id();
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
-    TenantContext::for_user(school, actor, corr, educore_core::tenant::UserType::SchoolAdmin)
+    TenantContext::for_user(
+        school,
+        actor,
+        corr,
+        educore_core::tenant::UserType::SchoolAdmin,
+    )
 }
 
 /// Happy-path: a complaint type is created, the wire event

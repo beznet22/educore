@@ -25,10 +25,10 @@ use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
-    BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
-    Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentId, DueFeesLoginPreventId,
+    BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId, Currency,
+    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentId, DueFeesLoginPreventId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
-    FeesCarryForwardId, FeesGroupId, FeesInstallmentId, FeesInstallmentAssignDiscountId,
+    FeesCarryForwardId, FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentId,
     FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId,
     FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId, IncomeId, PaymentMethodId,
     PaymentMethodKind, PayrollGenerateId, PayrollPaymentApprovalId, PayrollPaymentId, WalletId,

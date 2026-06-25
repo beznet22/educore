@@ -28,11 +28,11 @@ use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
 
 use crate::value_objects::{
-    AcademicYearId, Author, BookAcquisitionId, BookCategoryId, BookCatalogEntryId, BookId,
+    AcademicYearId, Author, BookAcquisitionId, BookCatalogEntryId, BookCategoryId, BookId,
     BookIssueId, BookNumber, BookPrice, BookReturnId, BookTitle, CategoryName, Details, DueDate,
-    Edition, FineAmount, FineId, FinePerDay, FineReason, GivenDate, Isbn, IssueNote,
-    IssueQuantity, LibraryMemberId, LibraryMemberNoteId, MemberId, MemberUdId, RackNumber,
-    ReturnDate, RoleId, StockAdjustmentReason, StockCopies, SubjectId,
+    Edition, FineAmount, FineId, FinePerDay, FineReason, GivenDate, Isbn, IssueNote, IssueQuantity,
+    LibraryMemberId, LibraryMemberNoteId, MemberId, MemberUdId, RackNumber, ReturnDate, RoleId,
+    StockAdjustmentReason, StockCopies, SubjectId,
 };
 
 #[allow(dead_code)]

@@ -94,8 +94,7 @@ fn calendar_setting_new_then_enable_is_idempotent() {
         created_at,
     );
 
-    let mut setting =
-        CalendarSetting::new(cmd).expect("valid CalendarSetting should construct");
+    let mut setting = CalendarSetting::new(cmd).expect("valid CalendarSetting should construct");
 
     // Aggregate fields populated from the command.
     assert_eq!(setting.school_id, school);
@@ -184,13 +183,8 @@ fn calendar_setting_new_rejects_invalid_css_color() {
             // the CSS color check. We accept either form because
             // the spec only requires a Validation error — the
             // message wording is an implementation detail.
-            assert!(
-                !msg.is_empty(),
-                "Validation error must carry a message"
-            );
+            assert!(!msg.is_empty(), "Validation error must carry a message");
         }
-        other => panic!(
-            "expected EventsDomainError::Validation, got: {other:?}",
-        ),
+        other => panic!("expected EventsDomainError::Validation, got: {other:?}",),
     }
 }

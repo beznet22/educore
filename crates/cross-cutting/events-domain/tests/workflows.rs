@@ -64,10 +64,7 @@ fn admin_context() -> (TenantContext, SystemIdGen) {
     )
 }
 
-fn calendar_event_id(
-    g: &SystemIdGen,
-    school: educore_core::ids::SchoolId,
-) -> CalendarEventId {
+fn calendar_event_id(g: &SystemIdGen, school: educore_core::ids::SchoolId) -> CalendarEventId {
     CalendarEventId::new(school, g.next_uuid())
 }
 
@@ -210,7 +207,10 @@ fn calendar_event_lifecycle_create_emits_event_created() {
         clock.now(),
     );
 
-    assert_eq!(<EventCreated as DomainEvent>::EVENT_TYPE, "events.calendar_event.created");
+    assert_eq!(
+        <EventCreated as DomainEvent>::EVENT_TYPE,
+        "events.calendar_event.created"
+    );
     assert_eq!(created.school_id, school);
     assert_eq!(created.title, "Parent-Teacher Conference");
     assert_eq!(created.from_date, date(2026, 6, 10));
@@ -260,7 +260,10 @@ fn calendar_event_lifecycle_update_emits_event_updated_and_bumps_version() {
         at,
     );
 
-    assert_eq!(<EventUpdated as DomainEvent>::EVENT_TYPE, "events.calendar_event.updated");
+    assert_eq!(
+        <EventUpdated as DomainEvent>::EVENT_TYPE,
+        "events.calendar_event.updated"
+    );
     assert_eq!(updated.changes, changes);
     assert_eq!(updated.updated_by, actor);
     assert_eq!(event.title, "Annual Sports Day");
@@ -395,18 +398,24 @@ fn calendar_event_lifecycle_delete_emits_event_deleted_and_blocks_updates() {
 
     let deleted = EventDeleted::new(event.id, event.school_id, actor, event_id, correlation, at);
 
-    assert_eq!(<EventDeleted as DomainEvent>::EVENT_TYPE, "events.calendar_event.deleted");
+    assert_eq!(
+        <EventDeleted as DomainEvent>::EVENT_TYPE,
+        "events.calendar_event.deleted"
+    );
     assert!(!event.active_status);
     assert_eq!(deleted.deleted_by, actor);
 
     // Per spec invariant 3: cannot update a soft-deleted event.
     let err = event
-        .update(Some("Field Trip (cancelled)".to_owned()), None, None, actor, clock.now())
+        .update(
+            Some("Field Trip (cancelled)".to_owned()),
+            None,
+            None,
+            actor,
+            clock.now(),
+        )
         .expect_err("update on soft-deleted event must be rejected");
-    assert!(
-        matches!(err, EventsDomainError::Conflict(_)),
-        "got {err:?}"
-    );
+    assert!(matches!(err, EventsDomainError::Conflict(_)), "got {err:?}");
 }
 
 // =============================================================================
@@ -446,7 +455,10 @@ fn holiday_management_add_emits_holiday_created() {
         clock.now(),
     );
 
-    assert_eq!(<HolidayCreated as DomainEvent>::EVENT_TYPE, "events.holiday.created");
+    assert_eq!(
+        <HolidayCreated as DomainEvent>::EVENT_TYPE,
+        "events.holiday.created"
+    );
     assert_eq!(created.school_id, school);
     assert_eq!(created.title, "Winter Break");
     assert_eq!(created.from_date, date(2026, 12, 20));
@@ -576,7 +588,10 @@ fn incident_lifecycle_file_emits_incident_reported() {
         clock.now(),
     );
 
-    assert_eq!(<IncidentReported as DomainEvent>::EVENT_TYPE, "events.incident.reported");
+    assert_eq!(
+        <IncidentReported as DomainEvent>::EVENT_TYPE,
+        "events.incident.reported"
+    );
     assert_eq!(reported.school_id, school);
     assert_eq!(reported.title, "Disruptive behaviour in class");
     assert_eq!(reported.point, 5);
@@ -628,7 +643,10 @@ fn incident_lifecycle_triage_emits_incident_updated() {
         at,
     );
 
-    assert_eq!(<IncidentUpdated as DomainEvent>::EVENT_TYPE, "events.incident.updated");
+    assert_eq!(
+        <IncidentUpdated as DomainEvent>::EVENT_TYPE,
+        "events.incident.updated"
+    );
     assert_eq!(updated.changes, changes);
     assert_eq!(incident.point, 3);
     assert_eq!(incident.description, "Late homework — second occurrence");
@@ -658,7 +676,9 @@ fn incident_lifecycle_resolve_transitions_to_resolved() {
     assert!(matches!(incident.status, IncidentStatus::Open));
 
     let at = clock.now();
-    incident.resolve(actor, at).expect("resolve must succeed on Open incident");
+    incident
+        .resolve(actor, at)
+        .expect("resolve must succeed on Open incident");
 
     let resolved = IncidentResolved::new(
         incident.id,
@@ -669,7 +689,10 @@ fn incident_lifecycle_resolve_transitions_to_resolved() {
         at,
     );
 
-    assert_eq!(<IncidentResolved as DomainEvent>::EVENT_TYPE, "events.incident.resolved");
+    assert_eq!(
+        <IncidentResolved as DomainEvent>::EVENT_TYPE,
+        "events.incident.resolved"
+    );
     assert!(matches!(incident.status, IncidentStatus::Resolved));
     assert_eq!(resolved.resolved_by, actor);
     assert_eq!(resolved.incident_id, incident.id);
@@ -708,10 +731,7 @@ fn incident_lifecycle_resolved_incident_is_immutable() {
             clock.now(),
         )
         .expect_err("update on resolved incident must be rejected");
-    assert!(
-        matches!(err, EventsDomainError::Conflict(_)),
-        "got {err:?}"
-    );
+    assert!(matches!(err, EventsDomainError::Conflict(_)), "got {err:?}");
 }
 
 /// Incident lifecycle failure path: resolving an already-
@@ -741,10 +761,7 @@ fn incident_lifecycle_double_resolve_returns_conflict() {
     let err = incident
         .resolve(actor, clock.now())
         .expect_err("second resolve must be rejected");
-    assert!(
-        matches!(err, EventsDomainError::Conflict(_)),
-        "got {err:?}"
-    );
+    assert!(matches!(err, EventsDomainError::Conflict(_)), "got {err:?}");
 }
 
 /// Incident lifecycle end-of-life (close): an admin soft-deletes
@@ -776,7 +793,10 @@ fn incident_lifecycle_close_emits_incident_deleted() {
 
     let deleted = IncidentDeleted::new(incident.id, incident.school_id, event_id, correlation, at);
 
-    assert_eq!(<IncidentDeleted as DomainEvent>::EVENT_TYPE, "events.incident.deleted");
+    assert_eq!(
+        <IncidentDeleted as DomainEvent>::EVENT_TYPE,
+        "events.incident.deleted"
+    );
     assert!(!incident.active_status);
     assert_eq!(deleted.incident_id, incident.id);
 }

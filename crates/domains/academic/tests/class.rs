@@ -108,8 +108,7 @@ fn class_create_builds_aggregate_and_emits_class_created_event() {
         class_name: "Grade 1".to_owned(),
         pass_mark: 35.0,
     };
-    let (agg, created_event) =
-        create_class(create_cmd, &clock, &ids).expect("create");
+    let (agg, created_event) = create_class(create_cmd, &clock, &ids).expect("create");
 
     // Aggregate fields are populated from the command.
     assert_eq!(agg.school_id, school);
@@ -118,10 +117,7 @@ fn class_create_builds_aggregate_and_emits_class_created_event() {
     // The default optional-subject GPA threshold is 0.0
     // (any GPA is eligible); the school can raise it later
     // via `SetOptionalSubjectGpaThreshold`.
-    assert_eq!(
-        agg.optional_subject_gpa_threshold.as_f32(),
-        0.0
-    );
+    assert_eq!(agg.optional_subject_gpa_threshold.as_f32(), 0.0);
     // Audit metadata footer is initialised.
     assert_eq!(agg.version.get(), 1);
     assert!(agg.active_status.is_active());
@@ -143,14 +139,8 @@ fn class_create_builds_aggregate_and_emits_class_created_event() {
         <ClassCreated as DomainEvent>::EVENT_TYPE,
         "academic.class.created"
     );
-    assert_eq!(
-        <ClassCreated as DomainEvent>::AGGREGATE_TYPE,
-        "class"
-    );
-    assert_eq!(
-        <ClassCreated as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<ClassCreated as DomainEvent>::AGGREGATE_TYPE, "class");
+    assert_eq!(<ClassCreated as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(created_event.aggregate_id(), agg.id.as_uuid());
     assert_eq!(created_event.school_id(), school);
     assert_eq!(created_event.class_name, "Grade 1");
@@ -180,8 +170,8 @@ fn class_create_with_empty_name_returns_validation_error() {
         class_name: String::new(),
         pass_mark: 35.0,
     };
-    let err = create_class(create_cmd, &clock, &ids)
-        .expect_err("empty class name must fail validation");
+    let err =
+        create_class(create_cmd, &clock, &ids).expect_err("empty class name must fail validation");
     assert!(
         matches!(err, DomainError::Validation(_)),
         "expected Validation, got {err:?}"
@@ -197,6 +187,6 @@ fn class_create_with_empty_name_returns_validation_error() {
         class_name: "Grade 1".to_owned(),
         pass_mark: 35.0,
     };
-    let (_agg, _event) = create_class(ok_cmd, &clock, &ids)
-        .expect("non-empty class name must succeed");
+    let (_agg, _event) =
+        create_class(ok_cmd, &clock, &ids).expect("non-empty class name must succeed");
 }

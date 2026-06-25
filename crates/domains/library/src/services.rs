@@ -62,9 +62,9 @@ use crate::commands::{
 };
 use crate::events::{
     BookAdded, BookCategoryCreated, BookCategoryDeleted, BookCategoryUpdated, BookDeleted,
-    BookIssued, BookMarkedLost, BookQuantityAdjusted, BookRenewed, BookReturnRecorded, BookReturned,
-    BookUpdated, FineCalculated, FineWaived, LibraryMemberDeactivated, LibraryMemberDeleted,
-    LibraryMemberReactivated, LibraryMemberRegistered, LibraryMemberUpdated,
+    BookIssued, BookMarkedLost, BookQuantityAdjusted, BookRenewed, BookReturnRecorded,
+    BookReturned, BookUpdated, FineCalculated, FineWaived, LibraryMemberDeactivated,
+    LibraryMemberDeleted, LibraryMemberReactivated, LibraryMemberRegistered, LibraryMemberUpdated,
 };
 use crate::value_objects::{
     AcademicYearId, Author, BookCategoryId, BookId, BookIssueId, BookReturnId, BookTitle,
