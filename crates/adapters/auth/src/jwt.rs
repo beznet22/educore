@@ -598,7 +598,13 @@ impl AuthProvider for JwtAuthProvider {
                 self.check_not_revoked(&claims.sid)?;
                 self.session_from_claims(&claims)
             }
-            Credential::Anonymous => Ok(self.anonymous_session()),
+            // FND-SEC-AUTH-001: reject anonymous auth by default.
+            // Callers needing an anonymous session should construct one
+            // explicitly via SessionService::bootstrap_anonymous() (a
+            // deliberate opt-in path). This prevents the prior auth bypass
+            // where Credential::Anonymous returned a full Session with
+            // mfa_enabled=false.
+            Credential::Anonymous => Err(AuthError::InvalidCredentials),
             Credential::UsernamePassword { .. }
             | Credential::Oauth2 { .. }
             | Credential::Saml { .. }
