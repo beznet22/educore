@@ -27,7 +27,7 @@ priority = "P0"
 area = "ENGINE"
 description = "Lint sub-module does NOT enforce tier-boundary direction (domain importing adapter); ADR-013 § Boundary enforcement item 2"
 source = "docs/decisions/ADR-013-CrateLayout.md"
-check = "file:crates/infra/core/src/lint.rs regex:tier.?boundary|tier_boundary"
+check = "file:crates/infra/core/src/lint.rs regex:fn check_tier_boundaries"
 
 [[item]]
 id = "STD-CI-CROSS-COMPILE"
@@ -109,7 +109,7 @@ check = "file:crates/adapters/payment/src/stripe.rs regex:async fn settlement"
 id = "PORT-INT-COMPILE-BROKEN"
 priority = "P0"
 area = "INTEGRATIONS"
-description = "crates/adapters/integrations/src/lib.rs does not compile: Result<Vec<…>> missing second generic argument"
+description = "Resolved — integrations crate compiles cleanly (verified 2026-06-25: cargo check -p educore-integrations exit 0). Audit finding was stale; no code change needed."
 source = "crates/adapters/integrations/src/lib.rs:121"
 check = "cmd:cargo check -p educore-integrations"
 
@@ -159,7 +159,7 @@ priority = "P0"
 area = "STORAGE"
 description = "StorageAdapter trait exposes migrate() but docs mandate create_schema(); port name and consumer name diverge"
 source = "docs/audit_reports/findings/wave4-storage-port.md PORT-STORE-001"
-check = "commit:create_schema|StorageAdapter::create_schema"
+check = "file:crates/infra/storage/src/port.rs regex:async fn create_schema"
 
 [[item]]
 id = "FND-PORT-STORE-003"

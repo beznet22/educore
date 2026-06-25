@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 139 |
+| Done (`[x]`) | 141 |
 | In-progress (`[~]`) | 11 |
-| Open (`[ ]`) | 335 |
-| Last update | 2026-06-25 11:24 UTC |
+| Open (`[ ]`) | 333 |
+| Last update | 2026-06-25 11:40 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -96,9 +96,9 @@
       **Source:** docs/decisions/ADR-014-Idempotency.md, docs/audit_reports/findings/wave4-core.md CORE-003
       **Check:** `file:crates/infra/core/src/error.rs regex:IdempotencyConflict|IdempotencyPending` → _error.rs:IdempotencyConflict|IdempotencyPending_
 
-- [ ] **ADR-013-LINT-TIER-CHECK** Lint sub-module does NOT enforce tier-boundary direction (domain importing adapter); ADR-013 § Boundary enforcement item 2
+- [x] **ADR-013-LINT-TIER-CHECK** Lint sub-module does NOT enforce tier-boundary direction (domain importing adapter); ADR-013 § Boundary enforcement item 2
       **Source:** docs/decisions/ADR-013-CrateLayout.md
-      **Check:** `file:crates/infra/core/src/lint.rs regex:tier.?boundary|tier_boundary` → _lint.rs:tier.?boundary|tier_boundary_
+      **Check:** `file:crates/infra/core/src/lint.rs regex:fn check_tier_boundaries` → _lint.rs:fn check_tier_boundaries_
 
 - [ ] **STD-CI-CROSS-COMPILE** No .github/workflows/; cross-compile mandate (Linux x86_64, aarch64, macOS, Windows) is unverified
       **Source:** docs/code-standards.md § Cross-Compilation
@@ -140,9 +140,9 @@
       **Source:** docs/schemas/tenancy-schema.md § 7, roadmap A-4
       **Check:** `file:crates/infra/query-derive/src/lib.rs regex:rls: ::std::vec!` → _lib.rs:rls: ::std::vec_
 
-- [ ] **FND-PORT-STORE-001** StorageAdapter trait exposes migrate() but docs mandate create_schema(); port name and consumer name diverge
+- [x] **FND-PORT-STORE-001** StorageAdapter trait exposes migrate() but docs mandate create_schema(); port name and consumer name diverge
       **Source:** docs/audit_reports/findings/wave4-storage-port.md PORT-STORE-001
-      **Check:** `commit:create_schema|StorageAdapter::create_schema` → _git log grep: create_schema|StorageAdapter::create_schema_
+      **Check:** `file:crates/infra/storage/src/port.rs regex:async fn create_schema` → _port.rs:async fn create_schema_
 
 - [ ] **FND-PORT-STORE-003** Outbox::append/pending/mark_published have no school_id on trait; TenantContext not propagated through Outbox
       **Source:** docs/audit_reports/findings/wave4-storage-port.md PORT-STORE-003
