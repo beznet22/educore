@@ -1,5 +1,9 @@
 # Production Readiness Roadmap
 
+> **RESOLVED 2026-06-25 (Wave 6.1 / D-4):** Phase 17 = CMS (Phase 12 in AGENTS.md). No new phase needed. The audit was stale. Decision A.
+>
+> Roadmap items **D-4** (P0-DOCS) and **I-3** (P3-DOCS, duplicate of D-4) — both of which claimed "Phase 17 missing from build plan" — were the source of the conflict. Phase 17 IS documented in `docs/build-plan.md` (line 1714: `## Phase 17 — Production readiness`); the build plan numbers 18 phases (Phase 0..17), matching `AGENTS.md:475` (`Build plan: 18 phases (Phase 0..17)`). The auto-check `file:docs/build-plan.md regex:Phase 17|phase 17` succeeds, which is why both items already show `[x]` in the COMPUTED sections below. The stale title text on those two lines has been corrected in `12-roadmap-data.toml` so future regenerations match. Closes roadmap item **D-4** (decision A locked in [`13-decision-needed.md`](13-decision-needed.md)).
+
 > **How to update:** run `scripts/update-roadmap.py` from the repo root.
 > The script reads `12-roadmap-data.toml`, runs each `check`, and
 > regenerates the COMPUTED sections below. Items the script cannot
@@ -148,8 +152,8 @@
 ### P0-DOCS — Decisions must be resolved (see `13-decision-needed.md`)
 
 <!-- COMPUTED:items.P0.DOCS -->
-- [x] **D-4** Phase 17 missing from build plan (or doesn't exist)
-      **Source:** docs/build-plan.md
+- [x] **D-4** Phase 17 IS documented in build-plan.md (Production readiness); audit was stale — see header note. No new phase needed.
+      **Source:** docs/build-plan.md; docs/audit_reports/remediation/13-decision-needed.md § D-4 (Option A locked 2026-06-25)
       **Check:** `file:docs/build-plan.md regex:Phase 17|phase 17` → _build-plan.md:Phase 17|phase 17_
 
 - [ ] **D-5** Cross-domain ownership collisions — 3 ADRs needed (SubjectAttendance, ExamAttendance, SpeechSlider)
@@ -1248,8 +1252,8 @@
       **Source:** wave5-docs-1.md
       **Check:** `manual:resolve SurrealDB primary status across docs` → _manual: resolve SurrealDB primary status across docs_
 
-- [x] **I-3** Phase 17 missing from build plan
-      **Source:** See D-4 (P0)
+- [x] **I-3** Phase 17 missing from build plan — RESOLVED (duplicate of D-4); see header note.
+      **Source:** See D-4 (P0); docs/audit_reports/remediation/13-decision-needed.md § D-4
       **Check:** `duplicate:D-4` → _build-plan.md:Phase 17|phase 17_
 
 - [~] **I-4** `library-docs.md` phantom `Engine::builder()` APIs

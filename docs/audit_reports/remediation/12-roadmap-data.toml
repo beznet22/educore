@@ -171,8 +171,8 @@ check = "file:crates/tools/testkit/src/storage.rs regex:outbox.*bus|drain.*publi
 id = "D-4"
 priority = "P0"
 area = "DOCS"
-description = "Phase 17 missing from build plan (or doesn't exist)"
-source = "docs/build-plan.md"
+description = "Phase 17 IS documented in build-plan.md as Production readiness (Phase 0..17 = 18 phases). Audit was stale — the check `file:docs/build-plan.md regex:Phase 17|phase 17` matches. No new phase needed. See 13-decision-needed.md D-4 Option A (locked 2026-06-25)."
+source = "docs/build-plan.md; docs/audit_reports/remediation/13-decision-needed.md § D-4 (Option A locked)"
 check = "file:docs/build-plan.md regex:Phase 17|phase 17"
 
 [[item]]
@@ -509,8 +509,8 @@ check = "manual:resolve SurrealDB primary status across docs"
 id = "I-3"
 priority = "P3"
 area = "DOCS"
-description = "Phase 17 missing from build plan"
-source = "See D-4 (P0)"
+description = "Phase 17 missing from build plan — RESOLVED (duplicate of D-4). Phase 17 = Production readiness, already documented in build-plan.md. No new phase needed. See 13-decision-needed.md D-4 Option A (locked 2026-06-25)."
+source = "See D-4 (P0); docs/audit_reports/remediation/13-decision-needed.md § D-4"
 check = "duplicate:D-4"
 
 [[item]]
