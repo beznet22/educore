@@ -51,7 +51,11 @@ pub use educore_storage_sqlite as storage_sqlite;
 pub use educore_storage_surrealdb as storage_surrealdb;
 
 // ---- Sync engine (cross-cutting port, Phase 0 per ADR-018) ---------------
+// Gated behind the `sync` feature flag (ADR-018 § 4). Default build excludes
+// the sync surface entirely; pass `--features sync` to the umbrella to include.
+#[cfg(feature = "sync")]
 pub use educore_sync as sync;
+#[cfg(feature = "sync")]
 pub use educore_sync_inprocess as sync_inprocess;
 
 // ---- Test infrastructure -------------------------------------------------
