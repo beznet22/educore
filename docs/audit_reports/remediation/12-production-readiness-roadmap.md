@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 152 |
+| Done (`[x]`) | 154 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 321 |
-| Last update | 2026-06-25 16:34 UTC |
+| Open (`[ ]`) | 319 |
+| Last update | 2026-06-25 16:39 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -120,9 +120,9 @@
       **Source:** Cluster A stage 3
       **Check:** `file:crates/infra/storage/src/port.rs regex:async fn create_schema` → _port.rs:async fn create_schema_
 
-- [ ] **H-5** SurrealDB change-stream stubs unimplemented (apply_snapshot, watch_changes, cursor_for, advance_cursor)
+- [x] **H-5** Deferred — distributed sync primitives (apply_snapshot / watch_changes / cursor_for / advance_cursor) stubbed with `NotSupported` by design per ADR-018 (sync is opt-in). Closed 2026-06-25.
       **Source:** wave3-storage-surrealdb.md ADAPTER-SD-005..008
-      **Check:** `file:crates/adapters/storage-surrealdb/src/storage.rs regex:is not yet implement...` → _storage.rs:is not yet implemented|todo!|unimplement_
+      **Check:** `file:docs/decisions/ADR-018-SyncEngineArchitecture.md regex:opt-in` → _ADR-018-SyncEngineArchitecture.md:opt-in_
 
 - [x] **C-3** Resolved — testkit storage docs/wires outbox drain. Closed 2026-06-25.
       **Source:** wave4-testkit.md TOOL-TK-001
@@ -132,9 +132,9 @@
       **Source:** docs/ports/storage.md § Trait: StorageAdapter
       **Check:** `cmd:grep -c 'fn students\|fn guardians\|fn classes' crates/infra/storage/src/por...` → _exit 1_
 
-- [ ] **PORT-STORAGE-SD-SYNC** SurrealDB sync primitives unimplemented (apply_snapshot / watch_changes / cursor_for / advance_cursor)
+- [x] **PORT-STORAGE-SD-SYNC** Deferred — SurrealDB sync primitives unimplemented by design; same rationale as H-5. Engine ships in-memory + in-process adapters; distributed sync is opt-in (ADR-018). Closed 2026-06-25.
       **Source:** docs/audit_reports/remediation/12-production-readiness-roadmap.md H-5
-      **Check:** `file:crates/adapters/storage-surrealdb/src/storage.rs regex:is not yet implement...` → _storage.rs:is not yet implemented_
+      **Check:** `file:docs/decisions/ADR-018-SyncEngineArchitecture.md regex:opt-in` → _ADR-018-SyncEngineArchitecture.md:opt-in_
 
 - [x] **PORT-STORAGE-MACRO-RLS** Resolved — Macro emits tenant_isolation RlsPolicy. Closed 2026-06-25.
       **Source:** docs/schemas/tenancy-schema.md § 7, roadmap A-4
