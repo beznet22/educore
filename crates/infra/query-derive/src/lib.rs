@@ -661,8 +661,20 @@ fn expand(input: DeriveInput) -> syn::Result<TokenStream2> {
                     __R: ::std::convert::Into<::educore_core::query::Relation>,
                     __F: ::std::ops::FnOnce(::educore_core::query::RelationalField) -> ::educore_core::query::RelationalField,
                 {
-                    let _ = relation;
-                    let _ = __build;
+                    let _rel_field: ::educore_core::query::RelationalField =
+                        __build(::educore_core::query::RelationalField);
+                    let rel: ::educore_core::query::Relation = relation.into();
+                    self.filters.push(
+                        ::educore_core::query::QueryNode::HasRelation(
+                            rel,
+                            ::std::boxed::Box::new(
+                                ::educore_core::query::QueryNode::Eq(
+                                    _rel_field,
+                                    ::educore_core::query::Value::Bool(true),
+                                ),
+                            ),
+                        ),
+                    );
                     self
                 }
             };
@@ -860,13 +872,16 @@ fn expand(input: DeriveInput) -> syn::Result<TokenStream2> {
         // snake_case (with a trailing "s" — naive pluralization;
         // adapters may override via a future `#[query(table = "...")]`
         // attribute). The columns are derived from the struct's
-        // fields, with `ColumnType::Custom("UNKNOWN")` as a placeholder
-        // until type inference lands (Cluster A stage 2 follow-up).
+        // fields, with `ColumnType::Custom(<TypeName>)` so the wire
+        // descriptor carries the Rust type name verbatim. A future
+        // Cluster A stage 2 follow-up will map Rust types to
+        // `ColumnType::Uuid` / `ColumnType::String` etc. instead of
+        // `Custom`.
         //
-        // Indexes, foreign keys, and RLS policies are empty arrays —
-        // the audit's CORE-002 finding noted these need to be derived
-        // from `#[query(...)]` attributes. That follow-up is tracked
-        // under Cluster A stage 2.
+        // Indexes emit a primary-key index (`idx_pk` on `id`); RLS
+        // emits a `tenant_isolation` policy. Foreign keys remain
+        // empty pending the `#[foreign_key]` attribute wiring (tracked
+        // under Cluster A stage 2).
         //
         // Note: this is a *function*, not a `const`, because
         // `EntityDescriptor` contains `Vec` fields and Rust forbids
@@ -879,10 +894,11 @@ fn expand(input: DeriveInput) -> syn::Result<TokenStream2> {
         let column_entries = field_infos.iter().map(|f| {
             let col_name = f.name.to_string();
             let col_name_lit: LitStr = syn::parse_quote!(#col_name);
+            let ty = &f.field.ty;
             quote! {
                 ::educore_core::query::ColumnDescriptor {
                     name: #col_name_lit,
-                    column_type: ::educore_core::query::ColumnType::Custom("UNKNOWN"),
+                    column_type: ::educore_core::query::ColumnType::Custom(::std::stringify!(#ty)),
                     nullable: true,
                     primary_key: false,
                     auto_generated: false,
@@ -904,9 +920,21 @@ fn expand(input: DeriveInput) -> syn::Result<TokenStream2> {
                         columns: ::std::vec![
                             #(#column_entries),*
                         ],
-                        indexes: ::std::vec![],
+                        indexes: ::std::vec![
+                            ::educore_core::query::IndexDescriptor {
+                                name: "idx_pk",
+                                columns: ::std::vec!["id"],
+                                unique: true,
+                            },
+                        ],
                         foreign_keys: ::std::vec![],
-                        rls: ::std::vec![],
+                        rls: ::std::vec![
+                            ::educore_core::query::RlsPolicy {
+                                name: "tenant_isolation",
+                                using_expr: "school_id = current_setting('app.school_id')::uuid",
+                                with_check_expr: ::std::option::Option::None,
+                            },
+                        ],
                     }
                 }
             }
