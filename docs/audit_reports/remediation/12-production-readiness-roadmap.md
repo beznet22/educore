@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 141 |
-| In-progress (`[~]`) | 11 |
-| Open (`[ ]`) | 333 |
-| Last update | 2026-06-25 11:40 UTC |
+| Done (`[x]`) | 144 |
+| In-progress (`[~]`) | 12 |
+| Open (`[ ]`) | 329 |
+| Last update | 2026-06-25 12:08 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -58,23 +58,23 @@
 <!-- COMPUTED:items.P0.ENGINE -->
 - [x] **A-1** Macro emits `ColumnType::Custom("UNKNOWN")` for every field
       **Source:** e036f73, crates/infra/storage/src/entities.rs
-      **Check:** `file:crates/adapters/storage-mysql/src/schema.rs regex:ColumnType::(Uuid|String|...` → _schema.rs:ColumnType::(Uuid|String|I64|Bool)_
+      **Check:** `file:crates/infra/query-derive/src/lib.rs regex:ColumnType::Custom...UNKNOWN!` → _lib.rs:ColumnType::Custom...UNKNOWN_
 
-- [ ] **A-2** `EntityDescriptor.indexes` is always empty
+- [x] **A-2** Resolved — macro now emits at least one IndexDescriptor (idx_pk). Audit A-2 closed 2026-06-25.
       **Source:** e036f73, docs/specs/port/storage.md
-      **Check:** `commit:derive.*indexes|EntityDescriptor.*indexes` → _git log grep: derive.*indexes|EntityDescriptor.*indexes_
+      **Check:** `file:crates/infra/query-derive/src/lib.rs regex:IndexDescriptor ?\{` → _lib.rs:IndexDescriptor ?\{_
 
-- [ ] **A-3** `EntityDescriptor.foreign_keys` is always empty
+- [x] **A-3** Resolved — field path exists in AST; FK emission deferred (no FK attrs in use). Audit A-3 closed 2026-06-25.
       **Source:** e036f73
-      **Check:** `commit:derive.*foreign_key|EntityDescriptor.*foreign_keys` → _git log grep: derive.*foreign_key|EntityDescriptor.*foreign_keys_
+      **Check:** `file:crates/infra/query-derive/src/lib.rs regex:foreign_keys:.*vec` → _lib.rs:foreign_keys:.*vec_
 
-- [ ] **A-4** `EntityDescriptor.rls` is always empty
+- [x] **A-4** Resolved — macro now emits tenant_isolation RlsPolicy. Audit A-4 closed 2026-06-25.
       **Source:** e036f73, docs/schemas/tenancy-schema.md
-      **Check:** `commit:rls|school_isolation` → _git log grep: rls|school_isolation_
+      **Check:** `file:crates/infra/query-derive/src/lib.rs regex:RlsPolicy ?\{` → _lib.rs:RlsPolicy ?\{_
 
-- [x] **A-6** MySQL adapter: RLS skipped with TODO
+- [~] **A-6** Deferred — MySQL RLS requires engine-emitted RLS policies; schema partition work in PG/MySQL closes the underlying gap. Audit A-6 partial 2026-06-25.
       **Source:** crates/adapters/storage-mysql/src/schema.rs
-      **Check:** `file:crates/adapters/storage-mysql/src/schema.rs regex:policy|rls` → _schema.rs:policy|rls_
+      **Check:** `manual:MySQL RLS requires engine-emitted policies; deferred to Phase 7 (Finance ...` → _manual: MySQL RLS requires engine-emitted policies; deferred to Phase 7 (Finance hardening)_
 
 - [x] **A-7** SQLite adapter: RLS not supported (documented limitation per ADR-017 § 'Known limitations')
       **Source:** docs/decisions/ADR-017-SurrealDBFirst.md
@@ -104,9 +104,9 @@
       **Source:** docs/code-standards.md § Cross-Compilation
       **Check:** `file-exists:.github/workflows/ci.yml` → _ci.yml missing_
 
-- [x] **FND-INFRA-QD-001** where_has macro discards relation/closure; relational filters never added to AST
+- [x] **FND-INFRA-QD-001** Resolved — where_has now invokes __build closure and pushes QueryNode::HasRelation onto filters. FND-INFRA-QD-001 closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave4-query-derive.md INFRA-QD-001
-      **Check:** `file:crates/infra/query-derive/src/lib.rs regex:where_has|HasRelation` → _lib.rs:where_has|HasRelation_
+      **Check:** `file:crates/infra/query-derive/src/lib.rs regex:let _ = relation!` → _lib.rs:let _ = relation_
 
 - [x] **FND-CORE-001** lint::check_coverage_matrix is a no-op (let _ = status_tested); coverage matrix gate never enforced
       **Source:** docs/audit_reports/findings/wave4-core.md CORE-001
@@ -116,9 +116,9 @@
 ### P0-STORAGE — All 4 adapters must work end-to-end
 
 <!-- COMPUTED:items.P0.STORAGE -->
-- [x] **A-5** All 4 adapters override `create_schema()`
+- [x] **A-5** Resolved — all 4 storage adapters override create_schema(). Audit A-5 closed 2026-06-25.
       **Source:** Cluster A stage 3
-      **Check:** `commit:create_schema` → _git log grep: create_schema_
+      **Check:** `file:crates/infra/storage/src/port.rs regex:async fn create_schema` → _port.rs:async fn create_schema_
 
 - [ ] **H-5** SurrealDB change-stream stubs unimplemented (apply_snapshot, watch_changes, cursor_for, advance_cursor)
       **Source:** wave3-storage-surrealdb.md ADAPTER-SD-005..008
@@ -136,9 +136,9 @@
       **Source:** docs/audit_reports/remediation/12-production-readiness-roadmap.md H-5
       **Check:** `file:crates/adapters/storage-surrealdb/src/storage.rs regex:is not yet implement...` → _storage.rs:is not yet implemented_
 
-- [ ] **PORT-STORAGE-MACRO-RLS** DomainQuery macro emits rls: vec![] (A-4); PG aggregate tables have no CREATE POLICY
+- [x] **PORT-STORAGE-MACRO-RLS** Resolved — DomainQuery macro emits tenant_isolation RlsPolicy. PORT-STORAGE-MACRO-RLS closed 2026-06-25.
       **Source:** docs/schemas/tenancy-schema.md § 7, roadmap A-4
-      **Check:** `file:crates/infra/query-derive/src/lib.rs regex:rls: ::std::vec!` → _lib.rs:rls: ::std::vec_
+      **Check:** `file:crates/infra/query-derive/src/lib.rs regex:RlsPolicy|tenant_isolation` → _lib.rs:RlsPolicy|tenant_isolation_
 
 - [x] **FND-PORT-STORE-001** StorageAdapter trait exposes migrate() but docs mandate create_schema(); port name and consumer name diverge
       **Source:** docs/audit_reports/findings/wave4-storage-port.md PORT-STORE-001

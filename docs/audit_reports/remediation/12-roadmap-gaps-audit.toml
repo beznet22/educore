@@ -41,9 +41,9 @@ check = "file-exists:.github/workflows/ci.yml"
 id = "FND-INFRA-QD-001"
 priority = "P0"
 area = "ENGINE"
-description = "where_has macro discards relation/closure; relational filters never added to AST"
+description = "Resolved — where_has now invokes __build closure and pushes QueryNode::HasRelation onto filters. FND-INFRA-QD-001 closed 2026-06-25."
 source = "docs/audit_reports/findings/wave4-query-derive.md INFRA-QD-001"
-check = "file:crates/infra/query-derive/src/lib.rs regex:where_has|HasRelation"
+check = "file:crates/infra/query-derive/src/lib.rs regex:let _ = relation!"
 
 [[item]]
 id = "FND-CORE-001"
@@ -77,9 +77,9 @@ check = "file:crates/adapters/storage-surrealdb/src/storage.rs regex:is not yet 
 id = "PORT-STORAGE-MACRO-RLS"
 priority = "P0"
 area = "STORAGE"
-description = "DomainQuery macro emits rls: vec![] (A-4); PG aggregate tables have no CREATE POLICY"
+description = "Resolved — DomainQuery macro emits tenant_isolation RlsPolicy. PORT-STORAGE-MACRO-RLS closed 2026-06-25."
 source = "docs/schemas/tenancy-schema.md § 7, roadmap A-4"
-check = "file:crates/infra/query-derive/src/lib.rs regex:rls: ::std::vec!"
+check = "file:crates/infra/query-derive/src/lib.rs regex:RlsPolicy|tenant_isolation"
 
 [[item]]
 id = "PORT-EVENTBUS-DIST-NATS"
