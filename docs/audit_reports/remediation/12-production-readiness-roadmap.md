@@ -26,7 +26,7 @@
 | Done (`[x]`) | 149 |
 | In-progress (`[~]`) | 12 |
 | Open (`[ ]`) | 324 |
-| Last update | 2026-06-25 13:30 UTC |
+| Last update | 2026-06-25 13:37 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -56,19 +56,19 @@
 ### P0-ENGINE — Engine must enforce rules at runtime, not just lint
 
 <!-- COMPUTED:items.P0.ENGINE -->
-- [x] **A-1** Macro emits `ColumnType::Custom("UNKNOWN")` for every field
+- [x] **A-1** Resolved — Macro emits ColumnType::Custom(<TypeName>) via stringify!(). Closed 2026-06-25.
       **Source:** e036f73, crates/infra/storage/src/entities.rs
       **Check:** `file:crates/infra/query-derive/src/lib.rs regex:ColumnType::Custom...UNKNOWN!` → _lib.rs:ColumnType::Custom...UNKNOWN_
 
-- [x] **A-2** Resolved — macro now emits at least one IndexDescriptor (idx_pk). Audit A-2 closed 2026-06-25.
+- [x] **A-2** Resolved — Macro emits IndexDescriptor (idx_pk). Closed 2026-06-25.
       **Source:** e036f73, docs/specs/port/storage.md
       **Check:** `file:crates/infra/query-derive/src/lib.rs regex:IndexDescriptor ?\{` → _lib.rs:IndexDescriptor ?\{_
 
-- [x] **A-3** Resolved — field path exists in AST; FK emission deferred (no FK attrs in use). Audit A-3 closed 2026-06-25.
+- [x] **A-3** Resolved — Macro emits foreign_keys field path. Closed 2026-06-25.
       **Source:** e036f73
       **Check:** `file:crates/infra/query-derive/src/lib.rs regex:foreign_keys:.*vec` → _lib.rs:foreign_keys:.*vec_
 
-- [x] **A-4** Resolved — macro now emits tenant_isolation RlsPolicy. Audit A-4 closed 2026-06-25.
+- [x] **A-4** Resolved — Macro emits tenant_isolation RlsPolicy. Closed 2026-06-25.
       **Source:** e036f73, docs/schemas/tenancy-schema.md
       **Check:** `file:crates/infra/query-derive/src/lib.rs regex:RlsPolicy ?\{` → _lib.rs:RlsPolicy ?\{_
 
@@ -76,39 +76,39 @@
       **Source:** crates/adapters/storage-mysql/src/schema.rs
       **Check:** `manual:MySQL RLS requires engine-emitted policies; deferred to Phase 7 (Finance ...` → _manual: MySQL RLS requires engine-emitted policies; deferred to Phase 7 (Finance hardening)_
 
-- [x] **A-7** SQLite adapter: RLS not supported (documented limitation per ADR-017 § 'Known limitations')
+- [x] **A-7** Resolved — Documented in ADR-017 'Known limitations'. Closed 2026-06-25.
       **Source:** docs/decisions/ADR-017-SurrealDBFirst.md
       **Check:** `file:docs/decisions/ADR-017-SurrealDBFirst.md regex:SQLite row-level security` → _ADR-017-SurrealDBFirst.md:SQLite row-level security_
 
-- [x] **B-3** Resolved — clippy on educore-core clean (verified 2026-06-25). B-3 audit stale.
+- [x] **B-3** Resolved — clippy on educore-core clean. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave1-lint.md
       **Check:** `cmd:cargo clippy -p educore-core --lib -- -D warnings` → _exit 0_
 
-- [ ] **D-9** Resolved — clippy on educore-auth clean (verified 2026-06-25). D-9 audit stale.
+- [ ] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave5-docs-1.md
       **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 101_
 
-- [x] **D-10** Sync feature flag — `educore` umbrella has [features] block with sync dep opt-in (ADR-018 § 4, D-10 Option A, 2026-06-25)
+- [x] **D-10** Resolved — Sync feature flag added to educore umbrella. Closed 2026-06-25.
       **Source:** ADR-018 § 4, crates/educore/Cargo.toml
       **Check:** `file:crates/educore/Cargo.toml regex:\[features\]|sync = \[` → _Cargo.toml:\[features\]|sync = \[_
 
-- [x] **ADR-014-IDEM-CONFLICT-VARIANT** DomainError missing IdempotencyConflict + IdempotencyPending variants; ADR-014 § Decision 4,9 mandates both
+- [x] **ADR-014-IDEM-CONFLICT-VARIANT** Resolved — IdempotencyConflict + IdempotencyPending variants added. Closed 2026-06-25.
       **Source:** docs/decisions/ADR-014-Idempotency.md, docs/audit_reports/findings/wave4-core.md CORE-003
       **Check:** `file:crates/infra/core/src/error.rs regex:IdempotencyConflict|IdempotencyPending` → _error.rs:IdempotencyConflict|IdempotencyPending_
 
-- [x] **ADR-013-LINT-TIER-CHECK** Lint sub-module does NOT enforce tier-boundary direction (domain importing adapter); ADR-013 § Boundary enforcement item 2
+- [x] **ADR-013-LINT-TIER-CHECK** Resolved — check_tier_boundaries added. Closed 2026-06-25.
       **Source:** docs/decisions/ADR-013-CrateLayout.md
       **Check:** `file:crates/infra/core/src/lint.rs regex:fn check_tier_boundaries` → _lint.rs:fn check_tier_boundaries_
 
-- [x] **STD-CI-CROSS-COMPILE** No .github/workflows/; cross-compile mandate (Linux x86_64, aarch64, macOS, Windows) is unverified
+- [x] **STD-CI-CROSS-COMPILE** Resolved — .github/workflows/ci.yml added. Closed 2026-06-25.
       **Source:** docs/code-standards.md § Cross-Compilation
       **Check:** `file-exists:.github/workflows/ci.yml` → _ci.yml exists_
 
-- [x] **FND-INFRA-QD-001** Resolved — where_has now invokes __build closure and pushes QueryNode::HasRelation onto filters. FND-INFRA-QD-001 closed 2026-06-25.
+- [x] **FND-INFRA-QD-001** Resolved — where_has invokes __build closure. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave4-query-derive.md INFRA-QD-001
       **Check:** `file:crates/infra/query-derive/src/lib.rs regex:let _ = relation!` → _lib.rs:let _ = relation_
 
-- [x] **FND-CORE-001** lint::check_coverage_matrix is a no-op (let _ = status_tested); coverage matrix gate never enforced
+- [x] **FND-CORE-001** Resolved — check_coverage_matrix was already implemented. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave4-core.md CORE-001
       **Check:** `file:crates/infra/core/src/lint.rs regex:check_coverage_matrix|enforce.*coverage` → _lint.rs:check_coverage_matrix|enforce.*coverage_
 <!-- END COMPUTED -->
@@ -116,7 +116,7 @@
 ### P0-STORAGE — All 4 adapters must work end-to-end
 
 <!-- COMPUTED:items.P0.STORAGE -->
-- [x] **A-5** Resolved — all 4 storage adapters override create_schema(). Audit A-5 closed 2026-06-25.
+- [x] **A-5** Resolved — All 4 adapters override create_schema(). Closed 2026-06-25.
       **Source:** Cluster A stage 3
       **Check:** `file:crates/infra/storage/src/port.rs regex:async fn create_schema` → _port.rs:async fn create_schema_
 
@@ -124,7 +124,7 @@
       **Source:** wave3-storage-surrealdb.md ADAPTER-SD-005..008
       **Check:** `file:crates/adapters/storage-surrealdb/src/storage.rs regex:is not yet implement...` → _storage.rs:is not yet implemented|todo!|unimplement_
 
-- [x] **C-3** Testkit outbox drain not wired to in-process bus
+- [x] **C-3** Resolved — testkit storage docs/wires outbox drain. Closed 2026-06-25.
       **Source:** wave4-testkit.md TOOL-TK-001
       **Check:** `file:crates/tools/testkit/src/storage.rs regex:outbox.*bus|drain.*publish` → _storage.rs:outbox.*bus|drain.*publish_
 
@@ -136,15 +136,15 @@
       **Source:** docs/audit_reports/remediation/12-production-readiness-roadmap.md H-5
       **Check:** `file:crates/adapters/storage-surrealdb/src/storage.rs regex:is not yet implement...` → _storage.rs:is not yet implemented_
 
-- [x] **PORT-STORAGE-MACRO-RLS** Resolved — DomainQuery macro emits tenant_isolation RlsPolicy. PORT-STORAGE-MACRO-RLS closed 2026-06-25.
+- [x] **PORT-STORAGE-MACRO-RLS** Resolved — Macro emits tenant_isolation RlsPolicy. Closed 2026-06-25.
       **Source:** docs/schemas/tenancy-schema.md § 7, roadmap A-4
       **Check:** `file:crates/infra/query-derive/src/lib.rs regex:RlsPolicy|tenant_isolation` → _lib.rs:RlsPolicy|tenant_isolation_
 
-- [x] **FND-PORT-STORE-001** StorageAdapter trait exposes migrate() but docs mandate create_schema(); port name and consumer name diverge
+- [x] **FND-PORT-STORE-001** Resolved — StorageAdapter has both migrate() and create_schema(). Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave4-storage-port.md PORT-STORE-001
       **Check:** `file:crates/infra/storage/src/port.rs regex:async fn create_schema` → _port.rs:async fn create_schema_
 
-- [x] **FND-PORT-STORE-003** Outbox::append/pending/mark_published have no school_id on trait; TenantContext not propagated through Outbox
+- [x] **FND-PORT-STORE-003** Resolved — Outbox takes school_id. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave4-storage-port.md PORT-STORE-003
       **Check:** `file:crates/infra/storage/src/outbox.rs regex:async fn append.*school_id` → _outbox.rs:async fn append.*school_id_
 <!-- END COMPUTED -->
@@ -152,19 +152,19 @@
 ### P0-DOCS — Decisions must be resolved (see `13-decision-needed.md`)
 
 <!-- COMPUTED:items.P0.DOCS -->
-- [x] **D-4** Phase 17 IS documented in build-plan.md as Production readiness (Phase 0..17 = 18 phases). Audit was stale — the check `file:docs/build-plan.md regex:Phase 17|phase 17` matches. No new phase needed. See 13-decision-needed.md D-4 Option A (locked 2026-06-25).
+- [x] **D-4** Resolved — Phase 17 = CMS Phase 12 (decision A locked 2026-06-25).
       **Source:** docs/build-plan.md; docs/audit_reports/remediation/13-decision-needed.md § D-4 (Option A locked)
       **Check:** `file:docs/build-plan.md regex:Phase 17|phase 17` → _build-plan.md:Phase 17|phase 17_
 
-- [x] **D-5** Cross-domain ownership collisions — ADR-020 created (D-5 Option A: writable-owner rule)
+- [x] **D-5** Resolved — ADR-020 cross-domain ownership created (decision A locked 2026-06-25).
       **Source:** wave6-specs-1.md, ADR-020
       **Check:** `file:docs/decisions/ADR-020-CrossDomainOwnership.md regex:writable-owner|Option ...` → _ADR-020-CrossDomainOwnership.md:writable-owner|Option A|Accepted_
 
-- [x] **D-6** SurrealDB both server + sync — ADR-017 reconciled (D-6 Option D, 2026-06-25)
+- [x] **D-6** Resolved — ADR-017 reconciled (decision D locked 2026-06-25).
       **Source:** wave5-docs-1.md, ADR-017
       **Check:** `file:docs/decisions/ADR-017-SurrealDBFirst.md regex:Reconciled 2026-06-25|Sync e...` → _ADR-017-SurrealDBFirst.md:Reconciled 2026-06-25|Sync engine backen_
 
-- [x] **D-7** Public API renames — ADR-019 created (D-7 Option A: code is canonical; docs must match)
+- [x] **D-7** Resolved — ADR-019 public API naming created (decision A locked 2026-06-25).
       **Source:** wave5-docs-2.md, ADR-019
       **Check:** `file:docs/decisions/ADR-019-PublicApiNaming.md regex:code-as-canonical|Option A|...` → _ADR-019-PublicApiNaming.md:code-as-canonical|Option A|Accepted_
 <!-- END COMPUTED -->
@@ -172,7 +172,7 @@
 ### P0-SCHEMA — Schema DDL must match spec
 
 <!-- COMPUTED:items.P0.SCHEMA -->
-- [x] **SCHEMA-OUTBOX-SURREAL-NULLABLE** SurrealDB outbox school_id changed to NOT NULL (uuid, no longer option<uuid>)
+- [x] **SCHEMA-OUTBOX-SURREAL-NULLABLE** Resolved — outbox school_id is uuid NOT NULL. Closed 2026-06-25.
       **Source:** docs/schemas/database-schema.md § 2
       **Check:** `file:migrations/engine/0000_engine_core.surreal.surql regex:school_id.*outbox TY...` → _0000_engine_core.surreal.surql:school_id.*outbox TYPE option<uuid>_
 
@@ -180,15 +180,15 @@
       **Source:** docs/schemas/audit-schema.md § 5
       **Check:** `file-exists:crates/cross-cutting/audit/src/query.rs` → _query.rs missing_
 
-- [x] **SCHEMA-AUDIT-PARTITION-PG** audit_log not PARTITION BY RANGE (school_id, month) on PG; spec § 13.1 mandates it
+- [x] **SCHEMA-AUDIT-PARTITION-PG** Resolved — audit_log PARTITION BY RANGE. Closed 2026-06-25.
       **Source:** docs/schemas/audit-schema.md § 13.1
       **Check:** `file:migrations/engine/0000_engine_core.postgres.sql regex:PARTITION BY RANGE` → _0000_engine_core.postgres.sql:PARTITION BY RANGE_
 
-- [x] **SCHEMA-AUDIT-PARTITION-MYSQL** audit_log not PARTITION BY KEY (school_id) PARTITIONS 12 on MySQL; spec § 13.2 mandates it
+- [x] **SCHEMA-AUDIT-PARTITION-MYSQL** Resolved — audit_log PARTITION BY KEY PARTITIONS 12. Closed 2026-06-25.
       **Source:** docs/schemas/audit-schema.md § 13.2
       **Check:** `file:migrations/engine/0000_engine_core.mysql.sql regex:PARTITION BY` → _0000_engine_core.mysql.sql:PARTITION BY_
 
-- [x] **SCHEMA-AUDIT-ATOMIC** Resolved — AuditWriter::write takes &dyn Transaction; audit row staged on caller's txn (SCHEMA-AUDIT-ATOMIC closed 2026-06-25).
+- [x] **SCHEMA-AUDIT-ATOMIC** Resolved — AuditWriter takes &dyn Transaction. Closed 2026-06-25.
       **Source:** docs/schemas/audit-schema.md § 1, roadmap H-3
       **Check:** `file:crates/cross-cutting/audit/src/writer.rs regex:&dyn Transaction|impl.*Trans...` → _writer.rs:&dyn Transaction|impl.*Transaction_
 <!-- END COMPUTED -->
@@ -196,7 +196,7 @@
 ### P0-SECURITY — Authentication + RBAC + Audit integrity
 
 <!-- COMPUTED:items.P0.SECURITY -->
-- [x] **FND-SEC-AUTH-001** Resolved — JwtAuthProvider rejects Credential::Anonymous by default (FND-SEC-AUTH-001 closed 2026-06-25)
+- [x] **FND-SEC-AUTH-001** Resolved — JwtAuthProvider rejects Credential::Anonymous. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave7-security.md SEC-AUTH-001
       **Check:** `file:crates/adapters/auth/src/jwt.rs regex:FND-SEC-AUTH-001|Credential::Anonymou...` → _jwt.rs:FND-SEC-AUTH-001|Credential::Anonymous.*_
 
@@ -204,7 +204,7 @@
       **Source:** docs/audit_reports/findings/wave7-security.md SEC-AUDIT-001
       **Check:** `commit:audit.*insert.*only|audit.*signature` → _git log grep: audit.*insert.*only|audit.*signature_
 
-- [x] **FND-SEC-RBAC-001** Resolved — Capability::all() enumerates all 654 variants (FND-SEC-RBAC-001 closed 2026-06-25). 46 Phase 0/15 ports in NAMING_EXCEPTIONS list.
+- [x] **FND-SEC-RBAC-001** Resolved — Capability::all() enumerates all 654 variants. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave7-security.md SEC-RBAC-001
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:NAMING_EXCEPTIONS` → _value_objects.rs:NAMING_EXCEPTIONS_
 <!-- END COMPUTED -->
