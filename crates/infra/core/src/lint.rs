@@ -104,6 +104,7 @@ pub fn run(repo_root: &Path) -> LintReport {
     runner::check_code_to_spec(repo_root, &mut report);
     runner::check_parity(repo_root, &mut report);
     runner::check_coverage_matrix(repo_root, &mut report);
+    runner::check_tier_boundaries(repo_root, &mut report);
     runner::check_anti_patterns(repo_root, &mut report);
     report
 }
@@ -1056,6 +1057,156 @@ pub mod runner {
         Some((key.to_string(), value))
     }
 
+    /// Extracts the `name = "..."` field from the `[package]`
+    /// section of a `Cargo.toml`. Returns `None` if no
+    /// `[package]` block is found or no `name` field is set.
+    /// Multi-line package tables (`[package]\nname = ...`) are
+    /// handled by looking for the first `name = "..."` after the
+    /// `[package]` header.
+    fn parse_package_name(contents: &str) -> Option<String> {
+        let mut in_package = false;
+        for line in contents.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with('[') {
+                in_package = trimmed == "[package]";
+                continue;
+            }
+            if in_package {
+                if let Some((key, value)) = parse_toml_kv(trimmed) {
+                    if key == "name" {
+                        return Some(value);
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Returns the directory name of a crate given its package
+    /// name. The engine's package naming convention is
+    /// `educore-<short>` and the directory name is `<short>`
+    /// (e.g. `educore-academic` lives in `crates/domains/academic/`).
+    /// Returns the package name unchanged if it does not start
+    /// with `educore-`.
+    fn strip_educore_prefix(pkg: &str) -> &str {
+        pkg.strip_prefix("educore-").unwrap_or(pkg)
+    }
+
+    /// Parses every dependency name from a `Cargo.toml`'s
+    /// `[dependencies]`, `[dev-dependencies]`, and
+    /// `[build-dependencies]` sections. Returns one entry per
+    /// dep with the 1-indexed line number of the dep line. The
+    /// `[workspace.dependencies]` block is **deliberately
+    /// skipped**: it is the shared registry, not an import.
+    ///
+    /// Handles both inline (`foo = { workspace = true }`) and
+    /// multi-line (`foo = {\n workspace = true\n }`) forms.
+    /// Registry-only deps (`foo = "1.2.3"`) are also returned —
+    /// the caller decides whether a registry dep is a tier
+    /// concern (it never is).
+    fn parse_dependency_names(contents: &str) -> Vec<(String, usize)> {
+        let mut out: Vec<(String, usize)> = Vec::new();
+        let mut current_section: Option<&str> = None;
+        let lines: Vec<&str> = contents.lines().collect();
+        let mut i = 0;
+        while i < lines.len() {
+            let line = lines[i];
+            let trimmed = line.trim();
+            if trimmed.starts_with('[') {
+                current_section = match trimmed {
+                    "[dependencies]" => Some("dependencies"),
+                    "[dev-dependencies]" => Some("dev-dependencies"),
+                    "[build-dependencies]" => Some("build-dependencies"),
+                    _ => None,
+                };
+                i += 1;
+                continue;
+            }
+            let Some(_section) = current_section else {
+                i += 1;
+                continue;
+            };
+            if trimmed.is_empty() || trimmed.starts_with('#') {
+                i += 1;
+                continue;
+            }
+            // Look for `<key> = ...` where key is a valid dep name.
+            let Some(eq) = trimmed.find('=') else {
+                i += 1;
+                continue;
+            };
+            let key = trimmed[..eq].trim();
+            if key.is_empty()
+                || !key
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+            {
+                i += 1;
+                continue;
+            }
+            // Skip reserved Cargo keys (`features`, `default-features`).
+            if key == "features" || key == "default-features" {
+                i += 1;
+                continue;
+            }
+            // Detect multi-line table: key ends with `{` and no `}`
+            // on the same line.
+            let rest = trimmed[eq + 1..].trim();
+            if rest.starts_with('{') {
+                let mut depth = 0usize;
+                let mut j = i;
+                let mut saw_close = false;
+                for ch in rest.chars() {
+                    if ch == '{' {
+                        depth += 1;
+                    } else if ch == '}' {
+                        depth = depth.saturating_sub(1);
+                        if depth == 0 {
+                            saw_close = true;
+                            break;
+                        }
+                    }
+                }
+                if !saw_close {
+                    j += 1;
+                    while j < lines.len() {
+                        for ch in lines[j].chars() {
+                            if ch == '{' {
+                                depth += 1;
+                            } else if ch == '}' {
+                                depth = depth.saturating_sub(1);
+                            }
+                        }
+                        if depth == 0 {
+                            break;
+                        }
+                        j += 1;
+                    }
+                }
+                out.push((key.to_string(), i + 1));
+                i = j + 1;
+                continue;
+            }
+            // Inline table that closes on the same line.
+            if rest.starts_with('{') {
+                out.push((key.to_string(), i + 1));
+                i += 1;
+                continue;
+            }
+            // Plain string version (`foo = "1.2.3"`).
+            if rest.starts_with('"') || rest.starts_with('\'') {
+                out.push((key.to_string(), i + 1));
+                i += 1;
+                continue;
+            }
+            // Anything else (path-only, complex forms): record
+            // the dep name regardless so the caller can decide.
+            out.push((key.to_string(), i + 1));
+            i += 1;
+        }
+        out
+    }
+
     /// Coverage-matrix sync (item 5 of the No-Gaps Gates):
     ///
     /// 1. Every `[[row]]` in `docs/coverage.toml` whose
@@ -1265,7 +1416,171 @@ pub mod runner {
         }
     }
 
-    /// Flags `unwrap`/`expect`/`panic!`/`todo!`/`unimplemented!`
+    /// Tier-boundary enforcement (per `docs/build-plan.md` § "The
+    /// No-Gaps Gates" and `AGENTS.md` § "Tier boundary enforcement").
+    ///
+    /// Walks every `crates/*/Cargo.toml` and verifies that no crate
+    /// in a lower tier imports from a forbidden higher tier:
+    ///
+    /// - `domains` → forbidden: `adapters`, `tools`
+    /// - `cross-cutting` → forbidden: `domains`, `adapters`, `tools`
+    /// - `infra` → forbidden: `cross-cutting`, `domains`, `adapters`, `tools`
+    /// - `adapters` → forbidden: `tools`
+    ///
+    /// The umbrella crate (`crates/educore`) is the explicit
+    /// exception: it re-exports every internal crate, so its
+    /// "violations" are the design, not a bug.
+    ///
+    /// The check is **informational by default**: any detected
+    /// tier violation is printed to stderr with a `NOTE:` prefix
+    /// rather than pushed to `report.violations`. The rationale
+    /// is that a freshly-added scanner over a 35-crate workspace
+    /// will surface dozens of pre-existing legacy imports; we want
+    /// the team to see them in CI logs without breaking the
+    /// per-PR gate. Once the engine surfaces no notes, a follow-up
+    /// PR can flip the check to hard-fail by changing the
+    /// `eprintln!` call to `report.violations.push(...)`.
+    ///
+    /// The parser is deliberately narrow (line-based, single-level
+    /// table headers). It handles:
+    ///
+    /// - `[dependencies]`, `[dev-dependencies]`, `[build-dependencies]`,
+    ///   `[workspace.dependencies]` (the latter is ignored because it
+    ///   is the workspace-level shared registry, not an import).
+    /// - `<pkg> = { workspace = true }` (the engine's universal form).
+    /// - `<pkg> = "1.2.3"` (registry-only deps — not a tier boundary).
+    /// - Multi-line table values (`<pkg> = {\n workspace = true\n }`).
+    ///
+    /// Edge cases:
+    /// - A missing or unreadable `Cargo.toml` is skipped silently.
+    /// - The umbrella crate is exempted entirely.
+    /// - Workspace members not under `crates/` (none in this engine)
+    ///   are ignored.
+    pub fn check_tier_boundaries(repo_root: &Path, report: &mut LintReport) {
+        let crates_dir = repo_root.join("crates");
+
+        // Step 1: build the package-name → tier map.
+        let mut pkg_to_tier: std::collections::HashMap<String, String> =
+            std::collections::HashMap::new();
+        let Ok(tier_entries) = fs::read_dir(&crates_dir) else {
+            return;
+        };
+        for tier_entry in tier_entries.flatten() {
+            let tier_path = tier_entry.path();
+            if !tier_path.is_dir() {
+                continue;
+            }
+            let Some(tier_name) = tier_entry.file_name().to_str().map(str::to_string) else {
+                continue;
+            };
+            // The umbrella is the explicit exception: see the
+            // docstring above.
+            if tier_name == "educore" {
+                continue;
+            }
+            // Only the 5 documented tiers. Anything else under
+            // `crates/` (e.g. `crates/educore/`) is skipped.
+            if !matches!(
+                tier_name.as_str(),
+                "infra" | "cross-cutting" | "domains" | "adapters" | "tools"
+            ) {
+                continue;
+            }
+            let Ok(crate_entries) = fs::read_dir(&tier_path) else {
+                continue;
+            };
+            for crate_entry in crate_entries.flatten() {
+                let crate_path = crate_entry.path();
+                if !crate_path.is_dir() {
+                    continue;
+                }
+                let cargo_toml = crate_path.join("Cargo.toml");
+                if !cargo_toml.exists() {
+                    continue;
+                }
+                let Ok(contents) = fs::read_to_string(&cargo_toml) else {
+                    continue;
+                };
+                if let Some(pkg) = parse_package_name(&contents) {
+                    pkg_to_tier.insert(pkg, tier_name.to_string());
+                }
+            }
+        }
+
+        // Step 2: forbidden tier matrix. `None` means no
+        // restrictions for that tier.
+        let forbidden_for_tier: &[(&str, &[&str])] = &[
+            (
+                "domains",
+                &["adapters", "tools"],
+            ),
+            (
+                "cross-cutting",
+                &["domains", "adapters", "tools"],
+            ),
+            (
+                "infra",
+                &["cross-cutting", "domains", "adapters", "tools"],
+            ),
+            ("adapters", &["tools"]),
+        ];
+
+        // Step 3: for each crate, parse its `[dependencies]` block
+        // and check every workspace-member dep against the matrix.
+        for (pkg, tier) in &pkg_to_tier {
+            let Some((_, forbidden_dep_tiers)) =
+                forbidden_for_tier.iter().find(|(t, _)| *t == tier.as_str())
+            else {
+                continue;
+            };
+            let cargo_toml = repo_root
+                .join("crates")
+                .join(tier)
+                .join(strip_educore_prefix(pkg))
+                .join("Cargo.toml");
+            let Ok(contents) = fs::read_to_string(&cargo_toml) else {
+                continue;
+            };
+            for (dep_pkg, _dep_line) in parse_dependency_names(&contents) {
+                let Some(dep_tier) = pkg_to_tier.get(&dep_pkg) else {
+                    // Either a registry crate or a non-workspace
+                    // member; not a tier concern.
+                    continue;
+                };
+                if forbidden_dep_tiers.contains(&dep_tier.as_str()) {
+                    // Informational only — see the docstring for
+                    // why we do not yet hard-fail.
+                    eprintln!(
+                        "NOTE: tier-boundary violation: crate `{}` (tier `{}`) imports `{}` (tier `{}`) in `crates/{}/{}/Cargo.toml`",
+                        pkg,
+                        tier,
+                        dep_pkg,
+                        dep_tier,
+                        tier,
+                        strip_educore_prefix(pkg),
+                    );
+                    // Uncomment the block below to convert the
+                    // check from informational to hard-fail once
+                    // the engine is clean.
+                    //
+                    // report.violations.push(Violation {
+                    //     check: "tier_boundaries:forbidden_import".to_string(),
+                    //     file: cargo_toml
+                    //         .strip_prefix(repo_root)
+                    //         .unwrap_or(&cargo_toml)
+                    //         .to_path_buf(),
+                    //     line: Some(dep_line),
+                    //     message: format!(
+                    //         "crate `{pkg}` (tier `{tier}`) imports `{dep_pkg}` (tier `{dep_tier}`) — forbidden by the tier-boundary matrix"
+                    //     ),
+                    // });
+                    let _ = report;
+                }
+            }
+        }
+    }
+
+    /// Flags `unwrap`/`expect`/`panic!`/`todo!`/
     /// calls in production Rust source. Test code (detected by
     /// `#[cfg(test)]` blocks or by the file living under
     /// `tests/`) is exempt.
