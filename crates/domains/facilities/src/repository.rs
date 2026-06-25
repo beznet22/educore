@@ -293,6 +293,47 @@ pub trait SupplierRepository: Send + Sync {
 }
 
 // =============================================================================
+// 14. ItemReceiveChildRepository
+// =============================================================================
+
+/// Repository port for the `ItemReceiveChild` line aggregate.
+/// Mirrors `ItemReceiveRepository::list_lines` / `insert_line`
+/// / `update_line` / `delete_line` so adapters may implement
+/// either the parent-only API or the dedicated child API.
+#[async_trait]
+pub trait ItemReceiveChildRepository: Send + Sync {
+    async fn get(
+        &self,
+        id: crate::value_objects::ItemReceiveChildId,
+    ) -> Result<Option<ItemReceiveChild>>;
+    async fn list_for_receive(&self, receive: ItemReceiveId) -> Result<Vec<ItemReceiveChild>>;
+    async fn insert(&self, line: &ItemReceiveChild) -> Result<()>;
+    async fn update(&self, line: &ItemReceiveChild) -> Result<()>;
+    async fn delete(&self, id: crate::value_objects::ItemReceiveChildId) -> Result<()>;
+}
+
+// =============================================================================
+// 15. ItemSellChildRepository
+// =============================================================================
+
+/// Repository port for the `ItemSellChild` line aggregate.
+/// Mirrors `ItemSellRepository::list_lines` / `insert_line` /
+/// `update_line` / `delete_line` so adapters may implement
+/// either the parent-only API or the dedicated child API.
+#[async_trait]
+pub trait ItemSellChildRepository: Send + Sync {
+    async fn get(&self, id: crate::value_objects::ItemSellChildId)
+        -> Result<Option<ItemSellChild>>;
+    async fn list_for_sell(
+        &self,
+        sell: crate::value_objects::ItemSellId,
+    ) -> Result<Vec<ItemSellChild>>;
+    async fn insert(&self, line: &ItemSellChild) -> Result<()>;
+    async fn update(&self, line: &ItemSellChild) -> Result<()>;
+    async fn delete(&self, id: crate::value_objects::ItemSellChildId) -> Result<()>;
+}
+
+// =============================================================================
 // Tests (object-safety smoke tests per the Phase 6 / Phase 7 pattern)
 // =============================================================================
 
@@ -319,4 +360,6 @@ mod tests {
     fn _assert_object_safe_receive(_: &dyn ItemReceiveRepository) {}
     fn _assert_object_safe_sell(_: &dyn ItemSellRepository) {}
     fn _assert_object_safe_supplier(_: &dyn SupplierRepository) {}
+    fn _assert_object_safe_receive_child(_: &dyn ItemReceiveChildRepository) {}
+    fn _assert_object_safe_sell_child(_: &dyn ItemSellChildRepository) {}
 }
