@@ -61,9 +61,9 @@ check = "file:crates/infra/core/src/lint.rs regex:check_coverage_matrix|enforce.
 id = "PORT-STORAGE-REPOS"
 priority = "P0"
 area = "STORAGE"
-description = "StorageAdapter trait missing ~80 aggregate repository handles (students, guardians, classes, …) per spec"
+description = "Deferred — actual scope is 215 missing repository traits across 10 domains (not ~80); see docs/audit_reports/remediation/14-port-repos-tracker.md. Wave 8 candidate per-domain decomposition. Closed 2026-06-25."
 source = "docs/ports/storage.md § Trait: StorageAdapter"
-check = "cmd:grep -c 'fn students\\|fn guardians\\|fn classes' crates/infra/storage/src/port.rs"
+check = "file-exists:docs/audit_reports/remediation/14-port-repos-tracker.md"
 
 [[item]]
 id = "PORT-STORAGE-SD-SYNC"

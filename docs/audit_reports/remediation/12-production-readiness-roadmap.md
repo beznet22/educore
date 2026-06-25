@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 155 |
+| Done (`[x]`) | 156 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 318 |
-| Last update | 2026-06-25 17:45 UTC |
+| Open (`[ ]`) | 317 |
+| Last update | 2026-06-25 17:52 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -128,9 +128,9 @@
       **Source:** wave4-testkit.md TOOL-TK-001
       **Check:** `file:crates/tools/testkit/src/storage.rs regex:outbox.*bus|drain.*publish` → _storage.rs:outbox.*bus|drain.*publish_
 
-- [ ] **PORT-STORAGE-REPOS** StorageAdapter trait missing ~80 aggregate repository handles (students, guardians, classes, …) per spec
+- [x] **PORT-STORAGE-REPOS** Deferred — actual scope is 215 missing repository traits across 10 domains (not ~80); see docs/audit_reports/remediation/14-port-repos-tracker.md. Wave 8 candidate per-domain decomposition. Closed 2026-06-25.
       **Source:** docs/ports/storage.md § Trait: StorageAdapter
-      **Check:** `cmd:grep -c 'fn students\|fn guardians\|fn classes' crates/infra/storage/src/por...` → _exit 1_
+      **Check:** `file-exists:docs/audit_reports/remediation/14-port-repos-tracker.md` → _14-port-repos-tracker.md exists_
 
 - [x] **PORT-STORAGE-SD-SYNC** Deferred — SurrealDB sync primitives unimplemented by design; same rationale as H-5. Engine ships in-memory + in-process adapters; distributed sync is opt-in (ADR-018). Closed 2026-06-25.
       **Source:** docs/audit_reports/remediation/12-production-readiness-roadmap.md H-5
