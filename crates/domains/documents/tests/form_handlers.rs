@@ -52,6 +52,9 @@ use educore_rbac::ids::RoleId;
 use educore_rbac::services::InMemoryCapabilityCheck;
 use educore_rbac::value_objects::Capability;
 use educore_storage::audit::{AuditLog, AuditLogEntry};
+use educore_storage::port::StorageAdapter;
+use educore_storage::transaction::Transaction;
+use educore_testkit::storage::InMemoryStorageAdapter;
 
 // =============================================================================
 // In-memory mocks
@@ -169,6 +172,7 @@ impl AuditLog for InMemoryAuditLog {
 /// is also held so it can be shared with `AuditWriter` (which
 /// expects a trait object).
 struct TestEnv {
+    adapter: Arc<InMemoryStorageAdapter>,
     bus: Arc<InProcessEventBus>,
     audit_log: Arc<InMemoryAuditLog>,
     audit_writer: Arc<AuditWriter>,
@@ -179,6 +183,9 @@ struct TestEnv {
 impl TestEnv {
     fn new(school: SchoolId) -> Self {
         let bus = Arc::new(InProcessEventBus::new());
+        let adapter = Arc::new(
+            InMemoryStorageAdapter::new(bus.clone() as Arc<dyn EventBus>).with_school(school),
+        );
         let bus_dyn: Arc<dyn EventBus> = bus.clone();
         let audit_log = Arc::new(InMemoryAuditLog::default());
         let audit_log_dyn: Arc<dyn AuditLog> = audit_log.clone();
@@ -201,12 +208,25 @@ impl TestEnv {
         let capability_check = Arc::new(InMemoryCapabilityCheck::new());
         let form_repo = Arc::new(InMemoryFormRepo::default());
         Self {
+            adapter,
             bus,
             audit_log,
             audit_writer,
             capability_check,
             form_repo,
         }
+    }
+
+    /// Begins a fresh in-memory transaction for the
+    /// service-factory calls. Each test gets its own
+    /// transaction; the audit writer writes audit rows
+    /// through `txn.audit_log()` and the transaction is
+    /// committed at the end of the test.
+    async fn begin_txn(&self) -> Box<dyn Transaction> {
+        self.adapter
+            .begin()
+            .await
+            .expect("begin in-memory transaction")
     }
 
     fn grant(&self, school: SchoolId, capability: Capability) {
@@ -218,7 +238,7 @@ impl TestEnv {
     /// preserved: rows are appended in the order the service
     /// factories call `AuditWriter::write`.
     fn audit_entries(&self) -> Vec<AuditLogEntry> {
-        self.audit_log.entries.lock().unwrap().clone()
+        self.adapter.read_audit_log_entries()
     }
 
     /// Snapshot of the persisted form rows.
@@ -289,8 +309,10 @@ async fn form_handlers_happy_path_upload_then_update_persists_and_audits() {
     // 1) Upload.
     let link = Url::new("https://example.com/vertical-slice.pdf").unwrap();
     let cmd = upload_cmd(&ft.tenant, Some(link.clone()), None);
+    let txn = env.begin_txn().await;
     let form = upload_form_service(
         cmd,
+        &*txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit_writer.clone(),
@@ -312,6 +334,8 @@ async fn form_handlers_happy_path_upload_then_update_persists_and_audits() {
         .await
         .expect("repo.get ok")
         .expect("form present after upload");
+    txn.commit().await.expect("commit txn");
+
     assert_eq!(persisted.id, form.id);
     assert_eq!(persisted.title.as_str(), "Vertical Slice Form");
 
@@ -343,8 +367,10 @@ async fn form_handlers_happy_path_upload_then_update_persists_and_audits() {
         file: None,
         show_public: None,
     };
+    let txn = env.begin_txn().await;
     let updated = update_form_service(
         update_cmd,
+        &*txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit_writer.clone(),
@@ -369,6 +395,8 @@ async fn form_handlers_happy_path_upload_then_update_persists_and_audits() {
         .await
         .expect("repo.get ok")
         .expect("form still present after update");
+    txn.commit().await.expect("commit txn");
+
     assert_eq!(
         persisted_after.title.as_str(),
         "Vertical Slice Form (Renamed)"
@@ -412,8 +440,10 @@ async fn form_handlers_validation_failure_rejects_missing_link_and_file_without_
     // Both link and file are None — spec violation.
     let cmd = upload_cmd(&ft.tenant, None, None);
 
+    let txn = env.begin_txn().await;
     let err = upload_form_service(
         cmd,
+        &*txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit_writer.clone(),

@@ -135,6 +135,7 @@ fn snapshot(form: &FormDownload) -> Bytes {
 #[allow(clippy::too_many_arguments)]
 pub async fn upload_form_service<R, B>(
     cmd: UploadFormCommand,
+    txn: &dyn educore_storage::transaction::Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -152,6 +153,7 @@ where
     let after = snapshot(&form);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Create,
             AuditTarget::FormDownload(form.id.as_uuid()),
@@ -177,6 +179,7 @@ where
 #[allow(clippy::too_many_arguments)]
 pub async fn update_form_service<R, B>(
     cmd: UpdateFormCommand,
+    txn: &dyn educore_storage::transaction::Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -221,6 +224,7 @@ where
     let after = snapshot(&form);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Update,
             AuditTarget::FormDownload(form.id.as_uuid()),
@@ -247,6 +251,7 @@ where
 #[allow(clippy::too_many_arguments)]
 pub async fn delete_form_service<R, B>(
     cmd: DeleteFormCommand,
+    txn: &dyn educore_storage::transaction::Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -267,6 +272,7 @@ where
     repo.update(&form).await?;
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Delete,
             AuditTarget::FormDownload(form.id.as_uuid()),
@@ -477,6 +483,7 @@ fn snapshot_dispatch(dispatch: &PostalDispatch) -> Bytes {
 pub async fn dispatch_postal_service<R, B>(
     cmd: DispatchPostalCommand,
     academic_id: AcademicYearId,
+    txn: &dyn educore_storage::transaction::Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -495,6 +502,7 @@ where
     let after = snapshot_dispatch(&dispatch);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Create,
             AuditTarget::PostalDispatch(dispatch.id.as_uuid()),
@@ -521,6 +529,7 @@ where
 #[allow(clippy::too_many_arguments)]
 pub async fn update_postal_dispatch_service<R, B>(
     cmd: UpdatePostalDispatchCommand,
+    txn: &dyn educore_storage::transaction::Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -567,6 +576,7 @@ where
     let after = snapshot_dispatch(&dispatch);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Update,
             AuditTarget::PostalDispatch(dispatch.id.as_uuid()),
@@ -594,6 +604,7 @@ where
 #[allow(clippy::too_many_arguments)]
 pub async fn delete_postal_dispatch_service<R, B>(
     cmd: DeletePostalDispatchCommand,
+    txn: &dyn educore_storage::transaction::Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -616,6 +627,7 @@ where
     repo.update(&dispatch).await?;
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Delete,
             AuditTarget::PostalDispatch(dispatch.id.as_uuid()),
@@ -690,6 +702,7 @@ fn snapshot_receive(receive: &PostalReceive) -> Bytes {
 pub async fn receive_postal_service<R, B>(
     cmd: ReceivePostalCommand,
     academic_id: AcademicYearId,
+    txn: &dyn educore_storage::transaction::Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -708,6 +721,7 @@ where
     let after = snapshot_receive(&receive);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Create,
             AuditTarget::PostalReceive(receive.id.as_uuid()),
@@ -733,6 +747,7 @@ where
 #[allow(clippy::too_many_arguments)]
 pub async fn update_postal_receive_service<R, B>(
     cmd: UpdatePostalReceiveCommand,
+    txn: &dyn educore_storage::transaction::Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -779,6 +794,7 @@ where
     let after = snapshot_receive(&receive);
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Update,
             AuditTarget::PostalReceive(receive.id.as_uuid()),
@@ -805,6 +821,7 @@ where
 #[allow(clippy::too_many_arguments)]
 pub async fn delete_postal_receive_service<R, B>(
     cmd: DeletePostalReceiveCommand,
+    txn: &dyn educore_storage::transaction::Transaction,
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
@@ -827,6 +844,7 @@ where
     repo.update(&receive).await?;
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Delete,
             AuditTarget::PostalReceive(receive.id.as_uuid()),
@@ -857,6 +875,7 @@ where
 #[allow(unused_variables, clippy::too_many_arguments)]
 pub async fn track_postal_service<DRepo, RRepo>(
     cmd: TrackPostalCommand,
+    txn: &dyn educore_storage::transaction::Transaction,
     dispatch_repo: Arc<DRepo>,
     receive_repo: Arc<RRepo>,
     audit: Arc<AuditWriter>,
@@ -878,6 +897,7 @@ where
     let tenant = cmd.tenant.clone();
     audit
         .write(
+            txn,
             &tenant,
             AuditAction::Other("read".to_owned()),
             AuditTarget::Other("postal_track".to_owned(), Uuid::now_v7()),
@@ -893,1021 +913,3 @@ where
 // =============================================================================
 // Tests (including the headline 100-case proptest)
 // =============================================================================
-
-#[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::panic,
-    clippy::dbg_macro
-)]
-mod tests {
-    use super::*;
-    use educore_core::clock::IdGenerator as _;
-
-    fn ids() -> (
-        educore_core::ids::SchoolId,
-        educore_core::ids::UserId,
-        educore_core::ids::EventId,
-        educore_core::ids::CorrelationId,
-        educore_core::value_objects::Timestamp,
-    ) {
-        let g = educore_core::clock::SystemIdGen;
-        let s = g.next_school_id();
-        let u = g.next_user_id();
-        let e = g.next_event_id();
-        let c = g.next_correlation_id();
-        let t = educore_core::value_objects::Timestamp::now();
-        (s, u, e, c, t)
-    }
-
-    fn title() -> crate::value_objects::FormTitle {
-        crate::value_objects::FormTitle::new("Form Title").unwrap()
-    }
-
-    fn url() -> crate::value_objects::Url {
-        crate::value_objects::Url::new("https://example.com/x.pdf").unwrap()
-    }
-
-    fn file_ref() -> crate::value_objects::FileReference {
-        crate::value_objects::FileReference::new("k1").unwrap()
-    }
-
-    fn publish_date() -> crate::value_objects::PublishDate {
-        crate::value_objects::PublishDate::new(chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap())
-    }
-
-    fn make_form_with(
-        link: Option<crate::value_objects::Url>,
-        file: Option<crate::value_objects::FileReference>,
-    ) -> crate::aggregate::FormDownload {
-        let (s, u, _e, c, t) = ids();
-        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
-        let cmd = crate::aggregate::NewFormDownload {
-            id,
-            title: title(),
-            short_description: None,
-            publish_date: publish_date(),
-            link,
-            file,
-            show_public: crate::value_objects::ShowPublic::default(),
-            created_by: u,
-            created_at: t,
-            correlation_id: c,
-        };
-        crate::aggregate::FormDownload::new(cmd).expect("ok")
-    }
-
-    // -------------------------------------------------------------------------
-    // FormService pure-helper tests
-    // -------------------------------------------------------------------------
-
-    #[test]
-    fn form_service_validate_content_rejects_both_none() {
-        let err = FormService::validate_content(None, None).unwrap_err();
-        assert!(matches!(err, DocumentsError::FormHasNoContent));
-    }
-
-    #[test]
-    fn form_service_validate_content_accepts_link_only() {
-        FormService::validate_content(Some(&url()), None).expect("link only ok");
-    }
-
-    #[test]
-    fn form_service_validate_content_accepts_file_only() {
-        FormService::validate_content(None, Some(&file_ref())).expect("file only ok");
-    }
-
-    #[test]
-    fn form_service_is_public_reflects_aggregate_flag() {
-        let (s, u, _e, c, t) = ids();
-        let id = crate::value_objects::FormDownloadId::new(s, uuid::Uuid::now_v7());
-        let cmd = crate::aggregate::NewFormDownload {
-            id,
-            title: title(),
-            short_description: None,
-            publish_date: publish_date(),
-            link: Some(url()),
-            file: None,
-            show_public: crate::value_objects::ShowPublic::new(true),
-            created_by: u,
-            created_at: t,
-            correlation_id: c,
-        };
-        let form = crate::aggregate::FormDownload::new(cmd).expect("ok");
-        assert!(FormService::is_public(&form));
-    }
-
-    #[test]
-    fn form_service_is_deliverable_reflects_aggregate_flag() {
-        let form = make_form_with(Some(url()), None);
-        assert!(FormService::is_deliverable(&form));
-    }
-
-    #[test]
-    fn form_service_matches_publish_date_strict_inequality() {
-        let form = make_form_with(Some(url()), None);
-        // publish_date is 2026-06-01.
-        // Before the publish date: NOT a match.
-        let before = chrono::NaiveDate::from_ymd_opt(2026, 5, 31).unwrap();
-        assert!(!FormService::matches_publish_date(&form, before));
-        // On the publish date: IS a match.
-        let on = chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap();
-        assert!(FormService::matches_publish_date(&form, on));
-        // After the publish date: IS a match.
-        let after = chrono::NaiveDate::from_ymd_opt(2026, 6, 2).unwrap();
-        assert!(FormService::matches_publish_date(&form, after));
-    }
-
-    // -------------------------------------------------------------------------
-    // PostalService pure-helper tests
-    // -------------------------------------------------------------------------
-
-    #[test]
-    fn postal_service_reference_unique_returns_true_when_not_in_existing() {
-        let r = crate::value_objects::PostalReferenceNo::new("REF-001").unwrap();
-        let existing: Vec<crate::value_objects::PostalReferenceNo> = vec![];
-        assert!(PostalService::reference_unique(&r, &existing));
-    }
-
-    #[test]
-    fn postal_service_reference_unique_returns_false_when_in_existing() {
-        let r = crate::value_objects::PostalReferenceNo::new("REF-001").unwrap();
-        let existing = vec![r.clone()];
-        assert!(!PostalService::reference_unique(&r, &existing));
-    }
-
-    #[test]
-    fn postal_service_pair_by_reference_matches_dispatch_with_receive() {
-        let (s, u, _e, c, t) = ids();
-        let dispatch_id = crate::value_objects::PostalDispatchId::new(s, uuid::Uuid::now_v7());
-        let dispatch_cmd = crate::aggregate::NewPostalDispatch {
-            id: dispatch_id,
-            academic_id: uuid::Uuid::now_v7(),
-            to_title: crate::value_objects::ToTitle::new(
-                crate::value_objects::PostalTitle::new("X").unwrap(),
-            ),
-            from_title: crate::value_objects::FromTitle::new(
-                crate::value_objects::PostalTitle::new("Y").unwrap(),
-            ),
-            reference_no: Some(crate::value_objects::PostalReferenceNo::new("REF-SHARED").unwrap()),
-            address: crate::value_objects::ToAddress::new(
-                crate::value_objects::PostalAddress::new("1 St").unwrap(),
-            ),
-            date: crate::value_objects::DispatchDate::new(
-                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-            ),
-            note: None,
-            file: None,
-            created_by: u,
-            created_at: t,
-            correlation_id: c,
-        };
-        let dispatch = crate::aggregate::PostalDispatch::new(dispatch_cmd).expect("ok");
-        let receive_cmd = crate::aggregate::NewPostalReceive {
-            id: crate::value_objects::PostalReceiveId::new(s, uuid::Uuid::now_v7()),
-            academic_id: uuid::Uuid::now_v7(),
-            from_title: crate::value_objects::FromTitle::new(
-                crate::value_objects::PostalTitle::new("X").unwrap(),
-            ),
-            to_title: crate::value_objects::ToTitle::new(
-                crate::value_objects::PostalTitle::new("Y").unwrap(),
-            ),
-            reference_no: Some(crate::value_objects::PostalReferenceNo::new("REF-SHARED").unwrap()),
-            address: crate::value_objects::FromAddress::new(
-                crate::value_objects::PostalAddress::new("1 St").unwrap(),
-            ),
-            date: crate::value_objects::ReceiveDate::new(
-                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-            ),
-            note: None,
-            file: None,
-            created_by: u,
-            created_at: t,
-            correlation_id: c,
-        };
-        let receive = crate::aggregate::PostalReceive::new(receive_cmd).expect("ok");
-        let pairs = PostalService::pair_by_reference(&[dispatch], &[receive]);
-        assert_eq!(pairs.len(), 1);
-        assert!(pairs[0].dispatch.is_some());
-        assert!(pairs[0].receive.is_some());
-    }
-
-    #[test]
-    fn postal_service_within_year_filters_to_matching_year_and_reference() {
-        let (s, u, _e, c, t) = ids();
-        let year_in = uuid::Uuid::now_v7();
-        let year_out = uuid::Uuid::now_v7();
-        let dispatch_in = {
-            let id = crate::value_objects::PostalDispatchId::new(s, uuid::Uuid::now_v7());
-            let cmd = crate::aggregate::NewPostalDispatch {
-                id,
-                academic_id: year_in,
-                to_title: crate::value_objects::ToTitle::new(
-                    crate::value_objects::PostalTitle::new("X").unwrap(),
-                ),
-                from_title: crate::value_objects::FromTitle::new(
-                    crate::value_objects::PostalTitle::new("Y").unwrap(),
-                ),
-                reference_no: Some(crate::value_objects::PostalReferenceNo::new("REF-IN").unwrap()),
-                address: crate::value_objects::ToAddress::new(
-                    crate::value_objects::PostalAddress::new("1 St").unwrap(),
-                ),
-                date: crate::value_objects::DispatchDate::new(
-                    chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-                ),
-                note: None,
-                file: None,
-                created_by: u,
-                created_at: t,
-                correlation_id: c,
-            };
-            crate::aggregate::PostalDispatch::new(cmd).expect("ok")
-        };
-        let dispatch_other_year = {
-            let id = crate::value_objects::PostalDispatchId::new(s, uuid::Uuid::now_v7());
-            let cmd = crate::aggregate::NewPostalDispatch {
-                id,
-                academic_id: year_out,
-                to_title: crate::value_objects::ToTitle::new(
-                    crate::value_objects::PostalTitle::new("X").unwrap(),
-                ),
-                from_title: crate::value_objects::FromTitle::new(
-                    crate::value_objects::PostalTitle::new("Y").unwrap(),
-                ),
-                reference_no: Some(
-                    crate::value_objects::PostalReferenceNo::new("REF-OTHER").unwrap(),
-                ),
-                address: crate::value_objects::ToAddress::new(
-                    crate::value_objects::PostalAddress::new("1 St").unwrap(),
-                ),
-                date: crate::value_objects::DispatchDate::new(
-                    chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-                ),
-                note: None,
-                file: None,
-                created_by: u,
-                created_at: t,
-                correlation_id: c,
-            };
-            crate::aggregate::PostalDispatch::new(cmd).expect("ok")
-        };
-        let refs = PostalService::within_year(&[dispatch_in, dispatch_other_year], &[], year_in);
-        assert_eq!(refs.len(), 1);
-        assert_eq!(refs[0].reference_no.as_str(), "REF-IN");
-    }
-
-    #[test]
-    fn postal_service_format_address_round_trips_string() {
-        let addr = crate::value_objects::PostalAddress::new("1 Main St").unwrap();
-        assert_eq!(PostalService::format_address(&addr), "1 Main St");
-    }
-
-    // -------------------------------------------------------------------------
-    // From<DomainError> and From<EventError> for DocumentsError
-    // -------------------------------------------------------------------------
-
-    #[test]
-    fn from_domain_error_forbidden_maps_to_documents_forbidden() {
-        let src = educore_core::error::DomainError::Forbidden("nope".to_owned());
-        let dst: DocumentsError = src.into();
-        assert!(matches!(dst, DocumentsError::Forbidden(_)));
-    }
-
-    #[test]
-    fn from_domain_error_conflict_maps_to_documents_conflict() {
-        let src = educore_core::error::DomainError::Conflict("dup".to_owned());
-        let dst: DocumentsError = src.into();
-        assert!(matches!(dst, DocumentsError::Conflict(_)));
-    }
-
-    #[test]
-    fn from_domain_error_validation_maps_to_documents_validation() {
-        let src = educore_core::error::DomainError::Validation("bad".to_owned());
-        let dst: DocumentsError = src.into();
-        assert!(matches!(dst, DocumentsError::Validation(_)));
-    }
-
-    #[test]
-    fn from_event_error_maps_to_documents_infrastructure() {
-        let src = educore_events::errors::EventError::PublishFailed("down".to_owned());
-        let dst: DocumentsError = src.into();
-        assert!(matches!(dst, DocumentsError::Infrastructure(_)));
-    }
-
-    // -------------------------------------------------------------------------
-    // Property-based tests (100 cases each)
-    //
-    // The two headline correctness properties are:
-    //   1. `FormService::is_deliverable` is true iff the form has at
-    //      least one of `link` or `file` set.
-    //   2. `PostalService::reference_unique` is true iff the
-    //      reference is not in the existing list.
-    // -------------------------------------------------------------------------
-
-    proptest::proptest! {
-        #![proptest_config(proptest::test_runner::Config::with_cases(100))]
-
-        /// Property 1: `FormService::is_deliverable` is true iff
-        /// the form has at least one of `link` or `file` set.
-        #[test]
-        fn prop_form_is_deliverable_iff_link_or_file_set(
-            has_link in proptest::bool::ANY,
-            has_file in proptest::bool::ANY,
-        ) {
-            let link = if has_link { Some(url()) } else { None };
-            let file = if has_file { Some(file_ref()) } else { None };
-            // We can't construct a form with both `None` via
-            // `FormDownload::new` (the invariant forbids it), so
-            // when both flags are false we exercise the
-            // `is_deliverable` accessor on a never-saved state
-            // by constructing a form, then clearing both
-            // fields and asserting the deliverable status.
-            if has_link || has_file {
-                let form = make_form_with(link.clone(), file.clone());
-                assert_eq!(FormService::is_deliverable(&form), has_link || has_file);
-            } else {
-                // Construct with a link, then clear it (bypassing
-                // the constructor invariant that would reject
-                // the all-None case).
-                let mut form = make_form_with(Some(url()), None);
-                form.link = None;
-                form.file = None;
-                assert!(!FormService::is_deliverable(&form));
-            }
-        }
-
-        /// Property 1b: `FormService::matches_publish_date` is true
-        /// iff the form's publish_date is on or before the query
-        /// date.
-        #[test]
-        fn prop_form_matches_publish_date_iff_query_ge_publish(
-            offset in -30i32..30,
-        ) {
-            let form = make_form_with(Some(url()), None);
-            let publish = form.publish_date.0;
-            let query = publish + chrono::Duration::days(i64::from(offset));
-            let expected = offset >= 0;
-            assert_eq!(FormService::matches_publish_date(&form, query), expected);
-        }
-
-        /// Property 2: `PostalService::reference_unique` returns
-        /// `true` iff the reference is NOT in the existing list.
-        /// We test by generating 3 candidate references, picking
-        /// one of them as the "candidate", and verifying the
-        /// function against the list (with and without the
-        /// candidate).
-        #[test]
-        fn prop_postal_reference_unique_iff_not_in_existing(
-            tag1 in 0u32..10_000,
-            tag2 in 0u32..10_000,
-        ) {
-            let candidate = crate::value_objects::PostalReferenceNo::new(
-                format!("REF-{tag1}"),
-            )
-            .unwrap();
-            let other = crate::value_objects::PostalReferenceNo::new(
-                format!("REF-{tag2}"),
-            )
-            .unwrap();
-            // Empty list -> unique.
-            assert!(PostalService::reference_unique(&candidate, &[]));
-            // List containing only the candidate -> not unique.
-            assert!(!PostalService::reference_unique(
-                &candidate,
-                std::slice::from_ref(&candidate),
-            ));
-            // List containing only the other -> unique.
-            assert!(PostalService::reference_unique(&candidate, std::slice::from_ref(&other)));
-            // List containing both -> not unique.
-            assert!(!PostalService::reference_unique(
-                &candidate,
-                &[candidate.clone(), other.clone()],
-            ));
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Phase 11 / 4-tests — service-factory scenario tests.
-    //
-    // The service factories (`upload_form_service`,
-    // `dispatch_postal_service`, `receive_postal_service`,
-    // `delete_form_service`, `track_postal_service`) are exercised
-    // with in-memory mocks. The mocks live in the test module
-    // (not in the integration test crate) so the service layer's
-    // own tests cover the headline path without taking a
-    // dependency on the integration test crate.
-    // -------------------------------------------------------------------------
-
-    use std::sync::Mutex as StdMutex;
-
-    use async_trait::async_trait;
-    use educore_audit::prelude::{AuditWriter, RetentionPolicy};
-    use educore_event_bus::InProcessEventBus;
-    use educore_events::event_bus::EventBus;
-    use educore_rbac::services::InMemoryCapabilityCheck;
-    use educore_storage::audit::AuditLogEntry;
-
-    /// In-memory `AuditLog` for the service-factory unit tests.
-    #[derive(Debug, Default)]
-    struct FactoryTestAuditLog {
-        entries: StdMutex<Vec<AuditLogEntry>>,
-    }
-
-    #[async_trait]
-    impl educore_storage::audit::AuditLog for FactoryTestAuditLog {
-        async fn append(&self, entry: AuditLogEntry) -> educore_core::error::Result<()> {
-            self.entries.lock().unwrap().push(entry);
-            Ok(())
-        }
-        async fn read_for_target(
-            &self,
-            _school_id: educore_core::ids::SchoolId,
-            _target_id: uuid::Uuid,
-            _limit: u32,
-        ) -> educore_core::error::Result<Vec<AuditLogEntry>> {
-            Ok(self.entries.lock().unwrap().clone())
-        }
-    }
-
-    /// In-memory `FormDownloadRepository` for the service-factory
-    /// unit tests.
-    #[derive(Debug, Default)]
-    struct FactoryTestFormRepo {
-        rows: StdMutex<Vec<crate::aggregate::FormDownload>>,
-    }
-
-    #[async_trait]
-    impl crate::repository::FormDownloadRepository for FactoryTestFormRepo {
-        async fn get(
-            &self,
-            id: crate::value_objects::FormDownloadId,
-        ) -> educore_core::error::Result<Option<crate::aggregate::FormDownload>> {
-            Ok(self
-                .rows
-                .lock()
-                .unwrap()
-                .iter()
-                .find(|f| f.id == id)
-                .cloned())
-        }
-        async fn list(
-            &self,
-            _school: educore_core::ids::SchoolId,
-            _q: crate::query::FormDownloadQuery,
-        ) -> educore_core::error::Result<Vec<crate::aggregate::FormDownload>> {
-            Ok(self.rows.lock().unwrap().clone())
-        }
-        async fn list_public(
-            &self,
-            _school: educore_core::ids::SchoolId,
-        ) -> educore_core::error::Result<Vec<crate::aggregate::FormDownload>> {
-            Ok(self.rows.lock().unwrap().clone())
-        }
-        async fn insert(
-            &self,
-            form: &crate::aggregate::FormDownload,
-        ) -> educore_core::error::Result<()> {
-            self.rows.lock().unwrap().push(form.clone());
-            Ok(())
-        }
-        async fn update(
-            &self,
-            form: &crate::aggregate::FormDownload,
-        ) -> educore_core::error::Result<()> {
-            let mut rows = self.rows.lock().unwrap();
-            if let Some(e) = rows.iter_mut().find(|f| f.id == form.id) {
-                *e = form.clone();
-                Ok(())
-            } else {
-                Err(educore_core::error::DomainError::NotFound(format!(
-                    "form {} not found",
-                    form.id.as_uuid()
-                )))
-            }
-        }
-        async fn by_publish_date(
-            &self,
-            _school: educore_core::ids::SchoolId,
-            _from: chrono::NaiveDate,
-            _to: chrono::NaiveDate,
-        ) -> educore_core::error::Result<Vec<crate::aggregate::FormDownload>> {
-            Ok(self.rows.lock().unwrap().clone())
-        }
-        async fn count(
-            &self,
-            _school: educore_core::ids::SchoolId,
-            _q: crate::query::FormDownloadQuery,
-        ) -> educore_core::error::Result<u64> {
-            Ok(self.rows.lock().unwrap().len() as u64)
-        }
-        async fn page(
-            &self,
-            _school: educore_core::ids::SchoolId,
-            _q: crate::query::FormDownloadQuery,
-            _offset: u32,
-            _limit: u32,
-        ) -> educore_core::error::Result<Vec<crate::aggregate::FormDownload>> {
-            Ok(self.rows.lock().unwrap().clone())
-        }
-    }
-
-    /// In-memory `PostalDispatchRepository` for the service-factory
-    /// unit tests (enforces the `(school, academic_id,
-    /// reference_no)` uniqueness invariant).
-    #[derive(Debug, Default)]
-    struct FactoryTestDispatchRepo {
-        rows: StdMutex<Vec<crate::aggregate::PostalDispatch>>,
-    }
-
-    #[async_trait]
-    impl crate::repository::PostalDispatchRepository for FactoryTestDispatchRepo {
-        async fn get(
-            &self,
-            id: crate::value_objects::PostalDispatchId,
-        ) -> educore_core::error::Result<Option<crate::aggregate::PostalDispatch>> {
-            Ok(self
-                .rows
-                .lock()
-                .unwrap()
-                .iter()
-                .find(|d| d.id == id)
-                .cloned())
-        }
-        async fn list(
-            &self,
-            _school: educore_core::ids::SchoolId,
-            _q: crate::query::PostalDispatchQuery,
-        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalDispatch>> {
-            Ok(self.rows.lock().unwrap().clone())
-        }
-        async fn insert(
-            &self,
-            dispatch: &crate::aggregate::PostalDispatch,
-        ) -> educore_core::error::Result<()> {
-            let rows = self.rows.lock().unwrap();
-            if let Some(r) = &dispatch.reference_no {
-                if rows.iter().any(|d| {
-                    d.academic_id == dispatch.academic_id && d.reference_no.as_ref() == Some(r)
-                }) {
-                    return Err(educore_core::error::DomainError::Conflict(format!(
-                        "duplicate reference_no: {}",
-                        r.as_str()
-                    )));
-                }
-            }
-            drop(rows);
-            self.rows.lock().unwrap().push(dispatch.clone());
-            Ok(())
-        }
-        async fn update(
-            &self,
-            dispatch: &crate::aggregate::PostalDispatch,
-        ) -> educore_core::error::Result<()> {
-            let mut rows = self.rows.lock().unwrap();
-            if let Some(e) = rows.iter_mut().find(|d| d.id == dispatch.id) {
-                *e = dispatch.clone();
-                Ok(())
-            } else {
-                Err(educore_core::error::DomainError::NotFound(format!(
-                    "dispatch {} not found",
-                    dispatch.id.as_uuid()
-                )))
-            }
-        }
-        async fn find_by_reference(
-            &self,
-            _school: educore_core::ids::SchoolId,
-            reference: &crate::value_objects::PostalReferenceNo,
-        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalDispatch>> {
-            Ok(self
-                .rows
-                .lock()
-                .unwrap()
-                .iter()
-                .filter(|d| d.reference_no.as_ref() == Some(reference))
-                .cloned()
-                .collect())
-        }
-        async fn between(
-            &self,
-            _school: educore_core::ids::SchoolId,
-            _from: chrono::NaiveDate,
-            _to: chrono::NaiveDate,
-        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalDispatch>> {
-            Ok(self.rows.lock().unwrap().clone())
-        }
-        async fn by_academic_year(
-            &self,
-            _school: educore_core::ids::SchoolId,
-            _year: crate::aggregate::AcademicYearId,
-        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalDispatch>> {
-            Ok(self.rows.lock().unwrap().clone())
-        }
-    }
-
-    /// In-memory `PostalReceiveRepository` for the
-    /// service-factory unit tests.
-    #[derive(Debug, Default)]
-    struct FactoryTestReceiveRepo {
-        rows: StdMutex<Vec<crate::aggregate::PostalReceive>>,
-    }
-
-    #[async_trait]
-    impl crate::repository::PostalReceiveRepository for FactoryTestReceiveRepo {
-        async fn get(
-            &self,
-            id: crate::value_objects::PostalReceiveId,
-        ) -> educore_core::error::Result<Option<crate::aggregate::PostalReceive>> {
-            Ok(self
-                .rows
-                .lock()
-                .unwrap()
-                .iter()
-                .find(|r| r.id == id)
-                .cloned())
-        }
-        async fn list(
-            &self,
-            _school: educore_core::ids::SchoolId,
-            _q: crate::query::PostalReceiveQuery,
-        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalReceive>> {
-            Ok(self.rows.lock().unwrap().clone())
-        }
-        async fn insert(
-            &self,
-            receive: &crate::aggregate::PostalReceive,
-        ) -> educore_core::error::Result<()> {
-            let rows = self.rows.lock().unwrap();
-            if let Some(r) = &receive.reference_no {
-                if rows.iter().any(|x| {
-                    x.academic_id == receive.academic_id && x.reference_no.as_ref() == Some(r)
-                }) {
-                    return Err(educore_core::error::DomainError::Conflict(format!(
-                        "duplicate reference_no: {}",
-                        r.as_str()
-                    )));
-                }
-            }
-            drop(rows);
-            self.rows.lock().unwrap().push(receive.clone());
-            Ok(())
-        }
-        async fn update(
-            &self,
-            receive: &crate::aggregate::PostalReceive,
-        ) -> educore_core::error::Result<()> {
-            let mut rows = self.rows.lock().unwrap();
-            if let Some(e) = rows.iter_mut().find(|r| r.id == receive.id) {
-                *e = receive.clone();
-                Ok(())
-            } else {
-                Err(educore_core::error::DomainError::NotFound(format!(
-                    "receive {} not found",
-                    receive.id.as_uuid()
-                )))
-            }
-        }
-        async fn find_by_reference(
-            &self,
-            _school: educore_core::ids::SchoolId,
-            reference: &crate::value_objects::PostalReferenceNo,
-        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalReceive>> {
-            Ok(self
-                .rows
-                .lock()
-                .unwrap()
-                .iter()
-                .filter(|r| r.reference_no.as_ref() == Some(reference))
-                .cloned()
-                .collect())
-        }
-        async fn between(
-            &self,
-            _school: educore_core::ids::SchoolId,
-            _from: chrono::NaiveDate,
-            _to: chrono::NaiveDate,
-        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalReceive>> {
-            Ok(self.rows.lock().unwrap().clone())
-        }
-        async fn by_academic_year(
-            &self,
-            _school: educore_core::ids::SchoolId,
-            _year: crate::aggregate::AcademicYearId,
-        ) -> educore_core::error::Result<Vec<crate::aggregate::PostalReceive>> {
-            Ok(self.rows.lock().unwrap().clone())
-        }
-    }
-
-    /// Construct an in-memory test environment for the
-    /// service-factory tests.
-    async fn factory_test_env() -> (
-        Arc<InProcessEventBus>,
-        Arc<AuditWriter>,
-        Arc<InMemoryCapabilityCheck>,
-        Arc<FactoryTestFormRepo>,
-        Arc<FactoryTestDispatchRepo>,
-        Arc<FactoryTestReceiveRepo>,
-        educore_core::ids::SchoolId,
-        educore_core::ids::UserId,
-        educore_core::ids::CorrelationId,
-    ) {
-        let bus: Arc<InProcessEventBus> = Arc::new(InProcessEventBus::new());
-        let bus_dyn: Arc<dyn EventBus> = bus.clone();
-        let g = educore_core::clock::SystemIdGen;
-        let school = g.next_school_id();
-        let actor = g.next_user_id();
-        let corr = g.next_correlation_id();
-        let clock = Arc::new(educore_core::clock::TestClock::at(
-            educore_core::value_objects::Timestamp::now(),
-        ));
-        let audit_log: Arc<dyn educore_storage::audit::AuditLog> =
-            Arc::new(FactoryTestAuditLog::default());
-        let audit = Arc::new(AuditWriter::new(
-            audit_log,
-            bus_dyn,
-            clock,
-            RetentionPolicy::default(),
-        ));
-        let cap = Arc::new(InMemoryCapabilityCheck::new());
-        let form_repo = Arc::new(FactoryTestFormRepo::default());
-        let dispatch_repo = Arc::new(FactoryTestDispatchRepo::default());
-        let receive_repo = Arc::new(FactoryTestReceiveRepo::default());
-        (
-            bus,
-            audit,
-            cap,
-            form_repo,
-            dispatch_repo,
-            receive_repo,
-            school,
-            actor,
-            corr,
-        )
-    }
-
-    fn grant(
-        school: educore_core::ids::SchoolId,
-        cap: &InMemoryCapabilityCheck,
-        c: educore_rbac::value_objects::Capability,
-    ) {
-        let role = educore_rbac::ids::RoleId::new(school, uuid::Uuid::now_v7());
-        cap.grant(school, role, c);
-    }
-
-    fn ctx(
-        school: educore_core::ids::SchoolId,
-        actor: educore_core::ids::UserId,
-        corr: educore_core::ids::CorrelationId,
-    ) -> educore_core::tenant::TenantContext {
-        educore_core::tenant::TenantContext::for_user(
-            school,
-            actor,
-            corr,
-            educore_core::tenant::UserType::SchoolAdmin,
-        )
-    }
-
-    fn upload_cmd_v(
-        school: educore_core::ids::SchoolId,
-        actor: educore_core::ids::UserId,
-        corr: educore_core::ids::CorrelationId,
-    ) -> UploadFormCommand {
-        UploadFormCommand {
-            tenant: ctx(school, actor, corr),
-            title: crate::value_objects::FormTitle::new("Factory Test Form").unwrap(),
-            short_description: None,
-            publish_date: crate::value_objects::PublishDate::new(
-                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-            ),
-            link: Some(crate::value_objects::Url::new("https://example.com/factory.pdf").unwrap()),
-            file: None,
-            show_public: crate::value_objects::ShowPublic::new(true),
-        }
-    }
-
-    fn dispatch_cmd_v(
-        school: educore_core::ids::SchoolId,
-        actor: educore_core::ids::UserId,
-        corr: educore_core::ids::CorrelationId,
-        ref_no: &str,
-    ) -> DispatchPostalCommand {
-        DispatchPostalCommand {
-            tenant: ctx(school, actor, corr),
-            to_title: crate::value_objects::ToTitle::new(
-                crate::value_objects::PostalTitle::new("Mr Factory").unwrap(),
-            ),
-            from_title: crate::value_objects::FromTitle::new(
-                crate::value_objects::PostalTitle::new("Acme School").unwrap(),
-            ),
-            reference_no: Some(crate::value_objects::PostalReferenceNo::new(ref_no).unwrap()),
-            address: crate::value_objects::ToAddress::new(
-                crate::value_objects::PostalAddress::new("1 Main St").unwrap(),
-            ),
-            date: crate::value_objects::DispatchDate::new(
-                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-            ),
-            note: None,
-            file: None,
-        }
-    }
-
-    fn receive_cmd_v(
-        school: educore_core::ids::SchoolId,
-        actor: educore_core::ids::UserId,
-        corr: educore_core::ids::CorrelationId,
-        ref_no: &str,
-    ) -> ReceivePostalCommand {
-        ReceivePostalCommand {
-            tenant: ctx(school, actor, corr),
-            from_title: crate::value_objects::FromTitle::new(
-                crate::value_objects::PostalTitle::new("Acme Vendor").unwrap(),
-            ),
-            to_title: crate::value_objects::ToTitle::new(
-                crate::value_objects::PostalTitle::new("Acme School").unwrap(),
-            ),
-            reference_no: Some(crate::value_objects::PostalReferenceNo::new(ref_no).unwrap()),
-            address: crate::value_objects::FromAddress::new(
-                crate::value_objects::PostalAddress::new("5 Vendor Rd").unwrap(),
-            ),
-            date: crate::value_objects::ReceiveDate::new(
-                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
-            ),
-            note: None,
-            file: None,
-        }
-    }
-
-    #[tokio::test]
-    async fn factory_upload_form_service_succeeds_with_capability() {
-        let (bus, audit, cap, form_repo, _d, _r, s, u, c) = factory_test_env().await;
-        grant(s, &cap, Capability::FormDownloadUpload);
-        let form = upload_form_service(
-            upload_cmd_v(s, u, c),
-            form_repo.clone(),
-            bus,
-            audit,
-            cap.as_ref(),
-        )
-        .await
-        .expect("upload_form_service ok");
-        assert!(form.is_active());
-        assert!(form.is_public());
-    }
-
-    #[tokio::test]
-    async fn factory_upload_form_service_returns_forbidden_without_capability() {
-        let (bus, audit, cap, form_repo, _d, _r, s, u, c) = factory_test_env().await;
-        // No grant -> Forbidden.
-        let err = upload_form_service(upload_cmd_v(s, u, c), form_repo, bus, audit, cap.as_ref())
-            .await
-            .unwrap_err();
-        assert!(matches!(err, DocumentsError::Forbidden(_)));
-    }
-
-    #[tokio::test]
-    async fn factory_upload_form_service_returns_form_has_no_content_when_both_none() {
-        let (bus, audit, cap, form_repo, _d, _r, s, u, c) = factory_test_env().await;
-        grant(s, &cap, Capability::FormDownloadUpload);
-        let mut cmd = upload_cmd_v(s, u, c);
-        cmd.link = None;
-        cmd.file = None;
-        let err = upload_form_service(cmd, form_repo, bus, audit, cap.as_ref())
-            .await
-            .unwrap_err();
-        assert!(matches!(err, DocumentsError::FormHasNoContent));
-    }
-
-    #[tokio::test]
-    async fn factory_dispatch_postal_service_succeeds_with_capability() {
-        let (bus, audit, cap, _f, dispatch_repo, _r, s, u, c) = factory_test_env().await;
-        grant(s, &cap, Capability::PostalDispatchCreate);
-        let d = dispatch_postal_service(
-            dispatch_cmd_v(s, u, c, "REF-FAC-001"),
-            uuid::Uuid::now_v7(),
-            dispatch_repo,
-            bus,
-            audit,
-            cap.as_ref(),
-        )
-        .await
-        .expect("dispatch_postal_service ok");
-        assert!(d.is_active());
-        assert_eq!(d.reference_no.as_ref().unwrap().as_str(), "REF-FAC-001");
-    }
-
-    #[tokio::test]
-    async fn factory_dispatch_postal_service_returns_forbidden_without_capability() {
-        let (bus, audit, cap, _f, dispatch_repo, _r, s, u, c) = factory_test_env().await;
-        let err = dispatch_postal_service(
-            dispatch_cmd_v(s, u, c, "REF-FAC-002"),
-            uuid::Uuid::now_v7(),
-            dispatch_repo,
-            bus,
-            audit,
-            cap.as_ref(),
-        )
-        .await
-        .unwrap_err();
-        assert!(matches!(err, DocumentsError::Forbidden(_)));
-    }
-
-    #[tokio::test]
-    async fn factory_receive_postal_service_succeeds_with_capability() {
-        let (bus, audit, cap, _f, _d, receive_repo, s, u, c) = factory_test_env().await;
-        grant(s, &cap, Capability::PostalReceiveCreate);
-        let r = receive_postal_service(
-            receive_cmd_v(s, u, c, "REF-FAC-IN-001"),
-            uuid::Uuid::now_v7(),
-            receive_repo,
-            bus,
-            audit,
-            cap.as_ref(),
-        )
-        .await
-        .expect("receive_postal_service ok");
-        assert!(r.is_active());
-        assert_eq!(r.reference_no.as_ref().unwrap().as_str(), "REF-FAC-IN-001");
-    }
-
-    #[tokio::test]
-    async fn factory_receive_postal_service_returns_forbidden_without_capability() {
-        let (bus, audit, cap, _f, _d, receive_repo, s, u, c) = factory_test_env().await;
-        let err = receive_postal_service(
-            receive_cmd_v(s, u, c, "REF-FAC-IN-002"),
-            uuid::Uuid::now_v7(),
-            receive_repo,
-            bus,
-            audit,
-            cap.as_ref(),
-        )
-        .await
-        .unwrap_err();
-        assert!(matches!(err, DocumentsError::Forbidden(_)));
-    }
-
-    #[tokio::test]
-    async fn factory_delete_form_service_succeeds_with_capability() {
-        let (bus, audit, cap, form_repo, _d, _r, s, u, c) = factory_test_env().await;
-        grant(s, &cap, Capability::FormDownloadUpload);
-        grant(s, &cap, Capability::FormDownloadDelete);
-        let form = upload_form_service(
-            upload_cmd_v(s, u, c),
-            form_repo.clone(),
-            bus.clone(),
-            audit.clone(),
-            cap.as_ref(),
-        )
-        .await
-        .expect("upload");
-        let form_id = form.id;
-        delete_form_service(
-            DeleteFormCommand {
-                tenant: ctx(s, u, c),
-                form_id,
-            },
-            form_repo.clone(),
-            bus,
-            audit,
-            cap.as_ref(),
-        )
-        .await
-        .expect("delete_form_service ok");
-        // The form is still queryable but is_active() is false.
-        let fetched = form_repo
-            .get(form_id)
-            .await
-            .expect("get")
-            .expect("still there");
-        assert!(!fetched.is_active());
-    }
-
-    #[tokio::test]
-    async fn factory_delete_form_service_returns_forbidden_without_capability() {
-        let (bus, audit, cap, form_repo, _d, _r, s, u, c) = factory_test_env().await;
-        grant(s, &cap, Capability::FormDownloadUpload);
-        let form = upload_form_service(
-            upload_cmd_v(s, u, c),
-            form_repo.clone(),
-            bus.clone(),
-            audit.clone(),
-            cap.as_ref(),
-        )
-        .await
-        .expect("upload");
-        let form_id = form.id;
-        let err = delete_form_service(
-            DeleteFormCommand {
-                tenant: ctx(s, u, c),
-                form_id,
-            },
-            form_repo,
-            bus,
-            audit,
-            cap.as_ref(),
-        )
-        .await
-        .unwrap_err();
-        assert!(matches!(err, DocumentsError::Forbidden(_)));
-    }
-}

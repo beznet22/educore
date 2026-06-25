@@ -694,6 +694,13 @@ impl InMemoryStorageAdapter {
         self
     }
 
+    /// Reads all audit log rows from the adapter's in-memory
+    /// store. Returns the rows in insertion order (oldest
+    /// first). Includes only rows from committed transactions.
+    pub fn read_audit_log_entries(&self) -> Vec<AuditLogEntry> {
+        self.inner.audit_log.lock().clone()
+    }
+
     /// Cluster F: returns the `SchoolId` scope of every
     /// transaction opened by this adapter.
     #[must_use]
