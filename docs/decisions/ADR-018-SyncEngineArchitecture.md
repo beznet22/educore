@@ -4,6 +4,11 @@
 
 Accepted, 2026-06-12.
 
+Amended 2026-06-25: `sync-inprocess` lives in `crates/cross-cutting/`
+(not `crates/adapters/` as originally specified in § 3). It is a
+reference implementation for tests, not a port implementation, so
+the cross-cutting tier is the correct home per ADR-013's tier system.
+
 ## Context
 
 Educore is **embeddable**: a consumer links the engine into a
@@ -98,8 +103,9 @@ up a worker, the engine ships:
   tracking, change observation, snapshot
   (de)serialization, retry policy, conflict mapping.
   These are reusable in any deployment shape.
-- **`crates/adapters/sync-inprocess/`** (package
-  `educore-sync-inprocess`) — an in-process adapter
+- **`crates/cross-cutting/sync-inprocess/`** (package
+  `educore-sync-inprocess`) — an in-process reference
+  implementation
   that drains the local outbox and applies remote
   snapshots **without** any network I/O. The "remote"
   store is just a `StorageAdapter` on the same process.
@@ -182,20 +188,22 @@ dependencies (no `[features]` block, no `cfg(feature =
 flag is the correct design but is a follow-up implementation
 item, not part of this ADR's acceptance.
 
-**Sync-crate location note (2026-06-24):** the directory
+**Sync-crate location note (2026-06-24, resolved
+2026-06-25 by Status amendment):** the directory
 paths quoted in section 3 above
 (`crates/cross-cutting/sync/`,
-`crates/adapters/sync-inprocess/`,
+`crates/cross-cutting/sync-inprocess/`,
 `crates/adapters/sync-http/`,
 `crates/adapters/sync-null/`) disagree with the filesystem
-in two ways. (a) `educore-sync-inprocess` lives at
-`crates/cross-cutting/sync-inprocess/`, not
-`crates/adapters/sync-inprocess/`. (b) The `sync-http`
-and `sync-null` crates named in section 3 do not yet
-exist on disk — only `educore-sync` and
-`educore-sync-inprocess` are scaffolded. The
-`crates/cross-cutting/sync/` location for the primitives
-crate is correct.
+in one remaining way: the `sync-http` and `sync-null`
+crates named in section 3 do not yet exist on disk —
+only `educore-sync` and `educore-sync-inprocess` are
+scaffolded. (The earlier `crates/adapters/sync-inprocess/`
+discrepancy is resolved by the 2026-06-25 Status
+amendment: the cross-cutting tier is the correct home
+for a reference implementation, not a port
+implementation.) The `crates/cross-cutting/sync/`
+location for the primitives crate is correct.
 
 ### 5. Four new methods on `StorageAdapter`
 
@@ -396,7 +404,7 @@ to the engine.
   most consumers do not need to know the methods
   exist.
 - (-) New crates: `crates/cross-cutting/sync/`,
-  `crates/adapters/sync-inprocess/`,
+  `crates/cross-cutting/sync-inprocess/`,
   `crates/adapters/sync-http/`,
   `crates/adapters/sync-null/`. Four new packages
   in the workspace.
