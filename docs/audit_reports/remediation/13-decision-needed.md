@@ -26,7 +26,7 @@ tickable.
 - The 18 phases are differently numbered
 
 **Options:**
-- [ ] **A: Phase 17 is `CMS` (Phase 12 in AGENTS.md).** No new phase needed. Update audit finding.
+- [x] **A: Phase 17 is `CMS` (Phase 12 in AGENTS.md).** No new phase needed. Update audit finding.
 - [ ] **B: Phase 17 is a NEW phase for post-CMS work** (e.g., dev tools, SDK). Document its scope in `build-plan.md`.
 - [ ] **C: Merge phases** (e.g., fold Phase 17 into Phase 16). Reduces total phase count.
 
@@ -50,7 +50,7 @@ tickable.
 **Question:** Is `SubjectAttendance` a child of `Attendance` (owned by attendance domain) or a derived view (owned by academic)?
 
 **Options:**
-- [ ] **A: attendance owns it.** academic can read but not write.
+- [x] **A: attendance owns it.** academic can read but not write.
 - [ ] **B: academic owns it.** attendance publishes events that academic consumes.
 - [ ] **C: New shared domain** for attendance tracking. (Major refactor.)
 
@@ -94,8 +94,9 @@ tickable.
 - [ ] **A: SurrealDB is primary (ADR-017 stands).** Postgres is ONLY for sync engine metadata. Update ADR-018 to make this explicit.
 - [ ] **B: Postgres is primary (override ADR-017).** SurrealDB is the embedded/offline mode. Create ADR-019.
 - [ ] **C: Both are first-class.** Adapter choice is per-deployment. Update both ADRs + AGENTS.md to remove "primary" language.
+- [x] **D: SurrealDB is both primary server mode and embedded/offline mode for the sync engine (ADR-017 stands).**
 
-**Recommended:** A (matches current implementation; ADR-017's intent is SurrealDB for app data).
+**Recommended:** D, surrealdb is first class and the primary backend and we will use it for the sync engine as well since it supports both server and embedded modes.
 
 **Impact if unresolved:** confusion in deployment docs, conflict in contributor onboarding.
 
@@ -113,7 +114,7 @@ tickable.
 Current code uses generic `Conflict(String)`. The audit report's remediation claim at line 156 says the variants exist, but they do not.
 
 **Options:**
-- [ ] **A: Add both variants** (per ADR-014). Consumers must migrate.
+- [x] **A: Add both variants** (per ADR-014). Consumers must migrate.
 - [ ] **B: Keep generic `Conflict(String)`** and amend ADR-014 to remove the variant mandate. Reduces breaking changes for existing callers.
 - [ ] **C: Add as `DomainError::Conflict(IdempotencyOutcome)`** — wrap inside the existing `Conflict` variant. Backward compatible.
 
@@ -135,7 +136,7 @@ Current code uses generic `Conflict(String)`. The audit report's remediation cla
 - Actual filesystem: 3+9+10+10+4 = 36 internal + 1 = 37
 
 **Options:**
-- [ ] **A: Adopt 37** (3 infra + 9 cross-cutting + 10 domains + 10 adapters + 4 tools + 1 umbrella). Update AGENTS.md + ADR-013 reconciliation + architecture.md.
+- [x] **A: Adopt 37** (3 infra + 9 cross-cutting + 10 domains + 10 adapters + 4 tools + 1 umbrella). Update AGENTS.md + ADR-013 reconciliation + architecture.md.
 - [ ] **B: Adopt 36** (drop `sync` or `sync-inprocess` from cross-cutting count). Depends on D-11 decision.
 - [ ] **C: Re-tally the inventory** before deciding. New crate may have been added recently.
 
@@ -153,7 +154,7 @@ Current code uses generic `Conflict(String)`. The audit report's remediation cla
 **The conflict:** ADR-018 § 4 requires `[features] default = []; sync = ["educore-sync", "educore-sync-inprocess"]` in `crates/educore/Cargo.toml` so server-only consumers don't pay the sync dependency cost. Current umbrella has unconditional deps.
 
 **Options:**
-- [ ] **A: Add the `sync` feature flag** (per ADR-018). `cargo build -p educore` (default) excludes sync; `cargo build -p educore --features sync` includes it.
+- [x] **A: Add the `sync` feature flag** (per ADR-018). `cargo build -p educore` (default) excludes sync; `cargo build -p educore --features sync` includes it.
 - [ ] **B: Make sync always-on** and amend ADR-018. Acceptable if sync cost is small.
 - [ ] **C: Split into two umbrella crates** (`educore` core + `educore-sync` extension).
 
@@ -171,7 +172,7 @@ Current code uses generic `Conflict(String)`. The audit report's remediation cla
 **The conflict:** ADR-018 § 3 lists `crates/adapters/sync-inprocess/` but the actual location is `crates/cross-cutting/sync-inprocess/`. ADR-013 says adapters live at tier 3; cross-cutting at tier 1. The in-process adapter is a reference impl that arguably fits both.
 
 **Options:**
-- [ ] **A: Move to `crates/adapters/sync-inprocess/`** (per ADR-018). Tier 3 alignment.
+- [x] **A: Move to `crates/adapters/sync-inprocess/`** (per ADR-018). Tier 3 alignment.
 - [ ] **B: Amend ADR-018 to accept cross-cutting location** (since it's a reference impl, not a port impl). Tier 1 alignment.
 - [ ] **C: Keep as-is** and amend both ADRs with a reconciliation note.
 
@@ -197,7 +198,7 @@ Current code uses generic `Conflict(String)`. The audit report's remediation cla
 5. Apply renames via mechanical refactor (large PR — split per crate)
 
 **Options:**
-- [ ] **A: Keep current code names; fix docs.** Lowest churn; consumers see no change.
+- [x] **A: Keep current code names; fix docs.** Lowest churn; consumers see no change.
 - [ ] **B: Rename code to match docs.** Higher churn; consumers see new names.
 - [ ] **C: Pick one canonical set; update both.** Middle ground; one breaking rename.
 
