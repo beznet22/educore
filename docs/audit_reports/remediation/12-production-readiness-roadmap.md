@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 144 |
+| Done (`[x]`) | 147 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 329 |
-| Last update | 2026-06-25 12:11 UTC |
+| Open (`[ ]`) | 326 |
+| Last update | 2026-06-25 12:55 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -144,9 +144,9 @@
       **Source:** docs/audit_reports/findings/wave4-storage-port.md PORT-STORE-001
       **Check:** `file:crates/infra/storage/src/port.rs regex:async fn create_schema` → _port.rs:async fn create_schema_
 
-- [ ] **FND-PORT-STORE-003** Outbox::append/pending/mark_published have no school_id on trait; TenantContext not propagated through Outbox
+- [x] **FND-PORT-STORE-003** Outbox::append/pending/mark_published have no school_id on trait; TenantContext not propagated through Outbox
       **Source:** docs/audit_reports/findings/wave4-storage-port.md PORT-STORE-003
-      **Check:** `commit:outbox.*school_id|outbox.*tenant` → _git log grep: outbox.*school_id|outbox.*tenant_
+      **Check:** `file:crates/infra/storage/src/outbox.rs regex:async fn append.*school_id` → _outbox.rs:async fn append.*school_id_
 <!-- END COMPUTED -->
 
 ### P0-DOCS — Decisions must be resolved (see `13-decision-needed.md`)
@@ -188,7 +188,7 @@
       **Source:** docs/schemas/audit-schema.md § 13.2
       **Check:** `file:migrations/engine/0000_engine_core.mysql.sql regex:PARTITION BY` → _0000_engine_core.mysql.sql:PARTITION BY_
 
-- [ ] **SCHEMA-AUDIT-ATOMIC** AuditWriter does not take a &dyn Transaction parameter; atomicity relies on call-site ordering
+- [x] **SCHEMA-AUDIT-ATOMIC** Resolved — AuditWriter::write takes &dyn Transaction; audit row staged on caller's txn (SCHEMA-AUDIT-ATOMIC closed 2026-06-25).
       **Source:** docs/schemas/audit-schema.md § 1, roadmap H-3
       **Check:** `file:crates/cross-cutting/audit/src/writer.rs regex:&dyn Transaction|impl.*Trans...` → _writer.rs:&dyn Transaction|impl.*Transaction_
 <!-- END COMPUTED -->
