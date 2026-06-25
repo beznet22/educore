@@ -21,8 +21,8 @@ documentation.
 
 ## Workspace Layout
 
-The 36 internal crates are organized into 5 tiers + 1 umbrella
-(= 37 packages total). Tier boundaries are enforced at the
+The 36 internal crates + 1 umbrella = 37 packages are organized
+into 5 tiers + 1 umbrella. Tier boundaries are enforced at the
 filesystem level (the `educore-core::lint` sub-module verifies
 that a crate in `crates/domains/` does not import from
 `crates/adapters/` or `crates/tools/`). Each tier has a clear
@@ -143,7 +143,7 @@ need to know the internal `educore-` prefix on the package name.
 
 ## Tier System
 
-The 36 internal crates are organized into 5 tiers. Each tier has a
+The 37 packages are organized into 5 tiers. Each tier has a
 distinct purpose, dependency direction, and lifecycle.
 
 | Tier | Path | Count | Purpose | Depends on |
@@ -155,7 +155,7 @@ distinct purpose, dependency direction, and lifecycle.
 | `tools` | `crates/tools/` | 4 | Dev tooling: testkit, storage-parity, cli (binary), sdk | `infra`, `cross-cutting`, `domains` |
 
 The umbrella crate `educore` re-exports the public surface of
-all 36 internal crates.
+all 37 packages.
 
 **Layered dependency direction** (no cycles, no upward deps):
 
@@ -485,8 +485,7 @@ topology is documented in
 
 ## Crate Inventory (per-crate phase assignment)
 
-Every one of the 36 internal workspace crates is scaffolded
-(plus 1 umbrella = 37 packages). Implementation begins in
+Every one of the 37 packages is scaffolded. Implementation begins in
 Phase 0 of `docs/build-plan.md`. The table below maps each crate
 to the phase that implements it. **This is the authoritative
 source** — do not rely on the directory tree or the umbrella
