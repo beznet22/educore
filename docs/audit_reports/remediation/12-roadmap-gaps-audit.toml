@@ -1,0 +1,840 @@
+# Production Readiness Roadmap — supplementary gap items
+#
+# Auto-generated from the exhaustive review of:
+# - ADRs (ADR-013..018 + architecture.md + code-standards.md + library-docs.md)
+# - Audit findings (47 finding files in docs/audit_reports/findings/)
+# - Port contracts (docs/ports/{storage,authentication,event-bus,...}.md)
+# - Schemas (docs/schemas/{database,event,audit,command,tenancy}-schema.md)
+# - Cross-cutting domain spec (docs/specs/sync/ — only 1 of 11 files)
+#
+# Do NOT edit by hand — regenerate from `scripts/regenerate-gaps-toml.py`.
+
+# ============================================================================
+# P0 — Architectural gaps from ADR compliance audit
+# ============================================================================
+
+[[item]]
+id = "ADR-014-IDEM-CONFLICT-VARIANT"
+priority = "P0"
+area = "ENGINE"
+description = "DomainError missing IdempotencyConflict + IdempotencyPending variants; ADR-014 § Decision 4,9 mandates both"
+source = "docs/decisions/ADR-014-Idempotency.md, docs/audit_reports/findings/wave4-core.md CORE-003"
+check = "file:crates/infra/core/src/error.rs regex:IdempotencyConflict|IdempotencyPending"
+
+[[item]]
+id = "ADR-013-LINT-TIER-CHECK"
+priority = "P0"
+area = "ENGINE"
+description = "Lint sub-module does NOT enforce tier-boundary direction (domain importing adapter); ADR-013 § Boundary enforcement item 2"
+source = "docs/decisions/ADR-013-CrateLayout.md"
+check = "file:crates/infra/core/src/lint.rs regex:tier.?boundary|tier_boundary"
+
+[[item]]
+id = "STD-CI-CROSS-COMPILE"
+priority = "P0"
+area = "ENGINE"
+description = "No .github/workflows/; cross-compile mandate (Linux x86_64, aarch64, macOS, Windows) is unverified"
+source = "docs/code-standards.md § Cross-Compilation"
+check = "file-exists:.github/workflows/ci.yml"
+
+[[item]]
+id = "FND-INFRA-QD-001"
+priority = "P0"
+area = "ENGINE"
+description = "where_has macro discards relation/closure; relational filters never added to AST"
+source = "docs/audit_reports/findings/wave4-query-derive.md INFRA-QD-001"
+check = "file:crates/infra/query-derive/src/lib.rs regex:where_has|HasRelation"
+
+[[item]]
+id = "FND-CORE-001"
+priority = "P0"
+area = "ENGINE"
+description = "lint::check_coverage_matrix is a no-op (let _ = status_tested); coverage matrix gate never enforced"
+source = "docs/audit_reports/findings/wave4-core.md CORE-001"
+check = "file:crates/infra/core/src/lint.rs regex:check_coverage_matrix|enforce.*coverage"
+
+# ============================================================================
+# P0 — Port contract gaps from cross-cutting review
+# ============================================================================
+
+[[item]]
+id = "PORT-STORAGE-REPOS"
+priority = "P0"
+area = "STORAGE"
+description = "StorageAdapter trait missing ~80 aggregate repository handles (students, guardians, classes, …) per spec"
+source = "docs/ports/storage.md § Trait: StorageAdapter"
+check = "cmd:grep -c 'fn students\\|fn guardians\\|fn classes' crates/infra/storage/src/port.rs"
+
+[[item]]
+id = "PORT-STORAGE-SD-SYNC"
+priority = "P0"
+area = "STORAGE"
+description = "SurrealDB sync primitives unimplemented (apply_snapshot / watch_changes / cursor_for / advance_cursor)"
+source = "docs/audit_reports/remediation/12-production-readiness-roadmap.md H-5"
+check = "file:crates/adapters/storage-surrealdb/src/storage.rs regex:is not yet implemented!"
+
+[[item]]
+id = "PORT-STORAGE-MACRO-RLS"
+priority = "P0"
+area = "STORAGE"
+description = "DomainQuery macro emits rls: vec![] (A-4); PG aggregate tables have no CREATE POLICY"
+source = "docs/schemas/tenancy-schema.md § 7, roadmap A-4"
+check = "file:crates/infra/query-derive/src/lib.rs regex:rls: ::std::vec!"
+
+[[item]]
+id = "PORT-EVENTBUS-DIST-NATS"
+priority = "P0"
+area = "EVENT-BUS"
+description = "NatsEventBus stub — publish/publish_batch/subscribe all return NotSupported"
+source = "docs/ports/event-bus.md § Distributed Bus"
+check = "file:crates/adapters/event-bus/src/nats.rs regex:Phase 2 stub|not_supported"
+
+[[item]]
+id = "PORT-EVENTBUS-DIST-REDIS"
+priority = "P0"
+area = "EVENT-BUS"
+description = "RedisEventBus stub — publish/publish_batch/subscribe all return NotSupported"
+source = "docs/ports/event-bus.md § Distributed Bus"
+check = "file:crates/adapters/event-bus/src/redis.rs regex:Phase 2 stub|not_supported"
+
+[[item]]
+id = "PORT-PAY-SETTLEMENT-IMPL"
+priority = "P0"
+area = "PAYMENT"
+description = "StripeProvider::settlement ignores _request and returns unimplemented stub"
+source = "docs/ports/payments.md § Settlement & Reconciliation"
+check = "file:crates/adapters/payment/src/stripe.rs regex:async fn settlement"
+
+[[item]]
+id = "PORT-INT-COMPILE-BROKEN"
+priority = "P0"
+area = "INTEGRATIONS"
+description = "crates/adapters/integrations/src/lib.rs does not compile: Result<Vec<…>> missing second generic argument"
+source = "crates/adapters/integrations/src/lib.rs:121"
+check = "cmd:cargo check -p educore-integrations"
+
+[[item]]
+id = "SCHEMA-OUTBOX-SURREAL-NULLABLE"
+priority = "P0"
+area = "SCHEMA"
+description = "SurrealDB outbox declares school_id as option<uuid>; spec mandates NOT NULL on every engine table"
+source = "docs/schemas/database-schema.md § 2"
+check = "file:migrations/engine/0000_engine_core.surreal.surql regex:outbox TYPE option<uuid>"
+
+[[item]]
+id = "SCHEMA-AUDIT-QUERY-PORT"
+priority = "P0"
+area = "SCHEMA"
+description = "AuditQuery trait (list/get/resource_history/actor_history/AuditFilter) not implemented; only AuditWriter exists"
+source = "docs/schemas/audit-schema.md § 5"
+check = "file-exists:crates/cross-cutting/audit/src/query.rs"
+
+[[item]]
+id = "SCHEMA-AUDIT-PARTITION-PG"
+priority = "P0"
+area = "SCHEMA"
+description = "audit_log not PARTITION BY RANGE (school_id, month) on PG; spec § 13.1 mandates it"
+source = "docs/schemas/audit-schema.md § 13.1"
+check = "file:migrations/engine/0000_engine_core.postgres.sql regex:PARTITION BY RANGE"
+
+[[item]]
+id = "SCHEMA-AUDIT-PARTITION-MYSQL"
+priority = "P0"
+area = "SCHEMA"
+description = "audit_log not PARTITION BY KEY (school_id) PARTITIONS 12 on MySQL; spec § 13.2 mandates it"
+source = "docs/schemas/audit-schema.md § 13.2"
+check = "file:migrations/engine/0000_engine_core.mysql.sql regex:PARTITION BY"
+
+[[item]]
+id = "SCHEMA-AUDIT-ATOMIC"
+priority = "P0"
+area = "SCHEMA"
+description = "AuditWriter does not take a &dyn Transaction parameter; atomicity relies on call-site ordering"
+source = "docs/schemas/audit-schema.md § 1, roadmap H-3"
+check = "file:crates/cross-cutting/audit/src/writer.rs regex:&dyn Transaction|impl.*Transaction"
+
+[[item]]
+id = "FND-PORT-STORE-001"
+priority = "P0"
+area = "STORAGE"
+description = "StorageAdapter trait exposes migrate() but docs mandate create_schema(); port name and consumer name diverge"
+source = "docs/audit_reports/findings/wave4-storage-port.md PORT-STORE-001"
+check = "commit:create_schema|StorageAdapter::create_schema"
+
+[[item]]
+id = "FND-PORT-STORE-003"
+priority = "P0"
+area = "STORAGE"
+description = "Outbox::append/pending/mark_published have no school_id on trait; TenantContext not propagated through Outbox"
+source = "docs/audit_reports/findings/wave4-storage-port.md PORT-STORE-003"
+check = "commit:outbox.*school_id|outbox.*tenant"
+
+[[item]]
+id = "FND-WF-005"
+priority = "P0"
+area = "WORKFLOWS"
+description = "Finance has no subscribers for cross-domain events (StudentAdmitted→FeesAssign, etc.)"
+source = "docs/audit_reports/findings/wave7-workflows.md WF-005"
+check = "commit:finance.*subscriber|fees_assign.*subscriber"
+
+[[item]]
+id = "FND-WF-007"
+priority = "P0"
+area = "WORKFLOWS"
+description = "Academic has no subscriber on SubjectTeacherAssigned; class-subject binding never materialises for ClassRoutine"
+source = "docs/audit_reports/findings/wave7-workflows.md WF-007"
+check = "commit:SubjectTeacherAssigned.*subscriber"
+
+[[item]]
+id = "FND-SEC-AUTH-001"
+priority = "P0"
+area = "SECURITY"
+description = "JwtAuthProvider accepts Credential::Anonymous and returns full Session with mfa_satisfied=true; no allow_anonymous builder knob"
+source = "docs/audit_reports/findings/wave7-security.md SEC-AUTH-001"
+check = "commit:reject.*anonymous|allow_anonymous"
+
+[[item]]
+id = "FND-SEC-AUDIT-001"
+priority = "P0"
+area = "SECURITY"
+description = "AuditLog::append is pub with no DB-level INSERT-only privilege enforcement; forged rows possible if TenantContext is wrong"
+source = "docs/audit_reports/findings/wave7-security.md SEC-AUDIT-001"
+check = "commit:audit.*insert.*only|audit.*signature"
+
+[[item]]
+id = "FND-SEC-RBAC-001"
+priority = "P0"
+area = "SECURITY"
+description = "Capability::all() enumerates 608 variants while enum has 654; SuperAdmin role ships with incomplete set"
+source = "docs/audit_reports/findings/wave7-security.md SEC-RBAC-001"
+check = "commit:Capability::all|default.*super_admin"
+
+# ============================================================================
+# P1 — High priority gaps (port contracts + ADR compliance + audit findings)
+# ============================================================================
+
+[[item]]
+id = "PORT-AUTH-LOCAL-PWD"
+priority = "P1"
+area = "AUTH"
+description = "LocalPasswordAuthProvider (argon2 + local user table) is listed in spec § Configuration but not shipped"
+source = "docs/ports/authentication.md § Configuration"
+check = "file-exists:crates/adapters/auth/src/local_password.rs"
+
+[[item]]
+id = "PORT-AUTH-OAUTH2"
+priority = "P1"
+area = "AUTH"
+description = "OAuth2/OIDC AuthProvider not shipped"
+source = "docs/ports/authentication.md § Configuration"
+check = "file-exists:crates/adapters/auth/src/oauth2.rs"
+
+[[item]]
+id = "PORT-AUTH-APIKEY"
+priority = "P1"
+area = "AUTH"
+description = "ApiKeyAuthProvider not shipped (service-to-service auth)"
+source = "docs/ports/authentication.md § Configuration"
+check = "file-exists:crates/adapters/auth/src/api_key.rs"
+
+[[item]]
+id = "PORT-AUTH-MFA-CHALLENGE"
+priority = "P1"
+area = "AUTH"
+description = "Spec describes 2-phase MFA flow; no MfaChallenge value object (id/method/expires_at) is exported from the port"
+source = "docs/ports/authentication.md § Two-Factor Authentication"
+check = "file:crates/adapters/auth/src/port.rs regex:MfaChallenge"
+
+[[item]]
+id = "PORT-AUTH-RBAC-FORBIDDEN"
+priority = "P1"
+area = "AUTH"
+description = "RbacPort::require currently returns AuthError::InvalidCredentials on denial; spec requires DomainError::Forbidden mapping"
+source = "docs/ports/authentication.md § Capability Check"
+check = "file:crates/adapters/auth/src/port.rs regex:InvalidCredentials"
+
+[[item]]
+id = "PORT-EVENTBUS-DLQ"
+priority = "P1"
+area = "EVENT-BUS"
+description = "Dead-letter queue port/trait not implemented; nack(requeue=false) has nowhere to route"
+source = "docs/ports/event-bus.md § Dead Letter Queue"
+check = "file:crates/cross-cutting/events/src/event_bus.rs regex:dlq|dead_letter"
+
+[[item]]
+id = "PORT-EVENTBUS-SCHEMA-REGISTRY-PORT"
+priority = "P1"
+area = "EVENT-BUS"
+description = "Schema registry table DDL exists, but SchemaRegistry Rust port (list / schema) is not implemented"
+source = "docs/ports/event-bus.md § Schema Versioning"
+check = "file-exists:crates/cross-cutting/events/src/schema_registry.rs"
+
+[[item]]
+id = "PORT-NOTIFY-CHANNELS"
+priority = "P1"
+area = "NOTIFY"
+description = "Push / InApp / Chat / Voice / Webhook channels declared in port but no adapters shipped (only Email + SMS)"
+source = "docs/ports/notifications.md § Channel"
+check = "file-exists:crates/adapters/notify/src/push.rs"
+
+[[item]]
+id = "PORT-NOTIFY-TEMPLATES"
+priority = "P1"
+area = "NOTIFY"
+description = "NotificationTemplate aggregate / repository not implemented; port uses opaque id"
+source = "docs/ports/notifications.md § Templates"
+check = "file-exists:crates/domains/communication/src/template.rs"
+
+[[item]]
+id = "PORT-NOTIFY-RECIPIENT-EXPR"
+priority = "P1"
+area = "NOTIFY"
+description = "Recipient::Expression materializer not wired (engine query layer)"
+source = "docs/ports/notifications.md § Recipient"
+check = "file:crates/cross-cutting/communication/src/recipient.rs regex:RecipientExpr"
+
+[[item]]
+id = "PORT-PAY-BANKSLIP"
+priority = "P1"
+area = "PAYMENT"
+description = "BankPaymentSlip aggregate + Generate/Approve commands not implemented"
+source = "docs/ports/payments.md § Bank Slip Flow"
+check = "file-exists:crates/domains/finance/src/bank_slip.rs"
+
+[[item]]
+id = "PORT-PAY-SETTLE-MATCH"
+priority = "P1"
+area = "PAYMENT"
+description = "No engine code joins SettlementLine.provider_payment_id to PaymentReceipt and emits PaymentSettled events"
+source = "docs/ports/payments.md § Settlement & Reconciliation"
+check = "file:crates/educore/src/lib.rs regex:PaymentSettled"
+
+[[item]]
+id = "PORT-FILE-VERSIONING"
+priority = "P1"
+area = "FILES"
+description = "S3FileStorage does not surface version_id on FileReference; spec requires versioning support"
+source = "docs/ports/file-storage.md § Versioning"
+check = "file:crates/adapters/files/src/s3.rs regex:version_id"
+
+[[item]]
+id = "PORT-INT-POLLING"
+priority = "P1"
+area = "INTEGRATIONS"
+description = "PollingIntegration adapter (Schedule / cursor / auth / target_event) not shipped"
+source = "docs/ports/integrations.md § Polling Adapter"
+check = "file-exists:crates/adapters/integrations/src/polling.rs"
+
+[[item]]
+id = "PORT-INT-RBAC"
+priority = "P1"
+area = "INTEGRATIONS"
+description = "Engine does not enforce IntegrationCapability.required_capabilities on invoke"
+source = "docs/ports/integrations.md § IntegrationCapability"
+check = "file:crates/educore/src/lib.rs regex:required_capabilities"
+
+[[item]]
+id = "PORT-STORAGE-TX-OUTBOX"
+priority = "P1"
+area = "STORAGE"
+description = "Spec § Trait Transaction declares fn outbox() -> &dyn Outbox; current Transaction impl does not expose it"
+source = "docs/ports/storage.md § Trait: Transaction"
+check = "file:crates/infra/storage/src/transaction.rs regex:fn outbox"
+
+[[item]]
+id = "PORT-STORAGE-HYDRATION-ERR"
+priority = "P1"
+area = "STORAGE"
+description = "StorageError missing HydrationFailure variant required by § Hydration Atomicity"
+source = "docs/ports/storage.md § Hydration Atomicity"
+check = "file:crates/infra/storage/src/error.rs regex:HydrationFailure"
+
+[[item]]
+id = "SCHEMA-AUDIT-SINK-PORT"
+priority = "P1"
+area = "SCHEMA"
+description = "AuditSink port (interface for the writer) not declared; AuditWriter is the concrete impl"
+source = "docs/schemas/audit-schema.md § 3"
+check = "file:crates/cross-cutting/audit/src/lib.rs regex:trait AuditSink"
+
+[[item]]
+id = "SCHEMA-AUDIT-PII-REDACTOR"
+priority = "P1"
+area = "SCHEMA"
+description = "Redactor port not implemented; default password/secret/token redaction not wired"
+source = "docs/schemas/audit-schema.md § 11"
+check = "file-exists:crates/cross-cutting/audit/src/redactor.rs"
+
+[[item]]
+id = "SCHEMA-OUTBOX-PARTITION"
+priority = "P1"
+area = "SCHEMA"
+description = "Outbox has no partitioning on PG/MySQL despite growing unbounded"
+source = "docs/schemas/event-schema.md § 8, roadmap H-4"
+check = "file:migrations/engine/0000_engine_core.postgres.sql regex:outbox.*PARTITION"
+
+[[item]]
+id = "SCHEMA-IDEM-AGGREGATE-COL"
+priority = "P1"
+area = "SCHEMA"
+description = "IdempotencyRecord.affected_aggregate_ids referenced in code; not a column in any DDL"
+source = "crates/infra/storage/src/idempotency.rs:46"
+check = "cmd:grep -l affected_aggregate_ids migrations/engine/*.sql"
+
+[[item]]
+id = "SCHEMA-SYSTEM-USER-CONSISTENCY"
+priority = "P1"
+area = "SCHEMA"
+description = "Verify SYSTEM_USER_ID UUID matches across PG/MySQL/SQLite seeds and educore_core::SYSTEM_USER_ID constant"
+source = "docs/schemas/database-schema.md § 2"
+check = "cmd:grep -nE 'SYSTEM_USER|00000000-0000-7000-8000-000000000001' migrations/engine/*.sql"
+
+[[item]]
+id = "SCHEMA-TENANT-CROSS-CAP"
+priority = "P1"
+area = "SCHEMA"
+description = "Cross-tenant commands (Transfer/Merge/Suspend/Clone) do not check Capability::PlatformCrossTenant"
+source = "docs/schemas/tenancy-schema.md § 5"
+check = "file:crates/domains/platform/src/commands.rs regex:PlatformCrossTenant"
+
+[[item]]
+id = "X-CUT-H3-AUDIT-ATOMIC"
+priority = "P1"
+area = "X-CUT"
+description = "AuditWriter does not take a &dyn Transaction parameter; atomicity relies on call-site ordering"
+source = "roadmap H-3"
+check = "file:crates/cross-cutting/audit/src/writer.rs regex:&dyn Transaction"
+
+[[item]]
+id = "X-CUT-H4-OUTBOX-PARTITION"
+priority = "P1"
+area = "X-CUT"
+description = "Outbox has no partitioning strategy despite unbounded growth (H-4)"
+source = "roadmap H-4"
+check = "file:migrations/engine/0000_engine_core.postgres.sql regex:outbox.*PARTITION"
+
+[[item]]
+id = "X-CUT-EVENT-AUDIT-MIRROR"
+priority = "P1"
+area = "X-CUT"
+description = "Every event must be mirrored to audit_log (event-schema § 13); no subscriber exists"
+source = "docs/schemas/event-schema.md § 13"
+check = "file:crates/cross-cutting/events/src/subscribe.rs regex:audit_log|AuditWriter"
+
+[[item]]
+id = "X-CUT-PAY-SETTLED-EVENT"
+priority = "P1"
+area = "X-CUT"
+description = "PaymentSettled event not declared; settlement reconciliation cannot fire subscribers"
+source = "docs/ports/payments.md § Settlement & Reconciliation"
+check = "file:crates/cross-cutting/events/src/domain_event.rs regex:PaymentSettled"
+
+# ADR compliance gaps (P1)
+
+[[item]]
+id = "ADR-018-SYNC-FEATURE-FLAG"
+priority = "P1"
+area = "ENGINE"
+description = "crates/educore/Cargo.toml has NO [features] block; sync feature flag required by ADR-018 § 4"
+source = "docs/decisions/ADR-018-SyncEngine.md § 4, FINDING 27"
+check = "file:crates/educore/Cargo.toml regex:features"
+
+[[item]]
+id = "ADR-018-SYNC-HTTP-ADAPTER"
+priority = "P1"
+area = "ENGINE"
+description = "crates/adapters/sync-http/ does not exist; required by ADR-018 § 3"
+source = "docs/decisions/ADR-018-SyncEngine.md § 3"
+check = "file-exists:crates/adapters/sync-http/Cargo.toml"
+
+[[item]]
+id = "ADR-018-SYNC-NULL-ADAPTER"
+priority = "P1"
+area = "ENGINE"
+description = "crates/adapters/sync-null/ does not exist; required by ADR-018 § 3"
+source = "docs/decisions/ADR-018-SyncEngine.md § 3"
+check = "file-exists:crates/adapters/sync-null/Cargo.toml"
+
+[[item]]
+id = "ADR-018-CONFLICT-RESOLVER"
+priority = "P1"
+area = "ENGINE"
+description = "ConflictResolver trait not in code (ADR-018 § 6 + ADR-008)"
+source = "docs/decisions/ADR-018-SyncEngine.md § 6"
+check = "file:crates/cross-cutting/events/src/conflict.rs regex:trait ConflictResolver"
+
+[[item]]
+id = "STD-SYNC-SPEC-FOLDER-INCOMPLETE"
+priority = "P1"
+area = "DOCS"
+description = "docs/specs/sync/ has only overview.md (1 of 11 required files)"
+source = "docs/code-standards.md § Spec folder layout"
+check = "file:docs/specs/sync/aggregates.md regex:^##"
+
+[[item]]
+id = "STD-DOMAINQUERY-COVERAGE"
+priority = "P1"
+area = "ENGINE"
+description = "3 domains lack #[derive(DomainQuery)] integration: finance, hr, documents"
+source = "docs/code-standards.md § Type Safety, ADR-006"
+check = "file-exists:crates/domains/finance/src/query.rs"
+
+[[item]]
+id = "FND-PORT-STORE-005"
+priority = "P1"
+area = "STORAGE"
+description = "IdempotencyRecord.command_type typed &'static str forces adapters to Box::leak column values"
+source = "docs/audit_reports/findings/wave4-storage-port.md PORT-STORE-005"
+check = "commit:IdempotencyRecord.*String|IdempotencyRecord.*Cow"
+
+[[item]]
+id = "FND-PORT-STORE-010"
+priority = "P1"
+area = "STORAGE"
+description = "Repository<A> trait has no stream() method; bulk loads materialise millions of rows into Vec<A>"
+source = "docs/audit_reports/findings/wave4-storage-port.md PORT-STORE-010"
+check = "commit:Repository.*stream|stream.*BoxStream"
+
+[[item]]
+id = "FND-SEC-AUTH-005"
+priority = "P1"
+area = "SECURITY"
+description = "Argon2 needs_rehash compares only algorithm identifier; cost parameters not compared"
+source = "docs/audit_reports/findings/wave7-security.md SEC-AUTH-005"
+check = "commit:needs_rehash.*params|argon2.*rehash"
+
+[[item]]
+id = "FND-SEC-PLAT-001"
+priority = "P1"
+area = "SECURITY"
+description = "School aggregate missing email, is_enabled, plan_type, starting_date, ending_date, region, phone, address fields"
+source = "docs/audit_reports/findings/wave7-security.md SEC-PLAT-001"
+check = "commit:School.*is_enabled|school.*suspend.*audit"
+
+[[item]]
+id = "FND-SPEC-1-001"
+priority = "P1"
+area = "SPECS"
+description = "Academic spec declares 20 aggregates but aggregate.rs ships only 5; 15 aggregates have no Rust struct"
+source = "docs/audit_reports/findings/wave6-specs-1.md SPEC-1-001"
+check = "commit:academic.*aggregate.*root|class_subject.*struct"
+
+[[item]]
+id = "FND-SPEC-2-001"
+priority = "P1"
+area = "SPECS"
+description = "Documents domain has zero #[derive(DomainQuery)] applications"
+source = "docs/audit_reports/findings/wave6-specs-2.md SPEC-2-001"
+check = "commit:documents.*DomainQuery|DomainQuery.*documents"
+
+[[item]]
+id = "FND-CLI-SDK-001"
+priority = "P1"
+area = "CLI-SDK"
+description = "library-docs.md documents Engine::builder() API but no such method exists"
+source = "docs/audit_reports/findings/wave4-cli-sdk.md CLI-SDK-001"
+check = "commit:Engine::builder|fn builder.*Engine"
+
+[[item]]
+id = "FND-CLI-SDK-005"
+priority = "P1"
+area = "CLI-SDK"
+description = "CLI `admit` command parses args and prints synthetic UUIDs but never persists a student"
+source = "docs/audit_reports/findings/wave4-cli-sdk.md CLI-SDK-005"
+check = "commit:cli.*admit.*persist|admit_student.*cli"
+
+[[item]]
+id = "FND-TOOL-TK-002"
+priority = "P1"
+area = "TOOLING"
+description = "InMemoryTransaction::rollback only flips AtomicBool; sub-port handles write directly to shared Arc"
+source = "docs/audit_reports/findings/wave4-testkit.md TOOL-TK-002"
+check = "commit:testkit.*rollback.*staged|InMemoryTransaction.*discard"
+
+# ============================================================================
+# P2 — Medium priority
+# ============================================================================
+
+[[item]]
+id = "PORT-STORAGE-STREAMING"
+priority = "P2"
+area = "STORAGE"
+description = "StudentRepository::stream returning BoxStream<Result<Student>> is not declared"
+source = "docs/ports/storage.md § Streaming"
+check = "file:crates/infra/storage/src/port.rs regex:fn stream"
+
+[[item]]
+id = "PORT-AUTH-SAML"
+priority = "P2"
+area = "AUTH"
+description = "SamlAuthProvider not shipped (enterprise IdP)"
+source = "docs/ports/authentication.md § Configuration"
+check = "file-exists:crates/adapters/auth/src/saml.rs"
+
+[[item]]
+id = "PORT-NOTIFY-RATE-LIMIT"
+priority = "P2"
+area = "NOTIFY"
+description = "Per-tenant per-channel rate limiting not implemented at adapter boundary"
+source = "docs/ports/notifications.md § Rate Limiting"
+check = "file:crates/adapters/notify/src/reliability.rs regex:rate.?limit"
+
+[[item]]
+id = "PORT-NOTIFY-CRITICAL"
+priority = "P2"
+area = "NOTIFY"
+description = "Priority::Critical requires synchronous delivery; no bypass path in adapters"
+source = "docs/ports/notifications.md § Priority"
+check = "file:crates/adapters/notify/src/email.rs regex:Critical"
+
+[[item]]
+id = "PORT-PAY-3DS"
+priority = "P2"
+area = "PAYMENT"
+description = "PaymentError::ThreeDSRequired declared but no 3DS auth-capture orchestration"
+source = "docs/ports/payments.md § Error Type"
+check = "file:crates/adapters/payment/src/stripe.rs regex:ThreeDS"
+
+[[item]]
+id = "PORT-FILE-LIFECYCLE"
+priority = "P2"
+area = "FILES"
+description = "Lifecycle-rule config port (Hot→Cool→Archive→expire) not implemented"
+source = "docs/ports/file-storage.md § Lifecycle Rules"
+check = "file-exists:crates/adapters/files/src/lifecycle.rs"
+
+[[item]]
+id = "PORT-FILE-OFFLINE-CACHE"
+priority = "P2"
+area = "FILES"
+description = "Offline-mode local URI on FileReference not implemented"
+source = "docs/ports/file-storage.md § Offline Mode"
+check = "file:crates/adapters/files/src/local.rs regex:local://"
+
+[[item]]
+id = "PORT-FILE-TENANT-DENIAL-TEST"
+priority = "P2"
+area = "FILES"
+description = "Cross-tenant denial test missing from tests/"
+source = "docs/ports/file-storage.md § Testing"
+check = "file-exists:crates/adapters/files/tests/cross_tenant.rs"
+
+[[item]]
+id = "PORT-INT-OAUTH2-HELPER"
+priority = "P2"
+area = "INTEGRATIONS"
+description = "Per-tenant OAuth2 client-credentials token cache + refresh not extracted as a port helper"
+source = "docs/ports/integrations.md § OAuth2 Client Credentials"
+check = "file:crates/adapters/integrations/src/lib.rs regex:client_credentials"
+
+[[item]]
+id = "PORT-EVENTBUS-AUDIT"
+priority = "P2"
+area = "EVENT-BUS"
+description = "Spec requires every publish/consume recorded in audit; no AuditSink wiring on the bus"
+source = "docs/ports/event-bus.md § Audit"
+check = "file:crates/cross-cutting/events/src/event_bus.rs regex:audit_log|AuditSink"
+
+[[item]]
+id = "SCHEMA-AUDIT-GDPR-ERASURE"
+priority = "P2"
+area = "SCHEMA"
+description = "Report.SubjectErasure.Execute command missing; PII anonymization in audit not implemented"
+source = "docs/schemas/audit-schema.md § 8.2"
+check = "file:crates/domains/platform/src/commands.rs regex:SubjectErasure"
+
+[[item]]
+id = "SCHEMA-AUDIT-FERPA"
+priority = "P2"
+area = "SCHEMA"
+description = "Report.ParentAccess.Generate command missing"
+source = "docs/schemas/audit-schema.md § 8.3"
+check = "file:crates/domains/communication/src/commands.rs regex:ParentAccess"
+
+[[item]]
+id = "SCHEMA-AUDIT-REGULATOR"
+priority = "P2"
+area = "SCHEMA"
+description = "Report.RegulatorAudit.Generate command missing"
+source = "docs/schemas/audit-schema.md § 8.4"
+check = "file:crates/domains/platform/src/commands.rs regex:RegulatorAudit"
+
+[[item]]
+id = "SCHEMA-EVENTLOG-RETENTION"
+priority = "P2"
+area = "SCHEMA"
+description = "event_log has no retention sweeper (compare with audit RetentionSweepDue)"
+source = "docs/schemas/event-schema.md § 9"
+check = "file:crates/cross-cutting/audit/src/retention.rs regex:event_log"
+
+[[item]]
+id = "SCHEMA-CMD-ASYNC"
+priority = "P2"
+area = "SCHEMA"
+description = "Async command handle (CommandHandle / engine.commands.status) not implemented"
+source = "docs/schemas/command-schema.md § 13"
+check = "file:crates/educore/src/lib.rs regex:CommandHandle"
+
+[[item]]
+id = "SCHEMA-CMD-BULK-EVENTS"
+priority = "P2"
+area = "SCHEMA"
+description = "BulkCommandStarted / BulkCommandItemProcessed / BulkCommandCompleted events not declared"
+source = "docs/schemas/command-schema.md § 12"
+check = "file:crates/cross-cutting/events/src/domain_event.rs regex:BulkCommand"
+
+[[item]]
+id = "SCHEMA-TENANT-CONFIG-SVC"
+priority = "P2"
+area = "SCHEMA"
+description = "ConfigurationService port not implemented; per-tenant settings live in ad-hoc repos"
+source = "docs/schemas/tenancy-schema.md § 9"
+check = "file-exists:crates/cross-cutting/platform/src/configuration.rs"
+
+[[item]]
+id = "SCHEMA-IDEM-MIGRATE-OUTCOME"
+priority = "P2"
+area = "SCHEMA"
+description = "Idempotency::record() callers must migrate to record_outcome(); sweep not complete (C-1)"
+source = "roadmap C-1"
+check = "cmd:grep -r 'Idempotency::record(' crates/ --include='*.rs' | grep -v record_outcome | wc -l"
+
+[[item]]
+id = "SCHEMA-IDEM-TTL-SWEEP"
+priority = "P2"
+area = "SCHEMA"
+description = "No engine-side idempotency TTL sweep; only audit has RetentionSweepDue"
+source = "docs/schemas/command-schema.md § 6"
+check = "file:crates/cross-cutting/audit/src/retention.rs regex:Idempotency"
+
+[[item]]
+id = "X-CUT-C1-IDEM"
+priority = "P2"
+area = "X-CUT"
+description = "Idempotency.record() callers must migrate to record_outcome(); sweep incomplete"
+source = "roadmap C-1"
+check = "cmd:grep -r 'Idempotency::record(' crates/ --include='*.rs' | grep -v record_outcome | wc -l"
+
+[[item]]
+id = "X-CUT-OUTBOX-RELAY-PARTITION"
+priority = "P2"
+area = "X-CUT"
+description = "Outbox relay polls without per-school partitioning; back-pressure model unspecified"
+source = "crates/cross-cutting/events/src/relay.rs"
+check = "file:crates/cross-cutting/events/src/relay.rs regex:school_id"
+
+[[item]]
+id = "X-CUT-NOTIFY-BULK-EVENT"
+priority = "P2"
+area = "X-CUT"
+description = "Per-recipient NotificationSent event emission not wired for bulk send"
+source = "docs/ports/notifications.md § Bulk Send"
+check = "file:crates/adapters/notify/src/services.rs regex:NotificationSent"
+
+[[item]]
+id = "X-CUT-WF-COMPENSATE"
+priority = "P2"
+area = "X-CUT"
+description = "Saga / compensating action library not implemented (E-4)"
+source = "roadmap E-4"
+check = "file:crates/cross-cutting/sync/src/lib.rs regex:compensat"
+
+[[item]]
+id = "ADR-014-OUTCOME-FIELDS"
+priority = "P2"
+area = "ENGINE"
+description = "Idempotency record missing aggregate_version, etag, duration, emitted_event_ids fields (ADR-014 § Decision 6)"
+source = "docs/decisions/ADR-014-Idempotency.md § Decision 6"
+check = "file:crates/infra/storage/src/idempotency.rs regex:aggregate_version|etag"
+
+[[item]]
+id = "ADR-015-CARGO-DENY"
+priority = "P2"
+area = "ENGINE"
+description = "No deny.toml / cargo deny; license audit unverified (ADR-015 § Dependency hygiene policy rule 5)"
+source = "docs/decisions/ADR-015-ExternalCrates.md"
+check = "file-exists:deny.toml"
+
+[[item]]
+id = "FND-SPEC-3-001"
+priority = "P2"
+area = "SPECS"
+description = "HR spec uses legacy Sm_ brand prefix (SmAssignClassTeacher) violating AGENTS.md 'Brand is Educore'"
+source = "docs/audit_reports/findings/wave6-specs-3.md SPEC-3-001"
+check = "commit:Sm_.*rename|hr.*brand.*cleanup"
+
+[[item]]
+id = "FND-SPEC-4-001"
+priority = "P2"
+area = "SPECS"
+description = "docs/specs/sync/ contains only overview.md (1 of 11 files)"
+source = "docs/audit_reports/findings/wave6-specs-4.md SPEC-4-001"
+check = "commit:sync.*spec|specs/sync/tables.md"
+
+[[item]]
+id = "FND-CORE-005"
+priority = "P2"
+area = "ENGINE"
+description = "ids module rustdoc links to crate::id_gen::IdGenerator but no id_gen module exists"
+source = "docs/audit_reports/findings/wave4-core.md CORE-005"
+check = "commit:id_gen.*module|core.*id_gen"
+
+[[item]]
+id = "FND-UMB-005"
+priority = "P2"
+area = "ENGINE"
+description = "Umbrella deps (34) vs re-exports (32) vs AGENTS.md (36 internal crates); inventory stale"
+source = "docs/audit_reports/findings/wave4-umbrella.md UMB-005"
+check = "commit:AGENTS.md.*crate.*inventory|34 internal crates"
+
+# ============================================================================
+# P3 — Documentation drift + cosmetic
+# ============================================================================
+
+[[item]]
+id = "ADR-013-COUNTS-DRIFT"
+priority = "P3"
+area = "DOCS"
+description = "ADR-013 / AGENTS.md / architecture.md disagree on crate count (33 vs 36 vs 37); canonicalise"
+source = "docs/decisions/ADR-013-CrateLayout.md, AGENTS.md, docs/architecture.md"
+check = "cmd:grep -nE '3[3-7].*crates|3[3-7].*internal' AGENTS.md docs/architecture.md docs/decisions/ADR-013-CrateLayout.md"
+
+[[item]]
+id = "ADR-013-NO-TIER-CARGO"
+priority = "P3"
+area = "DOCS"
+description = "No lint guard against adding Cargo.toml at tier roots (ADR-013 § Negative consequences item 2)"
+source = "docs/decisions/ADR-013-CrateLayout.md"
+check = "file:crates/infra/core/src/lint.rs regex:tier.root|tier_root"
+
+[[item]]
+id = "ADR-018-SYNC-INPROCESS-TIER"
+priority = "P3"
+area = "DOCS"
+description = "sync-inprocess lives at crates/cross-cutting/ not crates/adapters/ as ADR-018 § 3 says"
+source = "docs/decisions/ADR-018-SyncEngine.md § 3"
+check = "file-exists:crates/adapters/sync-inprocess/Cargo.toml"
+
+[[item]]
+id = "ADR-016-GRAPHIFY-HOOK"
+priority = "P3"
+area = "DOCS"
+description = "Graphify post-commit hook per-user only; fresh clones miss the automation"
+source = "docs/decisions/ADR-016-EngineGraph.md"
+check = "file-exists:.githooks/post-commit"
+
+[[item]]
+id = "LIB-DOMAIN-ACCESSORS"
+priority = "P3"
+area = "DOCS"
+description = "library-docs.md shows engine.students()/engine.fees() accessors that don't exist on Engine facade"
+source = "docs/library-docs.md § Common Workflows"
+check = "file:crates/tools/sdk/src/engine.rs regex:fn students|fn fees"
+
+[[item]]
+id = "LIB-TYPED-EVENT-SUBSCRIBE"
+priority = "P3"
+area = "DOCS"
+description = "library-docs.md shows engine.events().subscribe::<T>() API; actual is untyped SubscribeOptions"
+source = "docs/library-docs.md § Subscribing to Events"
+check = "file:crates/cross-cutting/events/src/event_bus.rs regex:subscribe_typed"

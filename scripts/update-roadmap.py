@@ -28,7 +28,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DATA_FILE = REPO_ROOT / "docs" / "audit_reports" / "remediation" / "12-roadmap-data.toml"
+DATA_FILES = [
+    REPO_ROOT / "docs" / "audit_reports" / "remediation" / "12-roadmap-data.toml",
+    REPO_ROOT / "docs" / "audit_reports" / "remediation" / "12-roadmap-gaps-audit.toml",
+]
 MD_FILE = REPO_ROOT / "docs" / "audit_reports" / "remediation" / "12-production-readiness-roadmap.md"
 
 # Section markers in the .md file
@@ -324,18 +327,26 @@ def main() -> int:
     parser.add_argument("--verbose", "-v", action="store_true", help="print per-check details")
     args = parser.parse_args()
 
-    if not DATA_FILE.exists():
-        print(f"ERROR: data file not found: {DATA_FILE}", file=sys.stderr)
-        return 1
     if not MD_FILE.exists():
         print(f"ERROR: roadmap .md not found: {MD_FILE}", file=sys.stderr)
         return 1
 
-    with DATA_FILE.open("rb") as f:
-        data = tomllib.load(f)
+    # Load all data files and merge
+    data: dict = {"item": [], "gate": [], "meta": {}}
+    for path in DATA_FILES:
+        if not path.exists():
+            print(f"ERROR: data file not found: {path}", file=sys.stderr)
+            return 1
+        with path.open("rb") as f:
+            chunk = tomllib.load(f)
+        for key in ("item", "gate"):
+            data[key].extend(chunk.get(key, []))
+        # meta is from the primary file only
+        if path == DATA_FILES[0]:
+            data["meta"] = chunk.get("meta", {})
 
     if args.verbose:
-        print(f"Loaded {len(data.get('item', []))} items, {len(data.get('gate', []))} gates")
+        print(f"Loaded {len(data['item'])} items, {len(data['gate'])} gates from {len(DATA_FILES)} files")
 
     if args.verbose:
         print("Running checks:")

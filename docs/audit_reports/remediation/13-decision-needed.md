@@ -9,8 +9,8 @@ one), then create an ADR in `docs/decisions/` with the canonical
 answer. After the ADR lands, the corresponding roadmap item becomes
 tickable.
 
-> **Open count:** 4 (D-4, D-5, D-6, D-7) — must close before
-> production deployment.
+> **Open count:** 8 (D-4, D-5, D-6, D-7, D-8, D-9, D-10, D-11) — must close
+> before production deployment.
 
 ---
 
@@ -98,6 +98,86 @@ tickable.
 **Recommended:** A (matches current implementation; ADR-017's intent is SurrealDB for app data).
 
 **Impact if unresolved:** confusion in deployment docs, conflict in contributor onboarding.
+
+---
+
+## D-8 — ADR-014 IdempotencyConflict / IdempotencyPending error variants
+
+**Roadmap ID:** `ADR-014-IDEM-CONFLICT-VARIANT`, `FND-CORE-001`
+**Source:** `docs/decisions/ADR-014-Idempotency.md` § Decision 4,9 + `docs/audit_reports/findings/wave4-core.md` CORE-003
+
+**The conflict:** ADR-014 explicitly mandates two `DomainError` variants:
+- `IdempotencyConflict { key, existing_outcome_ref }` — retry with same key but different payload
+- `IdempotencyPending { key, started_at }` — retry during async run
+
+Current code uses generic `Conflict(String)`. The audit report's remediation claim at line 156 says the variants exist, but they do not.
+
+**Options:**
+- [ ] **A: Add both variants** (per ADR-014). Consumers must migrate.
+- [ ] **B: Keep generic `Conflict(String)`** and amend ADR-014 to remove the variant mandate. Reduces breaking changes for existing callers.
+- [ ] **C: Add as `DomainError::Conflict(IdempotencyOutcome)`** — wrap inside the existing `Conflict` variant. Backward compatible.
+
+**Recommended:** A (matches ADR-014 explicit text; consumers are still few since the dispatcher is forward-looking).
+
+**Impact if unresolved:** callers cannot programmatically distinguish retry-conflict from generic conflict; tests will be brittle.
+
+---
+
+## D-9 — Canonical crate count (33 / 36 / 37)
+
+**Roadmap ID:** `ADR-013-COUNTS-DRIFT`
+**Source:** `docs/decisions/ADR-013-CrateLayout.md` drift note; `AGENTS.md` line 24; `docs/architecture.md` tier table
+
+**The conflict:** Three numbers in three places.
+- ADR-013 original: 3+7+10+9+4 = 33 internal + 1 = 34
+- ADR-013 drift note: 3+9+10+10+4 = 36 internal + 1 = 37
+- AGENTS.md: "36 internal crates"
+- Actual filesystem: 3+9+10+10+4 = 36 internal + 1 = 37
+
+**Options:**
+- [ ] **A: Adopt 37** (3 infra + 9 cross-cutting + 10 domains + 10 adapters + 4 tools + 1 umbrella). Update AGENTS.md + ADR-013 reconciliation + architecture.md.
+- [ ] **B: Adopt 36** (drop `sync` or `sync-inprocess` from cross-cutting count). Depends on D-11 decision.
+- [ ] **C: Re-tally the inventory** before deciding. New crate may have been added recently.
+
+**Recommended:** A — matches filesystem, document as canonical.
+
+**Impact if unresolved:** docs disagree on counts; cross-references break.
+
+---
+
+## D-10 — Sync feature flag (ADR-018 § 4)
+
+**Roadmap ID:** `ADR-018-SYNC-FEATURE-FLAG`
+**Source:** `docs/decisions/ADR-018-SyncEngine.md` § 4 + FINDING 27
+
+**The conflict:** ADR-018 § 4 requires `[features] default = []; sync = ["educore-sync", "educore-sync-inprocess"]` in `crates/educore/Cargo.toml` so server-only consumers don't pay the sync dependency cost. Current umbrella has unconditional deps.
+
+**Options:**
+- [ ] **A: Add the `sync` feature flag** (per ADR-018). `cargo build -p educore` (default) excludes sync; `cargo build -p educore --features sync` includes it.
+- [ ] **B: Make sync always-on** and amend ADR-018. Acceptable if sync cost is small.
+- [ ] **C: Split into two umbrella crates** (`educore` core + `educore-sync` extension).
+
+**Recommended:** A (matches ADR-018 explicit text).
+
+**Impact if unresolved:** server deployments pay unnecessary dependency cost; wasm builds may break.
+
+---
+
+## D-11 — Sync-inprocess tier location
+
+**Roadmap ID:** `ADR-018-SYNC-INPROCESS-TIER`
+**Source:** `docs/decisions/ADR-018-SyncEngine.md` § 3 + ADR-013 § Tier System
+
+**The conflict:** ADR-018 § 3 lists `crates/adapters/sync-inprocess/` but the actual location is `crates/cross-cutting/sync-inprocess/`. ADR-013 says adapters live at tier 3; cross-cutting at tier 1. The in-process adapter is a reference impl that arguably fits both.
+
+**Options:**
+- [ ] **A: Move to `crates/adapters/sync-inprocess/`** (per ADR-018). Tier 3 alignment.
+- [ ] **B: Amend ADR-018 to accept cross-cutting location** (since it's a reference impl, not a port impl). Tier 1 alignment.
+- [ ] **C: Keep as-is** and amend both ADRs with a reconciliation note.
+
+**Recommended:** B (lowest churn; the crate is a reference impl for tests).
+
+**Impact if unresolved:** docs disagree on tier; future contributors confused.
 
 ---
 
