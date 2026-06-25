@@ -21,6 +21,21 @@
 //! isolation on bulk inserts and rejects duplicate idempotency
 //! records with [`DomainError::Conflict`].
 //!
+//! ## Outbox drain to in-process bus (roadmap C-3)
+//!
+//! [`InMemoryStorageAdapter`] holds an [`EventBus`]
+//! (`Arc<dyn EventBus>`, supplied at construction via
+//! [`InMemoryStorageAdapter::new`] or swapped via
+//! [`InMemoryStorageAdapter::with_bus`]). On
+//! [`commit`](educore_storage::Transaction::commit) the
+//! adapter drains the outbox and publishes every staged
+//! envelope through the bus. Successful publishes are
+//! removed from the outbox; failed publishes are pushed
+//! back so the next drain retries (at-least-once delivery,
+//! mirroring the production `OutboxRelay`). Tests install
+//! an `InProcessEventBus` plus any subscriber registries
+//! they need to assert event publication.
+//!
 //! See `docs/ports/storage.md` for the port contract.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
