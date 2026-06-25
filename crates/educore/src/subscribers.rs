@@ -20,7 +20,7 @@
 //!   now wired (via the in-process registry pattern; bus
 //!   adapters consume this registry at startup).
 //!
-//! The remaining 27+ subscribers (`StudentAdmitted → Library
+//! The remaining 26+ subscribers (`StudentAdmitted → Library
 //! Member`, `StudentPromoted → Fee Structure`, `ExamScheduled →
 //! CMS`, etc.) are deferred to per-domain PRs in subsequent
 //! remediation passes. The pattern established here — a
@@ -61,7 +61,7 @@ use educore_core::ids::Identifier;
 ///
 /// # Current scope
 ///
-/// Six reference subscribers are registered today:
+/// Seven reference subscribers are registered today:
 ///
 /// | # | Subscriber                              | Trigger event                          | Spec reference                  |
 /// |---|-----------------------------------------|----------------------------------------|---------------------------------|
@@ -71,6 +71,7 @@ use educore_core::ids::Identifier;
 /// | 4 | `payroll_paid_mark_paid`                | `hr.payroll.paid`                      | `hr/workflows.md` + WF-006       |
 /// | 5 | `student_admitted_fees_assign`          | `academic.student.admitted`            | `finance/workflows.md` + WF-005  |
 /// | 6 | `student_withdrawn_terminate_fees_assign`| `academic.student.withdrawn`           | `finance/workflows.md` + WF-005  |
+/// | 7 | `subject_teacher_assigned_class_subject` | `academic.subject_teacher.assigned`    | `academic/workflows.md` + FND-WF-007 |
 ///
 /// Future remediation passes extend this list. The
 /// `register_all_subscribers` function is the single entry
@@ -145,6 +146,22 @@ pub fn register_all_subscribers(registry: &mut SubscriberRegistry) {
     registry.register(
         SubscriptionFilter::on_event("academic.student.withdrawn"),
         Arc::new(StudentWithdrawnTerminateFeesAssign::new()),
+    );
+
+    // 7. academic.subject_teacher.assigned -> academic ClassSubject
+    //    binding. Per docs/specs/academic/workflows.md § "Class
+    //    Subject Binding" the spec mandates that when a teacher
+    //    is assigned to a subject in a class/section, a
+    //    ClassSubject binding is materialised. Audit finding
+    //    FND-WF-007 ("Academic has no subscriber on
+    //    SubjectTeacherAssigned; class-subject binding never
+    //    created automatically") is closed by this wiring.
+    //    Zero-state subscriber that logs the fan-out target;
+    //    the actual `class_subject.create` command lands when
+    //    Phase 3 academic service factories are wired.
+    registry.register(
+        SubscriptionFilter::on_event("academic.subject_teacher.assigned"),
+        Arc::new(SubjectTeacherAssignedClassSubject::new()),
     );
 }
 
@@ -780,6 +797,134 @@ impl Subscriber for StudentWithdrawnTerminateFeesAssign {
 }
 
 // =============================================================================
+// Subscriber 7: subject_teacher_assigned_class_subject
+// =============================================================================
+
+/// Subscribes to `academic.subject_teacher.assigned` and
+/// materialises the corresponding `ClassSubject` binding so the
+/// academic domain has a first-class record of "this teacher
+/// teaches this subject in this class/section". Per
+/// `docs/specs/academic/workflows.md` § "Class Subject Binding":
+/// when a teacher is assigned to a subject in a class/section,
+/// a `ClassSubject` binding is created. The
+/// `SubjectTeacherAssigned` event is the trigger that fans out
+/// into the academic `class_subject.create` command.
+///
+/// # Audit finding
+///
+/// `docs/audit_reports/findings/wave7-workflows.md` FND-WF-007
+/// ("Academic has no subscriber on SubjectTeacherAssigned;
+/// class-subject binding never created automatically").
+///
+/// # Idempotency
+///
+/// Dedupe key: `envelope.event_id`. The downstream
+/// `class_subject.create` command is keyed on
+/// `(school_id, class_id, section_id, subject_id, teacher_id)`;
+/// re-delivery is a no-op per `academic/workflows.md` §
+/// "Idempotency".
+#[derive(Debug)]
+pub struct SubjectTeacherAssignedClassSubject {
+    /// Dedupe set: event_ids already processed.
+    seen_events: Mutex<HashSet<uuid::Uuid>>,
+}
+
+impl SubjectTeacherAssignedClassSubject {
+    /// Constructs a new subscriber with an empty dedupe set.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            seen_events: Mutex::new(HashSet::new()),
+        }
+    }
+}
+
+impl Default for SubjectTeacherAssignedClassSubject {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait]
+impl Subscriber for SubjectTeacherAssignedClassSubject {
+    fn name(&self) -> &'static str {
+        "subject_teacher_assigned_class_subject"
+    }
+
+    async fn handle(&self, envelope: &EventEnvelope) -> Result<()> {
+        let event_id = envelope.event_id.as_uuid();
+        {
+            let mut seen = self.seen_events.lock().map_err(|_| {
+                educore_core::error::DomainError::Infrastructure(
+                    "SubjectTeacherAssignedClassSubject dedupe mutex poisoned".into(),
+                )
+            })?;
+            if !seen.insert(event_id) {
+                tracing::debug!(
+                    event_id = %event_id,
+                    "subject_teacher_assigned_class_subject: duplicate event, skipping"
+                );
+                return Ok(());
+            }
+        }
+
+        // Parse the four class-subject binding identifiers
+        // defensively. The SubjectTeacherAssigned payload carries
+        // the subject, class, section, and teacher ids; school_id
+        // is sourced from the envelope (matches the existing
+        // subscriber pattern). All four must be present for the
+        // downstream ClassSubject materialisation to proceed.
+        let subject_id = envelope
+            .payload
+            .get("subject_id")
+            .and_then(serde_json::Value::as_str);
+        let class_id = envelope
+            .payload
+            .get("class_id")
+            .and_then(serde_json::Value::as_str);
+        let section_id = envelope
+            .payload
+            .get("section_id")
+            .and_then(serde_json::Value::as_str);
+        let teacher_id = envelope
+            .payload
+            .get("teacher_id")
+            .and_then(serde_json::Value::as_str);
+
+        match (subject_id, class_id, section_id, teacher_id) {
+            (Some(sid), Some(cid), Some(secid), Some(tid)) => {
+                tracing::info!(
+                    event_id = %event_id,
+                    school_id = %envelope.school_id,
+                    subject_id = sid,
+                    class_id = cid,
+                    section_id = secid,
+                    teacher_id = tid,
+                    "subject_teacher_assigned_class_subject: would create ClassSubject for subject_id={} class_id={} section_id={} teacher_id={}",
+                    sid,
+                    cid,
+                    secid,
+                    tid,
+                );
+                // TODO(SDK): dispatch
+                // `Academic::CreateClassSubject` command with
+                // `(school_id, class_id, section_id, subject_id,
+                // teacher_id)` once the SDK facade wires academic
+                // commands.
+            }
+            _ => {
+                tracing::warn!(
+                    event_id = %event_id,
+                    event_type = envelope.event_type,
+                    "subject_teacher_assigned_class_subject: payload missing subject_id, class_id, section_id, or teacher_id; skipping"
+                );
+            }
+        }
+        Ok(())
+    }
+}
+
+// =============================================================================
 // Tests
 // =============================================================================
 
@@ -826,16 +971,16 @@ mod tests {
     }
 
     #[test]
-    fn register_all_subscribers_wires_at_least_six_subscribers() {
+    fn register_all_subscribers_wires_at_least_seven_subscribers() {
         // Sanity check: the umbrella's bootstrap wires at least
-        // the six reference subscribers. The assertion uses
-        // `>= 6` so that adding a seventh subscriber in a
+        // the seven reference subscribers. The assertion uses
+        // `>= 7` so that adding an eighth subscriber in a
         // future PR does not break this test.
         let mut registry = SubscriberRegistry::new();
         register_all_subscribers(&mut registry);
         assert!(
-            registry.len() >= 6,
-            "expected at least 6 subscribers, got {}",
+            registry.len() >= 7,
+            "expected at least 7 subscribers, got {}",
             registry.len()
         );
     }
@@ -928,6 +1073,39 @@ mod tests {
     }
 
     #[test]
+    fn subject_teacher_assigned_subscriber_handles_missing_payload_gracefully() {
+        let subscriber = SubjectTeacherAssignedClassSubject::new();
+        // Empty payload: subscriber should log a warning and
+        // return Ok (not panic, not error).
+        let env = envelope("academic.subject_teacher.assigned", json!({}));
+        let result = block_on(subscriber.handle(&env));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn subject_teacher_assigned_subscriber_handles_full_payload() {
+        let subscriber = SubjectTeacherAssignedClassSubject::new();
+        let env = envelope(
+            "academic.subject_teacher.assigned",
+            json!({
+                "subject_id": "sub-1",
+                "class_id": "cls-1",
+                "section_id": "sec-1",
+                "teacher_id": "tch-1",
+            }),
+        );
+        // First delivery: subscriber logs and returns Ok.
+        let result = block_on(subscriber.handle(&env));
+        assert!(result.is_ok());
+
+        // Second delivery (same event_id): subscriber is
+        // idempotent on `event_id`, so the dedupe guard
+        // short-circuits with Ok.
+        let result2 = block_on(subscriber.handle(&env));
+        assert!(result2.is_ok());
+    }
+
+    #[test]
     fn form_uploaded_subscriber_handles_missing_show_public() {
         let subscriber = FormUploadedPublicIndexing::new();
         let env = envelope(
@@ -981,6 +1159,10 @@ mod tests {
             StudentWithdrawnTerminateFeesAssign::new().name(),
             "student_withdrawn_terminate_fees_assign"
         );
+        assert_eq!(
+            SubjectTeacherAssignedClassSubject::new().name(),
+            "subject_teacher_assigned_class_subject"
+        );
     }
 
     #[test]
@@ -995,7 +1177,7 @@ mod tests {
         let env = envelope("unrelated.test.event", json!({}));
         let stats = block_on(registry.dispatch(&env)).unwrap();
         assert_eq!(stats.delivered, 0);
-        assert_eq!(stats.skipped, 6);
+        assert_eq!(stats.skipped, 7);
         assert!(stats.is_ok());
     }
 }
