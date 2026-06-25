@@ -12,6 +12,9 @@
 //! - [`writer`] — the [`writer::AuditWriter`] service, the typed
 //!   [`writer::AuditAction`] and [`writer::AuditTarget`] enums,
 //!   and the [`writer::SENTINEL_TARGET_ID`] constant.
+//! - [`query`] — the [`query::AuditQuery`] read-side trait, the
+//!   [`query::AuditFilter`] enum, and the [`query::Page`]
+//!   pagination struct (limit capped at [`query::MAX_PAGE_LIMIT`]).
 //! - [`retention`] — the [`retention::RetentionPolicy`] and the
 //!   [`retention::RetentionSweeper`] threshold checker.
 //! - [`events`] — the [`events::RetentionSweepDue`] event emitted
@@ -42,6 +45,12 @@ pub mod errors;
 /// The [`events::RetentionSweepDue`] typed event.
 pub mod events;
 
+/// The [`query::AuditQuery`] read-side trait, [`query::AuditFilter`]
+/// enum, [`query::Page`] pagination struct, and the fully
+/// denormalised [`query::AuditRecord`] read shape. Implements the
+/// read side of `docs/schemas/audit-schema.md` § 5.
+pub mod query;
+
 /// The retention policy and threshold checker.
 pub mod retention;
 
@@ -63,6 +72,10 @@ pub use educore_storage::AuditLogEntry;
 pub mod prelude {
     pub use crate::errors::{AuditError, Result};
     pub use crate::events::RetentionSweepDue;
+    pub use crate::query::{
+        ActorType, AuditFilter, AuditId, AuditQuery, AuditRecord, AuditSource, CommandId, Page,
+        ResourceId, ResourceType, MAX_PAGE_LIMIT,
+    };
     pub use crate::retention::{RetentionPolicy, RetentionSweeper};
     pub use crate::writer::{AuditAction, AuditTarget, AuditWriter, SENTINEL_TARGET_ID};
     pub use educore_storage::AuditLogEntry;
