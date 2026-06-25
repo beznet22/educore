@@ -43,14 +43,21 @@ educore-integrations = { workspace = true }
 educore-audit = { workspace = true }
 educore-testkit = { workspace = true }
 educore-sdk = { workspace = true }
-educore-sync = { workspace = true }
-educore-sync-inprocess = { workspace = true }
 educore-cli = { workspace = true }
 educore-query-derive = { workspace = true }
+educore-sync = { workspace = true, optional = true }
+educore-sync-inprocess = { workspace = true, optional = true }
 async-trait = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
+
+[features]
+default = []
+# Sync engine port + in-process reference adapter (ADR-018 § 4).
+# Enable to include `educore_sync` and `educore_sync_inprocess` plus their
+# umbrella re-exports. Default build excludes the sync surface entirely.
+sync = ["dep:educore-sync", "dep:educore-sync-inprocess"]
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
