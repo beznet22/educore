@@ -26,7 +26,7 @@
 | Done (`[x]`) | 156 |
 | In-progress (`[~]`) | 12 |
 | Open (`[ ]`) | 317 |
-| Last update | 2026-06-25 18:43 UTC |
+| Last update | 2026-06-25 19:05 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -128,7 +128,7 @@
       **Source:** wave4-testkit.md TOOL-TK-001
       **Check:** `file:crates/tools/testkit/src/storage.rs regex:outbox.*bus|drain.*publish` → _storage.rs:outbox.*bus|drain.*publish_
 
-- [x] **PORT-STORAGE-REPOS** Deferred — actual scope is 215 missing repository traits across 10 domains (not ~80); see docs/audit_reports/remediation/14-port-repos-tracker.md. Wave 8 candidate per-domain decomposition. Closed 2026-06-25.
+- [x] **PORT-STORAGE-REPOS** Partial closure Wave 8.2 — 10/215 traits added (attendance 4, communication 1, facilities 2, library 3). Remaining 205 in 6 domains per docs/audit_reports/remediation/14-port-repos-tracker.md.
       **Source:** docs/ports/storage.md § Trait: StorageAdapter
       **Check:** `file-exists:docs/audit_reports/remediation/14-port-repos-tracker.md` → _14-port-repos-tracker.md exists_
 

@@ -8,19 +8,19 @@
 
 The audit item description estimated ~80 missing aggregate repository handles, but the actual gap (counted 2026-06-25) is **215 missing traits across 10 domains**. The chart below shows the per-domain breakdown:
 
-| Domain         | Spec aggregates | Code traits | Missing |
-| -------------- | --------------- | ----------- | ------- |
-| academic       | 20              | 5           | **15**  |
-| assessment     | 44              | 6           | **38**  |
-| attendance     | 9               | 6           | 3       |
-| cms            | 66              | 19          | **47**  |
-| communication  | 27              | 26          | 1       |
-| documents      | 23              | 3           | **20**  |
-| facilities     | 15              | 13          | 2       |
-| finance        | 73              | 44          | **29**  |
-| hr             | 68              | 16          | **52**  |
-| library        | 14              | 6           | 8       |
-| **TOTAL**      | **359**         | **144**     | **215** |
+| Domain         | Spec aggregates | Code traits | Missing | Status |
+| -------------- | --------------- | ----------- | ------- | ------ |
+| academic       | 20              | 5           | **15**  | open |
+| assessment     | 44              | 6           | **38**  | open |
+| attendance     | 9               | 10          | 0       | ✅ closed (Wave 8.2) |
+| cms            | 66              | 19          | **47**  | open |
+| communication  | 27              | 27          | 0       | ✅ closed (Wave 8.2) |
+| documents      | 23              | 3           | **20**  | open |
+| facilities     | 15              | 15          | 0       | ✅ closed (Wave 8.2) |
+| finance        | 73              | 44          | **29**  | open |
+| hr             | 68              | 16          | **52**  | open |
+| library        | 14              | 9           | 5       | partial (Wave 8.2 closed 3/8) |
+| **TOTAL**      | **359**         | **154**     | **205** | 10/215 closed |
 
 ## Per-domain breakdown (the missing aggregates)
 
@@ -49,6 +49,8 @@ The work decomposes naturally by domain. Each domain is a single microtask:
 | 8 | assessment    | 38 | large      | Wave 8.6 |
 | 9 | cms           | 47 | very large | Wave 8.7 |
 | 10| hr            | 52 | very large | Wave 8.8 |
+
+Wave 8.2 closed 10 traits (4 domains). Remaining 205 in 6 domains.
 
 Each domain agent:
 - Reads `docs/specs/<domain>/aggregates.md`
