@@ -31,6 +31,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_FILES = [
     REPO_ROOT / "docs" / "audit_reports" / "remediation" / "12-roadmap-data.toml",
     REPO_ROOT / "docs" / "audit_reports" / "remediation" / "12-roadmap-gaps-audit.toml",
+    REPO_ROOT / "docs" / "audit_reports" / "remediation" / "12-roadmap-gaps-coverage.toml",
 ]
 MD_FILE = REPO_ROOT / "docs" / "audit_reports" / "remediation" / "12-production-readiness-roadmap.md"
 
