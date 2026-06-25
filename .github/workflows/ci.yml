@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }} / Rust ${{ matrix.rust }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        rust: [stable]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry and target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Lint
+        run: cargo run -p educore-core --bin lint --features lint
+
+      - name: Build
+        run: cargo build --workspace --all-features
+
+      - name: Test (lib)
+        run: cargo test --workspace --lib --all-features
+
+      - name: Test (integration)
+        run: cargo test --workspace --tests --all-features
+        env:
+          RUST_BACKTRACE: 1
+
+  cross-compile:
+    name: Cross-compile (aarch64 + wasm32)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cross
+        run: cargo install cross --locked
+
+      - name: Cross aarch64-unknown-linux-gnu
+        run: cross build --workspace --target aarch64-unknown-linux-gnu --no-default-features
+
+      - name: Check wasm32
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: cargo check --workspace --target wasm32-unknown-unknown --no-default-features
