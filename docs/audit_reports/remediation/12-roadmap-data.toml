@@ -1,0 +1,538 @@
+# Production Readiness Roadmap — data file
+#
+# Source of truth for the auto-generated roadmap. The script
+# `scripts/update-roadmap.py` reads this file, runs each `check`,
+# and regenerates the COMPUTED sections of
+# `12-production-readiness-roadmap.md`.
+#
+# Check types:
+#   cmd:<shell command>      exit 0 = done
+#   file:<path> regex:<pat>  grep matches = done
+#   file-exists:<path>       file exists = done
+#   commit:<regex>           git log has matching commit = done
+#   manual                   no auto-check (human review)
+#
+# To add a new item: append a [[item]] block.
+# To add a new gate: append a [[gate]] block.
+
+[meta]
+title = "Production Readiness Roadmap"
+last_update = "2026-06-25"
+main_head = "2eb7d88"
+wave = "Wave 5 vertical slices complete"
+
+# ============================================================================
+# Production gates (6 boxes — all must pass to declare production-ready)
+# ============================================================================
+
+[[gate]]
+id = "lint"
+name = "Gate-1 Lint"
+description = "`cargo run -p educore-core --bin lint --features lint` exits 0"
+check = "cmd:cargo run -p educore-core --bin lint --features lint"
+
+[[gate]]
+id = "tests"
+name = "Gate-2 Tests"
+description = "`cargo test --workspace` passes (zero failures)"
+check = "manual:cargo test --workspace"
+
+[[gate]]
+id = "clippy"
+name = "Gate-3 Clippy"
+description = "`cargo clippy --workspace --all-targets -- -D warnings` exits 0"
+check = "cmd:cargo clippy --workspace --all-targets -- -D warnings"
+
+[[gate]]
+id = "fmt"
+name = "Gate-4 Fmt"
+description = "`cargo fmt --all -- --check` exits 0"
+check = "cmd:cargo fmt --all -- --check"
+
+[[gate]]
+id = "adapters"
+name = "Gate-5 Adapters"
+description = "All 4 storage adapters' `create_schema()` round-trip on a fresh DB"
+check = "manual:cargo test -p educore-storage-parity --features all-dbs"
+
+[[gate]]
+id = "decisions"
+name = "Gate-6 Decisions"
+description = "All items in `13-decision-needed.md` resolved"
+check = "manual:see 13-decision-needed.md"
+
+# ============================================================================
+# P0 — Production blockers (must close before deploy)
+# ============================================================================
+
+# --- P0-ENGINE: Engine must enforce rules at runtime, not just lint ---
+
+[[item]]
+id = "A-1"
+priority = "P0"
+area = "ENGINE"
+description = "Macro emits `ColumnType::Custom(\"UNKNOWN\")` for every field"
+source = "e036f73, crates/infra/storage/src/entities.rs"
+check = "file:crates/adapters/storage-mysql/src/schema.rs regex:ColumnType::(Uuid|String|I64|Bool)"
+
+[[item]]
+id = "A-2"
+priority = "P0"
+area = "ENGINE"
+description = "`EntityDescriptor.indexes` is always empty"
+source = "e036f73, docs/specs/port/storage.md"
+check = "commit:derive.*indexes|EntityDescriptor.*indexes"
+
+[[item]]
+id = "A-3"
+priority = "P0"
+area = "ENGINE"
+description = "`EntityDescriptor.foreign_keys` is always empty"
+source = "e036f73"
+check = "commit:derive.*foreign_key|EntityDescriptor.*foreign_keys"
+
+[[item]]
+id = "A-4"
+priority = "P0"
+area = "ENGINE"
+description = "`EntityDescriptor.rls` is always empty"
+source = "e036f73, docs/schemas/tenancy-schema.md"
+check = "commit:rls|school_isolation"
+
+[[item]]
+id = "A-5"
+priority = "P0"
+area = "STORAGE"
+description = "All 4 adapters override `create_schema()`"
+source = "Cluster A stage 3"
+check = "commit:create_schema"
+
+[[item]]
+id = "A-6"
+priority = "P0"
+area = "ENGINE"
+description = "MySQL adapter: RLS skipped with TODO"
+source = "crates/adapters/storage-mysql/src/schema.rs"
+check = "file:crates/adapters/storage-mysql/src/schema.rs regex:policy|rls"
+
+[[item]]
+id = "A-7"
+priority = "P0"
+area = "ENGINE"
+description = "SQLite adapter: RLS not supported (documented limitation)"
+source = "documented in adapter README"
+check = "manual:accepted limitation per docs/decisions/ADR-017"
+
+[[item]]
+id = "B-3"
+priority = "P0"
+area = "ENGINE"
+description = "Pre-existing clippy warnings in `crates/infra/core/src/lint.rs:83/44/394`"
+source = "docs/audit_reports/findings/wave1-lint.md"
+check = "cmd:cargo clippy -p educore-core --lib -- -D warnings"
+
+[[item]]
+id = "D-9"
+priority = "P0"
+area = "ENGINE"
+description = "`educore-auth` has unresolved clippy warnings"
+source = "docs/audit_reports/findings/wave5-docs-1.md"
+check = "cmd:cargo clippy -p educore-auth --all-targets -- -D warnings"
+
+[[item]]
+id = "D-10"
+priority = "P0"
+area = "ENGINE"
+description = "Verify proc-macro `as` cast in `crates/infra/query-derive/src/lib.rs` is fixed"
+source = "docs/build-plan.md:73"
+check = "file:crates/infra/query-derive/src/lib.rs regex:as (i32|u32|u64|i64)!"
+
+# --- P0-STORAGE: All 4 adapters must work end-to-end ---
+
+[[item]]
+id = "H-5"
+priority = "P0"
+area = "STORAGE"
+description = "SurrealDB change-stream stubs unimplemented (apply_snapshot, watch_changes, cursor_for, advance_cursor)"
+source = "wave3-storage-surrealdb.md ADAPTER-SD-005..008"
+check = "file:crates/adapters/storage-surrealdb/src/storage.rs regex:is not yet implemented|todo!|unimplemented!!"
+
+[[item]]
+id = "C-3"
+priority = "P0"
+area = "STORAGE"
+description = "Testkit outbox drain not wired to in-process bus"
+source = "wave4-testkit.md TOOL-TK-001"
+check = "file:crates/tools/testkit/src/storage.rs regex:outbox.*bus|drain.*publish"
+
+# --- P0-DOCS: Decisions must be resolved (see 13-decision-needed.md) ---
+
+[[item]]
+id = "D-4"
+priority = "P0"
+area = "DOCS"
+description = "Phase 17 missing from build plan (or doesn't exist)"
+source = "docs/build-plan.md"
+check = "file:docs/build-plan.md regex:Phase 17|phase 17"
+
+[[item]]
+id = "D-5"
+priority = "P0"
+area = "DOCS"
+description = "Cross-domain ownership collisions — 3 ADRs needed (SubjectAttendance, ExamAttendance, SpeechSlider)"
+source = "wave6-specs-1.md"
+check = "commit:cross-domain ownership|ADR.*ownership"
+
+[[item]]
+id = "D-6"
+priority = "P0"
+area = "DOCS"
+description = "SurrealDB vs Postgres as primary backend"
+source = "wave5-docs-1.md; AGENTS.md vs ADR-017 vs ADR-018"
+check = "commit:ADR.*primary.*backend|SurrealDB.*primary"
+
+[[item]]
+id = "D-7"
+priority = "P0"
+area = "DOCS"
+description = "Public API renames (identity types + event types canonical)"
+source = "wave5-docs-2.md"
+check = "manual:see 13-decision-needed.md D-7"
+
+# ============================================================================
+# P1 — High priority (feature incomplete)
+# ============================================================================
+
+# --- P1-TESTS: Domain test coverage ---
+
+[[item]]
+id = "TS-1"
+priority = "P1"
+area = "TESTS"
+description = "academic: 2/14+ aggregates tested (Class + Subject)"
+source = "Wave 2 (subject) + Wave 4 (class)"
+check = "file-exists:crates/domains/academic/tests/subject.rs"
+
+[[item]]
+id = "TS-2"
+priority = "P1"
+area = "TESTS"
+description = "assessment: 2/20+ aggregates tested (Exam + MarksGrade)"
+source = "Wave 3 + Wave 4"
+check = "file-exists:crates/domains/assessment/tests/exam.rs"
+
+[[item]]
+id = "TS-3"
+priority = "P1"
+area = "TESTS"
+description = "attendance: 2/10 aggregates tested (StudentAttendance + SubjectAttendance)"
+source = "Wave 1 + Wave 4"
+check = "file-exists:crates/domains/attendance/tests/aggregates.rs"
+
+[[item]]
+id = "TS-4"
+priority = "P1"
+area = "TESTS"
+description = "cms: 2/20+ aggregates tested (Page + News)"
+source = "Wave 2 + Wave 4"
+check = "file-exists:crates/domains/cms/tests/page.rs"
+
+[[item]]
+id = "TS-5"
+priority = "P1"
+area = "TESTS"
+description = "communication: 2/27 aggregates tested (Notice + ComplaintType)"
+source = "Wave 1 + Wave 4"
+check = "file-exists:crates/domains/communication/tests/notice.rs"
+
+[[item]]
+id = "TS-6"
+priority = "P1"
+area = "TESTS"
+description = "documents: 2/20 aggregates tested (FormDownload + PostalReceive)"
+source = "Wave 1 + Wave 4"
+check = "file-exists:crates/domains/documents/tests/form_handlers.rs"
+
+[[item]]
+id = "TS-7"
+priority = "P1"
+area = "TESTS"
+description = "events-domain: 3/7 aggregates tested (Holiday, Weekend, CalendarSetting)"
+source = "Wave 5"
+check = "file-exists:crates/cross-cutting/events-domain/tests/holiday.rs"
+
+[[item]]
+id = "TS-8"
+priority = "P1"
+area = "TESTS"
+description = "facilities: 2/16 aggregates tested (Vehicle + Route)"
+source = "Wave 2 + Wave 4"
+check = "file-exists:crates/domains/facilities/tests/vehicle.rs"
+
+[[item]]
+id = "TS-9"
+priority = "P1"
+area = "TESTS"
+description = "finance: 2/51 aggregates tested (Wallet + FmFeesGroup)"
+source = "Wave 3 + Wave 4"
+check = "file-exists:crates/domains/finance/tests/wallet.rs"
+
+[[item]]
+id = "TS-10"
+priority = "P1"
+area = "TESTS"
+description = "hr: 2/40+ aggregates tested (Department + Designation)"
+source = "Wave 3 + Wave 4"
+check = "file-exists:crates/domains/hr/tests/department.rs"
+
+[[item]]
+id = "TS-11"
+priority = "P1"
+area = "TESTS"
+description = "library: 2/9 aggregates tested (BookCategory + BookIssue)"
+source = "Wave 1 + Wave 4"
+check = "file-exists:crates/domains/library/tests/aggregates.rs"
+
+[[item]]
+id = "TS-12"
+priority = "P1"
+area = "TESTS"
+description = "48 integration tests pass across 11 domains"
+source = "Wave 1-5"
+check = "manual:run each domain's test suite"
+
+[[item]]
+id = "TS-13"
+priority = "P1"
+area = "TESTS"
+description = "Storage-parity tests for the 25 covered aggregates"
+source = "crates/tools/storage-parity/tests/"
+check = "manual:scenarios needed for each covered aggregate"
+
+# --- P1-WORKFLOWS: Multi-step workflows ---
+
+[[item]]
+id = "E-1"
+priority = "P1"
+area = "WORKFLOWS"
+description = "Outbox relay wired"
+source = "Cluster B"
+check = "file-exists:crates/cross-cutting/events/src/relay_envelope.rs"
+
+[[item]]
+id = "E-2"
+priority = "P1"
+area = "WORKFLOWS"
+description = "Subscriber registration"
+source = "Cluster B"
+check = "commit:subscriber"
+
+[[item]]
+id = "E-3"
+priority = "P1"
+area = "WORKFLOWS"
+description = "`tests/workflows.rs` per domain (11/11 domains have it)"
+source = "Cluster B"
+check = "file-exists:crates/domains/academic/tests/workflows.rs"
+
+[[item]]
+id = "E-4"
+priority = "P1"
+area = "WORKFLOWS"
+description = "Saga / compensating actions for multi-step workflows"
+source = "wave7-workflows.md WF-006"
+check = "file:crates/cross-cutting/sync/src/lib.rs regex:compensat"
+
+[[item]]
+id = "E-5"
+priority = "P1"
+area = "WORKFLOWS"
+description = "Bus port completion"
+source = "Cluster B"
+check = "file-exists:crates/cross-cutting/events/src/event_bus.rs"
+
+# --- P1-API: Public API consistency ---
+
+[[item]]
+id = "F-3"
+priority = "P1"
+area = "API"
+description = "Naming drift sweep (StudentId vs StudentIdentifier, table singular vs plural)"
+source = "wave6-specs-1.md"
+check = "commit:naming.*drift|rename.*Identifier"
+
+# ============================================================================
+# P2 — Medium priority (technical debt)
+# ============================================================================
+
+[[item]]
+id = "B-1"
+priority = "P2"
+area = "ENGINE"
+description = "Code→spec direction false positives for re-exports"
+source = "Cluster D follow-ups"
+check = "file:crates/infra/core/src/lint.rs regex:re_export|reexport"
+
+[[item]]
+id = "B-2"
+priority = "P2"
+area = "ENGINE"
+description = "`as` cast detection is regex-based (false positives possible)"
+source = "Cluster D follow-ups"
+check = "file:crates/infra/core/src/lint.rs regex:as_.*cast"
+
+[[item]]
+id = "B-4"
+priority = "P2"
+area = "ENGINE"
+description = "Coverage matrix sync's TOML parser is line-based"
+source = "Cluster D follow-ups"
+check = "file:crates/infra/core/src/lint.rs regex:toml.*parser|line.*based"
+
+[[item]]
+id = "B-5"
+priority = "P2"
+area = "ENGINE"
+description = "Anti-pattern check doesn't catch `as` chains on numeric constants"
+source = "Cluster D follow-ups"
+check = "manual:re-validate on real codebase"
+
+[[item]]
+id = "C-1"
+priority = "P2"
+area = "STORAGE"
+description = "Idempotency.record() callers must migrate to record_outcome()"
+source = "5382a6e (port) + 4 adapter commits"
+check = "commit:record_outcome"
+
+[[item]]
+id = "C-2"
+priority = "P2"
+area = "STORAGE"
+description = "QW-13 MySQL defense-in-depth"
+source = "QW-13, d2f52c9"
+check = "commit:QW-13|d2f52c9"
+
+[[item]]
+id = "H-1"
+priority = "P2"
+area = "STORAGE"
+description = "StorageAdapter::create_schema() impls (all 4 adapters)"
+source = "Cluster A stage 3"
+check = "file-exists:crates/adapters/storage-surrealdb/src/schema.rs"
+
+[[item]]
+id = "H-2"
+priority = "P2"
+area = "STORAGE"
+description = "Transaction::TenantContext propagation"
+source = "wave4-storage-port.md PORT-STORE-002"
+check = "file:crates/infra/storage/src/transaction.rs regex:TenantContext"
+
+[[item]]
+id = "H-3"
+priority = "P2"
+area = "STORAGE"
+description = "Atomic audit-write in same transaction"
+source = "wave4-storage-port.md PORT-STORE-013"
+check = "commit:PORT-STORE-013"
+
+[[item]]
+id = "H-4"
+priority = "P2"
+area = "STORAGE"
+description = "Outbox partition enforcement at storage port level"
+source = "wave4-testkit.md TOOL-TK-004"
+check = "commit:TOOL-TK-004"
+
+[[item]]
+id = "H-6"
+priority = "P2"
+area = "ADAPTERS"
+description = "Port-adapter gaps (auth/event-bus/notify/payment/files/integrations)"
+source = "Various wave3-* findings"
+check = "manual:see wave3 findings"
+
+[[item]]
+id = "F-2"
+priority = "P2"
+area = "ENGINE"
+description = "`#[derive(DomainQuery)]` adoption"
+source = "0/310 across all domains"
+check = "cmd:grep -r DomainQuery crates/domains/ crates/cross-cutting/ | wc -l"
+
+# ============================================================================
+# P3 — Low priority (cosmetic / housekeeping)
+# ============================================================================
+
+[[item]]
+id = "B-6"
+priority = "P3"
+area = "ENGINE"
+description = "Single-line `mod tests { ... }` exemption regression test sweep"
+source = "Cluster D"
+check = "manual:regression sweep complete"
+
+[[item]]
+id = "D-1"
+priority = "P3"
+area = "HOUSEKEEPING"
+description = "Pre-existing unrelated stash (user decision)"
+source = "session start"
+check = "manual:user must resolve"
+
+[[item]]
+id = "D-2"
+priority = "P3"
+area = "HOUSEKEEPING"
+description = "`docs_guidlines/` directory deletions (user decision)"
+source = "session start"
+check = "manual:user must commit or restore"
+
+[[item]]
+id = "I-1"
+priority = "P3"
+area = "DOCS"
+description = "Crate count drift (AGENTS.md: 34 → 37 actual)"
+source = "wave5-docs-1.md"
+check = "file:AGENTS.md regex:36 internal crates|37 packages"
+
+[[item]]
+id = "I-2"
+priority = "P3"
+area = "DOCS"
+description = "SurrealDB shipping status tri-contradiction"
+source = "wave5-docs-1.md"
+check = "manual:resolve SurrealDB primary status across docs"
+
+[[item]]
+id = "I-3"
+priority = "P3"
+area = "DOCS"
+description = "Phase 17 missing from build plan"
+source = "See D-4 (P0)"
+check = "duplicate:D-4"
+
+[[item]]
+id = "I-4"
+priority = "P3"
+area = "DOCS"
+description = "`library-docs.md` phantom `Engine::builder()` APIs"
+source = "wave5-docs-2.md"
+check = "manual:audit library-docs.md APIs vs code"
+
+[[item]]
+id = "I-5"
+priority = "P3"
+area = "DOCS"
+description = "`guides/*.md` phantom `engine.<domain>()` accessors"
+source = "wave5-docs-6.md"
+check = "manual:audit guides/*.md accessors vs code"
+
+[[item]]
+id = "I-6"
+priority = "P3"
+area = "DOCS"
+description = "ADR review (013, 015, 016, 017, 018)"
+source = "wave5-docs-2.md"
+check = "manual:ADR review checklist complete"
