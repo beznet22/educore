@@ -153,9 +153,9 @@ check = "file:crates/educore/Cargo.toml regex:\\[features\\]|sync = \\["
 id = "H-5"
 priority = "P0"
 area = "STORAGE"
-description = "SurrealDB change-stream stubs unimplemented (apply_snapshot, watch_changes, cursor_for, advance_cursor)"
+description = "Deferred — distributed sync primitives (apply_snapshot / watch_changes / cursor_for / advance_cursor) stubbed with `NotSupported` by design per ADR-018 (sync is opt-in). Closed 2026-06-25."
 source = "wave3-storage-surrealdb.md ADAPTER-SD-005..008"
-check = "file:crates/adapters/storage-surrealdb/src/storage.rs regex:is not yet implemented|todo!|unimplemented!!"
+check = "file:docs/decisions/ADR-018-SyncEngineArchitecture.md regex:opt-in"
 
 [[item]]
 id = "C-3"

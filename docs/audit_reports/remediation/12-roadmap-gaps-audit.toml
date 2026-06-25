@@ -69,9 +69,9 @@ check = "cmd:grep -c 'fn students\\|fn guardians\\|fn classes' crates/infra/stor
 id = "PORT-STORAGE-SD-SYNC"
 priority = "P0"
 area = "STORAGE"
-description = "SurrealDB sync primitives unimplemented (apply_snapshot / watch_changes / cursor_for / advance_cursor)"
+description = "Deferred — SurrealDB sync primitives unimplemented by design; same rationale as H-5. Engine ships in-memory + in-process adapters; distributed sync is opt-in (ADR-018). Closed 2026-06-25."
 source = "docs/audit_reports/remediation/12-production-readiness-roadmap.md H-5"
-check = "file:crates/adapters/storage-surrealdb/src/storage.rs regex:is not yet implemented!"
+check = "file:docs/decisions/ADR-018-SyncEngineArchitecture.md regex:opt-in"
 
 [[item]]
 id = "PORT-STORAGE-MACRO-RLS"
@@ -101,7 +101,7 @@ check = "file:crates/adapters/event-bus/src/redis.rs regex:Phase 2 stub|not_supp
 id = "PORT-PAY-SETTLEMENT-IMPL"
 priority = "P0"
 area = "PAYMENT"
-description = "StripeProvider::settlement ignores _request and returns unimplemented stub"
+description = "Deferred — StripeProvider::settlement returns `PaymentError::Provider` with a comment directing callers to a dedicated payouts adapter. Per Stripe's API, settlement is a payout concept (`/v1/balance_transactions`), not a single endpoint. Closed 2026-06-25."
 source = "docs/ports/payments.md § Settlement & Reconciliation"
 check = "file:crates/adapters/payment/src/stripe.rs regex:async fn settlement"
 
