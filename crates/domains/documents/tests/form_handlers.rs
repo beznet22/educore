@@ -171,18 +171,21 @@ struct TestEnv {
 }
 
 impl TestEnv {
-    fn new() -> Self {
+    fn new(school: SchoolId) -> Self {
         let bus = Arc::new(InProcessEventBus::new());
         let bus_dyn: Arc<dyn EventBus> = bus.clone();
         let audit_log = Arc::new(InMemoryAuditLog::default());
         let audit_log_dyn: Arc<dyn AuditLog> = audit_log.clone();
         let clock = Arc::new(TestClock::at(Timestamp::now()));
-        let audit_writer = Arc::new(AuditWriter::new(
-            audit_log_dyn,
-            bus_dyn,
-            clock,
-            RetentionPolicy::default(),
-        ));
+        // FND-SEC-AUDIT-001: AuditWriter is tenant-bound; the
+        // writer can only write audit rows for the school it
+        // was constructed for. `school` here comes from
+        // `fresh_tenant()` so each test gets a writer bound to
+        // its own tenant.
+        let audit_writer = Arc::new(
+            AuditWriter::new(school, audit_log_dyn, bus_dyn, clock, RetentionPolicy::default())
+                .expect("test school_id is a valid (non-nil) UUID"),
+        );
         let capability_check = Arc::new(InMemoryCapabilityCheck::new());
         let form_repo = Arc::new(InMemoryFormRepo::default());
         Self {
@@ -266,8 +269,8 @@ fn upload_cmd(
 /// snapshots), and the bus deliverable returns without error.
 #[tokio::test]
 async fn form_handlers_happy_path_upload_then_update_persists_and_audits() {
-    let env = TestEnv::new();
     let ft = fresh_tenant();
+    let env = TestEnv::new(ft.school);
     env.grant(ft.school, Capability::FormDownloadUpload);
     env.grant(ft.school, Capability::FormDownloadUpdate);
 
@@ -390,8 +393,8 @@ async fn form_handlers_happy_path_upload_then_update_persists_and_audits() {
 /// touch the repo or the audit log.
 #[tokio::test]
 async fn form_handlers_validation_failure_rejects_missing_link_and_file_without_side_effects() {
-    let env = TestEnv::new();
     let ft = fresh_tenant();
+    let env = TestEnv::new(ft.school);
     env.grant(ft.school, Capability::FormDownloadUpload);
 
     // Both link and file are None — spec violation.

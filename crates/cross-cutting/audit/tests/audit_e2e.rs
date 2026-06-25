@@ -45,6 +45,12 @@ use educore_events::event_bus::{
     BatchReceipt, EventBus, EventSubscription, PublishReceipt, SubscribeOptions,
 };
 use educore_storage::audit::{AuditLog, AuditLogEntry};
+use educore_storage::event_log::{EventLog, EventLogEntry, EventLogFilter};
+use educore_storage::idempotency::{
+    Idempotency, IdempotencyCompositeKey, IdempotencyOutcome, IdempotencyRecord,
+};
+use educore_storage::outbox::{Outbox, SerializedEnvelope};
+use educore_storage::transaction::{TenantTransaction, Transaction};
 
 // =============================================================================
 // In-memory mocks for the storage and bus ports.
@@ -169,6 +175,206 @@ impl EventBus for InMemoryEventBus {
 }
 
 // =============================================================================
+// Stub sub-port impls for `TestTransaction`
+//
+// The audit writer only uses `audit_log()` on the `Transaction` it
+// receives. The other three sub-ports (`outbox`, `idempotency`,
+// `event_log`) are never touched by the writer's code path, but the
+// trait still requires an implementation. These stubs return
+// `DomainError::NotSupported` for any non-trivial operation so any
+// accidental use fails loudly.
+// =============================================================================
+
+/// No-op outbox stub. The audit writer never appends to the
+/// outbox, so this is a structural placeholder that exists only
+/// to satisfy the `Transaction` trait contract.
+#[derive(Debug, Default)]
+struct StubOutbox;
+
+#[async_trait]
+impl Outbox for StubOutbox {
+    async fn append(
+        &self,
+        _school_id: SchoolId,
+        _envelope: SerializedEnvelope,
+    ) -> educore_core::error::Result<()> {
+        Err(educore_core::error::DomainError::not_supported(
+            "Outbox stub: AuditWriter does not append to the outbox",
+        ))
+    }
+
+    async fn pending(
+        &self,
+        _school_id: SchoolId,
+        _limit: u32,
+    ) -> educore_core::error::Result<Vec<SerializedEnvelope>> {
+        Ok(Vec::new())
+    }
+
+    async fn mark_published(
+        &self,
+        _school_id: SchoolId,
+        _ids: &[educore_core::ids::EventId],
+    ) -> educore_core::error::Result<()> {
+        Ok(())
+    }
+}
+
+/// No-op idempotency stub. Mirrors `StubOutbox`: never used by
+/// the audit writer, present only to satisfy the `Transaction`
+/// trait contract.
+#[derive(Debug, Default)]
+struct StubIdempotency;
+
+#[async_trait]
+impl Idempotency for StubIdempotency {
+    async fn lookup(
+        &self,
+        _key: IdempotencyCompositeKey,
+    ) -> educore_core::error::Result<Option<IdempotencyRecord>> {
+        Ok(None)
+    }
+
+    async fn record(
+        &self,
+        _record: IdempotencyRecord,
+    ) -> educore_core::error::Result<()> {
+        Err(educore_core::error::DomainError::not_supported(
+            "Idempotency stub: AuditWriter does not record idempotency keys",
+        ))
+    }
+}
+
+/// No-op event-log stub. Mirrors `StubOutbox`: never used by
+/// the audit writer, present only to satisfy the `Transaction`
+/// trait contract.
+#[derive(Debug, Default)]
+struct StubEventLog;
+
+#[async_trait]
+impl EventLog for StubEventLog {
+    async fn append(
+        &self,
+        _entry: EventLogEntry,
+    ) -> educore_core::error::Result<()> {
+        Err(educore_core::error::DomainError::not_supported(
+            "EventLog stub: AuditWriter does not append to the event log",
+        ))
+    }
+
+    async fn read(
+        &self,
+        _filter: EventLogFilter,
+    ) -> educore_core::error::Result<Vec<EventLogEntry>> {
+        Ok(Vec::new())
+    }
+
+    async fn count(
+        &self,
+        _filter: EventLogFilter,
+    ) -> educore_core::error::Result<u64> {
+        Ok(0)
+    }
+}
+
+// =============================================================================
+// TestTransaction — a hand-rolled `Transaction` impl for the audit e2e tests.
+//
+// The audit writer only consumes the `audit_log()` sub-port of the
+// `Transaction` it is given (per SCHEMA-AUDIT-ATOMIC, the audit
+// row is staged on the caller's transaction). The other three
+// sub-ports are stubbed via the `Stub*` types above.
+//
+// The wrapped `InMemoryAuditLog` is the same mock the tests have
+// always used for `AuditWriter::new(audit_log, ...)`. We continue
+// to expose it directly so the existing assertions
+// (`audit_log.read_for_target(...)` after a `write`) keep
+// working without changes.
+// =============================================================================
+
+/// A `Transaction` that wraps an `InMemoryAuditLog` (the audit
+/// sub-port) and three no-op stubs (outbox, idempotency, event
+/// log). The audit writer only ever calls `audit_log().append()`,
+/// so the stubs are unreachable in normal test flow; calling them
+/// returns `DomainError::NotSupported` for visibility.
+struct TestTransaction {
+    audit_log: Arc<InMemoryAuditLog>,
+    school_id: SchoolId,
+    outbox: StubOutbox,
+    idempotency: StubIdempotency,
+    event_log: StubEventLog,
+}
+
+impl std::fmt::Debug for TestTransaction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TestTransaction")
+            .field("school_id", &self.school_id)
+            .finish_non_exhaustive()
+    }
+}
+
+#[async_trait]
+impl Transaction for TestTransaction {
+    async fn commit(self: Box<Self>) -> educore_core::error::Result<()> {
+        // The audit writer stages rows directly into the
+        // shared `InMemoryAuditLog` (no staging buffer). The
+        // commit is therefore a no-op: rows are already
+        // visible after `audit_log().append(...)` returns.
+        Ok(())
+    }
+
+    async fn rollback(self: Box<Self>) -> educore_core::error::Result<()> {
+        // No-op: see `commit`.
+        Ok(())
+    }
+
+    fn outbox(&self) -> &dyn Outbox {
+        &self.outbox
+    }
+
+    fn audit_log(&self) -> &dyn AuditLog {
+        &*self.audit_log
+    }
+
+    fn idempotency(&self) -> &dyn Idempotency {
+        &self.idempotency
+    }
+
+    fn event_log(&self) -> &dyn EventLog {
+        &self.event_log
+    }
+}
+
+impl TenantTransaction for TestTransaction {
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+}
+
+/// Helper: constructs a `Box<dyn Transaction>` wrapping `audit_log`
+/// with `school_id` as the tenant anchor. Tests use this to
+/// satisfy `AuditWriter::write(&dyn Transaction, ...)` without
+/// pulling in `educore-testkit` (which would create a circular
+/// dev-dep: `educore-audit -> educore-testkit -> educore-audit`).
+fn test_txn(audit_log: Arc<InMemoryAuditLog>, school_id: SchoolId) -> Box<dyn Transaction> {
+    Box::new(TestTransaction {
+        audit_log,
+        school_id,
+        outbox: StubOutbox,
+        idempotency: StubIdempotency,
+        event_log: StubEventLog,
+    })
+}
+
+// Silence the unused-import warning for `IdempotencyOutcome`
+// (only the trait method signatures are referenced, not the
+// enum directly).
+#[allow(dead_code)]
+fn _force_idempotency_outcome_import(o: IdempotencyOutcome) -> IdempotencyOutcome {
+    o
+}
+
+// =============================================================================
 // Test helpers
 // =============================================================================
 
@@ -198,11 +404,14 @@ async fn audit_writer_appends_row_to_audit_log() {
     let bus = Arc::new(InMemoryEventBus::new());
     let clock = Arc::new(TestClock::at(ts(1_700_000_000)));
     let policy = RetentionPolicy::default();
-    let writer = AuditWriter::new(audit_log.clone(), bus.clone(), clock, policy);
+    let writer = AuditWriter::new(school, audit_log.clone(), bus.clone(), clock, policy)
+        .expect("valid school_id for test writer");
 
     let after = bytes::Bytes::from_static(b"{\"id\":\"x\"}");
+    let txn = test_txn(audit_log.clone(), school);
     writer
         .write(
+            &*txn,
             &ctx,
             AuditAction::Create,
             AuditTarget::Student(target),
@@ -240,10 +449,13 @@ async fn audit_writer_does_not_emit_sweep_due_on_first_write() {
     let bus = Arc::new(InMemoryEventBus::new());
     let clock = Arc::new(TestClock::at(ts(1_700_000_000)));
     let policy = RetentionPolicy::default();
-    let writer = AuditWriter::new(audit_log.clone(), bus.clone(), clock, policy);
+    let writer = AuditWriter::new(school, audit_log.clone(), bus.clone(), clock, policy)
+        .expect("valid school_id for test writer");
 
+    let txn = test_txn(audit_log.clone(), school);
     writer
         .write(
+            &*txn,
             &ctx,
             AuditAction::Update,
             AuditTarget::Student(target),
@@ -301,11 +513,14 @@ async fn audit_writer_emits_sweep_due_when_threshold_reached() {
         retention_days: 90,
         sweep_check_interval: std::time::Duration::from_secs(60),
     };
-    let writer = AuditWriter::new(audit_log.clone(), bus.clone(), clock.clone(), policy);
+    let writer = AuditWriter::new(school, audit_log.clone(), bus.clone(), clock.clone(), policy)
+        .expect("valid school_id for test writer");
 
     // First write — seed the sweep clock, no event published.
+    let txn = test_txn(audit_log.clone(), school);
     writer
         .write(
+            &*txn,
             &ctx,
             AuditAction::Create,
             AuditTarget::Student(target),
@@ -324,8 +539,10 @@ async fn audit_writer_emits_sweep_due_when_threshold_reached() {
 
     // Second write — sweep check fires, threshold reached, event
     // is published.
+    let txn2 = test_txn(audit_log.clone(), school);
     writer
         .write(
+            &*txn2,
             &ctx,
             AuditAction::Update,
             AuditTarget::Student(target),
