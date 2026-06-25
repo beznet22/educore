@@ -33,6 +33,7 @@ use educore_events::domain_event::DomainEvent;
 use educore_events::event_bus::EventBus;
 
 use educore_storage::audit::{AuditLog, AuditLogEntry};
+use educore_storage::Transaction;
 
 use crate::events::RetentionSweepDue;
 use crate::retention::{RetentionPolicy, RetentionSweeper};
@@ -810,6 +811,18 @@ impl AuditWriter {
     /// Writes an audit row for a state change and then triggers
     /// an opportunistic sweep check.
     ///
+    /// ## Atomicity (SCHEMA-AUDIT-ATOMIC)
+    ///
+    /// The audit row is staged on the caller's [`Transaction`]
+    /// (`txn.audit_log().append(entry)`), **not** on the
+    /// bare [`AuditLog`] port. The caller MUST be running inside
+    /// the same DB transaction as the business mutation so the
+    /// audit row, the outbox envelope, the event-log row, and
+    /// the aggregate state all commit (or roll back) together.
+    /// A dropped or rolled-back transaction silently discards
+    /// the staged audit row — exactly what the engine's
+    /// audit-first invariant requires.
+    ///
     /// The `before` snapshot is the serialised resource state
     /// before the mutation; `None` for create actions. The `after`
     /// snapshot is the state after; `None` for delete actions.
@@ -823,6 +836,7 @@ impl AuditWriter {
     ///   event bus fails.
     pub async fn write(
         &self,
+        txn: &dyn Transaction,
         ctx: &TenantContext,
         action: AuditAction,
         target: AuditTarget,
@@ -838,23 +852,25 @@ impl AuditWriter {
             target_id: target.target_id(),
             before,
             after,
-            // Phase 2: the audit row is decoupled from the
-            // event-log row. Phase 3 will wire `event_id` when
-            // command handlers run inside the same transaction
-            // as the outbox emit.
+            // The audit row is staged on the caller's
+            // transaction; `event_id` will be wired when the
+            // command handler's outbox emit moves inside the
+            // same transaction (Phase 3+ work).
             event_id: None,
             correlation_id: ctx.correlation_id,
             occurred_at: self.clock.now(),
             active_status: ActiveStatus::Active,
             // The metadata column is open-ended; the default
             // null lets the writer pass through callers that do
-            // not need to attach a reason or ticket. Callers
-            // that need metadata can extend `AuditWriter` in
-            // Phase 3 (the `to_audit_value` projection will land
-            // alongside the per-aggregate emit hook).
+            // not need to attach a reason or ticket.
             metadata: serde_json::Value::Null,
         };
-        self.audit_log.append(entry).await?;
+        // Stage the audit row on the caller's transaction so
+        // it commits atomically with the business write. A
+        // rolled-back transaction drops the audit row, which
+        // is the desired behaviour (no phantom audit history
+        // for state that never actually committed).
+        txn.audit_log().append(entry).await?;
         self.maybe_sweep(school_id).await?;
         Ok(())
     }
