@@ -8,6 +8,13 @@
 //! command dispatcher converts infrastructure errors into a generic
 //! `Infrastructure` variant.
 //!
+//! Idempotency-specific variants per `docs/decisions/ADR-014-Idempotency.md`:
+//! - [`DomainError::IdempotencyConflict`] (ADR-014 § 4): the same
+//!   idempotency key was replayed with a *different* payload.
+//! - [`DomainError::IdempotencyPending`] (ADR-014 § 9): the same
+//!   idempotency key was replayed while the original async run is
+//!   still in flight. Both map to [`ErrorKind::Conflict`].
+//!
 //! Tests assert on variants, not on display strings.
 
 use std::fmt;
@@ -34,6 +41,34 @@ pub enum DomainError {
     /// already-closed invoice, etc.).
     #[error("conflict: {0}")]
     Conflict(String),
+
+    /// Retry with the same idempotency key but a different payload
+    /// (ADR-014 § 4). The stored outcome reference is returned so
+    /// callers can fetch the canonical prior result rather than
+    /// re-running the side effects.
+    #[error(
+        "idempotency conflict: key={key} existing_outcome_ref={existing_outcome_ref}"
+    )]
+    IdempotencyConflict {
+        /// The idempotency key the client replayed.
+        key: String,
+        /// Opaque reference to the outcome record of the original
+        /// run. Callers should surface this so clients can compare
+        /// and decide whether to adopt the prior outcome.
+        existing_outcome_ref: String,
+    },
+
+    /// Retry replayed while the original async run is still in
+    /// flight (ADR-014 § 9). The `started_at` timestamp lets the
+    /// caller distinguish a transient pending state from a
+    /// permanently failed prior run.
+    #[error("idempotency pending: key={key} started_at={started_at}")]
+    IdempotencyPending {
+        /// The idempotency key the client replayed.
+        key: String,
+        /// Wall-clock instant at which the original run started.
+        started_at: chrono::DateTime<chrono::Utc>,
+    },
 
     /// The actor lacks the capability required for this operation.
     /// Distinct from `Validation` so RBAC audits can be filtered.
@@ -71,7 +106,9 @@ impl DomainError {
         match self {
             Self::Validation(_) | Self::NotSupported(_) => ErrorKind::Validation,
             Self::NotFound(_) => ErrorKind::NotFound,
-            Self::Conflict(_) => ErrorKind::Conflict,
+            Self::Conflict(_)
+            | Self::IdempotencyConflict { .. }
+            | Self::IdempotencyPending { .. } => ErrorKind::Conflict,
             Self::Forbidden(_) => ErrorKind::Forbidden,
             Self::TenantViolation(_) => ErrorKind::TenantViolation,
             Self::Infrastructure(_) => ErrorKind::Infrastructure,
@@ -90,7 +127,9 @@ impl DomainError {
             | Self::Forbidden(m)
             | Self::TenantViolation(m)
             | Self::NotSupported(m) => Some(m),
-            Self::Infrastructure(_) => None,
+            Self::Infrastructure(_)
+            | Self::IdempotencyConflict { .. }
+            | Self::IdempotencyPending { .. } => None,
         }
     }
 
@@ -110,6 +149,30 @@ impl DomainError {
     #[inline]
     pub fn conflict(reason: impl Into<String>) -> Self {
         Self::Conflict(reason.into())
+    }
+
+    /// Constructs an `IdempotencyConflict` error (ADR-014 § 4).
+    #[inline]
+    pub fn idempotency_conflict(
+        key: impl Into<String>,
+        existing_outcome_ref: impl Into<String>,
+    ) -> Self {
+        Self::IdempotencyConflict {
+            key: key.into(),
+            existing_outcome_ref: existing_outcome_ref.into(),
+        }
+    }
+
+    /// Constructs an `IdempotencyPending` error (ADR-014 § 9).
+    #[inline]
+    pub fn idempotency_pending(
+        key: impl Into<String>,
+        started_at: chrono::DateTime<chrono::Utc>,
+    ) -> Self {
+        Self::IdempotencyPending {
+            key: key.into(),
+            started_at,
+        }
     }
 
     /// Constructs a `Forbidden` error from a static reason.
@@ -254,5 +317,44 @@ mod tests {
     fn display_includes_message() {
         let e = DomainError::validation("negative count");
         assert_eq!(e.to_string(), "validation: negative count");
+    }
+
+    #[test]
+    fn idempotency_conflict_kind_is_conflict() {
+        let e = DomainError::idempotency_conflict("k1", "ref-123");
+        assert_eq!(e.kind(), ErrorKind::Conflict);
+        assert!(e.message().is_none());
+        let s = e.to_string();
+        assert!(s.contains("k1"));
+        assert!(s.contains("ref-123"));
+        match e {
+            DomainError::IdempotencyConflict {
+                key,
+                existing_outcome_ref,
+            } => {
+                assert_eq!(key, "k1");
+                assert_eq!(existing_outcome_ref, "ref-123");
+            }
+            _ => panic!("expected IdempotencyConflict"),
+        }
+    }
+
+    #[test]
+    fn idempotency_pending_kind_is_conflict() {
+        let ts = chrono::DateTime::parse_from_rfc3339("2026-01-02T03:04:05Z")
+            .expect("valid rfc3339")
+            .with_timezone(&chrono::Utc);
+        let e = DomainError::idempotency_pending("k2", ts);
+        assert_eq!(e.kind(), ErrorKind::Conflict);
+        assert!(e.message().is_none());
+        let s = e.to_string();
+        assert!(s.contains("k2"));
+        match e {
+            DomainError::IdempotencyPending { key, started_at } => {
+                assert_eq!(key, "k2");
+                assert_eq!(started_at, ts);
+            }
+            _ => panic!("expected IdempotencyPending"),
+        }
     }
 }

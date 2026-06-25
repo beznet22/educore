@@ -42,6 +42,15 @@ impl From<DomainError> for SettingsDomainError {
             DomainError::Validation(s) => Self::Validation(s),
             DomainError::NotFound(s) => Self::NotFound(s),
             DomainError::Conflict(s) => Self::Conflict(s),
+            DomainError::IdempotencyConflict {
+                key,
+                existing_outcome_ref,
+            } => Self::Conflict(format!(
+                "idempotency conflict for key {key}: existing outcome {existing_outcome_ref}"
+            )),
+            DomainError::IdempotencyPending { key, started_at } => Self::Conflict(format!(
+                "idempotency pending for key {key} (started {started_at})"
+            )),
             DomainError::Forbidden(s) => Self::Forbidden(s),
             DomainError::TenantViolation(s) => Self::Forbidden(s),
             DomainError::NotSupported(s) => Self::Validation(s),

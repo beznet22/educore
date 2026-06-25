@@ -93,6 +93,10 @@ impl From<educore_core::error::DomainError> for CmsError {
             educore_core::error::DomainError::Forbidden(msg)
             | educore_core::error::DomainError::TenantViolation(msg) => CmsError::Forbidden(msg),
             educore_core::error::DomainError::Conflict(msg) => CmsError::Conflict(msg),
+            educore_core::error::DomainError::IdempotencyConflict { key, .. }
+            | educore_core::error::DomainError::IdempotencyPending { key, .. } => {
+                CmsError::Conflict(key)
+            }
             educore_core::error::DomainError::Validation(msg)
             | educore_core::error::DomainError::NotFound(msg) => CmsError::Validation(msg),
             educore_core::error::DomainError::NotSupported(msg) => CmsError::Validation(msg),
