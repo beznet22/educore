@@ -117,9 +117,9 @@ check = "cmd:cargo check -p educore-integrations"
 id = "SCHEMA-OUTBOX-SURREAL-NULLABLE"
 priority = "P0"
 area = "SCHEMA"
-description = "SurrealDB outbox declares school_id as option<uuid>; spec mandates NOT NULL on every engine table"
+description = "SurrealDB outbox school_id changed to NOT NULL (uuid, no longer option<uuid>)"
 source = "docs/schemas/database-schema.md § 2"
-check = "file:migrations/engine/0000_engine_core.surreal.surql regex:outbox TYPE option<uuid>"
+check = "file:migrations/engine/0000_engine_core.surreal.surql regex:school_id.*outbox TYPE option<uuid>!"
 
 [[item]]
 id = "SCHEMA-AUDIT-QUERY-PORT"

@@ -119,9 +119,9 @@ check = "file:crates/adapters/storage-mysql/src/schema.rs regex:policy|rls"
 id = "A-7"
 priority = "P0"
 area = "ENGINE"
-description = "SQLite adapter: RLS not supported (documented limitation)"
-source = "documented in adapter README"
-check = "manual:accepted limitation per docs/decisions/ADR-017"
+description = "SQLite adapter: RLS not supported (documented limitation per ADR-017 § 'Known limitations')"
+source = "docs/decisions/ADR-017-SurrealDBFirst.md"
+check = "file:docs/decisions/ADR-017-SurrealDBFirst.md regex:SQLite row-level security"
 
 [[item]]
 id = "B-3"

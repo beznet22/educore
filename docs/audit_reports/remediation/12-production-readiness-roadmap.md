@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 136 |
-| In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 337 |
-| Last update | 2026-06-25 11:05 UTC |
+| Done (`[x]`) | 139 |
+| In-progress (`[~]`) | 11 |
+| Open (`[ ]`) | 335 |
+| Last update | 2026-06-25 11:24 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -76,9 +76,9 @@
       **Source:** crates/adapters/storage-mysql/src/schema.rs
       **Check:** `file:crates/adapters/storage-mysql/src/schema.rs regex:policy|rls` → _schema.rs:policy|rls_
 
-- [~] **A-7** SQLite adapter: RLS not supported (documented limitation)
-      **Source:** documented in adapter README
-      **Check:** `manual:accepted limitation per docs/decisions/ADR-017` → _manual: accepted limitation per docs/decisions/ADR-017_
+- [x] **A-7** SQLite adapter: RLS not supported (documented limitation per ADR-017 § 'Known limitations')
+      **Source:** docs/decisions/ADR-017-SurrealDBFirst.md
+      **Check:** `file:docs/decisions/ADR-017-SurrealDBFirst.md regex:SQLite row-level security` → _ADR-017-SurrealDBFirst.md:SQLite row-level security_
 
 - [x] **B-3** Pre-existing clippy warnings in `crates/infra/core/src/lint.rs:83/44/394`
       **Source:** docs/audit_reports/findings/wave1-lint.md
@@ -167,6 +167,30 @@
 - [x] **D-7** Public API renames — ADR-019 created (D-7 Option A: code is canonical; docs must match)
       **Source:** wave5-docs-2.md, ADR-019
       **Check:** `file:docs/decisions/ADR-019-PublicApiNaming.md regex:code-as-canonical|Option A|...` → _ADR-019-PublicApiNaming.md:code-as-canonical|Option A|Accepted_
+<!-- END COMPUTED -->
+
+### P0-SCHEMA — Schema DDL must match spec
+
+<!-- COMPUTED:items.P0.SCHEMA -->
+- [x] **SCHEMA-OUTBOX-SURREAL-NULLABLE** SurrealDB outbox school_id changed to NOT NULL (uuid, no longer option<uuid>)
+      **Source:** docs/schemas/database-schema.md § 2
+      **Check:** `file:migrations/engine/0000_engine_core.surreal.surql regex:school_id.*outbox TY...` → _0000_engine_core.surreal.surql:school_id.*outbox TYPE option<uuid>_
+
+- [ ] **SCHEMA-AUDIT-QUERY-PORT** AuditQuery trait (list/get/resource_history/actor_history/AuditFilter) not implemented; only AuditWriter exists
+      **Source:** docs/schemas/audit-schema.md § 5
+      **Check:** `file-exists:crates/cross-cutting/audit/src/query.rs` → _query.rs missing_
+
+- [x] **SCHEMA-AUDIT-PARTITION-PG** audit_log not PARTITION BY RANGE (school_id, month) on PG; spec § 13.1 mandates it
+      **Source:** docs/schemas/audit-schema.md § 13.1
+      **Check:** `file:migrations/engine/0000_engine_core.postgres.sql regex:PARTITION BY RANGE` → _0000_engine_core.postgres.sql:PARTITION BY RANGE_
+
+- [x] **SCHEMA-AUDIT-PARTITION-MYSQL** audit_log not PARTITION BY KEY (school_id) PARTITIONS 12 on MySQL; spec § 13.2 mandates it
+      **Source:** docs/schemas/audit-schema.md § 13.2
+      **Check:** `file:migrations/engine/0000_engine_core.mysql.sql regex:PARTITION BY` → _0000_engine_core.mysql.sql:PARTITION BY_
+
+- [ ] **SCHEMA-AUDIT-ATOMIC** AuditWriter does not take a &dyn Transaction parameter; atomicity relies on call-site ordering
+      **Source:** docs/schemas/audit-schema.md § 1, roadmap H-3
+      **Check:** `file:crates/cross-cutting/audit/src/writer.rs regex:&dyn Transaction|impl.*Trans...` → _writer.rs:&dyn Transaction|impl.*Transaction_
 <!-- END COMPUTED -->
 
 ---
