@@ -26,7 +26,7 @@
 | Done (`[x]`) | 156 |
 | In-progress (`[~]`) | 12 |
 | Open (`[ ]`) | 317 |
-| Last update | 2026-06-25 17:52 UTC |
+| Last update | 2026-06-25 18:43 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -35,14 +35,14 @@
 ## Production gates — all 6 must be `[x]` to declare production-ready
 
 <!-- COMPUTED:gates -->
-- [x] **Gate-1 Lint:** `cargo run -p educore-core --bin lint --features lint` exits 0
-      _check: `cmd:cargo run -p educore-core --bin lint --features lint` → exit 0_
+- [ ] **Gate-1 Lint:** `cargo run -p educore-core --bin lint --features lint` exits 0
+      _check: `cmd:cargo run -p educore-core --bin lint --features lint` → exit 1_
 - [ ] **Gate-2 Tests:** `cargo test --workspace` passes (zero failures)
       _check: `manual:cargo test --workspace` → manual: cargo test --workspace_
 - [ ] **Gate-3 Clippy:** `cargo clippy --workspace --all-targets -- -D warnings` exits 0
       _check: `cmd:cargo clippy --workspace --all-targets -- -D warnings` → exit 101_
-- [ ] **Gate-4 Fmt:** `cargo fmt --all -- --check` exits 0
-      _check: `cmd:cargo fmt --all -- --check` → exit 1_
+- [x] **Gate-4 Fmt:** `cargo fmt --all -- --check` exits 0
+      _check: `cmd:cargo fmt --all -- --check` → exit 0_
 - [ ] **Gate-5 Adapters:** All 4 storage adapters' `create_schema()` round-trip on a fresh DB
       _check: `manual:cargo test -p educore-storage-parity --features all-dbs` → manual: cargo test -p educore-storage-parity --features all-dbs_
 - [ ] **Gate-6 Decisions:** All items in `13-decision-needed.md` resolved
