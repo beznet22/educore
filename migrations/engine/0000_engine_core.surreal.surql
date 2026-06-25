@@ -80,7 +80,7 @@ DEFINE FIELD event_version   ON TABLE outbox TYPE int      ASSERT $value != NONE
 -- school_id as a bare uuid and the SurrealDB adapter enforces the
 -- referential integrity at the application layer via the
 -- TenantGuard port.
-DEFINE FIELD school_id       ON TABLE outbox TYPE option<uuid>;
+DEFINE FIELD school_id       ON TABLE outbox TYPE uuid     ASSERT $value != NONE;
 DEFINE FIELD aggregate_id    ON TABLE outbox TYPE uuid     ASSERT $value != NONE;
 DEFINE FIELD aggregate_type  ON TABLE outbox TYPE string   ASSERT $value != NONE AND string::len($value) <= 64;
 DEFINE FIELD actor_id        ON TABLE outbox TYPE uuid     ASSERT $value != NONE;
