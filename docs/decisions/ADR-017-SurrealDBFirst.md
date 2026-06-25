@@ -281,6 +281,22 @@ Treat the sketches in this table as illustrative; consult
   `NotSupported` impl lets the trait land cleanly; sync-engine
   consumers check capability at startup.
 
+## Known limitations
+
+### SQLite row-level security (RLS)
+
+SQLite does not natively support PostgreSQL-style row-level security
+policies. The SQLite adapter enforces school_id isolation in the Rust
+query layer (every query is automatically scoped via the `TenantContext`),
+which is acceptable for single-tenant embedded deployments (offline
+clients, per-school kiosks). For multi-tenant server deployments,
+**PostgreSQL is required** (RLS policies at the database layer are a
+defense-in-depth check on top of the application-layer scoping).
+
+This limitation is documented in `docs/specs/storage/multi-tenancy.md`
+and accepted per ADR-017 (this document). The roadmap item `A-7`
+tracks the documentation closure.
+
 ## See also
 
 - [`docs/architecture.md` § "Storage Strategy"](../architecture.md#storage-strategy)
