@@ -3,8 +3,27 @@
 ## Status
 
 Accepted.
+Reconciled 2026-06-25: canonical count = 37 packages
+(36 internal crates + 1 umbrella).
 
 ## Context
+
+> **Reconciliation note (2026-06-25):** The original
+> 34-crate count recorded in this ADR drifted as later
+> ADRs (`ADR-017` SurrealDB-first storage adapter,
+> `ADR-018` sync engine, Phase 2 audit/event-bus
+> additions) added new crates. The canonical count is
+> now **37 packages** = 36 internal crates (3 infra +
+> 9 cross-cutting + 10 domains + 10 adapters + 4 tools)
+> + 1 umbrella crate. This matches the on-disk
+> `crates/` directory and the count recorded in
+> `AGENTS.md` § "Tier System". The 5-tier model and
+> dependency direction are unchanged; only the
+> per-tier counts have drifted. See the **Crate
+> status** subsection below for the corrected
+> per-tier counts.
+
+
 
 Educore is a school-domain engine. It is organized into
 15 bounded contexts (academic, finance, hr, attendance,
@@ -35,7 +54,7 @@ must:
 - **Keep compile-time iteration fast.** A change to
   `educore-academic` should not trigger a rebuild of
   `educore-storage-surrealdb` or
-  `educore-notify`. The 34-crate granularity is
+  `educore-notify`. The 37-package granularity is
   already at the right level; the layout must
   preserve it.
 - **Avoid workspace metadata duplication.** A
@@ -57,7 +76,7 @@ boundary enforcement.
 ## Decision
 
 Educore is organized as a single Cargo workspace
-with **34 crates grouped into 5 tiers + 1 umbrella**.
+with **37 packages grouped into 5 tiers + 1 umbrella**.
 The 5 tiers are directory-organized under `crates/`
 and the single root `Cargo.toml` is the source of
 truth for workspace metadata. Tier boundaries are
@@ -76,7 +95,7 @@ Concretely:
 | domains | `crates/domains/` | 10 | The 10 domain bounded contexts (academic, finance, hr, ...) |
 | adapters | `crates/adapters/` | 9 | Port implementations: 3 storage adapters + 6 port adapters (auth, event-bus, files, integrations, notify, payment) |
 | tools | `crates/tools/` | 4 | Dev tooling: testkit, storage-parity, cli, sdk |
-| umbrella | `crates/educore/` | 1 | Re-exports the public surface of all 34 internal crates |
+| umbrella | `crates/educore/` | 1 | Re-exports the public surface of all 37 packages |
 
 ### Dependency direction
 
@@ -114,8 +133,8 @@ The boundary is enforced at **two levels**:
    means a single `cargo build --workspace` covers
    the entire engine, and a single
    `[workspace.dependencies]` /
-   `[workspace.lints]` block applies to all 34
-   crates. We considered Cargo's sub-workspace
+   `[workspace.lints]` block applies to all 37
+   packages. We considered Cargo's sub-workspace
    feature (a `Cargo.toml` per tier with its own
    `[workspace]` table) and chose glob patterns
    instead: sub-workspaces require duplicating
@@ -143,18 +162,18 @@ full gate list.
 
 ### Crate status
 
-All 34 crates are scaffolded. Implementation begins
+All 37 packages are scaffolded. Implementation begins
 in Phase 0 of `docs/build-plan.md`.
 
 The 5-tier layout was adopted in this restructure.
-All 34 crates retain their `educore-<name>` package
+All 37 packages retain their `educore-<name>` package
 names; only directory paths changed. The full path
 mapping is in the table above and in `AGENTS.md` §
 "Tier System".
 
-**Drift note (2026-06-24):** the original 34-crate count
-has drifted to **37 internal crates + 1 umbrella = 38**
-as three crates were added by later ADRs:
+**Drift note (2026-06-24 → reconciled 2026-06-25):**
+the original 34-crate count drifted as later ADRs
+added new crates:
 
 - `educore-storage-surrealdb` (adapters tier) — added by
   [ADR-017](./ADR-017-SurrealDBFirst.md) as the Phase 0
@@ -171,11 +190,11 @@ as three crates were added by later ADRs:
 
 The table above counts (3 / 7 / 10 / 9 / 4 = 33 internal
 + 1 umbrella = 34) were correct at the time of writing
-but no longer match the filesystem; the actual current
+but no longer match the filesystem; the canonical
 counts are 3 / 9 / 10 / 10 / 4 = 36 internal + 1
 umbrella = 37. The 5-tier model and dependency direction
 remain unchanged; only the per-tier counts have drifted.
-**Last verified:** 2026-06-24 against `find crates -name Cargo.toml`.
+**Last verified:** 2026-06-25 against `find crates -name Cargo.toml`.
 
 ## Rationale
 
@@ -243,7 +262,7 @@ crates (`educore-audit`, `educore-operations`,
 `educore-testkit`, `educore-cli`,
 `educore-storage-parity`) were added during the
 v1 scaffold pass to reach 34. The 5-tier restructure
-moved all 34 crates into the directory organization
+moved all 37 packages into the directory organization
 described above; package names (`educore-<name>`)
 and crate contents are unchanged. The full migration
 is recorded in `docs/decisions/ADR-013-CrateLayout.md`
@@ -263,7 +282,7 @@ is recorded in `docs/decisions/ADR-013-CrateLayout.md`
   shows the 10 domain crates in isolation.
   `ls crates/cross-cutting/` shows the 7 cross-
   cutting foundations. A contributor does not have
-  to read 34 directory names to find the right
+  to read 37 directory names to find the right
   crate.
 - **Strict boundary enforcement.** A domain crate
   cannot import an adapter. A cross-cutting crate
@@ -311,10 +330,10 @@ is recorded in `docs/decisions/ADR-013-CrateLayout.md`
 
 | Alternative | Why not chosen |
 | --- | --- |
-| Flat 34-crate layout (`crates/<name>/`) | Works but doesn't scale past ~50 crates; no layer boundaries; a contributor landing in the repo sees 34 sibling directories with no signal as to which is which |
+| Flat 37-package layout (`crates/<name>/`) | Works but doesn't scale past ~50 crates; no layer boundaries; a contributor landing in the repo sees 37 sibling directories with no signal as to which is which |
 | Sub-workspaces (5 `[workspace]` files, one per tier) | Each sub-workspace needs its own `[workspace.dependencies]` and `[workspace.lints]`; high maintenance cost (5 copies of workspace metadata, all of which must be kept in sync by hand) |
 | 3 tiers (foundation/business/edges) | 14 domain crates mixed with 6 cross-cutting foundations in the same tier; harder to navigate; the foundation/edges distinction doesn't map cleanly onto the engine's actual dependency graph |
-| Per-domain repository (polyrepo) | 34 repos with separate version control; CI complexity; loses atomic commits across crates; cross-cutting refactors become multi-PR coordination problems |
+| Per-domain repository (polyrepo) | 37 repos with separate version control; CI complexity; loses atomic commits across crates; cross-cutting refactors become multi-PR coordination problems |
 | One giant `educore` crate | Fails on compile time, visibility control, consumer pull-in scope, and test isolation; see ADR-013 § "Context" for the full list |
 | One crate per aggregate | Hundreds of crates; the relationships between aggregates of the same domain are too tight to justify the per-aggregate boilerplate |
 | One crate per layer (commands/events/aggregates) | Separates the bounded context; a domain owns its commands, events, and aggregates together; separating them fragments the domain |
