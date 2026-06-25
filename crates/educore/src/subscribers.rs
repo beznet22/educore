@@ -13,7 +13,7 @@
 //! — it closes the foundation:
 //!
 //! - **WF-002** (partial): the registration pattern is now
-//!   defined and four reference subscribers are wired.
+//!   defined and six reference subscribers are wired.
 //! - **WF-016**: `form_uploaded_public_indexing_subscriber` is
 //!   no longer a phantom; it is registered on the registry.
 //! - **WF-030**: the first consumers of `bus.subscribe(...)` are
@@ -61,7 +61,7 @@ use educore_core::ids::Identifier;
 ///
 /// # Current scope
 ///
-/// Four reference subscribers are registered today:
+/// Six reference subscribers are registered today:
 ///
 /// | # | Subscriber                              | Trigger event                          | Spec reference                  |
 /// |---|-----------------------------------------|----------------------------------------|---------------------------------|
@@ -69,6 +69,8 @@ use educore_core::ids::Identifier;
 /// | 2 | `student_promoted_fee_structure`        | `academic.student.promoted`            | `finance/workflows.md` + WF-005  |
 /// | 3 | `staff_registered_salary_template`      | `hr.staff.registered`                  | `finance/workflows.md` + WF-005  |
 /// | 4 | `payroll_paid_mark_paid`                | `hr.payroll.paid`                      | `hr/workflows.md` + WF-006       |
+/// | 5 | `student_admitted_fees_assign`          | `academic.student.admitted`            | `finance/workflows.md` + WF-005  |
+/// | 6 | `student_withdrawn_terminate_fees_assign`| `academic.student.withdrawn`           | `finance/workflows.md` + WF-005  |
 ///
 /// Future remediation passes extend this list. The
 /// `register_all_subscribers` function is the single entry
@@ -117,6 +119,32 @@ pub fn register_all_subscribers(registry: &mut SubscriberRegistry) {
     registry.register(
         SubscriptionFilter::on_event("hr.payroll.paid"),
         Arc::new(PayrollPaidMarkPaid::new()),
+    );
+
+    // 5. academic.student.admitted -> finance FeesAssign creation.
+    //    Per docs/specs/finance/workflows.md § "Cross-Workflow
+    //    Order" step 1 ("StudentAdmitted (academic) -> FeesAssign
+    //    is created") and audit finding WF-005. Zero-state
+    //    subscriber that logs the fan-out target; the actual
+    //    `fees_assign.create` command lands when Phase 7 finance
+    //    service factories are wired.
+    registry.register(
+        SubscriptionFilter::on_event("academic.student.admitted"),
+        Arc::new(StudentAdmittedFeesAssign::new()),
+    );
+
+    // 6. academic.student.withdrawn -> finance FeesAssign termination.
+    //    Per docs/specs/finance/workflows.md § "Cross-Workflow
+    //    Order" step 3 ("StudentWithdrawn (academic) -> open
+    //    FeesAssign is closed; unpaid balance becomes a
+    //    carry-forward or a refund, per policy") and audit
+    //    finding WF-005. Zero-state subscriber that logs the
+    //    fan-out target; the actual `fees_assign.terminate`
+    //    command lands when Phase 7 finance service factories
+    //    are wired.
+    registry.register(
+        SubscriptionFilter::on_event("academic.student.withdrawn"),
+        Arc::new(StudentWithdrawnTerminateFeesAssign::new()),
     );
 }
 
@@ -540,6 +568,218 @@ impl Subscriber for PayrollPaidMarkPaid {
 }
 
 // =============================================================================
+// Subscriber 5: student_admitted_fees_assign
+// =============================================================================
+
+/// Subscribes to `academic.student.admitted` and creates a
+/// `FeesAssign` for the newly admitted student. Per
+/// `docs/specs/finance/workflows.md` § "Cross-Workflow Order"
+/// step 1: "StudentAdmitted (academic) → FeesAssign is
+/// created."
+///
+/// # Audit finding
+///
+/// `docs/audit_reports/findings/wave7-workflows.md` WF-005
+/// (StudentAdmitted → FeesAssign fan-out is missing).
+///
+/// # Idempotency
+///
+/// Dedupe key: `envelope.event_id`. The downstream
+/// `fees_assign.create` command is keyed on
+/// `(school_id, student_id, class_id)`; re-delivery is a no-op
+/// per `finance/workflows.md` § "Idempotency".
+#[derive(Debug)]
+pub struct StudentAdmittedFeesAssign {
+    /// Dedupe set: event_ids already processed.
+    seen_events: Mutex<HashSet<uuid::Uuid>>,
+}
+
+impl StudentAdmittedFeesAssign {
+    /// Constructs a new subscriber with an empty dedupe set.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            seen_events: Mutex::new(HashSet::new()),
+        }
+    }
+}
+
+impl Default for StudentAdmittedFeesAssign {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait]
+impl Subscriber for StudentAdmittedFeesAssign {
+    fn name(&self) -> &'static str {
+        "student_admitted_fees_assign"
+    }
+
+    async fn handle(&self, envelope: &EventEnvelope) -> Result<()> {
+        let event_id = envelope.event_id.as_uuid();
+        {
+            let mut seen = self.seen_events.lock().map_err(|_| {
+                educore_core::error::DomainError::Infrastructure(
+                    "StudentAdmittedFeesAssign dedupe mutex poisoned".into(),
+                )
+            })?;
+            if !seen.insert(event_id) {
+                tracing::debug!(
+                    event_id = %event_id,
+                    "student_admitted_fees_assign: duplicate event, skipping"
+                );
+                return Ok(());
+            }
+        }
+
+        // Parse the admission identifiers defensively. The
+        // StudentAdmitted payload carries the student_id and
+        // class_id; school_id is sourced from the envelope
+        // (matches the existing subscriber pattern).
+        let student_id = envelope
+            .payload
+            .get("student_id")
+            .and_then(serde_json::Value::as_str);
+        let class_id = envelope
+            .payload
+            .get("class_id")
+            .and_then(serde_json::Value::as_str);
+
+        match (student_id, class_id) {
+            (Some(sid), Some(cid)) => {
+                tracing::info!(
+                    event_id = %event_id,
+                    student_id = sid,
+                    school_id = %envelope.school_id,
+                    class_id = cid,
+                    "student_admitted_fees_assign: would create FeesAssign for student_id={} in school_id={} class_id={}",
+                    sid,
+                    %envelope.school_id,
+                    cid,
+                );
+                // TODO(SDK): dispatch
+                // `Finance::CreateFeesAssign` command with
+                // `(student_id, school_id, class_id)` once the
+                // SDK facade wires finance commands.
+            }
+            _ => {
+                tracing::warn!(
+                    event_id = %event_id,
+                    event_type = envelope.event_type,
+                    "student_admitted_fees_assign: payload missing student_id or class_id; skipping"
+                );
+            }
+        }
+        Ok(())
+    }
+}
+
+// =============================================================================
+// Subscriber 6: student_withdrawn_terminate_fees_assign
+// =============================================================================
+
+/// Subscribes to `academic.student.withdrawn` and terminates
+/// the student's open `FeesAssign`. Per
+/// `docs/specs/finance/workflows.md` § "Cross-Workflow Order"
+/// step 3: "StudentWithdrawn (academic) → open FeesAssign is
+/// closed; unpaid balance becomes a carry-forward or a refund,
+/// per policy."
+///
+/// # Audit finding
+///
+/// `docs/audit_reports/findings/wave7-workflows.md` WF-005
+/// (StudentWithdrawn → FeesAssign termination fan-out is
+/// missing).
+///
+/// # Idempotency
+///
+/// Dedupe key: `envelope.event_id`. The downstream
+/// `fees_assign.terminate` command is keyed on
+/// `(school_id, student_id)`; re-delivery is a no-op per
+/// `finance/workflows.md` § "Idempotency".
+#[derive(Debug)]
+pub struct StudentWithdrawnTerminateFeesAssign {
+    /// Dedupe set: event_ids already processed.
+    seen_events: Mutex<HashSet<uuid::Uuid>>,
+}
+
+impl StudentWithdrawnTerminateFeesAssign {
+    /// Constructs a new subscriber with an empty dedupe set.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            seen_events: Mutex::new(HashSet::new()),
+        }
+    }
+}
+
+impl Default for StudentWithdrawnTerminateFeesAssign {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait]
+impl Subscriber for StudentWithdrawnTerminateFeesAssign {
+    fn name(&self) -> &'static str {
+        "student_withdrawn_terminate_fees_assign"
+    }
+
+    async fn handle(&self, envelope: &EventEnvelope) -> Result<()> {
+        let event_id = envelope.event_id.as_uuid();
+        {
+            let mut seen = self.seen_events.lock().map_err(|_| {
+                educore_core::error::DomainError::Infrastructure(
+                    "StudentWithdrawnTerminateFeesAssign dedupe mutex poisoned".into(),
+                )
+            })?;
+            if !seen.insert(event_id) {
+                tracing::debug!(
+                    event_id = %event_id,
+                    "student_withdrawn_terminate_fees_assign: duplicate event, skipping"
+                );
+                return Ok(());
+            }
+        }
+
+        // Parse the withdrawal identifier defensively. The
+        // StudentWithdrawn payload carries the student_id;
+        // school_id is sourced from the envelope (matches the
+        // existing subscriber pattern).
+        let student_id = envelope
+            .payload
+            .get("student_id")
+            .and_then(serde_json::Value::as_str);
+
+        match student_id {
+            Some(sid) => {
+                tracing::info!(
+                    event_id = %event_id,
+                    student_id = sid,
+                    school_id = %envelope.school_id,
+                    "student_withdrawn_terminate_fees_assign: would terminate FeesAssign for student_id={} school_id={}",
+                    sid,
+                    %envelope.school_id,
+                );
+                // TODO(SDK): dispatch
+                // `Finance::TerminateFeesAssign` command with
+                // `(student_id, school_id)` once the SDK
+                // facade wires finance commands.
+            }
+            None => {
+                tracing::warn!(
+                    event_id = %event_id,
+                    event_type = envelope.event_type,
+                    "student_withdrawn_terminate_fees_assign: payload missing student_id; skipping"
+                );
+            }
+        }
+        Ok(())
+    }
+}
+
+// =============================================================================
 // Tests
 // =============================================================================
 
@@ -586,17 +826,16 @@ mod tests {
     }
 
     #[test]
-    fn register_all_subscribers_wires_at_least_five_subscribers() {
+    fn register_all_subscribers_wires_at_least_six_subscribers() {
         // Sanity check: the umbrella's bootstrap wires at least
-        // the four reference subscribers + the wrapper. We use
-        // a slightly loose assertion (>= 5) so that adding a
-        // fifth subscriber in a future PR does not break this
-        // test.
+        // the six reference subscribers. The assertion uses
+        // `>= 6` so that adding a seventh subscriber in a
+        // future PR does not break this test.
         let mut registry = SubscriberRegistry::new();
         register_all_subscribers(&mut registry);
         assert!(
-            registry.len() >= 4,
-            "expected at least 4 subscribers, got {}",
+            registry.len() >= 6,
+            "expected at least 6 subscribers, got {}",
             registry.len()
         );
     }
@@ -636,7 +875,10 @@ mod tests {
             stats2.delivered, 1,
             "handler is invoked on duplicate but short-circuits via seen_events dedupe"
         );
-        assert!(stats2.is_ok(), "duplicate dispatch must not record a failure");
+        assert!(
+            stats2.is_ok(),
+            "duplicate dispatch must not record a failure"
+        );
         assert!(stats2.failures.is_empty());
         let _ = env_event_id; // suppress unused warning
     }
@@ -663,6 +905,24 @@ mod tests {
     fn payroll_paid_subscriber_handles_missing_payload_gracefully() {
         let subscriber = PayrollPaidMarkPaid::new();
         let env = envelope("hr.payroll.paid", json!({}));
+        let result = block_on(subscriber.handle(&env));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn student_admitted_subscriber_handles_missing_payload_gracefully() {
+        let subscriber = StudentAdmittedFeesAssign::new();
+        // Empty payload: subscriber should log a warning and
+        // return Ok (not panic, not error).
+        let env = envelope("academic.student.admitted", json!({}));
+        let result = block_on(subscriber.handle(&env));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn student_withdrawn_subscriber_handles_missing_payload_gracefully() {
+        let subscriber = StudentWithdrawnTerminateFeesAssign::new();
+        let env = envelope("academic.student.withdrawn", json!({}));
         let result = block_on(subscriber.handle(&env));
         assert!(result.is_ok());
     }
@@ -713,18 +973,29 @@ mod tests {
             "staff_registered_salary_template"
         );
         assert_eq!(PayrollPaidMarkPaid::new().name(), "payroll_paid_mark_paid");
+        assert_eq!(
+            StudentAdmittedFeesAssign::new().name(),
+            "student_admitted_fees_assign"
+        );
+        assert_eq!(
+            StudentWithdrawnTerminateFeesAssign::new().name(),
+            "student_withdrawn_terminate_fees_assign"
+        );
     }
 
     #[test]
     fn registry_only_dispatches_matching_events() {
         // Events that don't match any registered filter should
-        // be skipped (not delivered, not failed).
+        // be skipped (not delivered, not failed). Use a
+        // synthetic event type that no subscriber subscribes
+        // to; do not reuse an academic event type here because
+        // several academic.* events now have wired subscribers.
         let mut registry = SubscriberRegistry::new();
         register_all_subscribers(&mut registry);
-        let env = envelope("academic.student.admitted", json!({}));
+        let env = envelope("unrelated.test.event", json!({}));
         let stats = block_on(registry.dispatch(&env)).unwrap();
         assert_eq!(stats.delivered, 0);
-        assert_eq!(stats.skipped, 4);
+        assert_eq!(stats.skipped, 6);
         assert!(stats.is_ok());
     }
 }
