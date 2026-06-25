@@ -4,6 +4,11 @@
 
 Accepted, 2026-06-12.
 
+Reconciled 2026-06-25: SurrealDB is both the primary server-mode
+backend AND the embedded/offline backend for the sync engine
+(per ADR-018). Postgres is no longer required for sync engine
+metadata; sync engine metadata lives in SurrealDB too.
+
 ## Context
 
 Educore is an embeddable school-domain engine. The initial design (per
@@ -92,6 +97,14 @@ queries for `watch_changes`; the `outbox` table for PG/MySQL/SQLite).
 The default `NotSupported` implementation lets the trait land in
 Phase 0 even though some adapters will not override all four until
 later phases.
+
+## Sync engine backend (reconciled 2026-06-25)
+
+Per ADR-018, the sync engine runs against SurrealDB in both server
+mode (multi-tenant production) and embedded mode (offline clients,
+per-device storage). Postgres is **not** required for sync engine
+metadata. This means a deployment only needs one database engine
+end-to-end, simplifying ops (no cross-engine replication).
 
 ## Rationale
 
