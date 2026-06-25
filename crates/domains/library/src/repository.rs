@@ -5,7 +5,7 @@
 //! identifier that already embeds it) and refuses to return
 //! data from another school. Tenant isolation is structural.
 //!
-//! All 6 headline aggregates have a `pub trait
+//! All 9 headline aggregates have a `pub trait
 //! XxxRepository: Send + Sync` port trait with the standard
 //! `get` / `list` / `insert` / `update` / `delete` methods plus
 //! per-aggregate `find_by_*` and `list_for_*` helpers.
@@ -22,10 +22,13 @@ use chrono::NaiveDate;
 use educore_core::error::Result;
 use educore_core::ids::SchoolId;
 
-use crate::aggregate::{Book, BookCategory, BookIssue, BookReturn, Fine, LibraryMember};
+use crate::aggregate::{
+    Book, BookAcquisition, BookCatalogEntry, BookCategory, BookIssue, BookReturn, Fine,
+    LibraryMember, LibraryMemberNote,
+};
 use crate::value_objects::{
-    AcademicYearId, BookCategoryId, BookId, BookIssueId, BookReturnId, FineId, LibraryMemberId,
-    MemberId, RoleId, StockCopies,
+    AcademicYearId, BookAcquisitionId, BookCatalogEntryId, BookCategoryId, BookId, BookIssueId,
+    BookReturnId, FineId, LibraryMemberId, LibraryMemberNoteId, MemberId, RoleId, StockCopies,
 };
 
 // =============================================================================
@@ -200,6 +203,80 @@ pub trait FineRepository: Send + Sync {
     async fn insert(&self, f: &Fine) -> Result<()>;
     /// Update an existing fine (used by the waiver path).
     async fn update(&self, f: &Fine) -> Result<()>;
+}
+
+// 7.
+// =============================================================================
+// BookAcquisitionRepository
+// =============================================================================
+
+/// Port for the `BookAcquisition` aggregate.
+#[async_trait]
+pub trait BookAcquisitionRepository: Send + Sync {
+    /// Fetch an acquisition by its typed id.
+    async fn get(&self, id: BookAcquisitionId) -> Result<Option<BookAcquisition>>;
+    /// List all acquisitions for a book (oldest first).
+    async fn list_for_book(&self, book: BookId) -> Result<Vec<BookAcquisition>>;
+    /// List all acquisitions for a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<BookAcquisition>>;
+    /// Insert a new acquisition.
+    async fn insert(&self, a: &BookAcquisition) -> Result<()>;
+    /// Update an existing acquisition.
+    async fn update(&self, a: &BookAcquisition) -> Result<()>;
+    /// Delete (soft) an acquisition.
+    async fn delete(&self, id: BookAcquisitionId) -> Result<()>;
+}
+
+// 8.
+// =============================================================================
+// BookCatalogEntryRepository
+// =============================================================================
+
+/// Port for the `BookCatalogEntry` aggregate (append-only
+/// catalog history).
+#[async_trait]
+pub trait BookCatalogEntryRepository: Send + Sync {
+    /// Fetch a catalog entry by its typed id.
+    async fn get(&self, id: BookCatalogEntryId) -> Result<Option<BookCatalogEntry>>;
+    /// List all catalog entries for a book (oldest first; the
+    /// full versioned history).
+    async fn list_for_book(&self, book: BookId) -> Result<Vec<BookCatalogEntry>>;
+    /// Fetch the most recent catalog entry for a book (the
+    /// current snapshot).
+    async fn latest_for_book(&self, book: BookId) -> Result<Option<BookCatalogEntry>>;
+    /// Insert a new catalog entry.
+    async fn insert(&self, e: &BookCatalogEntry) -> Result<()>;
+    /// Update an existing catalog entry.
+    async fn update(&self, e: &BookCatalogEntry) -> Result<()>;
+    /// Delete (soft) a catalog entry.
+    async fn delete(&self, id: BookCatalogEntryId) -> Result<()>;
+}
+
+// 9.
+// =============================================================================
+// LibraryMemberNoteRepository
+// =============================================================================
+
+/// Port for the `LibraryMemberNote` aggregate.
+#[async_trait]
+pub trait LibraryMemberNoteRepository: Send + Sync {
+    /// Fetch a note by its typed id.
+    async fn get(&self, id: LibraryMemberNoteId) -> Result<Option<LibraryMemberNote>>;
+    /// List all notes for a member (oldest first; the full
+    /// administrative history).
+    async fn list_for_member(&self, member: LibraryMemberId) -> Result<Vec<LibraryMemberNote>>;
+    /// List the notes for a member that are visible to the
+    /// member (i.e. `visible_to_member == true`).
+    async fn list_visible_for_member(
+        &self,
+        member: LibraryMemberId,
+    ) -> Result<Vec<LibraryMemberNote>>;
+    /// Insert a new note.
+    async fn insert(&self, n: &LibraryMemberNote) -> Result<()>;
+    /// Update an existing note.
+    async fn update(&self, n: &LibraryMemberNote) -> Result<()>;
+    /// Delete (soft) a note.
+    async fn delete(&self, id: LibraryMemberNoteId) -> Result<()>;
 }
 
 #[cfg(test)]
@@ -440,6 +517,90 @@ mod tests {
         Box::new(Impl)
     }
 
+    fn _object_safety_check_book_acquisition() -> Box<dyn BookAcquisitionRepository> {
+        struct Impl;
+        #[async_trait]
+        impl BookAcquisitionRepository for Impl {
+            async fn get(&self, _id: BookAcquisitionId) -> Result<Option<BookAcquisition>> {
+                unreachable!()
+            }
+            async fn list_for_book(&self, _book: BookId) -> Result<Vec<BookAcquisition>> {
+                unreachable!()
+            }
+            async fn list_for_school(&self, _school: SchoolId) -> Result<Vec<BookAcquisition>> {
+                unreachable!()
+            }
+            async fn insert(&self, _a: &BookAcquisition) -> Result<()> {
+                unreachable!()
+            }
+            async fn update(&self, _a: &BookAcquisition) -> Result<()> {
+                unreachable!()
+            }
+            async fn delete(&self, _id: BookAcquisitionId) -> Result<()> {
+                unreachable!()
+            }
+        }
+        Box::new(Impl)
+    }
+
+    fn _object_safety_check_book_catalog_entry() -> Box<dyn BookCatalogEntryRepository> {
+        struct Impl;
+        #[async_trait]
+        impl BookCatalogEntryRepository for Impl {
+            async fn get(&self, _id: BookCatalogEntryId) -> Result<Option<BookCatalogEntry>> {
+                unreachable!()
+            }
+            async fn list_for_book(&self, _book: BookId) -> Result<Vec<BookCatalogEntry>> {
+                unreachable!()
+            }
+            async fn latest_for_book(&self, _book: BookId) -> Result<Option<BookCatalogEntry>> {
+                unreachable!()
+            }
+            async fn insert(&self, _e: &BookCatalogEntry) -> Result<()> {
+                unreachable!()
+            }
+            async fn update(&self, _e: &BookCatalogEntry) -> Result<()> {
+                unreachable!()
+            }
+            async fn delete(&self, _id: BookCatalogEntryId) -> Result<()> {
+                unreachable!()
+            }
+        }
+        Box::new(Impl)
+    }
+
+    fn _object_safety_check_library_member_note() -> Box<dyn LibraryMemberNoteRepository> {
+        struct Impl;
+        #[async_trait]
+        impl LibraryMemberNoteRepository for Impl {
+            async fn get(&self, _id: LibraryMemberNoteId) -> Result<Option<LibraryMemberNote>> {
+                unreachable!()
+            }
+            async fn list_for_member(
+                &self,
+                _member: LibraryMemberId,
+            ) -> Result<Vec<LibraryMemberNote>> {
+                unreachable!()
+            }
+            async fn list_visible_for_member(
+                &self,
+                _member: LibraryMemberId,
+            ) -> Result<Vec<LibraryMemberNote>> {
+                unreachable!()
+            }
+            async fn insert(&self, _n: &LibraryMemberNote) -> Result<()> {
+                unreachable!()
+            }
+            async fn update(&self, _n: &LibraryMemberNote) -> Result<()> {
+                unreachable!()
+            }
+            async fn delete(&self, _id: LibraryMemberNoteId) -> Result<()> {
+                unreachable!()
+            }
+        }
+        Box::new(Impl)
+    }
+
     #[test]
     fn repository_traits_are_object_safe() {
         // If the traits were not object-safe, these fn definitions
@@ -450,5 +611,10 @@ mod tests {
         let _issue: Box<dyn BookIssueRepository> = _object_safety_check_book_issue();
         let _ret: Box<dyn BookReturnRepository> = _object_safety_check_book_return();
         let _fine: Box<dyn FineRepository> = _object_safety_check_fine();
+        let _acq: Box<dyn BookAcquisitionRepository> = _object_safety_check_book_acquisition();
+        let _cat_entry: Box<dyn BookCatalogEntryRepository> =
+            _object_safety_check_book_catalog_entry();
+        let _note: Box<dyn LibraryMemberNoteRepository> =
+            _object_safety_check_library_member_note();
     }
 }
