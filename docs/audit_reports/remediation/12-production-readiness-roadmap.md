@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 149 |
+| Done (`[x]`) | 152 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 324 |
-| Last update | 2026-06-25 13:37 UTC |
+| Open (`[ ]`) | 321 |
+| Last update | 2026-06-25 16:34 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -176,9 +176,9 @@
       **Source:** docs/schemas/database-schema.md § 2
       **Check:** `file:migrations/engine/0000_engine_core.surreal.surql regex:school_id.*outbox TY...` → _0000_engine_core.surreal.surql:school_id.*outbox TYPE option<uuid>_
 
-- [ ] **SCHEMA-AUDIT-QUERY-PORT** AuditQuery trait (list/get/resource_history/actor_history/AuditFilter) not implemented; only AuditWriter exists
+- [x] **SCHEMA-AUDIT-QUERY-PORT** Resolved — crates/cross-cutting/audit/src/query.rs with AuditQuery trait + AuditFilter (7 variants) + Page + AuditRecord. Closed 2026-06-25.
       **Source:** docs/schemas/audit-schema.md § 5
-      **Check:** `file-exists:crates/cross-cutting/audit/src/query.rs` → _query.rs missing_
+      **Check:** `file-exists:crates/cross-cutting/audit/src/query.rs` → _query.rs exists_
 
 - [x] **SCHEMA-AUDIT-PARTITION-PG** Resolved — audit_log PARTITION BY RANGE. Closed 2026-06-25.
       **Source:** docs/schemas/audit-schema.md § 13.1
@@ -207,6 +207,18 @@
 - [x] **FND-SEC-RBAC-001** Resolved — Capability::all() enumerates all 654 variants. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave7-security.md SEC-RBAC-001
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:NAMING_EXCEPTIONS` → _value_objects.rs:NAMING_EXCEPTIONS_
+<!-- END COMPUTED -->
+
+### P0-WORKFLOWS — Cross-domain subscribers
+
+<!-- COMPUTED:items.P0.WORKFLOWS -->
+- [x] **FND-WF-005** Resolved — 2 subscribers wired in educore/src/subscribers.rs (#5 StudentAdmittedFeesAssign, #6 StudentWithdrawnTerminateFeesAssign). Closed 2026-06-25.
+      **Source:** docs/audit_reports/findings/wave7-workflows.md WF-005
+      **Check:** `file:crates/educore/src/subscribers.rs regex:StudentAdmittedFeesAssign` → _subscribers.rs:StudentAdmittedFeesAssign_
+
+- [x] **FND-WF-007** Resolved — SubjectTeacherAssignedClassSubject subscriber wired (#7 in educore/src/subscribers.rs). Closed 2026-06-25.
+      **Source:** docs/audit_reports/findings/wave7-workflows.md WF-007
+      **Check:** `commit:SubjectTeacherAssigned.*subscriber` → _git log grep: SubjectTeacherAssigned.*subscriber_
 <!-- END COMPUTED -->
 
 ---

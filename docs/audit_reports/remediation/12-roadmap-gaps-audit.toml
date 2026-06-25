@@ -125,7 +125,7 @@ check = "file:migrations/engine/0000_engine_core.surreal.surql regex:school_id.*
 id = "SCHEMA-AUDIT-QUERY-PORT"
 priority = "P0"
 area = "SCHEMA"
-description = "AuditQuery trait (list/get/resource_history/actor_history/AuditFilter) not implemented; only AuditWriter exists"
+description = "Resolved — crates/cross-cutting/audit/src/query.rs with AuditQuery trait + AuditFilter (7 variants) + Page + AuditRecord. Closed 2026-06-25."
 source = "docs/schemas/audit-schema.md § 5"
 check = "file-exists:crates/cross-cutting/audit/src/query.rs"
 
@@ -173,15 +173,15 @@ check = "file:crates/infra/storage/src/outbox.rs regex:async fn append.*school_i
 id = "FND-WF-005"
 priority = "P0"
 area = "WORKFLOWS"
-description = "Finance has no subscribers for cross-domain events (StudentAdmitted→FeesAssign, etc.)"
+description = "Resolved — 2 subscribers wired in educore/src/subscribers.rs (#5 StudentAdmittedFeesAssign, #6 StudentWithdrawnTerminateFeesAssign). Closed 2026-06-25."
 source = "docs/audit_reports/findings/wave7-workflows.md WF-005"
-check = "commit:finance.*subscriber|fees_assign.*subscriber"
+check = "file:crates/educore/src/subscribers.rs regex:StudentAdmittedFeesAssign"
 
 [[item]]
 id = "FND-WF-007"
 priority = "P0"
 area = "WORKFLOWS"
-description = "Academic has no subscriber on SubjectTeacherAssigned; class-subject binding never materialises for ClassRoutine"
+description = "Resolved — SubjectTeacherAssignedClassSubject subscriber wired (#7 in educore/src/subscribers.rs). Closed 2026-06-25."
 source = "docs/audit_reports/findings/wave7-workflows.md WF-007"
 check = "commit:SubjectTeacherAssigned.*subscriber"
 
