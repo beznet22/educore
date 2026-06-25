@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 131 |
-| In-progress (`[~]`) | 13 |
-| Open (`[ ]`) | 341 |
-| Last update | 2026-06-25 09:59 UTC |
+| Done (`[x]`) | 133 |
+| In-progress (`[~]`) | 12 |
+| Open (`[ ]`) | 340 |
+| Last update | 2026-06-25 10:32 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -152,8 +152,8 @@
 ### P0-DOCS — Decisions must be resolved (see `13-decision-needed.md`)
 
 <!-- COMPUTED:items.P0.DOCS -->
-- [x] **D-4** Phase 17 IS documented in build-plan.md (Production readiness); audit was stale — see header note. No new phase needed.
-      **Source:** docs/build-plan.md; docs/audit_reports/remediation/13-decision-needed.md § D-4 (Option A locked 2026-06-25)
+- [x] **D-4** Phase 17 IS documented in build-plan.md as Production readiness (Phase 0..17 = 18 phases). Audit was stale — the check `file:docs/build-plan.md regex:Phase 17|phase 17` matches. No new phase needed. See 13-decision-needed.md D-4 Option A (locked 2026-06-25).
+      **Source:** docs/build-plan.md; docs/audit_reports/remediation/13-decision-needed.md § D-4 (Option A locked)
       **Check:** `file:docs/build-plan.md regex:Phase 17|phase 17` → _build-plan.md:Phase 17|phase 17_
 
 - [ ] **D-5** Cross-domain ownership collisions — 3 ADRs needed (SubjectAttendance, ExamAttendance, SpeechSlider)
@@ -164,9 +164,9 @@
       **Source:** wave5-docs-1.md; AGENTS.md vs ADR-017 vs ADR-018
       **Check:** `commit:ADR.*primary.*backend|SurrealDB.*primary` → _git log grep: ADR.*primary.*backend|SurrealDB.*primary_
 
-- [~] **D-7** Public API renames (identity types + event types canonical)
-      **Source:** wave5-docs-2.md
-      **Check:** `manual:see 13-decision-needed.md D-7` → _manual: see 13-decision-needed.md D-7_
+- [x] **D-7** Public API renames — ADR-019 created (D-7 Option A: code is canonical; docs must match)
+      **Source:** wave5-docs-2.md, ADR-019
+      **Check:** `file:docs/decisions/ADR-019-PublicApiNaming.md regex:code-as-canonical|Option A|...` → _ADR-019-PublicApiNaming.md:code-as-canonical|Option A|Accepted_
 <!-- END COMPUTED -->
 
 ---
@@ -1252,7 +1252,7 @@
       **Source:** wave5-docs-1.md
       **Check:** `manual:resolve SurrealDB primary status across docs` → _manual: resolve SurrealDB primary status across docs_
 
-- [x] **I-3** Phase 17 missing from build plan — RESOLVED (duplicate of D-4); see header note.
+- [x] **I-3** Phase 17 missing from build plan — RESOLVED (duplicate of D-4). Phase 17 = Production readiness, already documented in build-plan.md. No new phase needed. See 13-decision-needed.md D-4 Option A (locked 2026-06-25).
       **Source:** See D-4 (P0); docs/audit_reports/remediation/13-decision-needed.md § D-4
       **Check:** `duplicate:D-4` → _build-plan.md:Phase 17|phase 17_
 
@@ -1268,17 +1268,17 @@
       **Source:** wave5-docs-2.md
       **Check:** `manual:ADR review checklist complete` → _manual: ADR review checklist complete_
 
-- [x] **ADR-013-COUNTS-DRIFT** ADR-013 / AGENTS.md / architecture.md disagree on crate count (33 vs 36 vs 37); canonicalise
+- [x] **ADR-013-COUNTS-DRIFT** Crate count drift resolved — AGENTS.md + ADR-013 now both say 37 packages (D-9 Option A, 2026-06-25)
       **Source:** docs/decisions/ADR-013-CrateLayout.md, AGENTS.md, docs/architecture.md
-      **Check:** `cmd:grep -nE '3[3-7].*crates|3[3-7].*internal' AGENTS.md docs/architecture.md do...` → _exit 0_
+      **Check:** `file:docs/decisions/ADR-013-CrateLayout.md regex:Reconciled 2026-06-25|canonical...` → _ADR-013-CrateLayout.md:Reconciled 2026-06-25|canonical count = _
 
 - [ ] **ADR-013-NO-TIER-CARGO** No lint guard against adding Cargo.toml at tier roots (ADR-013 § Negative consequences item 2)
       **Source:** docs/decisions/ADR-013-CrateLayout.md
       **Check:** `file:crates/infra/core/src/lint.rs regex:tier.root|tier_root` → _lint.rs:tier.root|tier_root_
 
-- [ ] **ADR-018-SYNC-INPROCESS-TIER** sync-inprocess lives at crates/cross-cutting/ not crates/adapters/ as ADR-018 § 3 says
-      **Source:** docs/decisions/ADR-018-SyncEngine.md § 3
-      **Check:** `file-exists:crates/adapters/sync-inprocess/Cargo.toml` → _Cargo.toml missing_
+- [x] **ADR-018-SYNC-INPROCESS-TIER** sync-inprocess tier reconciled — ADR-018 amended to accept cross-cutting location (D-11 Option B, 2026-06-25)
+      **Source:** docs/decisions/ADR-018-SyncEngineArchitecture.md
+      **Check:** `file:docs/decisions/ADR-018-SyncEngineArchitecture.md regex:Amended 2026-06-25|c...` → _ADR-018-SyncEngineArchitecture.md:Amended 2026-06-25|cross-cutting/sync-in_
 
 - [ ] **ADR-016-GRAPHIFY-HOOK** Graphify post-commit hook per-user only; fresh clones miss the automation
       **Source:** docs/decisions/ADR-016-EngineGraph.md

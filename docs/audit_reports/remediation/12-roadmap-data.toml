@@ -195,9 +195,9 @@ check = "commit:ADR.*primary.*backend|SurrealDB.*primary"
 id = "D-7"
 priority = "P0"
 area = "DOCS"
-description = "Public API renames (identity types + event types canonical)"
-source = "wave5-docs-2.md"
-check = "manual:see 13-decision-needed.md D-7"
+description = "Public API renames — ADR-019 created (D-7 Option A: code is canonical; docs must match)"
+source = "wave5-docs-2.md, ADR-019"
+check = "file:docs/decisions/ADR-019-PublicApiNaming.md regex:code-as-canonical|Option A|Accepted"
 
 # ============================================================================
 # P1 — High priority (feature incomplete)
