@@ -101,6 +101,8 @@ impl From<DomainError> for DocumentsError {
                 DocumentsError::Forbidden(msg)
             }
             DomainError::Conflict(msg) => DocumentsError::Conflict(msg),
+            DomainError::IdempotencyConflict { key, .. }
+            | DomainError::IdempotencyPending { key, .. } => DocumentsError::Conflict(key),
             DomainError::Validation(msg) | DomainError::NotFound(msg) => {
                 DocumentsError::Validation(msg)
             }
