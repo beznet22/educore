@@ -179,7 +179,7 @@ impl SurrealOutbox {
 
 #[async_trait]
 impl Outbox for SurrealOutbox {
-    async fn append(&self, envelope: SerializedEnvelope) -> Result<()> {
+    async fn append(&self, _school_id: educore_core::ids::SchoolId, envelope: SerializedEnvelope) -> Result<()> {
         let row = OutboxRow::from_envelope(&envelope);
         let mut response = self
             .db
@@ -225,7 +225,7 @@ impl Outbox for SurrealOutbox {
         Ok(())
     }
 
-    async fn pending(&self, limit: u32) -> Result<Vec<SerializedEnvelope>> {
+    async fn pending(&self, _school_id: educore_core::ids::SchoolId, limit: u32) -> Result<Vec<SerializedEnvelope>> {
         let school_uuid = SurrealUuid::from(self.school.as_uuid());
         let mut response = self
             .db
@@ -254,7 +254,7 @@ impl Outbox for SurrealOutbox {
         Ok(envelopes)
     }
 
-    async fn mark_published(&self, ids: &[EventId]) -> Result<()> {
+    async fn mark_published(&self, _school_id: educore_core::ids::SchoolId, ids: &[EventId]) -> Result<()> {
         if ids.is_empty() {
             return Ok(());
         }

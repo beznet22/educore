@@ -106,7 +106,7 @@ pub const DEFAULT_BATCH_SIZE: u32 = 100;
 pub trait OutboxSource: Send + Sync {
     /// Returns up to `limit` envelopes for `school_id` that
     /// have not yet been marked as published. Mirrors
-    /// [`Outbox::pending_for_school`](educore_storage::outbox::Outbox::pending_for_school).
+    /// [`Outbox::pending`](educore_storage::outbox::Outbox::pending).
     async fn pending_for_school(
         &self,
         school_id: SchoolId,
@@ -116,7 +116,13 @@ pub trait OutboxSource: Send + Sync {
     /// Marks the given envelopes as published. Idempotent:
     /// calling twice with the same id is a no-op. Mirrors
     /// [`Outbox::mark_published`](educore_storage::outbox::Outbox::mark_published).
-    async fn mark_published(&self, ids: &[EventId]) -> Result<()>;
+    ///
+    /// `school_id` is the tenant anchor (FND-PORT-STORE-003) —
+    /// the storage adapter MUST verify that `school_id`
+    /// matches the handle's scope (or bind it into the
+    /// `UPDATE` predicate for un-scoped handles) so a tenant
+    /// cannot drain another tenant's queue.
+    async fn mark_published(&self, school_id: SchoolId, ids: &[EventId]) -> Result<()>;
 }
 
 /// Default idle delay between [`OutboxRelay::run_loop`] ticks
@@ -139,7 +145,7 @@ pub const DEFAULT_IDLE_DELAY: Duration = Duration::from_millis(250);
 /// - `skipped` — the number of envelopes whose `school_id` did
 ///   NOT match the requested `school_id`. The current
 ///   implementation drains only via
-///   [`Outbox::pending_for_school`](educore_storage::outbox::Outbox::pending_for_school),
+///   [`OutboxSource::pending_for_school`](OutboxSource::pending_for_school),
 ///   which scopes to a single school, so this counter is
 ///   typically 0; it exists for future multi-school drains.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -244,9 +250,9 @@ impl<O: OutboxSource, B: EventBus + Send + Sync> OutboxRelay<O, B> {
     /// # Errors
     ///
     /// Returns `Err` if the underlying
-    /// [`Outbox::pending_for_school`](educore_storage::outbox::Outbox::pending_for_school)
+    /// [`OutboxSource::pending_for_school`](OutboxSource::pending_for_school)
     /// or
-    /// [`Outbox::mark_published`](educore_storage::outbox::Outbox::mark_published)
+    /// [`OutboxSource::mark_published`](OutboxSource::mark_published)
     /// call fails. Publish failures are NOT propagated as
     /// errors — they are recorded in
     /// [`RelayStats::failed`] so the caller can decide whether
@@ -291,7 +297,12 @@ impl<O: OutboxSource, B: EventBus + Send + Sync> OutboxRelay<O, B> {
             // undo the publish — the next drain will see these
             // envelopes still pending and re-publish them (the
             // bus is at-least-once and subscribers dedupe).
-            if let Err(err) = self.outbox.mark_published(&published_ids).await {
+            //
+            // `school_id` is the tenant anchor
+            // (FND-PORT-STORE-003) — every adapter MUST verify
+            // that the handle is scoped to this school and
+            // reject mismatches with `TenantViolation`.
+            if let Err(err) = self.outbox.mark_published(school_id, &published_ids).await {
                 warn!(
                     school_id = %school_id.as_uuid(),
                     error = %err,
@@ -564,9 +575,14 @@ mod tests {
                 .cloned()
                 .collect())
         }
-        async fn mark_published(&self, ids: &[EventId]) -> Result<()> {
+        async fn mark_published(&self, school_id: SchoolId, ids: &[EventId]) -> Result<()> {
             let mut g = lock_unpoisoned(&self.rows);
-            g.retain(|e| !ids.contains(&e.event_id));
+            // FND-PORT-STORE-003: `school_id` is the tenant
+            // anchor. Only retain rows that are NOT in `ids`
+            // AND belong to `school_id`; rows from other
+            // tenants must be preserved even if their ids
+            // happen to collide with `ids`.
+            g.retain(|e| e.school_id != school_id || !ids.contains(&e.event_id));
             Ok(())
         }
     }

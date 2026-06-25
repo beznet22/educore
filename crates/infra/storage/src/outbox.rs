@@ -86,6 +86,21 @@ pub struct SerializedEnvelope {
 /// The `Outbox` sub-port trait. Storage adapters that participate
 /// in event-driven workflows implement this; the in-memory
 /// `educore-testkit` also implements it.
+///
+/// ## Tenant isolation (FND-PORT-STORE-003)
+///
+/// Every method that reads from or writes to the outbox takes
+/// `school_id: SchoolId` as the **first** argument. The
+/// `school_id` is the tenant anchor for the call and MUST be
+/// enforced by every adapter, even when the adapter holds a
+/// school-scoped handle (the handle MUST verify that the
+/// caller-supplied `school_id` matches its own scope and
+/// reject mismatches with
+/// [`DomainError::TenantViolation`](educore_core::error::DomainError::TenantViolation)).
+/// This is defense-in-depth alongside the application-layer
+/// [`TenantGuard`](educore_core::rbac::TenantGuard) — a bug in
+/// the application layer that passes the wrong `school_id`
+/// will still be caught at the storage port boundary.
 #[async_trait]
 pub trait Outbox: Send + Sync {
     /// Appends `envelope` to the outbox in the current
@@ -95,84 +110,70 @@ pub trait Outbox: Send + Sync {
     /// uniquely identified by `event_id`; duplicates must be
     /// rejected (or, equivalently, stored but never published).
     ///
+    /// ## Tenant scope
+    ///
+    /// `school_id` is the tenant anchor for the append. The
+    /// adapter MUST bind `school_id` (not just
+    /// `envelope.school_id`) into the persistence layer so
+    /// that the row carries the caller-supplied tenant. For
+    /// school-scoped handles, the adapter MUST verify that
+    /// `school_id` matches the handle's scope.
+    ///
     /// # Errors
     /// - `Conflict` if an envelope with the same `event_id` was
     ///   already appended in the same school.
+    /// - `TenantViolation` if `school_id` does not match the
+    ///   handle's scope (school-scoped adapters only).
     /// - `Infrastructure` for any underlying storage error.
-    async fn append(&self, envelope: SerializedEnvelope) -> Result<()>;
+    async fn append(&self, school_id: SchoolId, envelope: SerializedEnvelope) -> Result<()>;
 
-    /// Returns up to `limit` envelopes that have not yet been
-    /// marked as published. The order is FIFO by append time
-    /// within a school.
+    /// Returns up to `limit` envelopes for `school_id` that
+    /// have not yet been marked as published. The order is
+    /// FIFO by append time within a school.
     ///
-    /// ## School partitioning contract (TOOL-TK-004 / QW-13)
+    /// ## School partitioning contract (FND-PORT-STORE-003 / QW-13)
     ///
     /// The outbox is **logically partitioned by `school_id`** —
     /// every row carries the tenant that wrote it, and adapters
-    /// MUST return only envelopes belonging to the handle's
-    /// scoped school. Cross-tenant reads are a security
-    /// violation (per `docs/schemas/tenancy-schema.md` § 2 and
+    /// MUST return only envelopes belonging to `school_id`.
+    /// Cross-tenant reads are a security violation (per
+    /// `docs/schemas/tenancy-schema.md` § 2 and
     /// `docs/ports/storage.md` § "Tenant Isolation").
     ///
     /// Adapters that scope the handle to a single `SchoolId`
     /// at construction time (e.g. `PostgresOutbox::new(pool,
-    /// school)`) may implement `pending` by filtering on that
-    /// internal scope. Adapters that don't carry a scoped
-    /// school MUST implement [`pending_for_school`](Self::pending_for_school)
-    /// explicitly.
-    ///
-    /// Prefer [`pending_for_school`](Self::pending_for_school)
-    /// when the caller knows which school it wants — the
-    /// explicit-school variant lets the adapter reject mismatched
-    /// `school_id` arguments with
+    /// school)`) MUST verify that `school_id` matches the
+    /// handle's scope and return
     /// [`DomainError::TenantViolation`](educore_core::error::DomainError::TenantViolation)
-    /// instead of silently returning rows from the wrong school.
-    async fn pending(&self, limit: u32) -> Result<Vec<SerializedEnvelope>>;
-
-    /// Returns up to `limit` envelopes that have not yet been
-    /// marked as published, scoped to `school_id`. The order is
-    /// FIFO by append time within a school.
+    /// otherwise. Adapters that don't carry a scoped school
+    /// MUST filter the result by `school_id`.
     ///
-    /// ## School partitioning contract (QW-13)
-    ///
-    /// This is the explicit-school variant of
-    /// [`pending`](Self::pending). Adapters that scope the
-    /// handle to a single `SchoolId` MUST verify that
-    /// `school_id` matches the handle's scope and return
-    /// [`DomainError::TenantViolation`](educore_core::error::DomainError::TenantViolation)
-    /// otherwise. Adapters without a scoped handle MUST filter
-    /// by `school_id`.
-    ///
-    /// The default implementation delegates to
-    /// [`pending`](Self::pending), which is correct for
-    /// school-scoped handles (the outbox is already partitioned
-    /// by the handle's school). Adapters that hold an
-    /// un-scoped handle (the testkit's `OutboxHandle`) MUST
-    /// override this method to actually filter on `school_id`.
-    ///
-    /// Closing findings: TOOL-TK-004 (testkit half —
-    /// delegated to a follow-up PR), ADAPTER-PG-013,
-    /// ADAPTER-PG-029 (Postgres half — closed here by asserting
-    /// the explicit-school argument matches the handle scope).
-    async fn pending_for_school(
+    /// This method replaces the prior
+    /// `pending(limit)` / `pending_for_school(school_id,
+    /// limit)` pair — the unified API surfaces the tenant
+    /// anchor at the port layer so callers cannot forget it.
+    async fn pending(
         &self,
         school_id: SchoolId,
         limit: u32,
-    ) -> Result<Vec<SerializedEnvelope>> {
-        // SAFETY: This default impl assumes the handle is
-        // already school-scoped (so `pending(limit)` returns
-        // only the handle's school). The `school_id` argument is
-        // intentionally ignored: the adapter cannot validate it
-        // without knowing its own scope. Adapters that need to
-        // validate the caller-supplied `school_id` against their
-        // internal scope MUST override this method.
-        let _ = school_id;
-        self.pending(limit).await
-    }
+    ) -> Result<Vec<SerializedEnvelope>>;
 
-    /// Marks the given envelopes as published. Idempotent: calling
-    /// twice with the same id is a no-op.
-    async fn mark_published(&self, ids: &[EventId]) -> Result<()>;
+    /// Marks the given envelopes as published. Idempotent:
+    /// calling twice with the same id is a no-op.
+    ///
+    /// ## Tenant scope
+    ///
+    /// `school_id` is the tenant anchor. Adapters that scope
+    /// the handle to a single `SchoolId` MUST verify that
+    /// `school_id` matches the handle's scope and return
+    /// [`DomainError::TenantViolation`](educore_core::error::DomainError::TenantViolation)
+    /// otherwise. Adapters without a scoped handle MUST bind
+    /// `school_id` into the `UPDATE` predicate so a tenant
+    /// cannot mark another tenant's envelopes as published
+    /// (which would let one tenant's relay silently drain
+    /// another tenant's queue — a denial-of-service
+    /// cross-tenant vector).
+    async fn mark_published(&self, school_id: SchoolId, ids: &[EventId]) -> Result<()>;
 
     /// Returns the count of envelopes currently in the outbox
     /// for `school_id` that have not been marked as published.
@@ -196,8 +197,7 @@ pub trait Outbox: Send + Sync {
         // Default implementation: count via `pending` and check
         // length. Adapters with efficient `COUNT(*)` support may
         // override.
-        let _ = school_id;
-        let n = self.pending(u32::MAX).await?.len();
+        let n = self.pending(school_id, u32::MAX).await?.len();
         u64::try_from(n)
             .map_err(|_| DomainError::validation("pending count exceeds u64::MAX"))
     }
