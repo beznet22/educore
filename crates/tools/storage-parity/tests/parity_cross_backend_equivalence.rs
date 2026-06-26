@@ -94,7 +94,7 @@ impl UniquenessChecker for TestUniqueness {
 /// Drains the outbox into the event log. Inlined so this file
 /// does not depend on `common::relay_outbox_to_event_log`
 /// differing from the local copy.
-async fn relay(adapter: &dyn StorageAdapter) {
+async fn relay(adapter: &dyn StorageAdapter, school: educore_core::ids::SchoolId) {
     common::relay_outbox_to_event_log(adapter, school).await;
 }
 
@@ -152,7 +152,11 @@ async fn dispatch_create_school(
     // SurrealDB adapters behave the same: the outbox → event
     // log transition is atomic with the original command's
     // mutation.
-    let pending = tx.outbox().pending(school, 100).await.expect("pending");
+    let pending = tx
+        .outbox()
+        .pending(ctx.school_id, 100)
+        .await
+        .expect("pending");
     for env in &pending {
         let entry = educore_storage::event_log::EventLogEntry::from_serialized_envelope(env);
         tx.event_log()
@@ -160,7 +164,7 @@ async fn dispatch_create_school(
             .await
             .expect("event_log append");
         tx.outbox()
-            .mark_published(school, &[env.event_id])
+            .mark_published(ctx.school_id, &[env.event_id])
             .await
             .expect("mark_published");
     }
@@ -189,7 +193,11 @@ async fn assert_cross_cutting_equivalence(
     assert_eq!(school.name, "Parity Academy");
 
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(school, 10).await.expect("pending");
+    let pending = tx
+        .outbox()
+        .pending(ctx.school_id, 10)
+        .await
+        .expect("pending");
     assert!(pending.is_empty(), "outbox should be drained after relay");
     let audit_count = tx
         .audit_log()

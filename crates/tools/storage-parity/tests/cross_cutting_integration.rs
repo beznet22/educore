@@ -97,7 +97,7 @@ impl UniquenessChecker for TestUniqueness {
 /// Drains the outbox into the event log. This is what a relay
 /// process does in production; we inline it here so the test
 /// can assert the event_log without standing up a real relay.
-async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter, school: SchoolId) {
+async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter) {
     let tx = adapter.begin().await.expect("begin");
     let pending = tx.outbox().pending(school, 100).await.expect("pending");
     for env in &pending {
@@ -107,7 +107,7 @@ async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter, school: SchoolI
             .await
             .expect("event_log append");
         tx.outbox()
-            .mark_published(school, &[env.event_id])
+            .mark_published(&[env.event_id])
             .await
             .expect("mark_published");
     }
@@ -178,7 +178,7 @@ async fn dispatch_create_school(
     bus.publish(envelope).await.expect("bus publish");
 
     // 5. Drain the outbox into the event log.
-    relay_outbox_to_event_log(adapter, school).await;
+    relay_outbox_to_event_log(adapter).await;
 
     school
 }
