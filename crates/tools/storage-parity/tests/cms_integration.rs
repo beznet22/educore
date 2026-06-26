@@ -370,7 +370,7 @@ impl NewsRepository for InMemoryNewsRepo {
 
 #[allow(dead_code)]
 struct TestEnv {
-    adapter: Arc<educore_storage::StorageAdapter>,
+    adapter: Arc<dyn educore_storage::StorageAdapter>,
     bus: Arc<InProcessEventBus>,
     bus_dyn: Arc<dyn EventBus>,
     audit: Arc<AuditWriter>,
@@ -386,7 +386,7 @@ struct TestEnv {
 async fn setup_test_env() -> TestEnv {
     let bus: Arc<InProcessEventBus> = Arc::new(InProcessEventBus::new());
     let bus_dyn: Arc<dyn EventBus> = bus.clone();
-    let adapter: Arc<educore_storage::StorageAdapter> = Arc::new(
+    let adapter: Arc<dyn educore_storage::StorageAdapter> = Arc::new(
         educore_testkit::storage::InMemoryStorageAdapter::new(bus_dyn.clone()),
     );
     let g = SystemIdGen;
