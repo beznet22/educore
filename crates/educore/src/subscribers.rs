@@ -255,7 +255,7 @@ impl Subscriber for FormUploadedPublicIndexing {
             tracing::info!(
                 event_id = %event_id,
                 event_type = envelope.event_type,
-                school_id = %envelope.school_id,
+                school_id = %envelope.school_id.as_uuid(),
                 "form_uploaded_public_indexing: Index (show_public=true)"
             );
             // TODO(SDK): dispatch `Cms::IndexForm` command when
@@ -265,7 +265,7 @@ impl Subscriber for FormUploadedPublicIndexing {
             tracing::info!(
                 event_id = %event_id,
                 event_type = envelope.event_type,
-                school_id = %envelope.school_id,
+                school_id = %envelope.school_id.as_uuid(),
                 "form_uploaded_public_indexing: Ignore (show_public=false)"
             );
         }
@@ -360,7 +360,7 @@ impl Subscriber for StudentPromotedFeeStructure {
                     event_id = %event_id,
                     student_id = sid,
                     to_academic_year_id = year,
-                    school_id = %envelope.school_id,
+                    school_id = %envelope.school_id.as_uuid(),
                     "student_promoted_fee_structure: regenerate fee structure"
                 );
                 // TODO(SDK): dispatch
@@ -462,7 +462,7 @@ impl Subscriber for StaffRegisteredSalaryTemplate {
                     event_id = %event_id,
                     staff_id = sid,
                     designation_id = did,
-                    school_id = %envelope.school_id,
+                    school_id = %envelope.school_id.as_uuid(),
                     "staff_registered_salary_template: bind salary template"
                 );
                 // TODO(SDK): dispatch
@@ -564,7 +564,7 @@ impl Subscriber for PayrollPaidMarkPaid {
                     event_id = %event_id,
                     payroll_generate_id = pid,
                     paid_amount = amount,
-                    school_id = %envelope.school_id,
+                    school_id = %envelope.school_id.as_uuid(),
                     "payroll_paid_mark_paid: mark PayrollGenerate as paid"
                 );
                 // TODO(SDK): dispatch `Hr::MarkPayrollPaid`
@@ -668,11 +668,11 @@ impl Subscriber for StudentAdmittedFeesAssign {
                 tracing::info!(
                     event_id = %event_id,
                     student_id = sid,
-                    school_id = %envelope.school_id,
+                    school_id = %envelope.school_id.as_uuid(),
                     class_id = cid,
                     "student_admitted_fees_assign: would create FeesAssign for student_id={} in school_id={} class_id={}",
                     sid,
-                    %envelope.school_id,
+                    envelope.school_id,
                     cid,
                 );
                 // TODO(SDK): dispatch
@@ -774,10 +774,10 @@ impl Subscriber for StudentWithdrawnTerminateFeesAssign {
                 tracing::info!(
                     event_id = %event_id,
                     student_id = sid,
-                    school_id = %envelope.school_id,
+                    school_id = %envelope.school_id.as_uuid(),
                     "student_withdrawn_terminate_fees_assign: would terminate FeesAssign for student_id={} school_id={}",
                     sid,
-                    %envelope.school_id,
+                    envelope.school_id,
                 );
                 // TODO(SDK): dispatch
                 // `Finance::TerminateFeesAssign` command with
@@ -895,7 +895,7 @@ impl Subscriber for SubjectTeacherAssignedClassSubject {
             (Some(sid), Some(cid), Some(secid), Some(tid)) => {
                 tracing::info!(
                     event_id = %event_id,
-                    school_id = %envelope.school_id,
+                    school_id = %envelope.school_id.as_uuid(),
                     subject_id = sid,
                     class_id = cid,
                     section_id = secid,
