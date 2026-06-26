@@ -446,6 +446,7 @@ impl PostalReceiveRepository for InMemoryReceiveRepo {
 // ---------------------------------------------------------------------------
 
 struct TestEnv {
+    adapter: Arc<educore_storage::StorageAdapter>,
     /// Concrete bus used to pass into service factories
     /// (which require `B: EventBus + 'static`, not `dyn`).
     bus: Arc<InProcessEventBus>,
@@ -466,6 +467,9 @@ struct TestEnv {
 async fn setup_test_env() -> TestEnv {
     let bus: Arc<InProcessEventBus> = Arc::new(InProcessEventBus::new());
     let bus_dyn: Arc<dyn EventBus> = bus.clone();
+    let adapter: Arc<educore_storage::StorageAdapter> = Arc::new(
+        educore_testkit::storage::InMemoryStorageAdapter::new(bus_dyn.clone()),
+    );
     let adapter: Arc<educore_storage::StorageAdapter> = Arc::new(
         educore_testkit::storage::InMemoryStorageAdapter::new(bus_dyn.clone()),
     );
@@ -491,6 +495,7 @@ async fn setup_test_env() -> TestEnv {
     let receive_repo = Arc::new(InMemoryReceiveRepo::new());
     let ctx = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
     TestEnv {
+        adapter,
         bus,
         bus_dyn,
         audit,
