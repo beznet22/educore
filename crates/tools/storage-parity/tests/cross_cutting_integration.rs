@@ -99,7 +99,7 @@ impl UniquenessChecker for TestUniqueness {
 /// can assert the event_log without standing up a real relay.
 async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter) {
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(100).await.expect("pending");
+    let pending = tx.outbox().pending(school, 100).await.expect("pending");
     for env in &pending {
         let entry = EventLogEntry::from_serialized_envelope(env);
         tx.event_log()
@@ -160,7 +160,10 @@ async fn dispatch_create_school(
         ctx.correlation_id,
     );
     let tx = adapter.begin().await.expect("begin");
-    tx.outbox().append(serialized).await.expect("outbox append");
+    tx.outbox()
+        .append(school, serialized)
+        .await
+        .expect("outbox append");
     tx.audit_log()
         .append(audit_entry)
         .await
@@ -227,7 +230,7 @@ async fn cross_cutting_integration_sqlite() {
 
     // Verify the 4 sub-ports (outbox drained, so 0 pending).
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(10).await.expect("pending");
+    let pending = tx.outbox().pending(school, 10).await.expect("pending");
     assert!(pending.is_empty(), "outbox should be drained after relay");
     let audit_count = tx
         .audit_log()
@@ -293,7 +296,10 @@ async fn outbox_to_event_log_relay_preserves_event_id_and_payload() {
     let envelope: EventEnvelope = school_created.into_envelope(&ctx);
     let serialized = SerializedEnvelope::from_event_envelope(&envelope);
     let tx = adapter.begin().await.expect("begin");
-    tx.outbox().append(serialized).await.expect("append");
+    tx.outbox()
+        .append(school, serialized)
+        .await
+        .expect("append");
     tx.commit().await.expect("commit");
     relay_outbox_to_event_log(&*adapter).await;
     let tx = adapter.begin().await.expect("begin");
@@ -347,7 +353,7 @@ async fn cross_cutting_integration_postgres() {
     let _school_agg = dispatch_create_school(&ctx, cmd, &*adapter, &bus, &uniqueness).await;
     // PG: verify the same assertions as SQLite.
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(10).await.expect("pending");
+    let pending = tx.outbox().pending(school, 10).await.expect("pending");
     assert!(pending.is_empty(), "PG outbox should be drained");
     let events = tx
         .event_log()
@@ -458,7 +464,7 @@ async fn cross_cutting_integration_mysql() {
     );
     let _school_agg = dispatch_create_school(&ctx, cmd, &*adapter, &bus, &uniqueness).await;
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(10).await.expect("pending");
+    let pending = tx.outbox().pending(school, 10).await.expect("pending");
     assert!(pending.is_empty(), "MySQL outbox should be drained");
     let events = tx
         .event_log()

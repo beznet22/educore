@@ -112,9 +112,9 @@ impl AssessmentUniquenessChecker for TestUniqueness {
 /// relay process does in production; we inline it here so
 /// the test can assert the event_log without standing up a
 /// real relay.
-async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter) {
+async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter, school: SchoolId) {
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(100).await.expect("pending");
+    let pending = tx.outbox().pending(school, 100).await.expect("pending");
     for env in &pending {
         let entry = EventLogEntry::from_serialized_envelope(env);
         tx.event_log()
@@ -122,7 +122,7 @@ async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter) {
             .await
             .expect("event_log append");
         tx.outbox()
-            .mark_published(&[env.event_id])
+            .mark_published(school, &[env.event_id])
             .await
             .expect("mark_published");
     }
@@ -170,7 +170,10 @@ async fn dispatch_create_exam(
         ctx.correlation_id,
     );
     let tx = adapter.begin().await.expect("begin");
-    tx.outbox().append(serialized).await.expect("outbox append");
+    tx.outbox()
+        .append(school, serialized)
+        .await
+        .expect("outbox append");
     tx.audit_log()
         .append(audit_entry)
         .await
@@ -183,7 +186,7 @@ async fn dispatch_create_exam(
 
     bus.publish(envelope).await.expect("bus publish");
 
-    relay_outbox_to_event_log(adapter).await;
+    relay_outbox_to_event_log(adapter, school).await;
 
     exam
 }
@@ -263,7 +266,11 @@ async fn assessment_integration_sqlite() {
     let tx = adapter.begin().await.expect("begin");
 
     // 1. Outbox: drained (0 pending).
-    let pending = tx.outbox().pending(100).await.expect("outbox pending");
+    let pending = tx
+        .outbox()
+        .pending(school, 100)
+        .await
+        .expect("outbox pending");
     assert_eq!(pending.len(), 0, "outbox should be drained after relay");
 
     // 2. Audit log: at least 1 row for the school.
@@ -358,7 +365,14 @@ async fn assessment_integration_postgres() {
     .await;
     relay_outbox_to_event_log(adapter.as_ref()).await;
     let tx = adapter.begin().await.expect("begin");
-    assert_eq!(tx.outbox().pending(100).await.expect("pending").len(), 0);
+    assert_eq!(
+        tx.outbox()
+            .pending(school, 100)
+            .await
+            .expect("pending")
+            .len(),
+        0
+    );
     let event_count = tx
         .event_log()
         .count(EventLogFilter::for_school(school))
@@ -406,7 +420,14 @@ async fn assessment_integration_mysql() {
     .await;
     relay_outbox_to_event_log(adapter.as_ref()).await;
     let tx = adapter.begin().await.expect("begin");
-    assert_eq!(tx.outbox().pending(100).await.expect("pending").len(), 0);
+    assert_eq!(
+        tx.outbox()
+            .pending(school, 100)
+            .await
+            .expect("pending")
+            .len(),
+        0
+    );
     let event_count = tx
         .event_log()
         .count(EventLogFilter::for_school(school))

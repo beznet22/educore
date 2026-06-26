@@ -319,7 +319,10 @@ mod full_prelude_scenarios {
         let tx = adapter.begin().await.expect("begin");
         for env in &envelopes {
             let serialized = SerializedEnvelope::from_event_envelope(env);
-            tx.outbox().append(serialized).await.expect("outbox append");
+            tx.outbox()
+                .append(school, serialized)
+                .await
+                .expect("outbox append");
         }
         let idem_record = IdempotencyRecord {
             school_id: school,

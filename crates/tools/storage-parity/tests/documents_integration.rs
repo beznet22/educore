@@ -446,6 +446,7 @@ impl PostalReceiveRepository for InMemoryReceiveRepo {
 // ---------------------------------------------------------------------------
 
 struct TestEnv {
+    adapter: Arc<dyn educore_storage::StorageAdapter>,
     /// Concrete bus used to pass into service factories
     /// (which require `B: EventBus + 'static`, not `dyn`).
     bus: Arc<InProcessEventBus>,
@@ -466,24 +467,35 @@ struct TestEnv {
 async fn setup_test_env() -> TestEnv {
     let bus: Arc<InProcessEventBus> = Arc::new(InProcessEventBus::new());
     let bus_dyn: Arc<dyn EventBus> = bus.clone();
+    let adapter: Arc<dyn educore_storage::StorageAdapter> = Arc::new(
+        educore_testkit::storage::InMemoryStorageAdapter::new(bus_dyn.clone()),
+    );
+    let adapter: Arc<dyn educore_storage::StorageAdapter> = Arc::new(
+        educore_testkit::storage::InMemoryStorageAdapter::new(bus_dyn.clone()),
+    );
     let g = SystemIdGen;
     let school = g.next_school_id();
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
     let clock = Arc::new(TestClock::at(ts(1_700_000_000)));
     let audit_log: Arc<dyn educore_storage::audit::AuditLog> = Arc::new(InMemoryAuditLog::new());
-    let audit = Arc::new(AuditWriter::new(
-        audit_log,
-        bus_dyn.clone(),
-        clock.clone(),
-        RetentionPolicy::default(),
-    ));
+    let audit = Arc::new(
+        AuditWriter::new(
+            school,
+            audit_log,
+            bus_dyn.clone(),
+            clock.clone(),
+            RetentionPolicy::default(),
+        )
+        .expect("test school_id is valid"),
+    );
     let cap = Arc::new(InMemoryCapabilityCheck::new());
     let form_repo = Arc::new(InMemoryFormRepo::new());
     let dispatch_repo = Arc::new(InMemoryDispatchRepo::new());
     let receive_repo = Arc::new(InMemoryReceiveRepo::new());
     let ctx = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
     TestEnv {
+        adapter,
         bus,
         bus_dyn,
         audit,
@@ -585,8 +597,11 @@ async fn documents_integration_sqlite_vertical_slice() {
     let mut sub: Box<dyn EventSubscription> = env.bus_dyn.subscribe(opts).await.expect("subscribe");
 
     // 1. Upload a form.
+    let txn = env.adapter.begin().await.expect("begin txn");
+
     let form = upload_form_service(
         upload_cmd(env.school, env.actor, env.ctx.correlation_id),
+        (env.school, env.actor, env.ctx.correlation_id) & *txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -610,6 +625,7 @@ async fn documents_integration_sqlite_vertical_slice() {
             Some("REF-2026-0001"),
         ),
         uuid::Uuid::now_v7(),
+        &*txn,
         env.dispatch_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -632,6 +648,7 @@ async fn documents_integration_sqlite_vertical_slice() {
             Some("REF-IN-0001"),
         ),
         uuid::Uuid::now_v7(),
+        &*txn,
         env.receive_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -808,6 +825,7 @@ async fn documents_postal_reference_uniqueness_invariant() {
             file: None,
         },
         academic_id,
+        &*txn,
         env.dispatch_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -837,6 +855,7 @@ async fn documents_postal_reference_uniqueness_invariant() {
             file: None,
         },
         academic_id,
+        &*txn,
         env.dispatch_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -888,8 +907,11 @@ async fn documents_soft_delete_invariant_holds() {
     grant_all_caps(&env.cap, env.school, env.actor);
 
     // Create a form.
+    let txn = env.adapter.begin().await.expect("begin txn");
+
     let form = upload_form_service(
         upload_cmd(env.school, env.actor, env.ctx.correlation_id),
+        (env.school, env.actor, env.ctx.correlation_id) & *txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -946,8 +968,13 @@ async fn documents_form_publish_visibility_invariant() {
     // 1. A form with show_public = true.
     let mut public_cmd = upload_cmd(env.school, env.actor, env.ctx.correlation_id);
     public_cmd.show_public = ShowPublic::new(true);
+    let txn = env.adapter.begin().await.expect("begin txn");
+
+    let txn = env.adapter.begin().await.expect("begin txn");
+
     let public_form = upload_form_service(
         public_cmd,
+        &*txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -961,8 +988,13 @@ async fn documents_form_publish_visibility_invariant() {
     let mut staff_cmd = upload_cmd(env.school, env.actor, env.ctx.correlation_id);
     staff_cmd.title = FormTitle::new("Staff Only").unwrap();
     staff_cmd.show_public = ShowPublic::new(false);
+    let txn = env.adapter.begin().await.expect("begin txn");
+
+    let txn = env.adapter.begin().await.expect("begin txn");
+
     let staff_form = upload_form_service(
         staff_cmd,
+        &*txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),

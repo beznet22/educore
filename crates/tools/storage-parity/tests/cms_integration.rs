@@ -370,6 +370,7 @@ impl NewsRepository for InMemoryNewsRepo {
 
 #[allow(dead_code)]
 struct TestEnv {
+    adapter: Arc<dyn educore_storage::StorageAdapter>,
     bus: Arc<InProcessEventBus>,
     bus_dyn: Arc<dyn EventBus>,
     audit: Arc<AuditWriter>,
@@ -385,18 +386,25 @@ struct TestEnv {
 async fn setup_test_env() -> TestEnv {
     let bus: Arc<InProcessEventBus> = Arc::new(InProcessEventBus::new());
     let bus_dyn: Arc<dyn EventBus> = bus.clone();
+    let adapter: Arc<dyn educore_storage::StorageAdapter> = Arc::new(
+        educore_testkit::storage::InMemoryStorageAdapter::new(bus_dyn.clone()),
+    );
     let g = SystemIdGen;
     let school = g.next_school_id();
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
     let clock = Arc::new(TestClock::at(ts(1_700_000_000)));
     let audit_log: Arc<dyn educore_storage::audit::AuditLog> = Arc::new(InMemoryAuditLog::new());
-    let audit = Arc::new(AuditWriter::new(
-        audit_log,
-        bus_dyn.clone(),
-        clock.clone(),
-        RetentionPolicy::default(),
-    ));
+    let audit = Arc::new(
+        AuditWriter::new(
+            school,
+            audit_log,
+            bus_dyn.clone(),
+            clock.clone(),
+            RetentionPolicy::default(),
+        )
+        .expect("test school_id is valid"),
+    );
     let cap = Arc::new(InMemoryCapabilityCheck::new());
     let page_repo = Arc::new(InMemoryPageRepo::new());
     let news_repo = Arc::new(InMemoryNewsRepo::new());
@@ -503,8 +511,13 @@ async fn cms_integration_sqlite_vertical_slice() {
     let mut sub: Box<dyn EventSubscription> = env.bus_dyn.subscribe(opts).await.expect("subscribe");
 
     // 1. Create a Page.
+    let txn = env.adapter.begin().await.expect("begin txn");
+
+    let txn = env.adapter.begin().await.expect("begin txn");
+
     let page = cms_create_page(
         page_cmd(env.school, env.actor, env.ctx.correlation_id),
+        (env.school, env.actor, env.ctx.correlation_id) & *txn,
         env.page_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -517,8 +530,13 @@ async fn cms_integration_sqlite_vertical_slice() {
     assert_eq!(<PageCreated as DomainEvent>::EVENT_TYPE, "cms.page.created");
 
     // 2. Create a News.
+    let txn = env.adapter.begin().await.expect("begin txn");
+
+    let txn = env.adapter.begin().await.expect("begin txn");
+
     let news = cms_create_news(
         news_cmd(env.school, env.actor, env.ctx.correlation_id),
+        (env.school, env.actor, env.ctx.correlation_id) & *txn,
         env.news_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -942,8 +960,13 @@ async fn cms_slug_uniqueness_invariant() {
     grant_cms_caps(&env.cap, env.school, env.actor);
 
     // First create succeeds.
+    let txn = env.adapter.begin().await.expect("begin txn");
+
+    let txn = env.adapter.begin().await.expect("begin txn");
+
     let first = cms_create_page(
         page_cmd(env.school, env.actor, env.ctx.correlation_id),
+        (env.school, env.actor, env.ctx.correlation_id) & *txn,
         env.page_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -959,8 +982,13 @@ async fn cms_slug_uniqueness_invariant() {
     // both rows and the dispatcher's uniqueness check would
     // see the duplicate. This documents the invariant
     // location.
+    let txn = env.adapter.begin().await.expect("begin txn");
+
+    let txn = env.adapter.begin().await.expect("begin txn");
+
     let second = cms_create_page(
         page_cmd(env.school, env.actor, env.ctx.correlation_id),
+        (env.school, env.actor, env.ctx.correlation_id) & *txn,
         env.page_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),

@@ -57,9 +57,9 @@ pub fn make_ctx(school: SchoolId) -> TenantContext {
 /// Drains the outbox into the event log. Mirrors the existing
 /// `cross_cutting_integration::relay_outbox_to_event_log` helper.
 /// Inlined here so the new parity tests can stand on their own.
-pub async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter) {
+pub async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter, school: SchoolId) {
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(100).await.expect("pending");
+    let pending = tx.outbox().pending(school, 100).await.expect("pending");
     for env in &pending {
         let entry = EventLogEntry::from_serialized_envelope(env);
         tx.event_log()
@@ -67,7 +67,7 @@ pub async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter) {
             .await
             .expect("event_log append");
         tx.outbox()
-            .mark_published(&[env.event_id])
+            .mark_published(school, &[env.event_id])
             .await
             .expect("mark_published");
     }
