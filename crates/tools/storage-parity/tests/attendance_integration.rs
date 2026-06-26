@@ -120,9 +120,9 @@ impl AttendanceUniquenessChecker for TestUniqueness {
 /// real relay. The cap is set to 1000 to match the default
 /// page size and to comfortably hold the 400 envelopes the
 /// bulk mark emits.
-async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter) {
+async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter, school: SchoolId) {
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(1000).await.expect("pending");
+    let pending = tx.outbox().pending(school, 1000).await.expect("pending");
     for env in &pending {
         let entry = EventLogEntry::from_serialized_envelope(env);
         tx.event_log()
@@ -130,7 +130,7 @@ async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter) {
             .await
             .expect("event_log append");
         tx.outbox()
-            .mark_published(&[env.event_id])
+            .mark_published(school, &[env.event_id])
             .await
             .expect("mark_published");
     }
@@ -271,7 +271,10 @@ async fn dispatch_bulk_mark(
     let tx = adapter.begin().await.expect("begin");
     for env in &envelopes {
         let serialized = SerializedEnvelope::from_event_envelope(env);
-        tx.outbox().append(serialized).await.expect("outbox append");
+        tx.outbox()
+            .append(school, serialized)
+            .await
+            .expect("outbox append");
     }
     tx.audit_log()
         .append(audit_entry)
@@ -287,7 +290,7 @@ async fn dispatch_bulk_mark(
         bus.publish(env.clone()).await.expect("bus publish");
     }
 
-    relay_outbox_to_event_log(adapter).await;
+    relay_outbox_to_event_log(adapter, school).await;
 
     DispatchOutcome {
         aggregates_len,
@@ -345,7 +348,11 @@ async fn attendance_integration_sqlite() {
     let tx = adapter.begin().await.expect("begin");
 
     // 1. Outbox: drained (0 pending) after the relay step.
-    let pending = tx.outbox().pending(1000).await.expect("outbox pending");
+    let pending = tx
+        .outbox()
+        .pending(school, 1000)
+        .await
+        .expect("outbox pending");
     assert_eq!(pending.len(), 0, "outbox should be drained after relay");
 
     // 2. Event log: at least 401 rows (201 marked + 200
@@ -456,7 +463,14 @@ async fn attendance_integration_postgres() {
     .await;
     assert_eq!(outcome.aggregates_len, 201);
     let tx = adapter.begin().await.expect("begin");
-    assert_eq!(tx.outbox().pending(1000).await.expect("pending").len(), 0);
+    assert_eq!(
+        tx.outbox()
+            .pending(school, 1000)
+            .await
+            .expect("pending")
+            .len(),
+        0
+    );
     let event_count = tx
         .event_log()
         .count(EventLogFilter::for_school(school))
@@ -555,7 +569,14 @@ async fn attendance_integration_mysql() {
     .await;
     assert_eq!(outcome.aggregates_len, 201);
     let tx = adapter.begin().await.expect("begin");
-    assert_eq!(tx.outbox().pending(1000).await.expect("pending").len(), 0);
+    assert_eq!(
+        tx.outbox()
+            .pending(school, 1000)
+            .await
+            .expect("pending")
+            .len(),
+        0
+    );
     let event_count = tx
         .event_log()
         .count(EventLogFilter::for_school(school))

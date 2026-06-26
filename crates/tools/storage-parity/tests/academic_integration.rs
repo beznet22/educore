@@ -101,9 +101,9 @@ impl UniquenessChecker for TestUniqueness {
 /// relay process does in production; we inline it here so
 /// the test can assert the event_log without standing up a
 /// real relay.
-async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter) {
+async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter, school: SchoolId) {
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(100).await.expect("pending");
+    let pending = tx.outbox().pending(school, 100).await.expect("pending");
     for env in &pending {
         let entry = EventLogEntry::from_serialized_envelope(env);
         tx.event_log()
@@ -111,7 +111,7 @@ async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter) {
             .await
             .expect("event_log append");
         tx.outbox()
-            .mark_published(&[env.event_id])
+            .mark_published(school, &[env.event_id])
             .await
             .expect("mark_published");
     }
@@ -161,7 +161,10 @@ async fn dispatch_admit_student(
         ctx.correlation_id,
     );
     let tx = adapter.begin().await.expect("begin");
-    tx.outbox().append(serialized).await.expect("outbox append");
+    tx.outbox()
+        .append(school, serialized)
+        .await
+        .expect("outbox append");
     tx.audit_log()
         .append(audit_entry)
         .await
@@ -174,7 +177,7 @@ async fn dispatch_admit_student(
 
     bus.publish(envelope).await.expect("bus publish");
 
-    relay_outbox_to_event_log(adapter).await;
+    relay_outbox_to_event_log(adapter, school).await;
 
     student
 }
@@ -243,7 +246,7 @@ async fn cross_cutting_integration_academic() {
 
     // Verify the 4 sub-ports.
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(10).await.expect("pending");
+    let pending = tx.outbox().pending(school, 10).await.expect("pending");
     assert!(pending.is_empty(), "outbox should be drained after relay");
     let audit_count = tx
         .audit_log()
@@ -370,7 +373,7 @@ async fn cross_cutting_integration_academic_postgres() {
     let uniqueness = TestUniqueness::new();
     let _student_agg = dispatch_admit_student(&ctx, cmd, &*adapter, &bus, &uniqueness).await;
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(10).await.expect("pending");
+    let pending = tx.outbox().pending(school, 10).await.expect("pending");
     assert!(pending.is_empty(), "PG outbox should be drained");
     let events = tx
         .event_log()
@@ -423,7 +426,7 @@ async fn cross_cutting_integration_academic_mysql() {
     let uniqueness = TestUniqueness::new();
     let _student_agg = dispatch_admit_student(&ctx, cmd, &*adapter, &bus, &uniqueness).await;
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(10).await.expect("pending");
+    let pending = tx.outbox().pending(school, 10).await.expect("pending");
     assert!(pending.is_empty(), "MySQL outbox should be drained");
     let events = tx
         .event_log()

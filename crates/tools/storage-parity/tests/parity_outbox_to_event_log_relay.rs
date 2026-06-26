@@ -72,10 +72,17 @@ impl UniquenessChecker for TestUniqueness {
 /// `commit`, so a post-commit drain would see an empty outbox.
 /// See `parity_cross_backend_equivalence.rs` for the
 /// long-form rationale.
-async fn append_and_drain_within_tx(adapter: &dyn StorageAdapter, serialized: SerializedEnvelope) {
+async fn append_and_drain_within_tx(
+    adapter: &dyn StorageAdapter,
+    school: SchoolId,
+    serialized: SerializedEnvelope,
+) {
     let tx = adapter.begin().await.expect("begin");
-    tx.outbox().append(serialized).await.expect("outbox append");
-    let pending = tx.outbox().pending(100).await.expect("pending");
+    tx.outbox()
+        .append(school, serialized)
+        .await
+        .expect("outbox append");
+    let pending = tx.outbox().pending(school, 100).await.expect("pending");
     for env in &pending {
         let entry = educore_storage::event_log::EventLogEntry::from_serialized_envelope(env);
         tx.event_log()
@@ -83,7 +90,7 @@ async fn append_and_drain_within_tx(adapter: &dyn StorageAdapter, serialized: Se
             .await
             .expect("event_log append");
         tx.outbox()
-            .mark_published(&[env.event_id])
+            .mark_published(school, &[env.event_id])
             .await
             .expect("mark_published");
     }
@@ -115,7 +122,7 @@ async fn assert_outbox_relay_preserves_envelope(adapter: &dyn StorageAdapter, sc
     let envelope: EventEnvelope = school_created.into_envelope(&ctx);
     let event_type = envelope.event_type.to_owned();
     let serialized = SerializedEnvelope::from_event_envelope(&envelope);
-    append_and_drain_within_tx(adapter, serialized).await;
+    append_and_drain_within_tx(adapter, school, serialized).await;
     let tx = adapter.begin().await.expect("begin");
     let rows = tx
         .event_log()
