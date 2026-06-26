@@ -290,7 +290,7 @@ async fn dispatch_bulk_mark(
         bus.publish(env.clone()).await.expect("bus publish");
     }
 
-    relay_outbox_to_event_log(adapter, school).await;
+    relay_outbox_to_event_log(adapter, ctx.school_id).await;
 
     DispatchOutcome {
         aggregates_len,

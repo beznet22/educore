@@ -95,7 +95,7 @@ impl UniquenessChecker for TestUniqueness {
 /// does not depend on `common::relay_outbox_to_event_log`
 /// differing from the local copy.
 async fn relay(adapter: &dyn StorageAdapter, school: educore_core::ids::SchoolId) {
-    common::relay_outbox_to_event_log(adapter, school).await;
+    common::relay_outbox_to_event_log(adapter, ctx.school_id).await;
 }
 
 async fn dispatch_create_school(

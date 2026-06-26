@@ -601,7 +601,7 @@ async fn documents_integration_sqlite_vertical_slice() {
 
     let form = upload_form_service(
         upload_cmd(env.school, env.actor, env.ctx.correlation_id),
-        txn,
+        (env.school, env.actor, env.ctx.correlation_id) & *txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -825,6 +825,7 @@ async fn documents_postal_reference_uniqueness_invariant() {
             file: None,
         },
         academic_id,
+        &*txn,
         env.dispatch_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -854,6 +855,7 @@ async fn documents_postal_reference_uniqueness_invariant() {
             file: None,
         },
         academic_id,
+        &*txn,
         env.dispatch_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -909,7 +911,7 @@ async fn documents_soft_delete_invariant_holds() {
 
     let form = upload_form_service(
         upload_cmd(env.school, env.actor, env.ctx.correlation_id),
-        txn,
+        (env.school, env.actor, env.ctx.correlation_id) & *txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -972,7 +974,7 @@ async fn documents_form_publish_visibility_invariant() {
 
     let public_form = upload_form_service(
         public_cmd,
-        txn,
+        &*txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -992,7 +994,7 @@ async fn documents_form_publish_visibility_invariant() {
 
     let staff_form = upload_form_service(
         staff_cmd,
-        txn,
+        &*txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),

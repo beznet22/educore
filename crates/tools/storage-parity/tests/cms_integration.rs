@@ -517,7 +517,7 @@ async fn cms_integration_sqlite_vertical_slice() {
 
     let page = cms_create_page(
         page_cmd(env.school, env.actor, env.ctx.correlation_id),
-        txn,
+        (env.school, env.actor, env.ctx.correlation_id) & *txn,
         env.page_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -536,7 +536,7 @@ async fn cms_integration_sqlite_vertical_slice() {
 
     let news = cms_create_news(
         news_cmd(env.school, env.actor, env.ctx.correlation_id),
-        txn,
+        (env.school, env.actor, env.ctx.correlation_id) & *txn,
         env.news_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -966,7 +966,7 @@ async fn cms_slug_uniqueness_invariant() {
 
     let first = cms_create_page(
         page_cmd(env.school, env.actor, env.ctx.correlation_id),
-        txn,
+        (env.school, env.actor, env.ctx.correlation_id) & *txn,
         env.page_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -988,7 +988,7 @@ async fn cms_slug_uniqueness_invariant() {
 
     let second = cms_create_page(
         page_cmd(env.school, env.actor, env.ctx.correlation_id),
-        txn,
+        (env.school, env.actor, env.ctx.correlation_id) & *txn,
         env.page_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
