@@ -65,19 +65,22 @@ async fn outbox_append_and_pending_round_trip() {
     let event_id = env.event_id;
     // Append via a transaction.
     let tx = adapter.begin().await.unwrap();
-    tx.outbox().append(env).await.unwrap();
+    tx.outbox().append(school, env).await.unwrap();
     tx.commit().await.unwrap();
     // Pending via another transaction.
     let tx = adapter.begin().await.unwrap();
-    let pending = tx.outbox().pending(10).await.unwrap();
+    let pending = tx.outbox().pending(school, 10).await.unwrap();
     assert_eq!(pending.len(), 1);
     assert_eq!(pending[0].event_id, event_id);
     assert_eq!(pending[0].event_type, "academic.student.admitted");
     assert_eq!(pending[0].aggregate_type, "student");
     assert_eq!(pending[0].schema_version, 1);
     // Mark published and verify pending is now empty.
-    tx.outbox().mark_published(&[event_id]).await.unwrap();
-    let pending = tx.outbox().pending(10).await.unwrap();
+    tx.outbox()
+        .mark_published(school, &[event_id])
+        .await
+        .unwrap();
+    let pending = tx.outbox().pending(school, 10).await.unwrap();
     assert!(pending.is_empty());
 }
 
@@ -152,15 +155,15 @@ async fn outbox_pending_is_partitioned_by_school() {
 
     // Append each envelope in its own school's transaction.
     let tx = adapter_a.begin().await.unwrap();
-    tx.outbox().append(env_a).await.unwrap();
+    tx.outbox().append(school_a, env_a).await.unwrap();
     tx.commit().await.unwrap();
     let tx = adapter_b.begin().await.unwrap();
-    tx.outbox().append(env_b).await.unwrap();
+    tx.outbox().append(school_b, env_b).await.unwrap();
     tx.commit().await.unwrap();
 
     // School A drain: must contain event_a, must NOT contain event_b.
     let tx = adapter_a.begin().await.unwrap();
-    let pending_a = tx.outbox().pending(10).await.unwrap();
+    let pending_a = tx.outbox().pending(school_a, 10).await.unwrap();
     assert!(
         pending_a.iter().any(|e| e.event_id == event_id_a),
         "school A must see its own envelope after pending() drain"
@@ -177,7 +180,7 @@ async fn outbox_pending_is_partitioned_by_school() {
 
     // School B drain: must contain event_b, must NOT contain event_a.
     let tx = adapter_b.begin().await.unwrap();
-    let pending_b = tx.outbox().pending(10).await.unwrap();
+    let pending_b = tx.outbox().pending(school_b, 10).await.unwrap();
     assert!(
         pending_b.iter().any(|e| e.event_id == event_id_b),
         "school B must see its own envelope after pending() drain"
@@ -197,11 +200,14 @@ async fn outbox_pending_is_partitioned_by_school() {
     // `WHERE school_id = ?` predicate on the UPDATE closes that
     // gap (relay cross-tenant idempotency attack).
     let tx = adapter_b.begin().await.unwrap();
-    tx.outbox().mark_published(&[event_id_a]).await.unwrap();
+    tx.outbox()
+        .mark_published(school_b, &[event_id_a])
+        .await
+        .unwrap();
     tx.commit().await.unwrap();
 
     let tx = adapter_a.begin().await.unwrap();
-    let pending_a_after = tx.outbox().pending(10).await.unwrap();
+    let pending_a_after = tx.outbox().pending(school_a, 10).await.unwrap();
     assert!(
         pending_a_after.iter().any(|e| e.event_id == event_id_a),
         "school B's mark_published must not affect school A's outbox row"

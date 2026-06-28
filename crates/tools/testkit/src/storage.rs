@@ -1276,11 +1276,11 @@ mod tests {
             let school = g.next_school_id();
             let tx = adapter.begin().await.unwrap();
             let env = sample_envelope(school);
-            tx.outbox().append(env.clone()).await.unwrap();
+            tx.outbox().append(school, env.clone()).await.unwrap();
             tx.commit().await.unwrap();
             // After commit, the outbox is drained.
             let tx2 = adapter.begin().await.unwrap();
-            let pending = tx2.outbox().pending(10).await.unwrap();
+            let pending = tx2.outbox().pending(school, 10).await.unwrap();
             assert!(pending.is_empty());
         });
     }
@@ -1293,10 +1293,13 @@ mod tests {
             let g = SystemIdGen;
             let school = g.next_school_id();
             let tx = adapter.begin().await.unwrap();
-            tx.outbox().append(sample_envelope(school)).await.unwrap();
+            tx.outbox()
+                .append(school, sample_envelope(school))
+                .await
+                .unwrap();
             tx.rollback().await.unwrap();
             let tx2 = adapter.begin().await.unwrap();
-            let pending = tx2.outbox().pending(10).await.unwrap();
+            let pending = tx2.outbox().pending(school, 10).await.unwrap();
             // Cluster F (PORT-STORE-013): the staging buffer
             // is discarded on rollback, so the next
             // transaction observes an empty outbox. (Before
@@ -1545,7 +1548,10 @@ mod tests {
             // Stage a write so the transaction has real work
             // (and verifies the Drop path is exercised on a
             // non-trivial transaction).
-            tx.outbox().append(sample_envelope(school)).await.unwrap();
+            tx.outbox()
+                .append(school, sample_envelope(school))
+                .await
+                .unwrap();
 
             // Drop without `commit` or `rollback`.
             drop(tx);
@@ -1582,7 +1588,10 @@ mod tests {
             );
 
             let tx = adapter.begin().await.unwrap();
-            tx.outbox().append(sample_envelope(school)).await.unwrap();
+            tx.outbox()
+                .append(school, sample_envelope(school))
+                .await
+                .unwrap();
             // `commit` consumes the `Box<dyn Transaction>`;
             // its Drop fires when `commit` returns. QW-4
             // contract: a committed transaction MUST NOT
@@ -1840,7 +1849,7 @@ mod tests {
 
             // Phase 1: commit — all four become visible.
             let tx = adapter.begin().await.unwrap();
-            tx.outbox().append(envelope.clone()).await.unwrap();
+            tx.outbox().append(school, envelope.clone()).await.unwrap();
             tx.audit_log().append(audit.clone()).await.unwrap();
             tx.idempotency().record(idem_record.clone()).await.unwrap();
             tx.event_log().append(event_entry.clone()).await.unwrap();
@@ -1848,7 +1857,7 @@ mod tests {
 
             let tx2 = adapter.begin().await.unwrap();
             assert_eq!(
-                tx2.outbox().pending(10).await.unwrap().len(),
+                tx2.outbox().pending(school, 10).await.unwrap().len(),
                 0,
                 "outbox is drained on commit (envelopes flow to the bus and are removed)"
             );
@@ -1933,7 +1942,7 @@ mod tests {
 
             // Phase 1: stage everything, then rollback.
             let tx = adapter.begin().await.unwrap();
-            tx.outbox().append(envelope.clone()).await.unwrap();
+            tx.outbox().append(school, envelope.clone()).await.unwrap();
             tx.audit_log().append(audit.clone()).await.unwrap();
             tx.idempotency().record(idem_record.clone()).await.unwrap();
             tx.event_log().append(event_entry.clone()).await.unwrap();
@@ -1942,7 +1951,7 @@ mod tests {
             // Phase 2: nothing is visible to subsequent reads.
             let tx2 = adapter.begin().await.unwrap();
             assert!(
-                tx2.outbox().pending(10).await.unwrap().is_empty(),
+                tx2.outbox().pending(school, 10).await.unwrap().is_empty(),
                 "rolled-back outbox is empty"
             );
             assert!(
