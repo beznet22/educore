@@ -68,19 +68,22 @@ async fn outbox_append_and_pending_round_trip() {
     let event_id = env.event_id;
     // Append via a transaction.
     let tx = adapter.begin().await.unwrap();
-    tx.outbox().append(env).await.unwrap();
+    tx.outbox().append(school, env).await.unwrap();
     tx.commit().await.unwrap();
     // Pending via another transaction.
     let tx = adapter.begin().await.unwrap();
-    let pending = tx.outbox().pending(10).await.unwrap();
+    let pending = tx.outbox().pending(school, 10).await.unwrap();
     assert_eq!(pending.len(), 1);
     assert_eq!(pending[0].event_id, event_id);
     assert_eq!(pending[0].event_type, "academic.student.admitted");
     assert_eq!(pending[0].aggregate_type, "student");
     assert_eq!(pending[0].schema_version, 1);
     // Mark published and verify pending is now empty.
-    tx.outbox().mark_published(&[event_id]).await.unwrap();
-    let pending = tx.outbox().pending(10).await.unwrap();
+    tx.outbox()
+        .mark_published(school, &[event_id])
+        .await
+        .unwrap();
+    let pending = tx.outbox().pending(school, 10).await.unwrap();
     assert!(pending.is_empty());
 }
 
@@ -149,15 +152,15 @@ async fn outbox_pending_returns_only_handle_school_rows() {
     let env_a1 = make_envelope(school_a, "a1");
     let env_a2 = make_envelope(school_a, "a2");
     let env_b1 = make_envelope(school_b, "b1");
-    outbox_a.append(env_a1.clone()).await.unwrap();
-    outbox_a.append(env_a2.clone()).await.unwrap();
-    outbox_b.append(env_b1.clone()).await.unwrap();
+    outbox_a.append(school_a, env_a1.clone()).await.unwrap();
+    outbox_a.append(school_a, env_a2.clone()).await.unwrap();
+    outbox_b.append(school_b, env_b1.clone()).await.unwrap();
 
     // pending() on the school_a handle MUST return only the
     // two school_a envelopes (the WHERE school_id = $1
     // predicate filters by self.school, not by any caller
     // argument).
-    let pending_a = outbox_a.pending(100).await.unwrap();
+    let pending_a = outbox_a.pending(school_a, 100).await.unwrap();
     assert_eq!(
         pending_a.len(),
         2,
@@ -173,7 +176,7 @@ async fn outbox_pending_returns_only_handle_school_rows() {
 
     // pending() on the school_b handle MUST return only the
     // one school_b envelope.
-    let pending_b = outbox_b.pending(100).await.unwrap();
+    let pending_b = outbox_b.pending(school_b, 100).await.unwrap();
     assert_eq!(
         pending_b.len(),
         1,
@@ -212,7 +215,7 @@ async fn outbox_pending_count_rejects_wrong_school_id() {
 
     // Seed: one envelope in school_a.
     outbox_a
-        .append(make_envelope(school_a, "a1"))
+        .append(school_a, make_envelope(school_a, "a1"))
         .await
         .unwrap();
 
@@ -257,24 +260,21 @@ async fn outbox_pending_for_school_enforces_handle_scope() {
     // Seed: one envelope for school_a, one for school_b.
     let env_a = make_envelope(school_a, "a1");
     let env_b = make_envelope(school_b, "b1");
-    outbox_a.append(env_a.clone()).await.unwrap();
+    outbox_a.append(school_a, env_a.clone()).await.unwrap();
     PostgresOutbox::new(pool.clone(), school_b)
-        .append(env_b.clone())
+        .append(school_b, env_b.clone())
         .await
         .unwrap();
 
     // 1) Correct school: returns the school_a rows.
-    let got = outbox_a.pending_for_school(school_a, 100).await.unwrap();
+    let got = outbox_a.pending(school_a, 100).await.unwrap();
     assert_eq!(got.len(), 1);
     assert_eq!(got[0].school_id, school_a);
     assert_eq!(got[0].event_id, env_a.event_id);
 
     // 2) Wrong school: MUST return TenantViolation (no rows
     //    leaked across tenants).
-    let wrong = outbox_a
-        .pending_for_school(school_b, 100)
-        .await
-        .unwrap_err();
+    let wrong = outbox_a.pending(school_b, 100).await.unwrap_err();
     assert_eq!(wrong.kind(), ErrorKind::TenantViolation);
     assert!(matches!(wrong, DomainError::TenantViolation(_)));
 }

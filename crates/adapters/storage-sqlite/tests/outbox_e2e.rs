@@ -40,19 +40,22 @@ async fn outbox_append_and_pending_round_trip() {
     let event_id = env.event_id;
     // Append via a transaction.
     let tx = adapter.begin().await.unwrap();
-    tx.outbox().append(env).await.unwrap();
+    tx.outbox().append(school, env).await.unwrap();
     tx.commit().await.unwrap();
     // Pending via another transaction.
     let tx = adapter.begin().await.unwrap();
-    let pending = tx.outbox().pending(10).await.unwrap();
+    let pending = tx.outbox().pending(school, 10).await.unwrap();
     assert_eq!(pending.len(), 1);
     assert_eq!(pending[0].event_id, event_id);
     assert_eq!(pending[0].event_type, "academic.student.admitted");
     assert_eq!(pending[0].aggregate_type, "student");
     assert_eq!(pending[0].schema_version, 1);
     // Mark published and verify pending is now empty.
-    tx.outbox().mark_published(&[event_id]).await.unwrap();
-    let pending = tx.outbox().pending(10).await.unwrap();
+    tx.outbox()
+        .mark_published(school, &[event_id])
+        .await
+        .unwrap();
+    let pending = tx.outbox().pending(school, 10).await.unwrap();
     assert!(pending.is_empty());
 }
 
@@ -141,11 +144,11 @@ async fn outbox_pending_is_partitioned_by_school() {
 
     // Append via adapter_a's transaction.
     let tx = adapter_a.begin().await.unwrap();
-    tx.outbox().append(env_a).await.unwrap();
+    tx.outbox().append(school_a, env_a).await.unwrap();
     tx.commit().await.unwrap();
     // Append via adapter_b's transaction.
     let tx = adapter_b.begin().await.unwrap();
-    tx.outbox().append(env_b).await.unwrap();
+    tx.outbox().append(school_b, env_b).await.unwrap();
     tx.commit().await.unwrap();
 
     // Cross-school isolation: adapter_a only sees school_a's
@@ -158,7 +161,7 @@ async fn outbox_pending_is_partitioned_by_school() {
     // `school_id` that doesn't match the handle's scope with
     // `DomainError::TenantViolation`.
     let tx = adapter_a.begin().await.unwrap();
-    let pending_a = tx.outbox().pending(10).await.unwrap();
+    let pending_a = tx.outbox().pending(school_a, 10).await.unwrap();
     assert_eq!(
         pending_a.len(),
         1,
@@ -179,19 +182,19 @@ async fn outbox_pending_is_partitioned_by_school() {
         matches!(cross, Err(educore_core::error::DomainError::TenantViolation(_))),
         "adapter_a.pending_count(school_b) must reject cross-tenant probe with TenantViolation, got {cross:?}"
     );
-    let cross = tx.outbox().pending_for_school(school_b, 10).await;
+    let cross = tx.outbox().pending(school_b, 10).await;
     assert!(
         matches!(cross, Err(educore_core::error::DomainError::TenantViolation(_))),
-        "adapter_a.pending_for_school(school_b, _) must reject cross-tenant probe with TenantViolation, got {cross:?}"
+        "adapter_a.pending(school_b, _) must reject cross-tenant probe with TenantViolation, got {cross:?}"
     );
     // Matching-school explicit-school path works.
-    let pending_a_explicit = tx.outbox().pending_for_school(school_a, 10).await.unwrap();
+    let pending_a_explicit = tx.outbox().pending(school_a, 10).await.unwrap();
     assert_eq!(pending_a_explicit.len(), 1);
     assert_eq!(pending_a_explicit[0].event_id, event_id_a);
     drop(tx);
 
     let tx = adapter_b.begin().await.unwrap();
-    let pending_b = tx.outbox().pending(10).await.unwrap();
+    let pending_b = tx.outbox().pending(school_b, 10).await.unwrap();
     assert_eq!(
         pending_b.len(),
         1,
@@ -214,15 +217,18 @@ async fn outbox_pending_is_partitioned_by_school() {
     // Mark adapter_a's row published via adapter_a; adapter_b's
     // row must remain pending.
     let tx = adapter_a.begin().await.unwrap();
-    tx.outbox().mark_published(&[event_id_a]).await.unwrap();
+    tx.outbox()
+        .mark_published(school_a, &[event_id_a])
+        .await
+        .unwrap();
     tx.commit().await.unwrap();
     let tx = adapter_a.begin().await.unwrap();
     assert!(
-        tx.outbox().pending(10).await.unwrap().is_empty(),
+        tx.outbox().pending(school_a, 10).await.unwrap().is_empty(),
         "adapter_a must see no pending rows after mark_published"
     );
     let tx = adapter_b.begin().await.unwrap();
-    let still_pending = tx.outbox().pending(10).await.unwrap();
+    let still_pending = tx.outbox().pending(school_b, 10).await.unwrap();
     assert_eq!(
         still_pending.len(),
         1,
