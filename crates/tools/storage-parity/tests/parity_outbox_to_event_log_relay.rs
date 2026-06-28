@@ -82,11 +82,7 @@ async fn append_and_drain_within_tx(
         .append(school, serialized)
         .await
         .expect("outbox append");
-    let pending = tx
-        .outbox()
-        .pending(ctx.school_id, 100)
-        .await
-        .expect("pending");
+    let pending = tx.outbox().pending(school, 100).await.expect("pending");
     for env in &pending {
         let entry = educore_storage::event_log::EventLogEntry::from_serialized_envelope(env);
         tx.event_log()
@@ -94,7 +90,7 @@ async fn append_and_drain_within_tx(
             .await
             .expect("event_log append");
         tx.outbox()
-            .mark_published(&[env.event_id])
+            .mark_published(school, &[env.event_id])
             .await
             .expect("mark_published");
     }

@@ -97,7 +97,7 @@ impl UniquenessChecker for TestUniqueness {
 /// Drains the outbox into the event log. This is what a relay
 /// process does in production; we inline it here so the test
 /// can assert the event_log without standing up a real relay.
-async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter) {
+async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter, school: SchoolId) {
     let tx = adapter.begin().await.expect("begin");
     let pending = tx.outbox().pending(school, 100).await.expect("pending");
     for env in &pending {
@@ -107,7 +107,7 @@ async fn relay_outbox_to_event_log(adapter: &dyn StorageAdapter) {
             .await
             .expect("event_log append");
         tx.outbox()
-            .mark_published(&[env.event_id])
+            .mark_published(school, &[env.event_id])
             .await
             .expect("mark_published");
     }
@@ -161,7 +161,7 @@ async fn dispatch_create_school(
     );
     let tx = adapter.begin().await.expect("begin");
     tx.outbox()
-        .append(school, serialized)
+        .append(ctx.school_id, serialized)
         .await
         .expect("outbox append");
     tx.audit_log()
@@ -178,7 +178,7 @@ async fn dispatch_create_school(
     bus.publish(envelope).await.expect("bus publish");
 
     // 5. Drain the outbox into the event log.
-    relay_outbox_to_event_log(adapter).await;
+    relay_outbox_to_event_log(adapter, ctx.school_id).await;
 
     school
 }
@@ -230,7 +230,11 @@ async fn cross_cutting_integration_sqlite() {
 
     // Verify the 4 sub-ports (outbox drained, so 0 pending).
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(school, 10).await.expect("pending");
+    let pending = tx
+        .outbox()
+        .pending(ctx.school_id, 10)
+        .await
+        .expect("pending");
     assert!(pending.is_empty(), "outbox should be drained after relay");
     let audit_count = tx
         .audit_log()
@@ -297,11 +301,11 @@ async fn outbox_to_event_log_relay_preserves_event_id_and_payload() {
     let serialized = SerializedEnvelope::from_event_envelope(&envelope);
     let tx = adapter.begin().await.expect("begin");
     tx.outbox()
-        .append(school, serialized)
+        .append(ctx.school_id, serialized)
         .await
         .expect("append");
     tx.commit().await.expect("commit");
-    relay_outbox_to_event_log(&*adapter).await;
+    relay_outbox_to_event_log(&*adapter, ctx.school_id).await;
     let tx = adapter.begin().await.expect("begin");
     let filter = EventLogFilter::for_school(ctx.school_id);
     let events = tx.event_log().read(filter).await.expect("read");

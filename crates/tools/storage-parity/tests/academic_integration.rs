@@ -162,7 +162,7 @@ async fn dispatch_admit_student(
     );
     let tx = adapter.begin().await.expect("begin");
     tx.outbox()
-        .append(school, serialized)
+        .append(ctx.school_id, serialized)
         .await
         .expect("outbox append");
     tx.audit_log()
@@ -177,7 +177,7 @@ async fn dispatch_admit_student(
 
     bus.publish(envelope).await.expect("bus publish");
 
-    relay_outbox_to_event_log(adapter, school).await;
+    relay_outbox_to_event_log(adapter, ctx.school_id).await;
 
     student
 }
@@ -246,7 +246,11 @@ async fn cross_cutting_integration_academic() {
 
     // Verify the 4 sub-ports.
     let tx = adapter.begin().await.expect("begin");
-    let pending = tx.outbox().pending(school, 10).await.expect("pending");
+    let pending = tx
+        .outbox()
+        .pending(ctx.school_id, 10)
+        .await
+        .expect("pending");
     assert!(pending.is_empty(), "outbox should be drained after relay");
     let audit_count = tx
         .audit_log()
