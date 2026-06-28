@@ -410,6 +410,7 @@ async fn setup_test_env() -> TestEnv {
     let news_repo = Arc::new(InMemoryNewsRepo::new());
     let ctx = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
     TestEnv {
+        adapter,
         bus,
         bus_dyn,
         audit,
@@ -513,11 +514,9 @@ async fn cms_integration_sqlite_vertical_slice() {
     // 1. Create a Page.
     let txn = env.adapter.begin().await.expect("begin txn");
 
-    let txn = env.adapter.begin().await.expect("begin txn");
-
     let page = cms_create_page(
         page_cmd(env.school, env.actor, env.ctx.correlation_id),
-        (env.school, env.actor, env.ctx.correlation_id) & *txn,
+        &*txn,
         env.page_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -532,11 +531,9 @@ async fn cms_integration_sqlite_vertical_slice() {
     // 2. Create a News.
     let txn = env.adapter.begin().await.expect("begin txn");
 
-    let txn = env.adapter.begin().await.expect("begin txn");
-
     let news = cms_create_news(
         news_cmd(env.school, env.actor, env.ctx.correlation_id),
-        (env.school, env.actor, env.ctx.correlation_id) & *txn,
+        &*txn,
         env.news_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -962,11 +959,9 @@ async fn cms_slug_uniqueness_invariant() {
     // First create succeeds.
     let txn = env.adapter.begin().await.expect("begin txn");
 
-    let txn = env.adapter.begin().await.expect("begin txn");
-
     let first = cms_create_page(
         page_cmd(env.school, env.actor, env.ctx.correlation_id),
-        (env.school, env.actor, env.ctx.correlation_id) & *txn,
+        &*txn,
         env.page_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -984,11 +979,9 @@ async fn cms_slug_uniqueness_invariant() {
     // location.
     let txn = env.adapter.begin().await.expect("begin txn");
 
-    let txn = env.adapter.begin().await.expect("begin txn");
-
     let second = cms_create_page(
         page_cmd(env.school, env.actor, env.ctx.correlation_id),
-        (env.school, env.actor, env.ctx.correlation_id) & *txn,
+        &*txn,
         env.page_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -1120,11 +1113,11 @@ fn cms_form_uploaded_public_indexing_subscriber_indexes_when_show_public() {
     });
     let env = EventEnvelope {
         event_id: educore_core::ids::EventId(uuid::Uuid::now_v7()),
-        event_type: "documents.form_download.uploaded",
+        event_type: "documents.form_download.uploaded".to_string(),
         schema_version: 1,
         school_id: SchoolId::from_uuid(uuid::Uuid::now_v7()),
         aggregate_id: uuid::Uuid::now_v7(),
-        aggregate_type: "form_download",
+        aggregate_type: "form_download".to_string(),
         actor_id: UserId::from_uuid(uuid::Uuid::now_v7()),
         correlation_id: CorrelationId::from_uuid(uuid::Uuid::now_v7()),
         causation_id: None,
@@ -1146,11 +1139,11 @@ fn cms_form_uploaded_public_indexing_subscriber_ignores_when_not_public() {
     });
     let env = EventEnvelope {
         event_id: educore_core::ids::EventId(uuid::Uuid::now_v7()),
-        event_type: "documents.form_download.uploaded",
+        event_type: "documents.form_download.uploaded".to_string(),
         schema_version: 1,
         school_id: SchoolId::from_uuid(uuid::Uuid::now_v7()),
         aggregate_id: uuid::Uuid::now_v7(),
-        aggregate_type: "form_download",
+        aggregate_type: "form_download".to_string(),
         actor_id: UserId::from_uuid(uuid::Uuid::now_v7()),
         correlation_id: CorrelationId::from_uuid(uuid::Uuid::now_v7()),
         causation_id: None,
