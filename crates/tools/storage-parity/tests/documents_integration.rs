@@ -470,9 +470,6 @@ async fn setup_test_env() -> TestEnv {
     let adapter: Arc<dyn educore_storage::StorageAdapter> = Arc::new(
         educore_testkit::storage::InMemoryStorageAdapter::new(bus_dyn.clone()),
     );
-    let adapter: Arc<dyn educore_storage::StorageAdapter> = Arc::new(
-        educore_testkit::storage::InMemoryStorageAdapter::new(bus_dyn.clone()),
-    );
     let g = SystemIdGen;
     let school = g.next_school_id();
     let actor = g.next_user_id();
@@ -601,7 +598,7 @@ async fn documents_integration_sqlite_vertical_slice() {
 
     let form = upload_form_service(
         upload_cmd(env.school, env.actor, env.ctx.correlation_id),
-        (env.school, env.actor, env.ctx.correlation_id) & *txn,
+        &*txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -807,6 +804,8 @@ async fn documents_postal_reference_uniqueness_invariant() {
     let academic_id = uuid::Uuid::now_v7();
     let reference = "REF-DUP-001";
 
+    let txn = env.adapter.begin().await.expect("begin txn");
+
     // Insert a first dispatch with `reference_no = reference`.
     let first = dispatch_postal_service(
         DispatchPostalCommand {
@@ -887,6 +886,7 @@ async fn documents_postal_reference_uniqueness_invariant() {
             file: None,
         },
         other_year,
+        &*txn,
         env.dispatch_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -911,7 +911,7 @@ async fn documents_soft_delete_invariant_holds() {
 
     let form = upload_form_service(
         upload_cmd(env.school, env.actor, env.ctx.correlation_id),
-        (env.school, env.actor, env.ctx.correlation_id) & *txn,
+        &*txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
@@ -933,6 +933,7 @@ async fn documents_soft_delete_invariant_holds() {
             ),
             form_id,
         },
+        &*txn,
         env.form_repo.clone(),
         env.bus.clone(),
         env.audit.clone(),
