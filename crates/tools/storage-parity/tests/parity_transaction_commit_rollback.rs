@@ -102,7 +102,10 @@ async fn assert_commit_and_rollback_lifecycle(adapter: &dyn StorageAdapter, scho
     let (env_a, audit_a, event_a) = fresh_writes(school);
     {
         let tx = adapter.begin().await.expect("begin-commit");
-        tx.outbox().append(env_a.clone()).await.expect("append env");
+        tx.outbox()
+            .append(school, env_a.clone())
+            .await
+            .expect("append env");
         tx.audit_log()
             .append(audit_a.clone())
             .await
@@ -148,10 +151,13 @@ async fn assert_commit_and_rollback_lifecycle(adapter: &dyn StorageAdapter, scho
     let (_env_b, _audit_b, _event_b) = fresh_writes(school);
     let tx = adapter.begin().await.expect("begin-rollback");
     tx.outbox()
-        .append(SerializedEnvelope {
-            event_type: "parity.test.rolled_back".to_owned(),
-            .._env_b.clone()
-        })
+        .append(
+            school,
+            SerializedEnvelope {
+                event_type: "parity.test.rolled_back".to_owned(),
+                .._env_b.clone()
+            },
+        )
         .await
         .expect("append env rollback");
     tx.audit_log()

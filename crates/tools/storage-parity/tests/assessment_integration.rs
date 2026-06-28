@@ -171,7 +171,7 @@ async fn dispatch_create_exam(
     );
     let tx = adapter.begin().await.expect("begin");
     tx.outbox()
-        .append(school, serialized)
+        .append(ctx.school_id, serialized)
         .await
         .expect("outbox append");
     tx.audit_log()
@@ -186,7 +186,7 @@ async fn dispatch_create_exam(
 
     bus.publish(envelope).await.expect("bus publish");
 
-    relay_outbox_to_event_log(adapter, school).await;
+    relay_outbox_to_event_log(adapter, ctx.school_id).await;
 
     exam
 }
@@ -260,7 +260,7 @@ async fn assessment_integration_sqlite() {
     .await;
 
     // Drain the outbox so we can assert the event log + bus.
-    relay_outbox_to_event_log(adapter.as_ref()).await;
+    relay_outbox_to_event_log(adapter.as_ref(), school).await;
 
     // Open a new read tx and assert each of the 4 sub-ports.
     let tx = adapter.begin().await.expect("begin");
@@ -363,7 +363,7 @@ async fn assessment_integration_postgres() {
         &uniqueness,
     )
     .await;
-    relay_outbox_to_event_log(adapter.as_ref()).await;
+    relay_outbox_to_event_log(adapter.as_ref(), school).await;
     let tx = adapter.begin().await.expect("begin");
     assert_eq!(
         tx.outbox()
@@ -418,7 +418,7 @@ async fn assessment_integration_mysql() {
         &uniqueness,
     )
     .await;
-    relay_outbox_to_event_log(adapter.as_ref()).await;
+    relay_outbox_to_event_log(adapter.as_ref(), school).await;
     let tx = adapter.begin().await.expect("begin");
     assert_eq!(
         tx.outbox()

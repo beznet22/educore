@@ -95,7 +95,7 @@ impl UniquenessChecker for TestUniqueness {
 /// does not depend on `common::relay_outbox_to_event_log`
 /// differing from the local copy.
 async fn relay(adapter: &dyn StorageAdapter, school: educore_core::ids::SchoolId) {
-    common::relay_outbox_to_event_log(adapter, ctx.school_id).await;
+    common::relay_outbox_to_event_log(adapter, school).await;
 }
 
 async fn dispatch_create_school(
@@ -135,7 +135,7 @@ async fn dispatch_create_school(
     );
     let tx = adapter.begin().await.expect("begin");
     tx.outbox()
-        .append(school, serialized)
+        .append(ctx.school_id, serialized)
         .await
         .expect("outbox append");
     tx.audit_log()
@@ -170,7 +170,7 @@ async fn dispatch_create_school(
     }
     tx.commit().await.expect("commit");
     bus.publish(envelope).await.expect("bus publish");
-    let _ = relay(adapter).await;
+    let _ = relay(adapter, ctx.school_id).await;
     school
 }
 

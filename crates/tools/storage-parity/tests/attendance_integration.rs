@@ -272,7 +272,7 @@ async fn dispatch_bulk_mark(
     for env in &envelopes {
         let serialized = SerializedEnvelope::from_event_envelope(env);
         tx.outbox()
-            .append(school, serialized)
+            .append(ctx.school_id, serialized)
             .await
             .expect("outbox append");
     }
