@@ -43,6 +43,7 @@
 
 use std::collections::BTreeMap;
 
+use educore_communication::events::{NotificationSettingCreated, SmsGatewayConfigured};
 use educore_communication::prelude::*;
 use educore_communication::value_objects::SmsGatewayCredentials;
 use educore_core::clock::{Clock as _, IdGenerator as _, SystemIdGen, TestClock};
@@ -93,7 +94,7 @@ fn complaint_register_creates_open_complaint() {
         ComplaintId::new(school, g.next_uuid()),
         Some(actor),
         complaint_type_id,
-        ComplaintSource::InPerson,
+        ComplaintSource::WalkIn,
         Some(
             PhoneNumber::new("+15551234567")
                 .unwrap_or_else(|_| PhoneNumber::new("+1-555-1234").expect("fallback phone valid")),
@@ -331,7 +332,7 @@ fn email_setting_configure_then_activate() {
         "smtp.school.example".to_owned(),
         587,
         "office".to_owned(),
-        SecretReference("vault://email/smtp_password".to_owned()),
+        SecretReference::new("vault://email/smtp_password").expect("secret reference valid"),
         MailEncryption::Tls,
         actor,
         clock.now(),
@@ -371,7 +372,8 @@ fn sms_gateway_configure_with_twilio_credentials() {
         GatewayType::Twilio,
         SmsGatewayCredentials::Twilio {
             account_sid: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx".to_owned(),
-            auth_token: SecretReference("vault://sms/twilio_token".to_owned()),
+            auth_token: SecretReference::new("vault://sms/twilio_token")
+                .expect("secret reference valid"),
             registered_no: "+15551234567".to_owned(),
         },
         actor,
@@ -404,7 +406,7 @@ fn sms_gateway_configure_with_twilio_credentials() {
 /// typed event is well-formed.
 #[test]
 fn notification_setting_create_event_route() {
-    use educore_communication::entities::NotificationSettingAudience;
+    use educore_communication::prelude::NotificationSettingAudience;
 
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
@@ -648,7 +650,6 @@ fn chat_block_user_emits_user_blocked() {
         ChatBlockUserId::new(school, g.next_uuid()),
         actor,
         target,
-        actor,
         clock.now(),
         g.next_correlation_id(),
     );
@@ -656,6 +657,7 @@ fn chat_block_user_emits_user_blocked() {
     assert_eq!(block.block_to, target);
 
     let event: UserBlocked = UserBlocked::new(
+        school,
         block.block_by,
         block.block_to,
         clock.now(),
@@ -685,6 +687,8 @@ fn chat_invitation_lifecycle_accept() {
         actor,
         target,
         ChatInvitationTypeEnum::OneToOne,
+        None,
+        None,
         actor,
         clock.now(),
         g.next_correlation_id(),
@@ -758,13 +762,13 @@ fn chat_status_record_set_emits_chat_status_set() {
         ChatStatusId::new(school, g.next_uuid()),
         actor,
         ChatStatus::Active,
-        actor,
         clock.now(),
         g.next_correlation_id(),
     );
     assert!(matches!(rec.status, ChatStatus::Active));
 
     let event: ChatStatusSet = ChatStatusSet::new(
+        school,
         rec.user_id,
         rec.status,
         clock.now(),
@@ -808,7 +812,7 @@ fn send_message_create_captures_audience_and_publish_date() {
 
     let event: SendMessageCreated = SendMessageCreated::new(
         sm.id,
-        sm.audience.clone(),
+        sm.message_to.clone(),
         sm.publish_on,
         g.next_event_id(),
         CorrelationId::from(g.next_uuid()),
@@ -850,14 +854,14 @@ fn contact_message_receive_emits_received_event() {
         g.next_correlation_id(),
     );
     assert_eq!(cm.subject, "Admissions inquiry");
-    assert_eq!(cm.view_status, ContactMessageViewStatus::Unread);
-    assert_eq!(cm.reply_status, ContactMessageReplyStatus::Pending);
+    assert_eq!(cm.view_status, ContactMessageViewStatus::Unviewed);
+    assert_eq!(cm.reply_status, ContactMessageReplyStatus::Unreplied);
 
     let event: ContactMessageReceived = ContactMessageReceived::new(
         cm.id,
         cm.name.clone(),
-        cm.email.clone(),
-        cm.phone.clone(),
+        cm.email.clone().expect("email must be set"),
+        cm.phone.clone().expect("phone must be set"),
         cm.subject.clone(),
         g.next_event_id(),
         CorrelationId::from(g.next_uuid()),
@@ -897,7 +901,7 @@ fn speech_slider_create_emits_speech_slider_created() {
 
     let event: SpeechSliderCreated = SpeechSliderCreated::new(
         ss.id,
-        ss.name.clone(),
+        ss.name.as_str().to_owned(),
         ss.designation.clone(),
         g.next_event_id(),
         CorrelationId::from(g.next_uuid()),
@@ -931,7 +935,7 @@ fn phone_call_log_record_then_update_follow_up() {
         date(2026, 6, 1),
         CallDescription::new("Discussed grade promotion criteria.").expect("description valid"),
         None,
-        Some(CallDuration("00:05:30".to_owned())),
+        Some(CallDuration::new("00:05:30").expect("call duration valid")),
         CallType::Incoming,
         actor,
         clock.now(),
@@ -964,7 +968,7 @@ fn phone_call_log_record_then_update_follow_up() {
 /// key/value pairs).
 #[test]
 fn custom_sms_setting_create_captures_gateway_shape() {
-    use educore_communication::entities::CustomSmsSettingParam;
+    use educore_communication::prelude::CustomSmsSettingParam;
 
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
@@ -1079,7 +1083,6 @@ fn chat_status_aggregate_known_rename_gap() {
         ChatStatusId::new(school, g.next_uuid()),
         actor,
         ChatStatus::Active,
-        actor,
         clock.now(),
         g.next_correlation_id(),
     );
