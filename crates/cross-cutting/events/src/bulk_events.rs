@@ -101,6 +101,7 @@ impl BulkCommandStarted {
     }
 }
 
+#[allow(clippy::misnamed_getters)]
 impl DomainEvent for BulkCommandStarted {
     /// Stable dotted event-type string. The subscription key
     /// for consumers is `"engine.bulk_command.started"`.
@@ -182,6 +183,7 @@ impl BulkCommandItemProcessed {
     }
 }
 
+#[allow(clippy::misnamed_getters)]
 impl DomainEvent for BulkCommandItemProcessed {
     /// Stable dotted event-type string. The subscription key
     /// for consumers is `"engine.bulk_command.item_processed"`.
@@ -265,6 +267,7 @@ impl BulkCommandCompleted {
     }
 }
 
+#[allow(clippy::misnamed_getters)]
 impl DomainEvent for BulkCommandCompleted {
     /// Stable dotted event-type string. The subscription key
     /// for consumers is `"engine.bulk_command.completed"`.
