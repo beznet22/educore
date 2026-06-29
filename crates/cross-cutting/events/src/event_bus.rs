@@ -10,6 +10,7 @@
 //! module is the port only.
 
 use std::fmt;
+use std::sync::Arc;
 use std::time::Duration;
 
 use async_trait::async_trait;
@@ -46,6 +47,37 @@ pub trait EventBus: Send + Sync + fmt::Debug {
     /// Subscribe to a topic. The returned subscription is a
     /// long-lived async iterator.
     async fn subscribe(&self, options: SubscribeOptions) -> Result<Box<dyn EventSubscription>>;
+
+    /// Returns the dead-letter queue (DLQ) attached to this bus,
+    /// if one is configured. Adapters that surface a DLQ
+    /// override this method; the default returns `None`, in
+    /// which case the `EventSubscription::nack` path treats
+    /// `requeue = false` as a drop (the envelope is logged but
+    /// not persisted anywhere recoverable).
+    ///
+    /// Per [`docs/ports/event-bus.md`](../docs/ports/event-bus.md):
+    /// "`nack(requeue=false)` routes the envelope to the
+    /// dead-letter queue." The DLQ port ([`DeadLetterQueue`])
+    /// is the landing pad; the bus port exposes it through
+    /// this accessor so subscription code can route nacks
+    /// without holding a separate handle to the DLQ adapter.
+    ///
+    /// # Object safety
+    ///
+    /// The return type is `Option<Arc<dyn DeadLetterQueue>>`.
+    /// The `Arc` indirection keeps the trait object-safe (no
+    /// generic lifetimes leak through) and matches the
+    /// `Arc<dyn AuditSink>` shape used elsewhere on the bus
+    /// port.
+    ///
+    /// # Default
+    ///
+    /// Returns `None`. Existing implementations that do not
+    /// yet expose a DLQ continue to compile unchanged; they
+    /// should override this once they wire a DLQ adapter.
+    async fn dlq(&self) -> Option<Arc<dyn DeadLetterQueue>> {
+        None
+    }
 }
 
 /// Acknowledgement semantics for `EventSubscription::ack` /
@@ -539,6 +571,293 @@ impl AuditSink for NoopAuditSink {
         _consumer: &ConsumerId,
     ) -> Result<()> {
         Ok(())
+    }
+}
+
+/// The reason an envelope was routed to the dead-letter queue
+/// (DLQ).
+///
+/// The DLQ is the terminal sink for envelopes that the bus or
+/// its consumers cannot process. The variant tells operators
+/// *why* a given envelope landed there so the right replay
+/// policy can be chosen (re-publish, drop, or escalate).
+///
+/// # Why an enum
+///
+/// A free-form `String` reason is rejected: the operator
+/// dashboard filters by reason, replay tooling keys off it,
+/// and metrics aggregate per-variant counts. A `String` would
+/// silently couple dashboards and replay scripts.
+///
+/// # When each variant is set
+///
+/// - [`NackRejected`](Self::NackRejected) — the consumer
+///   called [`EventSubscription::nack`] with `requeue =
+///   false`. This is the most common path; the consumer
+///   decided the envelope was unprocessable (e.g. business
+///   rule violation it does not intend to retry).
+/// - [`MaxRetriesExceeded`](Self::MaxRetriesExceeded) — the
+///   consumer retried up to the configured ceiling (typically
+///   tracked by the adapter, not by the engine) and the
+///   envelope is now poison.
+/// - [`TimeoutExpired`](Self::TimeoutExpired) — the envelope
+///   exceeded the consumer's processing budget without an
+///   explicit nack; the adapter timed the consumer out and
+///   routed the envelope to the DLQ on its behalf.
+/// - [`SchemaMismatch`](Self::SchemaMismatch) — the envelope's
+///   `schema_version` could not be deserialised by the
+///   consumer, or the payload failed the consumer's
+///   type-check before any business logic ran. Schema
+///   mismatches are almost always terminal; replaying them
+///   after a code change requires re-publishing from the
+///   outbox, not re-driving the DLQ entry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum DeadLetterReason {
+    /// The consumer called `nack(requeue = false)` and asked
+    /// for the envelope to be dead-lettered.
+    NackRejected,
+    /// The envelope exceeded the consumer's retry ceiling.
+    MaxRetriesExceeded,
+    /// The consumer's processing budget expired without an
+    /// explicit ack or nack; the adapter routed the envelope
+    /// to the DLQ on the consumer's behalf.
+    TimeoutExpired,
+    /// The envelope's `schema_version` did not match what the
+    /// consumer could deserialise, or the payload failed a
+    /// type-check before any business logic ran.
+    SchemaMismatch,
+}
+
+/// A single entry in the dead-letter queue.
+///
+/// An entry is the (envelope, reason, attempt history)
+/// triple that an operator inspects when triaging a DLQ
+/// back-log. Adapters persist this shape verbatim; the bus
+/// port treats it as the wire format for `list()`.
+///
+/// # Stability
+///
+/// The field set and order are part of the engine's public
+/// API. Renames or removals are breaking changes and require
+/// an ADR. New fields are additive and may be added in a
+/// minor release.
+///
+/// # Why a struct (not a tuple)
+///
+/// Consumers in operator dashboards and replay scripts
+/// pattern-match on field names. Tuple positions silently
+/// shift when fields are inserted; named fields do not.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeadLetterEntry {
+    /// The envelope that was dead-lettered. The full
+    /// `EventEnvelope` is retained (not just `event_id`) so
+    /// operators can inspect the payload and `schema_version`
+    /// without cross-referencing the event log.
+    pub envelope: EventEnvelope,
+    /// Why the envelope was routed here. See
+    /// [`DeadLetterReason`].
+    pub reason: DeadLetterReason,
+    /// How many delivery attempts the bus made before
+    /// giving up. For [`NackRejected`](DeadLetterReason::NackRejected)
+    /// entries this is typically 1; for
+    /// [`MaxRetriesExceeded`](DeadLetterReason::MaxRetriesExceeded)
+    /// it equals the configured ceiling.
+    pub attempt_count: u32,
+    /// The first time the bus observed this envelope. For
+    /// retry-driven entries this is the original
+    /// `occurred_at`; for `NackRejected` entries this is the
+    /// time of the consumer's nack call.
+    pub first_seen: Timestamp,
+    /// The most recent delivery attempt's clock time.
+    /// Operators compare this against `first_seen` to gauge
+    /// how long an envelope sat in the DLQ between retries.
+    pub last_attempt_at: Timestamp,
+}
+
+impl DeadLetterEntry {
+    /// Convenience constructor. Adapters that build entries
+    /// in a loop use this to avoid the verbose struct
+    /// literal; tests and one-off operator scripts use it
+    /// the same way.
+    #[must_use]
+    pub fn new(
+        envelope: EventEnvelope,
+        reason: DeadLetterReason,
+        attempt_count: u32,
+        first_seen: Timestamp,
+        last_attempt_at: Timestamp,
+    ) -> Self {
+        Self {
+            envelope,
+            reason,
+            attempt_count,
+            first_seen,
+            last_attempt_at,
+        }
+    }
+
+    /// Returns the [`EventId`] of the dead-lettered envelope.
+    /// Convenience for log lines and dashboards that only
+    /// need the id; avoids a full envelope clone.
+    #[must_use]
+    pub fn event_id(&self) -> EventId {
+        self.envelope.event_id
+    }
+}
+
+/// The dead-letter queue (DLQ) port. Object-safe.
+///
+/// Per [`docs/ports/event-bus.md`](../docs/ports/event-bus.md):
+/// "`nack(requeue=false)` routes the envelope to the
+/// dead-letter queue. Operators inspect the queue via
+/// `list()` and replay via a future `replay_dlq()` helper."
+///
+/// The DLQ is the terminal sink for envelopes the bus (or
+/// its consumers) cannot process. It is a *separate* port
+/// from [`EventBus`]: the bus moves envelopes through
+/// delivery, the DLQ stores the ones delivery gave up on.
+/// Adapters in `educore-event-bus` wire the DLQ into the
+/// bus's `nack(requeue = false)` path; operators wire the
+/// DLQ into their dashboards and replay tools.
+///
+/// # Implementations
+///
+/// - `InMemoryDeadLetterQueue` — `educore-event-bus` crate,
+///   default feature. Useful for tests and ephemeral
+///   single-process deployments.
+/// - `DatabaseDeadLetterQueue` — `educore-event-bus` crate,
+///   for production wiring. Persists entries to a
+///   `dead_letter` table on the same engine database (or a
+///   sidecar DLQ database, depending on operational
+///   policy).
+///
+/// # Object safety
+///
+/// The trait is object-safe: all async methods use
+/// `async_trait`, which keeps the futures boxed. Bus
+/// implementations hold the queue as
+/// `std::sync::Arc<dyn DeadLetterQueue>` and pass it across
+/// spawn boundaries without generic-type plumbing. The
+/// [`EventBus::dlq`] accessor returns the same shape.
+///
+/// # Failure handling
+///
+/// `send` MUST return `Err(_)` if the entry could not be
+/// persisted. The bus adapter that called `send` decides
+/// whether to fail-fast (reject the nack, leaving the
+/// envelope in-flight) or record-and-continue (log via
+/// `tracing::error!` with the event id and let the envelope
+/// be redelivered after the visibility timeout). Both
+/// policies are defensible; the port does not pick one.
+///
+/// `list` MUST return `Err(_)` if the entries could not be
+/// read. The operator dashboard typically surfaces the
+/// error directly.
+///
+/// # Default implementation
+///
+/// [`NoopDeadLetterQueue`] is provided for tests and for
+/// adapter configurations where the DLQ is intentionally
+/// disabled (e.g. ephemeral local-development runs where the
+/// `dead_letter` table is not provisioned). Production wiring
+/// MUST use an adapter that persists entries to durable
+/// storage.
+#[async_trait]
+pub trait DeadLetterQueue: Send + Sync + fmt::Debug {
+    /// Persist `envelope` to the DLQ with the given
+    /// `reason`. The DLQ adapter stamps the `attempt_count`,
+    /// `first_seen`, and `last_attempt_at` fields of the
+    /// resulting [`DeadLetterEntry`]; callers supply only
+    /// the envelope, reason, and attempt count.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(_)` if the entry could not be persisted.
+    /// See the trait-level docs for the fail-fast vs.
+    /// record-and-continue policy decision.
+    async fn send(
+        &self,
+        envelope: &EventEnvelope,
+        reason: DeadLetterReason,
+        attempt_count: u32,
+    ) -> Result<()>;
+
+    /// Return up to `limit` DLQ entries, in insertion order
+    /// (oldest first). Operators call this from dashboards
+    /// and replay scripts.
+    ///
+    /// The `limit` parameter caps the result set so a
+    /// back-log with millions of entries does not blow the
+    /// operator's memory. Adapters SHOULD clamp `limit` to a
+    /// sane upper bound (e.g. 1..=1024) and reject 0.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(_)` if the entries could not be read.
+    async fn list(&self, limit: u32) -> Result<Vec<DeadLetterEntry>>;
+
+    /// Drop a DLQ entry by `event_id`. Used by replay
+    /// tooling after the entry has been re-published and
+    /// acknowledged, so the DLQ does not grow without
+    /// bound.
+    ///
+    /// The default implementation returns `Ok(())` so
+    /// in-memory DLQ adapters that do not need explicit
+    /// pruning (e.g. tests that discard the whole queue at
+    /// process exit) do not have to implement it.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(_)` if the entry could not be removed.
+    /// Adapters that cannot find the entry also return
+    /// `Err(_)`; "not found" is a normal operator scenario
+    /// but the port treats it as an error so callers do not
+    /// silently assume success.
+    async fn drop_entry(&self, event_id: EventId) -> Result<()> {
+        let _ = event_id;
+        Ok(())
+    }
+}
+
+/// A no-op [`DeadLetterQueue`] for tests and for adapter
+/// configurations where the DLQ is intentionally disabled.
+///
+/// `NoopDeadLetterQueue::send` returns `Ok(())` without
+/// persisting the entry; `list` returns `Ok(vec![])`. This
+/// is the only situation where the bus may legitimately drop
+/// dead-letter records; the choice is explicit at the call
+/// site (the adapter constructs a `NoopDeadLetterQueue`
+/// rather than omitting the `Arc<dyn DeadLetterQueue>`
+/// handle).
+///
+/// # When to use
+///
+/// - Unit and integration tests where DLQ wiring is out of
+///   scope.
+/// - Local-development binaries that intentionally skip the
+///   `dead_letter` table.
+/// - Benchmarks where the DLQ path is the variable under
+///   test and a no-op baseline is needed.
+///
+/// Production wiring MUST NOT use `NoopDeadLetterQueue`;
+/// envelopes that should be dead-lettered will be silently
+/// dropped.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct NoopDeadLetterQueue;
+
+#[async_trait]
+impl DeadLetterQueue for NoopDeadLetterQueue {
+    async fn send(
+        &self,
+        _envelope: &EventEnvelope,
+        _reason: DeadLetterReason,
+        _attempt_count: u32,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    async fn list(&self, _limit: u32) -> Result<Vec<DeadLetterEntry>> {
+        Ok(Vec::new())
     }
 }
 

@@ -94,8 +94,9 @@ pub mod prelude {
     pub use crate::envelope::EventEnvelope;
     pub use crate::errors::EventError;
     pub use crate::event_bus::{
-        AckOutcome, BatchReceipt, ConsumerId, EventBus, EventFilter, EventFilterExpr,
-        EventSubscription, PublishReceipt, StartPosition, SubscribeOptions, Topic,
+        AckOutcome, BatchReceipt, ConsumerId, DeadLetterEntry, DeadLetterQueue, DeadLetterReason,
+        EventBus, EventFilter, EventFilterExpr, EventSubscription, NoopDeadLetterQueue,
+        PublishReceipt, StartPosition, SubscribeOptions, Topic,
     };
     pub use crate::event_retention::{EventLogRetentionPolicy, EventLogRetentionSweepDue};
     pub use crate::idempotency_retention::{IdempotencyRetentionPolicy, IdempotencyTtlSweepDue};
