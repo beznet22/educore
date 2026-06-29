@@ -577,6 +577,35 @@ pub struct FileReference {
     /// The spec pins SHA-256 hex; the field is opaque at the
     /// port boundary so the engine does not parse it.
     pub checksum: Checksum,
+
+    /// The provider-assigned object version id, if the underlying
+    /// bucket has versioning enabled (S3 returns a non-`None`
+    /// `VersionId` on every write when the bucket is versioned;
+    /// GCS and Azure expose equivalent "generation" or
+    /// "version id" tokens). `None` means "current version" —
+    /// the engine treats the reference as a live handle and
+    /// adapters pass no `versionId` / `generation` query
+    /// parameter to the provider on `get` / `delete` /
+    /// `head`.
+    ///
+    /// Per `docs/ports/file-storage.md` § "Versioning": when
+    /// versioning is enabled, the adapter surfaces the
+    /// `VersionId` returned by `PutObject` on the reference and
+    /// re-uses it on subsequent `GetObject` / `DeleteObject` /
+    /// `HeadObject` calls when the field is set. Callers pin to
+    /// a specific past version via
+    /// [`FileStorage::pin_version`](FileStorage::pin_version) (the
+    /// adapter-specific helper documented alongside each
+    /// reference impl).
+    ///
+    /// **Forward compatibility note:** when/if `Serialize` /
+    /// `Deserialize` derives are added to this struct (the port
+    /// currently does not derive them per the module-level doc),
+    /// this field MUST carry
+    /// `#[serde(default, skip_serializing_if = "Option::is_none")]`
+    /// so old persisted rows deserialize cleanly and so the wire
+    /// format stays compact for non-versioned buckets.
+    pub version_id: Option<String>,
 }
 
 // ---------------------------------------------------------------------------

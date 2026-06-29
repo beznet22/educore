@@ -103,6 +103,7 @@ impl FileStorage for InMemoryFileStorage {
             tenant: request.tenant.clone(),
             storage_class: StorageClass::Hot,
             checksum: Checksum::new(checksum),
+            version_id: None,
         };
 
         let mut store = self.store.lock();
@@ -197,6 +198,7 @@ impl FileStorage for InMemoryFileStorage {
             tenant: src.tenant.clone(),
             storage_class: src.storage_class,
             checksum: src.checksum.clone(),
+            version_id: None,
         };
 
         self.store.lock().insert(new_key, (new_ref.clone(), bytes));
@@ -382,6 +384,7 @@ mod tests {
             tenant: ctx(),
             storage_class: StorageClass::Hot,
             checksum: Checksum::new("0"),
+            version_id: None,
         };
         let err = store.head(&ghost).await.expect_err("must error");
         assert!(matches!(err, FileStorageError::NotFound(_)));

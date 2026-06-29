@@ -198,15 +198,15 @@ async fn finance_integration_sqlite_vertical_slice() {
         outcome_version: 1,
         recorded_at: Timestamp::now(),
         affected_aggregate_ids: vec![
-            aggregate_version: 1,
-            etag: None,
-            duration_ms: 0,
-            emitted_event_ids: Vec::new(),
             invoice.id.as_uuid(),
             wallet.id.as_uuid(),
             payment.id.as_uuid(),
             expense.id.as_uuid(),
         ],
+        aggregate_version: 1,
+        etag: None,
+        duration_ms: 0,
+        emitted_event_ids: Vec::new(),
     };
     let audit_entry = AuditLogEntry::create(
         school,
