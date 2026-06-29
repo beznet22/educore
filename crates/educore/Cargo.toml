@@ -48,6 +48,7 @@ educore-query-derive = { workspace = true }
 educore-sync = { workspace = true, optional = true }
 educore-sync-inprocess = { workspace = true, optional = true }
 async-trait = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }

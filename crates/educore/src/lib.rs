@@ -86,6 +86,14 @@ pub use educore_query_derive as query_derive;
 // WF-016.
 pub mod subscribers;
 
+// ---- Async command handle (SCHEMA-CMD-ASYNC, § 13) -------------------------
+// `command_handle::CommandRegistry` is the engine-facing port for
+// asynchronous commands (bulk imports, payroll generation, report
+// generation). `CommandHandle` is the handle returned by
+// `engine.commands.submit` and consumed by `engine.commands.status` /
+// `engine.commands.await`. See `docs/schemas/command-schema.md` § 13.
+pub mod command_handle;
+
 /// Educore version, sourced from the package manifest.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -99,6 +107,9 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// `Capability` types in the relevant PRs. Phase 14 adds the
 /// `educore_settings` + `educore_operations` re-exports.
 pub mod prelude {
+    pub use crate::command_handle::{
+        CommandHandle, CommandOutcome, CommandRegistry, CommandStatus,
+    };
     pub use educore_core;
     pub use educore_events;
     pub use educore_operations;
