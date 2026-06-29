@@ -22,6 +22,7 @@
 
 mod aggregate;
 pub mod commands;
+pub mod configuration;
 pub mod entities;
 mod errors;
 pub mod events;
@@ -54,6 +55,17 @@ pub use crate::services::{
 
 /// Per-aggregate repository port traits.
 pub use crate::repository::{SchoolRepository, UserRepository};
+
+/// Per-tenant configuration port and supporting value objects.
+///
+/// See `docs/schemas/tenancy-schema.md` § 9 for the design
+/// contract. The [`ConfigurationService`](configuration::ConfigurationService)
+/// trait is implemented by the storage adapters and exposed here
+/// for cross-cutting consumers.
+pub use crate::configuration::{
+    ConfigurationEntry, ConfigurationKey, ConfigurationService, ConfigurationValue,
+    InMemoryConfigurationService, SettingName,
+};
 
 /// The query builder stubs (typed query is wired in Phase 3+).
 pub use crate::query::{SchoolQuery, UserQuery};
@@ -93,6 +105,10 @@ pub mod prelude {
         ExecuteSubjectErasureCommand, GenerateParentAccessReportCommand,
         GenerateRegulatorAuditCommand, RegisterUserCommand, ReportFormat, UpdateSchoolCommand,
         UpdateUserCommand,
+    };
+    pub use crate::configuration::{
+        ConfigurationEntry, ConfigurationKey, ConfigurationService, ConfigurationValue,
+        InMemoryConfigurationService, SettingName,
     };
     pub use crate::entities::{SchoolContact, UserLogin, UserPreference, UserSession};
     pub use crate::errors::PlatformError;
