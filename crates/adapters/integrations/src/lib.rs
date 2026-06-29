@@ -98,6 +98,10 @@ pub mod lms;
 /// async transport layer.
 pub mod services;
 
+/// Per-tenant OAuth2 client-credentials token cache + refresh helper
+/// (see `docs/ports/integrations.md` § OAuth2 Client Credentials).
+pub mod oauth2;
+
 /// Re-exports of the engine types and the port's request/response
 /// surface. Consumers typically
 /// `use educore_integrations::prelude::*;` once at the top of a
