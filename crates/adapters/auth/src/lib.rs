@@ -29,6 +29,16 @@ pub mod port;
 /// builder API.
 pub mod jwt;
 
+/// Local-password [`port::AuthProvider`] reference implementation.
+///
+/// Username + password against an in-memory credential table with
+/// Argon2id hashing. Delegates token issuance, validation, refresh,
+/// and revocation to a wrapped [`jwt::JwtAuthProvider`] so the
+/// post-authentication flow is the same `Authorization: Bearer
+/// ...` shape every other adapter in the engine emits. See
+/// [`local_password::LocalPasswordAuthProvider`] for the builder.
+pub mod local_password;
+
 /// SAML 2.0 [`port::AuthProvider`] reference implementation.
 ///
 /// Enterprise identity-provider integration (Okta, Azure AD /
@@ -78,6 +88,7 @@ pub mod rate_limit;
 pub mod prelude {
     pub use crate::errors::AuthError;
     pub use crate::jwt::{JwtAuthProvider, JwtAuthProviderBuilder, JwtClaims, JwtSecretSource};
+    pub use crate::local_password::LocalPasswordAuthProvider;
     pub use crate::oauth_store::InMemoryOAuthStore;
     pub use crate::port::{
         AuthProvider, AuthScheme, AuthToken, BearerToken, Credential, RbacPort, Session,
