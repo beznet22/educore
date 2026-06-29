@@ -359,7 +359,7 @@ priority = "P1"
 area = "API"
 description = "Naming drift sweep (StudentId vs StudentIdentifier, table singular vs plural)"
 source = "wave6-specs-1.md"
-check = "commit:naming.*drift|rename.*Identifier"
+check = "commit:ADR-019"
 
 # ============================================================================
 # P2 — Medium priority (technical debt)
