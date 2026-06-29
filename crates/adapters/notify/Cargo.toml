@@ -30,4 +30,5 @@ reqwest = { workspace = true }
 # block once the orchestrator re-balances file ownership.
 serde = { workspace = true }
 thiserror = { workspace = true }
+tracing = { workspace = true }
 
