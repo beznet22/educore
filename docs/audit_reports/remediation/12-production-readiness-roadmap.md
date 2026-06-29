@@ -26,7 +26,7 @@
 | Done (`[x]`) | 165 |
 | In-progress (`[~]`) | 12 |
 | Open (`[ ]`) | 308 |
-| Last update | 2026-06-29 03:07 UTC |
+| Last update | 2026-06-29 03:20 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -84,9 +84,9 @@
       **Source:** docs/audit_reports/findings/wave1-lint.md
       **Check:** `cmd:cargo clippy -p educore-core --lib -- -D warnings` → _exit 0_
 
-- [x] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
+- [ ] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave5-docs-1.md
-      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 0_
+      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 101_
 
 - [x] **D-10** Resolved — Sync feature flag added to educore umbrella. Closed 2026-06-25.
       **Source:** ADR-018 § 4, crates/educore/Cargo.toml
@@ -426,9 +426,9 @@
       **Source:** docs/schemas/command-schema.md § 13
       **Check:** `file:crates/educore/src/lib.rs regex:CommandHandle` → _lib.rs:CommandHandle_
 
-- [ ] **SCHEMA-CMD-BULK-EVENTS** BulkCommandStarted / BulkCommandItemProcessed / BulkCommandCompleted events not declared
+- [x] **SCHEMA-CMD-BULK-EVENTS** BulkCommandStarted / BulkCommandItemProcessed / BulkCommandCompleted events not declared
       **Source:** docs/schemas/command-schema.md § 12
-      **Check:** `file:crates/cross-cutting/events/src/domain_event.rs regex:BulkCommand` → _domain_event.rs:BulkCommand_
+      **Check:** `file:crates/cross-cutting/events/src/bulk_events.rs regex:BulkCommand` → _bulk_events.rs:BulkCommand_
 
 - [ ] **SCHEMA-TENANT-CONFIG-SVC** ConfigurationService port not implemented; per-tenant settings live in ad-hoc repos
       **Source:** docs/schemas/tenancy-schema.md § 9

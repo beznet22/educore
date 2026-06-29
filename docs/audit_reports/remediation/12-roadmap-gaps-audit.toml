@@ -681,7 +681,7 @@ priority = "P2"
 area = "SCHEMA"
 description = "BulkCommandStarted / BulkCommandItemProcessed / BulkCommandCompleted events not declared"
 source = "docs/schemas/command-schema.md § 12"
-check = "file:crates/cross-cutting/events/src/domain_event.rs regex:BulkCommand"
+check = "file:crates/cross-cutting/events/src/bulk_events.rs regex:BulkCommand"
 
 [[item]]
 id = "SCHEMA-TENANT-CONFIG-SVC"
