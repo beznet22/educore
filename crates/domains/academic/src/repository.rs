@@ -16,9 +16,10 @@
 //! Phase 3 ships the 5 prompt-named repository ports:
 //! [`StudentRepository`], [`ClassRepository`],
 //! [`SectionRepository`], [`SubjectRepository`],
-//! [`AcademicYearRepository`]. The remaining ports
-//! (`GuardianRepository`, `ClassSectionRepository`,
-//! `StudentRecordRepository`, ...) land in later phases.
+//! [`AcademicYearRepository`], plus the mop-up
+//! [`StudentRecordRepository`] (added in wave 9.2a).
+//! The remaining ports (`GuardianRepository`,
+//! `ClassSectionRepository`, ...) land in later phases.
 
 use async_trait::async_trait;
 
@@ -26,9 +27,9 @@ use educore_core::error::Result;
 use educore_core::ids::SchoolId;
 use educore_core::tenant::TenantContext;
 
-use crate::aggregate::{AcademicYear, Class, Section, Student, Subject};
+use crate::aggregate::{AcademicYear, Class, Section, Student, StudentRecord, Subject};
 use crate::value_objects::{
-    AcademicYearId, ClassId, SectionId, StudentId, StudentStatus, SubjectId,
+    AcademicYearId, ClassId, SectionId, StudentId, StudentRecordId, StudentStatus, SubjectId,
 };
 
 // =============================================================================
@@ -190,6 +191,26 @@ pub trait AcademicYearRepository: Send + Sync {
     async fn update(&self, ctx: &TenantContext, year: &AcademicYear) -> Result<()>;
 }
 
+// =============================================================================
+// StudentRecordRepository
+// =============================================================================
+
+/// Repository port for the [`StudentRecord`] aggregate.
+///
+/// Minimal CRUD interface; extend with queries as needed.
+#[async_trait]
+pub trait StudentRecordRepository: Send + Sync {
+    /// Fetch a student record by its typed id. Returns `Ok(None)`
+    /// if the row does not exist or is soft-deleted.
+    async fn get(&self, ctx: &TenantContext, id: StudentRecordId) -> Result<Option<StudentRecord>>;
+
+    /// Insert a new student record (or upsert on a soft-delete update).
+    async fn insert(&self, ctx: &TenantContext, record: &StudentRecord) -> Result<()>;
+
+    /// Update an existing student record.
+    async fn update(&self, ctx: &TenantContext, record: &StudentRecord) -> Result<()>;
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
@@ -209,5 +230,6 @@ mod tests {
         fn _section(_: Box<dyn SectionRepository>) {}
         fn _subject(_: Box<dyn SubjectRepository>) {}
         fn _year(_: Box<dyn AcademicYearRepository>) {}
+        fn _record(_: Box<dyn StudentRecordRepository>) {}
     }
 }
