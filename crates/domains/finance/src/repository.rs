@@ -1,6 +1,6 @@
 //! # Finance repository ports
 //!
-//! Phase 7 ships 44 `#[async_trait]` repository port traits — one
+//! Phase 7 ships 62 `#[async_trait]` repository port traits — one
 //! per finance aggregate. Storage adapters (PG/MySQL/SQLite)
 //! implement these in Phase 17 (production hardening); the test
 //! fixtures in this crate use in-memory implementations matching
@@ -27,28 +27,37 @@ use educore_core::ids::SchoolId;
 use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
-    AmountTransfer, BankAccount, BankPaymentSlip, BankStatement, ChartOfAccount,
-    DirectFeesInstallment, DirectFeesInstallmentAssign, DirectFeesInstallmentChildPayment,
-    DirectFeesReminder, DirectFeesSetting, Donor, DueFeesLoginPrevent, Expense, ExpenseHead,
-    FeesAssign, FeesAssignDiscount, FeesCarryForward, FeesDiscount, FeesGroup, FeesInstallment,
-    FeesInstallmentAssign, FeesInstallmentCredit, FeesInvoiceSetting, FeesMaster, FeesType,
-    FmFeesGroup, FmFeesInvoice, FmFeesInvoiceChild, FmFeesInvoiceSetting, FmFeesTransaction,
-    FmFeesTransactionChild, FmFeesType, FmFeesWeaver, Income, IncomeHead, InventoryPayment,
-    InvoiceSetting, PaymentGatewaySetting, PaymentMethod, PayrollPayment, ProductPurchase,
-    QuestionBankFee, Wallet, WalletTransaction,
+    AmountTransfer, BankAccount, BankPaymentSlip, BankPaymentSlipAudit, BankStatement,
+    BankStatementAttachment, ChartOfAccount, DirectFeesInstallment, DirectFeesInstallmentAssign,
+    DirectFeesInstallmentAssignChild, DirectFeesInstallmentChildPayment, DirectFeesReminder,
+    DirectFeesSetting, Donor, DueFeesLoginPrevent, Expense, ExpenseApproval, ExpenseHead,
+    FeesAssign, FeesAssignDiscount, FeesCarryForward, FeesCarryForwardLog, FeesCarryForwardSetting,
+    FeesDiscount, FeesGroup, FeesInstallment, FeesInstallmentAssign, FeesInstallmentAssignDiscount,
+    FeesInstallmentCredit, FeesInvoice, FeesInvoiceSetting, FeesMaster, FeesPayment, FeesType,
+    FmFeesGroup, FmFeesInvoice, FmFeesInvoiceChild, FmFeesInvoiceLineNote, FmFeesInvoiceSetting,
+    FmFeesTransaction, FmFeesTransactionChild, FmFeesTransactionLineNote, FmFeesType, FmFeesWeaver,
+    Income, IncomeApproval, IncomeHead, InventoryPayment, InvoiceSetting, PaymentGatewaySetting,
+    PaymentMethod, PayrollEarnDeduc, PayrollGenerate, PayrollPayment, PayrollPaymentApproval,
+    ProductPurchase, QuestionBankFee, SalaryTemplate, Transaction, Wallet, WalletTransaction,
+    WalletTransactionApproval,
 };
 use crate::value_objects::{
-    AcademicYearId, AmountTransferId, BankAccountId, BankPaymentSlipId, BankStatementId,
-    ChartOfAccountId, ClassId, DirectFeesInstallmentAssignId, DirectFeesInstallmentChildPaymentId,
-    DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
-    DueFeesLoginPreventId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
-    FeesCarryForwardId, FeesDiscountId, FeesGroupId, FeesInstallmentAssignId,
-    FeesInstallmentCreditId, FeesInstallmentId, FeesInvoiceSettingId, FeesMasterId, FeesTypeId,
-    FmFeesGroupId, FmFeesInvoiceChildId, FmFeesInvoiceId, FmFeesInvoiceSettingId,
-    FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId, FmFeesWeaverId, GatewayMode,
-    IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId,
-    PaymentMethodId, PaymentMethodKind, PayrollPaymentId, ProductPurchaseId, QuestionBankFeeId,
-    StaffId, StudentId, SubjectId, WalletId, WalletTransactionId,
+    AcademicYearId, AmountTransferId, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId,
+    BankStatementAttachmentId, BankStatementId, ChartOfAccountId, ClassId,
+    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId,
+    DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId,
+    DirectFeesSettingId, DonorId, DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId,
+    ExpenseId, FeesAssignDiscountId, FeesAssignId, FeesCarryForwardId, FeesCarryForwardLogId,
+    FeesCarryForwardSettingId, FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId,
+    FeesInstallmentAssignId, FeesInstallmentCreditId, FeesInstallmentId, FeesInvoiceId,
+    FeesInvoiceSettingId, FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId,
+    FmFeesInvoiceChildId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId,
+    FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId,
+    FmFeesWeaverId, GatewayMode, IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId,
+    InvoiceSettingId, PaymentGatewaySettingId, PaymentMethodId, PaymentMethodKind,
+    PayrollEarnDeducId, PayrollGenerateId, PayrollPaymentApprovalId, PayrollPaymentId,
+    ProductPurchaseId, QuestionBankFeeId, SalaryTemplateId, StaffId, StudentId, SubjectId,
+    TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId,
 };
 
 // =============================================================================
@@ -1285,4 +1294,442 @@ pub trait FeesCarryForwardRepository: Send + Sync {
 
     /// Update an existing fees carry-forward record.
     async fn update(&self, ctx: &TenantContext, agg: &FeesCarryForward) -> Result<()>;
+}
+
+// =============================================================================
+// 45: BankPaymentSlipAudit
+// =============================================================================
+
+#[async_trait]
+pub trait BankPaymentSlipAuditRepository: Send + Sync {
+    /// Look up a bank-payment-slip audit row by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: BankPaymentSlipAuditId,
+    ) -> Result<Option<BankPaymentSlipAudit>>;
+
+    /// List all bank-payment-slip audit rows in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<BankPaymentSlipAudit>>;
+
+    /// Insert a new bank-payment-slip audit row.
+    async fn insert(&self, ctx: &TenantContext, agg: &BankPaymentSlipAudit) -> Result<()>;
+
+    /// Update an existing bank-payment-slip audit row.
+    async fn update(&self, ctx: &TenantContext, agg: &BankPaymentSlipAudit) -> Result<()>;
+}
+
+// =============================================================================
+// 46: BankStatementAttachment
+// =============================================================================
+
+#[async_trait]
+pub trait BankStatementAttachmentRepository: Send + Sync {
+    /// Look up a bank-statement attachment by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: BankStatementAttachmentId,
+    ) -> Result<Option<BankStatementAttachment>>;
+
+    /// List all bank-statement attachments in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<BankStatementAttachment>>;
+
+    /// Insert a new bank-statement attachment.
+    async fn insert(&self, ctx: &TenantContext, agg: &BankStatementAttachment) -> Result<()>;
+
+    /// Update an existing bank-statement attachment.
+    async fn update(&self, ctx: &TenantContext, agg: &BankStatementAttachment) -> Result<()>;
+}
+
+// =============================================================================
+// 47: DirectFeesInstallmentAssignChild
+// =============================================================================
+
+#[async_trait]
+pub trait DirectFeesInstallmentAssignChildRepository: Send + Sync {
+    /// Look up a direct-fees installment assignment child by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: DirectFeesInstallmentAssignChildId,
+    ) -> Result<Option<DirectFeesInstallmentAssignChild>>;
+
+    /// List all direct-fees installment assignment children in a school.
+    async fn list_for_school(
+        &self,
+        school: SchoolId,
+    ) -> Result<Vec<DirectFeesInstallmentAssignChild>>;
+
+    /// Insert a new direct-fees installment assignment child.
+    async fn insert(
+        &self,
+        ctx: &TenantContext,
+        agg: &DirectFeesInstallmentAssignChild,
+    ) -> Result<()>;
+
+    /// Update an existing direct-fees installment assignment child.
+    async fn update(
+        &self,
+        ctx: &TenantContext,
+        agg: &DirectFeesInstallmentAssignChild,
+    ) -> Result<()>;
+}
+
+// =============================================================================
+// 48: ExpenseApproval
+// =============================================================================
+
+#[async_trait]
+pub trait ExpenseApprovalRepository: Send + Sync {
+    /// Look up an expense-approval row by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: ExpenseApprovalId,
+    ) -> Result<Option<ExpenseApproval>>;
+
+    /// List all expense-approval rows in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<ExpenseApproval>>;
+
+    /// Insert a new expense-approval row.
+    async fn insert(&self, ctx: &TenantContext, agg: &ExpenseApproval) -> Result<()>;
+
+    /// Update an existing expense-approval row.
+    async fn update(&self, ctx: &TenantContext, agg: &ExpenseApproval) -> Result<()>;
+}
+
+// =============================================================================
+// 49: FeesCarryForwardLog
+// =============================================================================
+
+#[async_trait]
+pub trait FeesCarryForwardLogRepository: Send + Sync {
+    /// Look up a fees carry-forward log row by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: FeesCarryForwardLogId,
+    ) -> Result<Option<FeesCarryForwardLog>>;
+
+    /// List all fees carry-forward log rows in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<FeesCarryForwardLog>>;
+
+    /// Insert a new fees carry-forward log row.
+    async fn insert(&self, ctx: &TenantContext, agg: &FeesCarryForwardLog) -> Result<()>;
+
+    /// Update an existing fees carry-forward log row.
+    async fn update(&self, ctx: &TenantContext, agg: &FeesCarryForwardLog) -> Result<()>;
+}
+
+// =============================================================================
+// 50: FeesCarryForwardSetting
+// =============================================================================
+
+#[async_trait]
+pub trait FeesCarryForwardSettingRepository: Send + Sync {
+    /// Look up a fees carry-forward setting by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: FeesCarryForwardSettingId,
+    ) -> Result<Option<FeesCarryForwardSetting>>;
+
+    /// List all fees carry-forward settings in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<FeesCarryForwardSetting>>;
+
+    /// Get the (singleton) fees carry-forward setting for a school.
+    async fn get_for_school(&self, school: SchoolId) -> Result<Option<FeesCarryForwardSetting>>;
+
+    /// Insert a new fees carry-forward setting.
+    async fn insert(&self, ctx: &TenantContext, agg: &FeesCarryForwardSetting) -> Result<()>;
+
+    /// Update an existing fees carry-forward setting.
+    async fn update(&self, ctx: &TenantContext, agg: &FeesCarryForwardSetting) -> Result<()>;
+}
+
+// =============================================================================
+// 51: FeesInstallmentAssignDiscount
+// =============================================================================
+
+#[async_trait]
+pub trait FeesInstallmentAssignDiscountRepository: Send + Sync {
+    /// Look up a fees-installment-assign discount by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: FeesInstallmentAssignDiscountId,
+    ) -> Result<Option<FeesInstallmentAssignDiscount>>;
+
+    /// List all fees-installment-assign discounts in a school.
+    async fn list_for_school(&self, school: SchoolId)
+        -> Result<Vec<FeesInstallmentAssignDiscount>>;
+
+    /// Insert a new fees-installment-assign discount.
+    async fn insert(&self, ctx: &TenantContext, agg: &FeesInstallmentAssignDiscount) -> Result<()>;
+
+    /// Update an existing fees-installment-assign discount.
+    async fn update(&self, ctx: &TenantContext, agg: &FeesInstallmentAssignDiscount) -> Result<()>;
+}
+
+// =============================================================================
+// 52: FeesInvoice
+// =============================================================================
+
+#[async_trait]
+pub trait FeesInvoiceRepository: Send + Sync {
+    /// Look up a fees invoice by id.
+    async fn get(&self, ctx: &TenantContext, id: FeesInvoiceId) -> Result<Option<FeesInvoice>>;
+
+    /// List all fees invoices in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<FeesInvoice>>;
+
+    /// List all fees invoices for a student.
+    async fn list_for_student(&self, student_id: StudentId) -> Result<Vec<FeesInvoice>>;
+
+    /// Insert a new fees invoice.
+    async fn insert(&self, ctx: &TenantContext, agg: &FeesInvoice) -> Result<()>;
+
+    /// Update an existing fees invoice.
+    async fn update(&self, ctx: &TenantContext, agg: &FeesInvoice) -> Result<()>;
+}
+
+// =============================================================================
+// 53: FeesPayment
+// =============================================================================
+
+#[async_trait]
+pub trait FeesPaymentRepository: Send + Sync {
+    /// Look up a fees payment by id.
+    async fn get(&self, ctx: &TenantContext, id: FeesPaymentId) -> Result<Option<FeesPayment>>;
+
+    /// List all fees payments in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<FeesPayment>>;
+
+    /// List all fees payments for a student.
+    async fn list_for_student(&self, student_id: StudentId) -> Result<Vec<FeesPayment>>;
+
+    /// Insert a new fees payment.
+    async fn insert(&self, ctx: &TenantContext, agg: &FeesPayment) -> Result<()>;
+
+    /// Update an existing fees payment.
+    async fn update(&self, ctx: &TenantContext, agg: &FeesPayment) -> Result<()>;
+}
+
+// =============================================================================
+// 54: FmFeesInvoiceLineNote
+// =============================================================================
+
+#[async_trait]
+pub trait FmFeesInvoiceLineNoteRepository: Send + Sync {
+    /// Look up an FM fees invoice line note by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: FmFeesInvoiceLineNoteId,
+    ) -> Result<Option<FmFeesInvoiceLineNote>>;
+
+    /// List all FM fees invoice line notes in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<FmFeesInvoiceLineNote>>;
+
+    /// Insert a new FM fees invoice line note.
+    async fn insert(&self, ctx: &TenantContext, agg: &FmFeesInvoiceLineNote) -> Result<()>;
+
+    /// Update an existing FM fees invoice line note.
+    async fn update(&self, ctx: &TenantContext, agg: &FmFeesInvoiceLineNote) -> Result<()>;
+}
+
+// =============================================================================
+// 55: FmFeesTransactionLineNote
+// =============================================================================
+
+#[async_trait]
+pub trait FmFeesTransactionLineNoteRepository: Send + Sync {
+    /// Look up an FM fees transaction line note by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: FmFeesTransactionLineNoteId,
+    ) -> Result<Option<FmFeesTransactionLineNote>>;
+
+    /// List all FM fees transaction line notes in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<FmFeesTransactionLineNote>>;
+
+    /// Insert a new FM fees transaction line note.
+    async fn insert(&self, ctx: &TenantContext, agg: &FmFeesTransactionLineNote) -> Result<()>;
+
+    /// Update an existing FM fees transaction line note.
+    async fn update(&self, ctx: &TenantContext, agg: &FmFeesTransactionLineNote) -> Result<()>;
+}
+
+// =============================================================================
+// 56: IncomeApproval
+// =============================================================================
+
+#[async_trait]
+pub trait IncomeApprovalRepository: Send + Sync {
+    /// Look up an income-approval row by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: IncomeApprovalId,
+    ) -> Result<Option<IncomeApproval>>;
+
+    /// List all income-approval rows in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<IncomeApproval>>;
+
+    /// Insert a new income-approval row.
+    async fn insert(&self, ctx: &TenantContext, agg: &IncomeApproval) -> Result<()>;
+
+    /// Update an existing income-approval row.
+    async fn update(&self, ctx: &TenantContext, agg: &IncomeApproval) -> Result<()>;
+}
+
+// =============================================================================
+// 57: PayrollEarnDeduc
+// =============================================================================
+
+#[async_trait]
+pub trait PayrollEarnDeducRepository: Send + Sync {
+    /// Look up a payroll earnings/deduction line by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: PayrollEarnDeducId,
+    ) -> Result<Option<PayrollEarnDeduc>>;
+
+    /// List all payroll earnings/deduction lines in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<PayrollEarnDeduc>>;
+
+    /// List all payroll earnings/deduction lines for a payroll run.
+    async fn list_for_payroll(
+        &self,
+        payroll_id: PayrollGenerateId,
+    ) -> Result<Vec<PayrollEarnDeduc>>;
+
+    /// Insert a new payroll earnings/deduction line.
+    async fn insert(&self, ctx: &TenantContext, agg: &PayrollEarnDeduc) -> Result<()>;
+
+    /// Update an existing payroll earnings/deduction line.
+    async fn update(&self, ctx: &TenantContext, agg: &PayrollEarnDeduc) -> Result<()>;
+}
+
+// =============================================================================
+// 58: PayrollGenerate
+// =============================================================================
+
+#[async_trait]
+pub trait PayrollGenerateRepository: Send + Sync {
+    /// Look up a payroll generate (run) by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: PayrollGenerateId,
+    ) -> Result<Option<PayrollGenerate>>;
+
+    /// List all payroll generate runs in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<PayrollGenerate>>;
+
+    /// Insert a new payroll generate run.
+    async fn insert(&self, ctx: &TenantContext, agg: &PayrollGenerate) -> Result<()>;
+
+    /// Update an existing payroll generate run.
+    async fn update(&self, ctx: &TenantContext, agg: &PayrollGenerate) -> Result<()>;
+}
+
+// =============================================================================
+// 59: PayrollPaymentApproval
+// =============================================================================
+
+#[async_trait]
+pub trait PayrollPaymentApprovalRepository: Send + Sync {
+    /// Look up a payroll-payment approval row by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: PayrollPaymentApprovalId,
+    ) -> Result<Option<PayrollPaymentApproval>>;
+
+    /// List all payroll-payment approval rows in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<PayrollPaymentApproval>>;
+
+    /// Insert a new payroll-payment approval row.
+    async fn insert(&self, ctx: &TenantContext, agg: &PayrollPaymentApproval) -> Result<()>;
+
+    /// Update an existing payroll-payment approval row.
+    async fn update(&self, ctx: &TenantContext, agg: &PayrollPaymentApproval) -> Result<()>;
+}
+
+// =============================================================================
+// 60: SalaryTemplate
+// =============================================================================
+
+#[async_trait]
+pub trait SalaryTemplateRepository: Send + Sync {
+    /// Look up a salary template by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: SalaryTemplateId,
+    ) -> Result<Option<SalaryTemplate>>;
+
+    /// List all salary templates in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<SalaryTemplate>>;
+
+    /// List all salary templates for a staff member.
+    async fn list_for_staff(&self, staff_id: StaffId) -> Result<Vec<SalaryTemplate>>;
+
+    /// Insert a new salary template.
+    async fn insert(&self, ctx: &TenantContext, agg: &SalaryTemplate) -> Result<()>;
+
+    /// Update an existing salary template.
+    async fn update(&self, ctx: &TenantContext, agg: &SalaryTemplate) -> Result<()>;
+}
+
+// =============================================================================
+// 61: Transaction (double-entry journal line)
+// =============================================================================
+
+#[async_trait]
+pub trait TransactionRepository: Send + Sync {
+    /// Look up a journal transaction by id.
+    async fn get(&self, ctx: &TenantContext, id: TransactionId) -> Result<Option<Transaction>>;
+
+    /// List all journal transactions in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<Transaction>>;
+
+    /// Insert a new journal transaction.
+    async fn insert(&self, ctx: &TenantContext, agg: &Transaction) -> Result<()>;
+
+    /// Update an existing journal transaction.
+    async fn update(&self, ctx: &TenantContext, agg: &Transaction) -> Result<()>;
+}
+
+// =============================================================================
+// 62: WalletTransactionApproval
+// =============================================================================
+
+#[async_trait]
+pub trait WalletTransactionApprovalRepository: Send + Sync {
+    /// Look up a wallet-transaction approval row by id.
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: WalletTransactionApprovalId,
+    ) -> Result<Option<WalletTransactionApproval>>;
+
+    /// List all wallet-transaction approval rows in a school.
+    async fn list_for_school(&self, school: SchoolId) -> Result<Vec<WalletTransactionApproval>>;
+
+    /// List all wallet-transaction approval rows for a wallet transaction.
+    async fn list_for_wallet_transaction(
+        &self,
+        wallet_transaction_id: WalletTransactionId,
+    ) -> Result<Vec<WalletTransactionApproval>>;
+
+    /// Insert a new wallet-transaction approval row.
+    async fn insert(&self, ctx: &TenantContext, agg: &WalletTransactionApproval) -> Result<()>;
+
+    /// Update an existing wallet-transaction approval row.
+    async fn update(&self, ctx: &TenantContext, agg: &WalletTransactionApproval) -> Result<()>;
 }
