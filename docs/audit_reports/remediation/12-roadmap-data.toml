@@ -411,7 +411,7 @@ priority = "P2"
 area = "STORAGE"
 description = "QW-13 MySQL defense-in-depth"
 source = "QW-13, d2f52c9"
-check = "commit:QW-13|d2f52c9"
+check = "commit:QW-13"
 
 [[item]]
 id = "H-1"
