@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 176 |
+| Done (`[x]`) | 177 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 297 |
-| Last update | 2026-06-29 05:07 UTC |
+| Open (`[ ]`) | 296 |
+| Last update | 2026-06-29 05:09 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -422,7 +422,7 @@
       **Source:** docs/schemas/event-schema.md § 9
       **Check:** `file:crates/cross-cutting/events/src/event_retention.rs regex:event_log` → _event_retention.rs:event_log_
 
-- [ ] **SCHEMA-CMD-ASYNC** Async command handle (CommandHandle / engine.commands.status) not implemented
+- [x] **SCHEMA-CMD-ASYNC** Async command handle (CommandHandle / engine.commands.status) not implemented
       **Source:** docs/schemas/command-schema.md § 13
       **Check:** `file:crates/educore/src/lib.rs regex:CommandHandle` → _lib.rs:CommandHandle_
 
