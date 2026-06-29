@@ -41,6 +41,19 @@
 //! port trait is intentionally transport-agnostic so the deferred
 //! adapters can be added in-tree without breaking consumers.
 //!
+//! ## Saga / compensating actions
+//!
+//! Multi-step workflows in the sync engine often span several
+//! resources — fetching a remote change, applying it locally,
+//! committing to the audit log, and notifying the bus. If any
+//! step fails partway through, the engine must undo the prior
+//! steps to preserve the at-least-once semantics the engine
+//! promises. The [`saga`] module provides the saga pattern:
+//! each step declares a forward action and a compensating
+//! action, and the [`saga::Saga`] state machine runs them in
+//! sequence, invoking compensations in reverse order on
+//! failure.
+//!
 //! [`ADR-018`]: ../../docs/decisions/ADR-018-SyncEngineArchitecture.md
 
 #![forbid(unsafe_code)]
@@ -49,6 +62,8 @@
 mod command;
 mod health;
 mod port;
+
+pub mod saga;
 
 pub use command::SyncCommand;
 pub use educore_events::sync::{SyncPaused, SyncResumed, SyncStarted, SyncStopped};
