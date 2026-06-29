@@ -447,6 +447,13 @@ impl FileStorage for LocalFileStorage {
             tenant: request.tenant,
             storage_class: StorageClass::Hot,
             checksum: Checksum::new(hex),
+            // The local filesystem adapter does not have a
+            // provider-assigned version concept; every object is
+            // effectively version "1". Per the port contract
+            // (`docs/ports/file-storage.md` § "Versioning"),
+            // `None` means "current version", which is the
+            // correct behaviour for the local adapter.
+            version_id: None,
         })
     }
 
@@ -605,6 +612,10 @@ impl FileStorage for LocalFileStorage {
             tenant: src.tenant.clone(),
             storage_class: src.storage_class,
             checksum: src.checksum.clone(),
+            // Propagate any provider-side version pin so a
+            // copy/move of a pinned reference keeps the same
+            // version binding on the destination.
+            version_id: src.version_id.clone(),
         })
     }
 
@@ -643,6 +654,10 @@ impl FileStorage for LocalFileStorage {
             tenant: src.tenant.clone(),
             storage_class: src.storage_class,
             checksum: src.checksum.clone(),
+            // Preserve any provider-side version pin across the
+            // move so the new key references the same object
+            // version the source did.
+            version_id: src.version_id.clone(),
         })
     }
 }
@@ -984,6 +999,8 @@ mod tests {
             tenant,
             storage_class: StorageClass::Hot,
             checksum: Checksum::new(hex),
+            // Local fixture: no provider-side version pinning.
+            version_id: None,
         }
     }
 

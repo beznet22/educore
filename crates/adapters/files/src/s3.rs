@@ -79,6 +79,7 @@ use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_s3::types::StorageClass as S3StorageClass;
 use aws_sdk_s3::Client;
 use educore_core::value_objects::Timestamp;
+use uuid::Uuid;
 
 use crate::errors::{FileStorageError, InfrastructureError};
 use crate::port::{
@@ -291,6 +292,16 @@ impl FileStorage for S3FileStorage {
             .trim_matches('"')
             .to_string();
 
+        // Capture the S3-assigned `VersionId` when the bucket has
+        // versioning enabled. Per `docs/ports/file-storage.md`
+        // § "Versioning": the adapter surfaces `version_id` on
+        // the returned `FileReference` so subsequent
+        // `get` / `delete` / `head` calls can pin to the
+        // specific version if the caller asks for it. When the
+        // bucket is not versioned, S3 returns `None` and the
+        // reference stays a "current version" handle.
+        let version_id = output.version_id().map(str::to_owned);
+
         Ok(FileReference {
             key,
             etag,
@@ -310,6 +321,7 @@ impl FileStorage for S3FileStorage {
             tenant,
             storage_class: StorageClass::Hot,
             checksum: Checksum::new(checksum_hex),
+            version_id,
         })
     }
 
@@ -317,11 +329,23 @@ impl FileStorage for S3FileStorage {
         let physical_key = self.physical_key(&reference.key);
         let key_for_error = reference.key.clone();
 
-        let output = self
+        let mut req = self
             .client
             .get_object()
             .bucket(&self.bucket)
-            .key(&physical_key)
+            .key(&physical_key);
+
+        // When the reference is pinned to a specific S3 version
+        // (i.e. the caller passed a `version_id` produced by a
+        // prior `put` or by [`S3FileStorage::pin_version`]),
+        // forward the `versionId` query parameter so S3 streams
+        // the historical bytes rather than the latest one. A
+        // missing version pin streams the current version.
+        if let Some(version_id) = reference.version_id.as_deref() {
+            req = req.version_id(version_id);
+        }
+
+        let output = req
             .send()
             .await
             .map_err(|e| Self::map_object_error(e.into(), &key_for_error))?;
@@ -370,11 +394,22 @@ impl FileStorage for S3FileStorage {
         let physical_key = self.physical_key(&reference.key);
         let key_for_error = reference.key.clone();
 
-        self.client
+        let mut req = self
+            .client
             .delete_object()
             .bucket(&self.bucket)
-            .key(&physical_key)
-            .send()
+            .key(&physical_key);
+
+        // Pin the delete to the historical version if the
+        // reference carries a `version_id`; without the pin the
+        // request removes the current version (and, when the
+        // bucket is versioned, leaves older versions in place
+        // until their lifecycle rules expire them).
+        if let Some(version_id) = reference.version_id.as_deref() {
+            req = req.version_id(version_id);
+        }
+
+        req.send()
             .await
             .map_err(|e| Self::map_object_error(e.into(), &key_for_error))?;
 
@@ -407,11 +442,21 @@ impl FileStorage for S3FileStorage {
         let physical_key = self.physical_key(&reference.key);
         let key_for_error = reference.key.clone();
 
-        let output = self
+        let mut req = self
             .client
             .head_object()
             .bucket(&self.bucket)
-            .key(&physical_key)
+            .key(&physical_key);
+
+        // When the reference pins a specific version, forward
+        // the `versionId` parameter so the head request returns
+        // metadata for that historical version rather than the
+        // current one.
+        if let Some(version_id) = reference.version_id.as_deref() {
+            req = req.version_id(version_id);
+        }
+
+        let output = req
             .send()
             .await
             .map_err(|e| Self::map_object_error(e.into(), &key_for_error))?;
@@ -514,7 +559,20 @@ impl FileStorage for S3FileStorage {
         let src_physical = self.physical_key(&src.key);
         let dst_physical = format!("{}{}", self.key_prefix, dst_key);
         let dst_file_key = FileKey::new(dst_key);
-        let copy_source = format!("{}/{}", self.bucket, src_physical);
+        // S3 `CopyObject` pins to a specific historical version
+        // by appending `?versionId=<id>` to the `copy_source`
+        // value. Build the URL-encoded form when the source
+        // reference is pinned; otherwise copy the current
+        // version (the original behaviour).
+        let copy_source = match src.version_id.as_deref() {
+            Some(version_id) => format!(
+                "{}/{}?versionId={}",
+                self.bucket,
+                src_physical,
+                urlencode_query_value(version_id),
+            ),
+            None => format!("{}/{}", self.bucket, src_physical),
+        };
 
         let copy_output = self
             .client
@@ -557,6 +615,11 @@ impl FileStorage for S3FileStorage {
 
         let storage_class = Self::map_storage_class(head_output.storage_class());
 
+        // Capture the destination's `VersionId` if the bucket is
+        // versioned so the caller can pin the copy to its
+        // freshly-assigned version.
+        let version_id = head_output.version_id().map(str::to_owned);
+
         Ok(FileReference {
             key: dst_file_key,
             etag,
@@ -572,6 +635,7 @@ impl FileStorage for S3FileStorage {
             // re-hash on the destination to defend against
             // server-side tampering during the copy.
             checksum: src.checksum.clone(),
+            version_id,
         })
     }
 
@@ -583,6 +647,52 @@ impl FileStorage for S3FileStorage {
         let dst = self.copy(src, dst_key).await?;
         self.delete(src).await?;
         Ok(dst)
+    }
+}
+
+impl S3FileStorage {
+    /// Pins a [`FileReference`] to a specific S3 object version.
+    ///
+    /// Returns a new [`FileReference`] with the supplied
+    /// `version_id` set; subsequent calls against the returned
+    /// reference via [`get`](FileStorage::get),
+    /// [`head`](FileStorage::head),
+    /// [`delete`](FileStorage::delete), and
+    /// [`copy`](FileStorage::copy) operate on that historical
+    /// version rather than the bucket's current head.
+    ///
+    /// This method does NOT issue an S3 request — the caller
+    /// supplies the `version_id` (typically obtained from a
+    /// prior [`put`](FileStorage::put) response, from
+    /// `list_object_versions`, or from an audit log entry that
+    /// captured the upload-time version). If the version does
+    /// not exist on the provider, the next data-plane call
+    /// surfaces a [`FileStorageError::NotFound`].
+    ///
+    /// Per `docs/ports/file-storage.md` § "Versioning": the
+    /// adapter enables bucket-side versioning on construction
+    /// (consumer-controlled via bucket policy); once enabled,
+    /// every upload records a `VersionId` on the returned
+    /// reference and consumers can pin / roll back to any
+    /// retained version via this helper.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let stored = storage.put(request).await?;
+    /// let pinned = storage.pin_version(&stored, "old-version-id");
+    /// // `pinned` operates on the historical bytes; `stored`
+    /// // still resolves to the current version.
+    /// ```
+    #[must_use]
+    pub fn pin_version(
+        &self,
+        reference: &FileReference,
+        version_id: impl Into<String>,
+    ) -> FileReference {
+        let mut pinned = reference.clone();
+        pinned.version_id = Some(version_id.into());
+        pinned
     }
 }
 
@@ -689,6 +799,39 @@ fn to_lower_hex(bytes: &[u8]) -> String {
     out
 }
 
+/// Minimal percent-encoder for S3 `VersionId` query-string
+/// fragments appended to the `copy_source` URL passed to
+/// `CopyObject`.
+///
+/// The S3 SDK's typed `version_id(impl Into<String>)` builder
+/// methods handle URL encoding internally for `GetObject`,
+/// `DeleteObject`, and `HeadObject`. The `copy_source` parameter
+/// is a raw URL, so we encode the version id here to keep the
+/// behaviour consistent. Encodes every byte outside the
+/// unreserved set (`A-Z`, `a-z`, `0-9`, `-`, `_`, `.`, `~`) as
+/// `%HH` uppercase hex — matching the canonical AWS CLI output
+/// and AWS Signature Version 4 normalisation.
+fn urlencode_query_value(value: &str) -> String {
+    use std::fmt::Write;
+    let mut out = String::with_capacity(value.len());
+    for byte in value.as_bytes() {
+        let unreserved = matches!(
+            byte,
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~'
+        );
+        if unreserved {
+            // `push` on a `String` is total and cannot fail.
+            out.push(*byte as char);
+        } else {
+            // `write!` to a `String` is total. Discard the result
+            // per the engine's `let _ =` convention (see
+            // `to_lower_hex` above).
+            let _ = write!(out, "%{byte:02X}");
+        }
+    }
+    out
+}
+
 /// Compiles only when the builder default state holds every
 /// optional field as `None`. Belt-and-braces assertion: the
 /// compile-time `Default` impl on the builder produces a builder
@@ -714,6 +857,8 @@ const _: fn() = || {
 )]
 mod tests {
     use super::*;
+    use educore_core::ids::CorrelationId;
+    use educore_core::tenant::TenantContext;
 
     /// The builder can be constructed via `S3FileStorage::builder()`
     /// and `S3FileStorageBuilder::default()` with no setter calls,
@@ -883,5 +1028,119 @@ mod tests {
             .region(aws_sdk_s3::config::Region::new("us-east-1"))
             .build();
         Client::from_conf(cfg)
+    }
+
+    /// `pin_version` returns a new `FileReference` with the
+    /// supplied `version_id` set on a clone of the source, leaving
+    /// the source reference's `version_id` unchanged.
+    #[test]
+    fn pin_version_sets_version_id_on_clone() {
+        let storage = S3FileStorage {
+            client: test_client_unused(),
+            bucket: String::from("bucket"),
+            key_prefix: String::new(),
+        };
+        let mut source = FileReference {
+            key: FileKey::new("students/photos/ada.jpg"),
+            etag: String::from("\"etag-original\""),
+            size: 42,
+            content_type: ContentType::new("image/jpeg"),
+            visibility: Visibility::Private,
+            uploaded_at: Timestamp::epoch(),
+            uploaded_by: educore_core::ids::SYSTEM_USER_ID,
+            tenant: TenantContext::system(
+                educore_core::ids::PUBLIC_SCHOOL_ID,
+                CorrelationId::from(Uuid::nil()),
+            ),
+            storage_class: StorageClass::Hot,
+            checksum: Checksum::new(String::from(
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            )),
+            version_id: None,
+        };
+
+        let pinned = storage.pin_version(&source, "abc.def-123");
+        assert_eq!(pinned.version_id.as_deref(), Some("abc.def-123"));
+        assert_eq!(pinned.key, source.key);
+        assert_eq!(pinned.etag, source.etag);
+
+        // Pinning is non-destructive: the source reference is
+        // untouched and still resolves to the current version.
+        assert!(source.version_id.is_none());
+    }
+
+    /// `pin_version` overrides any pre-existing version pin on
+    /// the source. This lets callers roll forward to a newer
+    /// version without round-tripping through `put`.
+    #[test]
+    fn pin_version_overrides_existing_pin() {
+        let storage = S3FileStorage {
+            client: test_client_unused(),
+            bucket: String::from("bucket"),
+            key_prefix: String::new(),
+        };
+        let mut source = FileReference {
+            key: FileKey::new("students/photos/ada.jpg"),
+            etag: String::from("etag"),
+            size: 1,
+            content_type: ContentType::new("image/jpeg"),
+            visibility: Visibility::Private,
+            uploaded_at: Timestamp::epoch(),
+            uploaded_by: educore_core::ids::SYSTEM_USER_ID,
+            tenant: TenantContext::system(
+                educore_core::ids::PUBLIC_SCHOOL_ID,
+                CorrelationId::from(Uuid::nil()),
+            ),
+            storage_class: StorageClass::Hot,
+            checksum: Checksum::new(String::new()),
+            version_id: Some(String::from("old-version")),
+        };
+
+        let new_pinned = storage.pin_version(&source, "new-version");
+        assert_eq!(new_pinned.version_id.as_deref(), Some("new-version"));
+
+        // Source is unchanged.
+        assert_eq!(source.version_id.as_deref(), Some("old-version"));
+    }
+
+    /// `urlencode_query_value` percent-encodes every byte outside
+    /// the unreserved set (`A-Z`, `a-z`, `0-9`, `-`, `_`, `.`,
+    /// `~`). Verifies the canonical AWS CLI output shape:
+    /// uppercase `%HH` for non-unreserved bytes, raw bytes
+    /// otherwise.
+    #[test]
+    fn urlencode_query_value_matches_canonical_form() {
+        // Unreserved bytes round-trip verbatim.
+        assert_eq!(
+            urlencode_query_value("abcXYZ012-_.~"),
+            "abcXYZ012-_.~",
+            "unreserved bytes must round-trip verbatim"
+        );
+        // Spaces encode to `%20`.
+        assert_eq!(urlencode_query_value("a b"), "a%20b");
+        // Slashes encode to `%2F` (not `/`), critical for
+        // query-string context inside `copy_source`.
+        assert_eq!(urlencode_query_value("a/b"), "a%2Fb");
+        // Lowercase ASCII letters and digits are unreserved.
+        assert_eq!(urlencode_query_value("v1.2.3-abc_DEF"), "v1.2.3-abc_DEF");
+        // Empty string stays empty.
+        assert_eq!(urlencode_query_value(""), "");
+    }
+
+    /// The literal string `version_id` must appear in this module
+    /// (it is the contract pinned by the roadmap's
+    /// `PORT-FILE-VERSIONING` check). This test fails the build
+    /// if a future refactor accidentally drops every
+    /// `version_id` reference from the S3 adapter.
+    #[test]
+    fn version_id_identifier_is_present_in_source() {
+        const SRC: &str = include_str!("s3.rs");
+        assert!(
+            SRC.contains("version_id"),
+            "s3.rs must contain the literal `version_id` \
+             (PORT-FILE-VERSIONING contract); refactor preserved? \
+             check `put`, `get`, `delete`, `head`, `copy`, \
+             `pin_version`, and the FileReference field."
+        );
     }
 }

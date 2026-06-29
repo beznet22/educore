@@ -25,4 +25,5 @@ sha2 = { workspace = true }
 # microtask D.4). The local adapter keeps its in-tree HMAC impl
 # for reference; this dep powers the helper struct.
 hmac = { workspace = true }
+uuid = { workspace = true }
 
