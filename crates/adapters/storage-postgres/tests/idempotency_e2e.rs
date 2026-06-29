@@ -67,6 +67,10 @@ fn make_record(
         outcome_version: 1,
         recorded_at: Timestamp::now(),
         affected_aggregate_ids: Vec::new(),
+        aggregate_version: 1,
+        etag: None,
+        duration_ms: 0,
+        emitted_event_ids: Vec::new(),
     }
 }
 

@@ -1394,6 +1394,7 @@ mod tests {
                 outcome_version: 1,
                 recorded_at: Timestamp::now(),
                 affected_aggregate_ids: vec![],
+                ..IdempotencyRecord::default()
             };
             let tx = adapter.begin().await.unwrap();
             tx.idempotency().record(record.clone()).await.unwrap();
@@ -1421,6 +1422,7 @@ mod tests {
                 outcome_version: 1,
                 recorded_at: Timestamp::now(),
                 affected_aggregate_ids: vec![],
+                ..IdempotencyRecord::default()
             };
             let tx = adapter.begin().await.unwrap();
             tx.idempotency().record(r1).await.unwrap();
@@ -1433,6 +1435,7 @@ mod tests {
                 outcome_version: 1,
                 recorded_at: Timestamp::now(),
                 affected_aggregate_ids: vec![],
+                ..IdempotencyRecord::default()
             };
             let tx2 = adapter.begin().await.unwrap();
             let res = tx2.idempotency().record(r2).await;
@@ -1456,6 +1459,7 @@ mod tests {
                 outcome_version: 1,
                 recorded_at: Timestamp::now(),
                 affected_aggregate_ids: vec![],
+                ..IdempotencyRecord::default()
             };
             let tx = adapter.begin().await.unwrap();
             tx.idempotency().record(r.clone()).await.unwrap();
@@ -1830,6 +1834,7 @@ mod tests {
                 outcome_version: 1,
                 recorded_at: Timestamp::now(),
                 affected_aggregate_ids: vec![],
+                ..IdempotencyRecord::default()
             };
             let event_entry = EventLogEntry {
                 event_id: envelope.event_id,
@@ -1923,6 +1928,7 @@ mod tests {
                 outcome_version: 1,
                 recorded_at: Timestamp::now(),
                 affected_aggregate_ids: vec![],
+                ..IdempotencyRecord::default()
             };
             let event_entry = EventLogEntry {
                 event_id: envelope.event_id,

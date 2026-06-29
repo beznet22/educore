@@ -182,6 +182,12 @@ impl Idempotency for MysqlIdempotency {
                     outcome_version: version,
                     recorded_at: Timestamp::from_datetime(r.recorded_at),
                     affected_aggregate_ids: agg_ids,
+                    // Outcome envelope fields (ADR-014 § Decision 6)
+                    // are not persisted by the MySQL adapter yet;
+                    // they default to zero / None / empty when read
+                    // back from a row written before the field was
+                    // added.
+                    ..IdempotencyRecord::default()
                 }))
             }
         }
@@ -562,6 +568,7 @@ mod tests {
             outcome_version: 1,
             recorded_at: educore_core::value_objects::Timestamp::now(),
             affected_aggregate_ids: Vec::new(),
+            ..IdempotencyRecord::default()
         };
 
         let outcome = tx
@@ -631,6 +638,7 @@ mod tests {
             outcome_version: 1,
             recorded_at: educore_core::value_objects::Timestamp::now(),
             affected_aggregate_ids: Vec::new(),
+            ..IdempotencyRecord::default()
         };
         let second = IdempotencyRecord {
             // Same composite key, DIFFERENT outcome bytes —

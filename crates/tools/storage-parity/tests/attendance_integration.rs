@@ -258,6 +258,10 @@ async fn dispatch_bulk_mark(
         outcome_version: 1,
         recorded_at: Timestamp::now(),
         affected_aggregate_ids: result.aggregates.iter().map(|a| a.id.as_uuid()).collect(),
+        aggregate_version: 1,
+        etag: None,
+        duration_ms: 0,
+        emitted_event_ids: Vec::new(),
     };
     let audit_entry = AuditLogEntry::create(
         ctx.school_id,

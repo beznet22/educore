@@ -77,6 +77,10 @@ impl IdempotencyRow {
             outcome_version: self.outcome_version,
             recorded_at,
             affected_aggregate_ids,
+            aggregate_version: 0,
+            etag: None,
+            duration_ms: 0,
+            emitted_event_ids: Vec::new(),
         }
     }
 }
@@ -484,6 +488,7 @@ mod tests {
             outcome_version: 1,
             recorded_at: Timestamp::now(),
             affected_aggregate_ids: vec![],
+            ..IdempotencyRecord::default()
         }
     }
 

@@ -62,6 +62,10 @@ async fn assert_idempotency_no_op_and_independent(adapter: &dyn StorageAdapter, 
         outcome_version: 1,
         recorded_at: educore_core::value_objects::Timestamp::now(),
         affected_aggregate_ids: vec![],
+        aggregate_version: 1,
+        etag: None,
+        duration_ms: 0,
+        emitted_event_ids: Vec::new(),
     };
     let tx = adapter.begin().await.expect("begin");
     tx.idempotency().record(r1.clone()).await.expect("record1");
@@ -123,6 +127,10 @@ async fn assert_outcome_conflict_on_testkit(adapter: &dyn StorageAdapter, school
         outcome_version: 1,
         recorded_at: educore_core::value_objects::Timestamp::now(),
         affected_aggregate_ids: vec![],
+        aggregate_version: 1,
+        etag: None,
+        duration_ms: 0,
+        emitted_event_ids: Vec::new(),
     };
     let tx = adapter.begin().await.expect("begin");
     tx.idempotency().record(r1.clone()).await.expect("record1");

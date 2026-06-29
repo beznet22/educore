@@ -170,6 +170,12 @@ impl Idempotency for PostgresIdempotency {
                     outcome_version: version,
                     recorded_at: Timestamp::from_datetime(r.recorded_at),
                     affected_aggregate_ids: agg_ids,
+                    // Outcome envelope fields (ADR-014 § Decision 6)
+                    // are not persisted by the Postgres adapter yet;
+                    // they default to zero / None / empty when read
+                    // back from a row written before the field was
+                    // added.
+                    ..IdempotencyRecord::default()
                 }))
             }
         }
