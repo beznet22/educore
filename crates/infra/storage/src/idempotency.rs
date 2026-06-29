@@ -17,12 +17,30 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use educore_core::error::Result;
-use educore_core::ids::{IdempotencyKey, SchoolId};
+use educore_core::ids::{EventId, IdempotencyKey, SchoolId};
 
 /// The stored outcome of a previously-executed command. Per
 /// `ADR-014-Idempotency.md`, the engine stores a small JSON
 /// payload (the serialised command outcome) plus the version of
 /// the engine that produced it, for forward compatibility.
+///
+/// Per `ADR-014-Idempotency.md` § Decision 6, the record also
+/// carries the full outcome envelope needed to replay a retry
+/// verbatim:
+///
+/// - `aggregate_version` (the aggregate's optimistic-lock
+///   version at the time of the outcome)
+/// - `etag` (the resulting entity's ETag, surfaced to HTTP
+///   callers so a retry returns the same `ETag` header)
+/// - `duration_ms` (wall-clock duration of the original
+///   command, exposed for observability and SLA tracking)
+/// - `emitted_event_ids` (the event ids emitted by the
+///   original command, used as the join keys when replaying
+///   downstream reactions from the event log)
+///
+/// All four fields are `#[serde(default)]` so existing storage
+/// rows written by earlier engine versions (where these fields
+/// did not exist) continue to deserialize.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IdempotencyRecord {
     /// The school the command targeted.
@@ -42,6 +60,32 @@ pub struct IdempotencyRecord {
     /// by the dispatcher to detect "same idempotency key, but
     /// different target" misuse.
     pub affected_aggregate_ids: Vec<Uuid>,
+    /// The aggregate's optimistic-lock version at the time of
+    /// the original command's outcome. Per
+    /// `ADR-014-Idempotency.md` § Decision 6, a retry returns
+    /// the same version so consumers can verify the entity has
+    /// not been mutated by a *different* command since.
+    #[serde(default)]
+    pub aggregate_version: u32,
+    /// The resulting entity's ETag. Surfaced to HTTP callers
+    /// so a retry returns the same `ETag` header as the
+    /// original. `None` for commands that do not produce an
+    /// entity (e.g. bulk commands, fire-and-forget side
+    /// effects).
+    #[serde(default)]
+    pub etag: Option<String>,
+    /// Wall-clock duration of the original command, in
+    /// milliseconds. Exposed for observability and SLA
+    /// tracking; not part of the idempotency contract itself.
+    #[serde(default)]
+    pub duration_ms: u64,
+    /// Event ids emitted by the original command. The replay
+    /// path uses these as join keys when reconstructing
+    /// downstream reactions from the event log. Empty for
+    /// commands that emit no events (e.g. read-only commands
+    /// stored for idempotency bookkeeping).
+    #[serde(default)]
+    pub emitted_event_ids: Vec<EventId>,
 }
 
 impl IdempotencyRecord {
@@ -56,6 +100,36 @@ impl IdempotencyRecord {
             school_id,
             command_type,
             idempotency_key: key,
+        }
+    }
+}
+
+impl Default for IdempotencyRecord {
+    /// Returns a record whose identifier fields are the nil UUID
+    /// and whose outcome columns are empty / zero. Callers
+    /// always override the four required fields
+    /// (`school_id`, `command_type`, `idempotency_key`,
+    /// `outcome`) plus `recorded_at`; the four outcome envelope
+    /// fields added by `ADR-014-Idempotency.md` § Decision 6
+    /// (`aggregate_version`, `etag`, `duration_ms`,
+    /// `emitted_event_ids`) default to zero / `None` / empty.
+    ///
+    /// `Default` lets test code use the spread operator
+    /// (`..IdempotencyRecord::default()`) so adding new fields
+    /// does not require touching every call site.
+    fn default() -> Self {
+        Self {
+            school_id: SchoolId(Uuid::nil()),
+            command_type: "",
+            idempotency_key: IdempotencyKey(Uuid::nil()),
+            outcome: bytes::Bytes::new(),
+            outcome_version: 0,
+            recorded_at: educore_core::value_objects::Timestamp::default(),
+            affected_aggregate_ids: Vec::new(),
+            aggregate_version: 0,
+            etag: None,
+            duration_ms: 0,
+            emitted_event_ids: Vec::new(),
         }
     }
 }
@@ -325,6 +399,7 @@ mod tests {
             outcome_version: 1,
             recorded_at: Timestamp::now(),
             affected_aggregate_ids: Vec::new(),
+            ..IdempotencyRecord::default()
         };
         let second = IdempotencyRecord {
             // Same composite key, different outcome bytes.
@@ -402,6 +477,7 @@ mod tests {
             outcome_version: 1,
             recorded_at: Timestamp::now(),
             affected_aggregate_ids: Vec::new(),
+            ..IdempotencyRecord::default()
         };
 
         let first = futures::executor::block_on(mock.record_outcome(record.clone()))
@@ -478,6 +554,7 @@ mod tests {
             outcome_version: 1,
             recorded_at: Timestamp::now(),
             affected_aggregate_ids: Vec::new(),
+            ..IdempotencyRecord::default()
         };
 
         // The default impl delegates to `record` and reports
