@@ -29,6 +29,18 @@ pub mod port;
 /// builder API.
 pub mod jwt;
 
+/// SAML 2.0 [`port::AuthProvider`] reference implementation.
+///
+/// Enterprise identity-provider integration (Okta, Azure AD /
+/// Entra ID, OneLogin, Auth0 enterprise, PingFederate,
+/// Shibboleth, ...). Delegates token validation, refresh, and
+/// revocation to [`jwt::JwtAuthProvider`] so the post-callback
+/// session is surfaced as a uniform `Authorization: Bearer ...`
+/// JWT. Full SAML SSO callback validation, IdP metadata parsing,
+/// and assertion extraction land in a later phase; see
+/// [`saml::SamlAuthProvider`] for the implementation gap.
+pub mod saml;
+
 /// In-memory reference implementation of the four port-driven
 /// OAuth-related repository traits declared in
 /// [`educore_operations::repository`](educore_operations::repository):
@@ -71,6 +83,7 @@ pub mod prelude {
         AuthProvider, AuthScheme, AuthToken, BearerToken, Credential, RbacPort, Session,
     };
     pub use crate::rate_limit::{RateLimitError, RateLimiter, RateLimiterConfig};
+    pub use crate::saml::SamlAuthProvider;
     pub use crate::services::{
         JwtService, MfaService, OAuthScopeService, PasswordService, SecretString,
     };
