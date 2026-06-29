@@ -64,6 +64,11 @@ pub mod sync;
 /// `docs/schemas/command-schema.md` § 12).
 pub mod bulk_events;
 
+/// The typed event the engine publishes when an event-log
+/// retention sweep is due (see `docs/schemas/event-schema.md`
+/// § 9). Parallel to the audit crate's `RetentionSweepDue`.
+pub mod event_retention;
+
 /// The in-process [`SubscriberRegistry`](subscribe::SubscriberRegistry)
 /// and the [`Subscriber`](subscribe::Subscriber) trait. Used to
 /// wire spec-mandated cross-domain handlers to the bus.
@@ -86,6 +91,7 @@ pub mod prelude {
         AckOutcome, BatchReceipt, ConsumerId, EventBus, EventFilter, EventFilterExpr,
         EventSubscription, PublishReceipt, StartPosition, SubscribeOptions, Topic,
     };
+    pub use crate::event_retention::{EventLogRetentionPolicy, EventLogRetentionSweepDue};
     pub use crate::relay::{OutboxRelay, RelayStats, DEFAULT_BATCH_SIZE, DEFAULT_IDLE_DELAY};
     pub use crate::subscribe::{
         DispatchStats, Subscriber, SubscriberFailure, SubscriberRegistry, SubscriptionFilter,
