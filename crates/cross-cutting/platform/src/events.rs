@@ -23,6 +23,7 @@ use educore_core::tenant::UserType;
 use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 
+use crate::commands::ReportFormat;
 use crate::value_objects::{EmailAddress, SchoolStatus, UserStatus};
 
 /// A school was created.
@@ -467,6 +468,158 @@ impl DomainEvent for UserDeactivated {
         self.school_id
     }
 
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// ===========================================================================
+// Compliance-report events (Phase 2 § 8.2-8.4)
+//
+// Three events mirror the three compliance-report commands in
+// `commands.rs`. They close the same three roadmap items:
+// - SCHEMA-AUDIT-GDPR-ERASURE
+// - SCHEMA-AUDIT-FERPA
+// - SCHEMA-AUDIT-REGULATOR
+// ===========================================================================
+
+/// Emitted when a GDPR right-to-erasure was executed for
+/// `subject_id` (`docs/schemas/audit-schema.md` § 8.2). The
+/// subject's profile has been soft-deleted; PII in the audit
+/// log has been anonymized; financial records have been
+/// retained for the regulator-required period (default 7
+/// years). Consumers (e.g. the privacy portal) subscribe to
+/// `platform.subject.erased` to confirm the erasure.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SubjectErased {
+    /// The typed id of the erased subject.
+    pub subject_id: UserId,
+    /// The data-subject's request reference id.
+    pub request_id: String,
+    /// The actor who executed the erasure (a compliance
+    /// officer, typically).
+    pub actor_id: UserId,
+    /// The free-text reason recorded with the erasure.
+    pub reason: String,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for SubjectErased {
+    /// Stable dotted event-type string. The subscription key
+    /// for consumers is `"platform.subject.erased"`.
+    const EVENT_TYPE: &'static str = "platform.subject.erased";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "subject";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.subject_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        // The erasure applies tenant-wide; consumers can
+        // derive the school from the subject's profile
+        // (looked up before the erasure) or from the
+        // `request_id` if they need to route the event.
+        SchoolId::from_uuid(self.subject_id.as_uuid())
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a FERPA-style parental access report was
+/// generated (`docs/schemas/audit-schema.md` § 8.3). The
+/// report itself is stored at the location returned by
+/// `bundle_ref`; consumers subscribe to
+/// `platform.parent_access.generated` to deliver the bundle
+/// to the parent.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ParentAccessReportGenerated {
+    /// The typed id of the child whose records are in the report.
+    pub child_id: UserId,
+    /// The typed id of the parent who requested the report.
+    pub parent_id: UserId,
+    /// Reference to the generated report bundle (engine-level
+    /// file storage).
+    pub bundle_ref: String,
+    /// The output format requested by the parent.
+    pub report_format: ReportFormat,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for ParentAccessReportGenerated {
+    const EVENT_TYPE: &'static str = "platform.parent_access.generated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "parent_access_report";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.child_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        // Tenant-wide report; the child's school is derived
+        // from the child's profile lookup at service time.
+        SchoolId::from_uuid(self.child_id.as_uuid())
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a regulator audit bundle was generated
+/// (`docs/schemas/audit-schema.md` § 8.4). The bundle covers
+/// all state changes, authorization decisions, data exports,
+/// and backup/restore events for `school_id` in
+/// `[from, to]`. The consumer's compliance team reviews and
+/// signs off internally before disclosure.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RegulatorAuditGenerated {
+    /// The school under audit.
+    pub school_id: SchoolId,
+    /// Inclusive start of the audit time range.
+    pub from: Timestamp,
+    /// Inclusive end of the audit time range.
+    pub to: Timestamp,
+    /// Reference to the generated audit bundle.
+    pub bundle_ref: String,
+    /// The actor who generated the report (compliance officer).
+    pub actor_id: UserId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for RegulatorAuditGenerated {
+    const EVENT_TYPE: &'static str = "platform.regulator_audit.generated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "regulator_audit";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.school_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at
     }
