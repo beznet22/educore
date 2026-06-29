@@ -65,6 +65,12 @@ pub mod local;
 /// checksum, signed-URL, namespacing, and visibility helpers.
 pub mod services;
 
+/// Lifecycle-rule configuration port (Hot → Cool → Archive →
+/// expire). See `docs/ports/file-storage.md` § "Lifecycle Rules"
+/// and the module-level doc in [`lifecycle`] for the typed
+/// shape, evaluator trait, and default implementation.
+pub mod lifecycle;
+
 /// Package name constant. Re-exported so consumers can assert
 /// they are using the right crate version at compile time.
 pub const PACKAGE_NAME: &str = "educore-files";
@@ -80,6 +86,9 @@ pub const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// error type without naming each module.
 pub mod prelude {
     pub use crate::errors::{FileStorageError, InfrastructureError};
+    pub use crate::lifecycle::{
+        DefaultLifecycleEvaluator, LifecycleEvaluator, LifecyclePolicy, LifecycleRule, StorageTier,
+    };
     pub use crate::local::{LocalFileStorage, LocalFileStorageBuilder};
     pub use crate::port::{
         Checksum, ContentType, FileKey, FileMetadata, FileReference, FileStorage, FileStream,
