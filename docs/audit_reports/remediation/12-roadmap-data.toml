@@ -427,7 +427,7 @@ priority = "P2"
 area = "STORAGE"
 description = "Transaction::TenantContext propagation"
 source = "wave4-storage-port.md PORT-STORE-002"
-check = "file:crates/infra/storage/src/transaction.rs regex:TenantContext"
+check = "file:crates/infra/storage/src/transaction.rs regex:TenantTransaction"
 
 [[item]]
 id = "H-3"

@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 156 |
+| Done (`[x]`) | 157 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 317 |
-| Last update | 2026-06-25 19:05 UTC |
+| Open (`[ ]`) | 316 |
+| Last update | 2026-06-29 01:57 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -346,9 +346,9 @@
       **Source:** Cluster A stage 3
       **Check:** `file-exists:crates/adapters/storage-surrealdb/src/schema.rs` → _schema.rs exists_
 
-- [ ] **H-2** Transaction::TenantContext propagation
+- [x] **H-2** Transaction::TenantContext propagation
       **Source:** wave4-storage-port.md PORT-STORE-002
-      **Check:** `file:crates/infra/storage/src/transaction.rs regex:TenantContext` → _transaction.rs:TenantContext_
+      **Check:** `file:crates/infra/storage/src/transaction.rs regex:TenantTransaction` → _transaction.rs:TenantTransaction_
 
 - [x] **H-3** Atomic audit-write in same transaction
       **Source:** wave4-storage-port.md PORT-STORE-013
