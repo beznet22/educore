@@ -226,6 +226,332 @@ fn _assert_postal_receive_repo_object_safe() {
 
 // === PostalReceive repository section end ===
 
+// === NewFormDownload repository section begin (owner: wave9.1) ===
+
+// Sections 3A/3B/3C above already import `async_trait::async_trait`,
+// `chrono::NaiveDate`, `educore_core::ids::SchoolId`, and the
+// `StorageResult` rename. Re-importing any of them here is an E0252
+// duplicate. The `NewFormDownload`, `NewFormDownloadId` types below
+// are new to this section.
+
+use crate::aggregate::NewFormDownload;
+use crate::value_objects::NewFormDownloadId;
+
+/// Repository port for the
+/// [`NewFormDownload`](crate::aggregate::NewFormDownload) aggregate.
+/// Minimal CRUD surface per wave 9.1 (`get`, `insert`, `update`).
+#[async_trait]
+pub trait NewFormDownloadRepository: Send + Sync {
+    /// Fetch a `NewFormDownload` by its typed id. Returns
+    /// `Ok(None)` if the row does not exist.
+    async fn get(&self, id: NewFormDownloadId) -> StorageResult<Option<NewFormDownload>>;
+    /// Insert a new `NewFormDownload`.
+    async fn insert(&self, value: &NewFormDownload) -> StorageResult<()>;
+    /// Update an existing `NewFormDownload`.
+    async fn update(&self, value: &NewFormDownload) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test (compile-time).
+fn _assert_new_form_download_repo_object_safe() {
+    fn _f(_: Box<dyn NewFormDownloadRepository>) {}
+}
+
+// === NewFormDownload repository section end ===
+
+// === UpdateFormDownload repository section begin (owner: wave9.1) ===
+
+// Prior sections already import `async_trait::async_trait`,
+// `chrono::NaiveDate`, `educore_core::ids::SchoolId`, and the
+// `StorageResult` rename. The `UpdateFormDownload`,
+// `UpdateFormDownloadId` types below are new to this section.
+
+use crate::aggregate::UpdateFormDownload;
+use crate::value_objects::UpdateFormDownloadId;
+
+/// Repository port for the
+/// [`UpdateFormDownload`](crate::aggregate::UpdateFormDownload)
+/// aggregate. Minimal CRUD surface per wave 9.1
+/// (`get`, `insert`, `update`).
+#[async_trait]
+pub trait UpdateFormDownloadRepository: Send + Sync {
+    /// Fetch an `UpdateFormDownload` by its typed id. Returns
+    /// `Ok(None)` if the row does not exist.
+    async fn get(&self, id: UpdateFormDownloadId) -> StorageResult<Option<UpdateFormDownload>>;
+    /// Insert a new `UpdateFormDownload`.
+    async fn insert(&self, value: &UpdateFormDownload) -> StorageResult<()>;
+    /// Update an existing `UpdateFormDownload`.
+    async fn update(&self, value: &UpdateFormDownload) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test (compile-time).
+fn _assert_update_form_download_repo_object_safe() {
+    fn _f(_: Box<dyn UpdateFormDownloadRepository>) {}
+}
+
+// === UpdateFormDownload repository section end ===
+
+// === FormDownloadFile repository section begin (owner: wave9.1) ===
+
+// Prior sections already import `async_trait::async_trait`,
+// `chrono::NaiveDate`, `educore_core::ids::SchoolId`, and the
+// `StorageResult` rename. The `FormDownloadFile`,
+// `FormDownloadFileId` types below are new to this section.
+
+use crate::aggregate::FormDownloadFile;
+use crate::value_objects::FormDownloadFileId;
+
+/// Repository port for the
+/// [`FormDownloadFile`](crate::aggregate::FormDownloadFile)
+/// aggregate. Minimal CRUD surface per wave 9.1
+/// (`get`, `insert`, `update`).
+#[async_trait]
+pub trait FormDownloadFileRepository: Send + Sync {
+    /// Fetch a `FormDownloadFile` by its typed id. Returns
+    /// `Ok(None)` if the row does not exist.
+    async fn get(&self, id: FormDownloadFileId) -> StorageResult<Option<FormDownloadFile>>;
+    /// Insert a new `FormDownloadFile`.
+    async fn insert(&self, value: &FormDownloadFile) -> StorageResult<()>;
+    /// Update an existing `FormDownloadFile`.
+    async fn update(&self, value: &FormDownloadFile) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test (compile-time).
+fn _assert_form_download_file_repo_object_safe() {
+    fn _f(_: Box<dyn FormDownloadFileRepository>) {}
+}
+
+// === FormDownloadFile repository section end ===
+
+// === FormDownloadLink repository section begin (owner: wave9.1) ===
+
+// Prior sections already import `async_trait::async_trait`,
+// `chrono::NaiveDate`, `educore_core::ids::SchoolId`, and the
+// `StorageResult` rename. The `FormDownloadLink`,
+// `FormDownloadLinkId` types below are new to this section.
+
+use crate::aggregate::FormDownloadLink;
+use crate::value_objects::FormDownloadLinkId;
+
+/// Repository port for the
+/// [`FormDownloadLink`](crate::aggregate::FormDownloadLink)
+/// aggregate. Minimal CRUD surface per wave 9.1
+/// (`get`, `insert`, `update`).
+#[async_trait]
+pub trait FormDownloadLinkRepository: Send + Sync {
+    /// Fetch a `FormDownloadLink` by its typed id. Returns
+    /// `Ok(None)` if the row does not exist.
+    async fn get(&self, id: FormDownloadLinkId) -> StorageResult<Option<FormDownloadLink>>;
+    /// Insert a new `FormDownloadLink`.
+    async fn insert(&self, value: &FormDownloadLink) -> StorageResult<()>;
+    /// Update an existing `FormDownloadLink`.
+    async fn update(&self, value: &FormDownloadLink) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test (compile-time).
+fn _assert_form_download_link_repo_object_safe() {
+    fn _f(_: Box<dyn FormDownloadLinkRepository>) {}
+}
+
+// === FormDownloadLink repository section end ===
+
+// === NewPostalDispatch repository section begin (owner: wave9.1) ===
+
+// Prior sections already import `async_trait::async_trait`,
+// `chrono::NaiveDate`, `educore_core::ids::SchoolId`, and the
+// `StorageResult` rename. The `NewPostalDispatch`,
+// `NewPostalDispatchId` types below are new to this section.
+
+use crate::aggregate::NewPostalDispatch;
+use crate::value_objects::NewPostalDispatchId;
+
+/// Repository port for the
+/// [`NewPostalDispatch`](crate::aggregate::NewPostalDispatch)
+/// aggregate. Minimal CRUD surface per wave 9.1
+/// (`get`, `insert`, `update`).
+#[async_trait]
+pub trait NewPostalDispatchRepository: Send + Sync {
+    /// Fetch a `NewPostalDispatch` by its typed id. Returns
+    /// `Ok(None)` if the row does not exist.
+    async fn get(&self, id: NewPostalDispatchId) -> StorageResult<Option<NewPostalDispatch>>;
+    /// Insert a new `NewPostalDispatch`.
+    async fn insert(&self, value: &NewPostalDispatch) -> StorageResult<()>;
+    /// Update an existing `NewPostalDispatch`.
+    async fn update(&self, value: &NewPostalDispatch) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test (compile-time).
+fn _assert_new_postal_dispatch_repo_object_safe() {
+    fn _f(_: Box<dyn NewPostalDispatchRepository>) {}
+}
+
+// === NewPostalDispatch repository section end ===
+
+// === UpdatePostalDispatch repository section begin (owner: wave9.1) ===
+
+// Prior sections already import `async_trait::async_trait`,
+// `chrono::NaiveDate`, `educore_core::ids::SchoolId`, and the
+// `StorageResult` rename. The `UpdatePostalDispatch`,
+// `UpdatePostalDispatchId` types below are new to this section.
+
+use crate::aggregate::UpdatePostalDispatch;
+use crate::value_objects::UpdatePostalDispatchId;
+
+/// Repository port for the
+/// [`UpdatePostalDispatch`](crate::aggregate::UpdatePostalDispatch)
+/// aggregate. Minimal CRUD surface per wave 9.1
+/// (`get`, `insert`, `update`).
+#[async_trait]
+pub trait UpdatePostalDispatchRepository: Send + Sync {
+    /// Fetch an `UpdatePostalDispatch` by its typed id. Returns
+    /// `Ok(None)` if the row does not exist.
+    async fn get(&self, id: UpdatePostalDispatchId) -> StorageResult<Option<UpdatePostalDispatch>>;
+    /// Insert a new `UpdatePostalDispatch`.
+    async fn insert(&self, value: &UpdatePostalDispatch) -> StorageResult<()>;
+    /// Update an existing `UpdatePostalDispatch`.
+    async fn update(&self, value: &UpdatePostalDispatch) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test (compile-time).
+fn _assert_update_postal_dispatch_repo_object_safe() {
+    fn _f(_: Box<dyn UpdatePostalDispatchRepository>) {}
+}
+
+// === UpdatePostalDispatch repository section end ===
+
+// === PostalDispatchAttachment repository section begin (owner: wave9.1) ===
+
+// Prior sections already import `async_trait::async_trait`,
+// `chrono::NaiveDate`, `educore_core::ids::SchoolId`, and the
+// `StorageResult` rename. The `PostalDispatchAttachment`,
+// `PostalDispatchAttachmentId` types below are new to this section.
+
+use crate::aggregate::PostalDispatchAttachment;
+use crate::value_objects::PostalDispatchAttachmentId;
+
+/// Repository port for the
+/// [`PostalDispatchAttachment`](crate::aggregate::PostalDispatchAttachment)
+/// aggregate. Minimal CRUD surface per wave 9.1
+/// (`get`, `insert`, `update`).
+#[async_trait]
+pub trait PostalDispatchAttachmentRepository: Send + Sync {
+    /// Fetch a `PostalDispatchAttachment` by its typed id.
+    /// Returns `Ok(None)` if the row does not exist.
+    async fn get(
+        &self,
+        id: PostalDispatchAttachmentId,
+    ) -> StorageResult<Option<PostalDispatchAttachment>>;
+    /// Insert a new `PostalDispatchAttachment`.
+    async fn insert(&self, value: &PostalDispatchAttachment) -> StorageResult<()>;
+    /// Update an existing `PostalDispatchAttachment`.
+    async fn update(&self, value: &PostalDispatchAttachment) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test (compile-time).
+fn _assert_postal_dispatch_attachment_repo_object_safe() {
+    fn _f(_: Box<dyn PostalDispatchAttachmentRepository>) {}
+}
+
+// === PostalDispatchAttachment repository section end ===
+
+// === NewPostalReceive repository section begin (owner: wave9.1) ===
+
+// Prior sections already import `async_trait::async_trait`,
+// `chrono::NaiveDate`, `educore_core::ids::SchoolId`, and the
+// `StorageResult` rename. The `NewPostalReceive`,
+// `NewPostalReceiveId` types below are new to this section.
+
+use crate::aggregate::NewPostalReceive;
+use crate::value_objects::NewPostalReceiveId;
+
+/// Repository port for the
+/// [`NewPostalReceive`](crate::aggregate::NewPostalReceive)
+/// aggregate. Minimal CRUD surface per wave 9.1
+/// (`get`, `insert`, `update`).
+#[async_trait]
+pub trait NewPostalReceiveRepository: Send + Sync {
+    /// Fetch a `NewPostalReceive` by its typed id. Returns
+    /// `Ok(None)` if the row does not exist.
+    async fn get(&self, id: NewPostalReceiveId) -> StorageResult<Option<NewPostalReceive>>;
+    /// Insert a new `NewPostalReceive`.
+    async fn insert(&self, value: &NewPostalReceive) -> StorageResult<()>;
+    /// Update an existing `NewPostalReceive`.
+    async fn update(&self, value: &NewPostalReceive) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test (compile-time).
+fn _assert_new_postal_receive_repo_object_safe() {
+    fn _f(_: Box<dyn NewPostalReceiveRepository>) {}
+}
+
+// === NewPostalReceive repository section end ===
+
+// === UpdatePostalReceive repository section begin (owner: wave9.1) ===
+
+// Prior sections already import `async_trait::async_trait`,
+// `chrono::NaiveDate`, `educore_core::ids::SchoolId`, and the
+// `StorageResult` rename. The `UpdatePostalReceive`,
+// `UpdatePostalReceiveId` types below are new to this section.
+
+use crate::aggregate::UpdatePostalReceive;
+use crate::value_objects::UpdatePostalReceiveId;
+
+/// Repository port for the
+/// [`UpdatePostalReceive`](crate::aggregate::UpdatePostalReceive)
+/// aggregate. Minimal CRUD surface per wave 9.1
+/// (`get`, `insert`, `update`).
+#[async_trait]
+pub trait UpdatePostalReceiveRepository: Send + Sync {
+    /// Fetch an `UpdatePostalReceive` by its typed id. Returns
+    /// `Ok(None)` if the row does not exist.
+    async fn get(&self, id: UpdatePostalReceiveId) -> StorageResult<Option<UpdatePostalReceive>>;
+    /// Insert a new `UpdatePostalReceive`.
+    async fn insert(&self, value: &UpdatePostalReceive) -> StorageResult<()>;
+    /// Update an existing `UpdatePostalReceive`.
+    async fn update(&self, value: &UpdatePostalReceive) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test (compile-time).
+fn _assert_update_postal_receive_repo_object_safe() {
+    fn _f(_: Box<dyn UpdatePostalReceiveRepository>) {}
+}
+
+// === UpdatePostalReceive repository section end ===
+
+// === PostalReceiveAttachment repository section begin (owner: wave9.1) ===
+
+// Prior sections already import `async_trait::async_trait`,
+// `chrono::NaiveDate`, `educore_core::ids::SchoolId`, and the
+// `StorageResult` rename. The `PostalReceiveAttachment`,
+// `PostalReceiveAttachmentId` types below are new to this section.
+
+use crate::aggregate::PostalReceiveAttachment;
+use crate::value_objects::PostalReceiveAttachmentId;
+
+/// Repository port for the
+/// [`PostalReceiveAttachment`](crate::aggregate::PostalReceiveAttachment)
+/// aggregate. Minimal CRUD surface per wave 9.1
+/// (`get`, `insert`, `update`).
+#[async_trait]
+pub trait PostalReceiveAttachmentRepository: Send + Sync {
+    /// Fetch a `PostalReceiveAttachment` by its typed id.
+    /// Returns `Ok(None)` if the row does not exist.
+    async fn get(
+        &self,
+        id: PostalReceiveAttachmentId,
+    ) -> StorageResult<Option<PostalReceiveAttachment>>;
+    /// Insert a new `PostalReceiveAttachment`.
+    async fn insert(&self, value: &PostalReceiveAttachment) -> StorageResult<()>;
+    /// Update an existing `PostalReceiveAttachment`.
+    async fn update(&self, value: &PostalReceiveAttachment) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test (compile-time).
+fn _assert_postal_receive_attachment_repo_object_safe() {
+    fn _f(_: Box<dyn PostalReceiveAttachmentRepository>) {}
+}
+
+// === PostalReceiveAttachment repository section end ===
+
 // =============================================================================
 // Tests
 // =============================================================================
@@ -249,6 +575,16 @@ mod tests {
         fn _f(_: Box<dyn FormDownloadRepository>) {}
         fn _g(_: Box<dyn PostalDispatchRepository>) {}
         fn _h(_: Box<dyn PostalReceiveRepository>) {}
+        fn _i(_: Box<dyn NewFormDownloadRepository>) {}
+        fn _j(_: Box<dyn UpdateFormDownloadRepository>) {}
+        fn _k(_: Box<dyn FormDownloadFileRepository>) {}
+        fn _l(_: Box<dyn FormDownloadLinkRepository>) {}
+        fn _m(_: Box<dyn NewPostalDispatchRepository>) {}
+        fn _n(_: Box<dyn UpdatePostalDispatchRepository>) {}
+        fn _o(_: Box<dyn PostalDispatchAttachmentRepository>) {}
+        fn _p(_: Box<dyn NewPostalReceiveRepository>) {}
+        fn _q(_: Box<dyn UpdatePostalReceiveRepository>) {}
+        fn _r(_: Box<dyn PostalReceiveAttachmentRepository>) {}
     }
 
     // Send + Sync smoke tests. The trait is declared as
@@ -270,6 +606,56 @@ mod tests {
     #[test]
     fn postal_receive_repository_is_send_and_sync() {
         _assert_send_sync::<dyn PostalReceiveRepository>();
+    }
+
+    #[test]
+    fn new_form_download_repository_is_send_and_sync() {
+        _assert_send_sync::<dyn NewFormDownloadRepository>();
+    }
+
+    #[test]
+    fn update_form_download_repository_is_send_and_sync() {
+        _assert_send_sync::<dyn UpdateFormDownloadRepository>();
+    }
+
+    #[test]
+    fn form_download_file_repository_is_send_and_sync() {
+        _assert_send_sync::<dyn FormDownloadFileRepository>();
+    }
+
+    #[test]
+    fn form_download_link_repository_is_send_and_sync() {
+        _assert_send_sync::<dyn FormDownloadLinkRepository>();
+    }
+
+    #[test]
+    fn new_postal_dispatch_repository_is_send_and_sync() {
+        _assert_send_sync::<dyn NewPostalDispatchRepository>();
+    }
+
+    #[test]
+    fn update_postal_dispatch_repository_is_send_and_sync() {
+        _assert_send_sync::<dyn UpdatePostalDispatchRepository>();
+    }
+
+    #[test]
+    fn postal_dispatch_attachment_repository_is_send_and_sync() {
+        _assert_send_sync::<dyn PostalDispatchAttachmentRepository>();
+    }
+
+    #[test]
+    fn new_postal_receive_repository_is_send_and_sync() {
+        _assert_send_sync::<dyn NewPostalReceiveRepository>();
+    }
+
+    #[test]
+    fn update_postal_receive_repository_is_send_and_sync() {
+        _assert_send_sync::<dyn UpdatePostalReceiveRepository>();
+    }
+
+    #[test]
+    fn postal_receive_attachment_repository_is_send_and_sync() {
+        _assert_send_sync::<dyn PostalReceiveAttachmentRepository>();
     }
 
     // Trait-method compile-time proofs. Each helper function

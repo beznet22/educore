@@ -98,6 +98,46 @@ documents_typed_id! {
     /// A typed id for a [`PostalReceive`](crate::aggregate::PostalReceive).
     pub struct PostalReceiveId;
 }
+documents_typed_id! {
+    /// A typed id for a [`NewFormDownload`](crate::aggregate::NewFormDownload).
+    pub struct NewFormDownloadId;
+}
+documents_typed_id! {
+    /// A typed id for a [`UpdateFormDownload`](crate::aggregate::UpdateFormDownload).
+    pub struct UpdateFormDownloadId;
+}
+documents_typed_id! {
+    /// A typed id for a [`FormDownloadFile`](crate::aggregate::FormDownloadFile).
+    pub struct FormDownloadFileId;
+}
+documents_typed_id! {
+    /// A typed id for a [`FormDownloadLink`](crate::aggregate::FormDownloadLink).
+    pub struct FormDownloadLinkId;
+}
+documents_typed_id! {
+    /// A typed id for a [`NewPostalDispatch`](crate::aggregate::NewPostalDispatch).
+    pub struct NewPostalDispatchId;
+}
+documents_typed_id! {
+    /// A typed id for a [`UpdatePostalDispatch`](crate::aggregate::UpdatePostalDispatch).
+    pub struct UpdatePostalDispatchId;
+}
+documents_typed_id! {
+    /// A typed id for a [`PostalDispatchAttachment`](crate::aggregate::PostalDispatchAttachment).
+    pub struct PostalDispatchAttachmentId;
+}
+documents_typed_id! {
+    /// A typed id for a [`NewPostalReceive`](crate::aggregate::NewPostalReceive).
+    pub struct NewPostalReceiveId;
+}
+documents_typed_id! {
+    /// A typed id for a [`UpdatePostalReceive`](crate::aggregate::UpdatePostalReceive).
+    pub struct UpdatePostalReceiveId;
+}
+documents_typed_id! {
+    /// A typed id for a [`PostalReceiveAttachment`](crate::aggregate::PostalReceiveAttachment).
+    pub struct PostalReceiveAttachmentId;
+}
 
 // =============================================================================
 // Validated string newtypes
