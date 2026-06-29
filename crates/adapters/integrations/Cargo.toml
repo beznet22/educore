@@ -25,4 +25,5 @@ thiserror = { workspace = true }
 indexmap = { workspace = true }
 hmac = { workspace = true }
 sha2 = { workspace = true }
+uuid = { workspace = true }
 
