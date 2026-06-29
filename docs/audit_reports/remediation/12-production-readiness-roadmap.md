@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 166 |
+| Done (`[x]`) | 171 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 307 |
-| Last update | 2026-06-29 03:45 UTC |
+| Open (`[ ]`) | 302 |
+| Last update | 2026-06-29 04:13 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -84,9 +84,9 @@
       **Source:** docs/audit_reports/findings/wave1-lint.md
       **Check:** `cmd:cargo clippy -p educore-core --lib -- -D warnings` → _exit 0_
 
-- [ ] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
+- [x] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave5-docs-1.md
-      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 101_
+      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 0_
 
 - [x] **D-10** Resolved — Sync feature flag added to educore umbrella. Closed 2026-06-25.
       **Source:** ADR-018 § 4, crates/educore/Cargo.toml
@@ -370,19 +370,19 @@
       **Source:** docs/ports/storage.md § Streaming
       **Check:** `file:crates/domains/academic/src/repository.rs regex:fn stream` → _repository.rs:fn stream_
 
-- [ ] **PORT-AUTH-SAML** SamlAuthProvider not shipped (enterprise IdP)
+- [x] **PORT-AUTH-SAML** SamlAuthProvider not shipped (enterprise IdP)
       **Source:** docs/ports/authentication.md § Configuration
-      **Check:** `file-exists:crates/adapters/auth/src/saml.rs` → _saml.rs missing_
+      **Check:** `file-exists:crates/adapters/auth/src/saml.rs` → _saml.rs exists_
 
 - [x] **PORT-NOTIFY-RATE-LIMIT** Per-tenant per-channel rate limiting not implemented at adapter boundary
       **Source:** docs/ports/notifications.md § Rate Limiting
       **Check:** `file:crates/adapters/notify/src/reliability.rs regex:rate.?limit` → _reliability.rs:rate.?limit_
 
-- [ ] **PORT-NOTIFY-CRITICAL** Priority::Critical requires synchronous delivery; no bypass path in adapters
+- [x] **PORT-NOTIFY-CRITICAL** Priority::Critical requires synchronous delivery; no bypass path in adapters
       **Source:** docs/ports/notifications.md § Priority
       **Check:** `file:crates/adapters/notify/src/email.rs regex:Critical` → _email.rs:Critical_
 
-- [ ] **PORT-PAY-3DS** PaymentError::ThreeDSRequired declared but no 3DS auth-capture orchestration
+- [x] **PORT-PAY-3DS** PaymentError::ThreeDSRequired declared but no 3DS auth-capture orchestration
       **Source:** docs/ports/payments.md § Error Type
       **Check:** `file:crates/adapters/payment/src/stripe.rs regex:ThreeDS` → _stripe.rs:ThreeDS_
 
@@ -402,7 +402,7 @@
       **Source:** docs/ports/integrations.md § OAuth2 Client Credentials
       **Check:** `file:crates/adapters/integrations/src/lib.rs regex:client_credentials` → _lib.rs:client_credentials_
 
-- [ ] **PORT-EVENTBUS-AUDIT** Spec requires every publish/consume recorded in audit; no AuditSink wiring on the bus
+- [x] **PORT-EVENTBUS-AUDIT** Spec requires every publish/consume recorded in audit; no AuditSink wiring on the bus
       **Source:** docs/ports/event-bus.md § Audit
       **Check:** `file:crates/cross-cutting/events/src/event_bus.rs regex:audit_log|AuditSink` → _event_bus.rs:audit_log|AuditSink_
 
