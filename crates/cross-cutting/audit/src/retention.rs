@@ -6,6 +6,19 @@
 //! job. The engine emits a [`RetentionSweepDue`] event when a sweep
 //! is due; the consumer performs the actual deletion.
 //!
+//! ## Event-log retention (parallel concern)
+//!
+//! The engine's event_log has the same retention semantics
+//! (consumer-configured period; sweep signal + consumer-side
+//! deletion). The signal for event_log is the
+//! [`educore_events::EventLogRetentionSweepDue`] event
+//! (`event_log.retention.sweep_due` topic), defined in
+//! `crates/cross-cutting/events/src/event_retention.rs`. The
+//! event-log policy is structurally identical to this module's
+//! [`RetentionPolicy`] — defaults differ (365 days vs. 90 days)
+//! but the shape is the same so consumers can reuse the same
+//! job runner for both logs.
+//!
 //! This module owns:
 //!
 //! - [`RetentionPolicy`] — the configurable thresholds
