@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 157 |
+| Done (`[x]`) | 159 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 316 |
-| Last update | 2026-06-29 01:57 UTC |
+| Open (`[ ]`) | 314 |
+| Last update | 2026-06-29 02:17 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -84,9 +84,9 @@
       **Source:** docs/audit_reports/findings/wave1-lint.md
       **Check:** `cmd:cargo clippy -p educore-core --lib -- -D warnings` → _exit 0_
 
-- [ ] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
+- [x] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave5-docs-1.md
-      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 101_
+      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 0_
 
 - [x] **D-10** Resolved — Sync feature flag added to educore umbrella. Closed 2026-06-25.
       **Source:** ADR-018 § 4, crates/educore/Cargo.toml
@@ -366,9 +366,9 @@
       **Source:** 0/310 across all domains
       **Check:** `cmd:grep -r DomainQuery crates/domains/ crates/cross-cutting/ | wc -l` → _exit 0_
 
-- [ ] **PORT-STORAGE-STREAMING** StudentRepository::stream returning BoxStream<Result<Student>> is not declared
+- [x] **PORT-STORAGE-STREAMING** StudentRepository::stream returning BoxStream<Result<Student>> is not declared
       **Source:** docs/ports/storage.md § Streaming
-      **Check:** `file:crates/infra/storage/src/port.rs regex:fn stream` → _port.rs:fn stream_
+      **Check:** `file:crates/domains/academic/src/repository.rs regex:fn stream` → _repository.rs:fn stream_
 
 - [ ] **PORT-AUTH-SAML** SamlAuthProvider not shipped (enterprise IdP)
       **Source:** docs/ports/authentication.md § Configuration

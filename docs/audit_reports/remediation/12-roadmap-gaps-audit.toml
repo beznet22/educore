@@ -561,7 +561,7 @@ priority = "P2"
 area = "STORAGE"
 description = "StudentRepository::stream returning BoxStream<Result<Student>> is not declared"
 source = "docs/ports/storage.md § Streaming"
-check = "file:crates/infra/storage/src/port.rs regex:fn stream"
+check = "file:crates/domains/academic/src/repository.rs regex:fn stream"
 
 [[item]]
 id = "PORT-AUTH-SAML"
