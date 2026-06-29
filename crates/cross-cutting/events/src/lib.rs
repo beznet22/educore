@@ -59,6 +59,11 @@ pub mod relay_envelope;
 /// The four typed sync events emitted by the sync engine.
 pub mod sync;
 
+/// The three typed bulk-command lifecycle events emitted by
+/// the engine's bulk dispatcher (see
+/// `docs/schemas/command-schema.md` § 12).
+pub mod bulk_events;
+
 /// The in-process [`SubscriberRegistry`](subscribe::SubscriberRegistry)
 /// and the [`Subscriber`](subscribe::Subscriber) trait. Used to
 /// wire spec-mandated cross-domain handlers to the bus.
@@ -71,6 +76,9 @@ pub mod relay;
 
 /// Convenience re-exports for the most-used types.
 pub mod prelude {
+    pub use crate::bulk_events::{
+        BulkCommandCompleted, BulkCommandItemProcessed, BulkCommandStarted, BulkFailurePolicy,
+    };
     pub use crate::domain_event::{DomainEvent, EmittedEvent, EventFactory};
     pub use crate::envelope::EventEnvelope;
     pub use crate::errors::EventError;
