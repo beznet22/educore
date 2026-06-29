@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 174 |
+| Done (`[x]`) | 176 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 299 |
-| Last update | 2026-06-29 04:40 UTC |
+| Open (`[ ]`) | 297 |
+| Last update | 2026-06-29 05:06 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -430,9 +430,9 @@
       **Source:** docs/schemas/command-schema.md § 12
       **Check:** `file:crates/cross-cutting/events/src/bulk_events.rs regex:BulkCommand` → _bulk_events.rs:BulkCommand_
 
-- [ ] **SCHEMA-TENANT-CONFIG-SVC** ConfigurationService port not implemented; per-tenant settings live in ad-hoc repos
+- [x] **SCHEMA-TENANT-CONFIG-SVC** ConfigurationService port not implemented; per-tenant settings live in ad-hoc repos
       **Source:** docs/schemas/tenancy-schema.md § 9
-      **Check:** `file-exists:crates/cross-cutting/platform/src/configuration.rs` → _configuration.rs missing_
+      **Check:** `file-exists:crates/cross-cutting/platform/src/configuration.rs` → _configuration.rs exists_
 
 - [x] **SCHEMA-IDEM-MIGRATE-OUTCOME** Idempotency::record() callers must migrate to record_outcome(); sweep not complete (C-1)
       **Source:** roadmap C-1
@@ -458,7 +458,7 @@
       **Source:** roadmap E-4
       **Check:** `file:crates/cross-cutting/sync/src/lib.rs regex:compensat` → _lib.rs:compensat_
 
-- [ ] **ADR-014-OUTCOME-FIELDS** Idempotency record missing aggregate_version, etag, duration, emitted_event_ids fields (ADR-014 § Decision 6)
+- [x] **ADR-014-OUTCOME-FIELDS** Idempotency record missing aggregate_version, etag, duration, emitted_event_ids fields (ADR-014 § Decision 6)
       **Source:** docs/decisions/ADR-014-Idempotency.md § Decision 6
       **Check:** `file:crates/infra/storage/src/idempotency.rs regex:aggregate_version|etag` → _idempotency.rs:aggregate_version|etag_
 
