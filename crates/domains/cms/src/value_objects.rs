@@ -224,6 +224,86 @@ cms_typed_id! {
     pub struct UpdateNewsId;
 }
 
+// ---- Wave 9.4b: 16 additional command-shaped aggregate ids ----
+//
+// Per `docs/specs/cms/aggregates.md`, the page and content domains
+// also persist the following command shapes. Each carries its own
+// typed id for the Repository port's get/insert/update
+// operations. `PageStatusAction` is an enum (the transition verb
+// for the `Page.status` state machine); its id exists so the
+// Repository port can identify the audit row for a specific
+// transition applied to a specific page.
+
+cms_typed_id! {
+    /// A typed id for a [`NewAboutPage`](crate::aggregate::NewAboutPage) command.
+    pub struct NewAboutPageId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewContactPage`](crate::aggregate::NewContactPage) command.
+    pub struct NewContactPageId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewCoursePage`](crate::aggregate::NewCoursePage) command.
+    pub struct NewCoursePageId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewFrontendPage`](crate::aggregate::NewFrontendPage) command.
+    pub struct NewFrontendPageId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewHomePageSetting`](crate::aggregate::NewHomePageSetting) command.
+    pub struct NewHomePageSettingId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewNewsPage`](crate::aggregate::NewNewsPage) command.
+    pub struct NewNewsPageId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewPage`](crate::aggregate::NewPage) command.
+    pub struct NewPageId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewPageRevision`](crate::aggregate::NewPageRevision) command.
+    pub struct NewPageRevisionId;
+}
+cms_typed_id! {
+    /// A typed id for a [`PageStatusAction`](crate::aggregate::PageStatusAction) transition row.
+    ///
+    /// `PageStatusAction` is itself an enum (the verb applied to a
+    /// `Page` to change its `PageStatus`); this id identifies the
+    /// audit row for a specific transition applied to a specific
+    /// page in a specific school.
+    pub struct PageStatusActionId;
+}
+cms_typed_id! {
+    /// A typed id for an [`UpdatePage`](crate::aggregate::UpdatePage) command.
+    pub struct UpdatePageId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewContent`](crate::aggregate::NewContent) command.
+    pub struct NewContentId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewContentShareList`](crate::aggregate::NewContentShareList) command.
+    pub struct NewContentShareListId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewContentType`](crate::aggregate::NewContentType) command.
+    pub struct NewContentTypeId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewTeacherUploadContent`](crate::aggregate::NewTeacherUploadContent) command.
+    pub struct NewTeacherUploadContentId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewUploadContent`](crate::aggregate::NewUploadContent) command.
+    pub struct NewUploadContentId;
+}
+cms_typed_id! {
+    /// A typed id for an [`UpdateContent`](crate::aggregate::UpdateContent) command.
+    pub struct UpdateContentId;
+}
+
 // ---- Child entity ids (per `docs/specs/cms/entities.md`) ----
 
 cms_typed_id! {
