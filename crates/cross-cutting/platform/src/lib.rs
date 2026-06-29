@@ -42,7 +42,8 @@ pub use crate::aggregate::{School, User};
 
 /// Typed events emitted by the platform commands.
 pub use crate::events::{
-    SchoolCreated, SchoolDeactivated, SchoolUpdated, UserDeactivated, UserRegistered, UserUpdated,
+    ParentAccessReportGenerated, RegulatorAuditGenerated, SchoolCreated, SchoolDeactivated,
+    SchoolUpdated, SubjectErased, UserDeactivated, UserRegistered, UserUpdated,
 };
 
 /// Pure factory functions that turn a command into an aggregate
@@ -88,14 +89,16 @@ pub mod prelude {
 
     pub use crate::aggregate::{School, User};
     pub use crate::commands::{
-        CreateSchoolCommand, DeactivateSchoolCommand, DeactivateUserCommand, RegisterUserCommand,
-        UpdateSchoolCommand, UpdateUserCommand,
+        CreateSchoolCommand, DeactivateSchoolCommand, DeactivateUserCommand,
+        ExecuteSubjectErasureCommand, GenerateParentAccessReportCommand,
+        GenerateRegulatorAuditCommand, RegisterUserCommand, ReportFormat, UpdateSchoolCommand,
+        UpdateUserCommand,
     };
     pub use crate::entities::{SchoolContact, UserLogin, UserPreference, UserSession};
     pub use crate::errors::PlatformError;
     pub use crate::events::{
-        SchoolCreated, SchoolDeactivated, SchoolUpdated, UserDeactivated, UserRegistered,
-        UserUpdated,
+        ParentAccessReportGenerated, RegulatorAuditGenerated, SchoolCreated, SchoolDeactivated,
+        SchoolUpdated, SubjectErased, UserDeactivated, UserRegistered, UserUpdated,
     };
     pub use crate::query::{SchoolQuery, UserQuery};
     pub use crate::repository::{SchoolRepository, UserRepository};

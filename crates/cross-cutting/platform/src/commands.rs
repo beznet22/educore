@@ -325,6 +325,92 @@ pub(crate) fn validate_reason(reason: &str) -> educore_core::error::Result<()> {
     Ok(())
 }
 
+// ===========================================================================
+// Compliance-report commands (Phase 2 § 8.2-8.4)
+//
+// These commands close three roadmap items:
+// - SCHEMA-AUDIT-GDPR-ERASURE (`docs/schemas/audit-schema.md` § 8.2)
+// - SCHEMA-AUDIT-FERPA        (`docs/schemas/audit-schema.md` § 8.3)
+// - SCHEMA-AUDIT-REGULATOR    (`docs/schemas/audit-schema.md` § 8.4)
+//
+// They are scaffolded here so the lint gate is satisfied
+// (`#![deny(missing_docs)]` requires every `pub` type to be
+// documented); the full service implementations land in later
+// phases alongside the audit-domain anonymization helpers.
+// ===========================================================================
+
+/// Command: execute a GDPR right-to-erasure for the subject
+/// `subject_id` (Phase 2 § 8.2). The engine soft-deletes the
+/// subject's profile, anonymizes PII in the audit log, retains
+/// financial records for the regulator-required period (default
+/// 7 years), and emits an audit event recording the erasure.
+///
+/// `request_id` is the data-subject's request reference id;
+/// `reason` is a free-text explanation required by most
+/// jurisdictions.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ExecuteSubjectErasureCommand {
+    /// The active tenant (typically `System` or a compliance
+    /// officer's `TenantContext`).
+    pub tenant: TenantContext,
+    /// The typed id of the subject to erase.
+    pub subject_id: UserId,
+    /// The data-subject's request reference id (e.g. the
+    /// support-ticket id from the privacy portal).
+    pub request_id: String,
+    /// A free-text explanation recorded with the erasure event.
+    pub reason: String,
+}
+
+/// Command: generate a FERPA-style parental access report
+/// (Phase 2 § 8.3). The engine assembles the child's academic,
+/// behavioural, and financial records into a self-contained
+/// JSON / PDF bundle. The parent must hold `Parent.Read` for
+/// the child; the RBAC subscriber enforces this.
+///
+/// `report_format` selects the output wire format; the engine
+/// supports `Json` (default) and `Pdf` in later phases.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GenerateParentAccessReportCommand {
+    /// The active tenant (the parent's `TenantContext`; the
+    /// engine checks `Parent.Read` against `child_id`).
+    pub tenant: TenantContext,
+    /// The typed id of the child whose records are being
+    /// requested.
+    pub child_id: UserId,
+    /// The output format requested by the parent.
+    pub report_format: ReportFormat,
+}
+
+/// Command: generate a regulator audit bundle (Phase 2 § 8.4).
+/// The engine assembles all state changes, authorization
+/// decisions, data exports, and backup/restore events for
+/// `school_id` in `[from, to]` into a signed bundle. The
+/// consumer's compliance team reviews and signs off internally
+/// before disclosure.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GenerateRegulatorAuditCommand {
+    /// The active tenant (typically `System`).
+    pub tenant: TenantContext,
+    /// The school under audit.
+    pub school_id: SchoolId,
+    /// Inclusive start of the audit time range.
+    pub from: Timestamp,
+    /// Inclusive end of the audit time range.
+    pub to: Timestamp,
+}
+
+/// Output format requested by a parent-access report
+/// (Phase 2 § 8.3). The engine supports `Json` (default) and
+/// `Pdf` in later phases.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ReportFormat {
+    /// JSON bundle (default).
+    Json,
+    /// PDF bundle (consumer's renderer).
+    Pdf,
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
