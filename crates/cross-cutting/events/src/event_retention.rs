@@ -35,12 +35,6 @@ use educore_core::value_objects::Timestamp;
 
 use crate::domain_event::DomainEvent;
 
-/// Internal helper: constructs an `EventId` from a `Uuid`.
-#[inline]
-fn event_id_from(uuid: Uuid) -> EventId {
-    EventId::from_uuid(uuid)
-}
-
 /// A retention sweep is due for the `event_log` of `school_id`.
 /// Consumers (typically a background job subscribed to
 /// `event_log.retention.sweep_due`) execute the actual

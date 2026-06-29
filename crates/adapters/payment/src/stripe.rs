@@ -16,6 +16,7 @@
 //! | `status`          | `GET  /v1/charges/{id}`     | Maps Stripe `status` to [`PaymentStatus`].           |
 //! | `list_methods`    | (static)                    | Returns the canonical 4 `PaymentMethodInfo` rows.    |
 //! | `settlement`      | (none)                      | Returns `PaymentError::Provider(...)` — deviation.   |
+//! | (helper)          | `GET /v1/payment_intents/{id}` | 3DS challenge completion; see [`StripeProvider::complete_three_ds_challenge`]. |
 //!
 //! The Stripe API is form-encoded (`application/x-www-form-urlencoded`),
 //! not JSON, so every request body is a `Vec<(String, String)>` passed
@@ -88,6 +89,36 @@ use crate::port::{
     PaymentProvider, PaymentReceipt, PaymentStatus, RefundReceipt, RefundRequest, Settlement,
     SettlementRequest,
 };
+
+// ---------------------------------------------------------------------------
+// 3-D Secure (3DS) orchestration types
+// ---------------------------------------------------------------------------
+
+/// The outcome of a 3-D Secure challenge, as observed by the
+/// consumer's frontend after the issuer redirects back from the
+/// challenge page.
+///
+/// The adapter cross-checks this signal against Stripe's
+/// authoritative PaymentIntent status (fetched via
+/// `GET /v1/payment_intents/{id}`); Stripe's status wins on
+/// disagreement. A browser-side `Abandoned` does not void a
+/// successful authentication Stripe already observed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ThreeDSChallengeResult {
+    /// The customer successfully completed the 3DS challenge.
+    Authenticated,
+
+    /// The customer abandoned the challenge (browser closed,
+    /// timed out, or navigated away before submitting).
+    Abandoned,
+
+    /// The issuer rejected the authentication.
+    Failed {
+        /// The issuer's reason (e.g. `authentication_required`,
+        /// `do_not_honor`).
+        reason: String,
+    },
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -196,6 +227,152 @@ impl StripeProvider {
         } else {
             Err(PaymentError::Provider("webhook signature mismatch".into()))
         }
+    }
+
+    /// Completes the 3-D Secure (3DS) challenge for a
+    /// previously-created Stripe PaymentIntent and returns the
+    /// resulting [`PaymentReceipt`].
+    ///
+    /// # When to call this
+    ///
+    /// [`PaymentProvider::charge`] returns
+    /// [`PaymentError::ThreeDSRequired`] when Stripe signals that
+    /// the issuer requires 3-D Secure authentication before the
+    /// charge can proceed. The consumer's frontend then:
+    ///
+    /// 1. Reads `next_action.redirect_to_url` from the original
+    ///    charge response and redirects the customer to the
+    ///    issuer's hosted 3DS challenge.
+    /// 2. The issuer hosts the challenge and, on completion,
+    ///    redirects back to the consumer's `return_url` with the
+    ///    `payment_intent` query parameter (a Stripe `pi_...` id).
+    /// 3. The consumer calls this method with that
+    ///    `payment_intent_id` and the [`ThreeDSChallengeResult`]
+    ///    the frontend observed.
+    ///
+    /// # What this method does
+    ///
+    /// 1. Validates `payment_intent_id` is non-empty and starts
+    ///    with the Stripe `pi_` prefix.
+    /// 2. Fetches the PaymentIntent's current state via
+    ///    `GET /v1/payment_intents/{payment_intent_id}`.
+    /// 3. Translates Stripe's status into a [`PaymentReceipt`]:
+    ///    - `succeeded` -> [`PaymentStatus::Captured`].
+    ///    - `processing`, `requires_action`,
+    ///      `requires_confirmation`, `requires_source` ->
+    ///      [`PaymentStatus::Pending`] (the customer has not yet
+    ///      completed the challenge; the engine can poll
+    ///      [`PaymentProvider::status`] for an update).
+    ///    - `requires_payment_method`, `requires_source_action`
+    ///      -> [`PaymentStatus::Failed`] with the consumer-
+    ///      reported failure reason (or `"3DS authentication
+    ///      failed"` if the consumer reported success).
+    ///    - `canceled` -> [`PaymentStatus::Cancelled`] with the
+    ///      consumer-reported reason.
+    ///
+    /// Stripe's status is authoritative; the
+    /// [`ThreeDSChallengeResult`] argument enriches the audit-log
+    /// message when Stripe's status is ambiguous
+    /// (`requires_action`, `requires_payment_method`, or
+    /// `canceled`).
+    ///
+    /// # Errors
+    ///
+    /// - [`PaymentError::Provider`] when `payment_intent_id` is
+    ///   empty or malformed, or Stripe's response is missing
+    ///   required fields.
+    /// - [`PaymentError::Infrastructure`] when the HTTP round-trip
+    ///   fails.
+    /// - [`PaymentError::Declined`] is **not** returned by this
+    ///   method — authentication failures are reported as
+    ///   [`PaymentStatus::Failed`] in the returned receipt so the
+    ///   engine can persist the failure and emit the
+    ///   `PaymentFailed` event.
+    pub async fn complete_three_ds_challenge(
+        &self,
+        payment_intent_id: &str,
+        result: ThreeDSChallengeResult,
+    ) -> Result<PaymentReceipt, PaymentError> {
+        let intent_id = payment_intent_id.trim();
+        if intent_id.is_empty() {
+            return Err(PaymentError::Provider(
+                "three_ds payment_intent_id is empty".to_owned(),
+            ));
+        }
+        if !intent_id.starts_with("pi_") {
+            return Err(PaymentError::Provider(format!(
+                "three_ds payment_intent_id must start with 'pi_', got {intent_id:?}"
+            )));
+        }
+
+        let body = self
+            .get_json(&format!("payment_intents/{intent_id}"))
+            .await?;
+
+        let stripe_status = body
+            .get("status")
+            .and_then(JsonValue::as_str)
+            .ok_or_else(|| {
+                PaymentError::Provider(format!(
+                    "stripe ThreeDS PaymentIntent {intent_id} missing 'status'"
+                ))
+            })?;
+
+        let amount_minor = body
+            .get("amount")
+            .and_then(JsonValue::as_i64)
+            .ok_or_else(|| {
+                PaymentError::Provider(format!(
+                    "stripe ThreeDS PaymentIntent {intent_id} missing 'amount'"
+                ))
+            })?;
+
+        let currency_str = body
+            .get("currency")
+            .and_then(JsonValue::as_str)
+            .ok_or_else(|| {
+                PaymentError::Provider(format!(
+                    "stripe ThreeDS PaymentIntent {intent_id} missing 'currency'"
+                ))
+            })?;
+
+        let currency = match crate::port::CurrencyCode::new(
+            currency_str.to_ascii_uppercase().as_str(),
+        ) {
+            Ok(c) => c,
+            Err(_) => {
+                return Err(PaymentError::Provider(format!(
+                    "stripe ThreeDS PaymentIntent {intent_id} currency {currency_str:?} is not a valid ISO 4217 code"
+                )));
+            }
+        };
+
+        let amount = Money::new(currency.clone(), amount_minor).map_err(|e| {
+            PaymentError::Provider(format!(
+                "invalid stripe ThreeDS amount for {intent_id}: {e}"
+            ))
+        })?;
+
+        let status = map_payment_intent_3ds_status(stripe_status, &result);
+        let captured = matches!(status, PaymentStatus::Captured { .. });
+        let now = Timestamp::now();
+
+        Ok(PaymentReceipt {
+            payment_id: crate::port::PaymentId::from(intent_id.to_owned()),
+            provider_payment_id: Some(intent_id.to_owned()),
+            status,
+            amount: amount.clone(),
+            method: PaymentMethodKind::Card,
+            authorized_at: Some(now),
+            captured_at: if captured { Some(now) } else { None },
+            fees: Vec::new(),
+            net: amount,
+            receipt_url: body
+                .get("latest_charge")
+                .and_then(JsonValue::as_str)
+                .map(|c| format!("https://dashboard.stripe.com/test/payments/{c}")),
+            metadata: BTreeMap::new(),
+        })
     }
 
     // -- Internal HTTP helpers ------------------------------------------
@@ -673,6 +850,50 @@ fn json_object_to_metadata(value: Option<&JsonValue>) -> BTreeMap<String, String
 // Stripe -> PaymentStatus mapping
 // ---------------------------------------------------------------------------
 
+/// Maps a Stripe PaymentIntent status (after a 3DS challenge)
+/// into the engine's [`PaymentStatus`], incorporating the
+/// consumer-reported [`ThreeDSChallengeResult`] for the
+/// audit-friendly failure reason when Stripe's status is
+/// ambiguous.
+fn map_payment_intent_3ds_status(
+    stripe_status: &str,
+    result: &ThreeDSChallengeResult,
+) -> PaymentStatus {
+    match stripe_status {
+        "succeeded" => PaymentStatus::Captured {
+            at: Timestamp::now(),
+        },
+        "processing" | "requires_action" | "requires_confirmation" | "requires_source" => {
+            PaymentStatus::Pending
+        }
+        "requires_payment_method" | "requires_source_action" => {
+            let reason = match result {
+                ThreeDSChallengeResult::Failed { reason } => format!("3DS failed: {reason}"),
+                ThreeDSChallengeResult::Abandoned => "3DS abandoned".to_owned(),
+                ThreeDSChallengeResult::Authenticated => "3DS authentication required".to_owned(),
+            };
+            PaymentStatus::Failed {
+                reason,
+                code: Some("authentication_required".to_owned()),
+            }
+        }
+        "canceled" | "cancelled" => PaymentStatus::Cancelled {
+            at: Timestamp::now(),
+            reason: match result {
+                ThreeDSChallengeResult::Abandoned => "ThreeDS challenge abandoned".to_owned(),
+                ThreeDSChallengeResult::Failed { reason } => {
+                    format!("ThreeDS cancelled: {reason}")
+                }
+                ThreeDSChallengeResult::Authenticated => "ThreeDS challenge cancelled".to_owned(),
+            },
+        },
+        other => PaymentStatus::Failed {
+            reason: format!("unknown stripe ThreeDS PaymentIntent status: {other}"),
+            code: None,
+        },
+    }
+}
+
 fn map_charge_status(stripe_status: &str, captured: bool, amount: &Money) -> PaymentStatus {
     match stripe_status {
         "pending"
@@ -1128,6 +1349,103 @@ mod tests {
 
         let cancelled = map_charge_status("canceled", false, &amount);
         assert!(matches!(cancelled, PaymentStatus::Cancelled { .. }));
+    }
+
+    #[test]
+    fn test_map_payment_intent_3ds_status_authenticated_success() {
+        let status =
+            map_payment_intent_3ds_status("succeeded", &ThreeDSChallengeResult::Authenticated);
+        assert!(matches!(status, PaymentStatus::Captured { .. }));
+    }
+
+    #[test]
+    fn test_map_payment_intent_3ds_status_pending_paths() {
+        for stripe_status in [
+            "processing",
+            "requires_action",
+            "requires_confirmation",
+            "requires_source",
+        ] {
+            let status = map_payment_intent_3ds_status(
+                stripe_status,
+                &ThreeDSChallengeResult::Authenticated,
+            );
+            assert!(
+                matches!(status, PaymentStatus::Pending),
+                "status {stripe_status} should map to Pending"
+            );
+        }
+    }
+
+    #[test]
+    fn test_map_payment_intent_3ds_status_failed_with_consumer_reason() {
+        let status = map_payment_intent_3ds_status(
+            "requires_payment_method",
+            &ThreeDSChallengeResult::Failed {
+                reason: "do_not_honor".to_owned(),
+            },
+        );
+        match status {
+            PaymentStatus::Failed { reason, code } => {
+                assert!(reason.contains("do_not_honor"));
+                assert_eq!(code.as_deref(), Some("authentication_required"));
+            }
+            other => panic!("expected Failed, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_map_payment_intent_3ds_status_failed_when_consumer_says_authenticated() {
+        let status = map_payment_intent_3ds_status(
+            "requires_payment_method",
+            &ThreeDSChallengeResult::Authenticated,
+        );
+        match status {
+            PaymentStatus::Failed { reason, .. } => {
+                assert!(reason.contains("3DS"));
+            }
+            other => panic!("expected Failed, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_map_payment_intent_3ds_status_cancelled_with_abandoned() {
+        let status = map_payment_intent_3ds_status("canceled", &ThreeDSChallengeResult::Abandoned);
+        match status {
+            PaymentStatus::Cancelled { reason, .. } => {
+                assert!(reason.contains("abandoned"));
+            }
+            other => panic!("expected Cancelled, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_map_payment_intent_3ds_status_unknown_status_is_failed() {
+        let status = map_payment_intent_3ds_status(
+            "totally_made_up",
+            &ThreeDSChallengeResult::Authenticated,
+        );
+        assert!(matches!(status, PaymentStatus::Failed { .. }));
+    }
+
+    #[test]
+    fn test_three_ds_challenge_result_equality() {
+        assert_eq!(
+            ThreeDSChallengeResult::Authenticated,
+            ThreeDSChallengeResult::Authenticated
+        );
+        assert_ne!(
+            ThreeDSChallengeResult::Authenticated,
+            ThreeDSChallengeResult::Abandoned
+        );
+        assert_eq!(
+            ThreeDSChallengeResult::Failed {
+                reason: "x".to_owned()
+            },
+            ThreeDSChallengeResult::Failed {
+                reason: "x".to_owned()
+            }
+        );
     }
 
     #[test]

@@ -24,39 +24,8 @@ use educore_payment::webhook_security::{
 };
 
 // ---------------------------------------------------------------------------
-// Test clock — frozen so replay-window assertions are deterministic.
+// Test helpers
 // ---------------------------------------------------------------------------
-
-#[derive(Debug, Clone, Copy)]
-struct FrozenClock(i64);
-
-/// Tiny test-only wrapper around the verifier that captures the
-/// `now_unix_seconds` value via a private constructor path. We
-/// avoid exposing the `Clock` trait from the public surface; the
-/// integration tests use the `new` + signed-payload-with-recent-
-/// timestamp trick instead, but a frozen clock keeps the replay-
-/// window scenario free of flakiness.
-trait WithClock {
-    fn with_clock(self, clock: FrozenClock) -> Self;
-}
-
-impl WithClock for HmacSha256Verifier {
-    fn with_clock(self, clock: FrozenClock) -> Self {
-        // The trait `Clock` is intentionally not exported from
-        // the public module; reach the constructor through the
-        // private re-export by mirroring its behaviour here.
-        //
-        // The public API exposes `new(secret)` + `with_tolerance_seconds(t)`.
-        // We round-trip the secret through `with_tolerance_seconds`
-        // so the test does not depend on any private type.
-        //
-        // For the expired-timestamp scenario below we instead
-        // choose a timestamp that is guaranteed to be stale
-        // relative to the real system clock.
-        let _ = clock;
-        self
-    }
-}
 
 /// Build a `sha256=<hex>` signature for `(timestamp, payload)`
 /// using the standard signed-payload format (`{ts}.{body}`).

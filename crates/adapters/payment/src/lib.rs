@@ -81,7 +81,7 @@ pub mod prelude {
     pub use crate::services::{
         BankSlipService, IdempotencyService, SettlementService, WebhookSignatureService,
     };
-    pub use crate::stripe::{StripeProvider, StripeProviderBuilder};
+    pub use crate::stripe::{StripeProvider, StripeProviderBuilder, ThreeDSChallengeResult};
 }
 
 #[cfg(test)]

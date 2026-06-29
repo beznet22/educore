@@ -203,6 +203,7 @@ impl HmacSha256Verifier {
     /// Encode 32 bytes as 64 lower-case hex characters. Exposed
     /// (private) so tests can build expected signatures without
     /// pulling in the `hex` crate.
+    #[cfg(test)]
     fn hex_encode(bytes: &[u8]) -> String {
         const HEX: &[u8; 16] = b"0123456789abcdef";
         let mut out = String::with_capacity(bytes.len() * 2);
