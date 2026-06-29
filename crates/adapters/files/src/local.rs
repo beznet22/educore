@@ -10,16 +10,52 @@
 //!
 //! # Implementation outline
 //!
-//! | Port method    | Local I/O                                        |
-//! | -------------- | ------------------------------------------------ |
-//! | `put`          | `tokio::fs::write` + SHA-256 checksum            |
-//! | `get`          | `tokio::fs::File` chunked via `mpsc::channel`    |
-//! | `delete`       | `tokio::fs::remove_file` (idempotent)            |
-//! | `exists`       | `tokio::fs::metadata` + `is_file()`              |
-//! | `head`         | `tokio::fs::metadata`                            |
-//! | `signed_url`   | HMAC-SHA256 signed `file://` URL                 |
-//! | `copy`         | `tokio::fs::copy`                                |
-//! | `move_to`      | `tokio::fs::rename`                              |
+//! | Port method      | Local I/O / wire shape                          |
+//! | ---------------- | ----------------------------------------------- |
+//! | `put`            | `tokio::fs::write` + SHA-256 checksum           |
+//! | `get`            | `tokio::fs::File` chunked via `mpsc::channel`   |
+//! | `delete`         | `tokio::fs::remove_file` (idempotent)           |
+//! | `exists`         | `tokio::fs::metadata` + `is_file()`             |
+//! | `head`           | `tokio::fs::metadata`                           |
+//! | `signed_url`     | HMAC-SHA256 signed `file://` URL                |
+//! | `copy`           | `tokio::fs::copy`                               |
+//! | `move_to`        | `tokio::fs::rename`                             |
+//! | `local_uri`      | `local://<school_id>/<key>` (offline-mode URI)  |
+//!
+//! # Offline-mode `local://` URI scheme
+//!
+//! Per `docs/ports/file-storage.md` § "Offline Mode", the
+//! [`FileReference`](crate::port::FileReference) "carries a local
+//! URI during the offline period". The local adapter exposes that
+//! URI through [`LocalFileStorage::local_uri`] (and the
+//! instance-free [`local_uri_for`] helper). The URI format is:
+//!
+//! ```text
+//! local://<school_id>/<key>
+//! ```
+//!
+//! where `<school_id>` is the lowercase-hyphenated UUID of the
+//! tenant that owns the file (per
+//! [`TenantContext::school_id`](educore_core::tenant::TenantContext::school_id))
+//! and `<key>` is the same logical key returned by
+//! [`FileStorage::put`](crate::port::FileStorage::put) (the
+//! `<school_id>/<domain>/<aggregate>/<id>/` shape from
+//! the spec).
+//!
+//! The `local://` scheme is **only meaningful on the offline
+//! client** that issued the `put`. The URI is stable across the
+//! offline period (it never changes while the client is offline)
+//! and is the key the consumer's offline cache uses to index the
+//! file on local disk. When the client reconnects, the central
+//! store replaces the local copy and the `local://` URI is
+//! discarded; subsequent reads in the connected state use the
+//! remote adapter's URL (e.g. S3 presigned URLs, `file://` URLs
+//! from a server-side local adapter).
+//!
+//! Offline-mode clients MUST NOT persist the URI across sessions
+//! without re-validating that the file is still present (a
+//! `local://` URI is only valid while the file exists at the
+//! adapter's `root`).
 //!
 //! # Streaming semantics
 //!
@@ -221,6 +257,39 @@ impl LocalFileStorage {
     /// Builds a `file://` URL for the given physical path.
     fn file_url(path: &Path) -> String {
         format!("file://{}", path.display())
+    }
+
+    /// Returns the offline-mode `local://` URI for the given
+    /// [`FileReference`].
+    ///
+    /// Per `docs/ports/file-storage.md` § "Offline Mode", the
+    /// `FileReference` carries a local URI during the offline
+    /// period so the offline client can index the file in its
+    /// local cache without round-tripping to the central store.
+    /// The URI format is:
+    ///
+    /// ```text
+    /// local://<school_id>/<key>
+    /// ```
+    ///
+    /// The `<school_id>` segment is the lowercase-hyphenated UUID
+    /// of the tenant that owns the file; the `<key>` segment is
+    /// the same logical key returned by
+    /// [`FileStorage::put`](crate::port::FileStorage::put). The
+    /// URI is stable for the lifetime of the offline period and
+    /// is the only handle the offline cache stores; the adapter
+    /// is consulted on reconnect to decide whether the local
+    /// copy still matches the central store.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let uri = storage.local_uri(&reference);
+    /// // uri = "local://3fa85f64-5717-4562-b3fc-2c963f66afa6/students/photos/ada.jpg"
+    /// ```
+    #[must_use]
+    pub fn local_uri(&self, reference: &FileReference) -> String {
+        local_uri_for(reference)
     }
 }
 
@@ -581,6 +650,45 @@ impl FileStorage for LocalFileStorage {
 // ---------------------------------------------------------------------------
 // Free helpers
 // ---------------------------------------------------------------------------
+
+/// Builds the offline-mode `local://` URI for a
+/// [`FileReference`].
+///
+/// Per `docs/ports/file-storage.md` § "Offline Mode", the
+/// `FileReference` carries a local URI during the offline
+/// period so the offline client can index the file in its local
+/// cache without round-tripping to the central store. The URI
+/// format is:
+///
+/// ```text
+/// local://<school_id>/<key>
+/// ```
+///
+/// where `<school_id>` is the lowercase-hyphenated UUID of the
+/// tenant that owns the file (denormalised from
+/// [`FileReference::tenant`](crate::port::FileReference::tenant))
+/// and `<key>` is the logical file key.
+///
+/// The `local://` scheme is **only meaningful on the offline
+/// client** that issued the `put`. It is stable for the lifetime
+/// of the offline period and is the key the consumer's offline
+/// cache uses to index the file on local disk. When the client
+/// reconnects, the central store replaces the local copy and the
+/// `local://` URI is discarded.
+///
+/// This is the instance-free counterpart of
+/// [`LocalFileStorage::local_uri`]; adapters that hold a
+/// reference to a [`FileReference`] but not to a
+/// [`LocalFileStorage`] (e.g. an offline cache indexer) can use
+/// it directly.
+#[must_use]
+pub fn local_uri_for(reference: &FileReference) -> String {
+    format!(
+        "local://{}/{}",
+        reference.tenant.school_id,
+        reference.key.as_str(),
+    )
+}
 
 /// Lossless `usize → u64` conversion. The error case is
 /// unreachable on every platform the engine supports (32-bit
@@ -1060,5 +1168,116 @@ mod tests {
             .await
             .expect("exists should succeed after delete");
         assert!(!exists_after);
+    }
+
+    #[test]
+    fn local_uri_for_emits_local_scheme_with_school_id_and_key() {
+        // The offline-mode `local://` URI is documented in
+        // `docs/ports/file-storage.md` § "Offline Mode". The
+        // format is `local://<school_id>/<key>` where
+        // `<school_id>` is the lowercase-hyphenated UUID of the
+        // tenant that owns the file and `<key>` is the logical
+        // key returned by `put`.
+        let tenant = test_tenant();
+        let school_id = tenant.school_id;
+        let reference = test_reference("students/photos/ada.jpg", b"hello", tenant);
+
+        let uri = local_uri_for(&reference);
+
+        // The literal scheme MUST be present.
+        assert!(
+            uri.starts_with("local://"),
+            "offline-mode URI must use the `local://` scheme, got {uri}",
+        );
+        // The URI embeds the school id and the key in that order,
+        // separated by exactly one `/`.
+        assert_eq!(
+            uri,
+            format!("local://{}/{}", school_id, reference.key.as_str(),),
+        );
+        // The school id segment is the UUID's canonical
+        // lowercase-hyphenated form (8-4-4-4-12 hex chars).
+        let after_scheme = uri
+            .strip_prefix("local://")
+            .expect("scheme prefix is present");
+        let school_segment = after_scheme
+            .split('/')
+            .next()
+            .expect("at least one path segment");
+        assert_eq!(school_segment.len(), 36, "UUID is 36 chars");
+        assert_eq!(school_segment.chars().filter(|&c| c == '-').count(), 4);
+    }
+
+    #[test]
+    fn local_storage_local_uri_matches_instance_free_helper() {
+        // The instance method and the free function must agree.
+        // An offline cache indexer that does not hold a
+        // `LocalFileStorage` (e.g. a stateless request handler)
+        // can call `local_uri_for` directly and get the same URI
+        // a stateful consumer would.
+        let temp = TempRoot::new("local-uri");
+        let storage = LocalFileStorageBuilder::new()
+            .root(temp.path())
+            .build()
+            .expect("build should succeed");
+
+        let tenant = test_tenant();
+        let reference = test_reference("cms/pages/index.html", b"<html/>", tenant);
+
+        assert_eq!(storage.local_uri(&reference), local_uri_for(&reference));
+    }
+
+    #[test]
+    fn local_uri_distinct_per_tenant() {
+        // Two references with the same key but different tenants
+        // produce different `local://` URIs — the tenant
+        // boundary is encoded in the URI itself, so an offline
+        // cache that mixes tenants cannot accidentally resolve
+        // a URI from one school against a file owned by another.
+        let tenant_a = test_tenant();
+        let tenant_b = test_tenant();
+        let reference_a = test_reference("cms/pages/index.html", b"<html/>", tenant_a);
+        let reference_b = test_reference("cms/pages/index.html", b"<html/>", tenant_b);
+
+        let uri_a = local_uri_for(&reference_a);
+        let uri_b = local_uri_for(&reference_b);
+
+        assert_ne!(uri_a, uri_b);
+        assert!(uri_a.starts_with("local://"));
+        assert!(uri_b.starts_with("local://"));
+        // The keys are identical; the only difference must be
+        // the school-id segment. The URI structure is
+        // `local://<school_id>/<key>`, so the school id is at
+        // index 2 after splitting on `/` and the key starts at
+        // index 3.
+        let school_id_a = uri_a.split('/').nth(2);
+        let school_id_b = uri_b.split('/').nth(2);
+        assert_ne!(school_id_a, school_id_b, "school-id segments must differ");
+        assert!(school_id_a.is_some_and(|s| !s.is_empty()));
+        assert!(school_id_b.is_some_and(|s| !s.is_empty()));
+        let tail_a: Vec<&str> = uri_a.split('/').skip(3).collect();
+        let tail_b: Vec<&str> = uri_b.split('/').skip(3).collect();
+        assert_eq!(tail_a, tail_b, "key segments must match");
+    }
+
+    #[test]
+    fn local_uri_preserves_nested_key_segments() {
+        // The spec keys are `<school_id>/<domain>/<aggregate>/<id>/`
+        // — a nested path. The `local://` URI preserves the
+        // nested form verbatim; the consumer's offline cache
+        // uses the full path as the local-disk relative path.
+        let tenant = test_tenant();
+        let reference = test_reference(
+            "academic/students/abc123/photos/avatar.jpg",
+            b"\xff\xd8\xff\xe0",
+            tenant,
+        );
+
+        let uri = local_uri_for(&reference);
+        assert!(uri.starts_with("local://"));
+        assert!(
+            uri.ends_with("/academic/students/abc123/photos/avatar.jpg"),
+            "key segments must be preserved verbatim, got {uri}",
+        );
     }
 }
