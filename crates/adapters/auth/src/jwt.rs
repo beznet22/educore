@@ -559,6 +559,43 @@ impl JwtAuthProvider {
         }
     }
 
+    /// Mints a fresh JWT and [`Session`] for a service principal.
+    /// Used by [`crate::api_key::ApiKeyAuthProvider`] after a
+    /// successful API-key validation.
+    ///
+    /// The `service_id` is used to derive a deterministic
+    /// UUIDv5 user id so each service principal has a stable
+    /// identity across sessions (the same `service_id` always
+    /// yields the same `user_id`, which makes audit
+    /// traceability trivial). The session is anchored to the
+    /// public school (services are not anchored to a single
+    /// tenant) and carries no roles.
+    #[allow(dead_code)] // Used by crate::api_key::ApiKeyAuthProvider; see PORT-AUTH-APIKEY
+    pub(crate) fn mint_session_for_service(&self, service_id: &str) -> Result<Session, AuthError> {
+        let now = Timestamp::now();
+        let exp = Timestamp::from_datetime(
+            Utc.timestamp_opt(now.as_datetime().timestamp() + self.access_ttl_secs, 0)
+                .single()
+                .unwrap_or_else(|| now.as_datetime()),
+        );
+        // UUIDv5 over the OID namespace keyed by the service
+        // identifier — stable per service across processes.
+        let service_user_id =
+            UserId::from_uuid(Uuid::new_v5(&Uuid::NAMESPACE_OID, service_id.as_bytes()));
+        Ok(Session {
+            session_id: SessionId::from_uuid(Uuid::now_v7()),
+            user_id: service_user_id,
+            school_ids: vec![PUBLIC_SCHOOL_ID],
+            active_school_id: PUBLIC_SCHOOL_ID,
+            roles: Vec::new(),
+            capabilities: BTreeSet::<Capability>::new(),
+            mfa_satisfied: true,
+            issued_at: now,
+            expires_at: exp,
+            metadata: BTreeMap::new(),
+        })
+    }
+
     /// Locks the revocation set and inserts the given `sid`.
     /// Used by both `revoke` and `refresh`.
     fn add_revoked(&self, sid: &str) {

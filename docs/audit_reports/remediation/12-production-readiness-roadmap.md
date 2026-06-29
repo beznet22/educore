@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 185 |
+| Done (`[x]`) | 188 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 288 |
-| Last update | 2026-06-29 22:37 UTC |
+| Open (`[ ]`) | 285 |
+| Last update | 2026-06-29 23:04 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -41,8 +41,8 @@
       _check: `manual:cargo test --workspace` → manual: cargo test --workspace_
 - [ ] **Gate-3 Clippy:** `cargo clippy --workspace --all-targets -- -D warnings` exits 0
       _check: `cmd:cargo clippy --workspace --all-targets -- -D warnings` → exit 101_
-- [x] **Gate-4 Fmt:** `cargo fmt --all -- --check` exits 0
-      _check: `cmd:cargo fmt --all -- --check` → exit 0_
+- [ ] **Gate-4 Fmt:** `cargo fmt --all -- --check` exits 0
+      _check: `cmd:cargo fmt --all -- --check` → exit 1_
 - [ ] **Gate-5 Adapters:** All 4 storage adapters' `create_schema()` round-trip on a fresh DB
       _check: `manual:cargo test -p educore-storage-parity --features all-dbs` → manual: cargo test -p educore-storage-parity --features all-dbs_
 - [ ] **Gate-6 Decisions:** All items in `13-decision-needed.md` resolved
@@ -84,9 +84,9 @@
       **Source:** docs/audit_reports/findings/wave1-lint.md
       **Check:** `cmd:cargo clippy -p educore-core --lib -- -D warnings` → _exit 0_
 
-- [x] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
+- [ ] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave5-docs-1.md
-      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 0_
+      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 101_
 
 - [x] **D-10** Resolved — Sync feature flag added to educore umbrella. Closed 2026-06-25.
       **Source:** ADR-018 § 4, crates/educore/Cargo.toml

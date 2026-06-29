@@ -41,4 +41,11 @@ argon2 = { workspace = true }
 # to a randomly generated key in debug builds. tracing is the workspace's
 # standard logging facade.
 tracing = { workspace = true }
+# PORT-AUTH-APIKEY: HMAC-SHA256 for the constant-time digest comparison
+# used by `ApiKeyAuthProvider::verify_key`.
+hmac = { workspace = true }
+sha2 = { workspace = true }
+# PORT-AUTH-APIKEY: `futures::executor::block_on` for synchronous tests
+# that exercise the async `AuthProvider` trait.
+futures = { workspace = true }
 
