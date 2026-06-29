@@ -1,6 +1,6 @@
 //! # Assessment repository ports
 //!
-//! Twenty-six repository port traits in total: the six
+//! Forty-five repository port traits in total: the six
 //! Phase 4 Workstream A traits (Exam, ExamSchedule,
 //! SeatPlan, AdmitCard, MarksRegister, ResultStore) plus
 //! the twenty Wave 9.6a traits (AdmitCardSetting,
@@ -11,7 +11,14 @@
 //! ExamSignature, ExamStepSkip, ExamType,
 //! ExamWisePosition, FrontendExamResult,
 //! FrontendExamRoutine, FrontendResult, MarksGrade,
-//! MarksRegisterChild, MarkStore).
+//! MarksRegisterChild, MarkStore) plus the nineteen
+//! Wave 9.6b traits (MarkStoreEntry, MeritPosition,
+//! OnlineExam, OnlineExamMark, OnlineExamQuestion,
+//! OnlineExamStudentAnswerMarking, QuestionAssignment,
+//! QuestionBank, QuestionGroup, QuestionLevel,
+//! QuestionMuOption, ResultSetting, ResultStore,
+//! SeatPlanChild, SeatPlanSetting, StudentTakeOnlineExam,
+//! TeacherEvaluation, TeacherRemark, TemporaryMeritList).
 //!
 //! All port traits are `#[async_trait] pub trait
 //! XxxRepository: Send + Sync` per the academic crate's
@@ -22,7 +29,7 @@
                         // are described by their parameter
                         // names; suppressing this lint for the
                         // file is the pragmatic choice for the
-                        // 26 repo traits this file ships.
+                        // 45 repo traits this file ships.
 
 use async_trait::async_trait;
 
@@ -725,6 +732,445 @@ pub trait MarkStoreRepository: Send + Sync {
 
 /// Object-safety smoke test for [`MarkStoreRepository`].
 fn _assert_mark_store_repository_object_safe(_: Box<dyn MarkStoreRepository>) {}
+
+// =============================================================================
+// Wave 9.6b: additional repository port traits (19)
+// =============================================================================
+
+/// The storage-port contract for [`MarkStoreEntry`](crate::aggregate::MarkStoreEntry) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait MarkStoreEntryRepository: Send + Sync {
+    /// Returns the [`MarkStoreEntry`](crate::aggregate::MarkStoreEntry) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::MarkStoreEntryId,
+    ) -> Result<Option<crate::aggregate::MarkStoreEntry>>;
+    /// Inserts a new [`MarkStoreEntry`](crate::aggregate::MarkStoreEntry) row.
+    async fn insert(&self, ctx: &TenantContext, s: &crate::aggregate::MarkStoreEntry)
+        -> Result<()>;
+    /// Updates an existing [`MarkStoreEntry`](crate::aggregate::MarkStoreEntry) row.
+    async fn update(&self, ctx: &TenantContext, s: &crate::aggregate::MarkStoreEntry)
+        -> Result<()>;
+}
+
+/// Object-safety smoke test for [`MarkStoreEntryRepository`].
+fn _assert_mark_store_entry_repository_object_safe(_: Box<dyn MarkStoreEntryRepository>) {}
+
+/// The storage-port contract for [`MeritPosition`](crate::aggregate::MeritPosition) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait MeritPositionRepository: Send + Sync {
+    /// Returns the [`MeritPosition`](crate::aggregate::MeritPosition) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::MeritPositionId,
+    ) -> Result<Option<crate::aggregate::MeritPosition>>;
+    /// Inserts a new [`MeritPosition`](crate::aggregate::MeritPosition) row.
+    async fn insert(&self, ctx: &TenantContext, s: &crate::aggregate::MeritPosition) -> Result<()>;
+    /// Updates an existing [`MeritPosition`](crate::aggregate::MeritPosition) row.
+    async fn update(&self, ctx: &TenantContext, s: &crate::aggregate::MeritPosition) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`MeritPositionRepository`].
+fn _assert_merit_position_repository_object_safe(_: Box<dyn MeritPositionRepository>) {}
+
+/// The storage-port contract for [`OnlineExam`](crate::aggregate::OnlineExam) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait OnlineExamRepository: Send + Sync {
+    /// Returns the [`OnlineExam`](crate::aggregate::OnlineExam) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::OnlineExamId,
+    ) -> Result<Option<crate::aggregate::OnlineExam>>;
+    /// Inserts a new [`OnlineExam`](crate::aggregate::OnlineExam) row.
+    async fn insert(&self, ctx: &TenantContext, s: &crate::aggregate::OnlineExam) -> Result<()>;
+    /// Updates an existing [`OnlineExam`](crate::aggregate::OnlineExam) row.
+    async fn update(&self, ctx: &TenantContext, s: &crate::aggregate::OnlineExam) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`OnlineExamRepository`].
+fn _assert_online_exam_repository_object_safe(_: Box<dyn OnlineExamRepository>) {}
+
+/// The storage-port contract for [`OnlineExamMark`](crate::aggregate::OnlineExamMark) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait OnlineExamMarkRepository: Send + Sync {
+    /// Returns the [`OnlineExamMark`](crate::aggregate::OnlineExamMark) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::OnlineExamMarkId,
+    ) -> Result<Option<crate::aggregate::OnlineExamMark>>;
+    /// Inserts a new [`OnlineExamMark`](crate::aggregate::OnlineExamMark) row.
+    async fn insert(&self, ctx: &TenantContext, s: &crate::aggregate::OnlineExamMark)
+        -> Result<()>;
+    /// Updates an existing [`OnlineExamMark`](crate::aggregate::OnlineExamMark) row.
+    async fn update(&self, ctx: &TenantContext, s: &crate::aggregate::OnlineExamMark)
+        -> Result<()>;
+}
+
+/// Object-safety smoke test for [`OnlineExamMarkRepository`].
+fn _assert_online_exam_mark_repository_object_safe(_: Box<dyn OnlineExamMarkRepository>) {}
+
+/// The storage-port contract for [`OnlineExamQuestion`](crate::aggregate::OnlineExamQuestion) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait OnlineExamQuestionRepository: Send + Sync {
+    /// Returns the [`OnlineExamQuestion`](crate::aggregate::OnlineExamQuestion) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::OnlineExamQuestionId,
+    ) -> Result<Option<crate::aggregate::OnlineExamQuestion>>;
+    /// Inserts a new [`OnlineExamQuestion`](crate::aggregate::OnlineExamQuestion) row.
+    async fn insert(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::OnlineExamQuestion,
+    ) -> Result<()>;
+    /// Updates an existing [`OnlineExamQuestion`](crate::aggregate::OnlineExamQuestion) row.
+    async fn update(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::OnlineExamQuestion,
+    ) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`OnlineExamQuestionRepository`].
+fn _assert_online_exam_question_repository_object_safe(_: Box<dyn OnlineExamQuestionRepository>) {}
+
+/// The storage-port contract for [`OnlineExamStudentAnswerMarking`](crate::aggregate::OnlineExamStudentAnswerMarking) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait OnlineExamStudentAnswerMarkingRepository: Send + Sync {
+    /// Returns the [`OnlineExamStudentAnswerMarking`](crate::aggregate::OnlineExamStudentAnswerMarking) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::OnlineExamStudentAnswerMarkingId,
+    ) -> Result<Option<crate::aggregate::OnlineExamStudentAnswerMarking>>;
+    /// Inserts a new [`OnlineExamStudentAnswerMarking`](crate::aggregate::OnlineExamStudentAnswerMarking) row.
+    async fn insert(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::OnlineExamStudentAnswerMarking,
+    ) -> Result<()>;
+    /// Updates an existing [`OnlineExamStudentAnswerMarking`](crate::aggregate::OnlineExamStudentAnswerMarking) row.
+    async fn update(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::OnlineExamStudentAnswerMarking,
+    ) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`OnlineExamStudentAnswerMarkingRepository`].
+fn _assert_online_exam_student_answer_marking_repository_object_safe(
+    _: Box<dyn OnlineExamStudentAnswerMarkingRepository>,
+) {
+}
+
+/// The storage-port contract for [`QuestionAssignment`](crate::aggregate::QuestionAssignment) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait QuestionAssignmentRepository: Send + Sync {
+    /// Returns the [`QuestionAssignment`](crate::aggregate::QuestionAssignment) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::QuestionAssignmentId,
+    ) -> Result<Option<crate::aggregate::QuestionAssignment>>;
+    /// Inserts a new [`QuestionAssignment`](crate::aggregate::QuestionAssignment) row.
+    async fn insert(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::QuestionAssignment,
+    ) -> Result<()>;
+    /// Updates an existing [`QuestionAssignment`](crate::aggregate::QuestionAssignment) row.
+    async fn update(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::QuestionAssignment,
+    ) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`QuestionAssignmentRepository`].
+fn _assert_question_assignment_repository_object_safe(_: Box<dyn QuestionAssignmentRepository>) {}
+
+/// The storage-port contract for [`QuestionBank`](crate::aggregate::QuestionBank) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait QuestionBankRepository: Send + Sync {
+    /// Returns the [`QuestionBank`](crate::aggregate::QuestionBank) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::QuestionBankId,
+    ) -> Result<Option<crate::aggregate::QuestionBank>>;
+    /// Inserts a new [`QuestionBank`](crate::aggregate::QuestionBank) row.
+    async fn insert(&self, ctx: &TenantContext, s: &crate::aggregate::QuestionBank) -> Result<()>;
+    /// Updates an existing [`QuestionBank`](crate::aggregate::QuestionBank) row.
+    async fn update(&self, ctx: &TenantContext, s: &crate::aggregate::QuestionBank) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`QuestionBankRepository`].
+fn _assert_question_bank_repository_object_safe(_: Box<dyn QuestionBankRepository>) {}
+
+/// The storage-port contract for [`QuestionGroup`](crate::aggregate::QuestionGroup) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait QuestionGroupRepository: Send + Sync {
+    /// Returns the [`QuestionGroup`](crate::aggregate::QuestionGroup) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::QuestionGroupId,
+    ) -> Result<Option<crate::aggregate::QuestionGroup>>;
+    /// Inserts a new [`QuestionGroup`](crate::aggregate::QuestionGroup) row.
+    async fn insert(&self, ctx: &TenantContext, s: &crate::aggregate::QuestionGroup) -> Result<()>;
+    /// Updates an existing [`QuestionGroup`](crate::aggregate::QuestionGroup) row.
+    async fn update(&self, ctx: &TenantContext, s: &crate::aggregate::QuestionGroup) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`QuestionGroupRepository`].
+fn _assert_question_group_repository_object_safe(_: Box<dyn QuestionGroupRepository>) {}
+
+/// The storage-port contract for [`QuestionLevel`](crate::aggregate::QuestionLevel) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait QuestionLevelRepository: Send + Sync {
+    /// Returns the [`QuestionLevel`](crate::aggregate::QuestionLevel) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::QuestionLevelId,
+    ) -> Result<Option<crate::aggregate::QuestionLevel>>;
+    /// Inserts a new [`QuestionLevel`](crate::aggregate::QuestionLevel) row.
+    async fn insert(&self, ctx: &TenantContext, s: &crate::aggregate::QuestionLevel) -> Result<()>;
+    /// Updates an existing [`QuestionLevel`](crate::aggregate::QuestionLevel) row.
+    async fn update(&self, ctx: &TenantContext, s: &crate::aggregate::QuestionLevel) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`QuestionLevelRepository`].
+fn _assert_question_level_repository_object_safe(_: Box<dyn QuestionLevelRepository>) {}
+
+/// The storage-port contract for [`QuestionMuOption`](crate::aggregate::QuestionMuOption) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait QuestionMuOptionRepository: Send + Sync {
+    /// Returns the [`QuestionMuOption`](crate::aggregate::QuestionMuOption) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::QuestionMuOptionId,
+    ) -> Result<Option<crate::aggregate::QuestionMuOption>>;
+    /// Inserts a new [`QuestionMuOption`](crate::aggregate::QuestionMuOption) row.
+    async fn insert(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::QuestionMuOption,
+    ) -> Result<()>;
+    /// Updates an existing [`QuestionMuOption`](crate::aggregate::QuestionMuOption) row.
+    async fn update(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::QuestionMuOption,
+    ) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`QuestionMuOptionRepository`].
+fn _assert_question_mu_option_repository_object_safe(_: Box<dyn QuestionMuOptionRepository>) {}
+
+/// The storage-port contract for [`ResultSetting`](crate::aggregate::ResultSetting) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait ResultSettingRepository: Send + Sync {
+    /// Returns the [`ResultSetting`](crate::aggregate::ResultSetting) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::ResultSettingId,
+    ) -> Result<Option<crate::aggregate::ResultSetting>>;
+    /// Inserts a new [`ResultSetting`](crate::aggregate::ResultSetting) row.
+    async fn insert(&self, ctx: &TenantContext, s: &crate::aggregate::ResultSetting) -> Result<()>;
+    /// Updates an existing [`ResultSetting`](crate::aggregate::ResultSetting) row.
+    async fn update(&self, ctx: &TenantContext, s: &crate::aggregate::ResultSetting) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`ResultSettingRepository`].
+fn _assert_result_setting_repository_object_safe(_: Box<dyn ResultSettingRepository>) {}
+
+/// The storage-port contract for [`ResultStore`](crate::aggregate::ResultStore) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait ResultStoreRepository: Send + Sync {
+    /// Returns the [`ResultStore`](crate::aggregate::ResultStore) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::ResultStoreId,
+    ) -> Result<Option<crate::aggregate::ResultStore>>;
+    /// Inserts a new [`ResultStore`](crate::aggregate::ResultStore) row.
+    async fn insert(&self, ctx: &TenantContext, s: &crate::aggregate::ResultStore) -> Result<()>;
+    /// Updates an existing [`ResultStore`](crate::aggregate::ResultStore) row.
+    async fn update(&self, ctx: &TenantContext, s: &crate::aggregate::ResultStore) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`ResultStoreRepository`].
+fn _assert_result_store_repository_object_safe(_: Box<dyn ResultStoreRepository>) {}
+
+/// The storage-port contract for [`SeatPlanChild`](crate::aggregate::SeatPlanChild) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait SeatPlanChildRepository: Send + Sync {
+    /// Returns the [`SeatPlanChild`](crate::aggregate::SeatPlanChild) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::SeatPlanChildId,
+    ) -> Result<Option<crate::aggregate::SeatPlanChild>>;
+    /// Inserts a new [`SeatPlanChild`](crate::aggregate::SeatPlanChild) row.
+    async fn insert(&self, ctx: &TenantContext, s: &crate::aggregate::SeatPlanChild) -> Result<()>;
+    /// Updates an existing [`SeatPlanChild`](crate::aggregate::SeatPlanChild) row.
+    async fn update(&self, ctx: &TenantContext, s: &crate::aggregate::SeatPlanChild) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`SeatPlanChildRepository`].
+fn _assert_seat_plan_child_repository_object_safe(_: Box<dyn SeatPlanChildRepository>) {}
+
+/// The storage-port contract for [`SeatPlanSetting`](crate::aggregate::SeatPlanSetting) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait SeatPlanSettingRepository: Send + Sync {
+    /// Returns the [`SeatPlanSetting`](crate::aggregate::SeatPlanSetting) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::SeatPlanSettingId,
+    ) -> Result<Option<crate::aggregate::SeatPlanSetting>>;
+    /// Inserts a new [`SeatPlanSetting`](crate::aggregate::SeatPlanSetting) row.
+    async fn insert(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::SeatPlanSetting,
+    ) -> Result<()>;
+    /// Updates an existing [`SeatPlanSetting`](crate::aggregate::SeatPlanSetting) row.
+    async fn update(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::SeatPlanSetting,
+    ) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`SeatPlanSettingRepository`].
+fn _assert_seat_plan_setting_repository_object_safe(_: Box<dyn SeatPlanSettingRepository>) {}
+
+/// The storage-port contract for [`StudentTakeOnlineExam`](crate::aggregate::StudentTakeOnlineExam) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait StudentTakeOnlineExamRepository: Send + Sync {
+    /// Returns the [`StudentTakeOnlineExam`](crate::aggregate::StudentTakeOnlineExam) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::StudentTakeOnlineExamId,
+    ) -> Result<Option<crate::aggregate::StudentTakeOnlineExam>>;
+    /// Inserts a new [`StudentTakeOnlineExam`](crate::aggregate::StudentTakeOnlineExam) row.
+    async fn insert(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::StudentTakeOnlineExam,
+    ) -> Result<()>;
+    /// Updates an existing [`StudentTakeOnlineExam`](crate::aggregate::StudentTakeOnlineExam) row.
+    async fn update(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::StudentTakeOnlineExam,
+    ) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`StudentTakeOnlineExamRepository`].
+fn _assert_student_take_online_exam_repository_object_safe(
+    _: Box<dyn StudentTakeOnlineExamRepository>,
+) {
+}
+
+/// The storage-port contract for [`TeacherEvaluation`](crate::aggregate::TeacherEvaluation) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait TeacherEvaluationRepository: Send + Sync {
+    /// Returns the [`TeacherEvaluation`](crate::aggregate::TeacherEvaluation) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::TeacherEvaluationId,
+    ) -> Result<Option<crate::aggregate::TeacherEvaluation>>;
+    /// Inserts a new [`TeacherEvaluation`](crate::aggregate::TeacherEvaluation) row.
+    async fn insert(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::TeacherEvaluation,
+    ) -> Result<()>;
+    /// Updates an existing [`TeacherEvaluation`](crate::aggregate::TeacherEvaluation) row.
+    async fn update(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::TeacherEvaluation,
+    ) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`TeacherEvaluationRepository`].
+fn _assert_teacher_evaluation_repository_object_safe(_: Box<dyn TeacherEvaluationRepository>) {}
+
+/// The storage-port contract for [`TeacherRemark`](crate::aggregate::TeacherRemark) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait TeacherRemarkRepository: Send + Sync {
+    /// Returns the [`TeacherRemark`](crate::aggregate::TeacherRemark) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::TeacherRemarkId,
+    ) -> Result<Option<crate::aggregate::TeacherRemark>>;
+    /// Inserts a new [`TeacherRemark`](crate::aggregate::TeacherRemark) row.
+    async fn insert(&self, ctx: &TenantContext, s: &crate::aggregate::TeacherRemark) -> Result<()>;
+    /// Updates an existing [`TeacherRemark`](crate::aggregate::TeacherRemark) row.
+    async fn update(&self, ctx: &TenantContext, s: &crate::aggregate::TeacherRemark) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`TeacherRemarkRepository`].
+fn _assert_teacher_remark_repository_object_safe(_: Box<dyn TeacherRemarkRepository>) {}
+
+/// The storage-port contract for [`TemporaryMeritList`](crate::aggregate::TemporaryMeritList) rows.
+#[allow(dead_code)]
+#[async_trait]
+pub trait TemporaryMeritListRepository: Send + Sync {
+    /// Returns the [`TemporaryMeritList`](crate::aggregate::TemporaryMeritList) with the given id (or `Ok(None)` if not found).
+    async fn get(
+        &self,
+        ctx: &TenantContext,
+        id: crate::value_objects::TemporaryMeritListId,
+    ) -> Result<Option<crate::aggregate::TemporaryMeritList>>;
+    /// Inserts a new [`TemporaryMeritList`](crate::aggregate::TemporaryMeritList) row.
+    async fn insert(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::TemporaryMeritList,
+    ) -> Result<()>;
+    /// Updates an existing [`TemporaryMeritList`](crate::aggregate::TemporaryMeritList) row.
+    async fn update(
+        &self,
+        ctx: &TenantContext,
+        s: &crate::aggregate::TemporaryMeritList,
+    ) -> Result<()>;
+}
+
+/// Object-safety smoke test for [`TemporaryMeritListRepository`].
+fn _assert_temporary_merit_list_repository_object_safe(_: Box<dyn TemporaryMeritListRepository>) {}
 
 #[cfg(test)]
 #[allow(
