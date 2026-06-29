@@ -415,6 +415,133 @@ impl BatchReceipt {
     }
 }
 
+/// The audit sink port for the event bus.
+///
+/// Per [`docs/ports/event-bus.md`](../docs/ports/event-bus.md)
+/// § Audit: "Every publish and consume is recorded in the
+/// audit log. The audit record includes event id, event type,
+/// actor (publisher), consumer id, and timestamp."
+///
+/// The bus port delegates audit-write calls to an `AuditSink`
+/// implementation at two points in the envelope lifecycle:
+///
+/// - **`record_publish`** — invoked when [`EventBus::publish`]
+///   (or [`EventBus::publish_batch`]) accepts an envelope.
+///   The `publisher` is the envelope's [`actor_id`](EventEnvelope::actor_id).
+///   The bus writes one row per envelope, after the underlying
+///   transport has acknowledged acceptance so an audit row
+///   never describes an envelope the bus later rejected.
+/// - **`record_consume`** — invoked when a subscriber
+///   successfully receives an envelope from
+///   [`EventSubscription::next`]. The `consumer` identifies
+///   which subscription yielded the envelope (sourced from
+///   [`SubscribeOptions::consumer`]). The `publisher` remains
+///   the envelope's original [`actor_id`](EventEnvelope::actor_id);
+///   audit replay can correlate publish and consume rows by
+///   `event_id`.
+///
+/// # Object safety
+///
+/// The trait is object-safe: the async methods use
+/// `async_trait`, which keeps the futures boxed. Bus
+/// implementations hold the sink as
+/// `std::sync::Arc<dyn AuditSink>` and pass it across spawn
+/// boundaries without generic-type plumbing.
+///
+/// # Failure handling
+///
+/// Implementations MUST NOT silently drop audit records. If the
+/// underlying audit_log storage is unreachable, `record_publish`
+/// and `record_consume` MUST return `Err(_)` so the bus can
+/// decide whether to fail-fast (reject the publish / drop the
+/// consume) or record-and-continue. Adapters that choose
+/// record-and-continue MUST still log the failure via
+/// `tracing::warn!` with the event id so operators can
+/// reconcile the audit gap offline.
+///
+/// # Default implementation
+///
+/// [`NoopAuditSink`] is provided for tests and for adapter
+/// configurations where audit is intentionally disabled (e.g.
+/// ephemeral local-development runs where the audit_log table
+/// is not provisioned). Production wiring MUST use an adapter
+/// that forwards to the
+/// [`AuditLog`](educore_storage::audit::AuditLog) port or an
+/// equivalent audit_log sink; see
+/// `docs/decisions/ADR-018-SyncEngine.md` for the cross-cutting
+/// wiring convention.
+#[async_trait]
+pub trait AuditSink: Send + Sync + fmt::Debug {
+    /// Record that the bus accepted `envelope` for publishing.
+    /// The bus invokes this method AFTER the underlying
+    /// transport has acknowledged acceptance (so the audit
+    /// row never references an envelope the bus later
+    /// rejected). The `publisher` for the audit record is the
+    /// envelope's [`actor_id`](EventEnvelope::actor_id); the
+    /// record's timestamp is the envelope's `occurred_at`.
+    ///
+    /// # Errors
+    ///
+    /// Implementations MUST return `Err(_)` if the audit row
+    /// could not be persisted. Callers decide whether to
+    /// fail-fast or record-and-continue.
+    async fn record_publish(&self, envelope: &EventEnvelope) -> Result<()>;
+
+    /// Record that a consumer received `envelope`. The
+    /// `consumer` is the [`ConsumerId`] of the subscription
+    /// that yielded the envelope. The `publisher` is the
+    /// envelope's original [`actor_id`](EventEnvelope::actor_id);
+    /// audit replay correlates publish and consume rows by
+    /// `event_id`.
+    ///
+    /// # Errors
+    ///
+    /// Implementations MUST return `Err(_)` if the audit row
+    /// could not be persisted. The consume path typically
+    /// chooses record-and-continue (the envelope has already
+    /// been delivered) and logs the failure via `tracing`.
+    async fn record_consume(&self, envelope: &EventEnvelope, consumer: &ConsumerId) -> Result<()>;
+}
+
+/// A no-op [`AuditSink`] for tests and for adapter
+/// configurations where audit is intentionally disabled.
+///
+/// `NoopAuditSink::record_publish` and `record_consume` both
+/// return `Ok(())`. This is the only situation where the bus
+/// may legitimately drop audit records; the choice is
+/// explicit at the call site (the adapter constructs a
+/// `NoopAuditSink` rather than omitting the `Arc<dyn
+/// AuditSink>` field).
+///
+/// # When to use
+///
+/// - Unit and integration tests where audit wiring is out of
+///   scope.
+/// - Local-development binaries that intentionally skip the
+///   audit_log table.
+/// - Benchmarks where the audit path is the variable under
+///   test and a no-op baseline is needed.
+///
+/// Production wiring MUST NOT use `NoopAuditSink`; use an
+/// adapter that forwards to the audit_log port.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct NoopAuditSink;
+
+#[async_trait]
+impl AuditSink for NoopAuditSink {
+    async fn record_publish(&self, _envelope: &EventEnvelope) -> Result<()> {
+        Ok(())
+    }
+
+    async fn record_consume(
+        &self,
+        _envelope: &EventEnvelope,
+        _consumer: &ConsumerId,
+    ) -> Result<()> {
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
