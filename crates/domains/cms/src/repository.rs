@@ -1,9 +1,14 @@
 //! CMS-domain repository port traits.
 //!
-//! Per `docs/specs/cms/repositories.md`. The CMS domain ships 19
-//! repository port traits (one per root aggregate; `SpeechSlider`
-//! is unique-per-school and reuses the same query pattern as
-//! `HomeSlider`). Each trait is object-safe (the
+//! Per `docs/specs/cms/repositories.md`. The CMS domain ships 27
+//! repository port traits: 19 root-aggregate traits (one per
+//! root aggregate; `SpeechSlider` is unique-per-school and
+//! reuses the same query pattern as `HomeSlider`) plus 8
+//! command-shaped traits for the New*/Update* aggregates that
+//! the spec carves out as standalone persisted commands
+//! (NewHomeSlider, NewSpeechSlider, NewTestimonial, NewNews,
+//! NewNewsCategory, NewNewsComment, NewNoticeBoard,
+//! UpdateNews). Each trait is object-safe (the
 //! `_assert_object_safe` helpers in this module prove it).
 
 #![allow(dead_code, clippy::all)]
@@ -18,8 +23,9 @@ use educore_core::ids::SchoolId;
 
 use crate::aggregate::{
     AboutPage, ContactPage, Content, ContentShareList, ContentType, CoursePage, FrontendPage,
-    HomePageSetting, HomeSlider, News, NewsCategory, NewsComment, NewsPage, NoticeBoard, Page,
-    SpeechSlider, TeacherUploadContent, Testimonial, UploadContent,
+    HomePageSetting, HomeSlider, NewHomeSlider, NewNews, NewNewsCategory, NewNewsComment,
+    NewNoticeBoard, NewSpeechSlider, NewTestimonial, News, NewsCategory, NewsComment, NewsPage,
+    NoticeBoard, Page, SpeechSlider, TeacherUploadContent, Testimonial, UpdateNews, UploadContent,
 };
 use crate::query::{
     AboutPageQuery, ContactPageQuery, ContentQuery, ContentShareListQuery, ContentTypeQuery,
@@ -29,9 +35,10 @@ use crate::query::{
 };
 use crate::value_objects::{
     AboutPageId, ContactPageId, ContentId, ContentShareListId, ContentTypeId, CoursePageId,
-    FrontendPageId, HomePageSettingId, HomeSliderId, NewsCategoryId, NewsCommentId, NewsId,
-    NewsPageId, NoticeBoardId, PageId, SpeechSliderId, TeacherUploadContentId, TestimonialId,
-    UploadContentId,
+    FrontendPageId, HomePageSettingId, HomeSliderId, NewHomeSliderId, NewNewsCategoryId,
+    NewNewsCommentId, NewNewsId, NewNoticeBoardId, NewSpeechSliderId, NewTestimonialId,
+    NewsCategoryId, NewsCommentId, NewsId, NewsPageId, NoticeBoardId, PageId, SpeechSliderId,
+    TeacherUploadContentId, TestimonialId, UpdateNewsId, UploadContentId,
 };
 
 // =============================================================================
@@ -590,4 +597,184 @@ pub trait FrontendPageRepository: Send + Sync {
 /// Object-safety smoke test.
 fn _assert_frontend_page_object_safe() {
     fn _f(_: Box<dyn FrontendPageRepository>) {}
+}
+
+// =============================================================================
+// Command-shaped aggregate repositories (owner: F)
+// =============================================================================
+//
+// These repositories persist the New*/Update* command-shaped
+// aggregates that the spec carves out as standalone persisted
+// commands. Each carries its own typed id (e.g. `NewHomeSliderId`)
+// for the get/insert/update operations. The shape is minimal
+// CRUD: get, list_for_school, insert, update. The parent
+// aggregates (HomeSlider, SpeechSlider, Testimonial, News, ...)
+// already have their own Repository port traits.
+
+/// Repository port for the [`NewHomeSlider`](crate::aggregate::NewHomeSlider)
+/// command. Persists the home-slider create command. Minimal
+/// CRUD interface.
+#[async_trait]
+pub trait NewHomeSliderRepository: Send + Sync {
+    /// Fetch a new-home-slider entry by its typed id. Returns
+    /// `Ok(None)` if not found or soft-deleted.
+    async fn get(&self, id: NewHomeSliderId) -> StorageResult<Option<NewHomeSlider>>;
+    /// List new-home-slider entries for a school.
+    async fn list_for_school(&self, school: SchoolId) -> StorageResult<Vec<NewHomeSlider>>;
+    /// Insert a new home-slider command.
+    async fn insert(&self, h: &NewHomeSlider) -> StorageResult<()>;
+    /// Update an existing home-slider command.
+    async fn update(&self, h: &NewHomeSlider) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test.
+fn _assert_new_home_slider_object_safe() {
+    fn _f(_: Box<dyn NewHomeSliderRepository>) {}
+}
+
+/// Repository port for the [`NewSpeechSlider`](crate::aggregate::NewSpeechSlider)
+/// command. Persists the speech-slider create command. Minimal
+/// CRUD interface.
+#[async_trait]
+pub trait NewSpeechSliderRepository: Send + Sync {
+    /// Fetch a new-speech-slider entry by its typed id. Returns
+    /// `Ok(None)` if not found or soft-deleted.
+    async fn get(&self, id: NewSpeechSliderId) -> StorageResult<Option<NewSpeechSlider>>;
+    /// List new-speech-slider entries for a school.
+    async fn list_for_school(&self, school: SchoolId) -> StorageResult<Vec<NewSpeechSlider>>;
+    /// Insert a new speech-slider command.
+    async fn insert(&self, h: &NewSpeechSlider) -> StorageResult<()>;
+    /// Update an existing speech-slider command.
+    async fn update(&self, h: &NewSpeechSlider) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test.
+fn _assert_new_speech_slider_object_safe() {
+    fn _f(_: Box<dyn NewSpeechSliderRepository>) {}
+}
+
+/// Repository port for the [`NewTestimonial`](crate::aggregate::NewTestimonial)
+/// command. Persists the testimonial create command. Minimal
+/// CRUD interface.
+#[async_trait]
+pub trait NewTestimonialRepository: Send + Sync {
+    /// Fetch a new-testimonial entry by its typed id. Returns
+    /// `Ok(None)` if not found or soft-deleted.
+    async fn get(&self, id: NewTestimonialId) -> StorageResult<Option<NewTestimonial>>;
+    /// List new-testimonial entries for a school.
+    async fn list_for_school(&self, school: SchoolId) -> StorageResult<Vec<NewTestimonial>>;
+    /// Insert a new testimonial command.
+    async fn insert(&self, h: &NewTestimonial) -> StorageResult<()>;
+    /// Update an existing testimonial command.
+    async fn update(&self, h: &NewTestimonial) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test.
+fn _assert_new_testimonial_object_safe() {
+    fn _f(_: Box<dyn NewTestimonialRepository>) {}
+}
+
+/// Repository port for the [`NewNews`](crate::aggregate::NewNews)
+/// command. Persists the news create command. Minimal CRUD
+/// interface.
+#[async_trait]
+pub trait NewNewsRepository: Send + Sync {
+    /// Fetch a new-news entry by its typed id. Returns
+    /// `Ok(None)` if not found or soft-deleted.
+    async fn get(&self, id: NewNewsId) -> StorageResult<Option<NewNews>>;
+    /// List new-news entries for a school.
+    async fn list_for_school(&self, school: SchoolId) -> StorageResult<Vec<NewNews>>;
+    /// Insert a new news command.
+    async fn insert(&self, h: &NewNews) -> StorageResult<()>;
+    /// Update an existing news command.
+    async fn update(&self, h: &NewNews) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test.
+fn _assert_new_news_object_safe() {
+    fn _f(_: Box<dyn NewNewsRepository>) {}
+}
+
+/// Repository port for the [`NewNewsCategory`](crate::aggregate::NewNewsCategory)
+/// command. Persists the news-category create command. Minimal
+/// CRUD interface.
+#[async_trait]
+pub trait NewNewsCategoryRepository: Send + Sync {
+    /// Fetch a new-news-category entry by its typed id. Returns
+    /// `Ok(None)` if not found or soft-deleted.
+    async fn get(&self, id: NewNewsCategoryId) -> StorageResult<Option<NewNewsCategory>>;
+    /// List new-news-category entries for a school.
+    async fn list_for_school(&self, school: SchoolId) -> StorageResult<Vec<NewNewsCategory>>;
+    /// Insert a new news-category command.
+    async fn insert(&self, h: &NewNewsCategory) -> StorageResult<()>;
+    /// Update an existing news-category command.
+    async fn update(&self, h: &NewNewsCategory) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test.
+fn _assert_new_news_category_object_safe() {
+    fn _f(_: Box<dyn NewNewsCategoryRepository>) {}
+}
+
+/// Repository port for the [`NewNewsComment`](crate::aggregate::NewNewsComment)
+/// command. Persists the news-comment create command. Minimal
+/// CRUD interface.
+#[async_trait]
+pub trait NewNewsCommentRepository: Send + Sync {
+    /// Fetch a new-news-comment entry by its typed id. Returns
+    /// `Ok(None)` if not found or soft-deleted.
+    async fn get(&self, id: NewNewsCommentId) -> StorageResult<Option<NewNewsComment>>;
+    /// List new-news-comment entries for a school.
+    async fn list_for_school(&self, school: SchoolId) -> StorageResult<Vec<NewNewsComment>>;
+    /// Insert a new news-comment command.
+    async fn insert(&self, h: &NewNewsComment) -> StorageResult<()>;
+    /// Update an existing news-comment command.
+    async fn update(&self, h: &NewNewsComment) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test.
+fn _assert_new_news_comment_object_safe() {
+    fn _f(_: Box<dyn NewNewsCommentRepository>) {}
+}
+
+/// Repository port for the [`NewNoticeBoard`](crate::aggregate::NewNoticeBoard)
+/// command. Persists the notice-board create command. Minimal
+/// CRUD interface.
+#[async_trait]
+pub trait NewNoticeBoardRepository: Send + Sync {
+    /// Fetch a new-notice-board entry by its typed id. Returns
+    /// `Ok(None)` if not found or soft-deleted.
+    async fn get(&self, id: NewNoticeBoardId) -> StorageResult<Option<NewNoticeBoard>>;
+    /// List new-notice-board entries for a school.
+    async fn list_for_school(&self, school: SchoolId) -> StorageResult<Vec<NewNoticeBoard>>;
+    /// Insert a new notice-board command.
+    async fn insert(&self, h: &NewNoticeBoard) -> StorageResult<()>;
+    /// Update an existing notice-board command.
+    async fn update(&self, h: &NewNoticeBoard) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test.
+fn _assert_new_notice_board_object_safe() {
+    fn _f(_: Box<dyn NewNoticeBoardRepository>) {}
+}
+
+/// Repository port for the [`UpdateNews`](crate::aggregate::UpdateNews)
+/// command. Persists the news update command. Minimal CRUD
+/// interface.
+#[async_trait]
+pub trait UpdateNewsRepository: Send + Sync {
+    /// Fetch an update-news entry by its typed id. Returns
+    /// `Ok(None)` if not found or soft-deleted.
+    async fn get(&self, id: UpdateNewsId) -> StorageResult<Option<UpdateNews>>;
+    /// List update-news entries for a school.
+    async fn list_for_school(&self, school: SchoolId) -> StorageResult<Vec<UpdateNews>>;
+    /// Insert an update-news command.
+    async fn insert(&self, h: &UpdateNews) -> StorageResult<()>;
+    /// Update an existing update-news command.
+    async fn update(&self, h: &UpdateNews) -> StorageResult<()>;
+}
+
+/// Object-safety smoke test.
+fn _assert_update_news_object_safe() {
+    fn _f(_: Box<dyn UpdateNewsRepository>) {}
 }

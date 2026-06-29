@@ -184,6 +184,46 @@ cms_typed_id! {
     pub struct FrontendPageId;
 }
 
+// ---- Command-shaped aggregate ids (per `docs/specs/cms/aggregates.md`) ----
+//
+// The New*/Update* aggregates are command shapes that the
+// service layer persists as a side effect of fulfilling the
+// parent aggregate's command. Each carries its own typed id
+// for the Repository port's get/insert/update operations.
+
+cms_typed_id! {
+    /// A typed id for a [`NewHomeSlider`](crate::aggregate::NewHomeSlider) command.
+    pub struct NewHomeSliderId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewSpeechSlider`](crate::aggregate::NewSpeechSlider) command.
+    pub struct NewSpeechSliderId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewTestimonial`](crate::aggregate::NewTestimonial) command.
+    pub struct NewTestimonialId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewNews`](crate::aggregate::NewNews) command.
+    pub struct NewNewsId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewNewsCategory`](crate::aggregate::NewNewsCategory) command.
+    pub struct NewNewsCategoryId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewNewsComment`](crate::aggregate::NewNewsComment) command.
+    pub struct NewNewsCommentId;
+}
+cms_typed_id! {
+    /// A typed id for a [`NewNoticeBoard`](crate::aggregate::NewNoticeBoard) command.
+    pub struct NewNoticeBoardId;
+}
+cms_typed_id! {
+    /// A typed id for an [`UpdateNews`](crate::aggregate::UpdateNews) command.
+    pub struct UpdateNewsId;
+}
+
 // ---- Child entity ids (per `docs/specs/cms/entities.md`) ----
 
 cms_typed_id! {
