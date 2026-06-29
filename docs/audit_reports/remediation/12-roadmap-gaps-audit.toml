@@ -641,7 +641,7 @@ priority = "P2"
 area = "SCHEMA"
 description = "Report.SubjectErasure.Execute command missing; PII anonymization in audit not implemented"
 source = "docs/schemas/audit-schema.md § 8.2"
-check = "file:crates/domains/platform/src/commands.rs regex:SubjectErasure"
+check = "file:crates/cross-cutting/platform/src/commands.rs regex:ExecuteSubjectErasureCommand"
 
 [[item]]
 id = "SCHEMA-AUDIT-FERPA"
@@ -649,7 +649,7 @@ priority = "P2"
 area = "SCHEMA"
 description = "Report.ParentAccess.Generate command missing"
 source = "docs/schemas/audit-schema.md § 8.3"
-check = "file:crates/domains/communication/src/commands.rs regex:ParentAccess"
+check = "file:crates/cross-cutting/platform/src/commands.rs regex:GenerateParentAccessReportCommand"
 
 [[item]]
 id = "SCHEMA-AUDIT-REGULATOR"
@@ -657,7 +657,7 @@ priority = "P2"
 area = "SCHEMA"
 description = "Report.RegulatorAudit.Generate command missing"
 source = "docs/schemas/audit-schema.md § 8.4"
-check = "file:crates/domains/platform/src/commands.rs regex:RegulatorAudit"
+check = "file:crates/cross-cutting/platform/src/commands.rs regex:GenerateRegulatorAuditCommand"
 
 [[item]]
 id = "SCHEMA-EVENTLOG-RETENTION"

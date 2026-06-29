@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 159 |
+| Done (`[x]`) | 165 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 314 |
-| Last update | 2026-06-29 02:18 UTC |
+| Open (`[ ]`) | 308 |
+| Last update | 2026-06-29 03:07 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -308,9 +308,9 @@
 ### P1-API — Public API consistency
 
 <!-- COMPUTED:items.P1.API -->
-- [ ] **F-3** Naming drift sweep (StudentId vs StudentIdentifier, table singular vs plural)
+- [x] **F-3** Naming drift sweep (StudentId vs StudentIdentifier, table singular vs plural)
       **Source:** wave6-specs-1.md
-      **Check:** `commit:naming.*drift|rename.*Identifier` → _git log grep: naming.*drift|rename.*Identifier_
+      **Check:** `commit:ADR-019` → _git log grep: ADR-019_
 <!-- END COMPUTED -->
 
 ---
@@ -338,9 +338,9 @@
       **Source:** 5382a6e (port) + 4 adapter commits
       **Check:** `commit:record_outcome` → _git log grep: record_outcome_
 
-- [ ] **C-2** QW-13 MySQL defense-in-depth
+- [x] **C-2** QW-13 MySQL defense-in-depth
       **Source:** QW-13, d2f52c9
-      **Check:** `commit:QW-13|d2f52c9` → _git log grep: QW-13|d2f52c9_
+      **Check:** `commit:QW-13` → _git log grep: QW-13_
 
 - [x] **H-1** StorageAdapter::create_schema() impls (all 4 adapters)
       **Source:** Cluster A stage 3
@@ -394,9 +394,9 @@
       **Source:** docs/ports/file-storage.md § Offline Mode
       **Check:** `file:crates/adapters/files/src/local.rs regex:local://` → _local.rs:local://_
 
-- [ ] **PORT-FILE-TENANT-DENIAL-TEST** Cross-tenant denial test missing from tests/
+- [x] **PORT-FILE-TENANT-DENIAL-TEST** Cross-tenant denial test missing from tests/
       **Source:** docs/ports/file-storage.md § Testing
-      **Check:** `file-exists:crates/adapters/files/tests/cross_tenant.rs` → _cross_tenant.rs missing_
+      **Check:** `file-exists:crates/adapters/files/tests/cross_tenant.rs` → _cross_tenant.rs exists_
 
 - [ ] **PORT-INT-OAUTH2-HELPER** Per-tenant OAuth2 client-credentials token cache + refresh not extracted as a port helper
       **Source:** docs/ports/integrations.md § OAuth2 Client Credentials
@@ -406,17 +406,17 @@
       **Source:** docs/ports/event-bus.md § Audit
       **Check:** `file:crates/cross-cutting/events/src/event_bus.rs regex:audit_log|AuditSink` → _event_bus.rs:audit_log|AuditSink_
 
-- [ ] **SCHEMA-AUDIT-GDPR-ERASURE** Report.SubjectErasure.Execute command missing; PII anonymization in audit not implemented
+- [x] **SCHEMA-AUDIT-GDPR-ERASURE** Report.SubjectErasure.Execute command missing; PII anonymization in audit not implemented
       **Source:** docs/schemas/audit-schema.md § 8.2
-      **Check:** `file:crates/domains/platform/src/commands.rs regex:SubjectErasure` → _commands.rs missing_
+      **Check:** `file:crates/cross-cutting/platform/src/commands.rs regex:ExecuteSubjectErasureCo...` → _commands.rs:ExecuteSubjectErasureCommand_
 
-- [ ] **SCHEMA-AUDIT-FERPA** Report.ParentAccess.Generate command missing
+- [x] **SCHEMA-AUDIT-FERPA** Report.ParentAccess.Generate command missing
       **Source:** docs/schemas/audit-schema.md § 8.3
-      **Check:** `file:crates/domains/communication/src/commands.rs regex:ParentAccess` → _commands.rs:ParentAccess_
+      **Check:** `file:crates/cross-cutting/platform/src/commands.rs regex:GenerateParentAccessRep...` → _commands.rs:GenerateParentAccessReportCommand_
 
-- [ ] **SCHEMA-AUDIT-REGULATOR** Report.RegulatorAudit.Generate command missing
+- [x] **SCHEMA-AUDIT-REGULATOR** Report.RegulatorAudit.Generate command missing
       **Source:** docs/schemas/audit-schema.md § 8.4
-      **Check:** `file:crates/domains/platform/src/commands.rs regex:RegulatorAudit` → _commands.rs missing_
+      **Check:** `file:crates/cross-cutting/platform/src/commands.rs regex:GenerateRegulatorAuditC...` → _commands.rs:GenerateRegulatorAuditCommand_
 
 - [ ] **SCHEMA-EVENTLOG-RETENTION** event_log has no retention sweeper (compare with audit RetentionSweepDue)
       **Source:** docs/schemas/event-schema.md § 9
