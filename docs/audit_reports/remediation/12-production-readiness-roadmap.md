@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 165 |
+| Done (`[x]`) | 166 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 308 |
-| Last update | 2026-06-29 03:20 UTC |
+| Open (`[ ]`) | 307 |
+| Last update | 2026-06-29 03:23 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -84,9 +84,9 @@
       **Source:** docs/audit_reports/findings/wave1-lint.md
       **Check:** `cmd:cargo clippy -p educore-core --lib -- -D warnings` → _exit 0_
 
-- [ ] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
+- [x] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave5-docs-1.md
-      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 101_
+      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 0_
 
 - [x] **D-10** Resolved — Sync feature flag added to educore umbrella. Closed 2026-06-25.
       **Source:** ADR-018 § 4, crates/educore/Cargo.toml
