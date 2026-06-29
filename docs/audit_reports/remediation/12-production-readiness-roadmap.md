@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 179 |
+| Done (`[x]`) | 181 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 294 |
-| Last update | 2026-06-29 05:28 UTC |
+| Open (`[ ]`) | 292 |
+| Last update | 2026-06-29 05:29 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -398,9 +398,9 @@
       **Source:** docs/ports/file-storage.md § Testing
       **Check:** `file-exists:crates/adapters/files/tests/cross_tenant.rs` → _cross_tenant.rs exists_
 
-- [ ] **PORT-INT-OAUTH2-HELPER** Per-tenant OAuth2 client-credentials token cache + refresh not extracted as a port helper
+- [x] **PORT-INT-OAUTH2-HELPER** Per-tenant OAuth2 client-credentials token cache + refresh not extracted as a port helper
       **Source:** docs/ports/integrations.md § OAuth2 Client Credentials
-      **Check:** `file:crates/adapters/integrations/src/lib.rs regex:client_credentials` → _lib.rs:client_credentials_
+      **Check:** `file:crates/adapters/integrations/src/oauth2.rs regex:client_credentials` → _oauth2.rs:client_credentials_
 
 - [x] **PORT-EVENTBUS-AUDIT** Spec requires every publish/consume recorded in audit; no AuditSink wiring on the bus
       **Source:** docs/ports/event-bus.md § Audit
@@ -438,9 +438,9 @@
       **Source:** roadmap C-1
       **Check:** `cmd:grep -r 'Idempotency::record(' crates/ --include='*.rs' | grep -v record_out...` → _exit 0_
 
-- [ ] **SCHEMA-IDEM-TTL-SWEEP** No engine-side idempotency TTL sweep; only audit has RetentionSweepDue
+- [x] **SCHEMA-IDEM-TTL-SWEEP** No engine-side idempotency TTL sweep; only audit has RetentionSweepDue
       **Source:** docs/schemas/command-schema.md § 6
-      **Check:** `file:crates/cross-cutting/audit/src/retention.rs regex:Idempotency` → _retention.rs:Idempotency_
+      **Check:** `file:crates/cross-cutting/events/src/idempotency_retention.rs regex:Idempotency` → _idempotency_retention.rs:Idempotency_
 
 - [x] **X-CUT-C1-IDEM** Idempotency.record() callers must migrate to record_outcome(); sweep incomplete
       **Source:** roadmap C-1

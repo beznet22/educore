@@ -625,7 +625,7 @@ priority = "P2"
 area = "INTEGRATIONS"
 description = "Per-tenant OAuth2 client-credentials token cache + refresh not extracted as a port helper"
 source = "docs/ports/integrations.md § OAuth2 Client Credentials"
-check = "file:crates/adapters/integrations/src/lib.rs regex:client_credentials"
+check = "file:crates/adapters/integrations/src/oauth2.rs regex:client_credentials"
 
 [[item]]
 id = "PORT-EVENTBUS-AUDIT"
@@ -705,7 +705,7 @@ priority = "P2"
 area = "SCHEMA"
 description = "No engine-side idempotency TTL sweep; only audit has RetentionSweepDue"
 source = "docs/schemas/command-schema.md § 6"
-check = "file:crates/cross-cutting/audit/src/retention.rs regex:Idempotency"
+check = "file:crates/cross-cutting/events/src/idempotency_retention.rs regex:Idempotency"
 
 [[item]]
 id = "X-CUT-C1-IDEM"
