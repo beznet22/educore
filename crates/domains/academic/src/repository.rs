@@ -106,6 +106,18 @@ pub trait StudentRepository: Send + Sync {
     /// `Err(Conflict)` on optimistic-concurrency mismatch
     /// (the row's `version` does not match `student.version`).
     async fn update(&self, ctx: &TenantContext, student: &Student) -> Result<()>;
+
+    /// Streams students matching `q` in the active tenant.
+    /// Backed by `BoxStream<'static, Result<Student>>` per
+    /// `docs/ports/storage.md` § Streaming — avoids loading
+    /// millions of rows into memory for year-long attendance /
+    /// enrolment queries. Adapters translate `q` into a
+    /// cursor-paginated `SELECT` and yield rows as they arrive.
+    async fn stream(
+        &self,
+        ctx: &TenantContext,
+        q: crate::query::StudentQuery,
+    ) -> Result<futures::stream::BoxStream<'static, Result<Student>>>;
 }
 
 // =============================================================================
