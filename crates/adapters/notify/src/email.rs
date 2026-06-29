@@ -53,6 +53,7 @@ use crate::port::{
     NotificationReceipt, NotificationReceiptId, Priority, Recipient, Result, SendBulkNotification,
     SendNotification, TemplateRef, TemplateValue,
 };
+use crate::services::{emit_notification_sent, recipient_label, NotificationSent};
 
 /// Maximum number of recipients dispatched in a single batch per
 /// the bulk-send spec.
@@ -200,7 +201,7 @@ impl NotificationProvider for EmailProvider {
             .as_nanos();
         let bulk_id = BulkId::new(format!("bulk_email:{now_ns}"));
 
-        let mut receipt = BulkReceipt::new(bulk_id);
+        let mut receipt = BulkReceipt::new(bulk_id.clone());
 
         for (idx, row) in request.recipients.iter().enumerate() {
             if idx > 0 && idx % BULK_BATCH_SIZE == 0 {
@@ -221,7 +222,23 @@ impl NotificationProvider for EmailProvider {
             };
 
             match self.send(single).await {
-                Ok(r) => receipt.receipts.push(r),
+                Ok(r) => {
+                    // Per `docs/ports/notifications.md` § "Bulk Send",
+                    // emit one `NotificationSent` per successful
+                    // recipient so downstream consumers (audit log,
+                    // cost reporting, in-app inbox) can correlate
+                    // per-row events with the parent bulk envelope.
+                    let event = NotificationSent::new(
+                        recipient_label(&row.recipient),
+                        request.channel.clone(),
+                        request.priority,
+                        bulk_id.clone(),
+                        request.school_id,
+                        r.sent_at,
+                    );
+                    let _ = emit_notification_sent(&event);
+                    receipt.receipts.push(r);
+                }
                 Err(e) => {
                     let Ok(idx_u32) = u32::try_from(idx) else {
                         continue;

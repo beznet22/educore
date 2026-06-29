@@ -31,4 +31,12 @@ reqwest = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+# Wave 15 (X-CUT-NOTIFY-BULK-EVENT): the `NotificationSent` event in
+# `services.rs` mints UUIDv7 event ids; `uuid` is the source-of-truth
+# crate already declared in the workspace and documented in
+# `ADR-015-ExternalCrates.md` § Tier-A. The crate was previously a
+# transitive dep through `educore-events` and `educore-core`; this
+# commit makes the dependency explicit so the `DomainEvent` impl on
+# `NotificationSent` does not rely on a transitive version floor.
+uuid = { workspace = true }
 
