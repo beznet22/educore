@@ -26,7 +26,7 @@
 | Done (`[x]`) | 188 |
 | In-progress (`[~]`) | 12 |
 | Open (`[ ]`) | 285 |
-| Last update | 2026-06-29 23:06 UTC |
+| Last update | 2026-06-29 23:09 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -41,8 +41,8 @@
       _check: `manual:cargo test --workspace` → manual: cargo test --workspace_
 - [ ] **Gate-3 Clippy:** `cargo clippy --workspace --all-targets -- -D warnings` exits 0
       _check: `cmd:cargo clippy --workspace --all-targets -- -D warnings` → exit 101_
-- [ ] **Gate-4 Fmt:** `cargo fmt --all -- --check` exits 0
-      _check: `cmd:cargo fmt --all -- --check` → exit 1_
+- [x] **Gate-4 Fmt:** `cargo fmt --all -- --check` exits 0
+      _check: `cmd:cargo fmt --all -- --check` → exit 0_
 - [ ] **Gate-5 Adapters:** All 4 storage adapters' `create_schema()` round-trip on a fresh DB
       _check: `manual:cargo test -p educore-storage-parity --features all-dbs` → manual: cargo test -p educore-storage-parity --features all-dbs_
 - [ ] **Gate-6 Decisions:** All items in `13-decision-needed.md` resolved

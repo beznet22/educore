@@ -51,6 +51,13 @@ pub mod local_password;
 /// [`saml::SamlAuthProvider`] for the implementation gap.
 pub mod saml;
 
+/// API-key-based [`AuthProvider`](crate::port::AuthProvider)
+/// reference implementation. Service-to-service auth via a
+/// pre-shared API key, with HMAC-SHA256 constant-time digest
+/// comparison and delegated JWT issuance to
+/// [`JwtAuthProvider`](crate::jwt::JwtAuthProvider).
+pub mod api_key;
+
 /// OAuth 2.0 / OpenID Connect [`port::AuthProvider`] reference
 /// implementation.
 ///
@@ -99,11 +106,11 @@ pub mod rate_limit;
 /// the auth crate typically `use educore_auth::prelude::*;`
 /// once at the top of a file.
 pub mod prelude {
+    pub use crate::api_key::ApiKeyAuthProvider;
     pub use crate::errors::AuthError;
     pub use crate::jwt::{JwtAuthProvider, JwtAuthProviderBuilder, JwtClaims, JwtSecretSource};
     pub use crate::local_password::LocalPasswordAuthProvider;
     pub use crate::oauth2::{OAuth2AuthProvider, OAuth2Config};
-    pub use crate::api_key::ApiKeyAuthProvider;
     pub use crate::oauth_store::InMemoryOAuthStore;
     pub use crate::port::{
         AuthProvider, AuthScheme, AuthToken, BearerToken, Credential, RbacPort, Session,
