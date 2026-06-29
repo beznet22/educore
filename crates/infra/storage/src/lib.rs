@@ -15,6 +15,9 @@
 /// Change-stream / snapshot / cursor wire types.
 pub mod change_stream;
 
+/// The `StorageError` port-level error type.
+pub mod error;
+
 /// The `AuditLog` sub-port.
 pub mod audit;
 
@@ -47,6 +50,7 @@ pub use change_stream::{
     AggregateTypeFilter, ChangeEvent, ChangeFilter, ChangeStream, MigrationReport, SchoolSnapshot,
     SerializedChangeEvent, SnapshotAggregate, VersionCursor,
 };
+pub use error::StorageError;
 pub use event_log::{EventLog, EventLogEntry, EventLogFilter};
 pub use idempotency::{
     Idempotency, IdempotencyCompositeKey, IdempotencyOutcome, IdempotencyRecord,

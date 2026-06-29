@@ -19,6 +19,11 @@
 //!   [`retention::RetentionSweeper`] threshold checker.
 //! - [`events`] — the [`events::RetentionSweepDue`] event emitted
 //!   when the retention policy is reached.
+//! - [`redactor`] — the [`redactor::Redactor`] port trait,
+//!   [`redactor::RedactionKind`] enum, and the
+//!   [`redactor::DefaultRedactor`] regex/keyword-based
+//!   implementation. Wired into the audit writer in a later
+//!   phase; ships as a standalone module for now.
 //! - [`errors`] — the [`errors::AuditError`] re-export
 //!   (alias for [`educore_core::error::DomainError`]).
 //!
@@ -54,6 +59,10 @@ pub mod query;
 /// The retention policy and threshold checker.
 pub mod retention;
 
+/// The PII / secret redactor port trait, the [`redactor::RedactionKind`]
+/// enum, and the [`redactor::DefaultRedactor`] implementation.
+pub mod redactor;
+
 /// The [`writer::AuditWriter`] service and the typed action / target enums.
 pub mod writer;
 
@@ -76,6 +85,7 @@ pub mod prelude {
         ActorType, AuditFilter, AuditId, AuditQuery, AuditRecord, AuditSource, CommandId, Page,
         ResourceId, ResourceType, MAX_PAGE_LIMIT,
     };
+    pub use crate::redactor::{DefaultRedactor, RedactionKind, Redactor};
     pub use crate::retention::{RetentionPolicy, RetentionSweeper};
     pub use crate::writer::{AuditAction, AuditTarget, AuditWriter, SENTINEL_TARGET_ID};
     pub use educore_storage::AuditLogEntry;
