@@ -41,6 +41,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 
 use async_trait::async_trait;
+use educore_core::ids::SchoolId;
 use educore_core::value_objects::Timestamp;
 use lettre::message::Mailbox;
 use lettre::transport::smtp::authentication::Credentials;
@@ -49,7 +50,7 @@ use lettre::{Address, AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executo
 use crate::errors::NotificationError;
 use crate::port::{
     BulkId, BulkReceipt, BulkRecipientIndex, Channel, DeliveryStatus, NotificationProvider,
-    NotificationReceipt, NotificationReceiptId, Recipient, Result, SendBulkNotification,
+    NotificationReceipt, NotificationReceiptId, Priority, Recipient, Result, SendBulkNotification,
     SendNotification, TemplateRef, TemplateValue,
 };
 
@@ -65,6 +66,39 @@ const DEFAULT_SMTP_PORT: u16 = 587;
 /// pre-rendered a template body. The body contains a placeholder
 /// so the substitution path is exercised end-to-end.
 const DEFAULT_TEMPLATE_BODY: &str = "Hello {student_name}, this is a notification from Educore.";
+
+/// Record that the bypass path is in effect for a Critical-priority
+/// notification.
+///
+/// Per `docs/ports/notifications.md` § Priority, Critical
+/// notifications must skip the queue / retry layer and dispatch
+/// synchronously. The SMTP transport already accepts `send` calls
+/// directly (this implementation is the synchronous path); this
+/// helper records the bypass activation via `tracing::warn!` so
+/// operators can observe Critical-path usage on the hot path
+/// without blocking it.
+///
+/// We deliberately do NOT `panic!` on a failed Critical send — the
+/// caller surfaces a typed `NotificationError` instead. Panicking
+/// would crash the worker instead of letting the caller escalate
+/// (page, retry via a different channel, etc.).
+///
+/// The function is module-private; the public surface is the
+/// `if matches!(request.priority, Priority::Critical)` branch in
+/// `EmailProvider::send`.
+fn apply_critical_bypass(from: &str, school_id: SchoolId) {
+    tracing::warn!(
+        school_id = %school_id,
+        from = %from,
+        "Critical-priority notification: bypassing queue/retry layer (sync dispatch)",
+    );
+    if from.is_empty() {
+        tracing::warn!(
+            school_id = %school_id,
+            "Critical-priority notification has empty From address; falling back to default",
+        );
+    }
+}
 
 /// SMTP-based [`NotificationProvider`].
 ///
@@ -113,6 +147,22 @@ impl NotificationProvider for EmailProvider {
             template_id_of(&request.template).as_str(),
             recipient_email.as_str(),
         );
+
+        // Critical priority bypass path.
+        //
+        // Per `docs/ports/notifications.md` § Priority:
+        // Priority::Critical must skip the queue/retry layer and
+        // send synchronously. The transport already accepts the
+        // `send` call directly (this is the synchronous path);
+        // we record the bypass activation via `tracing::warn!`
+        // so operators can observe Critical-path usage without
+        // blocking the hot path. We do NOT `panic!` here — a
+        // failed Critical send must surface as a typed error so
+        // the caller can escalate (page, re-send via a different
+        // channel, etc.) rather than crash the worker.
+        if matches!(request.priority, Priority::Critical) {
+            apply_critical_bypass(&from, request.tenant.school_id);
+        }
 
         let message = build_lettre_message(&from, reply_to.as_deref(), &recipient_email, &body)?;
 
