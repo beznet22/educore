@@ -537,6 +537,7 @@ impl JwtAuthProvider {
     /// [`Credential::Anonymous`]. Issued against the platform
     /// school with the [`educore_core::ids::SYSTEM_USER_ID`]
     /// actor and the configured access TTL.
+    #[allow(dead_code)] // Reserved for Credential::Anonymous path; see FND-SEC-AUTH-001
     fn anonymous_session(&self) -> Session {
         let now = Timestamp::now();
         let exp = Timestamp::from_datetime(
