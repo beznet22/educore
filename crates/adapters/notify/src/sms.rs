@@ -37,13 +37,14 @@ use educore_core::value_objects::Timestamp;
 use crate::errors::{NotificationError, NotificationTemplateId};
 use crate::port::{
     BulkId, BulkReceipt, BulkRecipient, BulkRecipientIndex, Channel, DeliveryStatus,
-    NotificationProvider, NotificationReceipt, NotificationReceiptId, PhoneNumber, Recipient,
-    SendBulkNotification, SendNotification,
+    NotificationProvider, NotificationReceipt, NotificationReceiptId, PhoneNumber, Priority,
+    Recipient, SendBulkNotification, SendNotification,
 };
 // The port exposes a `Result<T>` type alias for
 // `std::result::Result<T, NotificationError>`. Bring it into
 // scope so the trait method signatures read naturally.
 use crate::port::Result;
+use crate::services::{emit_notification_sent, recipient_label, NotificationSent};
 
 /// The default SMS gateway URL. Twilio's `Messages` endpoint with
 /// `{account}` placeholder; the provider substitutes the configured
@@ -380,7 +381,7 @@ impl NotificationProvider for SmsProvider {
         }
 
         let bulk_id = BulkId::new(generate_id("bulk")?);
-        let mut receipt = BulkReceipt::new(bulk_id);
+        let mut receipt = BulkReceipt::new(bulk_id.clone());
 
         // Honor the per-request SMS bulk batch size from
         // `docs/ports/notifications.md` (100 per request).
@@ -399,7 +400,24 @@ impl NotificationProvider for SmsProvider {
                 })?);
                 let single = build_single_from_bulk(&request, row);
                 match self.dispatch(&single).await {
-                    Ok(r) => receipt.receipts.push(r),
+                    Ok(r) => {
+                        // Per `docs/ports/notifications.md` §
+                        // "Bulk Send", emit one `NotificationSent`
+                        // per successful recipient so downstream
+                        // consumers (audit log, cost reporting,
+                        // in-app inbox) can correlate per-row
+                        // events with the parent bulk envelope.
+                        let event = NotificationSent::new(
+                            recipient_label(&row.recipient),
+                            request.channel.clone(),
+                            request.priority,
+                            bulk_id.clone(),
+                            request.school_id,
+                            r.sent_at,
+                        );
+                        let _ = emit_notification_sent(&event);
+                        receipt.receipts.push(r);
+                    }
                     Err(e) => receipt.failed.push((index, e)),
                 }
                 // `offset` is reserved for any future

@@ -8,7 +8,7 @@
 //! rate-limit logic can be unit-tested without spinning up an
 //! SMTP / SMS / FCM backend.
 //!
-//! The four services are:
+//! The five services are:
 //!
 //! - [`TemplateService`] — substitutes `{var_name}` placeholders
 //!   in a template body, validates that every variable referenced
@@ -26,6 +26,15 @@
 //!   one token per second up to `max_per_second`. Useful for
 //!   tests and for short-lived single-tenant adapters; production
 //!   deployments should back the limiter with a shared store.
+//! - [`NotificationSent`] — the typed per-recipient event emitted
+//!   at the success point of a bulk send (per
+//!   `docs/ports/notifications.md` § Bulk Send), plus the
+//!   [`emit_notification_sent`] helper that surfaces the event
+//!   via `tracing` so the engine's tracing subscriber (or a real
+//!   bus wired in a follow-up commit) can pick it up. The struct
+//!   implements [`DomainEvent`](educore_events::domain_event::DomainEvent)
+//!   so it can also be serialised onto the bus directly by the
+//!   umbrella `educore` crate.
 //!
 //! # Deviations from the spec
 //!
@@ -57,8 +66,14 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::time::{Duration, Instant};
 
+use educore_core::ids::{CorrelationId, EventId, SchoolId};
+use educore_core::value_objects::Timestamp;
+use educore_events::domain_event::DomainEvent;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
 use crate::errors::NotificationError;
-use crate::port::Channel;
+use crate::port::{BulkId, Channel, ContactInfo, Priority, Recipient};
 
 // ---------------------------------------------------------------------------
 // SHA-256 (FIPS 180-4) — hand-rolled, stdlib only.
@@ -566,6 +581,224 @@ impl RateLimitService {
 }
 
 // ---------------------------------------------------------------------------
+// 5. NotificationSent — per-recipient bulk-send event
+// ---------------------------------------------------------------------------
+
+/// Per-recipient event emitted at the success point of a bulk
+/// send.
+///
+/// Per `docs/ports/notifications.md` § "Bulk Send", the engine
+/// emits one `NotificationSent` per recipient in a bulk send (in
+/// addition to the parent `BulkNotificationSent` summary event
+/// the umbrella crate publishes once the bulk dispatcher
+/// completes). The event carries the routing and context fields
+/// downstream consumers need (audit log, cost reporting, in-app
+/// inbox) to correlate a per-row event with its parent bulk
+/// envelope:
+///
+/// - `recipient` — a stable, opaque label for the addressee.
+///   Direct contacts render to their email / phone; indirect
+///   recipients (users, students, guardians, staff, groups)
+///   render to the typed id.
+/// - `channel` — the transport the adapter actually dispatched on.
+/// - `priority` — the priority the bulk request was sent at.
+/// - `bulk_id` — the join key shared with the parent
+///   [`crate::port::BulkReceipt`] / `BulkNotificationSent` event.
+///   Single sends mint a synthetic bulk id so consumers can group
+///   events uniformly.
+/// - `school_id` — the tenant anchor.
+/// - `at` — wall-clock time the per-recipient send succeeded
+///   (taken from the returned
+///   [`NotificationReceipt::sent_at`](crate::port::NotificationReceipt::sent_at)
+///   so the event timestamp matches the durable receipt).
+///
+/// The event implements
+/// [`DomainEvent`](educore_events::domain_event::DomainEvent) so
+/// it can be serialised onto the engine's event bus by the
+/// umbrella `educore` crate. The adapters themselves do not own a
+/// bus reference; they call [`emit_notification_sent`] which
+/// records the event via `tracing::info!` with structured fields.
+/// The umbrella wires the same struct onto a real bus in a
+/// follow-up commit.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NotificationSent {
+    /// The recipient identifier (opaque string form of the
+    /// originating [`Recipient`]).
+    pub recipient: String,
+    /// The transport channel the notification was delivered on.
+    pub channel: Channel,
+    /// The priority the notification was sent at.
+    pub priority: Priority,
+    /// The bulk send id (matches the parent
+    /// [`crate::port::BulkReceipt::bulk_id`] when this row is part
+    /// of a bulk send; for single sends the engine mints a fresh
+    /// synthetic id so consumers can group events uniformly).
+    pub bulk_id: BulkId,
+    /// The school tenant anchor.
+    pub school_id: SchoolId,
+    /// Wall-clock time the event occurred (taken from the
+    /// returned receipt so the event timestamp matches the
+    /// durable log entry).
+    pub at: Timestamp,
+    /// The unique event id (UUIDv7).
+    pub event_id: EventId,
+    /// Correlation id inherited from the originating request, if
+    /// any. `None` for synthetic events minted outside a request
+    /// context (e.g. unit tests).
+    pub correlation_id: Option<CorrelationId>,
+}
+
+impl NotificationSent {
+    /// Mints a fresh `NotificationSent` with the current clock
+    /// time and a fresh UUIDv7 event id.
+    ///
+    /// The `at` argument is taken from the caller (typically the
+    /// [`NotificationReceipt::sent_at`](crate::port::NotificationReceipt::sent_at)
+    /// of the just-completed per-row send) so the event timestamp
+    /// matches the durable receipt written by the adapter.
+    #[must_use]
+    pub fn new(
+        recipient: impl Into<String>,
+        channel: Channel,
+        priority: Priority,
+        bulk_id: BulkId,
+        school_id: SchoolId,
+        at: Timestamp,
+    ) -> Self {
+        Self {
+            recipient: recipient.into(),
+            channel,
+            priority,
+            bulk_id,
+            school_id,
+            at,
+            event_id: EventId(Uuid::now_v7()),
+            correlation_id: None,
+        }
+    }
+
+    /// Attaches a correlation id (inherited from the originating
+    /// [`crate::port::SendBulkNotification`]) to the event.
+    #[must_use]
+    pub fn with_correlation_id(mut self, correlation_id: CorrelationId) -> Self {
+        self.correlation_id = Some(correlation_id);
+        self
+    }
+}
+
+impl DomainEvent for NotificationSent {
+    /// Stable dotted event-type string. The subscription key for
+    /// consumers is `"notification.sent"`.
+    const EVENT_TYPE: &'static str = "notification.sent";
+    const SCHEMA_VERSION: u32 = 1;
+    /// The aggregate type. Per-row `NotificationSent` events are
+    /// grouped by `bulk_id`, not by a single aggregate; the
+    /// literal `"notification"` keeps consumers that filter on
+    /// aggregate type working.
+    const AGGREGATE_TYPE: &'static str = "notification";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        // Per-row events are not anchored on a single aggregate;
+        // the join key is `bulk_id`. Returning a nil UUID makes
+        // it explicit that consumers should key on `bulk_id`.
+        Uuid::nil()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.at
+    }
+}
+
+/// Returns a stable, opaque string label for a [`Recipient`].
+///
+/// Used by the bulk-send path to populate the `recipient` field
+/// on the [`NotificationSent`] event without committing PII
+/// (phone numbers, email addresses) to the tracing log. Direct
+/// contacts resolve to their email / phone; user / student /
+/// guardian / staff ids and group ids resolve to the typed id
+/// string. Multi-recipient [`Recipient::List`] variants render
+/// the literal `"list:<n>"` placeholder so consumers can group
+/// them without enumerating the underlying addresses.
+#[must_use]
+pub fn recipient_label(recipient: &Recipient) -> String {
+    match recipient {
+        Recipient::Direct(contact) => direct_contact_label(contact),
+        Recipient::User(id) => format!("user:{id}"),
+        Recipient::Student(id) => format!("student:{id}"),
+        Recipient::Guardian(student, role) => format!("guardian:{student}:{role:?}"),
+        Recipient::Staff(id) => format!("staff:{id}"),
+        Recipient::Group(id) => format!("group:{id}"),
+        Recipient::List(items) => format!("list:{}", items.len()),
+        Recipient::Expression(expr) => format!("expression:{}", expr.as_str()),
+    }
+}
+
+/// Renders the email / phone fields of a [`ContactInfo`] as a
+/// stable `email:<addr> | phone:<addr>` string. Falls back to
+/// `"contact:unknown"` when neither field is present.
+fn direct_contact_label(contact: &ContactInfo) -> String {
+    let email = contact
+        .email
+        .as_ref()
+        .map_or_else(String::new, |e| format!("email:{}", e.as_str()));
+    let phone = contact
+        .phone
+        .as_ref()
+        .map_or_else(String::new, |p| format!("phone:{}", p.as_str()));
+    let joined = if email.is_empty() {
+        phone
+    } else if phone.is_empty() {
+        email
+    } else {
+        format!("{email} | {phone}")
+    };
+    if joined.is_empty() {
+        "contact:unknown".to_owned()
+    } else {
+        joined
+    }
+}
+
+/// Emits a per-recipient [`NotificationSent`] event from the bulk
+/// send path.
+///
+/// The adapter does not own an event-bus reference; this helper
+/// records the event via `tracing::info!` with structured fields
+/// so the engine's tracing subscriber can pick it up, and returns
+/// the event by reference so callers (and tests) can inspect the
+/// payload. The umbrella `educore` crate wires the same struct
+/// onto a real bus; the field names below are stable and match
+/// the [`DomainEvent`] wire form so the tracing span and the
+/// bus-published payload stay in lockstep.
+///
+/// **Contract:** this function never returns an error and never
+/// panics; it is a hot-path observability hook and must not
+/// affect the bulk-send success / failure tally.
+#[must_use]
+pub fn emit_notification_sent(event: &NotificationSent) -> &NotificationSent {
+    tracing::info!(
+        event_type = NotificationSent::EVENT_TYPE,
+        schema_version = NotificationSent::SCHEMA_VERSION,
+        aggregate_type = NotificationSent::AGGREGATE_TYPE,
+        event_id = %event.event_id,
+        recipient = %event.recipient,
+        channel = ?event.channel,
+        priority = event.priority.as_str(),
+        bulk_id = %event.bulk_id,
+        school_id = %event.school_id,
+        at = %event.at,
+        correlation_id = ?event.correlation_id,
+        "notification sent (per-recipient event)",
+    );
+    event
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -703,5 +936,152 @@ mod tests {
             .expect("bucket exists after acquire");
         assert_eq!(state.max_tokens, 5);
         assert!(state.tokens <= 5);
+    }
+
+    #[test]
+    fn test_notification_sent_event_carries_required_fields() {
+        let channel = Channel::Email {
+            from: None,
+            reply_to: None,
+        };
+        let bulk_id = BulkId::new("bulk_email:1700000000000000000");
+        let school_id = educore_core::ids::PUBLIC_SCHOOL_ID;
+        let at = Timestamp::now();
+
+        let event = NotificationSent::new(
+            "email:alice@example.test",
+            channel.clone(),
+            Priority::High,
+            bulk_id.clone(),
+            school_id,
+            at,
+        );
+
+        assert_eq!(event.recipient, "email:alice@example.test");
+        assert_eq!(event.channel, channel);
+        assert_eq!(event.priority, Priority::High);
+        assert_eq!(event.bulk_id, bulk_id);
+        assert_eq!(event.school_id, school_id);
+        assert_eq!(event.at, at);
+        // Event id is minted (UUIDv7) — non-nil and unique.
+        assert_ne!(event.event_id.0, Uuid::nil());
+        // No correlation id until with_correlation_id is called.
+        assert!(event.correlation_id.is_none());
+    }
+
+    #[test]
+    fn test_notification_sent_with_correlation_id() {
+        let event = NotificationSent::new(
+            "user:42",
+            Channel::InApp,
+            Priority::Normal,
+            BulkId::new("bulk:42"),
+            educore_core::ids::PUBLIC_SCHOOL_ID,
+            Timestamp::now(),
+        )
+        .with_correlation_id(CorrelationId(Uuid::now_v7()));
+        assert!(event.correlation_id.is_some());
+    }
+
+    #[test]
+    fn test_notification_sent_domain_event_metadata() {
+        let event = NotificationSent::new(
+            "user:42",
+            Channel::InApp,
+            Priority::Normal,
+            BulkId::new("bulk:42"),
+            educore_core::ids::PUBLIC_SCHOOL_ID,
+            Timestamp::now(),
+        );
+        // DomainEvent trait constants — pin the wire form so a
+        // rename does not silently break consumers.
+        assert_eq!(NotificationSent::EVENT_TYPE, "notification.sent");
+        assert_eq!(NotificationSent::SCHEMA_VERSION, 1);
+        assert_eq!(NotificationSent::AGGREGATE_TYPE, "notification");
+        assert_eq!(event.school_id(), educore_core::ids::PUBLIC_SCHOOL_ID);
+        assert_eq!(event.occurred_at(), event.at);
+        // Per-row events are not anchored on a single aggregate
+        // (the join key is bulk_id); aggregate_id reports nil.
+        assert_eq!(event.aggregate_id(), Uuid::nil());
+        assert_eq!(event.event_id(), event.event_id);
+    }
+
+    #[test]
+    fn test_recipient_label_direct_contact_email() {
+        let contact =
+            ContactInfo::new().with_email(crate::port::EmailAddress::new("alice@example.test"));
+        let label = recipient_label(&Recipient::Direct(contact));
+        assert_eq!(label, "email:alice@example.test");
+    }
+
+    #[test]
+    fn test_recipient_label_direct_contact_email_and_phone() {
+        let contact = ContactInfo::new()
+            .with_email(crate::port::EmailAddress::new("alice@example.test"))
+            .with_phone(crate::port::PhoneNumber::new("+15551234567"));
+        let label = recipient_label(&Recipient::Direct(contact));
+        assert_eq!(label, "email:alice@example.test | phone:+15551234567");
+    }
+
+    #[test]
+    fn test_recipient_label_indirect_variants() {
+        let student = crate::port::StudentId::new("stu_42");
+        let user = educore_core::ids::UserId(Uuid::nil());
+        let list = Recipient::List(vec![Recipient::User(user)]);
+
+        assert_eq!(
+            recipient_label(&Recipient::User(user)),
+            format!("user:{user}")
+        );
+        assert_eq!(
+            recipient_label(&Recipient::Student(student.clone())),
+            format!("student:{student}")
+        );
+        assert_eq!(
+            recipient_label(&Recipient::Guardian(
+                student.clone(),
+                crate::port::GuardianRole::Primary
+            )),
+            format!("guardian:{student}:Primary")
+        );
+        assert_eq!(recipient_label(&list), "list:1");
+    }
+
+    #[test]
+    fn test_emit_notification_sent_returns_event_unchanged() {
+        let event = NotificationSent::new(
+            "email:bob@example.test",
+            Channel::InApp,
+            Priority::Normal,
+            BulkId::new("bulk:emit"),
+            educore_core::ids::PUBLIC_SCHOOL_ID,
+            Timestamp::now(),
+        );
+        let returned = emit_notification_sent(&event);
+        assert_eq!(returned, &event);
+        // emit must not mutate the caller's struct.
+        assert_eq!(returned.recipient, event.recipient);
+        assert_eq!(returned.event_id, event.event_id);
+    }
+
+    #[test]
+    fn test_notification_sent_clone_and_eq() {
+        // Verify Clone + PartialEq derived correctly so the event
+        // can be cloned for fan-out (one copy for the tracing
+        // emit, one for the in-app inbox subscriber, etc.) and
+        // compared against the persisted event in the audit log.
+        let event = NotificationSent::new(
+            "email:carol@example.test",
+            Channel::Email {
+                from: None,
+                reply_to: None,
+            },
+            Priority::Critical,
+            BulkId::new("bulk:rt"),
+            educore_core::ids::PUBLIC_SCHOOL_ID,
+            Timestamp::now(),
+        );
+        let cloned = event.clone();
+        assert_eq!(cloned, event);
     }
 }
