@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 177 |
+| Done (`[x]`) | 179 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 296 |
-| Last update | 2026-06-29 05:09 UTC |
+| Open (`[ ]`) | 294 |
+| Last update | 2026-06-29 05:28 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -296,7 +296,7 @@
       **Source:** Cluster B
       **Check:** `file-exists:crates/domains/academic/tests/workflows.rs` → _workflows.rs exists_
 
-- [ ] **E-4** Saga / compensating actions for multi-step workflows
+- [x] **E-4** Saga / compensating actions for multi-step workflows
       **Source:** wave7-workflows.md WF-006
       **Check:** `file:crates/cross-cutting/sync/src/lib.rs regex:compensat` → _lib.rs:compensat_
 
@@ -454,7 +454,7 @@
       **Source:** docs/ports/notifications.md § Bulk Send
       **Check:** `file:crates/adapters/notify/src/services.rs regex:NotificationSent` → _services.rs:NotificationSent_
 
-- [ ] **X-CUT-WF-COMPENSATE** Saga / compensating action library not implemented (E-4)
+- [x] **X-CUT-WF-COMPENSATE** Saga / compensating action library not implemented (E-4)
       **Source:** roadmap E-4
       **Check:** `file:crates/cross-cutting/sync/src/lib.rs regex:compensat` → _lib.rs:compensat_
 
