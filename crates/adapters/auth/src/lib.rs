@@ -41,6 +41,19 @@ pub mod jwt;
 /// [`saml::SamlAuthProvider`] for the implementation gap.
 pub mod saml;
 
+/// OAuth 2.0 / OpenID Connect [`port::AuthProvider`] reference
+/// implementation.
+///
+/// Standards-compliant authorization-code + PKCE integration
+/// (Google, Microsoft Entra ID, Auth0, Okta CIC, GitHub,
+/// Keycloak, ...). Delegates token validation, refresh, and
+/// revocation to [`jwt::JwtAuthProvider`] so the post-callback
+/// session is surfaced as a uniform `Authorization: Bearer ...`
+/// JWT. Full authorization-code exchange against `token_endpoint`,
+/// JWKS fetch, and PKCE helpers land in a later phase; see
+/// [`oauth2::OAuth2AuthProvider`] for the implementation gap.
+pub mod oauth2;
+
 /// In-memory reference implementation of the four port-driven
 /// OAuth-related repository traits declared in
 /// [`educore_operations::repository`](educore_operations::repository):
@@ -78,6 +91,7 @@ pub mod rate_limit;
 pub mod prelude {
     pub use crate::errors::AuthError;
     pub use crate::jwt::{JwtAuthProvider, JwtAuthProviderBuilder, JwtClaims, JwtSecretSource};
+    pub use crate::oauth2::{OAuth2AuthProvider, OAuth2Config};
     pub use crate::oauth_store::InMemoryOAuthStore;
     pub use crate::port::{
         AuthProvider, AuthScheme, AuthToken, BearerToken, Credential, RbacPort, Session,
