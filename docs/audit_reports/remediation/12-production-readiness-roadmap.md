@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 171 |
+| Done (`[x]`) | 174 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 302 |
-| Last update | 2026-06-29 04:13 UTC |
+| Open (`[ ]`) | 299 |
+| Last update | 2026-06-29 04:40 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -386,11 +386,11 @@
       **Source:** docs/ports/payments.md § Error Type
       **Check:** `file:crates/adapters/payment/src/stripe.rs regex:ThreeDS` → _stripe.rs:ThreeDS_
 
-- [ ] **PORT-FILE-LIFECYCLE** Lifecycle-rule config port (Hot→Cool→Archive→expire) not implemented
+- [x] **PORT-FILE-LIFECYCLE** Lifecycle-rule config port (Hot→Cool→Archive→expire) not implemented
       **Source:** docs/ports/file-storage.md § Lifecycle Rules
-      **Check:** `file-exists:crates/adapters/files/src/lifecycle.rs` → _lifecycle.rs missing_
+      **Check:** `file-exists:crates/adapters/files/src/lifecycle.rs` → _lifecycle.rs exists_
 
-- [ ] **PORT-FILE-OFFLINE-CACHE** Offline-mode local URI on FileReference not implemented
+- [x] **PORT-FILE-OFFLINE-CACHE** Offline-mode local URI on FileReference not implemented
       **Source:** docs/ports/file-storage.md § Offline Mode
       **Check:** `file:crates/adapters/files/src/local.rs regex:local://` → _local.rs:local://_
 
@@ -450,7 +450,7 @@
       **Source:** crates/cross-cutting/events/src/relay.rs
       **Check:** `file:crates/cross-cutting/events/src/relay.rs regex:school_id` → _relay.rs:school_id_
 
-- [ ] **X-CUT-NOTIFY-BULK-EVENT** Per-recipient NotificationSent event emission not wired for bulk send
+- [x] **X-CUT-NOTIFY-BULK-EVENT** Per-recipient NotificationSent event emission not wired for bulk send
       **Source:** docs/ports/notifications.md § Bulk Send
       **Check:** `file:crates/adapters/notify/src/services.rs regex:NotificationSent` → _services.rs:NotificationSent_
 
