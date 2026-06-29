@@ -26,7 +26,7 @@
 | Done (`[x]`) | 166 |
 | In-progress (`[~]`) | 12 |
 | Open (`[ ]`) | 307 |
-| Last update | 2026-06-29 03:23 UTC |
+| Last update | 2026-06-29 03:39 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -84,9 +84,9 @@
       **Source:** docs/audit_reports/findings/wave1-lint.md
       **Check:** `cmd:cargo clippy -p educore-core --lib -- -D warnings` → _exit 0_
 
-- [x] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
+- [ ] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave5-docs-1.md
-      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 0_
+      **Check:** `cmd:cargo clippy -p educore-auth --all-targets -- -D warnings` → _exit 101_
 
 - [x] **D-10** Resolved — Sync feature flag added to educore umbrella. Closed 2026-06-25.
       **Source:** ADR-018 § 4, crates/educore/Cargo.toml
@@ -418,9 +418,9 @@
       **Source:** docs/schemas/audit-schema.md § 8.4
       **Check:** `file:crates/cross-cutting/platform/src/commands.rs regex:GenerateRegulatorAuditC...` → _commands.rs:GenerateRegulatorAuditCommand_
 
-- [ ] **SCHEMA-EVENTLOG-RETENTION** event_log has no retention sweeper (compare with audit RetentionSweepDue)
+- [x] **SCHEMA-EVENTLOG-RETENTION** event_log has no retention sweeper (compare with audit RetentionSweepDue)
       **Source:** docs/schemas/event-schema.md § 9
-      **Check:** `file:crates/cross-cutting/audit/src/retention.rs regex:event_log` → _retention.rs:event_log_
+      **Check:** `file:crates/cross-cutting/events/src/event_retention.rs regex:event_log` → _event_retention.rs:event_log_
 
 - [ ] **SCHEMA-CMD-ASYNC** Async command handle (CommandHandle / engine.commands.status) not implemented
       **Source:** docs/schemas/command-schema.md § 13

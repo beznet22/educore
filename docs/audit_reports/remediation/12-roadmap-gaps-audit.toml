@@ -665,7 +665,7 @@ priority = "P2"
 area = "SCHEMA"
 description = "event_log has no retention sweeper (compare with audit RetentionSweepDue)"
 source = "docs/schemas/event-schema.md § 9"
-check = "file:crates/cross-cutting/audit/src/retention.rs regex:event_log"
+check = "file:crates/cross-cutting/events/src/event_retention.rs regex:event_log"
 
 [[item]]
 id = "SCHEMA-CMD-ASYNC"
