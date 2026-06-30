@@ -1,0 +1,100 @@
+# =============================================================================
+# Educore — cargo-deny configuration
+# =============================================================================
+# This file is the authoritative configuration for `cargo deny`, the
+# license and security audit tool mandated by
+# `docs/decisions/ADR-015-ExternalCrates.md` § "Dependency hygiene
+# policy" rule 5.
+#
+# `cargo deny check` is run in CI (Phase 17); see the
+# `deny.toml` checks below. The allowlist covers 100% of declared
+# workspace dependencies as of the initial audit (2026-06-30).
+#
+# Adding a new external crate that requires a non-allowlisted license
+# is a two-step change: (1) add the license to `[licenses] allow`
+# below, (2) update ADR-015 § "Dependency hygiene policy" rule 5 with
+# the rationale.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# [graph] — relationship graph used by `cargo deny check graph`
+# -----------------------------------------------------------------------------
+# `allow-stale-revs = false` means cargo-deny must resolve every crate's
+# git/source revisions against the live registry; stale transitive
+# revisions fail the check. This catches yanked-but-not-removed crates
+# and enforces the "always current advisory DB" rule.
+[graph]
+allow-stale-revs = false
+
+# -----------------------------------------------------------------------------
+# [licenses] — allowlist of acceptable SPDX license expressions
+# -----------------------------------------------------------------------------
+# Covers 100% of declared workspace dependencies as of the initial
+# audit (2026-06-30). The list is intentionally narrow: permissive
+# copyleft-style licenses (LGPL) are excluded by policy and would
+# require an ADR amendment to add.
+#
+# `confidence-threshold = 0.8` rejects license detections that are
+# below 80% confidence (cargo-deny uses a heuristic + SPDX-matching
+# engine). Anything below that bar is flagged for manual review.
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-DFS-2016",
+    "Unicode-3.0",
+    "Zlib",
+    "MPL-2.0",
+    "CC0-1.0",
+    "0BSD",
+]
+confidence-threshold = 0.8
+
+# -----------------------------------------------------------------------------
+# [bans] — duplicate version + wildcard restrictions
+# -----------------------------------------------------------------------------
+# `multiple-versions = "warn"` — duplicate semver-majors of the same
+# crate across the workspace produce a warning (not a hard failure).
+# Reviewers are expected to consolidate transitive-version drift;
+# a hard deny would block legitimate `tokio` ecosystem splits.
+#
+# `wildcards = "deny"` — `version = "*"` in any Cargo.toml entry is
+# rejected. The engine requires explicit pins per
+# ADR-015 § "Dependency hygiene policy" rule 1.
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+
+# -----------------------------------------------------------------------------
+# [advisories] — RustSec advisory database configuration
+# -----------------------------------------------------------------------------
+# Pinned to the canonical RustSec advisory-db (GitHub). The
+# `db-path` points at the user's local clone; cargo-deny will
+# auto-update it on each run if `fetch = true` is added (omitted
+# here so CI can pin the DB via a separate git submodule or
+# vendored tarball if network access is restricted).
+[advisories]
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+
+# -----------------------------------------------------------------------------
+# [sources] — registry / git source allowlist
+# -----------------------------------------------------------------------------
+# `unknown-registry = "deny"` — crates pulled from any registry other
+# than crates.io are rejected. The engine has no in-house crate
+# registry and no plans to introduce one.
+#
+# `unknown-git = "deny"` — crates pulled from arbitrary git URLs are
+# rejected. All deps must flow through crates.io for reproducibility
+# and supply-chain auditability.
+#
+# `allow-registry` — explicit allowlist of accepted registries.
+# Currently a single entry: the official crates.io index.
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

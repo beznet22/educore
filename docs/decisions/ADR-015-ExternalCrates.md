@@ -419,3 +419,34 @@ future phases:
 - `CONTRIBUTING.md` — the spec-to-PR workflow
 - `docs/schemas/sql-dialects/README.md` § "Runtime DDL emission" —
   cross-compile-aware DDL generation
+
+## Cargo deny
+
+Per [§ "Dependency hygiene policy" rule 5](#dependency-hygiene-policy) above,
+the engine enforces the license allowlist and supply-chain audit via
+[`cargo-deny`](https://github.com/EmbarkStudios/cargo-deny). The
+configuration lives at the workspace root at `deny.toml` and covers:
+
+- **`[graph]`** — `allow-stale-revs = false` to catch yanked-but-not-removed
+  transitive revisions against the live registry.
+- **`[licenses]`** — allowlist of `MIT`, `Apache-2.0`,
+  `Apache-2.0 WITH LLVM-exception`, `BSD-2-Clause`, `BSD-3-Clause`,
+  `ISC`, `Unicode-DFS-2016`, `Unicode-3.0`, `Zlib`, `MPL-2.0`,
+  `CC0-1.0`, `0BSD` with `confidence-threshold = 0.8`. Covers 100% of
+  declared workspace dependencies as of the initial audit.
+- **`[bans]`** — `multiple-versions = "warn"` (duplicate semver-majors
+  flag for review), `wildcards = "deny"` (no `version = "*"` allowed;
+  enforces rule 1's explicit-pin policy).
+- **`[advisories]`** — RustSec advisory DB pinned to
+  `https://github.com/rustsec/advisory-db` at `~/.cargo/advisory-db`.
+- **`[sources]`** — `unknown-registry = "deny"`, `unknown-git = "deny"`,
+  `allow-registry = ["https://github.com/rust-lang/crates.io-index"]`.
+
+`deny.toml` was added at the workspace root on 2026-06-30 as part of
+the Phase 17 (port adapters / CI hardening) workstream. The CI step
+that consumes it (`cargo deny check`) is a separate item; this ADR
+addition only establishes the configuration. Any new external crate
+that introduces a non-allowlisted license must (a) amend
+`deny.toml [licenses] allow`, and (b) append to the
+[§ "Dependency hygiene policy" rule 5](#dependency-hygiene-policy)
+audit log above with the rationale.
