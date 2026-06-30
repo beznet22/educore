@@ -15,6 +15,62 @@ use educore_testkit::TestkitWorld;
 use crate::errors::SdkError;
 use crate::facade::{AdmissionService, AttendanceService, NotificationService, PaymentService};
 
+/// Typed accessor for student-aggregate operations.
+/// Returned by [`Engine::students`].
+#[derive(Clone)]
+pub struct StudentsAccessor {
+    /// The storage adapter (shared with the engine).
+    storage: Arc<dyn StorageAdapter>,
+    /// The event bus (shared with the engine).
+    bus: Arc<dyn EventBus>,
+}
+
+impl StudentsAccessor {
+    /// Creates a new `StudentsAccessor`.
+    #[must_use]
+    pub const fn new(storage: Arc<dyn StorageAdapter>, bus: Arc<dyn EventBus>) -> Self {
+        Self { storage, bus }
+    }
+    /// Returns a reference to the storage adapter.
+    #[must_use]
+    pub fn storage(&self) -> &Arc<dyn StorageAdapter> {
+        &self.storage
+    }
+    /// Returns a reference to the event bus.
+    #[must_use]
+    pub fn bus(&self) -> &Arc<dyn EventBus> {
+        &self.bus
+    }
+}
+
+/// Typed accessor for fees-aggregate operations.
+/// Returned by [`Engine::fees`].
+#[derive(Clone)]
+pub struct FeesAccessor {
+    /// The storage adapter (shared with the engine).
+    storage: Arc<dyn StorageAdapter>,
+    /// The event bus (shared with the engine).
+    bus: Arc<dyn EventBus>,
+}
+
+impl FeesAccessor {
+    /// Creates a new `FeesAccessor`.
+    #[must_use]
+    pub const fn new(storage: Arc<dyn StorageAdapter>, bus: Arc<dyn EventBus>) -> Self {
+        Self { storage, bus }
+    }
+    /// Returns a reference to the storage adapter.
+    #[must_use]
+    pub fn storage(&self) -> &Arc<dyn StorageAdapter> {
+        &self.storage
+    }
+    /// Returns a reference to the event bus.
+    #[must_use]
+    pub fn bus(&self) -> &Arc<dyn EventBus> {
+        &self.bus
+    }
+}
+
 /// The engine. All 6 ports are `Arc<dyn ...>` so the engine
 /// can be cheaply cloned and shared across threads.
 #[derive(Clone)]
@@ -37,6 +93,10 @@ pub struct Engine {
     clock: Arc<dyn Clock>,
     /// The id generator.
     id_gen: Arc<dyn IdGenerator>,
+    /// The students domain accessor.
+    students: StudentsAccessor,
+    /// The fees domain accessor.
+    fees: FeesAccessor,
 }
 
 impl std::fmt::Debug for Engine {
@@ -53,8 +113,11 @@ impl Engine {
     pub fn test_world() -> Self {
         let world = TestkitWorld::new();
         let bus: Arc<dyn EventBus> = world.bus.clone();
+        let storage: Arc<dyn StorageAdapter> = world.storage.clone();
+        let students = StudentsAccessor::new(storage.clone(), bus.clone());
+        let fees = FeesAccessor::new(storage.clone(), bus.clone());
         Self {
-            storage: world.storage.clone(),
+            storage,
             auth: world.auth.clone(),
             notify: world.notify.clone(),
             payment: world.payment.clone(),
@@ -63,6 +126,8 @@ impl Engine {
             bus,
             clock: Arc::new(SystemClock),
             id_gen: Arc::new(SystemIdGen),
+            students,
+            fees,
         }
     }
 
@@ -88,6 +153,22 @@ impl Engine {
     #[must_use]
     pub fn payment(&self) -> &Arc<dyn PaymentProvider> {
         &self.payment
+    }
+
+    /// Returns a reference to the students domain accessor.
+    /// Provides typed access to student-aggregate operations
+    /// (admit, promote, update profile, etc.).
+    #[must_use]
+    pub fn students(&self) -> &StudentsAccessor {
+        &self.students
+    }
+
+    /// Returns a reference to the fees domain accessor.
+    /// Provides typed access to fees-aggregate operations
+    /// (assign, collect, refund, etc.).
+    #[must_use]
+    pub fn fees(&self) -> &FeesAccessor {
+        &self.fees
     }
 
     /// Returns a reference to the file storage.
@@ -268,15 +349,17 @@ impl EngineBuilder {
         let clock = self.clock.ok_or(SdkError::MissingPort("clock"))?;
         let id_gen = self.id_gen.ok_or(SdkError::MissingPort("id_gen"))?;
         Ok(Engine {
-            storage,
+            storage: storage.clone(),
             auth,
             notify,
             payment,
             files,
             integrations,
-            bus,
+            bus: bus.clone(),
             clock,
             id_gen,
+            students: StudentsAccessor::new(storage.clone(), bus.clone()),
+            fees: FeesAccessor::new(storage, bus),
         })
     }
 }
