@@ -26,16 +26,18 @@ use educore_core::value_objects::Timestamp;
 use educore_rbac::ids::RoleId;
 
 use crate::aggregate::{
-    AssignClassTeacherScope, BulkImportJob, Department, DepartmentHead, Designation,
-    DesignationGrade, HourlyRateOverride, LeaveDefineAdjustment, LeaveRequest,
-    LeaveRequestApproval, LeaveRequestAttachment, LeaveType, PayrollGenerate, PayrollGenerateAudit,
-    PayrollPaymentLink, Staff, StaffAddress, StaffAttendanceImportBatch, StaffAttendancePunch,
-    StaffBankDetail, StaffCustomField, StaffDocument, StaffDrivingLicense, StaffImportResolution,
-    StaffLeaveBalance, StaffLeaveHistory, StaffPayrollHistory, StaffProfilePhoto,
-    StaffRegistrationFieldOption, StaffRoleAssignment, StaffSocialLink, StaffTimeline,
+    AssignClassTeacher, AssignClassTeacherScope, BulkImportJob, Department, DepartmentHead,
+    Designation, DesignationGrade, HourlyRate, HourlyRateOverride, LeaveDefineAdjustment,
+    LeaveRequest, LeaveRequestApproval, LeaveRequestAttachment, LeaveType, PayrollGenerate,
+    PayrollGenerateAudit, PayrollPaymentLink, Staff, StaffAddress, StaffAttendanceImportBatch,
+    StaffAttendancePunch, StaffBankDetail, StaffCustomField, StaffDocument, StaffDrivingLicense,
+    StaffImportResolution, StaffLeaveBalance, StaffLeaveHistory, StaffPayrollHistory,
+    StaffProfilePhoto, StaffRegistrationFieldOption, StaffRoleAssignment, StaffSocialLink,
+    StaffTimeline,
 };
 use crate::commands::{
-    AssignDepartmentHeadCommand, AssignStaffRoleCommand, CreateAssignClassTeacherScopeCommand,
+    AssignDepartmentHeadCommand, AssignStaffRoleCommand, AssignSubjectTeacherCommand,
+    CreateAssignClassTeacherScopeCommand,
     CreateBulkImportJobCommand, CreateDesignationGradeCommand, CreateLeaveDefineAdjustmentCommand,
     CreateLeaveRequestAttachmentCommand, CreatePayrollPaymentLinkCommand,
     CreateStaffAddressCommand, CreateStaffAttendanceImportBatchCommand,
@@ -1291,6 +1293,189 @@ where
     Ok((agg, event))
 }
 
+// =============================================================================
+// Class Teacher Assignment
+// =============================================================================
+
+/// "Class Teacher Assignment" workflow service.
+///
+/// Manages the per-class, per-section, per-academic-year
+/// class-teacher assignment (one active staff per
+/// class-section-academic-year). Backed by
+/// [`AssignClassTeacher`] aggregates; this service exposes
+/// the lookup helpers the dispatcher uses to enforce
+/// uniqueness before writing a new assignment.
+pub struct ClassTeacherAssignmentService;
+
+impl ClassTeacherAssignmentService {
+    /// Returns `true` if `staff_id` is the active class teacher
+    /// for the given (class, section, academic-year)
+    /// combination.
+    #[must_use]
+    pub fn is_assigned(
+        assignments: &[AssignClassTeacher],
+        class_id: crate::value_objects::ClassId,
+        section_id: crate::value_objects::SectionId,
+        staff_id: StaffId,
+        academic_id: crate::value_objects::AcademicYearId,
+    ) -> bool {
+        assignments.iter().any(|a| {
+            a.active_status == 1
+                && a.class_id == class_id
+                && a.section_id == section_id
+                && a.staff_id == staff_id
+                && a.academic_id == academic_id
+        })
+    }
+
+    /// Returns the currently active class-teacher assignment
+    /// for the given class-section-academic-year, if any.
+    #[must_use]
+    pub fn current_for_class(
+        assignments: &[AssignClassTeacher],
+        class_id: crate::value_objects::ClassId,
+        section_id: crate::value_objects::SectionId,
+        academic_id: crate::value_objects::AcademicYearId,
+    ) -> Option<&AssignClassTeacher> {
+        assignments.iter().find(|a| {
+            a.active_status == 1
+                && a.class_id == class_id
+                && a.section_id == section_id
+                && a.academic_id == academic_id
+        })
+    }
+
+    /// Returns `true` if `class_id`/`section_id` already has an
+    /// active class teacher in the given academic year. Used
+    /// by the dispatcher to detect a conflict before creating
+    /// a new assignment.
+    #[must_use]
+    pub fn has_active_teacher(
+        assignments: &[AssignClassTeacher],
+        class_id: crate::value_objects::ClassId,
+        section_id: crate::value_objects::SectionId,
+        academic_id: crate::value_objects::AcademicYearId,
+    ) -> bool {
+        Self::current_for_class(assignments, class_id, section_id, academic_id).is_some()
+    }
+
+    /// Counts the number of distinct class-teacher assignments
+    /// held by `staff_id` in `academic_id` (active + inactive).
+    #[must_use]
+    pub fn count_for_staff(
+        assignments: &[AssignClassTeacher],
+        staff_id: StaffId,
+        academic_id: crate::value_objects::AcademicYearId,
+    ) -> usize {
+        assignments
+            .iter()
+            .filter(|a| a.staff_id == staff_id && a.academic_id == academic_id)
+            .count()
+    }
+}
+
+// =============================================================================
+// Subject Teacher Assignment
+// =============================================================================
+
+/// "Subject Teacher Assignment" workflow service.
+///
+/// Manages the per-class, per-subject, per-academic-year
+/// subject-teacher assignment (one active staff per
+/// class-subject-academic-year, optionally scoped to a
+/// section). Backed by [`AssignSubjectTeacherCommand`]
+/// inputs dispatched to the subject-teacher repository.
+pub struct SubjectTeacherAssignmentService;
+
+impl SubjectTeacherAssignmentService {
+    /// Validates a [`AssignSubjectTeacherCommand`] before
+    /// dispatch. Returns `Ok(())` for a well-formed command;
+    /// returns [`DomainError::Validation`] if `staff_id`
+    /// does not belong to the tenant school.
+    pub fn validate(cmd: &AssignSubjectTeacherCommand) -> Result<()> {
+        if cmd.staff_id.school_id() != cmd.tenant.school_id {
+            return Err(DomainError::validation(
+                "staff_id does not belong to the tenant school",
+            ));
+        }
+        Ok(())
+    }
+
+    /// Returns `true` if `replacement_id` differs from
+    /// `current_id`. A "reassignment" to the same staff
+    /// member is a no-op and should be rejected by the
+    /// dispatcher.
+    #[must_use]
+    pub fn is_reassignment(current_id: StaffId, replacement_id: StaffId) -> bool {
+        current_id != replacement_id
+    }
+
+    /// Returns `true` if `class_id` and `subject_id` belong
+    /// to the same school as the tenant. Used as a pre-flight
+    /// check before dispatching an assignment.
+    #[must_use]
+    pub fn scope_matches_tenant(
+        cmd: &AssignSubjectTeacherCommand,
+        class_school: SchoolId,
+        subject_school: SchoolId,
+    ) -> bool {
+        class_school == cmd.tenant.school_id && subject_school == cmd.tenant.school_id
+    }
+}
+
+// =============================================================================
+// Hourly Rate Management
+// =============================================================================
+
+/// "Hourly Rate Management" workflow service.
+///
+/// Manages per-grade hourly rates ([`HourlyRate`] rows) and
+/// per-staff overrides ([`HourlyRateOverride`] rows). Used
+/// by the payroll service to resolve the effective hourly
+/// rate for a given (staff, grade, academic-year)
+/// combination.
+pub struct HourlyRateManagementService;
+
+impl HourlyRateManagementService {
+    /// Returns the effective hourly rate for `grade` in
+    /// `academic_id`. Returns the first active
+    /// [`HourlyRate`] row matching (grade, academic_id), or
+    /// `None` if no row is configured. Per-staff overrides
+    /// are layered on top by the payroll service at
+    /// compute time.
+    #[must_use]
+    pub fn effective_rate(
+        grade: &str,
+        academic_id: crate::value_objects::AcademicYearId,
+        rates: &[HourlyRate],
+    ) -> Option<f64> {
+        rates
+            .iter()
+            .find(|r| r.grade == grade && r.academic_id == academic_id)
+            .map(|r| r.rate)
+    }
+
+    /// Validates that `rate` is non-negative. Returns
+    /// [`DomainError::Validation`] for negative rates; the
+    /// dispatcher surfaces this as a 400 to the caller.
+    pub fn validate_rate(rate: f64) -> Result<()> {
+        if rate < 0.0 {
+            return Err(DomainError::validation(
+                "hourly rate must be non-negative",
+            ));
+        }
+        Ok(())
+    }
+
+    /// Returns `true` if `old_rate` differs from `new_rate`
+    /// by more than `epsilon`. Used by `update_rate` to
+    /// detect a no-op update before dispatch.
+    #[must_use]
+    pub fn is_rate_change(old_rate: f64, new_rate: f64, epsilon: f64) -> bool {
+        (old_rate - new_rate).abs() > epsilon
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod tests {
@@ -1472,5 +1657,137 @@ mod tests {
         let s = SchoolId(uuid::Uuid::now_v7());
         assert_eq!(policy.tax(s, 1000.0), 100.0);
         assert_eq!(policy.tax(s, 0.0), 0.0);
+    }
+
+    #[test]
+    fn class_teacher_assignment_service_detects_active_teacher() {
+        let s = SchoolId(uuid::Uuid::now_v7());
+        let class_id = crate::value_objects::ClassId::new(s, uuid::Uuid::now_v7());
+        let section_id = crate::value_objects::SectionId::new(s, uuid::Uuid::now_v7());
+        let academic_id = crate::value_objects::AcademicYearId::new(s, uuid::Uuid::now_v7());
+        let staff_id = StaffId::new(s, uuid::Uuid::now_v7());
+        let other_staff = StaffId::new(s, uuid::Uuid::now_v7());
+        let now = educore_core::value_objects::Timestamp::now();
+        let actor = UserId(uuid::Uuid::now_v7());
+        let correlation_id = CorrelationId(uuid::Uuid::now_v7());
+        let assignment = AssignClassTeacher::fresh(
+            crate::value_objects::AssignClassTeacherId::new(s, uuid::Uuid::now_v7()),
+            class_id,
+            section_id,
+            staff_id,
+            academic_id,
+            actor,
+            now,
+            correlation_id,
+        );
+        let assignments = vec![assignment];
+        assert!(ClassTeacherAssignmentService::has_active_teacher(
+            &assignments,
+            class_id,
+            section_id,
+            academic_id,
+        ));
+        assert!(ClassTeacherAssignmentService::is_assigned(
+            &assignments,
+            class_id,
+            section_id,
+            staff_id,
+            academic_id,
+        ));
+        assert!(!ClassTeacherAssignmentService::is_assigned(
+            &assignments,
+            class_id,
+            section_id,
+            other_staff,
+            academic_id,
+        ));
+        assert_eq!(
+            ClassTeacherAssignmentService::count_for_staff(&assignments, staff_id, academic_id),
+            1
+        );
+    }
+
+    #[test]
+    fn subject_teacher_assignment_service_validates_tenant_scope() {
+        let s = SchoolId(uuid::Uuid::now_v7());
+        let other_school = SchoolId(uuid::Uuid::now_v7());
+        let staff_id = StaffId::new(s, uuid::Uuid::now_v7());
+        let tenant = ctx(s);
+        let cmd = AssignSubjectTeacherCommand {
+            tenant: tenant.clone(),
+            class_id: crate::value_objects::ClassId::new(s, uuid::Uuid::now_v7()),
+            section_id: None,
+            subject_id: crate::value_objects::SubjectId::new(s, uuid::Uuid::now_v7()),
+            staff_id,
+            academic_id: crate::value_objects::AcademicYearId::new(s, uuid::Uuid::now_v7()),
+        };
+        assert!(SubjectTeacherAssignmentService::validate(&cmd).is_ok());
+        assert!(SubjectTeacherAssignmentService::is_reassignment(
+            staff_id,
+            StaffId::new(s, uuid::Uuid::now_v7()),
+        ));
+        assert!(!SubjectTeacherAssignmentService::is_reassignment(
+            staff_id,
+            staff_id,
+        ));
+        assert!(SubjectTeacherAssignmentService::scope_matches_tenant(
+            &cmd,
+            s,
+            s,
+        ));
+        assert!(!SubjectTeacherAssignmentService::scope_matches_tenant(
+            &cmd,
+            other_school,
+            s,
+        ));
+        let foreign_cmd = AssignSubjectTeacherCommand {
+            staff_id: StaffId::new(other_school, uuid::Uuid::now_v7()),
+            ..cmd.clone()
+        };
+        let _ = foreign_cmd;
+        let tenant_other = ctx(other_school);
+        let cmd_other_school = AssignSubjectTeacherCommand {
+            tenant: tenant_other,
+            ..cmd
+        };
+        assert!(matches!(
+            SubjectTeacherAssignmentService::validate(&cmd_other_school),
+            Err(DomainError::Validation(_))
+        ));
+    }
+
+    #[test]
+    fn hourly_rate_management_service_resolves_effective_rate() {
+        let s = SchoolId(uuid::Uuid::now_v7());
+        let academic_id = crate::value_objects::AcademicYearId::new(s, uuid::Uuid::now_v7());
+        let now = educore_core::value_objects::Timestamp::now();
+        let actor = UserId(uuid::Uuid::now_v7());
+        let correlation_id = CorrelationId(uuid::Uuid::now_v7());
+        let rate = HourlyRate::fresh(
+            crate::value_objects::HourlyRateId::new(s, uuid::Uuid::now_v7()),
+            "G5".to_owned(),
+            250.0,
+            academic_id,
+            actor,
+            now,
+            correlation_id,
+        );
+        let rates = vec![rate];
+        assert_eq!(
+            HourlyRateManagementService::effective_rate("G5", academic_id, &rates),
+            Some(250.0)
+        );
+        assert_eq!(
+            HourlyRateManagementService::effective_rate("G6", academic_id, &rates),
+            None
+        );
+        assert!(HourlyRateManagementService::validate_rate(0.0).is_ok());
+        assert!(HourlyRateManagementService::validate_rate(100.0).is_ok());
+        assert!(matches!(
+            HourlyRateManagementService::validate_rate(-1.0),
+            Err(DomainError::Validation(_))
+        ));
+        assert!(HourlyRateManagementService::is_rate_change(100.0, 110.0, 1.0));
+        assert!(!HourlyRateManagementService::is_rate_change(100.0, 100.5, 1.0));
     }
 }
