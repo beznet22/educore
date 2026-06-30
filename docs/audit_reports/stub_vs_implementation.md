@@ -3028,6 +3028,338 @@ adapter).
 
 **Counts note:** every row tagged partial, missing, or spec deviation has file:line evidence in the `Status` column above. The 12 "Missing" rows are uniqueness checks, which are universally deferred to the storage adapter boundary across all engine domains — Phase 3's dispatcher + storage-adapter integration is the natural enforcement point. The 8 "Partial" rows cover authorization, post-event mutation guards, and cross-aggregate consistency checks that are partially delegated. The 3 spec deviations are concrete shape mismatches that should be filed as Phase 2 follow-ups.
 
+## assessment — Deep Invariant Audit
+
+**Generated:** Phase 1 Step 2, Engine Production Readiness ferment
+**Scope:** Every invariant listed in `docs/specs/assessment/aggregates.md`
+across all 42 assessment aggregates (ExamType, Exam, ExamSetup, ExamSchedule,
+ExamScheduleSubject, MarksRegister, MarksRegisterChild, MarkStore,
+MarkStoreEntry, ResultStore, ResultSetting, MarksGrade, ExamSetting,
+ExamSignature, ExamRoutinePage, FrontendExamRoutine, FrontendResult,
+FrontendExamResult, OnlineExam, QuestionBank, QuestionGroup, QuestionLevel,
+QuestionAssignment, OnlineExamQuestion, QuestionMuOption, OnlineExamMark,
+OnlineExamStudentAnswerMarking, StudentTakeOnlineExam, SeatPlan,
+SeatPlanChild, SeatPlanSetting, AdmitCard, AdmitCardSetting,
+TeacherEvaluation, TeacherRemark, TemporaryMeritList, MeritPosition,
+ExamWisePosition, AllExamWisePosition, CustomResultSetting,
+CustomTemporaryResult, ExamStepSkip, ExamAttendance, ExamAttendanceChild).
+**Methodology:** For each spec invariant, verify whether the engine enforces
+it in either the aggregate constructor (`aggregate.rs`), the value object
+(`value_objects.rs`), or the service function (`services.rs`). Classify as:
+- **enforced** — the invariant is validated at the constructor or service
+  boundary, with a test or assertion visible in the codebase.
+- **partial** — the invariant is partially checked (e.g. transition is set
+  correctly but the precondition is missing) or delegated to a downstream
+  layer that is acknowledged in source comments.
+- **missing** — no enforcement at the constructor, value object, or service
+  boundary; placeholder aggregate has only `id + school_id`.
+- **permissive (N/A)** — the invariant is a permissive statement ("may",
+  "can be reused"); no enforcement is required by the engine.
+
+### Totals
+
+| Status | Count | % |
+|---|---|---|
+| Enforced | 17 | 17.9% |
+| Partial | 8 | 8.4% |
+| Missing | 68 | 71.6% |
+| Permissive (N/A) | 2 | 2.1% |
+| **Total invariants** | **95** | **100%** |
+
+**Key findings:**
+- **37 of 42 aggregates are placeholder stubs** (ExamType, ExamSetup,
+  MarkStore, ResultSetting, MarksGrade, ExamSetting, ExamSignature,
+  ExamRoutinePage, FrontendExamRoutine, FrontendResult, FrontendExamResult,
+  OnlineExam, QuestionBank, QuestionGroup, QuestionLevel, StudentTakeOnlineExam,
+  AdmitCardSetting, TeacherEvaluation, TeacherRemark, TemporaryMeritList,
+  CustomResultSetting, CustomTemporaryResult, ExamStepSkip, ExamAttendance,
+  ExamScheduleSubject, MarksRegisterChild, MarkStoreEntry, QuestionAssignment,
+  OnlineExamQuestion, QuestionMuOption, OnlineExamMark,
+  OnlineExamStudentAnswerMarking, SeatPlanChild, MeritPosition, ExamWisePosition,
+  AllExamWisePosition, ExamAttendanceChild, SeatPlanSetting). Each placeholder
+  contributes every listed invariant as `missing`. Only the six prompt-named
+  aggregates (Exam, ExamSchedule, SeatPlan, AdmitCard, MarksRegister,
+  ResultStore) carry full field state; even those miss key invariants
+  (e.g. ExamSchedule start<end is not asserted in `schedule_exam`,
+  MarksRegister has no `Cancelled` status, AdmitCard has no
+  pre-condition guard).
+- **Marks boundary validation is the strongest pillar.** All numeric
+  value objects are constructor-validated: `ExamMark` (0, 1000],
+  `FullMark` (0, 1000], `Marks` [0, 1000], `TotalMarks` ≥ 0, `Gpa` [0, 5],
+  `Grade` 1..=4 chars, `ExamName` 1..=200, `ExamCode` 1..=50, `PassMark`
+  [0, 100] (re-exported from `educore-academic`). All have unit tests at
+  `value_objects.rs:1140-1232`.
+- **PassMark ≤ ExamMark invariant is doubly enforced.** `create_exam`
+  rejects the violation at `services.rs:128-133`; `update_exam` re-checks
+  the invariant on both `exam_mark` and `pass_mark` changes at
+  `services.rs:225-230` and `services.rs:240-245`. Covered by
+  `create_exam_rejects_pass_mark_greater_than_exam_mark` (services.rs:860)
+  and `update_exam_rejects_pass_mark_above_exam_mark` (services.rs:963).
+- **Exam uniqueness invariant is enforced at create only.** The 6-tuple
+  `(school, academic_year, exam_type, class, section, subject)` is checked
+  by `AssessmentUniquenessChecker::exam_unique_key_exists` at
+  `services.rs:137-152`. `update_exam` does **not** re-check uniqueness
+  on `code` change (the spec invariant applies to the full key, but the
+  service doc-comment at `services.rs:184-187` acknowledges this is
+  deferred to the dispatcher).
+- **`ExamSchedule::is_well_formed` exists but is dead code.** The helper
+  is defined at `aggregate.rs:349-353` but the `schedule_exam` factory at
+  `services.rs:335-377` does not call it; it constructs the aggregate
+  regardless of whether `start_time < end_time`. Invariant 2 (StartTime <
+  EndTime) is structurally checkable but unenforced at the service
+  boundary.
+- **MarksRegister status lifecycle is incomplete.** The spec requires
+  `Active | Cancelled`, but the aggregate has `is_open: bool`
+  (`aggregate.rs:526`) — no `Cancelled` state. `submit_marks` at
+  `services.rs:1022-1047` uses placeholder exam_id/class_id/section_id
+  (Uuid::nil()) rather than the real values from the command; the
+  per-exam broadcast is empty.
+- **MarksRegister.3 (cancel cascades children in same transaction)** has
+  no implementation. `cancel_marks_register` at `services.rs:1049-1071`
+  emits only the parent event; no child-cascade logic exists.
+- **`Grade` value object does not enforce the spec's closed enum.** The
+  spec lists exactly `{"A+", "A", "A-", "B+", "B", "C+", "C", "D", "F"}`
+  (`value-objects.md` Marks and Grades), but `Grade::new` at
+  `value_objects.rs:686-697` only validates `1..=4 chars`. Any string
+  in that range (including invalid grades like "XY") passes construction.
+- **Missing status enums.** Only `ExamTerm` (7 variants) and `ResultStatus`
+  (4 variants) are defined as enums (`value_objects.rs:715, 759`). The
+  spec also requires `QuestionType`, `OnlineExamStatus`, `AttemptStatus`,
+  `AnswerStatus`, `AttendanceType`, and a `MarksRegisterStatus` (referenced
+  in the file header at `value_objects.rs:15` but not implemented) — all
+  absent.
+- **`ResultService::compute_grade` does not accept the school's
+  `MarksGrade` scale.** The spec signature at
+  `docs/specs/assessment/services.md` requires
+  `compute_grade(percent: Percentage, scale: &[MarksGrade])`; the
+  implementation at `services.rs:1483-1514` ignores scale entirely and
+  hard-codes the A-F table. Per-school custom scales (MarksGrade#1-4
+  invariants) cannot be honoured.
+- **No cross-aggregate uniqueness check** for `(exam_type, class, section,
+  academic_year, student)` SeatPlan / AdmitCard / TeacherRemark /
+  TeacherEvaluation rows. The `AssessmentUniquenessChecker` port
+  exposes only `exam_unique_key_exists`; the trait does not surface
+  the other 8 required uniqueness methods. Phase 2 should expand the
+  trait.
+- **No referential checker for MarksRegister-on-Exam** (Exam#3: cannot
+  delete while MarksRegister rows reference it). `delete_exam` at
+  `services.rs:293-331` only checks `is_retired()` for double-delete;
+  the spec-required MarksRegister reference check is acknowledged as
+  deferred to the integration test fixture at `services.rs:283-285`.
+
+### Per-aggregate invariant table
+
+| Aggregate | # | Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|---|---|
+| ExamType | 1 | Title unique within school | Tenant-scoped name uniqueness | missing | `ExamType` is a placeholder `pub struct { id, school_id }` at `aggregate.rs:884-887`; no `title` field, no service factory, no uniqueness check. |
+| ExamType | 2 | `Percentage` in `[0, 100]` | Range validation | missing | No `Percentage` value object defined; `ExamType` placeholder has no `percentage` field. |
+| ExamType | 3 | `IsAverage` marks type as averaged | Boolean flag | missing | Same as #1 — placeholder; no `is_average` field. |
+| ExamType | 4 | `AverageMark` non-negative; cap used in averaging | Range validation + semantic | missing | Same as #1 — placeholder; no `average_mark` field. |
+| ExamType | 5 | `parent_id` allows composite exam types | Self-referential FK | permissive (N/A) | Spec permits composite types; no enforcement required at the engine boundary. |
+| Exam | 1 | Unique by `(exam_type_id, class_id, section_id, subject_id, academic_year_id)` | 6-tuple composite uniqueness | enforced | `AssessmentUniquenessChecker::exam_unique_key_exists` at `services.rs:137-152` checks the full 6-tuple; covered by `create_exam_rejects_uniqueness_conflict` (services.rs:875). **Caveat:** `update_exam` does not re-check uniqueness on `code` change (services.rs:184-187 comment acknowledges the gap). |
+| Exam | 2 | `PassMark <= ExamMark`, both non-negative | Range + ordering invariant | enforced | `create_exam` calls `validate_exam_mark` (rejects ≤ 0 and > 1000) and `validate_pass_mark` (rejects < 0 and > 100) at `services.rs:121-125`, then asserts `pass_mark <= exam_mark` at `services.rs:128-133`; `update_exam` re-checks on both fields at `services.rs:225-230` and `services.rs:240-245`. Covered by `create_exam_rejects_pass_mark_greater_than_exam_mark` (services.rs:860) and `update_exam_rejects_pass_mark_above_exam_mark` (services.rs:963). |
+| Exam | 3 | Cannot delete while `MarksRegister` rows reference it | Referential delete guard | missing | `delete_exam` at `services.rs:293-331` only checks `is_retired()` for double-delete; no `MarksRegister` reference query. Doc-comment at `services.rs:283-285` explicitly defers to the integration test fixture. |
+| ExamSetup | 1 | One `ExamSetup` per `(exam_id, section_id)` per academic year | Composite-key uniqueness | missing | `ExamSetup` is a placeholder `pub struct { id, school_id }` at `aggregate.rs:659-662`; no fields, no service factory, no uniqueness check. |
+| ExamSetup | 2 | `ExamMark` may override parent exam's mark | Override semantics | missing | Same as #1 — placeholder; no `exam_mark_override` field. |
+| ExamSetup | 3 | Deletion blocked if marks have been entered | Referential delete guard | missing | Same as #1 — placeholder; no service factory. |
+| ExamSchedule | 1 | Unique by `(exam_id, class_id, section_id)` per academic year | Composite-key uniqueness | missing | `ExamSchedule` aggregate (`aggregate.rs:236-289`) carries the four fields but the `schedule_exam` factory at `services.rs:335-377` performs no uniqueness check. The `AssessmentUniquenessChecker` port does not expose an `exam_schedule_unique_key_exists` method. |
+| ExamSchedule | 2 | `StartTime < EndTime` | Time ordering | partial | `ExamSchedule::is_well_formed` helper exists at `aggregate.rs:349-353` (returns `end_time > start_time`), but `schedule_exam` at `services.rs:335-377` does NOT call it — the aggregate is constructed regardless of whether the time window is well-formed. **Dead helper; unenforced at service boundary.** |
+| ExamSchedule | 3 | Teacher cannot be assigned to two overlapping schedules | Cross-row conflict | missing | `schedule_exam` at `services.rs:335-377` accepts `teacher_id` (via the `ExamSchedule::fresh` `None` placeholder) and does not query existing schedules. `ExamService::validate_no_teacher_overlap` is listed in the spec at `services.md:23-26` but not implemented. |
+| ExamSchedule | 4 | Room cannot be assigned to two overlapping schedules | Cross-row conflict | missing | Same as #3 — `schedule_exam` does not query existing room schedules. `ExamService::validate_no_room_overlap` is listed in the spec but not implemented. |
+| ExamSchedule | 5 | Date is within the academic year | Date range check | missing | `schedule_exam` at `services.rs:335-377` accepts an arbitrary `date: NaiveDate` with no academic-year range check. |
+| ExamScheduleSubject | 1 | Belongs to exactly one `ExamSchedule` | Single-parent link | missing | `ExamScheduleSubject` is a placeholder `pub struct { id, school_id }` at `aggregate.rs:890-893`; no `schedule_id` field. |
+| ExamScheduleSubject | 2 | `FullMark > 0`, `PassMark <= FullMark` | Range + ordering | partial (value object) | `FullMark::new` (value_objects.rs:608-621) validates `(0, 1000]`; `PassMark::new` (educore-academic) validates `[0, 100]`. The aggregate has no field-level guard for `PassMark <= FullMark` because the aggregate is a placeholder. |
+| MarksRegister | 1 | Unique by `(exam_id, student_id)` per academic year | Composite-key uniqueness | missing | `MarksRegister::fresh` (aggregate.rs:562-589) accepts arbitrary inputs; no uniqueness check at construction or in `initialize_marks_register` (services.rs:963-996). `AssessmentUniquenessChecker` port has no `marks_register_unique_key_exists` method. |
+| MarksRegister | 2 | May be `Active` or `Cancelled` | Two-state enum | partial | `MarksRegister` has `is_open: bool` (aggregate.rs:526), not a `Cancelled` variant. No `MarksRegisterStatus` enum is defined despite being referenced in the value_objects.rs file header (line 15). `cancel_marks_register` (services.rs:1049-1071) emits the event but does not flip any aggregate state. |
+| MarksRegister | 3 | Cancelling parent cancels children in same transaction | Cascade semantics | missing | `cancel_marks_register` (services.rs:1049-1071) emits only `MarksRegisterCancelled`; no child-cascade logic. The `MarksRegisterChild` aggregate is a placeholder (aggregate.rs:895-898) with no `cancelled` field. |
+| MarksRegisterChild | 1 | Belongs to exactly one `MarksRegister` | Single-parent link | missing | `MarksRegisterChild` placeholder `pub struct { id, school_id }` at `aggregate.rs:895-898`; no `marks_register_id` field. |
+| MarksRegisterChild | 2 | Unique by `(marks_register_id, subject_id)` | Composite-key uniqueness | missing | Same as #1 — placeholder; no fields, no service factory. |
+| MarksRegisterChild | 3 | If `Abs=1`, `Marks` treated as zero; `GpaPoint` follows absent rule | Absence semantics | missing | `enter_marks` (services.rs:999-1020) accepts `is_absent` and `marks` independently; no `if absent: marks = 0` coercion logic. The absent-rule for GpaPoint is not implemented. |
+| MarksRegisterChild | 4 | `Marks` non-negative and `<=` `FullMark` | Range + ordering | partial (value object) | `Marks::new` (value_objects.rs:626-637) validates `[0, 1000]`. No check that `marks <= full_mark` of the parent subject — the `FullMark` value is not threaded through `enter_marks` at all. |
+| MarkStore | 1 | Unique by `(exam_setup_id, exam_type_id, student_record_id, subject_id)` | Composite-key uniqueness | missing | `MarkStore` placeholder `pub struct { id, school_id }` at `aggregate.rs:670-673`; no fields, no service factory. |
+| MarkStore | 2 | `IsAbsent` mirrors input mark register's absence flag | State-projection invariant | missing | Same as #1 — placeholder. |
+| MarkStore | 3 | `TotalMarks` is the sum across the exam, per subject | Aggregation semantics | partial (value object) | `TotalMarks::new` (value_objects.rs:642-654) validates `>= 0`; the aggregation itself is performed by `ResultService::compute_total` (services.rs:1535-1553) which sums the children. The aggregate has no field to carry the result. |
+| MarkStore | 4 | `TeacherRemarks` free text bounded to 2000 chars | Length validation | missing | No `Remark` value object defined in `value_objects.rs` (the spec lists it at `value-objects.md:35` with 1..=2000 chars); `MarkStore` is a placeholder with no `teacher_remarks` field. |
+| MarkStoreEntry | (none listed) | — | — | n/a | Spec aggregates.md does not list invariants for `MarkStoreEntry`; it documents only the parent's fields. Aggregate is a placeholder `pub struct { id, school_id }` at `aggregate.rs:899-902`. |
+| ResultStore | 1 | Unique by `(exam_setup_id, exam_type_id, student_record_id, subject_id)` | Composite-key uniqueness | missing | `ResultStore::fresh` (aggregate.rs:653-693) accepts arbitrary inputs; no uniqueness check. `AssessmentUniquenessChecker` port has no `result_store_unique_key_exists` method. |
+| ResultStore | 2 | `TotalGpaPoint` and `TotalGpaGrade` are derived | Derived-fields invariant | partial (field exists) | `ResultStore` carries `total_marks`, `total_gpa`, `total_grade` (aggregate.rs:545-547); the freshness path stores whatever the caller passes. No service computes these from `MarksRegisterChild` rows; the spec's `ResultService::build_result_store` (services.md:67-73) is not implemented. |
+| ResultStore | 3 | Result is `Published` only after `PublishResult`; pre-publication rows are drafts | Two-state lifecycle | partial (field exists) | `ResultStore` carries `status: ResultStatus` (aggregate.rs:548) with Pass/Fail/Manual/Withheld variants (value_objects.rs:759-783). However `status` is not a `Draft \| Published` enum as the spec implies; the publisher at `services.rs:1073-1095` does not assert pre-publication status. |
+| ResultStore | 4 | Publishing freezes per-subject marks; updates require `RepublishResult` | Immutability after publish | missing | `publish_result` (services.rs:1073-1095) emits `ResultPublished` with `published_count = 0` (placeholder); no freeze guard on subsequent mutations. `republish_result` (services.rs:1098-1119) uses placeholder exam/class/section ids (`Uuid::nil()`). |
+| ResultSetting | 1 | One record per school per academic year | Per-school-per-year cardinality | missing | `ResultSetting` placeholder `pub struct { id, school_id }` at `aggregate.rs:680-683`; no service factory. |
+| ResultSetting | 2 | Header/footer/background are file references resolved by file storage | File-port delegation | missing | Same as #1 — placeholder; no fields. |
+| MarksGrade | 1 | `From < Up` for every grade | Range ordering | missing | `MarksGrade` placeholder `pub struct { id, school_id }` at `aggregate.rs:688-691`. `MarksGradeRow` struct (value_objects.rs:678-684) carries `from_percent` and `up_to_percent` fields but no `new()` constructor validates `from < up_to`. The `create_marks_grade` handler (services.rs:1179-1182) is a `TODO` stub. |
+| MarksGrade | 2 | `PercentFrom < PercentUpTo` | Range ordering | missing | Same as #1 — no validation at construction or service boundary. |
+| MarksGrade | 3 | Grade scale non-overlapping and contiguous | Cross-row disjointness + contiguity | missing | No `validate_no_overlap` or `validate_contiguous` functions exist. The module comment at `services.rs:1448-1458` explicitly defers both to a follow-up phase. |
+| MarksGrade | 4 | Exactly one `Gpa = 0.0` per school (the "Fail" boundary) | Cardinality-1 with sentinel | missing | Same as #3 — no enforcement; `ResultService::compute_grade` (services.rs:1483-1514) uses a hard-coded table and ignores `is_fail: bool` on `MarksGradeRow` (value_objects.rs:683). |
+| ExamSetting | 1 | `StartDate <= EndDate` | Date ordering | missing | `ExamSetting` placeholder `pub struct { id, school_id }` at `aggregate.rs:698-701`. `create_exam_setting` (services.rs:1194-1197) is a `TODO` stub. |
+| ExamSetting | 2 | `PublishDate <= StartDate` | Date ordering | missing | Same as #1 — placeholder. |
+| ExamSetting | 3 | One per school per exam type per academic year | Composite-key cardinality | missing | Same as #1 — placeholder. |
+| ExamSignature | 1 | Title unique per school | Tenant-scoped uniqueness | missing | `ExamSignature` placeholder `pub struct { id, school_id }` at `aggregate.rs:706-709`; `set_exam_signature` (services.rs:1209-1212) is a `TODO` stub. |
+| ExamSignature | 2 | Inactive when removed; existing reports still reference original | Soft-delete semantics | missing | Same as #1 — placeholder; no soft-delete method. |
+| ExamRoutinePage | 1 | One record per school | Per-school cardinality | missing | `ExamRoutinePage` placeholder `pub struct { id, school_id }` at `aggregate.rs:716-719`; `update_exam_routine_page` (services.rs:1214-1219) is a `TODO` stub. |
+| FrontendExamRoutine | 1 | `PublishDate` is in the past relative to the visibility check | Time-window gate | missing | `FrontendExamRoutine` placeholder `pub struct { id, school_id }` at `aggregate.rs:724-727`; `publish_exam_routine` (services.rs:1221-1226) is a `TODO` stub. |
+| FrontendResult | (none listed) | — | — | n/a | Spec aggregates.md does not list invariants for `FrontendResult`. Aggregate is a placeholder `pub struct { id, school_id }` at `aggregate.rs:732-735`. |
+| FrontendExamResult | 1 | One record per school | Per-school cardinality | missing | `FrontendExamResult` placeholder `pub struct { id, school_id }` at `aggregate.rs:742-745`; `update_frontend_exam_result` (services.rs:1235-1242) is a `TODO` stub. |
+| OnlineExam | 1 | Unique by `(class_id, section_id, subject_id, academic_id)` when Published | Composite-key uniqueness (conditional on status) | missing | `OnlineExam` placeholder `pub struct { id, school_id }` at `aggregate.rs:754-757`; `create_online_exam` (services.rs:1244-1247) is a `TODO` stub. |
+| OnlineExam | 2 | `StartTime < EndTime`, `EndTime <= EndDateTime` | Time ordering | missing | Same as #1 — placeholder; no fields, no time-window check. |
+| OnlineExam | 3 | Lifecycle `Pending → Published → (Running → Closed)`; `IsWaiting` is transient | FSM with 5 states | missing | No `OnlineExamStatus` enum defined (value_objects.rs has only `ExamTerm` and `ResultStatus` enums); no lifecycle methods on the aggregate. |
+| OnlineExam | 4 | Once `IsClosed=true`, no more answers accepted | Terminal-state guard | missing | Same as #3 — no state field, no guard. |
+| OnlineExam | 5 | `AutoMark=true` triggers automatic evaluation on close | Effect-on-close | missing | Same as #3 — no `auto_mark` field. |
+| QuestionBank | 1 | `Mark > 0` | Range validation | missing | `QuestionBank` placeholder `pub struct { id, school_id }` at `aggregate.rs:761-764`; `create_question` (services.rs:1277-1280) is a `TODO` stub. |
+| QuestionBank | 2 | `Type` is one of supported `QuestionType` variants | Closed enum | missing | No `QuestionType` enum defined in value_objects.rs; the spec lists MultipleChoice/TrueFalse/ShortAnswer/FillBlank/MultiSelect. |
+| QuestionBank | 3 | Bank uniquely titled within school | Tenant-scoped uniqueness | missing | Same as #1 — placeholder; no title field, no uniqueness check. |
+| QuestionGroup | 1 | Title unique per school | Tenant-scoped uniqueness | missing | `QuestionGroup` placeholder `pub struct { id, school_id }` at `aggregate.rs:768-771`; `create_question_group` (services.rs:1292-1297) is a `TODO` stub. |
+| QuestionLevel | 1 | Level unique per school | Tenant-scoped uniqueness | missing | `QuestionLevel` placeholder `pub struct { id, school_id }` at `aggregate.rs:776-779`; `create_question_level` (services.rs:1313-1318) is a `TODO` stub. |
+| QuestionAssignment | 1 | Unique by `(online_exam_id, question_bank_id)` | Composite-key uniqueness | missing | `QuestionAssignment` placeholder `pub struct { id, school_id }` at `aggregate.rs:909-912`; no service factory. |
+| OnlineExamQuestion | 1 | Belongs to exactly one `OnlineExam` | Single-parent link | missing | `OnlineExamQuestion` placeholder `pub struct { id, school_id }` at `aggregate.rs:916-919`; no `online_exam_id` field. |
+| OnlineExamQuestion | 2 | At most one correct option for MC; multi-select allows many | Cardinality constraint | missing | Same as #1 — placeholder; no options collection, no cardinality check. |
+| QuestionMuOption | 1 | Belongs to exactly one `OnlineExamQuestion` | Single-parent link | missing | `QuestionMuOption` placeholder `pub struct { id, school_id }` at `aggregate.rs:920-923`; no parent FK. |
+| OnlineExamMark | 1 | Unique by `(online_exam_id, student_id, subject_id)` | Composite-key uniqueness | missing | `OnlineExamMark` placeholder `pub struct { id, school_id }` at `aggregate.rs:919-922`; no service factory. |
+| OnlineExamStudentAnswerMarking | 1 | Unique by `(online_exam_id, student_id, question_id)` | Composite-key uniqueness | missing | `OnlineExamStudentAnswerMarking` placeholder `pub struct { id, school_id }` at `aggregate.rs:924-927`; no service factory. |
+| OnlineExamStudentAnswerMarking | 2 | `ObtainMarks` non-negative and `<=` question's `Mark` | Range + ordering | missing | Same as #1 — placeholder. |
+| StudentTakeOnlineExam | 1 | Unique by `(online_exam_id, student_id, record_id)` | Composite-key uniqueness | missing | `StudentTakeOnlineExam` placeholder `pub struct { id, school_id }` at `aggregate.rs:784-787`; `start_online_exam` (services.rs:1254-1259) is a `TODO` stub. |
+| StudentTakeOnlineExam | 2 | Status transitions `NotYet → Submitted → GotMarks` | FSM with 3 states | missing | No `AttemptStatus` enum defined (value_objects.rs); placeholder has no status field. |
+| StudentTakeOnlineExam | 3 | Once `Status=GotMarks`, no further answers accepted | Terminal-state guard | missing | Same as #2 — no state field, no guard. |
+| SeatPlan | 1 | Unique by `(exam_type_id, class_id, section_id, academic_id)` | Composite-key uniqueness | missing | `SeatPlan::fresh` (aggregate.rs:481-506) accepts arbitrary inputs; no uniqueness check at construction or in `generate_seat_plan` (services.rs:456-497). |
+| SeatPlan | 2 | A student receives at most one seat plan per academic year per exam type | Per-student cardinality | missing | Same as #1 — no per-student query; `AssessmentUniquenessChecker` port has no `student_seat_plan_exists` method. |
+| SeatPlan | 3 | `SeatPlanChild` room allocations must not overlap in time | Cross-row time conflict | missing | `SeatPlanChild` is a placeholder `pub struct { id, school_id }` at `aggregate.rs:945-948`; no start/end fields, no conflict check. |
+| SeatPlanChild | 1 | `AssignStudents > 0` | Range validation | missing | `SeatPlanChild` placeholder `pub struct { id, school_id }` at `aggregate.rs:945-948`; no `assign_students` field. |
+| SeatPlanChild | 2 | `StartTime < EndTime` | Time ordering | missing | Same as #1 — placeholder. |
+| SeatPlanChild | 3 | Sum of `AssignStudents` equals total students in section | Cross-row sum invariant | partial (aggregate) | `SeatPlan::fresh` aggregates the sum at `aggregate.rs:478-485` (services.rs:469-473) — but `SeatPlanChild` is a placeholder so the children are not actually persisted; the sum is computed from a flat `allocations` parameter. The invariant that the sum equals the section's total is not enforced (no `class_section` reference). |
+| SeatPlanSetting | (none listed) | — | — | n/a | Spec aggregates.md does not list invariants for `SeatPlanSetting`. Aggregate is a placeholder `pub struct { id, school_id }` at `aggregate.rs:955-958`. |
+| AdmitCard | 1 | Unique by `(student_record_id, exam_type_id, academic_id)` | Composite-key uniqueness | missing | `AdmitCard::fresh` (aggregate.rs:586-616) accepts arbitrary inputs; no uniqueness check at construction or in `generate_admit_card` (services.rs:569-601). |
+| AdmitCard | 2 | Generated only when exam scheduled and seat plan exists for the section | Pre-condition guard | missing | `generate_admit_card` (services.rs:569-601) performs no query against the exam or seat plan; no pre-condition enforcement. |
+| AdmitCard | 3 | Once generated, immutable; re-generation supersedes with new id | Immutability after generate | partial | `cancel_admit_card` (services.rs:626-659) retires via `active_status = Retired`, but no method prevents field-level mutation after generation. `regenerate_admit_card` (services.rs:603-624) returns the new event without retiring the previous card. |
+| AdmitCardSetting | 1 | One record per school per academic year | Per-school-per-year cardinality | missing | `AdmitCardSetting` placeholder `pub struct { id, school_id }` at `aggregate.rs:800-803`; `configure_admit_card_settings` (services.rs:1334-1341) is a `TODO` stub. |
+| TeacherEvaluation | 1 | Unique by `(student_id, teacher_id, subject_id, record_id, academic_id)` | 5-tuple composite uniqueness | missing | `TeacherEvaluation` placeholder `pub struct { id, school_id }` at `aggregate.rs:810-813`; `mark_teacher_evaluation` (services.rs:1343-1348) is a `TODO` stub. |
+| TeacherEvaluation | 2 | Status transitions `0 → 1`; rejection sets row inactive | Two-state lifecycle | missing | Same as #1 — placeholder; no status field, no transition methods. |
+| TeacherEvaluation | 3 | Student can rate only for subjects they are enrolled in | Enrollment check | missing | Same as #1 — placeholder; no enrollment query. |
+| TeacherRemark | 1 | Unique by `(student_id, exam_type_id, academic_id)` | Composite-key uniqueness | missing | `TeacherRemark` placeholder `pub struct { id, school_id }` at `aggregate.rs:819-822`; `add_teacher_remark` (services.rs:1368-1371) is a `TODO` stub. |
+| TeacherRemark | 2 | `Remark` length bounded to 2000 chars | Length validation | missing | Same as #1 — placeholder; no `remark` field. No `Remark` value object is defined in `value_objects.rs` (the spec lists it at `value-objects.md:35` with 1..=2000 chars). |
+| TemporaryMeritList | 1 | Unique by `(exam_id, class_id, section_id, student_id)` | Composite-key uniqueness | missing | `TemporaryMeritList` placeholder `pub struct { id, school_id }` at `aggregate.rs:829-832`; no service factory. |
+| TemporaryMeritList | 2 | Lives only during publish workflow; cleared after published | Lifecycle invariant | missing | Same as #1 — placeholder. |
+| MeritPosition | 1 | Unique by `(class_id, section_id, exam_term_id, record_id)` | Composite-key uniqueness | missing | `MeritPosition` placeholder `pub struct { id, school_id }` at `aggregate.rs:937-940`; no service factory. |
+| MeritPosition | 2 | `Position > 0` and dense per section | Range + density | missing | Same as #1 — placeholder; `ResultService::rank_section` (services.md:51-53) is not implemented. |
+| ExamWisePosition | 1 | Unique by `(class_id, section_id, exam_id, record_id)` | Composite-key uniqueness | missing | `ExamWisePosition` placeholder `pub struct { id, school_id }` at `aggregate.rs:941-944`; no service factory. |
+| AllExamWisePosition | 1 | Unique by `(class_id, exam_id, record_id)` | Composite-key uniqueness | missing | `AllExamWisePosition` placeholder `pub struct { id, school_id }` at `aggregate.rs:949-952`; no service factory. |
+| AllExamWisePosition | 2 | Sections merged into single ranking list | Cross-section ranking | missing | Same as #1 — placeholder; `ResultService::rank_all_sections` (services.md:55-57) is not implemented. |
+| CustomResultSetting | 1 | One per `(school_id, exam_type_id, academic_id)` | Composite-key cardinality | missing | `CustomResultSetting` placeholder `pub struct { id, school_id }` at `aggregate.rs:842-845`; `configure_custom_result_settings` (services.rs:1380-1387) is a `TODO` stub. |
+| CustomTemporaryResult | 1 | Cleared after publication | Lifecycle invariant | missing | `CustomTemporaryResult` placeholder `pub struct { id, school_id }` at `aggregate.rs:851-854`; no service factory, no clear-after-publish logic. |
+| ExamStepSkip | 1 | `Name` unique per school | Tenant-scoped uniqueness | missing | `ExamStepSkip` placeholder `pub struct { id, school_id }` at `aggregate.rs:861-864`; `mark_exam_step_skip` (services.rs:1389-1393) is a `TODO` stub. |
+| ExamAttendance | 1 | Unique by `(exam_id, subject_id, class_id, section_id, academic_id)` | 5-tuple composite uniqueness | missing | `ExamAttendance` placeholder `pub struct { id, school_id }` at `aggregate.rs:871-874`; `mark_exam_attendance` (services.rs:1394-1399) is a `TODO` stub. **Cross-cutting note:** the `mark_exam_attendance` function also exists in `crates/domains/attendance/src/services.rs:737` — both return `ExamAttendanceCreated` events, indicating a cross-domain ownership concern that Phase 2 should resolve. |
+| ExamAttendanceChild | 1 | Belongs to exactly one `ExamAttendance` | Single-parent link | missing | `ExamAttendanceChild` placeholder `pub struct { id, school_id }` at `aggregate.rs:949-952`; no `exam_attendance_id` field. |
+| ExamAttendanceChild | 2 | Unique by `(exam_attendance_id, student_id)` | Composite-key uniqueness | missing | Same as #1 — placeholder. |
+
+### Cross-cutting enforcement gaps
+
+1. **`AssessmentUniquenessChecker` coverage is incomplete.** The trait
+   at `services.rs:81-100` exposes a single method
+   `exam_unique_key_exists`. The spec requires at least nine additional
+   uniqueness checks: `exam_schedule_unique_key_exists`,
+   `marks_register_unique_key_exists`, `result_store_unique_key_exists`,
+   `seat_plan_unique_key_exists`, `admit_card_unique_key_exists`,
+   `teacher_evaluation_unique_key_exists`, `teacher_remark_unique_key_exists`,
+   `temporary_merit_list_unique_key_exists`, and
+   `online_exam_published_unique_key_exists`. None are wired.
+   Phase 2 should expand the trait to cover these.
+
+2. **No `ReferentialChecker` surface exists** for assessment. The
+   Exam#3 invariant (cannot delete while `MarksRegister` rows reference
+   it) and the AdmitCard#2 invariant (generated only when exam scheduled
+   and seat plan exists) cannot be implemented without one. Phase 2
+   should introduce an assessment-scoped `ReferentialChecker` parallel
+   to `AssessmentUniquenessChecker`.
+
+3. **Six status enums are missing.** Only `ExamTerm` and `ResultStatus`
+   are defined (`value_objects.rs:715, 759`). The spec also requires
+   `QuestionType`, `OnlineExamStatus`, `AttemptStatus`, `AnswerStatus`,
+   `AttendanceType`, and `MarksRegisterStatus` (referenced in the file
+   header at `value_objects.rs:15`). Each is needed to enforce the
+   lifecycle invariants on `OnlineExam`, `StudentTakeOnlineExam`,
+   `MarksRegister`, and `MarksRegisterChild`. Phase 2 should add them.
+
+4. **`Grade` value object does not enforce the spec's closed enum.** The
+   spec lists exactly `{"A+", "A", "A-", "B+", "B", "C+", "C", "D", "F"}`
+   (`value-objects.md` Marks and Grades). The implementation at
+   `value_objects.rs:686-697` only validates `1..=4 chars`. Any string in
+   that range (including "XY") passes construction. Phase 2 should
+   either change `Grade::new` to reject non-matching strings or replace
+   `Grade(String)` with a `Grade` enum.
+
+5. **`ResultService::compute_grade` ignores the school's `MarksGrade`
+   scale.** The spec signature at `docs/specs/assessment/services.md:43`
+   requires `compute_grade(percent: Percentage, scale: &[MarksGrade])`;
+   the implementation at `services.rs:1483-1514` ignores `scale` and
+   hard-codes the A-F table. Per-school custom grade scales
+   (MarksGrade#1-4 invariants) cannot be honoured. Phase 2 should
+   change the signature to accept the scale and route lookups through
+   `MarksGradeRow`.
+
+6. **`ExamSchedule::is_well_formed` is dead code.** The helper exists at
+   `aggregate.rs:349-353` but the `schedule_exam` factory at
+   `services.rs:335-377` does not call it. Any time window where
+   `end_time <= start_time` is accepted. Phase 2 should add the
+   assertion at the service boundary (or the constructor).
+
+7. **`MarksRegister` lacks a `Cancelled` state.** The spec requires
+   `Active | Cancelled` but the aggregate has only `is_open: bool`
+   (`aggregate.rs:526`). `cancel_marks_register` (services.rs:1049-1071)
+   emits the event without flipping any aggregate state. Phase 2 should
+   add a `status` enum and update the aggregate.
+
+8. **`submit_marks` uses placeholder UUIDs.** The service at
+   `services.rs:1022-1047` constructs `_placeholder_exam`,
+   `_placeholder_class`, `_placeholder_section` with `Uuid::nil()`
+   rather than the real values from the command's `marks_register_id`.
+   The per-exam broadcast is empty (`count = 0`). Phase 2 should
+   resolve the real ids and emit per-section events.
+
+9. **Cross-domain ownership of `ExamAttendance` is unclear.** The
+   `mark_exam_attendance` handler exists in both
+   `crates/domains/assessment/src/services.rs:1394-1399` (TODO stub) and
+   `crates/domains/attendance/src/services.rs:737` (partial). Both
+   return `ExamAttendanceCreated`. Phase 2 should pick one home and
+   delete the other.
+
+10. **Three spec value-object types are entirely absent.** `Remark`,
+    `Comment`, `SignatureTitle`, `GroupTitle`, `Level`, `RoutinePageTitle`,
+    `ExamTitle`, `QuestionTitle`, `QuestionOption`, `Rating`, `MeritPosition`
+    are all listed in `docs/specs/assessment/value-objects.md` but
+    none are defined in `crates/domains/assessment/src/value_objects.rs`.
+    Phase 2 should add them with the listed length constraints.
+
+### Classification rationale
+
+- **Enforced vs partial** hinges on whether the service function (or
+  constructor) covers every precondition the invariant requires.
+  `ExamMark`/`PassMark`/`FullMark` are constructor-validated for range
+  (enforced); `PassMark <= ExamMark` is asserted at the service boundary
+  on both create and update paths (enforced). In contrast,
+  `ExamSchedule::is_well_formed` exists but the factory does not call
+  it (partial).
+- **Missing vs permissive** hinges on whether the invariant forbids a
+  state (e.g. "exactly one Gpa=0.0 per school") or permits one
+  (e.g. "parent_id may allow composite types"). Permissive invariants
+  are classified as `N/A` rather than `missing`.
+- **Placeholder aggregates** (37 of 42) contribute every listed
+  invariant as `missing` because the aggregate struct is
+  `pub struct { id, school_id }` with no domain fields, no value object,
+  and a service factory that emits an empty event or returns
+  `not_supported`.
+- **The 8 `partial` entries** are: ExamSchedule#2 (helper exists, not
+  called), MarksRegister#2 (uses `is_open` instead of a Cancelled enum),
+  MarksRegisterChild#4 (Marks range enforced but no `marks <= full_mark`
+  check), MarkStore#3 (TotalMarks value object enforces `>= 0` but the
+  per-subject aggregation is not threaded through the aggregate),
+  ResultStore#2 (fields exist but no service computes from children),
+  ResultStore#3 (status field exists but is not Draft/Published),
+  AdmitCard#3 (no mutability guard but `cancel_admit_card` retires),
+  SeatPlanChild#3 (sum is computed in `SeatPlan::fresh` but children
+  are not persisted).
+- **The 2 `permissive` entries** are ExamType#5 (composite exam types
+  permitted) — these are model-freedom statements with no enforcement
+  obligation.
+
 Co-Authored-By: Antigravity <antigravity@google.com>
 
 ## cms — Deep Invariant Audit
