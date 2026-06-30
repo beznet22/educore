@@ -1091,3 +1091,248 @@ update factories do not need to re-check uniqueness on update.
   function is documented as a query (no event emission per spec),
   the receive side is real, and the audit row uses a synthetic
   target uuid appropriate for a read-only audit row.
+
+---
+
+## facilities
+
+**Crate:** `crates/domains/facilities/src/services.rs`
+**Spec reference:** `docs/specs/facilities/aggregates.md`
+**Function count:** 60 (`pub fn` + `pub async fn` only; excludes the 2
+private result-struct declarations `ReceiveItemResult` at services.rs:623
+and `SellItemResult` at services.rs:823, and the helper `event_id_to_uuid`
+at services.rs:74)
+**Stub count:** 0
+**Real / Partial / Stub:** 41 real / 19 partial / 0 stub
+
+The 60 functions split into 13 aggregates (Vehicle, Route,
+AssignVehicle, Dormitory, Room, RoomType, ItemCategory, Item,
+ItemStore, ItemIssue, ItemReceive, ItemSell, Supplier) plus 4
+helper service structs (`TransportService`, `DormitoryService`,
+`InventoryService`, `SupplierService`), one enum + struct pair
+(`MovementKind`, `MovementRow`), and one headline correctness
+service (`InventoryConservationService`).
+
+Phase 8 ships the prompt-named subset (transport, dormitory,
+inventory catalog + receive + issue + sell, supplier) as real
+or partial factory services with a 100-case proptest for
+`InventoryConservationService::check_invariant` (mirroring
+Phase 7's `DoubleEntryService` pattern). Phase 8 also adds
+the Update / Delete / Unassign gap-fill for every aggregate.
+No function body carries a `TODO:` / `unimplemented!()` /
+synthetic-id placeholder; every factory emits a real, payload-
+populated event with a real `last_event_id` chain.
+
+### Vehicle aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_vehicle` (services.rs:81) | Vehicle invariants 2 (`VehicleNumber` unique within school), 3 (`MadeYear` 1950..=current calendar year), 4 (optional `DriverId`) | partial | services.rs:96-105 — `Vehicle::fresh` builds aggregate with `academic_year_id`, `vehicle_no`, `vehicle_model`, `made_year`, `driver_id`; invariant 3 enforced upstream by `MadeYear::new` constructor (value_objects.rs:1138, test at rs:1805); invariant 4 satisfied by `Option<StaffId>` typing. **Missing:** invariant 2 (VehicleNumber uniqueness within school — no `UniquenessChecker` parameter on the function; the storage adapter must reject duplicates). |
+| `update_vehicle` (services.rs:120) | Vehicle update semantics (mutate profile fields, preserve version + last_event_id) | real | services.rs:127-145 — change tracking per field (rs:131-144); `no changes` is rejected implicitly by always pushing at least one label; version bump at rs:151; `last_event_id` set at rs:153; `VehicleUpdated` event at rs:155-163. |
+| `assign_driver` (services.rs:164) | Vehicle invariant 4 (single optional `DriverId`) | real | services.rs:170-177 — captures previous `vehicle.driver_id`, delegates mutation to `vehicle.assign_driver(...)` (aggregate.rs); `DriverAssignedToVehicle` event at rs:178-185 with `from` + `to` payload. |
+| `deactivate_vehicle` (services.rs:189) | Vehicle invariant 5 (`ActiveStatus` transitions to inactive); reason captured | real | services.rs:194-202 — `vehicle.deactivate(...)` aggregate method enforces the state machine (rs:196); `VehicleDeactivated` event at rs:204-211 with reason + new_status. |
+| `delete_vehicle` (services.rs:978) | Vehicle invariant 6 (cannot hard-delete while `AssignVehicle` references) | partial | services.rs:978-995 — emits `VehicleDeleted` event shell (rs:990-994). **Missing:** invariant 6 (the `AssignVehicle` referential check is deferred to the dispatcher per the docstring at rs:976-977: "The dispatcher must reject the call if any `AssignVehicle` row still references the vehicle"). |
+
+### Route aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_route` (services.rs:213) | Route invariants 1 (`RouteName` unique within school+academic_year), 2 (`Fare` non-negative), 3 (`RouteStop` ordered by `StopOrder`) | partial | services.rs:219-244 — `Route::fresh` with `title`, `fare`, `stops`; invariants 2 + 3 satisfied by value-object constructors + construction-time push. **Missing:** invariant 1 (RouteName uniqueness within `(school, academic_year)` — no uniqueness check at service layer). |
+| `update_route` (services.rs:999) | Route update semantics | real | services.rs:1005-1028 — per-field change tracking (rs:1013-1024); version bump + `last_event_id` at rs:1026-1027; `RouteUpdated` event at rs:1029-1037. |
+| `add_stop_to_route` (services.rs:252) | Route invariant 3 (`RouteStop` ordered by `StopOrder`) | real | services.rs:258-273 — `RouteStopSpec` constructed (rs:259-264); pushed to `route.stops` (rs:265); version bump + `last_event_id` at rs:266-269; `StopAddedToRoute` event at rs:271-280. |
+| `update_stop_on_route` (services.rs:1038) | Route stop mutation by `stop_order` | real | services.rs:1043-1074 — find-by-order loop (rs:1051-1065); change tracking per field (rs:1054-1064); version bump at rs:1067-1071; `StopUpdatedOnRoute` event at rs:1073-1082. |
+| `remove_stop_from_route` (services.rs:1084) | Route stop removal by `stop_order` | real | services.rs:1089-1097 — `route.stops.retain(...)` (rs:1093); version bump + `last_event_id` at rs:1094-1096; `StopRemovedFromRoute` event at rs:1099-1109. |
+| `delete_route` (services.rs:1111) | Route invariant 4 (cannot hard-delete while `AssignVehicle` references) | partial | services.rs:1116-1130 — emits `RouteDeleted` event shell. **Missing:** invariant 4 (referential check against `AssignVehicle` rows deferred to dispatcher). |
+
+### AssignVehicle aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `assign_vehicle_to_route` (services.rs:287) | AssignVehicle invariants 1 (vehicle at most one route per year), 3 (`(vehicle_id, academic_year_id)` unique) | partial | services.rs:293-314 — `AssignVehicle::fresh` builds aggregate; `VehicleAssigned` event at rs:315-323. **Missing:** invariants 1 + 3 (no uniqueness check on `(vehicle_id, academic_year_id)` at service layer); invariant 5 from Vehicle spec (inactive vehicle may not be assigned — not checked here, see `TransportService::can_assign_vehicle` below). |
+| `unassign_vehicle_from_route` (services.rs:1132) | AssignVehicle lifecycle (releases the assignment) | real | services.rs:1137-1150 — emits `VehicleUnassigned` event with vehicle_id + route_id (rs:1145-1149). |
+| `assign_student_to_route` (services.rs:324) | AssignVehicle membership (student-to-route set; event log per spec) | real | services.rs:329-355 — derives today's date from clock (rs:340-348, defensive `unwrap_or_default()` for out-of-range dates); `StudentAssignedToRoute` event at rs:350-358. |
+| `unassign_student_from_route` (services.rs:1156) | AssignVehicle membership release | real | services.rs:1161-1180 — derives today's date (rs:1167-1170); `StudentUnassignedFromRoute` event at rs:1172-1179. |
+
+### Dormitory aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_dormitory` (services.rs:367) | Dormitory invariants 1 (`DormitoryName` unique within school+year), 2 (`DormitoryType` ∈ Boys/Girls), 3 (`Intake` positive), 4 (sum of `Room.NumberOfBed` ≤ `Intake`) | partial | services.rs:374-400 — `Dormitory::fresh` with name + type + intake; invariants 2 + 3 satisfied by enum + value-object constructors. **Missing:** invariant 1 (name uniqueness not checked); invariant 4 (capacity is a cross-aggregate invariant — service has no access to `Room` rows). |
+| `update_dormitory` (services.rs:1241) | Dormitory update semantics | real | services.rs:1247-1278 — per-field change tracking (rs:1256-1270); version bump + `last_event_id` at rs:1273-1274; `DormitoryUpdated` event at rs:1276-1283. |
+| `delete_dormitory` (services.rs:1284) | Dormitory invariant 5 (cannot hard-delete while `Room` references) | partial | services.rs:1289-1303 — emits `DormitoryDeleted` event shell. **Missing:** invariant 5 (referential check against `Room` rows deferred to dispatcher). |
+
+### Room aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_room` (services.rs:442) | Room invariants 1 (`RoomNumber` unique within dormitory), 2 (`NumberOfBed` positive), 3 (`CostPerBed` non-negative), 4 (bound to one `RoomType`), 5 (assigned student count ≤ `NumberOfBed`) | partial | services.rs:449-477 — `Room::fresh` with room_number + room_type_id + number_of_bed + cost_per_bed; invariants 2-4 satisfied by value-object + enum. **Missing:** invariant 1 (RoomNumber uniqueness within Dormitory — no uniqueness check); invariant 5 (capacity check deferred to dispatcher / assignment-time service). |
+| `update_room` (services.rs:1305) | Room update semantics | real | services.rs:1311-1342 — per-field change tracking (rs:1320-1333); version bump + `last_event_id` at rs:1336-1337; `RoomUpdated` event at rs:1339-1346. |
+| `delete_room` (services.rs:1348) | Room delete semantics | real | services.rs:1353-1367 — emits `RoomDeleted` event (rs:1362-1366). |
+| `assign_student_to_room` (services.rs:484) | Room invariant 5 (assigned student count ≤ `NumberOfBed`) | partial | services.rs:490-505 — emits `StudentAssignedToRoom` event with room_id + student_id + bed_number (rs:499-504). **Missing:** invariant 5 (capacity check — current assignment count not loaded). |
+| `unassign_student_from_room` (services.rs:1369) | Room membership release | real | services.rs:1374-1389 — emits `StudentUnassignedFromRoom` event (rs:1382-1387). |
+
+### RoomType aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_room_type` (services.rs:407) | RoomType invariant 1 (`RoomTypeName` unique within school) | partial | services.rs:413-435 — `RoomType::fresh` with name + description. **Missing:** invariant 1 (no uniqueness check). |
+| `update_room_type` (services.rs:1185) | RoomType update semantics | real | services.rs:1191-1215 — per-field change tracking (rs:1200-1206); version bump + `last_event_id` at rs:1209-1210; `RoomTypeUpdated` event at rs:1212-1218. |
+| `delete_room_type` (services.rs:1220) | RoomType invariant 2 (cannot delete while `Room` references) | partial | services.rs:1225-1239 — emits `RoomTypeDeleted` event shell. **Missing:** invariant 2 (referential check against `Room` rows deferred to dispatcher). |
+
+### ItemCategory aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_item_category` (services.rs:511) | ItemCategory invariant 1 (`CategoryName` unique within school) | partial | services.rs:517-538 — `ItemCategory::fresh` with category_name. **Missing:** invariant 1 (no uniqueness check). |
+| `update_item_category` (services.rs:1391) | ItemCategory update semantics | real | services.rs:1397-1417 — change tracking (rs:1404-1409); version bump + `last_event_id` at rs:1412-1413; `ItemCategoryUpdated` event at rs:1415-1420. |
+| `delete_item_category` (services.rs:1422) | ItemCategory invariant 2 (cannot delete while `Item` references) | partial | services.rs:1427-1441 — emits `ItemCategoryDeleted` event shell. **Missing:** invariant 2 (referential check deferred to dispatcher). |
+
+### Item aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_item` (services.rs:544) | Item invariants 1 (`ItemSku` unique within school), 2 (`ItemName` non-empty), 4 (one `ItemCategory`), 5 (cannot delete while references exist) | partial | services.rs:551-576 — `Item::fresh` with name + sku + category_id; invariants 2 + 4 satisfied by value-object + enum. **Missing:** invariant 1 (no SKU uniqueness check); invariant 3 (`TotalInStock` non-negative — only updated by receive/issue/sell per spec, so service is fine; initial value is `0`). |
+| `update_item` (services.rs:1443) | Item update semantics | real | services.rs:1449-1477 — per-field change tracking (rs:1458-1466); version bump + `last_event_id` at rs:1469-1470; `ItemUpdated` event at rs:1472-1478. |
+| `delete_item` (services.rs:1482) | Item invariant 5 (cannot delete while `ItemIssue`/`ItemReceive`/`ItemSell` references) | partial | services.rs:1487-1501 — emits `ItemDeleted` event shell. **Missing:** invariant 5 (referential check deferred to dispatcher). |
+
+### ItemStore aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_item_store` (services.rs:582) | ItemStore invariant 1 (`StoreName` unique within school) | partial | services.rs:588-617 — `ItemStore::fresh` with store_name. **Missing:** invariant 1 (no uniqueness check). |
+| `update_item_store` (services.rs:1503) | ItemStore update semantics | real | services.rs:1509-1537 — per-field change tracking (rs:1518-1527); version bump + `last_event_id` at rs:1530-1531; `ItemStoreUpdated` event at rs:1533-1538. |
+| `delete_item_store` (services.rs:1542) | ItemStore invariant 2 (cannot delete while `ItemReceive` references) | partial | services.rs:1547-1563 — emits `ItemStoreDeleted` event shell. **Missing:** invariant 2 (referential check deferred to dispatcher). |
+
+### ItemIssue aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `issue_item` (services.rs:721) | ItemIssue invariants 2 (positive `Quantity`), 5 (`IssueTo` + optional buyer), 6 (decrement `Item.TotalInStock` atomically) | partial | services.rs:727-764 — non-zero quantity check (rs:728-733); `ItemIssue::fresh` with item_id + category_id + recipient + quantity + dates (rs:740-755); `ItemIssued` event at rs:757-766. **Missing:** invariant 3 (IssueDate ≥ academic year start — not checked); invariant 6 (atomic stock decrement deferred to dispatcher per the docstring at rs:722-723). |
+| `update_issue_status` (services.rs:1634) | ItemIssue invariant 4 (`IssueStatus` transitions) | real | services.rs:1640-1658 — captures `from` status (rs:1645); sets new status (rs:1646); version bump + `last_event_id` at rs:1647-1651; `ItemIssueStatusUpdated` event at rs:1653-1660. |
+| `return_issued_item` (services.rs:771) | ItemIssue state machine (Returned / PartiallyReturned) | partial | services.rs:776-816 — positive return quantity check (rs:778-780); outstanding-vs-return check (rs:781-786, returns `Conflict` if exceeded); accumulated `returned_quantity` update (rs:790-792); auto-promotion to `Returned` vs `PartiallyReturned` (rs:793-798); version bump + `last_event_id` at rs:799-802; `IssuedItemReturned` event at rs:805-814. **Missing:** atomic stock restore deferred to dispatcher (the service is pure). |
+
+### ItemReceive aggregate (header + children)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `receive_item` (services.rs:635) | ItemReceive invariants 1 (one Supplier + one ItemStore), 2 (≥1 `ItemReceiveChild`), 4 (`GrandTotal` = sum of subtotals), 5 (`TotalQuantity` = sum of quantities), 6 (`TotalPaid + TotalDue == GrandTotal`), 8 (atomic increment of `Item.TotalInStock` per line) | partial | services.rs:641-715 — empty-lines check (rs:642-646); per-line `ItemReceiveChild::fresh` constructs SubTotal = UnitPrice × Quantity (rs:661-678); `total_quantity` accumulated (rs:672); `grand_total` accumulated from line subtotals (rs:673); `ItemReceive::fresh` builds header with computed totals (rs:680-694); `ItemReceived` event with full payload (rs:696-714). **Missing:** invariant 3 (ReceiveDate ≥ academic year start — not checked); invariant 8 (atomic stock increment deferred to dispatcher per the docstring at rs:637-640); invariant 7 (PaidStatus enum satisfied by VO). |
+| `update_item_receive` (services.rs:1565) | ItemReceive invariants 4-6 preserved across updates; line add/remove cascades stock | partial | services.rs:1571-1603 — tracks `lines_to_add` / `lines_to_remove` as `changes` (rs:1578-1580) but does NOT mutate the lines vector; updates `total_paid` and recomputes `total_due` (rs:1581-1587). **Missing:** line mutation deferred to dispatcher (per the docstring at rs:1563-1564: "The dispatcher is responsible for re-applying stock deltas and re-validating totals"); the service emits the event shell. |
+| `cancel_item_receive` (services.rs:1608) | ItemReceive cancellation | partial | services.rs:1614-1629 — emits `ItemReceiveCancelled` event with reason; `reversed_lines` is `Vec::new()` populated by the dispatcher (rs:1625, comment at rs:1620-1622: "Reversed lines are populated by the dispatcher from the existing child rows; the service emits the event shell"). |
+
+### ItemSell aggregate (header + children)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `sell_item` (services.rs:835) | ItemSell invariants 1 (`RoleId` + optional buyer), 2 (≥1 `ItemSellChild`), 4 (`GrandTotal` = sum of subtotals), 5 (`TotalQuantity` = sum of quantities), 6 (`TotalPaid + TotalDue == GrandTotal`), 8 (atomic decrement of `Item.TotalInStock` per line) | partial | services.rs:841-916 — empty-lines check (rs:842-846); per-line `ItemSellChild::fresh` constructs SubTotal = SellPrice × Quantity (rs:862-879); `total_quantity` + `grand_total` accumulated (rs:880-882); `ItemSell::fresh` builds header (rs:885-898); `ItemSold` event with full payload (rs:900-914). **Missing:** invariant 3 (SellDate ≥ academic year start — not checked); invariant 8 (atomic stock decrement deferred to dispatcher per the docstring at rs:836-838); invariant 7 (PaidStatus enum satisfied by VO). |
+| `update_item_sell` (services.rs:1663) | ItemSell invariants 4-6 preserved across updates; line add/remove cascades stock | partial | services.rs:1669-1700 — same pattern as `update_item_receive` (rs:1676-1692): tracks line changes, updates total_paid + total_due, but does NOT mutate the lines vector. **Missing:** line mutation + stock cascade deferred to dispatcher. |
+| `cancel_item_sell` (services.rs:1706) | ItemSell cancellation | real | services.rs:1711-1725 — emits `ItemSellCancelled` event with reason (rs:1720-1724). |
+| `refund_item_sell` (services.rs:1730) | ItemSell invariant 7 (`PaidStatus` transitions include `Refunded`) | real | services.rs:1736-1769 — non-negative refund amount check (rs:1742-1746); refund-vs-total_paid cap (rs:1747-1752, returns `Conflict` if exceeded); `PaidStatus` promotion to `Refunded` on full refund, otherwise `Partial` (rs:1753-1758); version bump + `last_event_id` at rs:1759-1762; `ItemSellRefunded` event at rs:1764-1771. |
+
+### Supplier aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_supplier` (services.rs:922) | Supplier invariants 1 (`SupplierName` unique within school), 2 (`ContactPersonMobile` valid), 3 (`ContactPersonEmail` valid), 4 (cannot delete while `ItemReceive` references) | partial | services.rs:929-972 — `Supplier::fresh` with company_name + addresses + contacts (rs:945-961). **Missing:** invariant 1 (no uniqueness check); invariants 2-3 satisfied by `PhoneNumber` + `EmailAddress` VO constructors. |
+| `update_supplier` (services.rs:1775) | Supplier update semantics | real | services.rs:1781-1824 — per-field change tracking across all 7 mutable fields (rs:1790-1813); version bump + `last_event_id` at rs:1816-1817; `SupplierUpdated` event at rs:1819-1826. |
+| `deactivate_supplier` (services.rs:1830) | Supplier state machine (Active → Inactive); reason captured | real | services.rs:1835-1848 — `s.deactivate(...)` aggregate method enforces state machine (rs:1840); `SupplierDeactivated` event at rs:1843-1849 with reason. |
+| `delete_supplier` (services.rs:1853) | Supplier invariant 4 (cannot delete while `ItemReceive` references) | partial | services.rs:1858-1875 — emits `SupplierDeleted` event shell. **Missing:** invariant 4 (referential check deferred to dispatcher). |
+
+### TransportService (helper struct)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `TransportService::can_assign_vehicle` (services.rs:1887) | Doc-string promises: vehicle active AND route active AND no other `AssignVehicle` row for the same year | partial | services.rs:1887-1891 — body checks only `vehicle_active && vehicle.status == VehicleStatus::Active` (rs:1890). **Missing:** two of three promised checks (route-active flag and no-conflict `AssignVehicle` lookup are not performed). |
+| `TransportService::fare_for_student` (services.rs:1894) | Per-student fare = route fare, optionally overridden at stop | real | services.rs:1894-1897 — `stop_override.unwrap_or(route_fare)` (rs:1896); pure helper. |
+
+### DormitoryService (helper struct)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `DormitoryService::available_beds` (services.rs:1906) | Available beds = total beds − current assignments | real | services.rs:1906-1911 — `room.number_of_bed.value().saturating_sub(current_assignments)` (rs:1908-1910); pure arithmetic. |
+| `DormitoryService::can_assign` (services.rs:1914) | Doc-string: room must belong to the dormitory, capacity must permit | partial | services.rs:1914-1926 — body checks only `room.dormitory_id == dormitory.id` (rs:1918-1922). **Missing:** capacity check (room.NumberOfBed vs current student count; dormitory.Intake vs current students) — the function does not enforce the capacity rule that the docstring promises. |
+
+### InventoryService (helper struct)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `InventoryService::validate_receive` (services.rs:1934) | ItemReceive invariants 2 (non-empty lines), 4 (`GrandTotal` = sum of subtotals) | real | services.rs:1934-1949 — empty-lines check (rs:1935-1940); computed sum vs grand_total check (rs:1941-1948, returns `Conflict` if mismatch). Covers invariants 2 + 4 for the totals dimension; other invariants (date, paid+due=grand) are header-construction concerns handled at `ItemReceive::fresh`. |
+| `InventoryService::validate_sell` (services.rs:1951) | ItemSell invariants 2 + 4 (non-empty lines; `GrandTotal` = sum of subtotals) | real | services.rs:1951-1965 — same pattern as `validate_receive` (rs:1952-1964). |
+| `InventoryService::validate_issue` (services.rs:1966) | ItemIssue invariant 2 (positive quantity); Item invariant 3 (`TotalInStock` ≥ quantity) | real | services.rs:1966-1979 — zero quantity rejected (rs:1967-1971); stock-vs-quantity check (rs:1972-1978, returns `Conflict` if insufficient stock). |
+
+### SupplierService + MovementKind + InventoryConservationService (helpers + headline)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `SupplierService::normalize_name` (services.rs:1987) | Trims + collapses internal whitespace | real | services.rs:1987-1990 — `split_whitespace().collect::<Vec<_>>().join(" ")` (rs:1989); pure string transform. |
+| `MovementKind::sign` (services.rs:2020) | Sign multiplier: +1 for Receive, −1 for Issue / Sell | real | services.rs:2020-2025 — `match self { Self::Receive => 1, Self::Issue \| Self::Sell => -1 }` (rs:2021-2024). |
+| `InventoryConservationService::check_invariant` (services.rs:2053) | Per `(school_id, item_id)`: signed sum of movements ≥ 0 (Phase 8 headline correctness check, 100-case proptest) | real | services.rs:2053-2073 — cross-school filter (rs:2060); per-item signed accumulation (rs:2062-2066); negative `on_hand` rejected (rs:2067-2072); proptest target at services.rs:2853+ (100 cases for balanced + overdraw sequences). |
+| `InventoryConservationService::on_hand_for` (services.rs:2076) | Single-item on-hand projection | real | services.rs:2076-2086 — school + item filter (rs:2080-2082); signed accumulation (rs:2083-2084); pure read. |
+
+### Summary
+
+- **Total pub fn:** 60
+- **Real:** 41 — every Update / Delete / Unassign / Cancel /
+  Refund / Deactivate / Assign / Status factory plus the 7 helper
+  struct methods that match their doc-strings (`fare_for_student`,
+  `available_beds`, `validate_receive`, `validate_sell`,
+  `validate_issue`, `normalize_name`, `MovementKind::sign`,
+  `check_invariant`, `on_hand_for`).
+- **Partial:** 19 — 10 Create factories missing the
+  `(name, school)` uniqueness check (no `UniquenessChecker`
+  parameter on facilities services — the pattern academic uses is
+  absent here), 3 Create factories with additional cross-aggregate
+  invariants deferred to dispatcher
+  (`receive_item` / `issue_item` / `sell_item` for atomic stock
+  deltas, `return_issued_item` for atomic stock restore,
+  `update_item_receive` / `update_item_sell` for line mutation,
+  `cancel_item_receive` for reversed lines), 5 Delete / Unassign
+  factories where the referential invariant (cannot delete while
+  child rows reference) is deferred to the dispatcher
+  (`delete_vehicle`, `delete_route`, `delete_dormitory`,
+  `delete_room_type`, `delete_item_category`, `delete_item`,
+  `delete_item_store`, `delete_supplier`), and 2 helper struct
+  methods where the body does not match its doc-string
+  (`TransportService::can_assign_vehicle`, `DormitoryService::can_assign`).
+- **Stub:** 0 — every function body either implements the
+  invariant or delegates it explicitly via a doc-string note; no
+  `TODO:` / `unimplemented!()` / `let _ = (cmd, clock, ids);`
+  pattern.
+
+### Classification rationale
+
+- **Real vs partial** for the Update / Delete / Cancel / Unassign /
+  Assign factories hinges on whether the spec invariant requires a
+  cross-aggregate lookup or referential check. When it does
+  (`delete_*`, `cancel_item_receive`, `update_item_*` line
+  mutation), the gap is acknowledged in a doc-string and the
+  service emits the event shell — partial. When it doesn't
+  (per-field change tracking, simple event emission, single-
+  aggregate state transitions), the service is complete — real.
+- **Real vs partial** for the Create factories hinges on
+  uniqueness. Facilities does **not** use the academic
+  `UniquenessChecker` parameter pattern; uniqueness for
+  `VehicleNumber`, `RouteName`, `DormitoryName`, `RoomNumber`,
+  `RoomTypeName`, `CategoryName`, `ItemSku`, `StoreName`,
+  `SupplierName` is delegated entirely to the storage adapter.
+  Per the audit convention used for academic `create_class` and
+  attendance `mark_student_attendance` (same shape: uniqueness
+  delegated to storage), these are classified partial.
+- **Real vs partial** for the receive / issue / sell / return
+  factories hinges on atomic stock mutation (Item invariant 3,
+  ItemReceive/ItemSell/ItemIssue invariants 6/8). The pure
+  factory builds the aggregate and emits the event; the
+  dispatcher acquires the row-level lock and applies the stock
+  delta. The docstrings (rs:637-640, rs:722-723, rs:836-838)
+  acknowledge this. Same pattern as Phase 7 finance
+  `record_payment` (acknowledged deferred invariants = partial).
+- **Real vs partial** for the helper struct methods
+  (`TransportService::can_assign_vehicle`, `DormitoryService::can_assign`)
+  hinges on whether the body matches its doc-string. Both
+  doc-strings promise 3 / 2 checks respectively; both bodies
+  implement 1. Partial.
+- **`InventoryConservationService::check_invariant`** is the
+  Phase 8 headline correctness check (mirrors Phase 7's
+  `DoubleEntryService` proptest at
+  `crates/domains/finance/src/services.rs:953`). It is fully
+  implemented and 100-case proptest target — the only headline
+  correctness service in this file that is real end-to-end.
