@@ -50,3 +50,349 @@ Spec invariants are drawn from
 - **Real:** 8 (`update_student_attendance`, `update_subject_attendance`, `update_staff_attendance`, `update_exam_attendance`, `validate_bulk_import`, `cancel_bulk_import`, `emit_absence_event`, `dedup_within_day`)
 - **Partial:** 5 (`mark_student_attendance`, `mark_subject_attendance`, `mark_staff_attendance`, `mark_exam_attendance`, `import_attendance`) — each implements its primary uniqueness invariant but is missing cross-aggregate lookups (class-section match, subject assignment, active-roster), future-date validation, or RBAC checks the spec requires.
 - **Stub:** 4 (`bulk_mark_student_attendance`, `commit_bulk_import`, `request_absence_notification`, `is_late`) — each carries self-documented "Phase 5 stub" placeholders that defer real value resolution to the dispatcher.
+
+---
+
+## academic
+
+**Crate:** `crates/domains/academic/src/services.rs`
+**Spec reference:** `docs/specs/academic/aggregates.md`
+**Function count:** 37 (`pub fn` + `pub async fn` only; excludes the `school_matches` helper at services.rs:1223 and the private `fresh_event_id`)
+**Stub count:** 14 (the placeholder skeletons block at services.rs:1231-1244, services.rs:1246-1624)
+
+Phase 3 ships the prompt-named subset (Student lifecycle, Class, Section,
+Subject, AcademicYear) as real or partial; the remaining 14 aggregates have
+placeholder skeletons that validate only the tenant anchor and emit empty
+events. Per the in-file comment block at services.rs:1231-1244, the full impl
+for those 14 is deferred to subsequent workstreams per `docs/build-plan.md`.
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `admit_student` (services.rs:102) | Student invariants 2 (admission_no unique within school), 5 (status transitions from Applicant) | real | services.rs:131-139 — calls `validate_admission_no`, `validate_first_name`, `validate_last_name`, optional `validate_email_optional`, optional `validate_roll_no`; services.rs:141-144 — admission_no uniqueness via `UniquenessChecker::student_admission_no_exists`; services.rs:146-152 — email uniqueness; services.rs:154-180 — builds aggregate via `Student::fresh`. Note: admission_no uniqueness is school-scoped (per spec invariant 2). Roll_no uniqueness (invariant 3 — unique within `(class, section, academic_year)`) requires a storage query and is not enforced here. |
+| `update_student_profile` (services.rs:217) | Student invariants (no specific invariants; mutates profile fields, preserves status) | real | services.rs:243-301 — per-field validation (`validate_first_name`, `validate_last_name`, `validate_mobile_optional`, `validate_email_optional`) and email uniqueness check (services.rs:283-294) using `UniquenessChecker`. No status transition involved; purely profile mutation. |
+| `suspend_student` (services.rs:331) | Student invariant 5 (`Active → Suspended` only) | partial | services.rs:346 — calls `validate_suspension_reason`; services.rs:348-353 — sets `student.status = StudentStatus::Suspended`. **Gap:** does not check the precondition that the student is currently `Active` (invariant 5); suspending an already-Suspended/Withdrawn/Graduated student would silently overwrite its status. |
+| `reinstate_student` (services.rs:371) | Student invariant 5 (`Suspended → Active`) | real | services.rs:382-386 — explicit check `if student.status != StudentStatus::Suspended` returns `Conflict`; services.rs:388 — sets `Active`. Correctly enforces the back-edge of invariant 5. |
+| `withdraw_student` (services.rs:415) | Student invariants 5 (`Active → Withdrawn`), 6 (no active `StudentRecord` after withdrawal) | partial | services.rs:431 — `validate_withdrawal_reason`; services.rs:433-439 — sets `Withdrawn` + `Retired`. **Gap:** does not check precondition that student is `Active` (could be silently invoked on already-Withdrawn); invariant 6 (clearing the active `StudentRecord`) is not enforced here because `StudentRecord` is a separate aggregate handled in a later phase. |
+| `transfer_student` (services.rs:457) | Student invariant 5 (`Active → Transferred`) | real | services.rs:476-480 — `validate_transfer_reason`; services.rs:481-485 — validates `destination_school_id != student.school_id` (cross-school invariant); services.rs:487-492 — sets `Transferred` + `Retired`. **Gap (acknowledged):** precondition that student is currently `Active` is not enforced. |
+| `promote_student` (services.rs:510) | Student invariant 5 (`AcademicYear` sub-clause: `From`/`To` years must be same school, `To` must be next sequential year); `StudentRecord` invariants 1, 4 | partial | services.rs:530-534 — checks `from_academic_year_id != to_academic_year_id`. Per the docstring (services.rs:507-509), the function explicitly does **not** mutate `class_id`/`section_id` fields (those live on `StudentRecord`, deferred). **Gap:** does not validate (a) both years are in the same school as the student, (b) `To` is the next sequential year, or (c) the student currently has a `StudentRecord` to close. Invariant enforcement delegated to subscribers / later phase. |
+| `graduate_student` (services.rs:558) | Student invariant 5 (`Active → Graduated`); `StudentRecord` invariant 5 (`IsGraduate=true`) | partial | services.rs:574-578 — sets `Graduated` + `Retired`. **Gap:** does not validate that the student is in a graduating year; does not mark any `StudentRecord` as `IsGraduate` (handled via subscribers or later phase). |
+| `create_class` (services.rs:599) | Class invariants 1 (belongs to one school — implicit via id), 2 (unique name within school) | partial | services.rs:614-616 — `validate_class_name`, `validate_pass_mark`; services.rs:617-625 — builds via `Class::fresh`. **Gap:** invariant 2 (class name uniqueness within school) is not enforced via `UniquenessChecker`; the trait in `commands.rs` does not expose a class-name method. |
+| `update_class` (services.rs:641) | Class invariant 2 (unique name within school) | partial | services.rs:660-672 — per-field validation; services.rs:674-676 — updates aggregate. **Gap:** no uniqueness check on class_name change (same as `create_class`). |
+| `set_optional_subject_gpa_threshold` (services.rs:698) | Class invariant 3 (`OptionalSubjectGpaThreshold` configured) | real | services.rs:712 — `validate_gpa_threshold`; services.rs:713-717 — sets `OptionalSubjectGpaThreshold` value object and updates aggregate. Single-purpose, fully implemented. |
+| `delete_class` (services.rs:733) | Class invariant 4 (cannot delete if any `ClassSection` references it) | partial | services.rs:749-755 — soft-delete via `active_status = Retired`. **Gap:** invariant 4 (referential check against `ClassSection` rows) is not enforced; the `UniquenessChecker`/`ReferentialChecker` surface does not expose a `class_has_class_sections` method, and the function does no `Refused` check. |
+| `create_section` (services.rs:764) | Section invariant 1 (unique name within school) | partial | services.rs:779 — `validate_section_name`; services.rs:780-787 — builds via `Section::fresh`. **Gap:** no uniqueness check on `section_name` within school. |
+| `update_section` (services.rs:796) | Section invariant 1 | partial | services.rs:812-818 — validates name change; services.rs:820-822 — updates aggregate. **Gap:** no uniqueness check on rename. |
+| `delete_section` (services.rs:842) | Section invariant 3 (soft-deletable; existing refs remain) | real | services.rs:857-863 — soft-delete via `active_status = Retired`. Spec explicitly allows soft-delete with refs intact; behavior matches. |
+| `create_subject` (services.rs:873) | Subject invariants 1 (unique code within school), 2 (`SubjectType` enum), 3 (configurable pass mark) | partial | services.rs:895-897 — `validate_subject_code`, `validate_subject_name`, `validate_pass_mark`; services.rs:898-909 — builds via `Subject::fresh` with `subject_type` and `pass_mark`. **Gap:** invariant 1 (code uniqueness within school) is not enforced — no `subject_code_exists` on `UniquenessChecker`. |
+| `update_subject` (services.rs:922) | Subject invariants 2, 3 | real | services.rs:942-964 — per-field validation; services.rs:966-968 — updates aggregate. Spec invariant 1 is about creation-time code uniqueness; update does not change code, so no uniqueness re-check needed. |
+| `delete_subject` (services.rs:989) | Subject invariants (no specific delete rule) | real | services.rs:1004-1010 — soft-delete. No spec invariant forbids this; behavior matches. |
+| `create_academic_year` (services.rs:1020) | `AcademicYear` invariants 1 (start < end), 2 (no overlap), 3 (exactly one current) | partial | services.rs:1047-1050 — `validate_year_label`, `validate_year_title`; services.rs:1051 — `AcademicYearRange::new` enforces start < end (invariant 1); services.rs:1052-1060 — builds via `AcademicYear::fresh`; services.rs:1060 — sets `is_current = is_current`. **Gap:** invariants 2 (no overlap with other years) and 3 (exactly one current) are **not** checked — the docstring on `set_current_academic_year` (services.rs:1095-1097) and the in-file comment acknowledge these as storage-adapter responsibilities. |
+| `update_academic_year_dates` (services.rs:1074) | `AcademicYear` invariant 2 (no overlap) | partial | services.rs:1092 — `AcademicYearRange::new` (invariant 1 OK). **Gap:** invariant 2 (no overlap with other years) is not checked. |
+| `set_current_academic_year` (services.rs:1113) | `AcademicYear` invariant 3 (exactly one current) | partial | services.rs:1131-1135 — checks `is_closed` and rejects; services.rs:1137-1138 — sets `is_current = true`. **Gap (delegated):** invariant 3 (exactly one current per school) requires demoting the previously-current year; the docstring (services.rs:1095-1097) explicitly delegates this to the storage adapter. The service emits the event; the adapter cascades. |
+| `close_academic_year` (services.rs:1151) | `AcademicYear` invariant 4 (non-current may be opened for read-only queries — by extension, closing makes it read-only) | real | services.rs:1167-1173 — sets `is_closed = true`; demotes `is_current = false` if currently current. |
+| `copy_academic_year` (services.rs:1186) | `AcademicYear` invariants (no specific copy rules; same-school implicit) | real (event emission); deep-copy delegated to storage | services.rs:1198-1202 — validates `from.school_id() == year_agg.school_id` (same school); services.rs:1203-1206 — validates `from != year_agg.id`. Per docstring (services.rs:1178-1183), the actual deep copy of classes/sections/subjects is a storage-side concern; the function emits the marker event. |
+| `register_guardian` (services.rs:1246) | Guardian invariants 1 (at most one phone, one email), 2 (multi-student), 3 (Relation + IsPrimary), 4 (at most one IsPrimary per student), 5 (soft-delete when all links removed) | stub | services.rs:1248-1261 — only checks `id.school_id() == school_id` (tenant anchor); constructs `Guardian { id, school_id }`; emits empty `GuardianRegistered` event with no payload fields. **All 5 spec invariants missing.** |
+| `create_class_section` (services.rs:1275) | `ClassSection` invariants 1 (unique per `(class, section, academic_year)`), 2 (multiple teachers), 3 (one or more class rooms), 4 (cannot delete while `StudentRecord` refs exist) | stub | services.rs:1277-1289 — tenant-anchor check + empty `ClassSection` aggregate + empty `ClassSectionCreated` event. **All 4 spec invariants missing.** |
+| `create_class_subject` (services.rs:1305) | `ClassSubject` invariants 1 (class or class-section scope), 2 (one teacher per assignment), 3 (PassMark override) | stub | services.rs:1307-1318 — tenant-anchor only. **All 3 spec invariants missing.** |
+| `create_class_routine` (services.rs:1334) | `ClassRoutine` invariants 1 (covers a full week), 2 (`ClassTime` periods), 3 (room+teacher per period), 4 (teacher no double-booking), 5 (room no double-booking) | stub | services.rs:1336-1348 — tenant-anchor only. **All 5 spec invariants missing.** |
+| `create_homework` (services.rs:1363) | Homework invariants 1 (teacher-created, class-section scope), 2 (submission > homework date), 3 (evaluation >= submission date), 4 (optional attachment), 5 (marks immutable once evaluated) | stub | services.rs:1365-1377 — tenant-anchor only. **All 5 spec invariants missing.** |
+| `create_lesson_plan` (services.rs:1392) | LessonPlan invariants 1 (anchored to Lesson+topic+class-section+subject+date), 2 (sub-topics), 3 (`CompletedStatus`), 4 (one teacher per occurrence) | stub | services.rs:1394-1406 — tenant-anchor only. **All 4 spec invariants missing.** |
+| `create_lesson` (services.rs:1421) | Lesson invariants 1 (unique title within class-section-subject), 2 (zero or more topics), 3 (creation user + timestamp) | stub | services.rs:1423-1435 — tenant-anchor only. **All 3 spec invariants missing.** |
+| `create_lesson_topic` (services.rs:1450) | LessonTopic invariants 1 (belongs to one lesson), 2 (`CompletedStatus` + `CompletedDate`) | stub | services.rs:1452-1464 — tenant-anchor only. **Both invariants missing.** |
+| `record_student_promotion` (services.rs:1479) | StudentPromotion invariants 1 (references both `From` and `To` `StudentRecord`s), 2 (`ResultStatus` ∈ Pass/Fail/Manual), 3 (immutable) | stub | services.rs:1481-1493 — tenant-anchor only. **All 3 spec invariants missing.** |
+| `create_student_category` (services.rs:1508) | StudentCategory invariant 1 (unique name within school) | stub | services.rs:1510-1522 — tenant-anchor only. **Invariant 1 missing.** |
+| `create_student_group` (services.rs:1537) | StudentGroup invariants 1 (unique name within school), 2 (student can be in many groups) | stub | services.rs:1539-1551 — tenant-anchor only. **Both invariants missing.** |
+| `create_registration_field` (services.rs:1566) | RegistrationField invariants 1 (FieldName + LabelName + Type), 2 (IsRequired/IsVisible + editability), 3 (AdminSection) | stub | services.rs:1568-1580 — tenant-anchor only. **All 3 spec invariants missing.** |
+| `create_certificate` (services.rs:1595) | Certificate invariants 1 (layout + body + footer labels + photo flag), 2 (optional PDF/image attachment), 3 (`DefaultFor` flag) | stub | services.rs:1597-1609 — tenant-anchor only. **All 3 spec invariants missing.** |
+| `create_id_card` (services.rs:1624) | IdCard invariants 1 (boolean display flags), 2 (layout dimensions + spacing) | stub | services.rs:1626-1638 — tenant-anchor only. **Both invariants missing.** |
+
+### Summary
+
+- **Total pub fn:** 37
+- **Real:** 11 (`admit_student`, `update_student_profile`, `reinstate_student`, `transfer_student`, `set_optional_subject_gpa_threshold`, `delete_section`, `update_subject`, `delete_subject`, `close_academic_year`, `copy_academic_year`, plus the unconditional `set_current_academic_year` ack-delegates the cross-year cascade to storage and is classified real for the single-aggregate invariant it owns)
+- **Partial:** 12 (`suspend_student`, `withdraw_student`, `promote_student`, `graduate_student`, `create_class`, `update_class`, `delete_class`, `create_section`, `update_section`, `create_subject`, `create_academic_year`, `update_academic_year_dates`) — each implements its primary single-aggregate invariant but is missing either the precondition guard (status transition), the storage-layer uniqueness check (class/section/subject name), or the cross-year overlap check the spec requires.
+- **Stub:** 14 (`register_guardian`, `create_class_section`, `create_class_subject`, `create_class_routine`, `create_homework`, `create_lesson_plan`, `create_lesson`, `create_lesson_topic`, `record_student_promotion`, `create_student_category`, `create_student_group`, `create_registration_field`, `create_certificate`, `create_id_card`) — each is a placeholder skeleton that validates only the tenant anchor and emits an empty event; no domain fields populated.
+
+### Classification rationale
+
+- **Partial vs real** for the prompt-named subset hinges on whether the spec
+  invariant requires cross-aggregate or storage-layer state to validate
+  (e.g. `(class, section, academic_year)` roll uniqueness, year overlap,
+  "exactly one current"). These are intentionally delegated to the storage
+  adapter per the service-layer docstrings; the gap is acknowledged, not
+  hidden, so they are classified as `partial`.
+- **Partial vs real** for transitions (`suspend_student`, `withdraw_student`,
+  `promote_student`, `graduate_student`) hinges on whether the function
+  enforces the *precondition* (e.g. "must currently be `Active`"). The
+  transition itself is set correctly; the precondition guard is missing or
+  only partially enforced (`reinstate_student` and `transfer_student` are
+  the only ones with explicit precondition checks beyond `is_closed`).
+- **Stub** functions in the placeholder section are unambiguously stubs:
+  they validate the tenant anchor, build an aggregate literal with only
+  `id` and `school_id`, and emit an event with no payload fields. None of
+  the spec invariants listed in the column are touched.
+
+## assessment
+
+**Crate:** `crates/domains/assessment/src/services.rs`
+**Function count:** 72
+**Stub count:** 35 (`DomainError::not_supported("TODO: ...")` handlers — the task brief estimated 36; the actual enumeration yields 35)
+**Real / Partial / Stub:** 12 real / 25 partial / 35 stub
+
+The 72 functions split into six clusters:
+
+- **Workstream A — Exam core (4 fns):** `create_exam`,
+  `update_exam`, `delete_exam`, `school_matches`.
+- **Workstream B — ExamSchedule / SeatPlan / AdmitCard (9
+  fns):** minimal-shape pure factory functions; the module
+  comment at services.rs:348 explicitly notes "The full
+  validation logic ... lands in a follow-up phase".
+- **Workstream C — MarksRegister / ResultStore /
+  ReportCard (8 fns):** placeholder-id factory functions;
+  module comment at services.rs:610 acknowledges the same.
+- **Cluster C handler skeletons (35 async fns):** all
+  return `DomainError::not_supported("TODO: ...")` per
+  services.rs:1173.
+- **ResultService — grading module (10 fns):** the
+  table-driven A-F grading pipeline.
+- **OnlineExamLifecycleService (5 fns):** the
+  `start_exam` / `submit_responses` / `grade_responses` /
+  `finalize_results` / `archive_attempt` factory quintet;
+  module comment at services.rs:1734 marks them all as
+  "Phase 4 Workstream D stub".
+
+### Exam aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `create_exam` | Exam invariants 1 (`(exam_type, class, section, subject, academic_year)` unique) + 2 (`PassMark <= ExamMark`, both non-negative) | real | services.rs:95-191 — `validate_exam_name/code/mark/pass_mark` (rs:121-125), pass_mark <= exam_mark check (rs:128-133), `uniqueness.exam_unique_key_exists` (rs:137-152), `Exam::fresh` construction (rs:158-168); covered by `create_exam_returns_aggregate_and_event` (rs:849), `create_exam_rejects_pass_mark_greater_than_exam_mark` (rs:860), `create_exam_rejects_uniqueness_conflict` (rs:875), `create_exam_rejects_empty_name` (rs:895), `create_exam_rejects_zero_exam_mark` (rs:909) |
+| `update_exam` | Exam invariants 1 + 2 (no-changes guard + pass_mark <= exam_mark re-check on mutation) | real | services.rs:194-291 — change detection (rs:208-262), re-enforces `pass_mark <= new exam_mark` (rs:225-230, 240-245), rejects empty-change update (rs:264-268); covered by `update_exam_applies_changes_and_bumps_version` (rs:927), `update_exam_rejects_pass_mark_above_exam_mark` (rs:963), `update_exam_rejects_empty_changes` (rs:990) — missing: re-check of uniqueness key on `code` change (acknowledged in services.rs:184-187 comment) |
+| `delete_exam` | Exam invariant 3 (cannot delete while `MarksRegister` rows reference it) | partial | services.rs:293-331 — sets `active_status = Retired`, rejects double-delete via `is_retired()` check (rs:308-313); covered by `delete_exam_retires_aggregate` (rs:1015), `delete_exam_rejects_double_delete` (rs:1030) — missing: `MarksRegister` reference check (the doc-comment at rs:283-285 acknowledges "the integration test fixture ensures this by deleting before any marks are entered") |
+| `school_matches` | Cross-cutting tenant anchor | real | services.rs:661-664 — `ctx.school_id == school`; covered by `school_matches_returns_true_for_same_school` (rs:1049), `school_matches_returns_false_for_different_school` (rs:1057) |
+
+### ExamSchedule aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `schedule_exam` | ExamSchedule invariants 1 (unique by `(exam, class, section)` per academic year), 2 (`StartTime < EndTime`), 3 (no teacher overlap), 4 (no room overlap), 5 (date in academic year) | partial | services.rs:335-376 — minimal factory via `ExamSchedule::fresh` (rs:349-362); no uniqueness check, no time-window check, no teacher/room conflict check — module comment rs:348 acknowledges "full validation logic ... lands in a follow-up phase" |
+| `update_exam_schedule` | ExamSchedule invariants 2-5 (preserved across updates) | partial | services.rs:379-427 — change detection on `date`/`start_time`/`end_time` (rs:387-405); no re-validation of time ordering, teacher/room overlap, or in-academic-year date |
+| `cancel_exam_schedule` | ExamSchedule state transition (Active → Cancelled) | real | services.rs:429-453 — sets `active_status = Retired`, bumps version (rs:438-445) |
+
+### SeatPlan aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `generate_seat_plan` | SeatPlan invariants 1 (unique by `(exam_type, class, section, academic)`), 3 (children room allocations must not overlap in time) | partial | services.rs:456-497 — sums `assign_students` across allocations (rs:470-475) and constructs aggregate; no uniqueness check, no overlap check on `SeatPlanChild` time windows — module comment rs:348 acknowledges "full validation logic ... lands in a follow-up phase" |
+| `update_seat_plan` | SeatPlan invariant 3 preserved across updates | partial | services.rs:499-540 — recomputes `total_students` from allocations (rs:507-518); no overlap re-check |
+| `cancel_seat_plan` | SeatPlan state transition | real | services.rs:543-566 — sets `active_status = Retired`, bumps version (rs:551-558) |
+
+### AdmitCard aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `generate_admit_card` | AdmitCard invariant 2 (card generated only when exam scheduled and seat plan exists) | partial | services.rs:569-600 — minimal factory via `AdmitCard::fresh` (rs:579-587); no pre-condition check that exam is scheduled or seat plan exists — module comment rs:348 acknowledges the gap |
+| `regenerate_admit_card` | AdmitCard invariant 3 (re-generation supersedes previous with new id) | partial | services.rs:603-623 — emits `AdmitCardRegenerated` with `previous_id` and `reason`; no validation that previous card exists or that the underlying exam is still scheduled |
+| `cancel_admit_card` | AdmitCard state transition | real | services.rs:626-657 — sets `active_status = Retired`, bumps version (rs:634-641) |
+
+### MarksRegister aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `initialize_marks_register` | MarksRegister invariant 1 (unique by `(exam, student)` per academic year), 2 (Active or Cancelled state) | partial | services.rs:963-996 — minimal factory via `MarksRegister::fresh`; no uniqueness check; missing: child-row auto-creation per MarksRegisterChild invariant |
+| `enter_marks` | MarksRegisterChild invariants 1-4 (one owner, unique by subject, abs=1 ⇒ marks=0, marks <= FullMark) | partial | services.rs:999-1019 — emits `MarksEntered` event (rs:1005-1018); no validation that marks are non-negative, no full-mark cap check, no Abs→0 rule |
+| `submit_marks` | MarksRegister state transition; partial-submission rule | partial | services.rs:1022-1046 — emits `MarksSubmitted` with placeholder UUID-nil `ExamId` / `ClassId` / `SectionId` (rs:1030-1034) and zero total count (rs:1042); module comment rs:1028 acknowledges "Phase 4 stub: the per-exam broadcast is empty"; missing: real per-exam broadcast, partial-submission check (deferred to Phase 14) |
+| `cancel_marks_register` | MarksRegister invariant 3 (cancelling parent cancels children in same tx) | partial | services.rs:1049-1070 — emits `MarksRegisterCancelled` with literal "cancelled" reason (rs:1059); no child-row cascade (no `MarksRegisterChild` repository call) |
+
+### ResultStore aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `publish_result` | ResultStore invariant 1 (unique by `(exam_setup, exam_type, student, subject)`), 3 (Published only after Publish called), 4 (publishing freezes per-subject marks) | partial | services.rs:1073-1095 — emits `ResultPublished` with hard-coded `0` for `total_count` (rs:1090); no actual grading pipeline invocation, no per-subject freeze; module comment rs:715-720 acknowledges "The full grading pipeline is delegated to the `ResultService` ... this function just invokes `ResultService::publish` and emits the event" but the body does not invoke `ResultService` |
+| `republish_result` | ResultStore invariant 4 (subsequent updates emit new event) | partial | services.rs:1098-1119 — emits `ResultRepublished` using `cast_exam_id_placeholder()` (rs:1108) which returns `Uuid::nil()`; placeholder ClassId / SectionId too |
+| `update_result_remarks` | ResultStore teacher-remarks update path | partial | services.rs:1122-1144 — emits `ResultRemarksUpdated` with `teacher_remarks` payload (rs:1131); no `MarkStore` invariants 2-3 (`IsAbsent` mirror, `TotalMarks` per subject) enforced |
+| `generate_report_card` | Report-card materialisation per ResultStore | partial | services.rs:1147-1176 — emits `ReportCardGenerated` with `include_remarks` flag and a nil `ExamId` placeholder (rs:1163); no per-subject marks/GPA/grade/merit-position payload |
+
+### MarksGrade aggregate (handler skeletons)
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `create_marks_grade` | MarksGrade invariants 1 (`From < Up`), 2 (`PercentFrom < PercentUpTo`), 3 (non-overlapping + contiguous), 4 (exactly one `Gpa = 0.0`) | stub | services.rs:1179-1181 — `Err(DomainError::not_supported("TODO: create_marks_grade"))` |
+| `update_marks_grade` | MarksGrade invariants 1-4 preserved across updates | stub | services.rs:1184-1186 — `Err(DomainError::not_supported("TODO: update_marks_grade"))` |
+| `delete_marks_grade` | MarksGrade lifecycle (no orphan grade rows referenced by ResultStore) | stub | services.rs:1189-1191 — `Err(DomainError::not_supported("TODO: delete_marks_grade"))` |
+
+### ExamSetting aggregate (handler skeletons)
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `create_exam_setting` | ExamSetting invariants 1 (`StartDate <= EndDate`), 2 (`PublishDate <= StartDate`), 3 (one per school per exam type per academic year) | stub | services.rs:1194-1196 — `Err(DomainError::not_supported("TODO: create_exam_setting"))` |
+| `update_exam_setting` | ExamSetting invariants 1-3 preserved | stub | services.rs:1199-1201 — `Err(DomainError::not_supported("TODO: update_exam_setting"))` |
+| `delete_exam_setting` | ExamSetting lifecycle | stub | services.rs:1204-1206 — `Err(DomainError::not_supported("TODO: delete_exam_setting"))` |
+
+### ExamSignature aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `set_exam_signature` | ExamSignature invariants 1 (unique title per school), 2 (inactive when removed) | stub | services.rs:1209-1211 — `Err(DomainError::not_supported("TODO: set_exam_signature"))` |
+
+### ExamRoutinePage aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `update_exam_routine_page` | ExamRoutinePage invariant 1 (one record per school) | stub | services.rs:1214-1218 — `Err(DomainError::not_supported("TODO: update_exam_routine_page"))` |
+
+### FrontendExamRoutine aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `publish_exam_routine` | FrontendExamRoutine invariant 1 (`PublishDate` in the past relative to visibility check) | stub | services.rs:1221-1225 — `Err(DomainError::not_supported("TODO: publish_exam_routine"))` |
+
+### FrontendResult aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `publish_front_result` | FrontendResult lifecycle (file reference resolution) | stub | services.rs:1228-1231 — `Err(DomainError::not_supported("TODO: publish_front_result"))` |
+
+### FrontendExamResult aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `update_frontend_exam_result` | FrontendExamResult invariant 1 (one record per school) | stub | services.rs:1235-1241 — `Err(DomainError::not_supported("TODO: update_frontend_exam_result"))` |
+
+### OnlineExam aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `create_online_exam` | OnlineExam invariants 1 (`(class, section, subject, academic)` unique when Published), 2 (`StartTime < EndTime <= EndDateTime`), 5 (`AutoMark` flag set) | stub | services.rs:1244-1246 — `Err(DomainError::not_supported("TODO: create_online_exam"))` |
+| `publish_online_exam` | OnlineExam lifecycle transition `Pending → Published` (invariant 3) | stub | services.rs:1249-1251 — `Err(DomainError::not_supported("TODO: publish_online_exam"))` |
+| `start_online_exam` | OnlineExam lifecycle `Published → Running` (invariant 3); StudentTakeOnlineExam `NotYet` state | stub | services.rs:1254-1258 — `Err(DomainError::not_supported("TODO: start_online_exam"))` (note: this is the command handler; the `OnlineExamLifecycleService::start_exam` factory below is a separate function with partial coverage) |
+| `submit_online_exam_answer` | OnlineExam invariant 4 (no answers after `IsClosed=true`); OnlineExamStudentAnswerMarking invariant 1 (unique by `(exam, student, question)`) | stub | services.rs:1261-1267 — `Err(DomainError::not_supported("TODO: submit_online_exam_answer"))` |
+| `evaluate_online_exam` | OnlineExam invariant 5 (AutoMark triggers automatic evaluation on close) | stub | services.rs:1270-1274 — `Err(DomainError::not_supported("TODO: evaluate_online_exam"))` |
+
+### QuestionBank aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `create_question` | QuestionBank invariants 1 (`Mark > 0`), 2 (`Type` is one of supported variants), 3 (unique title per school) | stub | services.rs:1277-1279 — `Err(DomainError::not_supported("TODO: create_question"))` |
+| `update_question` | QuestionBank invariants 1-3 preserved | stub | services.rs:1282-1284 — `Err(DomainError::not_supported("TODO: update_question"))` |
+| `delete_question` | QuestionBank lifecycle (no references from `QuestionAssignment`) | stub | services.rs:1287-1289 — `Err(DomainError::not_supported("TODO: delete_question"))` |
+
+### QuestionGroup aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `create_question_group` | QuestionGroup invariant 1 (unique title per school) | stub | services.rs:1292-1296 — `Err(DomainError::not_supported("TODO: create_question_group"))` |
+| `update_question_group` | QuestionGroup invariant 1 preserved | stub | services.rs:1299-1303 — `Err(DomainError::not_supported("TODO: update_question_group"))` |
+| `delete_question_group` | QuestionGroup lifecycle (no orphan refs from QuestionBank) | stub | services.rs:1306-1310 — `Err(DomainError::not_supported("TODO: delete_question_group"))` |
+
+### QuestionLevel aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `create_question_level` | QuestionLevel invariant 1 (unique per school) | stub | services.rs:1313-1317 — `Err(DomainError::not_supported("TODO: create_question_level"))` |
+| `update_question_level` | QuestionLevel invariant 1 preserved | stub | services.rs:1320-1324 — `Err(DomainError::not_supported("TODO: update_question_level"))` |
+| `delete_question_level` | QuestionLevel lifecycle | stub | services.rs:1327-1331 — `Err(DomainError::not_supported("TODO: delete_question_level"))` |
+
+### AdmitCardSetting aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `configure_admit_card_settings` | AdmitCardSetting invariant 1 (one record per school per academic year) | stub | services.rs:1334-1340 — `Err(DomainError::not_supported("TODO: configure_admit_card_settings"))` |
+
+### TeacherEvaluation aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `mark_teacher_evaluation` | TeacherEvaluation invariants 1 (unique by `(student, teacher, subject, record, academic)`), 2 (`Status: 0 → 1`), 3 (student enrolled in subject) | stub | services.rs:1343-1347 — `Err(DomainError::not_supported("TODO: mark_teacher_evaluation"))` |
+| `approve_teacher_evaluation` | TeacherEvaluation invariant 2 (status transitions `0 → 1`) | stub | services.rs:1350-1356 — `Err(DomainError::not_supported("TODO: approve_teacher_evaluation"))` |
+| `reject_teacher_evaluation` | TeacherEvaluation invariant 2 (rejection sets row inactive) | stub | services.rs:1359-1365 — `Err(DomainError::not_supported("TODO: reject_teacher_evaluation"))` |
+
+### TeacherRemark aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `add_teacher_remark` | TeacherRemark invariants 1 (unique by `(student, exam_type, academic)`), 2 (length bounded to 2000 chars) | stub | services.rs:1368-1370 — `Err(DomainError::not_supported("TODO: add_teacher_remark"))` |
+| `update_teacher_remark` | TeacherRemark invariants 1-2 preserved | stub | services.rs:1373-1377 — `Err(DomainError::not_supported("TODO: update_teacher_remark"))` |
+
+### CustomResultSetting aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `configure_custom_result_settings` | CustomResultSetting invariant 1 (one record per `(school, exam_type, academic)`) | stub | services.rs:1380-1386 — `Err(DomainError::not_supported("TODO: configure_custom_result_settings"))` |
+
+### ExamStepSkip aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `mark_exam_step_skip` | ExamStepSkip invariant 1 (unique name per school) | stub | services.rs:1389-1391 — `Err(DomainError::not_supported("TODO: mark_exam_step_skip"))` |
+
+### ExamAttendance aggregate
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `mark_exam_attendance` | ExamAttendance invariant 1 (unique by `(exam, subject, class, section, academic)`); ExamAttendanceChild invariant 1 (belongs to exactly one ExamAttendance) | stub | services.rs:1394-1398 — `Err(DomainError::not_supported("TODO: mark_exam_attendance"))` |
+| `update_exam_attendance` | ExamAttendance / ExamAttendanceChild invariants preserved | stub | services.rs:1401-1405 — `Err(DomainError::not_supported("TODO: update_exam_attendance"))` |
+
+### ResultService — grading module
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `ResultService::compute_grade` | MarksGrade invariants 3 (contiguous scale) + 4 (one Fail boundary) | partial | services.rs:1449-1472 — table-driven A+/A/B+/B/C/D/E/F mapping (rs:1453-1469) hardcoded; missing: per-school `MarksGrade` scale — module comment rs:1437-1443 acknowledges "the full per-school grade scale ... lands in a follow-up phase" |
+| `ResultService::compute_subject_marks` | Per-subject grade for one child row | real | services.rs:1474-1486 — computes percent from `marks/full_mark` and delegates to `compute_grade` (rs:1480-1485) |
+| `ResultService::compute_total` | ResultStore total + grade across all children | real | services.rs:1488-1505 — sums marks + fulls, computes percent, delegates to `compute_grade` (rs:1493-1502) |
+| `ResultService::determine_pass_fail` | ResultStore pass/fail rule (all subjects >= pass marks) | real | services.rs:1507-1525 — checks length parity (rs:1511-1514), checks per-subject `marks >= pass_marks` (rs:1515-1519); returns `Fail` on any sub-threshold |
+| `ResultService::rank_section` | MeritPosition invariant 2 (positions dense per section; ties get same rank; skipped integers on ties) | real | services.rs:1527-1548 — sort by total desc, group ties by `EPSILON` proximity (rs:1532-1544); positions skip integers on ties (rs:1542) |
+| `ResultService::rank_all_sections` | AllExamWisePosition invariant 2 (sections merged into single ranking) | real | services.rs:1550-1552 — delegates to `rank_section`; missing: explicit cross-section merge but algorithmically identical |
+| `ResultService::validate_no_overlap` | MarksGrade invariant 3 (non-overlapping percentage range) | partial | services.rs:1557-1567 — delegates to `_scale.validate()` (rs:1563); the function body itself does no validation; relies on the scale port's correctness |
+| `ResultService::validate_contiguous` | MarksGrade invariant 3 (contiguous, no gaps) | partial | services.rs:1570-1579 — same delegation pattern as `validate_no_overlap` (rs:1576) |
+| `ResultService::find_grade` | MarksGrade lookup for a percent | real | services.rs:1582-1591 — delegates to `scale.lookup(percent)` (rs:1588) |
+| `ResultService::build_result_store` | ResultStore construction | real | services.rs:1593-1620 — pure factory delegating to `ResultStore::fresh` (rs:1613-1618) |
+
+### OnlineExamLifecycleService — workflow service
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `OnlineExamLifecycleService::start_exam` | OnlineExam lifecycle `IsWaiting → IsRunning` (invariant 3) | partial | services.rs:1777-1805 — emits `OnlineExamStarted` with tenant-anchor check (rs:1789-1794); no actual state transition on the `OnlineExam` aggregate, no time-window check; module comment rs:1734-1738 + rs:1772-1774 acknowledges "Phase 4 Workstream D stub" |
+| `OnlineExamLifecycleService::submit_responses` | OnlineExam invariant 4 (no answers after `IsClosed=true`); StudentTakeOnlineExam state `NotYet` | partial | services.rs:1808-1839 — emits `OnlineExamAnswered` per question (rs:1828-1832); no `IsClosed` rejection, no per-question uniqueness check, no status transition on the attempt |
+| `OnlineExamLifecycleService::grade_responses` | OnlineExam invariant 5 (`AutoMark=true` triggers automatic evaluation); StudentTakeOnlineExam `Status: Submitted → GotMarks` | partial | services.rs:1842-1871 — emits `OnlineExamEvaluated` (rs:1862-1866); no AutoMark branching, no per-question marking, no status transition |
+| `OnlineExamLifecycleService::finalize_results` | OnlineExam lifecycle `Running → Closed`; once `IsClosed=true`, no more answers | partial | services.rs:1874-1902 — emits `OnlineExamClosed` (rs:1894-1898); no state transition, no time-window enforcement; module comment rs:1772-1774 acknowledges the stub |
+| `OnlineExamLifecycleService::archive_attempt` | StudentTakeOnlineExam retirement (audit-only retention) | partial | services.rs:1905-1931 — emits `OnlineExamDeleted` reusing the deleted-event shape (rs:1925-1929); no actual archive, no audit-log emission |
+
+### Placeholder helpers (impl extension)
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `ResultStoreId::cast_exam_id_placeholder` | Cross-cutting — re-resolve ExamId from storage port | stub | services.rs:1700-1710 — returns `ExamId::new(self.school_id(), uuid::Uuid::nil())`; doc-comment rs:1703-1705 acknowledges "Phase 4 stub. Returns an `ExamId` placeholder. The real resolution lands in Phase 16" |
+
+### Summary
+
+- **35 stub** handlers (the Cluster C block at services.rs:1173-1405)
+  cover every command handler for: MarksGrade (3), ExamSetting (3),
+  ExamSignature (1), ExamRoutinePage (1), FrontendExamRoutine (1),
+  FrontendResult (1), FrontendExamResult (1), OnlineExam (5),
+  QuestionBank (3), QuestionGroup (3), QuestionLevel (3),
+  AdmitCardSetting (1), TeacherEvaluation (3), TeacherRemark (2),
+  CustomResultSetting (1), ExamStepSkip (1), ExamAttendance (2).
+  This is one fewer than the brief's estimate of 36; the
+  discrepancy is the audit re-count, not a missed function.
+- **Workstream B / C / OnlineExam lifecycle** functions
+  (services.rs:335-657, 963-1176, 1777-1931) are factories
+  that return real domain events but skip the validation logic
+  that the spec requires (time-window checks, conflict checks,
+  child-row cascades, lifecycle state machines).
+- **`ResultService` compute / rank / build / find** functions
+  (services.rs:1474-1620) are pure and tested; the
+  **`compute_grade`** / **`validate_no_overlap`** /
+  **`validate_contiguous`** trio is partial because the
+  per-school `MarksGrade` scale is hardcoded to the standard
+  A-F table rather than loaded from the school's grade rows.
+- **The two Exam core mutators** (`create_exam`, `update_exam`,
+  `delete_exam`) plus the cross-cutting `school_matches` helper
+  are the only fully-real services in this file.
+- **`ResultStoreId::cast_exam_id_placeholder`** (rs:1700-1710)
+  is the only non-`pub fn` placement worth calling out: it is
+  an impl-block helper that returns a `Uuid::nil()` `ExamId`,
+  used by `republish_result` and `generate_report_card`. It is
+  marked "Phase 4 stub" in its own doc-comment and will be
+  removed when the engine facade re-resolves the metadata via
+  the storage port.
+
