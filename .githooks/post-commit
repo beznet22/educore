@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Graphify post-commit hook — regenerates the engine knowledge graph
+# after each commit. Per ADR-016.
+#
+# Enable on a fresh clone with:
+#     git config core.hooksPath .githooks
+#
+# The hook is intentionally non-fatal: a graph regen failure
+# (or graphify missing entirely) must never block a commit. The
+# graph is a developer-convenience artefact, not a correctness
+# gate — CI and pre-merge builds catch the real regressions.
+
+set -e
+
+if command -v graphify >/dev/null 2>&1; then
+    if ! graphify update .; then
+        echo "Warning: graphify update failed (non-fatal)" >&2
+    fi
+else
+    echo "Note: graphify not installed; skipping graph update" >&2
+fi
