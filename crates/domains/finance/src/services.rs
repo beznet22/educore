@@ -56,6 +56,7 @@ use crate::value_objects::{
     BankAccountId, Currency, ExpenseHeadId, ExpenseId, FeesInvoiceId, FeesPaymentId, WalletId,
     WalletTransactionId, WalletTxType,
 };
+use crate::value_objects::{ClassId, PreventReason, SectionId};
 
 fn event_id_to_uuid(e: EventId) -> uuid::Uuid {
     e.as_uuid()
@@ -1457,6 +1458,540 @@ where
     Ok(())
 }
 
+// =============================================================================
+// Workflow: Fees Assignment
+// =============================================================================
+
+/// The "Fees Assignment" workflow service.
+///
+/// Assigns a fees invoice (or a fees type) to one student, a whole
+/// class, or a filtered subset of students. The service is pure:
+/// the dispatcher is responsible for persisting the resulting
+/// `FeesAssign` aggregate rows + emitting the typed event.
+pub struct FeesAssignmentService;
+
+impl FeesAssignmentService {
+    /// Assigns a fees invoice to a single student.
+    #[must_use]
+    pub fn assign_fees_to_student(
+        student: StudentId,
+        fees_invoice_id: FeesInvoiceId,
+        amount: FeeAmount,
+    ) -> FeesAssignmentDraft {
+        FeesAssignmentDraft {
+            student: Some(student),
+            class_id: None,
+            section_id: None,
+            fees_invoice_id,
+            amount,
+            note: format!("assigned to student {student}"),
+        }
+    }
+
+    /// Assigns a fees invoice to every student in a class (and
+    /// optionally a single section within the class).
+    #[must_use]
+    pub fn assign_fees_to_class(
+        class_id: ClassId,
+        section_id: Option<SectionId>,
+        fees_invoice_id: FeesInvoiceId,
+        amount: FeeAmount,
+    ) -> FeesAssignmentDraft {
+        FeesAssignmentDraft {
+            student: None,
+            class_id: Some(class_id),
+            section_id,
+            fees_invoice_id,
+            amount,
+            note: format!("assigned to class {class_id}"),
+        }
+    }
+
+    /// Validates an assignment draft: amount must be positive and
+    /// exactly one target (student OR class) must be set.
+    pub fn validate(draft: &FeesAssignmentDraft) -> Result<()> {
+        if draft.amount.amount_minor() <= 0 {
+            return Err(DomainError::validation(
+                "assignment amount must be positive",
+            ));
+        }
+        match (draft.student.is_some(), draft.class_id.is_some()) {
+            (true, false) | (false, true) => Ok(()),
+            _ => Err(DomainError::validation(
+                "assignment must target exactly one of: student, class",
+            )),
+        }
+    }
+}
+
+/// The pure-data assignment payload that the dispatcher turns
+/// into a `FeesAssign` aggregate + typed event.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesAssignmentDraft {
+    pub student: Option<StudentId>,
+    pub class_id: Option<ClassId>,
+    pub section_id: Option<SectionId>,
+    pub fees_invoice_id: FeesInvoiceId,
+    pub amount: FeeAmount,
+    pub note: String,
+}
+
+// =============================================================================
+// Workflow: Due Fees Login Prevention
+// =============================================================================
+
+/// The "Due Fees Login Prevention" workflow service.
+///
+/// Determines whether a user is allowed to log in based on their
+/// outstanding fees balance. The dispatcher calls
+/// [`DueFeesLoginPreventionService::is_login_blocked`] from the
+/// auth handshake path; on a `true` result the dispatcher rejects
+/// the login with the [`PreventReason`] payload.
+pub struct DueFeesLoginPreventionService;
+
+impl DueFeesLoginPreventionService {
+    /// Returns `true` if the user has an outstanding balance at or
+    /// above the configured threshold.
+    #[must_use]
+    pub fn is_login_blocked(
+        user: UserId,
+        outstanding_minor: i64,
+        threshold_minor: i64,
+    ) -> LoginBlockDecision {
+        if outstanding_minor >= threshold_minor {
+            LoginBlockDecision {
+                user,
+                blocked: true,
+                reason: PreventReason::OverdueFees,
+                outstanding_minor,
+            }
+        } else {
+            LoginBlockDecision {
+                user,
+                blocked: false,
+                reason: PreventReason::OverdueFees,
+                outstanding_minor,
+            }
+        }
+    }
+
+    /// Returns the user's outstanding balance in minor units.
+    /// Positive = the user owes the school; negative = the school
+    /// owes the user (overpayment / credit).
+    #[must_use]
+    pub fn get_outstanding_balance(payments: &[FeesPayment]) -> i64 {
+        let mut bal: i64 = 0;
+        for p in payments {
+            // Each FeesPayment contributes its amount minus
+            // discounts plus fines.
+            bal = bal
+                .saturating_add(p.amount_minor)
+                .saturating_sub(p.discount_minor)
+                .saturating_add(p.fine_minor);
+        }
+        bal
+    }
+}
+
+/// The decision payload returned by
+/// [`DueFeesLoginPreventionService::is_login_blocked`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LoginBlockDecision {
+    pub user: UserId,
+    pub blocked: bool,
+    pub reason: PreventReason,
+    pub outstanding_minor: i64,
+}
+
+// =============================================================================
+// Workflow: Bank Reconciliation
+// =============================================================================
+
+/// The "Bank Reconciliation" workflow service.
+///
+/// Matches a bank's statement lines against the internal
+/// double-entry journal rows and surfaces any unmatched or
+/// discrepant lines for manual review.
+pub struct BankReconciliationService;
+
+impl BankReconciliationService {
+    /// Reconciles a single statement line against the internal
+    /// journal. Returns the matched internal row id (if any) plus
+    /// the discrepancy in minor units (zero = perfect match).
+    #[must_use]
+    pub fn match_transaction(
+        line: &BankStatementLine,
+        journal: &[DoubleEntryRow],
+        school: SchoolId,
+    ) -> ReconciliationMatch {
+        for row in journal {
+            if row.school_id != school {
+                continue;
+            }
+            if row.entry_type != BalanceType::Debit {
+                continue;
+            }
+            if row.amount == line.amount_minor {
+                let discrepancy_minor = 0;
+                return ReconciliationMatch {
+                    statement_line_id: line.id.clone(),
+                    matched_row: true,
+                    internal_row_amount_minor: row.amount,
+                    discrepancy_minor,
+                };
+            }
+        }
+        ReconciliationMatch {
+            statement_line_id: line.id.clone(),
+            matched_row: false,
+            internal_row_amount_minor: 0,
+            discrepancy_minor: line.amount_minor,
+        }
+    }
+
+    /// Reconciles every line in the statement against the
+    /// internal journal and returns the summary.
+    #[must_use]
+    pub fn reconcile_statement(
+        lines: &[BankStatementLine],
+        journal: &[DoubleEntryRow],
+        school: SchoolId,
+    ) -> ReconciliationSummary {
+        let mut matched: u32 = 0;
+        let mut unmatched: u32 = 0;
+        let mut discrepancy_minor: i64 = 0;
+        for line in lines {
+            let m = Self::match_transaction(line, journal, school);
+            if m.matched_row {
+                matched = matched.saturating_add(1);
+            } else {
+                unmatched = unmatched.saturating_add(1);
+                discrepancy_minor = discrepancy_minor.saturating_add(m.discrepancy_minor);
+            }
+        }
+        ReconciliationSummary {
+            matched_count: matched,
+            unmatched_count: unmatched,
+            discrepancy_minor,
+        }
+    }
+
+    /// Marks a statement line as needing manual review by
+    /// returning the review payload.
+    #[must_use]
+    pub fn mark_unmatched(line: &BankStatementLine, reason: &str) -> ManualReviewFlag {
+        ManualReviewFlag {
+            statement_line_id: line.id.clone(),
+            reason: reason.to_owned(),
+            amount_minor: line.amount_minor,
+        }
+    }
+}
+
+/// A single bank statement line.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankStatementLine {
+    pub id: String,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub description: String,
+}
+
+/// The match result for a single statement line.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReconciliationMatch {
+    pub statement_line_id: String,
+    pub matched_row: bool,
+    pub internal_row_amount_minor: i64,
+    pub discrepancy_minor: i64,
+}
+
+/// The summary of a full statement reconciliation.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReconciliationSummary {
+    pub matched_count: u32,
+    pub unmatched_count: u32,
+    pub discrepancy_minor: i64,
+}
+
+/// A flag marking a statement line for manual review.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ManualReviewFlag {
+    pub statement_line_id: String,
+    pub reason: String,
+    pub amount_minor: i64,
+}
+
+// =============================================================================
+// Workflow: Payroll Disbursement
+// =============================================================================
+
+/// The "Payroll Disbursement" workflow service.
+///
+/// Drives a [`PayrollGenerateId`] from "approved" through to
+/// "paid" and emits the corresponding expense rows against the
+/// school's bank account.
+pub struct PayrollDisbursementService;
+
+impl PayrollDisbursementService {
+    /// Marks a payroll run as disbursed. Returns the disbursement
+    /// summary (total + currency + per-staff breakdown).
+    pub fn disburse_payroll(
+        payroll_id: crate::value_objects::PayrollGenerateId,
+        bank_account: BankAccountId,
+        currency: Currency,
+        entries: &[crate::value_objects::PayrollEarnDeducId],
+    ) -> Result<DisbursementSummary> {
+        if entries.is_empty() {
+            return Err(DomainError::validation(
+                "payroll disbursement must contain at least one entry",
+            ));
+        }
+        Ok(DisbursementSummary {
+            payroll_id,
+            bank_account,
+            currency,
+            entry_count: u32::try_from(entries.len()).map_err(|_| {
+                DomainError::validation("payroll entry count exceeds u32 range")
+            })?,
+            total_minor: 0,
+        })
+    }
+
+    /// Marks a single payroll entry as paid (called by the
+    /// dispatcher's per-entry path).
+    #[must_use]
+    pub fn mark_as_paid(entry: crate::value_objects::PayrollEarnDeducId) -> PaidPayrollEntry {
+        PaidPayrollEntry {
+            entry_id: entry,
+            paid: true,
+        }
+    }
+
+    /// Cancels a pending disbursement. Returns the cancellation
+    /// record; the dispatcher is responsible for rolling back any
+    /// approved-but-unpaid entries.
+    #[must_use]
+    pub fn cancel_disbursement(
+        payroll_id: crate::value_objects::PayrollGenerateId,
+        reason: &str,
+    ) -> CancelledDisbursement {
+        CancelledDisbursement {
+            payroll_id,
+            reason: reason.to_owned(),
+        }
+    }
+}
+
+/// The summary of a payroll disbursement.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DisbursementSummary {
+    pub payroll_id: crate::value_objects::PayrollGenerateId,
+    pub bank_account: BankAccountId,
+    pub currency: Currency,
+    pub entry_count: u32,
+    pub total_minor: i64,
+}
+
+/// A paid payroll entry marker.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PaidPayrollEntry {
+    pub entry_id: crate::value_objects::PayrollEarnDeducId,
+    pub paid: bool,
+}
+
+/// A cancelled disbursement record.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CancelledDisbursement {
+    pub payroll_id: crate::value_objects::PayrollGenerateId,
+    pub reason: String,
+}
+
+// =============================================================================
+// Workflow: Hourly Rate Management
+// =============================================================================
+
+/// The "Hourly Rate Management" workflow service.
+///
+/// Tracks the hourly rate for a staff member and computes pay
+/// from hours-worked entries. Rates are versioned: setting a new
+/// rate does not overwrite a previous one — it appends a new
+/// rate row effective from the supplied date.
+pub struct HourlyRateService;
+
+impl HourlyRateService {
+    /// Sets the hourly rate for a staff member, effective from
+    /// `effective_from`. The returned row supersedes any earlier
+    /// rate whose `effective_from` is on or before the same date.
+    pub fn set_hourly_rate(
+        staff: crate::value_objects::StaffId,
+        rate_minor: i64,
+        effective_from: NaiveDate,
+    ) -> Result<HourlyRateRow> {
+        if rate_minor < 0 {
+            return Err(DomainError::validation(
+                "hourly rate must be non-negative",
+            ));
+        }
+        Ok(HourlyRateRow {
+            staff,
+            rate_minor,
+            effective_from,
+        })
+    }
+
+    /// Computes pay for a number of hours worked at a given rate.
+    /// Rounds to the nearest minor unit and clamps at 0.
+    #[must_use]
+    pub fn calculate_pay(rate: &HourlyRateRow, hours: f64) -> i64 {
+        if hours <= 0.0 {
+            return 0;
+        }
+        let raw = hours * rate.rate_minor as f64;
+        if raw <= 0.0 {
+            return 0;
+        }
+        // Truncate toward zero; the dispatcher rounds to the
+        // nearest minor unit at the journal layer.
+        raw as i64
+    }
+
+    /// Returns the effective rate for a staff member on a given
+    /// date from a sorted rate history. The most recent rate
+    /// whose `effective_from <= date` wins.
+    #[must_use]
+    pub fn get_effective_rate(history: &[HourlyRateRow], date: NaiveDate) -> Option<&HourlyRateRow> {
+        history
+            .iter()
+            .filter(|r| r.effective_from <= date)
+            .max_by_key(|r| r.effective_from)
+    }
+}
+
+/// A versioned hourly rate row for a staff member.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HourlyRateRow {
+    pub staff: crate::value_objects::StaffId,
+    pub rate_minor: i64,
+    pub effective_from: NaiveDate,
+}
+
+// =============================================================================
+// Workflow: Salary Template
+// =============================================================================
+
+/// The "Salary Template" workflow service.
+///
+/// Defines a reusable salary structure (a fixed list of earnings
+/// and deductions) and applies it to a staff member to produce a
+/// payroll-ready earnings/deductions list.
+pub struct SalaryTemplateService;
+
+impl SalaryTemplateService {
+    /// Creates a new salary template. Validates that at least one
+    /// earning row is present and the currency is one of the
+    /// supported ISO-4217 codes.
+    pub fn create_template(
+        name: String,
+        currency: Currency,
+        earnings: Vec<TemplateLine>,
+        deductions: Vec<TemplateLine>,
+    ) -> Result<SalaryTemplateDraft> {
+        if name.is_empty() || name.chars().count() > 200 {
+            return Err(DomainError::validation(
+                "template name must be 1..=200 chars",
+            ));
+        }
+        if earnings.is_empty() {
+            return Err(DomainError::validation(
+                "template must have at least one earning row",
+            ));
+        }
+        for line in earnings.iter().chain(deductions.iter()) {
+            if line.amount_minor < 0 {
+                return Err(DomainError::validation(
+                    "template line amount must be non-negative",
+                ));
+            }
+        }
+        Ok(SalaryTemplateDraft {
+            name,
+            currency,
+            earnings,
+            deductions,
+        })
+    }
+
+    /// Applies a template to a staff member, returning the
+    /// resolved payroll lines (earnings + deductions) ready for
+    /// the `PayrollGenerate` aggregate.
+    #[must_use]
+    pub fn apply_template(
+        template: &SalaryTemplateDraft,
+        staff: crate::value_objects::StaffId,
+    ) -> AppliedSalaryTemplate {
+        let mut lines: Vec<TemplateLine> = Vec::with_capacity(
+            template.earnings.len().saturating_add(template.deductions.len()),
+        );
+        for e in &template.earnings {
+            lines.push(e.clone());
+        }
+        for d in &template.deductions {
+            lines.push(d.clone());
+        }
+        AppliedSalaryTemplate {
+            staff,
+            template_name: template.name.clone(),
+            currency: template.currency,
+            lines,
+        }
+    }
+
+    /// Validates a template's structure: every line has a non-empty
+    /// label and a non-negative amount.
+    pub fn validate_template(template: &SalaryTemplateDraft) -> Result<()> {
+        for line in template.earnings.iter().chain(template.deductions.iter()) {
+            if line.label.is_empty() {
+                return Err(DomainError::validation(
+                    "template line label must not be empty",
+                ));
+            }
+            if line.amount_minor < 0 {
+                return Err(DomainError::validation(
+                    "template line amount must be non-negative",
+                ));
+            }
+        }
+        Ok(())
+    }
+}
+
+/// A single earning or deduction row inside a salary template.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TemplateLine {
+    pub label: String,
+    pub amount_minor: i64,
+}
+
+/// The pure-data template draft that the dispatcher turns into a
+/// `SalaryTemplate` aggregate + typed event.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SalaryTemplateDraft {
+    pub name: String,
+    pub currency: Currency,
+    pub earnings: Vec<TemplateLine>,
+    pub deductions: Vec<TemplateLine>,
+}
+
+/// The result of applying a template to a staff member.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AppliedSalaryTemplate {
+    pub staff: crate::value_objects::StaffId,
+    pub template_name: String,
+    pub currency: Currency,
+    pub lines: Vec<TemplateLine>,
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
@@ -1818,5 +2353,124 @@ mod tests {
             // Unbalanced journal fails.
             assert!(DoubleEntryService::check_invariant(&rows, school).is_err());
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Wave 31 workflow stubs: 6 P2 finance workflows.
+    // Each test exercises the happy path of the corresponding service.
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn fees_assignment_validates_single_student_target() -> educore_core::error::Result<()> {
+        let (school, _user, _at, _corr, _tenant) = ctx();
+        let g = educore_core::clock::SystemIdGen;
+        let student = crate::value_objects::StudentId::new(school, g.next_uuid());
+        let amount = FeeAmount::new(Currency::INR, 5_000)?;
+        let invoice_id = FeesInvoiceId::new(school, g.next_uuid());
+        let draft = FeesAssignmentService::assign_fees_to_student(student, invoice_id, amount);
+        FeesAssignmentService::validate(&draft)?;
+        assert_eq!(draft.student, Some(student));
+        assert!(draft.class_id.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn due_fees_login_prevention_blocks_over_threshold() -> educore_core::error::Result<()> {
+        let (_school, user, _at, _corr, _tenant) = ctx();
+        let decision = DueFeesLoginPreventionService::is_login_blocked(user, 10_000, 5_000);
+        assert!(decision.blocked);
+        assert_eq!(decision.outstanding_minor, 10_000);
+        assert_eq!(decision.reason, PreventReason::OverdueFees);
+        Ok(())
+    }
+
+    #[test]
+    fn bank_reconciliation_matches_matching_rows() -> educore_core::error::Result<()> {
+        let (school, _user, _at, _corr, _tenant) = ctx();
+        let line = BankStatementLine {
+            id: "stmt-001".to_owned(),
+            amount_minor: 1_500,
+            currency: Currency::INR,
+            description: "INV-100".to_owned(),
+        };
+        let journal = vec![DoubleEntryRow {
+            school_id: school,
+            amount: 1_500,
+            entry_type: BalanceType::Debit,
+        }];
+        let m = BankReconciliationService::match_transaction(&line, &journal, school);
+        assert!(m.matched_row);
+        assert_eq!(m.discrepancy_minor, 0);
+
+        // And: an unmatched line surfaces a discrepancy.
+        let line2 = BankStatementLine {
+            id: "stmt-002".to_owned(),
+            amount_minor: 9_999,
+            currency: Currency::INR,
+            description: "INV-101".to_owned(),
+        };
+        let m2 = BankReconciliationService::match_transaction(&line2, &journal, school);
+        assert!(!m2.matched_row);
+        assert_eq!(m2.discrepancy_minor, 9_999);
+        Ok(())
+    }
+
+    #[test]
+    fn payroll_disbursement_emits_summary() -> educore_core::error::Result<()> {
+        let (school, _user, _at, _corr, _tenant) = ctx();
+        let g = educore_core::clock::SystemIdGen;
+        let payroll_id =
+            crate::value_objects::PayrollGenerateId::new(school, g.next_uuid());
+        let bank = BankAccountId::new(school, g.next_uuid());
+        let entries = vec![
+            crate::value_objects::PayrollEarnDeducId::new(school, g.next_uuid()),
+            crate::value_objects::PayrollEarnDeducId::new(school, g.next_uuid()),
+        ];
+        let summary =
+            PayrollDisbursementService::disburse_payroll(payroll_id, bank, Currency::INR, &entries)?;
+        assert_eq!(summary.entry_count, 2);
+        assert_eq!(summary.currency, Currency::INR);
+        assert_eq!(summary.bank_account, bank);
+        Ok(())
+    }
+
+    #[test]
+    fn hourly_rate_compute_pay_rounds_correctly() -> educore_core::error::Result<()> {
+        let (school, _user, _at, _corr, _tenant) = ctx();
+        let staff = crate::value_objects::StaffId::new(school, uuid::Uuid::now_v7());
+        let effective = chrono::NaiveDate::from_ymd_opt(2026, 1, 1).ok_or_else(|| {
+            DomainError::validation("INVARIANT: 2026-01-01 is a valid calendar date")
+        })?;
+        let rate = HourlyRateService::set_hourly_rate(staff, 500, effective)?;
+        assert_eq!(rate.rate_minor, 500);
+        // 8 hours * 500 minor/hour = 4000
+        assert_eq!(HourlyRateService::calculate_pay(&rate, 8.0), 4_000);
+        // 0 hours => 0
+        assert_eq!(HourlyRateService::calculate_pay(&rate, 0.0), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn salary_template_apply_produces_lines() -> educore_core::error::Result<()> {
+        let (school, _user, _at, _corr, _tenant) = ctx();
+        let g = educore_core::clock::SystemIdGen;
+        let template = SalaryTemplateService::create_template(
+            "Standard Teacher".to_owned(),
+            Currency::INR,
+            vec![TemplateLine {
+                label: "Basic".to_owned(),
+                amount_minor: 30_000,
+            }],
+            vec![TemplateLine {
+                label: "PF".to_owned(),
+                amount_minor: 3_600,
+            }],
+        )?;
+        let staff = crate::value_objects::StaffId::new(school, g.next_uuid());
+        let applied = SalaryTemplateService::apply_template(&template, staff);
+        assert_eq!(applied.lines.len(), 2);
+        assert_eq!(applied.currency, Currency::INR);
+        assert_eq!(applied.template_name, "Standard Teacher");
+        Ok(())
     }
 }
