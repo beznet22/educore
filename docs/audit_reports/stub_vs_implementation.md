@@ -1,14 +1,20 @@
 # Stub vs Implementation Audit
 
-**Generated:** Phase 1 Step 1, Engine Production Readiness ferment
-**Scope:** All 10 domain crates (`crates/domains/*/src/services.rs`)
-**Methodology:** For each `pub fn`/`pub async fn`, cross-reference against
-`docs/specs/<domain>/aggregates.md` invariants. Classify as:
-- **real** — validation/transition logic present, spec invariant enforced
-- **partial** — some logic but missing spec coverage (notes gap)
-- **stub** — returns `NotSupported`/`TODO`/`unimplemented!()`, no logic
+**Generated:** Phase 1, Engine Production Readiness ferment
+**Scope:** All 10 domain crates (`crates/domains/*/src/services.rs` + aggregate.rs + value_objects.rs)
+**Methodology:** Two-layer audit:
+1. **Layer 1 — Service functions:** For each `pub fn`/`pub async fn`, cross-reference against
+   `docs/specs/<domain>/aggregates.md` invariants. Classify as:
+   - **real** — validation/transition logic present, spec invariant enforced
+   - **partial** — some logic but missing spec coverage (notes gap)
+   - **stub** — returns `NotSupported`/`TODO`/`unimplemented!()`, no logic
+2. **Layer 2 — Deep invariant audit:** For each spec invariant (field-level validation,
+   state transitions, cross-aggregate rules), verify enforcement in aggregate.rs and
+   value_objects.rs. Flag as enforced / partial / missing.
 
 ## Summary
+
+### Layer 1: Service Functions
 
 | Domain | Functions | Real | Partial | Stub |
 |---|---|---|---|---|
@@ -21,18 +27,38 @@
 | finance | 66 | 29 | 5 | 32 |
 | hr | 49 | 17 | 6 | 26 |
 | library | 37 | 19 | 3 | 15 |
-| cms | 33 | TBD | TBD | TBD |
-| **TOTAL** | **493** | **193 (39%)** | **154 (31%)** | **139 (28%)** |
+| cms | 33 | 23 | 7 | 3 |
+| **TOTAL** | **493** | **197 (40%)** | **154 (31%)** | **142 (29%)** |
+
+### Layer 2: Spec Invariant Enforcement
+
+| Domain | Invariants Checked | Enforced | Partial | Missing |
+|---|---|---|---|---|
+| attendance | 27 | TBD | TBD | TBD |
+| academic | 73 | 8 | 2 | 61 |
+| assessment | 95 | TBD | TBD | TBD |
+| communication | 78 | 50 | TBD | TBD |
+| documents | TBD | TBD | TBD | TBD |
+| facilities | TBD | TBD | TBD | TBD |
+| finance | 110 | TBD | TBD | TBD |
+| hr | TBD | TBD | TBD | TBD |
+| library | TBD | TBD | TBD | TBD |
+| cms | TBD (20 aggregates) | TBD | TBD | TBD |
 
 **Key findings:**
-- **assessment (49% stub) and finance (48% stub)** are the most-stubbed domains
-- **documents (0% stub) and facilities (0% stub)** are the most complete
-- **hr (53% stub)** has the largest Cluster C handler-skeleton block
-- **communication has the most functions (104)** but a high partial rate (66%)
-  due to factory-vs-spec signature drift
+- **Layer 1:** assessment (49% stub), finance (48% stub), hr (53% stub) are the most-stubbed.
+  documents (0% stub) and facilities (0% stub) are most complete.
+- **Layer 2 (where available):** academic has 84% missing invariants (61/73) — far worse than
+  the 14 stub functions suggest. Deep audit reveals that "real" and "partial" functions are
+  still missing significant invariant coverage.
+- **communication** has the most functions (104) and the most partials (69) — factory pattern
+  defers most invariant checks to the dispatcher, but the dispatcher doesn't exist yet.
+- **Total Phase 2 scope:** 142 stub functions need real implementations + 154 partial functions
+  need missing invariant coverage + ~200+ missing invariants identified by deep audit.
 
 **Drives Phase 2:** All stubs need real implementations per spec.
 All partials need missing invariant/validation/transition coverage.
+All missing invariants from deep audit need enforcement.
 
 ---
 
