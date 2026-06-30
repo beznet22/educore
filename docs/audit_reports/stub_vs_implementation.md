@@ -703,6 +703,129 @@ in the file and is the headline correctness target for Phase 10
 
 ---
 
+## hr
+
+**Crate:** `crates/domains/hr/src/services.rs`
+**Spec reference:** `docs/specs/hr/aggregates.md`
+**Function count:** 49 (`pub fn` only; no `pub async fn`)
+**Stub count:** 26
+
+Phase 6 ships the seven prompt-named aggregate factories (`hire_staff`,
+`create_department`, `create_designation`, `create_leave_type`,
+`request_leave`, `approve_leave`, `run_payroll`) plus 16 impl-block
+methods across four workflow service structs
+(`LeaveAccrualService`, `ClassTeacherAssignmentService`,
+`SubjectTeacherAssignmentService`, `HourlyRateManagementService`) and
+the `InMemoryPayrollPolicy` constructor pair. The remaining 26
+Cluster C handler skeletons (services.rs:731-1297) are self-documented
+"Phase 6 stub" placeholders that validate only the tenant anchor and
+emit empty events; their full payloads are deferred to the owning
+Workstream per the in-file comment block at services.rs:697-714.
+
+### Core aggregate factories
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `hire_staff` (services.rs:80) | Staff invariants 1-4, 6 | partial | services.rs:114-119 — `validate_person_name(first_name)`, `validate_person_name(last_name)`; services.rs:120-122 — optional `validate_email`; services.rs:123-125 — optional `validate_phone`; services.rs:126 — `validate_date_of_birth`; services.rs:130-144 — three-way uniqueness via `uniqueness.email_exists`, `uniqueness.staff_no_exists`, `uniqueness.employee_id_exists` (covers invariant 3 staff_no unique + invariant 4 email unique; invariant 2 `UserId` binding carried via `cmd.user_id`); services.rs:155-167 — `Staff::fresh` with `Status::Active` (covers invariant 6 starting state). **Gaps:** invariant 5 (mobile uniqueness not enforced — only `validate_phone` format, no `uniqueness.mobile_exists`); invariant 7 (cannot be hard-deleted) deferred to delete handler; invariant 8 (leave day counts non-negative) enforced implicitly by typed fields. |
+| `create_department` (services.rs:196) | Department invariant 1 (unique name within school) | real | services.rs:209-213 — length validation (1..=200 chars); services.rs:214-218 — `uniqueness.department_name_exists` uniqueness check (covers invariant 1); services.rs:221-228 — `Department::fresh`; services.rs:231 — `DepartmentCreated::new`. Invariants 2-3 (referential check, system-defined flag) are delete-handler concerns; not applicable here. |
+| `create_designation` (services.rs:240) | Designation invariant 1 (unique name within school) | real | services.rs:252-256 — length validation; services.rs:257-261 — `uniqueness.designation_title_exists` (covers invariant 1); services.rs:264-272 — `Designation::fresh`; services.rs:275 — `DesignationCreated::new`. Invariants 2-3 deferred to delete handler. |
+| `create_leave_type` (services.rs:288) | LeaveType invariants 1 (unique name within school), 3 (`total_days >= 0`) | real | services.rs:300 — `validate_leave_type_name`; services.rs:301-305 — `uniqueness.leave_type_name_exists` (covers invariant 1); services.rs:308-317 — `LeaveType::fresh` with `total_days` (u32 type enforces invariant 3 non-negativity); services.rs:320-328 — `LeaveTypeCreated::new`. Invariant 2 (referential check on delete) deferred to delete handler. |
+| `request_leave` (services.rs:340) | LeaveRequest invariants 1 (unique by `(school, staff, leave_from, leave_to, type_id)`), 2 (`leave_from <= leave_to`), 3 (`approve_status = Pending` on creation) | partial | services.rs:354-358 — `leave_to < leave_from` rejection (covers invariant 2); services.rs:359-361 — optional `validate_leave_reason`; services.rs:364-374 — `LeaveRequest::fresh` initialises `approve_status = Pending` (covers invariant 3); services.rs:377-387 — `LeaveRequested::new`. **Gaps:** invariant 1 (uniqueness on `(school, staff, leave_from, leave_to, type_id)`) not enforced — `request_leave` does not consult any `LeaveRequestUniquenessChecker`; invariant 4 (LeaveDefine entitlement remaining) and invariant 5 (LeaveDefine.total_days cap) not enforced here — the helper `LeaveAccrualService::can_request` exists at services.rs:507 but is not called from `request_leave`. |
+| `approve_leave` (services.rs:414) | LeaveRequest invariant 3 (state transition `Pending -> Approved`, terminal once approved) | partial | services.rs:423-427 — `leave_request.can_transition(LeaveStatus::Approved)` state-machine guard (covers the forward edge of invariant 3); services.rs:428-432 — segregation-of-duties: rejects when `approver_tenant.actor_id == leave_request.created_by`; services.rs:434-445 — sets `approve_status = Approved`, bumps version, stamps `approved_at` + `updated_by` + `last_event_id`; services.rs:447-457 — `LeaveApproved::new`. **Gap:** invariant 4 (LeaveDefine remaining days for the period) not enforced — approval succeeds without consulting the leave balance. |
+| `run_payroll` (services.rs:536) | PayrollGenerate invariants 1 (`gross_salary == basic_salary + total_earning`), 2 (`net_salary == gross_salary - total_deduction - tax`), 3 (`Generated` status) | partial | services.rs:550 — `validate_pay_period`; services.rs:552-554 — `basic_salary >= 0` check; services.rs:556-560 — `total_earning = basic_salary`, `tax = policy.tax(...)`, `total_deduction = tax`, `gross_salary = total_earning`, `net_salary = gross_salary - total_deduction` (covers invariants 1 and 2 with the simplification that `total_earning == basic_salary` — invariant 1 holds vacuously; per-earnings deduction lines are not summed in here); services.rs:563-578 — `PayrollGenerate::fresh`; services.rs:581-588 — sets `payroll_status = PayrollStatus::Generated` (covers invariant 3 first leg); services.rs:591-607 — `PayrollGenerated::new`. **Gaps:** invariant 4 (`paid_amount <= net_salary`) deferred to `MarkPayrollPaid` (not present in this file); invariant 5 (uniqueness on `(school, staff, payroll_month, payroll_year)`) not enforced; invariant 6 (at most one `LeaveDeductionInfo` line) deferred to the leave-deduction-info handler skeleton (`record_payroll_generate_audit` is a stub at services.rs:1142). |
+
+### Workflow service structs
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `LeaveAccrualService::effective_leave_balance` (services.rs:473) | LeaveDefine invariant 3 (`days <= total_days`); LeaveRequest invariant 5 (`extra_leave <= LeaveDefine.total_days`) | real | services.rs:478-485 — sums `LeaveRequest::duration_days` over approved requests of the same `type_id`, returns `define.days.saturating_sub(used)`; pure, no I/O. |
+| `LeaveAccrualService::extra_leave_taken` (services.rs:490) | LeaveRequest invariant 5 (extra leave counting for payroll deduction) | real | services.rs:495-503 — sums approved durations, returns `total.saturating_sub(define.days)`; pure. |
+| `LeaveAccrualService::can_request` (services.rs:507) | LeaveRequest invariants 1 (no overlap), 4 (entitlement remaining), 5 (cap by `LeaveDefine.days`) | partial | services.rs:512-518 — duration computed from `(to - from).num_days() + 1`, `u32::try_from` saturation; services.rs:519-524 — sums approved durations, returns `used + duration <= define.days` (covers invariant 4 and 5). **Gap:** does not check that the candidate `(from, to)` window does not overlap an already-approved `LeaveRequest` window — `overlaps` exists at services.rs:525 but is not invoked here. The function comment (services.rs:510-511) claims "Rejects overlapping approved requests" but the body does not enforce it. |
+| `LeaveAccrualService::overlaps` (services.rs:525) | LeaveRequest invariant 1 (uniqueness on date window) | real | services.rs:526-528 — classic date-range overlap `a.0 <= b.1 && b.0 <= a.1`; pure helper. |
+| `InMemoryPayrollPolicy::new` (services.rs:659) | Test fixture constructor | real | services.rs:660-666 — `Self { tax_rate, allows_partial: true, max_fraction: 1.0 }`. Not a spec invariant; constructor for the in-memory `PayrollPolicy` reference. |
+| `InMemoryPayrollPolicy::with_partial` (services.rs:668) | Test fixture constructor | real | services.rs:669-675 — accepts `tax_rate`, `allows_partial`, `max_fraction`. Not a spec invariant; same role as `new`. |
+| `ClassTeacherAssignmentService::is_assigned` (services.rs:1315) | AssignClassTeacher invariants 1 (unique by `(class, section, academic)`), 2 (`active_status = 1` while open) | real | services.rs:1325-1332 — iterates assignments, checks `active_status == 1 && class_id == … && section_id == … && staff_id == … && academic_id == …`; pure lookup. |
+| `ClassTeacherAssignmentService::current_for_class` (services.rs:1334) | AssignClassTeacher invariant 2 | real | services.rs:1342-1349 — returns the first active assignment matching `(class, section, academic)`; pure lookup. |
+| `ClassTeacherAssignmentService::has_active_teacher` (services.rs:1353) | AssignClassTeacher invariant 2 | real | services.rs:1360-1363 — delegates to `current_for_class`; pure. |
+| `ClassTeacherAssignmentService::count_for_staff` (services.rs:1365) | AssignClassTeacher invariants (no specific count invariant; aggregation helper) | real | services.rs:1371-1376 — counts assignments where `staff_id == … && academic_id == …`; pure. |
+| `SubjectTeacherAssignmentService::validate` (services.rs:1395) | Tenant anchor (cross-aggregate: `staff_id` belongs to tenant school) | real | services.rs:1399-1404 — checks `cmd.staff_id.school_id() == cmd.tenant.school_id`, returns `Validation` error otherwise; covered by `subject_teacher_assignment_service_validates_tenant_scope` (services.rs:1729-1786) which exercises both the same-school and cross-school cases. |
+| `SubjectTeacherAssignmentService::is_reassignment` (services.rs:1409) | No-op reassignment rejection | real | services.rs:1411-1414 — pure `current_id != replacement_id`; correctly identifies a no-op. |
+| `SubjectTeacherAssignmentService::scope_matches_tenant` (services.rs:1417) | Tenant anchor (cross-aggregate: `class_id` and `subject_id` belong to tenant school) | real | services.rs:1421-1426 — checks both `class_school` and `subject_school` against `cmd.tenant.school_id`; pure. |
+| `HourlyRateManagementService::effective_rate` (services.rs:1447) | HourlyRate invariant 1 (unique by `(school, grade, academic)`) | real | services.rs:1453-1460 — finds first `HourlyRate` matching `(grade, academic_id)`, returns `rate`; returns `None` if absent. |
+| `HourlyRateManagementService::validate_rate` (services.rs:1461) | HourlyRate invariant 2 (`rate > 0`) | partial | services.rs:1462-1469 — rejects `rate < 0.0` (returns `Validation`). **Gap:** spec says `rate > 0` (strictly positive); this allows `rate == 0.0` to pass. Trivial fix: `rate <= 0.0` rejection. |
+| `HourlyRateManagementService::is_rate_change` (services.rs:1474) | No-op update rejection | real | services.rs:1476-1480 — `(old - new).abs() > epsilon`; pure epsilon comparison. |
+
+### Cluster C handler skeletons (all stub)
+
+Per the in-file comment block at services.rs:697-714, each handler
+below is a minimal skeleton that wires the matching command stub to
+the matching aggregate stub and emits the matching event with no
+payload. Every body is identical in shape — `cmd.id` and
+`cmd.school_id` lifted into a one-field aggregate, an event with
+`cmd.id` / fresh `event_id` / fresh `correlation_id` / `now`, and
+returned.
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_staff_bank_detail` (services.rs:731) | StaffBankDetail aggregate invariants | stub | services.rs:738-749 — body wires `StaffBankDetail { id: cmd.id, school_id: cmd.school_id }` and `StaffBankDetailUpserted::new(cmd.id, event_id, correlation_id, now)`; no payload fields. |
+| `create_staff_address` (services.rs:752) | StaffAddress aggregate invariants | stub | services.rs:759-770 — identical stub pattern; `StaffAddressAdded` event with `cmd.id` only. |
+| `create_staff_social_link` (services.rs:773) | StaffSocialLink aggregate invariants | stub | services.rs:780-791 — identical stub pattern; `StaffSocialLinkAdded` event. |
+| `create_staff_document` (services.rs:795) | StaffDocument aggregate invariants | stub | services.rs:802-813 — identical stub pattern; `StaffDocumentRegistered` event. |
+| `refresh_staff_timeline` (services.rs:817) | StaffTimeline aggregate invariants (projection recompute) | stub | services.rs:824-835 — identical stub pattern; `StaffTimelineRefreshed` event. |
+| `set_staff_custom_field` (services.rs:838) | StaffCustomField aggregate invariants | stub | services.rs:845-856 — identical stub pattern; `StaffCustomFieldSet` event. |
+| `refresh_staff_leave_balance` (services.rs:860) | StaffLeaveBalance aggregate invariants (projection recompute) | stub | services.rs:867-878 — identical stub pattern; `StaffLeaveBalanceRefreshed` event. |
+| `record_leave_request_approval` (services.rs:882) | LeaveRequestApproval aggregate invariants | stub | services.rs:889-900 — identical stub pattern; `LeaveRequestApprovalRecorded` event. |
+| `create_payroll_payment_link` (services.rs:903) | PayrollPaymentLink aggregate invariants | stub | services.rs:910-921 — identical stub pattern; `PayrollPaymentLinkCreated` event. |
+| `record_staff_import_resolution` (services.rs:925) | StaffImportResolution aggregate invariants | stub | services.rs:932-943 — identical stub pattern; `StaffImportResolutionRecorded` event. |
+| `record_staff_payroll_history` (services.rs:947) | StaffPayrollHistory aggregate invariants | stub | services.rs:954-965 — identical stub pattern; `StaffPayrollHistorySnapshotted` event. |
+| `record_staff_leave_history` (services.rs:969) | StaffLeaveHistory aggregate invariants | stub | services.rs:976-987 — identical stub pattern; `StaffLeaveHistorySnapshotted` event. |
+| `create_assign_class_teacher_scope` (services.rs:991) | AssignClassTeacherScope aggregate invariants | stub | services.rs:998-1009 — identical stub pattern; `AssignClassTeacherScopeAdded` event. |
+| `assign_department_head` (services.rs:1012) | DepartmentHead aggregate invariants | stub | services.rs:1019-1030 — identical stub pattern; `DepartmentHeadRecorded` event. |
+| `create_designation_grade` (services.rs:1033) | DesignationGrade aggregate invariants | stub | services.rs:1040-1051 — identical stub pattern; `DesignationGradeRecorded` event. |
+| `set_hourly_rate_override` (services.rs:1055) | HourlyRateOverride aggregate invariants | stub | services.rs:1062-1073 — identical stub pattern; `HourlyRateOverrideSet` event. |
+| `create_leave_define_adjustment` (services.rs:1077) | LeaveDefineAdjustment aggregate invariants | stub | services.rs:1084-1095 — identical stub pattern; `LeaveDefineAdjustmentApplied` event. |
+| `create_leave_request_attachment` (services.rs:1098) | LeaveRequestAttachment aggregate invariants | stub | services.rs:1105-1116 — identical stub pattern; `LeaveRequestAttachmentRegistered` event. |
+| `record_staff_attendance_punch` (services.rs:1120) | StaffAttendancePunch aggregate invariants | stub | services.rs:1127-1138 — identical stub pattern; `StaffAttendancePunchCaptured` event. |
+| `record_payroll_generate_audit` (services.rs:1142) | PayrollGenerateAudit aggregate invariants | stub | services.rs:1149-1160 — identical stub pattern; `PayrollGenerateAuditAppended` event. |
+| `assign_staff_role` (services.rs:1163) | StaffRoleAssignment aggregate invariants | stub | services.rs:1170-1181 — identical stub pattern; `StaffRoleAssignmentRecorded` event. |
+| `create_staff_profile_photo` (services.rs:1184) | StaffProfilePhoto aggregate invariants | stub | services.rs:1191-1202 — identical stub pattern; `StaffProfilePhotoRegistered` event. |
+| `create_staff_driving_license` (services.rs:1206) | StaffDrivingLicense aggregate invariants | stub | services.rs:1213-1224 — identical stub pattern; `StaffDrivingLicenseRegistered` event. |
+| `create_staff_registration_field_option` (services.rs:1228) | StaffRegistrationFieldOption aggregate invariants | stub | services.rs:1235-1248 — identical stub pattern; `StaffRegistrationFieldOptionAdded` event. |
+| `create_bulk_import_job` (services.rs:1252) | BulkImportJob aggregate invariants | stub | services.rs:1259-1270 — identical stub pattern; `BulkImportJobRecorded` event. |
+| `create_staff_attendance_import_batch` (services.rs:1273) | StaffAttendanceImportBatch aggregate invariants | stub | services.rs:1280-1297 — identical stub pattern; `StaffAttendanceImportBatchRecorded` event. |
+
+### Summary
+
+- **Total pub fn:** 49
+- **Real:** 17 — `create_department`, `create_designation`, `create_leave_type` (3 core creates), `LeaveAccrualService::{effective_leave_balance, extra_leave_taken, overlaps}` (3 of 4), `InMemoryPayrollPolicy::{new, with_partial}` (2 constructors), `ClassTeacherAssignmentService::{is_assigned, current_for_class, has_active_teacher, count_for_staff}` (4), `SubjectTeacherAssignmentService::{validate, is_reassignment, scope_matches_tenant}` (3), `HourlyRateManagementService::{effective_rate, is_rate_change}` (2 of 3).
+- **Partial:** 6 — `hire_staff` (missing mobile uniqueness, spec invariant 5); `request_leave` (missing uniqueness / entitlement / cap, invariants 1, 4, 5); `approve_leave` (missing LeaveDefine remaining-days check, invariant 4); `run_payroll` (missing uniqueness + paid-amount + LeaveDeductionInfo cap, invariants 4, 5, 6); `LeaveAccrualService::can_request` (overlap not enforced despite docstring claim); `HourlyRateManagementService::validate_rate` (allows `rate == 0.0` while spec invariant 2 requires `rate > 0`). **Two of the six partials are workflow-service helpers, not aggregate factories.**
+- **Stub:** 26 — every Cluster C handler skeleton (services.rs:731-1297) validates only the tenant anchor (`cmd.id`, `cmd.school_id`) and emits an empty event. No spec invariant is touched by any of the 26. This is consistent with the in-file comment at services.rs:697-714 marking the block as placeholder work deferred to the owning Workstream.
+
+### Classification rationale
+
+- **Real vs partial** for the prompt-named factory subset hinges on
+  whether the function enforces the spec invariant under
+  cross-aggregate or storage-layer state (uniqueness on multiple
+  fields, entitlement remaining, paid-amount cap). The factory
+  functions that need only typed-field validation (department name,
+  designation title, leave type name, basic salary) are real; those
+  that need uniqueness or balance lookups are partial because the
+  helper ports / services exist (`StaffUniquenessChecker`,
+  `LeaveAccrualService::can_request`, `LeaveAccrualService::extra_leave_taken`)
+  but are not consulted from the factory body.
+- **Real vs partial** for the workflow service struct methods hinges
+  on whether the function body matches its docstring. `can_request`
+  is partial because the docstring at services.rs:510-511 promises
+  overlap rejection that the body does not enforce; `validate_rate`
+  is partial because the spec says `rate > 0` (strictly positive)
+  but the body allows `rate == 0.0`.
+- **Stub** is unambiguous: every Cluster C handler skeleton has the
+  same 11-line body, no payload wiring, no invariant touch — and the
+  in-file comment at services.rs:697-714 self-documents the block
+  as placeholder work deferred to a later phase.
+
+---
+
 ## finance
 
 **Crate:** `crates/domains/finance/src/services.rs`
