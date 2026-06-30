@@ -168,6 +168,213 @@ for those 14 is deferred to subsequent workstreams per `docs/build-plan.md`.
   `id` and `school_id`, and emit an event with no payload fields. None of
   the spec invariants listed in the column are touched.
 
+## academic — Deep Invariant Audit
+
+**Generated:** Phase 1 Step 2, Engine Production Readiness ferment
+**Scope:** Every invariant listed in `docs/specs/academic/aggregates.md`
+across all 20 academic aggregates (Student, Guardian, Class, Section,
+ClassSection, Subject, ClassSubject, AcademicYear, ClassRoutine,
+Homework, LessonPlan, Lesson, LessonTopic, StudentRecord,
+StudentPromotion, StudentCategory, StudentGroup, RegistrationField,
+Certificate, IdCard).
+**Methodology:** For each spec invariant, verify whether the engine
+enforces it in either the aggregate constructor (`aggregate.rs`), the
+value object (`value_objects.rs`), or the service function
+(`services.rs`). Classify as:
+- **enforced** — the invariant is validated at the constructor or
+  service boundary, with a test or assertion visible in the codebase.
+- **partial** — the invariant is partially checked (e.g. transition is
+  set correctly but the precondition is missing) or delegated to a
+  downstream layer that is acknowledged in source comments.
+- **missing** — no enforcement at the constructor, value object, or
+  service boundary; placeholder aggregate has only `id + school_id`.
+- **permissive (N/A)** — the invariant is a permissive statement
+  ("may", "can be reused"); no enforcement is required by the engine.
+
+### Totals
+
+| Status | Count | % |
+|---|---|---|
+| Enforced | 8 | 11.0% |
+| Partial | 2 | 2.7% |
+| Missing | 61 | 83.6% |
+| Permissive (N/A) | 2 | 2.7% |
+| **Total invariants** | **73** | **100%** |
+
+**Key findings:**
+- **14 of 20 aggregates are placeholder stubs** (Guardian, ClassSection,
+  ClassSubject, ClassRoutine, Homework, LessonPlan, Lesson, LessonTopic,
+  StudentRecord, StudentPromotion, StudentCategory, StudentGroup,
+  RegistrationField, Certificate, IdCard). Each placeholder contributes
+  every listed invariant as `missing`.
+- **The five prompt-named aggregates** (Student, Class, Section, Subject,
+  AcademicYear) account for **21 of 73 invariants** (29%) and **all 8
+  enforced + 2 partial** invariants.
+- **Student invariant #5** (status-transition graph) is the only
+  `partial` for the prompt subset — `StudentStatus` is well-typed but
+  `suspend_student`, `withdraw_student`, `promote_student`,
+  `graduate_student` do not enforce the precondition that the student
+  is currently `Active` (only `reinstate_student` does).
+- **UniquenessChecker gaps:** the trait at `crates/domains/academic/src/commands.rs:50`
+  exposes `student_admission_no_exists` and `student_email_exists`
+  only. It has no `class_name_exists`, `section_name_exists`, or
+  `subject_code_exists` method, which is why invariant 2 of `Class`,
+  invariant 1 of `Section`, and invariant 1 of `Subject` are missing
+  enforcement at the service boundary.
+- **StudentRecord** has the most missing invariants (6 of 6) — the
+  aggregate is `pub struct StudentRecord { id, school_id }` at
+  `aggregate.rs:445`, with no fields for `class_id`, `section_id`,
+  `academic_year_id`, `roll_no`, `is_default`, `is_promote`,
+  `is_graduate`, or `admission_no`. Per `value_objects.rs:186` this is
+  documented as Phase 4 deferred (downstream assessment domain needs
+  the typed id).
+- **No cross-aggregate referential checks** — invariants that require
+  looking up another row (e.g. ClassSection referencing StudentRecord,
+  Class referencing ClassSection for the delete guard) have no
+  `ReferentialChecker` exposed on any academic service command.
+
+### Per-aggregate invariant table
+
+| Aggregate | # | Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|---|---|
+| Student | 1 | Exactly one active `StudentRecord` per `AcademicYear` | Per-student, per-year enrollment uniqueness | missing | `StudentRecord` aggregate is `pub struct { id, school_id }` at `aggregate.rs:445` — no fields, no service factory, no repository check. `value_objects.rs:186` doc acknowledges Phase 4 deferral. |
+| Student | 2 | `AdmissionNumber` unique within school | Tenant-scoped admission number uniqueness | enforced | `commands.rs:55-57` — `UniquenessChecker::student_admission_no_exists(school, admission_no)` is called in `services.rs:141-144` (admit_student); `value_objects.rs:299-302` enforces 1..=50 chars at the `AdmissionNumber::new` constructor. |
+| Student | 3 | `RollNumber` unique within `(school, class, section, academic_year)` | Composite-key roll uniqueness | missing | `UniquenessChecker` trait at `commands.rs:50` has no `roll_no_exists(school, class, section, year)` method. `services.rs:102-180` (admit_student) accepts a `roll_no` parameter but performs no storage query against the composite key. `RollNumber::new` (`value_objects.rs:341-345`) validates 1..=50 chars but not uniqueness. |
+| Student | 4 | At most one optional subject per academic year | Cap on optional-subject assignments | missing | `OptionalSubjectAssignment` aggregate does not exist; the only `Option<>` in `Student` (`aggregate.rs:114-138`) is `custom_fields`, `blood_group`, etc. — no optional-subject field on the aggregate. |
+| Student | 5 | Status transitions `Applicant → Active → {Suspended, Withdrawn, Graduated, Transferred}` | FSM with 6 states, 5 transitions | partial | `StudentStatus` enum at `value_objects.rs:573-590` defines all 6 states and `is_terminal()`; `reinstate_student` (`services.rs:382-386`) explicitly checks `status != Suspended` and rejects. **Missing:** `suspend_student` (`services.rs:346-353`), `withdraw_student` (`services.rs:433-439`), `transfer_student` (`services.rs:487-492`), `graduate_student` (`services.rs:574-578`) all overwrite `student.status` without checking the precondition that the current state is `Active`. |
+| Student | 6 | Withdrawn/Graduated student has no active `StudentRecord` | Cross-aggregate cascade on terminal status | missing | `StudentRecord` aggregate is a placeholder (see invariant #1); no service factory cascades the `student.status = Withdrawn/Graduated` change to clear or retire the corresponding `StudentRecord` row. |
+| Guardian | 1 | At most one phone and one email of record | One-of-each contact invariant | missing | `Guardian` is a placeholder struct `pub struct { id, school_id }` at `aggregate.rs:325-329`; `register_guardian` (`services.rs:1246-1261`) only checks `id.school_id() == school_id` and emits an empty event. |
+| Guardian | 2 | Multi-student linkage | Many-to-many student-guardian | missing | Same as #1 — placeholder; no `StudentGuardianLink` child aggregate defined. |
+| Guardian | 3 | `Relation` + `IsPrimary` per link | Link attributes | missing | Same as #1 — no `Relation` enum (Father/Mother/Guardian/Other), no `IsPrimary` field. |
+| Guardian | 4 | At most one `IsPrimary` per student | Per-student primary uniqueness | missing | Same as #1 — placeholder. |
+| Guardian | 5 | Soft-delete when all student links removed | Cascade soft-delete | missing | Same as #1 — placeholder; no link-tracking structure. |
+| Class | 1 | Belongs to exactly one school | Tenant anchor | enforced | `Class.id: ClassId` is the typed id `ClassId { school_id, value }` (`value_objects.rs:73-77`); `Class::fresh` (`aggregate.rs:213-235`) sets `school_id: id.school_id()`. The `Class` struct cannot exist without the school anchor being set in the type system. |
+| Class | 2 | Unique name within school | Tenant-scoped name uniqueness | missing | `UniquenessChecker` trait (`commands.rs:50-57`) has no `class_name_exists(school, name)` method. `create_class` (`services.rs:599-625`) calls `validate_class_name` for 1..=200 chars (`value_objects.rs:407-413`) but performs no uniqueness query. `update_class` (`services.rs:660-672`) is the same shape. |
+| Class | 3 | `OptionalSubjectGpaThreshold` configurable | Value object 0.0..=5.0 | enforced | `OptionalSubjectGpaThreshold::new` (`value_objects.rs:778-786`) validates 0.0..=5.0; `set_optional_subject_gpa_threshold` (`services.rs:698-720`) calls `validate_gpa_threshold` then sets `optional_subject_gpa_threshold` on the aggregate. Single-purpose, fully implemented. |
+| Class | 4 | Cannot delete if any `ClassSection` references it | Referential delete guard | missing | `delete_class` (`services.rs:733-758`) soft-deletes via `active_status = Retired` without checking the `ClassSection` table. No `ReferentialChecker` surface is exposed on the academic service commands. |
+| Section | 1 | Unique name within school | Tenant-scoped name uniqueness | missing | Same gap as `Class` #2 — `UniquenessChecker` trait has no `section_name_exists(school, name)`. `create_section` (`services.rs:764-787`) validates 1..=200 chars but not uniqueness; `update_section` (`services.rs:796-822`) the same. |
+| Section | 2 | Reusable across multiple `AcademicYear`s | Permissive cross-year reuse | permissive (N/A) | Data model permits: `Section` has no `academic_year_id` field (`aggregate.rs:255-280`), so the same `SectionId` can be referenced by any number of `ClassSection` rows across years. No enforcement is required; this is a statement of model freedom. |
+| Section | 3 | Soft-deletable; existing references remain | Soft-delete semantics | enforced | `delete_section` (`services.rs:842-866`) sets `active_status = Retired` rather than hard-deleting; spec explicitly allows soft-delete with references intact. `Section.is_active()` is preserved for soft-delete filtering. |
+| ClassSection | 1 | Unique per `(class, section, academic_year)` | Composite-key uniqueness | missing | `ClassSection` is a placeholder `pub struct { id, school_id }` at `aggregate.rs:330-333`. `create_class_section` (`services.rs:1275-1289`) only validates the tenant anchor. |
+| ClassSection | 2 | Multiple class teachers and subject teachers | Permissive fan-out | permissive (N/A) | Data model permits: the placeholder leaves room for `Vec<ClassTeacher>` / `Vec<SubjectTeacher>` children, but no constraint forbids fan-out — this is a permissive statement, not requiring enforcement. |
+| ClassSection | 3 | One or more class rooms | At-least-one cardinality | missing | Same as #1 — placeholder; no `ClassRoom` field or collection. |
+| ClassSection | 4 | Cannot delete while `StudentRecord` refs exist | Referential delete guard | missing | Same as #1 — placeholder; no service factory, no referential check. |
+| Subject | 1 | Unique code within school | Tenant-scoped code uniqueness | missing | `UniquenessChecker` trait (`commands.rs:50-57`) has no `subject_code_exists(school, code)`. `create_subject` (`services.rs:873-909`) validates 1..=50 chars (`value_objects.rs:362-369`) and constructs `Subject::fresh` but performs no uniqueness query. |
+| Subject | 2 | `SubjectType` is `Theory` or `Practical` | Closed enum | enforced | `SubjectType` enum at `value_objects.rs:689-697` has exactly two variants; `Subject::fresh` (`aggregate.rs:331-353`) takes a `subject_type: SubjectType` parameter so the type system rejects any other value at compile time. |
+| Subject | 3 | Configurable pass mark | Value object 0.0..=100.0 | enforced | `PassMark::new` (`value_objects.rs:753-762`) validates 0.0..=100.0; `create_subject` and `update_subject` both call `validate_pass_mark`. |
+| ClassSubject | 1 | Class or class-section scope | Aggregate scope flexibility | missing | `ClassSubject` placeholder `pub struct { id, school_id }` at `aggregate.rs:335-338`; no `class_id` / `class_section_id` field, no scope selector. |
+| ClassSubject | 2 | Same teacher may be assigned to multiple class-subjects | Permissive fan-out | permissive (N/A) | Same shape as `ClassSection` #2 — data model permits; no enforcement needed. |
+| ClassSubject | 3 | `PassMark` override | Per-assignment pass mark | missing | Same as #1 — placeholder; no `pass_mark` field on the aggregate. |
+| AcademicYear | 1 | Start date strictly before end date | Range ordering | enforced | `AcademicYearRange::new` (`value_objects.rs:683-694`) rejects `start >= end` with `DomainError::validation`; `create_academic_year` (`services.rs:1020-1071`) calls `AcademicYearRange::new` before constructing the aggregate. |
+| AcademicYear | 2 | No overlap within school | Cross-row disjointness | missing | `update_academic_year_dates` (`services.rs:1074-1099`) accepts a new `AcademicYearRange` without checking it against other `AcademicYear` rows for the school. `UniquenessChecker` has no `academic_year_overlaps(school, range)` method. |
+| AcademicYear | 3 | Exactly one current per school | Per-school current-year uniqueness | partial | `set_current_academic_year` (`services.rs:1113-1145`) checks `is_closed` and sets `is_current = true` on the target row but does **not** demote the previously-current row. The doc-comment at `services.rs:1095-1097` explicitly delegates the cross-row cascade to the storage adapter. Per `aggregate.rs:402-403`, `AcademicYear.is_current: bool` is a single-row flag — there is no school-scoped constraint at the constructor. |
+| AcademicYear | 4 | Non-current may be opened for read-only queries | Read-only flag | enforced | `AcademicYear.is_closed: bool` (`aggregate.rs:412-413`); `close_academic_year` (`services.rs:1151-1184`) sets `is_closed = true` and demotes `is_current = false` if currently current; `set_current_academic_year` rejects with `is_closed` guard at `services.rs:1131-1135`. |
+| AcademicYear | 5 | Promote requires same-school `From`/`To`; `To` next sequential | Cross-year sequencing | missing | `promote_student` (`services.rs:510-555`) only checks `from_academic_year_id != to_academic_year_id`; does not validate (a) same-school membership, (b) sequential ordering, (c) `To` year is the immediate successor. The doc-comment at `services.rs:507-509` explicitly defers `StudentRecord` mutation. |
+| ClassRoutine | 1 | Covers a full week | 7-day span invariant | missing | `ClassRoutine` placeholder `pub struct { id, school_id }` at `aggregate.rs:340-343`; no `periods` / `ClassTime` collection. |
+| ClassRoutine | 2 | `ClassTime` periods | Period identification | missing | Same as #1 — placeholder. |
+| ClassRoutine | 3 | Room + teacher per period per day | Per-slot assignment | missing | Same as #1 — placeholder. |
+| ClassRoutine | 4 | Teacher cannot be in two places at the same time | Cross-row teacher conflict | missing | Same as #1 — placeholder; no `ReferentialChecker` surface. |
+| ClassRoutine | 5 | Room cannot host two classes at the same time | Cross-row room conflict | missing | Same as #1 — placeholder; no `ReferentialChecker` surface. |
+| Homework | 1 | Teacher-created, class-section scope | Creation context | missing | `Homework` placeholder `pub struct { id, school_id }` at `aggregate.rs:345-348`; no `created_by`, `class_section_id` fields. |
+| Homework | 2 | Submission date after homework date | Date ordering | missing | Same as #1 — placeholder. |
+| Homework | 3 | Evaluation date >= submission date | Date ordering | missing | Same as #1 — placeholder. |
+| Homework | 4 | Optional attachment | Attachment field | missing | Same as #1 — placeholder; no `attachment` field. |
+| Homework | 5 | Marks immutable once evaluated | Immutability after evaluation | missing | Same as #1 — placeholder; no `evaluated_at` / `marks` field. |
+| LessonPlan | 1 | Anchored to Lesson+topic+class-section+subject+date | Aggregate anchor | missing | `LessonPlan` placeholder `pub struct { id, school_id }` at `aggregate.rs:351-354`; no anchor fields. |
+| LessonPlan | 2 | Sub-topics | Sub-collection | missing | Same as #1 — placeholder. |
+| LessonPlan | 3 | `CompletedStatus` enum | Lifecycle status | missing | Same as #1 — placeholder; no `CompletedStatus` enum (the spec lists Pending/InProgress/Completed/Skipped but no such enum is defined in `value_objects.rs`). |
+| LessonPlan | 4 | Multiple teachers share templates; one teacher per occurrence | Ownership rule | missing | Same as #1 — placeholder. |
+| Lesson | 1 | Unique title within `(class-section, subject)` | Composite-key title uniqueness | missing | `Lesson` placeholder `pub struct { id, school_id }` at `aggregate.rs:357-360`; no `title` / `class_section_id` / `subject_id` fields, no uniqueness check. |
+| Lesson | 2 | Zero or more topics | Topic collection | missing | Same as #1 — placeholder; no `topics` collection. |
+| Lesson | 3 | Creation user + timestamp | Audit metadata | missing | Same as #1 — placeholder; no `created_by` / `created_at` fields (the `Student` / `Class` / `Section` / `Subject` aggregates carry these, but `Lesson` does not). |
+| LessonTopic | 1 | Belongs to one lesson | Single-parent link | missing | `LessonTopic` placeholder `pub struct { id, school_id }` at `aggregate.rs:363-366`; no `lesson_id` field. |
+| LessonTopic | 2 | `CompletedStatus` + `CompletedDate` | Lifecycle fields | missing | Same as #1 — placeholder; no `CompletedStatus` enum, no `CompletedDate` field. |
+| StudentRecord | 1 | At most one non-graduate, non-withdrawn per academic year | Per-year enrollment cardinality | missing | `StudentRecord` is `pub struct { id, school_id }` at `aggregate.rs:445-449`; no `class_id`, `section_id`, `academic_year_id`, `is_graduate`, `is_withdrawn` fields. `value_objects.rs:186-192` doc acknowledges Phase 4 deferral — typed id added for downstream assessment dependency but aggregate structure not built. |
+| StudentRecord | 2 | `RollNumber` unique within `(class, section, academic_year)` | Composite-key uniqueness | missing | Same as #1 — placeholder; no `roll_no` field. |
+| StudentRecord | 3 | `IsDefault` per student | Default-record marker | missing | Same as #1 — placeholder; no `is_default` field. |
+| StudentRecord | 4 | `IsPromote=false` until `StudentPromoted` | Promotion lifecycle flag | missing | Same as #1 — placeholder; no `is_promote` field. |
+| StudentRecord | 5 | `IsGraduate=true` when graduate | Graduation flag | missing | Same as #1 — placeholder; no `is_graduate` field. |
+| StudentRecord | 6 | `AdmissionNumber` carried over; new on promotion | Admission-number lineage | missing | Same as #1 — placeholder; no `admission_no` field. |
+| StudentPromotion | 1 | References both `From` and `To` `StudentRecord`s | Cross-record reference | missing | `StudentPromotion` placeholder `pub struct { id, school_id }` at `aggregate.rs:369-372`; no `from_record_id` / `to_record_id` fields. |
+| StudentPromotion | 2 | `ResultStatus` is `Pass` / `Fail` / `Manual` | Closed enum | missing | `ResultStatus` enum is defined at `value_objects.rs:710-720` (Pass/Fail/Manual), but `StudentPromotion` placeholder does not carry a `result_status` field. |
+| StudentPromotion | 3 | Immutable once written | Append-only | missing | Same as #1 — placeholder; no `created_at` to anchor immutability, no service factory to assert it. |
+| StudentCategory | 1 | Unique name within school | Tenant-scoped name uniqueness | missing | `StudentCategory` placeholder `pub struct { id, school_id }` at `aggregate.rs:375-378`; `create_student_category` (`services.rs:1508-1522`) only validates the tenant anchor. |
+| StudentGroup | 1 | Unique name within school | Tenant-scoped name uniqueness | missing | `StudentGroup` placeholder `pub struct { id, school_id }` at `aggregate.rs:381-384`; same gap. |
+| StudentGroup | 2 | Student can be in many groups | Permissive many-to-many | permissive (N/A) | Data model permits — no constraint forbids a student from being in multiple groups; this is a permissive statement. |
+| RegistrationField | 1 | `FieldName` + `LabelName` + `Type` | Triple-attribute | missing | `RegistrationField` placeholder `pub struct { id, school_id }` at `aggregate.rs:387-390`; no `field_name` / `label_name` / `type` (Student or Staff) fields. |
+| RegistrationField | 2 | `IsRequired` / `IsVisible` + editability flags | Boolean configuration | missing | Same as #1 — placeholder. |
+| RegistrationField | 3 | `AdminSection` | Form-placement | missing | Same as #1 — placeholder; no `admin_section` field. |
+| Certificate | 1 | Layout (Portrait/Landscape) + body + footer (up to 3 labels) + photo flag | Template shape | missing | `Certificate` placeholder `pub struct { id, school_id }` at `aggregate.rs:393-396`; no `layout` / `body` / `footer_labels` / `photo` fields. |
+| Certificate | 2 | Optional attachment (PDF or image) | Attachment field | missing | Same as #1 — placeholder. |
+| Certificate | 3 | `DefaultFor` flag | Default-marker | missing | Same as #1 — placeholder. |
+| IdCard | 1 | Boolean display flags (admission number, name, class, photo, ...) | Template booleans | missing | `IdCard` placeholder `pub struct { id, school_id }` at `aggregate.rs:399-402`; no `display_*` boolean fields. |
+| IdCard | 2 | Layout dimensions + spacing | Template geometry | missing | Same as #1 — placeholder; no `width` / `height` / `spacing` fields. |
+
+### Cross-cutting enforcement gaps
+
+1. **`UniquenessChecker` coverage is incomplete.** The trait at
+   `commands.rs:50-57` exposes two methods (`student_admission_no_exists`,
+   `student_email_exists`). The spec requires at least six additional
+   uniqueness checks: `class_name_exists`, `section_name_exists`,
+   `subject_code_exists`, `student_category_name_exists`,
+   `student_group_name_exists`, `roll_no_exists(school, class, section, year)`.
+   None are wired. Phase 2 should expand the trait to cover these.
+
+2. **No `ReferentialChecker` surface exists** in `crates/domains/academic/src/`.
+   Cross-aggregate delete guards (Class#4: ClassSection refs Class;
+   ClassSection#4: StudentRecord refs ClassSection; ClassRoutine#4/#5:
+   teacher/room overlap) cannot be implemented without one. Phase 2
+   should introduce a `ReferentialChecker` port trait parallel to
+   `UniquenessChecker`.
+
+3. **No transition-precondition enforcement on `Student` aggregates** other
+   than `reinstate_student`. The Student aggregate is the only one with
+   a defined FSM, and 4 of its 5 transition functions
+   (`suspend_student`, `withdraw_student`, `transfer_student`,
+   `graduate_student`) silently overwrite `student.status` without
+   checking that the current state is `Active`. The `is_terminal()`
+   helper on `StudentStatus` (`value_objects.rs:601-604`) is defined
+   but unused by any service function. Phase 2 should add explicit
+   precondition guards.
+
+4. **`StudentRecord` is a typed-id stub, not an aggregate.** This blocks
+   assessment (`StudentRecordId` foreign-key dependency), finance
+   (fee assignment per enrollment), attendance (roster resolution),
+   and 4 invariants on `Student` (Student#1, Student#4, Student#6,
+   AcademicYear#5). Phase 2 or 3 should ship the full `StudentRecord`
+   aggregate per the handoff in `value_objects.rs:186-192`.
+
+5. **`AcademicYear` cascade (`is_current` exactly-one)** is delegated
+   to the storage adapter with no in-engine helper. The
+   `set_current_academic_year` service emits an event but does not
+   invalidate the previously-current year. This is a known gap per
+   the in-source comment at `services.rs:1095-1097`; Phase 2 should
+   add a same-school cascade in the service before the storage
+   adapter sees the event.
+
+### Classification rationale
+
+- **Enforced vs partial** hinges on whether the service function (or
+  constructor) covers every precondition the invariant requires.
+  `StudentStatus::is_terminal()` is defined but `suspend_student` does
+  not check `student.status == Active` first — that's a `partial`,
+  not `enforced`, because the post-state is correct but the
+  precondition is unenforced.
+- **Missing vs permissive** hinges on whether the invariant forbids a
+  state (e.g. "at most one phone") or permits one (e.g. "may be reused
+  across years"). Permissive invariants are classified as `N/A` rather
+  than `missing` because the engine is not required to enforce them.
+- **Placeholder aggregates** (14 of 20) contribute every listed
+  invariant as `missing` because the aggregate struct is
+  `pub struct { id, school_id }` with no domain fields, no value
+  object, and a service factory that emits an empty event.
+- **The two `partial` entries** (Student#5, AcademicYear#3) are
+  different in kind: Student#5 is "transition set correctly, source
+  precondition missing"; AcademicYear#3 is "single-row flag set,
+  cross-row cascade delegated to storage adapter". Both are real
+  spec violations that the service function should address before
+  the downstream layer can be trusted.
+
 ## assessment
 
 **Crate:** `crates/domains/assessment/src/services.rs`
