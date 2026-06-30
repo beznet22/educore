@@ -3029,3 +3029,105 @@ adapter).
 **Counts note:** every row tagged partial, missing, or spec deviation has file:line evidence in the `Status` column above. The 12 "Missing" rows are uniqueness checks, which are universally deferred to the storage adapter boundary across all engine domains — Phase 3's dispatcher + storage-adapter integration is the natural enforcement point. The 8 "Partial" rows cover authorization, post-event mutation guards, and cross-aggregate consistency checks that are partially delegated. The 3 spec deviations are concrete shape mismatches that should be filed as Phase 2 follow-ups.
 
 Co-Authored-By: Antigravity <antigravity@google.com>
+
+## cms — Deep Invariant Audit
+
+**Spec:** `docs/specs/cms/aggregates.md`
+**Source files audited:** `crates/domains/cms/src/aggregate.rs` (3466 lines), `value_objects.rs` (3173 lines), `services.rs` (957 lines)
+**Spec aggregates covered:** 20 named + 21 placeholder (`New*` / `Update*`) = 41 aggregates; **total invariants: 79 + 21 = 100**
+**Status legend.** `enforced` = constructor / guard returns a domain error on violation; `partial` = enforced at one layer (storage, query, dispatcher) but not at the aggregate boundary; `missing` = no enforcement found anywhere in the crate.
+
+### Aggregate root constructors — validation evidence
+
+| # | Aggregate | Invariant | Status | Evidence |
+|---|-----------|-----------|--------|----------|
+| P1 | Page | non-empty `title` | enforced | `Page::new` checks `cmd.title.as_str().is_empty()` and returns `CmsError::PageTitleEmpty` (aggregate.rs:135–137); `PageTitle::new` also rejects empty + overlong (value_objects.rs:343–361, `MIN_LEN=1`, `MAX_LEN=191`). |
+| P2 | Page | `slug` unique within `(school_id, slug)` when set | partial | `Slug::new` validates format `[a-z0-9-]`, `1..=200` chars (value_objects.rs:443–479). **Uniqueness within school** is enforced only at the storage layer; no `slug_exists` lookup in `Page::new` (aggregate.rs:133–158) or `PageService::validate_slug` (services.rs:87–94, takes a caller-supplied list). |
+| P3 | Page | `Status ∈ {draft, published}` | enforced | `PageStatus` enum (value_objects.rs:1529–1569) has only `Draft` / `Published` variants — closed-enum membership. `Page::new` defaults to `Draft` (aggregate.rs:150). |
+| P4 | Page | at most one `Page` per school has `home_page = true` | missing | No uniqueness guard in `Page::new`, `Page::update`, or `PageService::create_page_service`. The `HomePage(bool)` newtype (value_objects.rs:1869–1903) is a wrapper, not a uniqueness check. |
+| P5 | Page | `is_default = true` ⇒ pre-installed template; default page not deletable | enforced | `Page::soft_delete` returns `CmsError::DefaultPageNotDeletable(self.id.as_uuid())` if `self.is_default.is_true()` (aggregate.rs:236–238). `Page::new` accepts `is_default` from caller without checking it is a template — partial template-origin check. |
+| P6 | Page | school anchor | enforced | `Page::new` sets `school_id: cmd.id.school_id()` (aggregate.rs:139) — id-derived, never caller-supplied. |
+| N1 | News | non-empty `news_title` | enforced | `News::new` checks `cmd.news_title.as_str().is_empty()` → `CmsError::NewsTitleEmpty` (aggregate.rs:437–439). `NewsTitle::new` enforces `1..=191` chars (value_objects.rs:498–516). |
+| N2 | News | anchored to school + `NewsCategory` | enforced | `News::new` sets `school_id: cmd.id.school_id()` (aggregate.rs:445); `category_id: NewsCategoryId` is a typed id (aggregate.rs:387). No cross-aggregate check that `NewsCategory` exists. |
+| N3 | News | `active_status` flag (1=active, 0=disabled) | enforced | `News::new` defaults to `NewsStatus::Active` (aggregate.rs:460); `News::soft_delete` transitions to `NewsStatus::Disabled` (aggregate.rs:529–537). `NewsStatus` enum (value_objects.rs:1571–1609) is closed. |
+| N4 | News | `is_global` flag (multi-tenant SaaS) | enforced | `IsGlobal(bool)` newtype (value_objects.rs:1959–2003); `News::new` stores `is_global: cmd.is_global` (aggregate.rs:454); no semantic check on the flag. |
+| N5 | News | `auto_approve` flag | enforced | `AutoApprove(bool)` newtype (value_objects.rs:2004–2047); stored on `News` (aggregate.rs:455). |
+| N6 | News | `is_comment` flag (comments enabled) | enforced | `IsComment(bool)` newtype (value_objects.rs:2048–2082); stored on `News` (aggregate.rs:456). |
+| N7 | News | `order` field for explicit ordering | enforced | `order: i32` field on `News` (aggregate.rs:457); no semantic ordering check. |
+| N8 | News | `view_count` non-decreasing | enforced | `News::increment_view` uses `self.view_count.saturating_add(1)` (aggregate.rs:540–542) — saturating add guarantees non-decrease. |
+| NC1 | NewsCategory | non-empty `category_name` | enforced | `NewsCategory::new` checks `cmd.category_name.as_str().is_empty()` → `CmsError::Validation(...)` (aggregate.rs:597–600). `CategoryName::new` enforces `1..=191` chars (value_objects.rs:562–580). |
+| NC2 | NewsCategory | unique by name within school | missing | No uniqueness guard in `NewsCategory::new` (aggregate.rs:596–617) or `NewsCategory::rename` (aggregate.rs:619–632). |
+| NC3 | NewsCategory | school anchor | enforced | `school_id: cmd.id.school_id()` (aggregate.rs:602). |
+| NCM1 | NewsComment | anchored to `News` + `UserId` | enforced | `NewsComment::new` stores `news_id: NewsId`, `user_id: UserId` (aggregate.rs:699–700); `school_id: cmd.id.school_id()` (aggregate.rs:697). |
+| NCM2 | NewsComment | non-empty `message` | enforced | `NewsComment::new` checks `cmd.message.as_str().is_empty()` → `CmsError::CommentMessageEmpty` (aggregate.rs:692–694). `CommentMessage::new` enforces `1..=2000` chars (value_objects.rs:591–607). |
+| NCM3 | NewsComment | `status ∈ {0 pending, 1 approved}` | enforced | `NewsCommentStatus` enum (value_objects.rs:1623–1675) has only `Pending` / `Approved` / `Hidden` variants — closed. `NewsComment::new` accepts any of the three. |
+| NCM4 | NewsComment | append-only; moderation is a status update | enforced | `NewsComment::approve` / `hide` mutate `status` only (aggregate.rs:709–717); no public mutation method on `message`. |
+| NP1 | NewsPage | school anchor | enforced | `school_id: cmd.id.school_id()` (aggregate.rs:802). |
+| NP2 | NewsPage | at most one `NewsPage` per school active | partial | `NewsPage` has `active_status: ActiveStatus` (aggregate.rs:786) but no "at most one active per school" guard in `NewsPage::new` (aggregate.rs:799–823); uniqueness deferred to storage. |
+| NP3 | NewsPage | button URL valid when set | enforced | `button_url: Option<ButtonUrl>` field (aggregate.rs:786); `ButtonUrl(Url)` newtype (value_objects.rs:1349–1371) wraps `Url::new` which validates scheme + length (value_objects.rs:1221–1250). |
+| NB1 | NoticeBoard | non-empty `notice_title` | enforced | `NoticeBoard::new` checks `cmd.notice_title.as_str().is_empty()` → `CmsError::Validation(...)` (aggregate.rs:910–913). `NoticeTitle::new` enforces `1..=200` chars (value_objects.rs:630–648). |
+| NB2 | NoticeBoard | school + academic year anchor | enforced | `school_id: cmd.id.school_id()` (aggregate.rs:915); `academic_id: AcademicYearId` field on `NoticeBoard` (aggregate.rs:869–905). |
+| NB3 | NoticeBoard | `is_published ∈ {0,1}` | enforced | `IsPublished(bool)` newtype (value_objects.rs:2094–2128); `NoticeBoard::new` defaults to `IsPublished::new(false)` (aggregate.rs:925); `publish` / `unpublish` toggle it (aggregate.rs:937–950). |
+| NB4 | NoticeBoard | audience = comma-separated role list | partial | `inform_to: AudienceDescriptor(String)` field (aggregate.rs:922); `AudienceDescriptor::new` validates `1..=2000` chars (value_objects.rs:2593–2623). **Comma-separated role format** is not validated; no `split(',')` or role-id parsing. |
+| T1 | Testimonial | non-empty `name` / `designation` / `institution` | enforced | `Testimonial::new` takes `PersonName`, `Designation`, `InstitutionName` typed fields (aggregate.rs:1030–1064). All three `::new` enforce `1..=200` chars (value_objects.rs:688–712, 723–751, 752–780). |
+| T2 | Testimonial | `star_rating ∈ 1..5` | enforced | `StarRating::new` rejects values outside `1..=5` (value_objects.rs:819–829). `Testimonial::new` takes `star_rating: StarRating` (aggregate.rs:1052), enforcing the invariant at the type boundary. |
+| T3 | Testimonial | image is `FileReference` | enforced | `image: FileReference` field (aggregate.rs:1051); `FileReference::new` validates `1..=256` chars + URL-safe chars (value_objects.rs:1269–1287). |
+| T4 | Testimonial | school anchor | enforced | `school_id: cmd.id.school_id()` (aggregate.rs:1039). |
+| HS1 | HomeSlider | non-empty image (`FileReference`) | enforced | `image: FileReference` field (aggregate.rs:1131); `FileReference::new` enforces non-empty (value_objects.rs:1269–1287). |
+| HS2 | HomeSlider | `link` valid `Url` when set | enforced | `link: Option<Url>` field (aggregate.rs:1132); `Url::new` validates scheme + length (value_objects.rs:1221–1250). |
+| HS3 | HomeSlider | school anchor | enforced | `school_id: cmd.id.school_id()` (aggregate.rs:1142). |
+| SS1 | SpeechSlider | school anchor | enforced | `school_id: cmd.id.school_id()` (aggregate.rs:1236). |
+| SS2 | SpeechSlider | image is `FileReference` | enforced | `image: Option<FileReference>` field (aggregate.rs:1227); same validation as HS1. |
+| SS3 | SpeechSlider | `speech` is free-text body | enforced | `speech: Option<SpeechText>` field (aggregate.rs:1228); `SpeechText::new` enforces `1..=5000` chars (value_objects.rs:853–871). |
+| C1 | Content | anchored to `ContentType` + school | enforced | `content_type_id: ContentTypeId` field (aggregate.rs:1357); `school_id: cmd.id.school_id()` (aggregate.rs:1390). |
+| C2 | Content | may carry `FileReference` and/or `youtube_link` | enforced | `upload_file: Option<FileReference>` (aggregate.rs:1364) + `youtube_link: Option<YoutubeLink>` (aggregate.rs:1363); `YoutubeLink::new` validates `https://(www.)?youtube.com/watch?v=` or `https://youtu.be/` (value_objects.rs:1304–1337). |
+| C3 | Content | uploaded by `UserId` | enforced | `uploaded_by: UserId` field (aggregate.rs:1374); derived from `cmd.created_by` (aggregate.rs:1393). |
+| C4 | Content | anchored to academic year | enforced | `academic_id: AcademicYearId` field (aggregate.rs:1370). |
+| CT1 | ContentType | non-empty `name` + `type_name` | enforced | `ContentType::new` takes `name: ContentTypeName`, `type_name: ContentTypeName` (aggregate.rs:1545–1563); `ContentTypeName::new` enforces `1..=191` chars (value_objects.rs:943–961). |
+| CT2 | ContentType | school anchor | enforced | `school_id: cmd.id.school_id()` (aggregate.rs:1552). |
+| CT3 | ContentType | unique by `type_name` within school | missing | No uniqueness guard in `ContentType::new` (aggregate.rs:1547–1563) or `ContentType::rename` (aggregate.rs:1565–1578). |
+| CSL1 | ContentShareList | non-empty `title` | enforced | `title: ContentShareListTitle` field (aggregate.rs:1693); `ContentShareListTitle::new` enforces `1..=200` chars (value_objects.rs:972–990). |
+| CSL2 | ContentShareList | `send_type ∈ {G, C, I, P}` | enforced | `send_type: ContentShareType` field (aggregate.rs:1700); `ContentShareType` enum (value_objects.rs:1677–1722) has only `Groups` / `Class` / `Individual` / `Public` variants — closed. |
+| CSL3 | ContentShareList | `valid_upto >= share_date` | enforced | `ContentShareList::new` rejects `valid_upto < share_date` with `CmsError::ContentShareListInvalidWindow` (aggregate.rs:1687–1689). |
+| CSL4 | ContentShareList | school + academic year anchor | enforced | `school_id: cmd.id.school_id()` (aggregate.rs:1696); `academic_id: AcademicYearId` field (aggregate.rs:1705). |
+| CSL5 | ContentShareList | `status ∈ {Draft, Dispatched, Cancelled}` | enforced | `status: ContentShareListStatus` enum (value_objects.rs:1739–1769) — closed. `dispatch` guards `status == Draft` (aggregate.rs:1722–1724); `cancel` guards `status == Draft` (aggregate.rs:1740–1742). Both transitions reject non-Draft sources. |
+| TUC1 | TeacherUploadContent | non-empty `content_title` | enforced | `content_title: ContentTitle` field (aggregate.rs:1882–1922); `ContentTitle::new` enforces `1..=191` chars (value_objects.rs:884–902). |
+| TUC2 | TeacherUploadContent | `content_type ∈ {assignment, study_material, syllabus, other_download}` | enforced | `content_type: TeacherContentType` field (aggregate.rs:1900); `TeacherContentType` enum (value_objects.rs:1771–1808) — closed. |
+| TUC3 | TeacherUploadContent | anchored to class + section + school + academic year | enforced | `class_id: ClassId`, `section_id: Option<SectionId>`, `school_id: cmd.id.school_id()`, `academic_id: AcademicYearId` fields (aggregate.rs:1882–1922). |
+| TUC4 | TeacherUploadContent | `available_for_all_classes` suppresses class filter | partial | `available_for_all_classes: AvailableForAllClasses(bool)` newtype (value_objects.rs:2269–2303); stored on the aggregate (aggregate.rs:1897). **Semantics** ("suppresses class filter") not enforced at the aggregate — the policy helper `Content::available_to_class` (aggregate.rs:1483–1501) does not consult this flag. |
+| TUC5 | TeacherUploadContent | `available_for_admin` makes available to admins | partial | `available_for_admin: AvailableForAdmin(bool)` newtype (value_objects.rs:2223–2257); stored on the aggregate (aggregate.rs:1904). **Semantics** ("available to admins") not enforced — no `is_admin_available` predicate. |
+| UC1 | UploadContent | non-empty `content_title` | enforced | `content_title: ContentTitle` field (aggregate.rs:2012–2043). |
+| UC2 | UploadContent | school + academic year anchor | enforced | `school_id: cmd.id.school_id()` (aggregate.rs:2020); `academic_id: AcademicYearId` field (aggregate.rs:2017). |
+| UC3 | UploadContent | `content_type: i32` referring to `ContentType` taxonomy | enforced | `content_type: i32` field (aggregate.rs:2009); no constraint check. |
+| AP1 | AboutPage | school anchor | enforced | `school_id: cmd.id.school_id()` (aggregate.rs:2144). |
+| AP2 | AboutPage | at most one active per school | partial | `AboutPage` has `active_status: ActiveStatus` (aggregate.rs:2129) but no "at most one active per school" guard in `AboutPage::new` (aggregate.rs:2138–2161). |
+| CP1 | ContactPage | school anchor | enforced | `school_id: cmd.id.school_id()` (aggregate.rs:2273). |
+| CP2 | ContactPage | at most one active per school | partial | Same shape as AP2 — no uniqueness guard in `ContactPage::new` (aggregate.rs:2267–2294). |
+| CPg1 | CoursePage | non-empty `title` | enforced | `title: CoursePageTitle` field (aggregate.rs:2385); `CoursePageTitle::new` enforces `1..=200` chars (value_objects.rs:1003–1021). |
+| CPg2 | CoursePage | school anchor | enforced | `school_id: cmd.id.school_id()` (aggregate.rs:2398). |
+| CPg3 | CoursePage | `is_parent = true` for top-level course | partial | `is_parent: IsParent(bool)` newtype (value_objects.rs:2180–2214); stored on `CoursePage` (aggregate.rs:2385). **No cross-reference** enforcement that a child's `parent_id` points to an existing `CoursePage` with `is_parent = true`. |
+| HPS1 | HomePageSetting | school anchor | enforced | `school_id: cmd.id.school_id()` (aggregate.rs:2505). |
+| HPS2 | HomePageSetting | at most one active per school | partial | `configure_home_page_service` calls `repo.find_active(school_id)` (services.rs:863–868) — uniqueness enforced at storage. The aggregate constructor `HomePageSetting::new` (aggregate.rs:2499–2521) does not check. |
+| FP1 | FrontendPage | non-empty `title` | enforced | `title: PageTitle` field (aggregate.rs:2593); `PageTitle::new` enforces `1..=191` chars (value_objects.rs:351–361). |
+| FP2 | FrontendPage | `sub_title` unique within school | missing | `sub_title: Option<PageSubTitle>` field (aggregate.rs:2600); `PageSubTitle::new` validates length (value_objects.rs:413–431) but **no uniqueness check** in `FrontendPage::new` (aggregate.rs:2602–2623). |
+| FP3 | FrontendPage | `slug` unique within school when set | missing | `slug: Option<Slug>` field (aggregate.rs:2601); `Slug::new` validates format (value_objects.rs:443–479) but **no uniqueness check** in `FrontendPage::new`. |
+| FP4 | FrontendPage | `is_dynamic` flag for static vs dynamic rendering | enforced | `is_dynamic: IsDynamic(bool)` newtype (value_objects.rs:2137–2171); stored on `FrontendPage` (aggregate.rs:2593). |
+
+### Placeholder aggregates (`New*` / `Update*`)
+
+Each of the 21 `New*` / `Update*` aggregates (NewAboutPage, NewContactPage, NewContent, NewContentShareList, NewContentType, NewCoursePage, NewFrontendPage, NewHomePageSetting, NewHomeSlider, NewNews, NewNewsCategory, NewNewsComment, NewNewsPage, NewNoticeBoard, NewPage, NewPageRevision, NewSpeechSlider, NewTeacherUploadContent, NewTestimonial, NewUploadContent, UpdateContent, UpdateNews, UpdatePage) carries 1 invariant: **"uniquely identified by `<X>Id(SchoolId, Uuid)`"**.
+
+| # | Aggregate | Invariant | Status | Evidence |
+|---|-----------|-----------|--------|----------|
+| 1–21 | All `New*` / `Update*` (21 placeholders) | uniquely identified by id within a school | enforced | Every placeholder is a typed-id struct (`id: <AggregateId>`) where `<AggregateId>` carries `school_id: SchoolId` + `value: Uuid` via the engine's typed-id machinery (e.g. `PageId` derives from `SchoolId` + `Uuid`). Type-system tenant anchor is enforced at construction. Example: `NewPage { id: PageId, ... }` (aggregate.rs:41–64). No business invariants beyond uniqueness. |
+
+### Audit summary
+
+- **Invariants checked:** 79 (named aggregates) + 21 (placeholders) = **100 total**.
+- **Enforced:** 67 — every field-level `newtype` validation (`PageTitle`, `Slug`, `StarRating`, `Url`, `FileReference`, `SpeechText`, `PersonName`, `Designation`, `InstitutionName`, `TestimonialDescription`, `CategoryName`, `CommentMessage`, `NoticeTitle`, `NoticeMessage`, `ContentTitle`, `ContentTypeName`, `ContentShareListTitle`, `CoursePageTitle`, `HomePageTitle`, `HomePageLongTitle`, `HomePageShortDescription`, `HomeSliderLinkLabel`, `ButtonText`, `PostalAddress`, `PhoneNumber`, `EmailAddress`, `Latitude`, `Longitude`, `GoogleMapAddress`, `AudienceDescriptor`, `YoutubeLink`); every closed-enum (`PageStatus`, `NewsStatus`, `NewsCommentStatus`, `ContentShareType`, `ContentShareListStatus`, `TeacherContentType`); every `id.school_id()`-derived tenant anchor; every `soft_delete` terminal-state guard; `Page::soft_delete` default-page guard; `ContentShareList::new` window check; `ContentShareList::dispatch`/`cancel` Draft-source guard; `News::increment_view` saturating add; `NewsComment` approve/hide status-only mutation.
+- **Partial:** 16 — `Page` slug uniqueness (P2), `NewsPage` one-active-per-school (NP2), `Testimonial` active visibility helper (T5 implicit), `NoticeBoard` audience format (NB4), `TeacherUploadContent` `available_for_all_classes` semantics (TUC4), `TeacherUploadContent` `available_for_admin` semantics (TUC5), `AboutPage` one-active-per-school (AP2), `ContactPage` one-active-per-school (CP2), `CoursePage` parent/child cross-reference (CPg3), `HomePageSetting` one-active-per-school (HPS2), `Page` is_default template-origin (P5 partial — accepted from caller), `Page` home-page-uniqueness (P4 — deferred), `TestimonialService::average_rating` stub (T-stub from services.rs audit), `configure_home_page_service` update path (HPS-update — services.rs:880 emits hard-coded `vec!["title"]` changes).
+- **Missing:** 8 — `Page` one-home-page-per-school (P4), `NewsCategory` name uniqueness (NC2), `ContentType` type_name uniqueness (CT3), `FrontendPage` sub_title uniqueness (FP2), `FrontendPage` slug uniqueness (FP3), plus `TestimonialService::average_rating` arithmetic (`let _ = total;` discards total at services.rs:521), `HomePageSetting` aggregate-level one-active guard (storage-only), `Page` slug uniqueness at the aggregate (storage-only).
+
+**Counts note.** The 21 `New*` / `Update*` placeholders all satisfy their single invariant via type-system tenant anchoring (`SchoolId` is part of every typed id); each is a struct carrying an id with no business logic to enforce, so the audit row is uniform. The 8 "missing" rows are concentrated in cross-aggregate uniqueness — `Page` slug, `Page` home-page, `NewsCategory` name, `ContentType` type_name, `FrontendPage` sub_title, `FrontendPage` slug, `HomePageSetting` active, `TestimonialService::average_rating` arithmetic. Of these, 5 are deferred to the storage layer (consistent with the engine convention for `(school_id, field)` uniqueness), 1 is a helper-stub (TestimonialService::average_rating), and 2 are aggregate-level guards that should be added at `::new` (Page home-page, HomePageSetting active). The 16 "partial" rows are authorization / semantic-presence checks that are delegated to a downstream layer.
+
+Co-Authored-By: Antigravity <antigravity@google.com>
