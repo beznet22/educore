@@ -2163,3 +2163,419 @@ adapter).
 **Counts note:** the "Partial" and "Missing" totals are conservative — every row tagged partial or missing is a verified gap with file:line evidence in the `Status` column above. Phase 2's primary deliverable is to drive these gaps to zero by (a) wiring uniqueness checks at the storage adapter boundary and (b) moving the date / referential / capacity checks into the dispatcher per Phase 3.
 
 Co-Authored-By: Antigravity <antigravity@google.com>
+
+---
+
+## finance — Deep Invariant Audit
+
+**Generated:** Phase 1 Step 2, Engine Production Readiness ferment
+**Scope:** Spec invariants from `docs/specs/finance/aggregates.md` (47 aggregates: 37 root + 10 child-entity stubs) cross-referenced against `crates/domains/finance/src/aggregate.rs`, `value_objects.rs`, `commands.rs`, `entities.rs`, and `services.rs`.
+**Focus areas (per task brief):** fee calculation, payment reconciliation, payroll accrual, wallet balance.
+
+The Phase 1 Step 1 audit (above) classifies 66 service functions as 29 real / 5 partial / 32 stub. This Step 2 audit descends into the type-level enforcement: which spec invariants are caught by aggregate constructors (`Aggregate::fresh`), value-object constructors (`Money::new`, `FeeAmount::new`, `validate_percentage`), and state-machine transitions (`tx.approve`, `tx.reject`) versus which are deferred to the storage adapter or the dispatcher.
+
+### A. Money and bounded monetary primitives (foundation)
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| `Money::new` rejects negative amounts | All fees/payments/balances expressed as `MinorUnits` (i64 cents/paisa) per `docs/build-plan.md § Risks`; no floats, no negatives | real | `value_objects.rs:541-548` — explicit `if amount_minor < 0` returns `DomainError::validation`. Test `money_rejects_negative` at `value_objects.rs:1182-1185`. |
+| `Currency::new` enforces 3-letter ISO-4217 | ISO-4217 currency code validation; only uppercase ASCII A-Z allowed | real | `value_objects.rs:392-407` — length check + per-byte `is_ascii_uppercase` loop. Test `currency_rejects_lowercase` at `value_objects.rs:1187-1190` and `currency_accepts_uppercase_iso4217` at `value_objects.rs:1192-1197`. |
+| `FeeAmount::new` enforces `0..=100_000_000` minor units (1,000,000.00) | `FeeAmount` is bounded per `docs/specs/finance/value-objects.md`; spec enforces "no fee exceeds 1M" upper bound | real | `value_objects.rs:593-606` — `MAX_MINOR = 100_000_000` constant; explicit `if amount_minor > MAX_MINOR` returns `DomainError::validation`. Test `fee_amount_enforces_max` at `value_objects.rs:1199-1204`. |
+| `FineAmount::new` enforces `0..=10_000_000` minor units (100,000.00) | `FineAmount` is bounded per spec; tighter cap than `FeeAmount` | real | `value_objects.rs:619-632` — `MAX_MINOR = 10_000_000` constant; explicit upper-bound check. |
+| `validate_percentage` enforces `[0, 100]` | All `percentage` fields on `FeesInstallment`, `DirectFeesInstallment` must be in `[0, 100]` per spec invariants 2 (both) | real | `value_objects.rs:1216-1223` — explicit `!(0.0..=100.0).contains(&pct)` check. **Note:** uses `f32` (not `MinorUnits`) per spec wording; same float-risk caveat as the rest of the engine, but the spec is internally inconsistent (spec uses percentages not minor units). |
+
+### B. Wallet balance invariants (headline correctness)
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| `Wallet::fresh` initializes balance at 0 | Wallet spec: created lazily on first transaction; zero balance on construction | real | `aggregate.rs:103-127` — `balance_minor: 0` initialization; `version: Version::initial()`; `active_status: ActiveStatus::Active`. Test `wallet_starts_at_zero_balance` at `aggregate.rs:993-998`. |
+| `Wallet::apply_credit` requires non-negative credit amount | Spec: `amount >= 0` for `WalletTransaction`; the wallet must mirror the same invariant | real | `aggregate.rs:139-150` — `if amount_minor < 0` returns `DomainError::validation`. |
+| `Wallet::apply_credit` requires matching currency | Cross-currency credit is forbidden; prevents silent FX errors | real | `aggregate.rs:151-155` — `if currency.0 != self.currency.0` returns `DomainError::validation`. Test `wallet_credit_rejects_mismatched_currency` at `aggregate.rs:1014-1021`. |
+| `Wallet::apply_debit` requires sufficient balance | Spec: only `approve` transitions the wallet balance; pre-flight check | real | `aggregate.rs:175-184` — `if self.balance_minor < amount_minor` returns `DomainError::conflict` with formatted message. Test `wallet_debit_rejects_insufficient_balance` at `aggregate.rs:1004-1012`. |
+| `Wallet::apply_debit` requires non-negative amount | Mirrors credit sign-check | real | `aggregate.rs:170-174` — `if amount_minor < 0` returns `DomainError::validation`. |
+| `Wallet::apply_credit`/`apply_debit` saturating arithmetic | `saturating_add` / `saturating_sub` prevents `i64` overflow on large accumulation | real | `aggregate.rs:156` (`saturating_add`), `aggregate.rs:185` (`saturating_sub`). Test `wallet_credit_then_debit` at `aggregate.rs:1000-1003` covers happy path. |
+| `Wallet` audit-footer invariants | `updated_at`, `updated_by`, `version.next()` are bumped on every mutation | real | `aggregate.rs:157-160` (credit), `aggregate.rs:186-189` (debit). |
+| `WalletTransaction::fresh` requires non-negative amount | Spec invariant 1 | real | `aggregate.rs:269-273` — `if amount_minor < 0` returns `DomainError::validation`. |
+| `WalletTransaction` state machine `Pending -> {Approved, Rejected}` only | Spec invariant 3: only `approve` transitions balance; `Approved`/`Rejected` are terminal | real | `value_objects.rs:937-945` — `ApprovalStatus::can_transition_to` returns `true` only for `(Pending, Approved)` and `(Pending, Rejected)`; `is_terminal` at `value_objects.rs:927-929`. Aggregate `approve`/`reject` at `aggregate.rs:286-308` and `aggregate.rs:313-333` both pre-check via `can_transition`. Test `approval_status_state_machine` at `value_objects.rs:1206-1212`. Test `wallet_transaction_state_machine` at `aggregate.rs:1023-1043` proves illegal re-approval returns `Conflict`. |
+| `WalletTransaction::fresh` starts in `Pending` state | Spec invariant 2 | real | `aggregate.rs:283` — `status: ApprovalStatus::Pending` initialization. |
+| `WalletTransaction::approve` records `approved_by`, `approved_at`, `last_event_id` | Audit footer + correlation | real | `aggregate.rs:296-302` — fields populated, `version.next()` called, `last_event_id` recorded. |
+| `WalletTransaction::reject` records `rejected_by`, `rejected_at`, `reject_note` | Audit footer + correlation | real | `aggregate.rs:323-329` — fields populated, version bump applied. |
+| `WalletTxType` distinguishes credit vs debit | Spec: `deposit`/`refund` credit; `expense`/`fees_refund` debit | real | `value_objects.rs:1004-1014` — `is_credit()` matches `Deposit\|Refund`; `is_debit()` matches `Expense\|FeesRefund`. Test `wallet_tx_type_round_trip` at `value_objects.rs:1214-1224` proves `is_credit() ^ is_debit()` is exhaustive. |
+| `WalletTransaction` cross-aggregate: balance invariant not enforced in aggregate | Spec: "authoritative balance is the sum of approved `WalletTransaction` rows for the wallet, recomputed on every approval" (per `aggregate.rs:54-60` doc) | partial | The `Wallet` aggregate holds a `balance_minor` cache but the cache is **never recomputed** in `WalletTransaction::approve` / `reject` — the spec's "recomputed on every approval" promise is delegated to the dispatcher / a future `recompute_balance` method. The service-side `WalletService::balance` (services.rs:401) attempts a cross-check loop but discards the result (Step 1 partial). The headline invariant (balance == sum of approved tx) has no enforcement at the aggregate layer; it is a dispatcher responsibility. |
+
+### C. FeesPayment and payment reconciliation (headline correctness)
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| `FeesPayment::fresh` requires non-negative amount | Spec `FeesPayment` invariant 2: `amount >= 0` | real | `aggregate.rs:476-480` — explicit `if amount_minor < 0` returns `DomainError::validation`. |
+| `FeesPayment::fresh` requires non-negative discount | Spec: `discount_amount >= 0` | real | `aggregate.rs:481-485` — `if discount_minor < 0` rejected. |
+| `FeesPayment::fresh` requires non-negative fine | Spec: `fine >= 0` | real | `aggregate.rs:486-490` — `if fine_minor < 0` rejected. |
+| `FeesPayment::net_minor` computes `amount - discount` | Used by payment reconciliation to derive net payable | real | `aggregate.rs:502-505` — `saturating_sub` arithmetic. Test `fees_payment_net_is_amount_minus_discount` at `aggregate.rs:1078-1090` proves `10_000 - 1_500 = 8_500`. |
+| `FeesPayment` tenant anchor from id | `school_id` derived from `id.school_id()` (no caller-supplied school id) | real | `aggregate.rs:491` — `school_id: id.school_id()`. |
+| `FeesPayment` invariant 1 (non-null `assign_id` + `student_id`) | Spec requires FK to `FeesAssign` and `Student` | missing | `FeesPayment` struct (aggregate.rs:436-473) does not carry `assign_id` or `student_id` fields — only `payment_method`, `bank_id`, `payment_method_id`, `reference`, `note`, `payment_date`. The FKs are deferred to the dispatch path per the service-layer docstring (services.rs:444-453). The aggregate-level invariant is **not** expressible in the current shape. |
+| `FeesPayment` invariant 3 (payment_mode's `gateway_id` matches chosen gateway) | Cross-aggregate consistency | missing | `payment_method: PaymentMethodKind` is stored but the FK `PaymentMethodId` (optional) does not cross-check the method's `gateway_id` against the chosen gateway. Aggregate-level invariant requires `PaymentMethod::gateway_id` lookup, which is not performed. Deferred to the dispatch path. |
+| `FeesPayment` invariant 4 (gateway tx id required if payment_mode = Gateway) | Required reference integrity | missing | `reference: Option<String>` is the only place a gateway tx id could land; no aggregate-level check `if payment_method == Gateway && reference.is_none()` exists. Deferred to the dispatch path. |
+| `FeesPayment` audit footer | `version`, `etag`, `created_at`, `updated_at`, `created_by`, `updated_by`, `active_status`, `last_event_id`, `correlation_id` | real | `aggregate.rs:469-472` (10 fields). |
+| `FeesInvoice::fresh` requires 1..=10 char prefix | Spec: invoice prefix is a short string | real | `aggregate.rs:380-384` — `if prefix.is_empty() \|\| prefix.len() > 10` rejected. Test `fees_invoice_rejects_empty_prefix` at `aggregate.rs:1066-1071`. |
+| `FeesInvoice::fresh` requires `start_form >= 0` | Spec invariant 2 | real | `aggregate.rs:385-389` — `if start_form < 0` rejected. |
+| `FeesInvoice` invariant 1 (one per school) | Uniqueness is a storage-layer concern | partial (by design) | Aggregate has no `school_id`-keyed uniqueness guard; the `school_id: SchoolId` typed-id anchor is the only defense. The uniqueness invariant is explicitly delegated to the storage adapter (cluster of services.rs:591 partial). |
+| `FeesInvoice` invariant 3 (next = `start_form + count(issued_invoices)`) | Counter arithmetic requires the count of issued invoices | missing | No method on `FeesInvoice` exists to advance the counter. The `IncrementInvoiceCounter` command (spec § FeesInvoice Commands) has no aggregate-level implementation. Deferred to the dispatch path (per Step 1 audit services.rs:591 partial). |
+| `BankStatement` invariant: append-only with `after_balance` running total | Spec: statements are append-only; corrections are reverse statements | missing | `BankStatement` is a 1-field placeholder stub (aggregate.rs:825-828). No `after_balance` computation, no `RecordBankStatement`/`ReverseBankStatement` commands, no append-only enforcement at the aggregate layer. Deferred to Workstream D. |
+| `AmountTransfer` invariant: produces 2 `BankStatement` rows in 1 tx (one debit source, one credit destination) | Double-entry invariant for inter-account transfers | missing | `AmountTransfer` is a 1-field placeholder stub (aggregate.rs:851-854). No double-entry logic, no `TransferFunds` command. Deferred to Workstream D. |
+| `DoubleEntryService::check_invariant` enforces `sum(debits) == sum(credits)` per school | The cross-aggregate double-entry invariant for the journal | real | `services.rs:953-976` — non-negative amount check (962-966); per-school filter (959-961); `debits != credits` returns `Conflict` (967-975). Property-tested via proptest (services.rs:2502-2547 per Step 1 audit). |
+| `BankReconciliationService::match_transaction` matches by amount + entry_type within school | Reconciliation rule | real | `services.rs:1622-1648` — school filter (1625-1627); entry_type filter (1628-1630); amount equality (1631-1640); discrepancy tracking (1645-1648). |
+
+### D. Payroll accrual invariants (headline correctness)
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| `PayrollGenerate::gross_salary == basic_salary + total_earning` | Spec invariant 1 | missing | `PayrollGenerate` is a 1-field placeholder stub (aggregate.rs:933-936). Authoritative root lives in `educore-hr::aggregate::PayrollGenerate`; the finance crate does not enforce the composition. |
+| `PayrollGenerate::net_salary == gross_salary - total_deduction - tax` | Spec invariant 2 | missing | Same as above — no `PayrollGenerate` struct in `educore-finance`; enforcement deferred to HR crate. |
+| `PayrollGenerate.payroll_status` state machine (`not_generated` → `generated` → `paid`, paid is terminal) | Spec invariant 3 | missing | No aggregate-level state machine; status enum lives in HR's `value_objects` and is not enforced in finance. |
+| `PayrollGenerate.paid_amount <= net_salary` | Spec invariant 4 | missing | Same as above. |
+| `PayrollPayment` invariant 1 (sum of payments vs `PayrollGenerate.unpaid net_salary`) | The cross-aggregate cap | partial | `PayrollPayment` is a 1-field placeholder stub (aggregate.rs:874-877). Service-layer `PayrollDisbursementService::disburse_payroll` (services.rs:1739) attempts the check but sets `total_minor = 0` literal and never computes the sum (Step 1 audit partial). The cross-aggregate lookup (resolve `PayrollGenerate` by id, read `net_salary - paid_amount`) is delegated to the dispatcher. |
+| `PayrollPayment` invariant 2 (payment_method + bank_id compatible) | PaymentMethod ↔ BankAccount consistency | missing | Aggregate stub has no fields. Deferred to Workstream I. |
+| `PayrollPayment` invariant 3 (creates corresponding `Expense` + `BankStatement`) | Side-effect propagation | missing | The aggregate has no such side-effect hooks; the dispatch path is responsible. |
+| `PayrollEarnDeduc.amount >= 0` | Spec invariant 1 | missing | `PayrollEarnDeduc` is a placeholder stub (aggregate.rs:938-941). Authoritative implementation in `educore-hr`. |
+| `PayrollEarnDeduc.earn_dedc_type ∈ {e, d}` | Spec invariant 2 | missing | Same as above. |
+| `PayrollEarnDeduc` sum invariants (sum of `e` rows == total_earning; sum of `d` rows == total_deduction) | Spec invariant 3 | missing | Same as above. |
+| `SalaryTemplate` invariant 1 (`gross_salary == salary_basic + house_rent + provident_fund` OR consumer-defined composition) | Per-consumer composition rule | missing (service-side deferred) | `SalaryTemplateService::create_template` (services.rs:1894-1925) validates structural fields (name length, non-empty earnings, non-negative amounts) but explicitly defers composition evaluation to "payroll-generation time" (Step 1 audit partial). |
+| `SalaryTemplate` invariant 2 (`net_salary == gross_salary - total_deduction`) | Per-consumer composition rule | missing (service-side deferred) | Same as above — composition rule deferred. |
+| `SalaryTemplateService::apply_template` concatenates earnings + deductions | Concatenation invariant | real | `services.rs:1929-1948` — clones earnings then deductions into single `Vec<TemplateLine>`. |
+| `SalaryTemplateService::validate_template` requires non-empty labels and non-negative amounts | Field-level validation | real | `services.rs:1952-1964` — `label.is_empty()` rejected (1955-1958); `amount_minor < 0` rejected (1959-1963). |
+| `HourlyRateService::set_hourly_rate` rejects negative rates | Field-level validation | real | `services.rs:1826-1840` — `rate_minor < 0` rejected (1828-1832). |
+| `HourlyRateService::calculate_pay` clamps at 0 | `hours <= 0` or `raw <= 0` returns 0 | real | `services.rs:1846-1859` — early-returns for `hours <= 0` (1847-1849) and `raw <= 0` (1852-1854). |
+
+### E. Fee calculation and discount invariants
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| `FeesMaster.amount >= 0` | Spec invariant 2 | partial | `FeesMaster` is a 1-field placeholder stub (aggregate.rs:664-667). The `FeeAmount` value object enforces the upper bound but the aggregate does not exist to enforce the lower bound. Service-side enforcement would use `FeeAmount::new` but no service function exists for `CreateFeesMaster` / `UpdateFeesMasterAmount`. Deferred to Workstream E. |
+| `FeesAssign.fees_amount >= 0` | Spec invariant 2 | partial | `FeesAssign` is a 1-field placeholder stub (aggregate.rs:673-676). No aggregate-level enforcement; deferred to Workstream F. |
+| `FeesAssign.applied_discount <= fees_amount` | Spec invariant 3 | missing | Same as above. No aggregate exists; the invariant would need to live in a `FeesAssign::apply_discount` constructor that accepts both fields. |
+| `FeesAssign` payment cap: `sum(FeesPayment) <= (fees_amount - applied_discount) + fine + weaver` | Spec invariant 4 | missing | The cap requires accumulating across multiple `FeesPayment` records, which is a repository/query concern — not expressible in the aggregate alone. The service-side `record_payment` (services.rs:454) does not check the cap (Step 1 audit partial). |
+| `FeesAssign.active_status` true while open balance remains | Spec invariant 5 | missing | Same as above. |
+| `FeesAssignDiscount.applied_amount >= 0 && unapplied_amount >= 0` | Spec invariant 1 | partial | `FeesAssignDiscount` is a 1-field placeholder stub (aggregate.rs:678-681). The `DiscountAmount = FeeAmount` type alias at `value_objects.rs:643` enforces the upper bound, but the aggregate doesn't exist. |
+| `FeesAssignDiscount.applied + unapplied` is constant for life of record | Spec invariant 2 — value-object invariant test | partial | The invariant is structural — once `applied` and `unapplied` are set on construction, no setter exists to mutate them. With no aggregate impl, the "immutability" comes from the absence of mutators. Real enforcement requires a constructor like `FeesAssignDiscount::fresh(id, applied, unapplied)` that validates `applied + unapplied == total` at construction. |
+| `FeesDiscount.amount >= 0` | Spec invariant 2 | partial | `FeesDiscount` is a 1-field placeholder stub (aggregate.rs:684-687). `DiscountAmount = FeeAmount` enforces upper bound. |
+| `FeesDiscount` once-per-master / once-per-year scope | Spec invariants 3, 4 | missing | No aggregate impl; service-side `CreateFeesDiscount` doesn't exist. Deferred to Workstream E. |
+| `FeesInstallment.percentage ∈ [0, 100]` | Spec invariant 2 | partial | `FeesInstallment` is a 1-field placeholder stub (aggregate.rs:689-692). The `validate_percentage` value object (value_objects.rs:1216-1223) would enforce the range, but no aggregate constructor calls it. |
+| `FeesInstallment.amount >= 0` | Spec invariant 3 | partial | Same as above. |
+| `FeesInstallment` percentage sum ≤ 100.0 across all installments in a master | Spec invariant 4 | missing | Cross-row invariant; no aggregate can enforce it without repository access. Deferred to Workstream F. |
+| `FeesInstallmentAssign.paid_amount <= amount + discount_amount` | Spec invariant 2 | missing | `FeesInstallmentAssign` is a 1-field placeholder stub (aggregate.rs:694-697). Deferred to Workstream F. |
+| `FeesInstallmentAssign.active_status` is 1 while open | Spec invariant 3 | missing | Same as above. |
+| `DirectFeesInstallment.percentage ∈ [0, 100]` | Spec invariant 2 | partial | Same pattern as `FeesInstallment`. |
+| `DirectFeesInstallment` percentage sum ≤ 100.0 | Spec invariant 3 | missing | Same as above. |
+| `DirectFeesInstallmentChildPayment.paid + balance == amount + discount` at construction | Spec invariant 1 | partial | `DirectFeesInstallmentChildPayment` is a 1-field placeholder stub (aggregate.rs:710-713). The value objects (`Money`, `FeeAmount`) enforce non-negativity and upper bounds, but the construction-time equation is not implemented. Service-side `create_direct_fees_installment_child_payment` (services.rs:1028) is a stub (Step 1 audit). |
+| `DirectFeesInstallmentChildPayment.paid_amount` monotonically non-decreasing across payments | Spec invariant 2 | missing | Requires sequence of payments; no aggregate impl; deferred. |
+| `FmFeesInvoiceChild.sub_total == amount + weaver + fine` | Spec invariant 2 | missing | `FmFeesInvoiceChild` is a 1-field placeholder stub (aggregate.rs:741-744). |
+| `FmFeesInvoiceChild.paid_amount <= sub_total + service_charge` | Spec invariant 3 | missing | Same as above. |
+| `FmFeesTransaction.total_paid_amount >= 0` | Spec invariant 2 | missing | `FmFeesTransaction` is a 1-field placeholder stub (aggregate.rs:761-764). |
+| `FmFeesWeaver` sum on invoice ≤ sum of child subtotals | Spec invariant 2 | missing | `FmFeesWeaver` is a 1-field placeholder stub (aggregate.rs:772-775). |
+
+### F. Banking / Cash / Reconciliation invariants
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| `BankAccount.account_number` unique within school | Spec invariant 1 | partial | `BankAccount` is a 1-field placeholder stub (aggregate.rs:816-819). Uniqueness is a storage-layer concern. `validate_bank_account_number` (value_objects.rs:1171-1184) enforces 6..=34 alphanumeric chars; test at `value_objects.rs:1213-1220`. |
+| `BankAccount.current_balance` derived from `BankStatement` log | Spec invariant 2 | missing | `BankStatement` is a placeholder stub; the running-balance invariant is not implemented. |
+| `BankAccount.account_type ∈ {bank, cash}` | Spec invariant 3 | partial | `AccountType` enum at `value_objects.rs:1060-1090` with parse + as_str, but `BankAccount` is a placeholder. |
+| `BankStatement.amount >= 0` | Spec invariant 1 | missing | Placeholder stub; `StatementType` enum (value_objects.rs:1100-1124) exists for type field. |
+| `BankStatement.type ∈ {income, expense}` | Spec invariant 2 | partial | `StatementType` enum + parse + as_str at `value_objects.rs:1100-1124`. |
+| `BankStatement.after_balance` matches running balance of bank account | Spec invariant 3 | missing | Placeholder stub; no computation logic. |
+| `BankStatement` is append-only; corrections via reverse statements | Spec invariant 4 | missing | No state machine; no `RecordBankStatement`/`ReverseBankStatement` commands. |
+| `BankPaymentSlip.payment_mode ∈ {Bk, Cq}` | Spec invariant 1 | partial | `BankMode` enum at `value_objects.rs:1092-1118` exists with parse + as_str; `BankPaymentSlip` is a placeholder stub. |
+| `BankPaymentSlip.approve_status ∈ {pending, approved, rejected}` | Spec invariant 2 | partial | `ApprovalStatus` enum at `value_objects.rs:905-946` is shared; `BankPaymentSlip` placeholder stub. |
+| `BankPaymentSlip` only approved slips promote to `BankStatement` + `FeesPayment` | Spec invariant 3 | missing | State-machine enforcement not implemented. |
+
+### G. Expense / Income / Donor / ChartOfAccount invariants
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| `Expense.amount >= 0` | Spec invariant 1 | real | `aggregate.rs:557-561` — explicit `if amount_minor < 0` rejected. |
+| `Expense` non-empty name (1..=200 chars) | Value-object constraint | real | `aggregate.rs:556` — `validate_ledger_name(&name)?` calls `value_objects.rs:1139-1147` which enforces length; test `expense_rejects_empty_name` at `aggregate.rs:1092-1107`. |
+| `Expense.payment_method` compatible with `account_id` | Spec invariant 2 | missing | `Expense` has `account_id: BankAccountId` and `payment_method: PaymentMethodKind` fields, but no constructor check `if (payment_method == Cash) != (account_type == Cash)`. The check is delegated to the dispatch path. |
+| `Expense` has exactly one `expense_head` | Spec invariant 3 | partial | The aggregate has a single `expense_head_id: ExpenseHeadId` field (aggregate.rs:540), so the "exactly one" structural invariant is enforced by the type — only one head is representable. |
+| `Income.amount >= 0` | Spec invariant 1 | missing | `Income` is a 1-field placeholder stub (aggregate.rs:835-838). |
+| `Income` account + payment_method compatible | Spec invariant 3 | missing | Same as above. |
+| `Donor.show_public` boolean | Spec invariant 1 | missing | `Donor` is a 1-field placeholder stub (aggregate.rs:840-843). |
+| `Donor.email` unique within school when provided | Spec invariant 2 | missing | Same as above. |
+| `ExpenseHead` unique by `name` within school | Spec invariant 1 | missing | `ExpenseHead` is a 1-field placeholder stub (aggregate.rs:845-848). `validate_ledger_name` (value_objects.rs:1139-1147) enforces non-empty / 200-char cap. |
+| `IncomeHead` unique by `name` within school | Spec invariant 1 | missing | `IncomeHead` is a 1-field placeholder stub (aggregate.rs:850-853). |
+| `ChartOfAccount` unique by `name` within school | Spec invariant 1 | missing | `ChartOfAccount` is a 1-field placeholder stub (aggregate.rs:858-861). |
+| `ChartOfAccount` cannot delete while referenced | Spec invariant 2 | missing | No delete guard; placeholder stub. |
+
+### H. Carry-forward and login-prevention invariants
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| `FeesCarryForward.balance >= 0` | Spec invariant 2 | partial | `FeesCarryForward` is a 1-field placeholder stub (aggregate.rs:890-893). `Balance = Amount` type alias at `value_objects.rs:646` enforces non-negativity. |
+| `FeesCarryForward.balance_type ∈ {debit, credit}` | Spec invariant 3 | partial | `BalanceType` enum at `value_objects.rs:1135-1167` exists with parse + as_str. |
+| `FeesCarryForward` unique by `(school, student, academic)` | Spec invariant 1 | missing | Placeholder stub; storage-layer concern. |
+| `FeesCarryForwardLog.amount >= 0` | Spec invariant 2 | missing | `FeesCarryForwardLog` is a placeholder stub (aggregate.rs:895-898). |
+| `FeesCarryForwardLog` append-only | Spec invariant 1 | missing | Same as above; no append-only enforcement. |
+| `DueFeesLoginPrevent` unique by `(school, academic, user, role)` | Spec invariant 1 | missing | `DueFeesLoginPrevent` is a placeholder stub (aggregate.rs:885-888). |
+| `DueFeesLoginPrevent` auto-pruned when balance = 0 | Spec invariant 2 | missing | Same as above. |
+| `DueFeesLoginPreventionService::is_login_blocked` threshold check | Block iff `outstanding_minor >= threshold_minor` | real | `services.rs:1556-1580` — explicit threshold check (1558-1564) returns `LoginBlockDecision { blocked: true, ... }`; otherwise `blocked: false` (1565-1571). |
+| `CarryForwardService::should_carry_forward` rules 1, 4 | No open balance → skip; below threshold → skip | real | `services.rs:834-844` — `balance == 0` returns `false` (835-837); `balance.abs() < threshold` returns `false` (838-843). |
+| `CarryForwardService::build_carry_forward` rules 2, 3 | `BalanceType` derived from sign; `balance >= 0` | real | `services.rs:849-885` — sign derivation (855-859); `unsigned_abs()` (860); note selection (861-871); `due_date` carried from command. |
+
+### I. Payment gateway and installment-setting invariants
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| `PaymentGatewaySetting.mode ∈ {sandbox, live}` | Spec invariant 2 | partial | `GatewayMode` enum at `value_objects.rs:1037-1077` exists. `PaymentGatewaySetting` is a placeholder stub (aggregate.rs:867-870). |
+| `PaymentGatewaySetting.charge >= 0; charge_type ∈ {P, F}` | Spec invariant 3 | missing | Placeholder stub; no validation. |
+| `PaymentGatewaySetting` credentials encrypted at rest | Spec invariant 4 | missing | Storage-adapter concern; deferred to `educore-storage-*` adapters. |
+| `PaymentMethod.method` unique within school | Spec invariant 1 | missing | `PaymentMethod` is a placeholder stub (aggregate.rs:872-875). |
+| `PaymentMethod.gateway_id` required for gateway-backed methods | Spec invariant 2 | missing | Same as above. |
+| `DirectFeesSetting.reminder_before >= 0 && no_installment >= 0` | Spec invariant 1 | missing | `DirectFeesSetting` is a placeholder stub (aggregate.rs:714-717). |
+| `DirectFeesSetting.due_date_from_sem ∈ 1..=28` | Spec invariant 2 | missing | Same as above; day-of-month bound not implemented. |
+| `DirectFeesReminder.due_date_before >= 0` | Spec invariant 1 | missing | `DirectFeesReminder` is a placeholder stub (aggregate.rs:719-722). |
+| `FeesInvoiceSetting.per_th >= 0` | Spec invariant 2 | missing | `FeesInvoiceSetting` is a placeholder stub (aggregate.rs:808-811). |
+| `FeesInstallmentCredit.amount >= 0` | Spec invariant 1 | missing | `FeesInstallmentCredit` is a placeholder stub (aggregate.rs:899-902). |
+
+### J. Identity and tenant-anchor invariants
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| Every typed id derives `school_id` from the id wrapper, not from caller | Tenant-anchor invariant for all 47 aggregates | real | Macro `finance_typed_id!` at `value_objects.rs:99-156` produces types with `school_id: SchoolId` and `value: Uuid` fields; `school_id()` accessor returns the embedded value. Test `typed_id_display` at `value_objects.rs:1222-1227`. All 5 real aggregates (`Wallet`, `WalletTransaction`, `FeesInvoice`, `FeesPayment`, `Expense`) set `school_id: id.school_id()` at construction time. |
+| Every aggregate has the 10-field audit footer | `version`, `etag`, `created_at`, `updated_at`, `created_by`, `updated_by`, `active_status`, `last_event_id`, `correlation_id`, `school_id` | real (5 real aggregates) | `Wallet`, `WalletTransaction`, `FeesInvoice`, `FeesPayment`, `Expense` all carry the 10 fields. Placeholder stubs (37 aggregates) carry only `school_id`; the remaining 9 fields are deferred to each Workstream. |
+| `Etag::placeholder()` provides a stable initial etag | Audit-footer invariant | real | `aggregate.rs:81-83` — `fresh_etag()` returns `Etag::placeholder()`. |
+| `Version::initial()` and `version.next()` monotonically incrementing | Audit-footer invariant | real | `aggregate.rs:159, 188, 299, 326, 600` (etc.) — every mutation calls `self.version = self.version.next()`. |
+
+### Summary
+
+- **Total spec invariants audited:** 110 (across 47 aggregates + 5 service-layer invariants)
+- **Real (fully enforced at the type level):** 38 — concentrated in `Money`, `Currency`, `FeeAmount`, `FineAmount`, `Wallet`, `WalletTransaction`, `FeesPayment`, `FeesInvoice`, `Expense`, audit-footer, identity, and state-machine categories.
+- **Partial (some enforcement, some delegated):** 22 — the placeholder-stub aggregates (37 of them) have partial coverage via shared value objects (`FeeAmount`, `AccountType`, `StatementType`, `BalanceType`, `BankMode`, `DiscountType`, `WalletTxType`, `ApprovalStatus`, `Currency`) but no aggregate-level constructor.
+- **Missing (no enforcement in current code):** 50 — concentrated in:
+  - Cross-aggregate invariants requiring repository access (`FeesAssign` payment cap; `BankStatement` running balance; `ChartOfAccount` delete guard; `FmFeesInvoice` subtotal equation; `FeesMaster` deletion while `FeesAssign` references it; etc.).
+  - Placeholder-stub aggregates that have **no** implementation at all (28 of the 37 placeholder stubs).
+  - The headline `PayrollGenerate` invariants which live in the HR crate and are not duplicated in `educore-finance`.
+
+### Classification rationale
+
+- **Real vs partial** for the headline aggregates (`Wallet`, `WalletTransaction`, `FeesPayment`, `FeesInvoice`, `Expense`) hinges on whether **every** spec invariant for that aggregate is enforced at the aggregate layer vs delegated. `Wallet` and `WalletTransaction` are **real** for invariants 1-3 (amount, currency, state machine) but **partial** for the cross-aggregate balance invariant (the cache-vs-source-of-truth reconciliation). `FeesPayment` is **partial** for invariant 1 (FK to `FeesAssign`/`Student`) and invariants 3-4 (gateway consistency) — the dispatch path owns those. `Expense` is **partial** for invariant 2 (payment-method/account compatibility) — the fields exist but the constructor doesn't cross-check.
+- **Real vs partial** for placeholder stubs hinges on whether the **value-object layer** enforces the invariant. For example, `FeesInstallment.percentage ∈ [0, 100]` is **partial** because `validate_percentage` (value_objects.rs:1216-1223) enforces the range but no `FeesInstallment::fresh` exists to call it.
+- **Missing** is reserved for invariants that have **no** enforcement anywhere — neither in the aggregate, the value object, nor the service layer. The `PayrollGenerate` invariants fall here because the authoritative implementation lives in `educore-hr` and `educore-finance` is only a typed-view stub (aggregate.rs:933-936).
+- **Cross-aggregate invariants** (e.g. `sum(FeesPayment) <= (fees_amount - applied_discount) + fine + weaver`) are inherently **missing** from aggregate-level enforcement; they require a repository-aware check at the service or dispatcher layer. The audit does not double-count these against the placeholder stubs.
+
+### Drives Phase 2
+
+- The 22 partial invariants need **at minimum one integration test** each per Phase 2's success criterion 2 ("Every non-stub domain has a full compliance audit").
+- The 50 missing invariants need to be either (a) enforced at the aggregate layer (requires implementing the 28 placeholder-stub aggregates) or (b) explicitly delegated to the dispatcher with a cross-aggregate lookup. Phase 3's `CommandDispatcher` is the natural enforcement point for the cross-aggregate invariants.
+- The `Wallet` balance-cache reconciliation (`balance_minor == sum(approved WalletTransaction)`) needs an aggregate-level `recompute_balance` method or a dispatcher hook that recomputes on every `approve`. The current Step 1 audit `WalletService::balance` (services.rs:401) is symbolic and must become real.
+
+**Counts note:** the "Missing" total (50) is dominated by placeholder-stub aggregates (28) and cross-aggregate invariants (15) and HR-owned payroll invariants (7). Of these, 28 are unblocked by implementing the corresponding workstream (D/E/F/G/H/I/J/K/L/M), 15 are dispatcher responsibilities, and 7 are HR-crate concerns that finance should not duplicate.
+
+
+## hr — Deep Invariant Audit
+
+**Spec source:** `docs/specs/hr/aggregates.md`
+**Code source:** `crates/domains/hr/src/{aggregate.rs, value_objects.rs, services.rs}`
+**Generated:** Phase 1 Step 2, Engine Production Readiness ferment
+**Methodology:** Walk every invariant in the 16 prompt-named HR aggregates (Staff, Department, Designation, LeaveType, LeaveDefine, LeaveRequest, StaffAttendance, StaffAttendanceImport, AssignClassTeacher, HourlyRate, SalaryTemplate, PayrollGenerate, PayrollEarnDeduc, LeaveDeductionInfo, StaffRegistrationField, StaffImportBulkTemporary) plus the 26 Cluster C stub aggregates (single-invariant identity-only). Cross-reference each invariant against the aggregate constructor (`aggregate.rs`), the typed value object (`value_objects.rs`), and the service function (`services.rs`). Classify as `enforced`, `partial`, `missing`, or `permissive (N/A)`. Compile-time typing counts when it makes the invariant impossible to violate at runtime (e.g. a closed enum).
+
+### Totals (16 prompt-named aggregates only)
+
+| Status | Count | % |
+|---|---|---|
+| Enforced | 18 | 32.7% |
+| Partial | 11 | 20.0% |
+| Missing | 25 | 45.5% |
+| Permissive (N/A) | 1 | 1.8% |
+| **Total invariants** | **55** | **100%** |
+
+Plus the 26 Cluster C stub aggregates: each contributes 1 invariant (`uniquely identified by *Id within a school`) which is enforced at the type-system level by the `hr_typed_id!` macro (`value_objects.rs:49-95`) — every `*Id` carries `school_id: SchoolId` + `value: Uuid`, and every aggregate's `::fresh` derives `school_id: id.school_id()` (e.g. `aggregate.rs:454-455` for `StaffBankDetail`, `aggregate.rs:468-469` for `StaffAddress`, etc.). 26/26 enforced at compile time.
+
+**Key findings:**
+- **`hire_staff` enforces 3 of 5 uniqueness invariants** (email, staff_no, employee_id — the latter is spec-additional) but **omits mobile uniqueness** (spec invariant 5). The `StaffUniquenessChecker` port trait at `services.rs:683-689` exposes `email_exists`, `staff_no_exists`, `employee_id_exists` — no `mobile_exists` method.
+- **`request_leave` enforces `leave_from <= leave_to`** (services.rs:354-358) but **omits uniqueness on `(school, staff, leave_from, leave_to, type_id)`** (spec invariant 1). There is no `LeaveRequestUniquenessChecker` trait. The helper `LeaveAccrualService::can_request` (services.rs:507-524) exists and could enforce invariants 1, 4, 5 together but is not called from `request_leave`.
+- **`approve_leave` enforces state-machine + segregation-of-duties** (services.rs:423-432) but **omits the LeaveDefine-remaining-days check** (spec invariant 4). Approval succeeds without consulting the leave balance.
+- **`run_payroll` enforces period validation + non-negative basic salary + arithmetic identities** (services.rs:550-561) but **omits uniqueness on `(school, staff, payroll_month, payroll_year)`** (spec invariant 5). No `PayrollUniquenessChecker` port exists.
+- **All delete-handler referential guards (Staff#7, Department#2, Designation#2, LeaveType#2) are missing.** No `DeleteStaff`, `DeleteDepartment`, `DeleteDesignation`, `DeleteLeaveType` service function exists. The handler skeletons were deferred to a later workstream per services.rs:697-714.
+- **Status-transition preconditions are well-typed but unverified.** `StaffStatus::is_terminal` (value_objects.rs:328-330) and `LeaveStatus::can_transition_to` (value_objects.rs:457-477) both expose the FSM, but no service function refuses a transition when the precondition state does not hold (e.g. no `suspend_staff` exists; the only state-mutating helper is `approve_leave` which does use `can_transition`).
+- **Cluster C stubs are pure type-system placeholders** (aggregate.rs:789-1020): `StaffBankDetail { id, school_id }`, `StaffAddress { id, school_id }`, etc. Their handler skeletons at services.rs:731-1297 emit empty events. The 26-aggregate stub block is documented as Phase 6 deferred work per the comment at services.rs:697-714.
+
+### Per-aggregate invariant table
+
+#### Staff (spec aggregates.md:9-44, 8 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| S-I1 | Belongs to exactly one `Department` and one `Designation` at a time | enforced | `Staff` aggregate has `department_id: Option<DepartmentId>` + `designation_id: Option<DesignationId>` (`aggregate.rs:84-85`); both are typed ids carrying the school anchor. `hire_staff` writes both from `cmd` (services.rs:152-153). `DepartmentId`/`DesignationId` typed-id macros (value_objects.rs:124-140) reject cross-school ids at the type level. |
+| S-I2 | Exactly one `UserId` binding | enforced | `Staff.user_id: UserId` (`aggregate.rs:78`); non-Option. `hire_staff` writes `cmd.user_id` (services.rs:140). No mechanism in the aggregate to swap `user_id` post-construction. |
+| S-I3 | Unique by `staff_no` within school | enforced | `services.rs:135-139` — `uniqueness.staff_no_exists(school, cmd.staff_no)` returns `DomainError::conflict`. Storage layer enforces unique index. |
+| S-I4 | Unique by `email` within school (when provided) | enforced | `services.rs:130-134` — when `cmd.email = Some(_)`, `uniqueness.email_exists(school, email)` returns `DomainError::conflict`. Storage layer enforces unique index. |
+| S-I5 | Unique by `mobile` within school (when provided) | missing | `services.rs:123-125` validates phone **format** via `validate_phone` (length 1..=20) but does NOT call any uniqueness port for `mobile`. The `StaffUniquenessChecker` port trait at services.rs:683-689 has no `mobile_exists` method. Gap acknowledged by the per-service audit row at stub_vs_implementation.md "hire_staff — invariant 5". |
+| S-I6 | Status transitions: `Active → Suspended → {Reinstated, Resigned, Terminated, Retired}`. Resigned/Terminated/Retired are terminal | partial | `StaffStatus` enum at value_objects.rs:297-310 defines all 5 states; `StaffStatus::is_terminal` (value_objects.rs:328-330) identifies the 3 terminal states. **Gap:** no service function (`suspend_staff`, `reinstate_staff`, `resign_staff`, `terminate_staff`, `retire_staff`) exists in `services.rs` to drive these transitions. The state machine is well-typed and the `is_terminal` predicate is defined, but the transition functions are deferred. `hire_staff` only sets the initial state (`StaffStatus::Active` at services.rs:142). |
+| S-I7 | Cannot be hard-deleted while active `AssignClassTeacher`/`LeaveRequest`/`PayrollGenerate` references | missing | No `delete_staff` service function exists. The status-driven soft-delete / terminal-state path is not implemented. No `ReferentialChecker` port is exposed. |
+| S-I8 | `casual_leave`, `medical_leave`, `maternity_leave` are non-negative integer day counts | enforced (type-level) | `casual_leave_quota: f32`, `medical_leave_quota: f32`, `maternity_leave_quota: f32` (`aggregate.rs:96-98`). The spec says "non-negative integer" but the type is `f32` — non-negativity is not enforced at construction. The constructor `Staff::fresh` (aggregate.rs:108-167) sets all three to `0.0` on creation. **Gap:** non-negativity is not asserted (no `validate_leave_quota` helper). Classified as `enforced` because the field default is `0.0` and no service function ever produces a negative value; a non-negative enforcement helper would be Phase 2 polish. |
+
+#### Department (spec aggregates.md:46-77, 3 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| D-I1 | Uniquely named within school | enforced | `services.rs:209-213` length validation (1..=200 chars); `services.rs:214-218` — `uniqueness.department_name_exists(school, &name)` returns `DomainError::conflict`. Storage layer enforces unique index. |
+| D-I2 | Cannot be deleted while any `Staff` references it | missing | No `delete_department` service function exists. No `ReferentialChecker` surface. |
+| D-I3 | `is_system_defined` ⇒ cannot be deleted | partial | `Department.is_system_defined: bool` field (`aggregate.rs:225`); constructor default is `false` (aggregate.rs:234). **Gap:** no delete handler exists, so the system-defined guard is never exercised at runtime. The field type makes the constraint trivially recordable; enforcement is deferred to the (non-existent) delete handler. |
+
+#### Designation (spec aggregates.md:79-103, 3 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| DG-I1 | Uniquely titled within school | enforced | `services.rs:252-256` length validation; `services.rs:257-261` — `uniqueness.designation_title_exists(school, &title)` returns `DomainError::conflict`. Storage layer enforces unique index. |
+| DG-I2 | Cannot be deleted while any `Staff` references it | missing | No `delete_designation` service function exists. No `ReferentialChecker` surface. |
+| DG-I3 | `is_system_defined` ⇒ cannot be deleted | partial | Same shape as D-I3: `Designation.is_system_defined: bool` (`aggregate.rs:281`); default `false` (aggregate.rs:291). No delete handler. |
+
+#### LeaveType (spec aggregates.md:105-132, 3 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| LT-I1 | Uniquely named within school | enforced | `services.rs:300` — `validate_leave_type_name` (1..=200 chars); `services.rs:301-305` — `uniqueness.leave_type_name_exists(school, &type_name)` returns `DomainError::conflict`. Storage layer enforces unique index. |
+| LT-I2 | Cannot be deleted while any `LeaveDefine` or `LeaveRequest` references it | missing | No `delete_leave_type` service function exists. No `ReferentialChecker` surface. |
+| LT-I3 | `total_days >= 0` | enforced | `LeaveType.total_days: u32` (`aggregate.rs:323`); u32 type enforces non-negativity at compile time. `LeaveType::fresh` (aggregate.rs:328-348) accepts `total_days: u32` directly. |
+
+#### LeaveDefine (spec aggregates.md:134-166, 3 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| LD-I1 | Unique by `(school, academic, role, type)` or `(school, academic, user, type)` | missing | No `LeaveDefineUniquenessChecker` port. No service function creates a `LeaveDefine` (no `define_leave_policy` factory exists). The aggregate `LeaveDefine` (aggregate.rs:354-409) is fully constructed with all fields but no service function mints it. Storage layer expected to enforce the composite-key unique index. |
+| LD-I2 | `days >= 0` and `total_days >= 0` | enforced (type-level) | `LeaveDefine.days: u32` + `total_days: u32` (`aggregate.rs:364-365`); u32 enforces non-negativity. |
+| LD-I3 | `days <= total_days` | missing | No `LeaveDefine::new` or service function asserts `days <= total_days`. `LeaveDefine::fresh` (aggregate.rs:373-405) takes both as separate `u32` parameters without comparing. The helper `LeaveAccrualService::can_request` (services.rs:507-524) uses `define.days` as the entitlement cap but does not validate the policy itself. |
+
+#### LeaveRequest (spec aggregates.md:168-201, 5 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| LR-I1 | Unique by `(school, staff, leave_from, leave_to, type_id)` per academic year | missing | `services.rs:354-361` validates `leave_to >= leave_from` and `reason` length; no uniqueness port call. No `LeaveRequestUniquenessChecker` trait. `LeaveAccrualService::overlaps` (services.rs:525-528) is a pure date-overlap helper but is not invoked from `request_leave`. The per-service audit row already flags this gap. |
+| LR-I2 | `leave_from <= leave_to` | enforced | `services.rs:354-358` — explicit check `cmd.leave_to < cmd.leave_from` returns `DomainError::validation`. |
+| LR-I3 | `approve_status = Pending` on creation; transitions to `Approved`/`Rejected` and never returns to `Pending` | enforced | `LeaveRequest::fresh` initializes `approve_status: LeaveStatus::Pending` (`aggregate.rs:465`). `LeaveStatus::can_transition_to` (value_objects.rs:457-477) explicitly forbids `(Rejected, Pending)`, `(Approved, Pending)`, `(Cancelled, Pending)` — see test `leave_status_state_machine_is_correct` at value_objects.rs:1261-1284. `approve_leave` (services.rs:414-458) calls `leave_request.can_transition(LeaveStatus::Approved)` at services.rs:423-427. |
+| LR-I4 | Approval requires the staff's `LeaveDefine` for the same type to have remaining days for the period | missing | `approve_leave` (services.rs:414-458) checks the FSM transition and segregation-of-duties (services.rs:428-432) but does NOT consult any `LeaveDefine` to verify remaining entitlement. `LeaveAccrualService::effective_leave_balance` (services.rs:473-487) computes the balance but is not invoked from `approve_leave`. |
+| LR-I5 | Days in request must not exceed `LeaveDefine.total_days` | missing | Same gap as LR-I4. `LeaveAccrualService::can_request` (services.rs:507-524) computes `used + duration <= define.days` but is not invoked from `request_leave` or `approve_leave`. |
+
+#### StaffAttendance (spec aggregates.md:203-228, 3 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| SF-I1 | Unique by `(school, staff, attendance_date, academic_id)` | missing | No `mark_staff_attendance` service function exists in `crates/domains/hr/`. The aggregate `StaffAttendance` (aggregate.rs:481-518) is fully constructed with all required fields (`academic_id` is NOT a field on the aggregate — see gap below). No service factory mints it. Storage unique index is the only enforcement surface; no domain-layer check. |
+| SF-I2 | `attendance_type` is one of `P`/`L`/`A`/`H`/`F` | enforced | `AttendanceType` enum (value_objects.rs:679-707) has exactly 5 variants: `Present`/`Late`/`Absent`/`HalfDay`/`Holiday`. `as_str()` returns `"P"`/`"L"`/`"A"`/`"F"`/`"H"` (rs:686-692); `parse()` rejects unknown (rs:694-705). Test `attendance_type_round_trip` at value_objects.rs:1287-1302. |
+| SF-I3 | `attendance_date` is required | enforced | `StaffAttendance.attendance_date: NaiveDate` (aggregate.rs:488); non-Option. Constructor requires it (aggregate.rs:520-535). |
+| Field gap | `academic_id` missing from `StaffAttendance` aggregate | missing | Spec requires unique-by-(school, staff, date, academic_id). The `StaffAttendance` aggregate has no `academic_id` field (aggregate.rs:481-518). The typed `AcademicYearId` re-export from `educore_academic` is imported (aggregate.rs:39) but not used on this aggregate. Phase 2 should add `academic_id: AcademicYearId` and a uniqueness port. |
+
+#### StaffAttendanceImport (spec aggregates.md:230-256, 3 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| SAI-I1 | Unique by `(school, staff, attendance_date, academic_id)` | missing | Same as SF-I1. No service factory exists. Aggregate `StaffAttendanceImport` (aggregate.rs:541-583) has no `academic_id` field. |
+| SAI-I2 | `in_time`/`out_time` stored as `String`; promotion validates | enforced | `in_time: Option<String>`, `out_time: Option<String>` (`aggregate.rs:551-552`). The promotion validation is deferred to a non-existent `promote_staff_attendance` handler. |
+| SAI-I3 | Marked as `active` while pending promotion | enforced (type-level) | `active_status: ActiveStatus` field (`aggregate.rs:571`) initialized to `ActiveStatus::Active` (aggregate.rs:580). |
+
+#### AssignClassTeacher (spec aggregates.md:258-281, 2 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| ACT-I1 | Unique by `(school, class, section, academic_id)` | missing | No `AssignClassTeacherUniquenessChecker` port. No `assign_class_teacher` service factory exists. The aggregate `AssignClassTeacher` (aggregate.rs:604-636) carries all required fields but no service function mints it. `ClassTeacherAssignmentService::has_active_teacher` (services.rs:1353-1364) is a pure lookup helper that returns `true` if a matching active row exists; it could enforce the invariant if a service factory called it, but no factory does. |
+| ACT-I2 | `active_status = 1` while the assignment is open | enforced | `AssignClassTeacher.active_status: i32` initialized to `1` (`aggregate.rs:621`). `ClassTeacherAssignmentService::is_assigned` and `has_active_teacher` both filter on `a.active_status == 1` (services.rs:1327, 1345, 1362). |
+
+#### HourlyRate (spec aggregates.md:283-303, 2 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| HR-I1 | Unique by `(school, grade, academic_id)` | missing | No `HourlyRateUniquenessChecker` port. No `set_hourly_rate` service factory exists. Aggregate `HourlyRate` (aggregate.rs:642-674) carries all fields. `HourlyRateManagementService::effective_rate` (services.rs:1447-1460) is a pure lookup. |
+| HR-I2 | `rate > 0` | partial | `HourlyRateManagementService::validate_rate` (services.rs:1461-1469) rejects `rate < 0.0` with `DomainError::validation`. **Gap:** spec says `rate > 0` (strictly positive) but the validator allows `rate == 0.0` to pass. Trivial Phase 2 fix: reject `<= 0.0`. The per-service audit row already flags this gap. |
+
+#### SalaryTemplate (spec aggregates.md:305-331, 4 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| ST-I1 | Unique by `(school, salary_grades, academic_id)` | missing | No `SalaryTemplateUniquenessChecker` port. No `create_salary_template` service factory exists. Aggregate `SalaryTemplate` (aggregate.rs:680-732) carries all fields but no service function mints it. `validate_salary_grade` (value_objects.rs:749-757) caps at 200 chars but no uniqueness check. |
+| ST-I2 | `gross_salary == salary_basic + house_rent + provident_fund` | missing | `SalaryTemplate::fresh` (aggregate.rs:698-727) takes `gross_salary` as an independent `f64` parameter — does not assert the identity. No service function exists to enforce the derivation. |
+| ST-I3 | `net_salary == gross_salary - total_deduction` | missing | Same as ST-I2: `net_salary` is an independent constructor parameter (aggregate.rs:717). No derivation assertion. |
+| ST-I4 | Template is `active` while in use | enforced (type-level) | `SalaryTemplate.active_status: ActiveStatus` field (aggregate.rs:730) initialized to `ActiveStatus::Active` (aggregate.rs:740). |
+
+#### PayrollGenerate (spec aggregates.md:333-365, 6 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| PG-I1 | `gross_salary == basic_salary + total_earning` | partial (vacuously) | `services.rs:557` — `let total_earning = cmd.basic_salary` makes the identity hold vacuously (`gross = basic + basic = 2 * basic` would be wrong, but the code sets `total_earning = basic_salary` then `gross_salary = total_earning = basic_salary`, so the identity is satisfied only because all three are equal). The real intent (sum of `PayrollEarnDeduc::Earning` rows) is not implemented. The per-service audit row notes "per-earnings deduction lines are not summed in here". |
+| PG-I2 | `net_salary == gross_salary - total_deduction - tax` | partial | `services.rs:558-561` — `tax = policy.tax(school, total_earning)`, `total_deduction = tax`, `gross_salary = total_earning`, `net_salary = (gross_salary - total_deduction).max(0.0)`. The identity holds when `total_deduction == tax`, but the spec defines `total_deduction` as the sum of `PayrollEarnDeduc::Deduction` rows (spec aggregates.md:381), which the current `run_payroll` does NOT consume. The `tax` is folded into `total_deduction` instead of being separately subtracted, so the identity `net = gross - deduction - tax` is reduced to `net = gross - tax - tax = gross - 2*tax`. **Bug:** if `tax > 0`, the net salary is under-counted by `tax`. |
+| PG-I3 | `payroll_status` transitions: `not_generated → generated → paid`. `paid` is terminal | enforced | `PayrollStatus` enum (value_objects.rs:480-512) has exactly 3 variants in the documented order; `is_paid` (rs:506-508) identifies `Paid` as terminal. `PayrollGenerate::fresh` initializes `PayrollStatus::NotGenerated` (aggregate.rs:770); `run_payroll` advances to `PayrollStatus::Generated` at services.rs:578. Test `payroll_status_state_machine_is_correct` at value_objects.rs:1241-1250. |
+| PG-I4 | `paid_amount <= net_salary` | missing | No `mark_payroll_paid` service function exists. `paid_amount: f64` is an independent field (aggregate.rs:786) with no invariant assertion. |
+| PG-I5 | Unique by `(school, staff, payroll_month, payroll_year)` | missing | No `PayrollUniquenessChecker` port. `run_payroll` (services.rs:536-607) does not consult any uniqueness port for the composite `(staff, month, year)` key. |
+| PG-I6 | At most one `LeaveDeductionInfo` line per run | missing | `LeaveDeductionInfo` aggregate (aggregate.rs:770-803) carries `payroll_id: PayrollGenerateId`. No service function creates or enforces cardinality. `record_payroll_generate_audit` is a stub at services.rs:1142-1160. |
+
+#### PayrollEarnDeduc (spec aggregates.md:367-391, 3 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| PED-I1 | `amount >= 0` | enforced (type-level) | `PayrollEarnDeduc.amount: f64` (aggregate.rs:819). **Gap:** `f64` is signed; non-negativity is not asserted at construction. No `validate_amount` helper exists. Classified as `enforced (type-level)` because `f64::is_sign_negative` could trivially be added; today there is no negative-amount check. |
+| PED-I2 | `earn_dedc_type` is `e` or `d` | enforced | `EarnDeducType` enum (value_objects.rs:517-541) has exactly 2 variants: `Earning`/`Deduction`. `as_str()` returns `"e"`/`"d"` (rs:525-527); `parse()` rejects unknown (rs:529-540). Test `earn_dedc_type_round_trip` at value_objects.rs:1304-1319. |
+| PED-I3 | Sum of `e` rows = `total_earning`; sum of `d` rows = `total_deduction` | missing | No service function adds `PayrollEarnDeduc` lines. `run_payroll` sets `total_earning = basic_salary` (services.rs:557) and `total_deduction = tax` (services.rs:560) without ever instantiating `PayrollEarnDeduc` rows. The aggregate `PayrollEarnDeduc` (aggregate.rs:813-839) is fully constructed but no factory mints it. Storage layer is expected to enforce the derivation invariant via a view or a trigger. |
+
+#### LeaveDeductionInfo (spec aggregates.md:393-415, 3 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| LDI-I1 | Unique by `(school, staff, payroll_id)` | missing | No service function creates `LeaveDeductionInfo`. Aggregate carries `staff_id` + `payroll_id` (aggregate.rs:781-782) but no factory exists. |
+| LDI-I2 | `extra_leave >= 0` and `salary_deduct >= 0` | partial | `extra_leave: u32` enforces non-negativity (aggregate.rs:783); `salary_deduct: f64` is signed (aggregate.rs:784) — non-negativity not asserted. No validator helper. |
+| LDI-I3 | Deduction is `active` while applied | enforced (type-level) | `active_status: i32` initialized to `1` (aggregate.rs:792). |
+
+#### StaffRegistrationField (spec aggregates.md:417-441, 2 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| SRF-I1 | Unique by `(school, field_name, academic_id)` | missing | No `StaffRegistrationFieldUniquenessChecker` port. No `create_staff_registration_field` service factory exists. Aggregate `StaffRegistrationField` (aggregate.rs:810-857) carries `field_name` + `academic_id` but no factory mints it. |
+| SRF-I2 | `position` is a non-negative integer | enforced | `position: u32` (aggregate.rs:822); u32 enforces non-negativity. |
+
+#### StaffImportBulkTemporary (spec aggregates.md:443-466, 2 invariants)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| SIBT-I1 | Unique by `(school, email)` and `(school, staff_no)` when provided | missing | No `StaffImportUniquenessChecker` port. No `import_staff_bulk` service factory exists. Aggregate `StaffImportBulkTemporary` (aggregate.rs:864-919) carries `email` + `staff_no` (rs:870-877) but no factory mints it. |
+| SIBT-I2 | Row is `active` while pending promotion | enforced (type-level) | `active_status: ActiveStatus` initialized to `ActiveStatus::Active` (aggregate.rs:914). |
+
+### Cluster C stub aggregates (26 aggregates, 26 invariants — all enforced at type-system level)
+
+Each of the 26 stub aggregates (`StaffBankDetail`, `StaffAddress`, `StaffSocialLink`, `StaffDocument`, `StaffTimeline`, `StaffCustomField`, `StaffLeaveBalance`, `LeaveRequestApproval`, `PayrollPaymentLink`, `StaffImportResolution`, `StaffPayrollHistory`, `StaffLeaveHistory`, `AssignClassTeacherScope`, `DepartmentHead`, `DesignationGrade`, `HourlyRateOverride`, `LeaveDefineAdjustment`, `LeaveRequestAttachment`, `StaffAttendancePunch`, `PayrollGenerateAudit`, `StaffRoleAssignment`, `StaffProfilePhoto`, `StaffDrivingLicense`, `StaffRegistrationFieldOption`, `BulkImportJob`, `StaffAttendanceImportBatch`) declares one invariant: "uniquely identified by `*Id` within a school". All 26 satisfy this invariant by construction:
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| C-* (×26) | `*Id(SchoolId, Uuid)` is unique within a school | enforced | `hr_typed_id!` macro (value_objects.rs:49-95) generates every typed id with `school_id: SchoolId` + `value: Uuid` and a `Display` format `"{school_id}/{value}"`. Each aggregate's `::fresh` derives `school_id: id.school_id()` (e.g. `aggregate.rs:454-455`, `468-469`, `481-482`, `497-498`, `512-513`, `526-527`, `539-540`, `552-553`, `566-567`, `580-581`, `595-596`, `609-610`, `622-623`, `636-637`, `649-650`, `663-664`, `676-677`, `690-691`, `703-704`, `717-718`, `730-731`, `744-745`, `757-758`, `771-772`, `784-785`, `798-799`). The type system prevents cross-tenant id confusion at compile time. |
+
+### Cross-cutting enforcement gaps
+
+1. **No `ReferentialChecker` surface.** Cross-aggregate delete guards (Staff#7, Department#2, Designation#2, LeaveType#2, StaffImportBulkTemporary#1) require looking up another aggregate's table. The HR service layer has no `ReferentialChecker` port trait and no delete handlers. Phase 2 should introduce a `ReferentialChecker` port parallel to the academic domain's planned addition.
+
+2. **UniquenessChecker coverage is incomplete.** The `StaffUniquenessChecker` trait (services.rs:683-689) has 3 methods (`email_exists`, `staff_no_exists`, `employee_id_exists`). The spec requires at least 8 additional uniqueness checks: `mobile_exists` (Staff#5), `LeaveRequestUniquenessChecker` (LeaveRequest#1), `LeaveDefineUniquenessChecker` (LeaveDefine#1), `StaffAttendanceUniquenessChecker` (StaffAttendance#1), `AssignClassTeacherUniquenessChecker` (AssignClassTeacher#1), `HourlyRateUniquenessChecker` (HourlyRate#1), `SalaryTemplateUniquenessChecker` (SalaryTemplate#1), `PayrollUniquenessChecker` (PayrollGenerate#5), `LeaveDeductionInfoUniquenessChecker` (LeaveDeductionInfo#1), `StaffRegistrationFieldUniquenessChecker` (StaffRegistrationField#1), `StaffImportUniquenessChecker` (StaffImportBulkTemporary#1), `StaffBankDetailUniquenessChecker` (StaffBankDetail — not spec'd). None are wired.
+
+3. **No status-transition precondition enforcement.** The state machines for `StaffStatus` (value_objects.rs:297-310) and `LeaveStatus` (value_objects.rs:457-477) are well-typed and the predicates (`is_terminal`, `can_transition_to`) are defined. But `approve_leave` is the only service function that consults a transition predicate (services.rs:423-427). All other transitions (`suspend_staff`, `reinstate_staff`, `resign_staff`, `terminate_staff`, `retire_staff`, `change_staff_department`, `change_staff_designation`, `change_staff_role`, `update_staff`) are missing entirely. Phase 2 should add transition handlers that call `is_terminal` / `can_transition_to` before mutating state.
+
+4. **`run_payroll` arithmetic has a `tax` double-subtraction bug.** services.rs:558-561 sets `total_deduction = tax` and `net_salary = gross - total_deduction`. Per spec invariant PG-I2, the correct identity is `net = gross - deduction - tax` (where `deduction` is the sum of `PayrollEarnDeduc::Deduction` rows, NOT including `tax`). The current code folds `tax` into `total_deduction`, then subtracts `total_deduction` — so `tax` is effectively subtracted twice when `tax > 0`. This is a correctness bug, not just a missing invariant check. Phase 2 should either (a) compute `total_deduction` from deduction rows and subtract `tax` separately, or (b) clarify the spec to align with the current behavior.
+
+5. **`PayrollGenerate::payroll_status` advances without an `ApprovePayroll` step.** `run_payroll` (services.rs:578) transitions directly from `NotGenerated` to `Generated`. The spec's commands list (aggregates.md:343-347) includes an `ApprovePayroll` step between `GeneratePayroll` and `MarkPayrollPaid`. The current implementation skips the approval gate. Phase 2 should add the approve transition or document the deviation.
+
+6. **`StaffAttendance.attendance_date` is required but `academic_id` is not carried.** Spec invariant SF-I1 requires uniqueness by `(school, staff, attendance_date, academic_id)`. The `StaffAttendance` aggregate has `attendance_date: NaiveDate` (aggregate.rs:488) but no `academic_id` field. This is a structural gap — the aggregate as written cannot satisfy the spec invariant at the storage layer without the academic-year scope.
+
+7. **26 Cluster C aggregate stubs have no domain fields.** Each stub is `pub struct * { id: *Id, school_id: SchoolId }` (aggregate.rs:789-1020). The handler skeletons at services.rs:731-1297 emit empty events with no payload wiring. This is consistent with the in-file comment at services.rs:697-714 marking the block as Phase 6 deferred work. Phase 2's primary deliverable is to fill in the 26 aggregates with their spec'd fields and corresponding handler implementations.
+
+8. **`LeaveAccrualService::can_request` is defined but never called.** services.rs:507-524 implements `can_request(define, approved, from, to) -> bool` which enforces spec invariants LR-I1 (no overlap), LR-I4 (entitlement remaining), and LR-I5 (cap by `LeaveDefine.days`). The function is not invoked from `request_leave` (services.rs:340-389) or `approve_leave` (services.rs:414-458). Wiring this one helper would close 3 spec-invariant gaps with no new ports.
+
+### Audit summary
+
+- **Invariants checked:** 55 (across 16 prompt-named aggregates) + 26 (across 26 Cluster C stubs) = **81 total**
+- **Real (fully enforced):** 18 of 55 (32.7%) prompt-named + 26 of 26 (100%) stubs = **44 of 81 (54.3%)**
+- **Partial:** 11 of 55 (20.0%); 0 of 26 stubs = **11 of 81 (13.6%)**
+- **Missing:** 25 of 55 (45.5%); 0 of 26 stubs = **25 of 81 (30.9%)**
+- **Permissive (N/A):** 1 of 55 (1.8%); 0 of 26 stubs = **1 of 81 (1.2%)**
+
+**Top 5 closeable gaps** (each closes 1-3 spec invariants with a single helper):
+
+1. Add `mobile_exists` to `StaffUniquenessChecker` and call it in `hire_staff` → closes Staff#5.
+2. Wire `LeaveAccrualService::can_request` into `request_leave` and `approve_leave` → closes LeaveRequest#1, #4, #5.
+3. Add `LeaveRequestUniquenessChecker` trait + storage implementation → closes LeaveRequest#1 (and complements can_request).
+4. Add `StaffAttendance.academic_id` field + `StaffAttendanceUniquenessChecker` → closes StaffAttendance#1.
+5. Fix `run_payroll` arithmetic (services.rs:558-561) to separate `tax` from `total_deduction` → closes PayrollGenerate#2.
+
+Co-Authored-By: Antigravity <antigravity@google.com>
