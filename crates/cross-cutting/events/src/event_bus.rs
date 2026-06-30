@@ -10,16 +10,19 @@
 //! module is the port only.
 
 use std::fmt;
+use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
 
 use async_trait::async_trait;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
-use educore_core::error::Result;
+use educore_core::error::{DomainError, Result};
 use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId};
 use educore_core::value_objects::Timestamp;
 
+use crate::domain_event::DomainEvent;
 use crate::envelope::EventEnvelope;
 
 /// The bus port. Object-safe.
@@ -77,6 +80,75 @@ pub trait EventBus: Send + Sync + fmt::Debug {
     /// should override this once they wire a DLQ adapter.
     async fn dlq(&self) -> Option<Arc<dyn DeadLetterQueue>> {
         None
+    }
+
+    /// Subscribe to a topic filtered to a specific typed event `E`.
+    ///
+    /// `subscribe_typed` is the typed counterpart to
+    /// [`EventBus::subscribe`]. The returned
+    /// [`TypedEventSubscription<E>`] yields only envelopes whose
+    /// `event_type` matches `E::EVENT_TYPE`, with the payload
+    /// deserialized to `E`. This is the API
+    /// `library-docs.md` documents as
+    /// `engine.events().subscribe::<T>()`.
+    ///
+    /// The default implementation composes the existing
+    /// [`EventBus::subscribe`] path: it calls `subscribe` with an
+    /// [`EventFilter::EventType(E::EVENT_TYPE)`] server-side
+    /// filter and additionally re-applies the filter
+    /// client-side (the [`TypedEventSubscription`] wrapper drops
+    /// any envelope whose `event_type` does not match before
+    /// deserialization). Adapters that can evaluate the
+    /// `EventType` filter server-side should prefer it; the
+    /// client-side re-application is a defensive belt-and-braces
+    /// guard per the bus-port contract.
+    ///
+    /// # Object safety
+    ///
+    /// The method is generic over `E`, so it is NOT dispatchable
+    /// through `Arc<dyn EventBus>`. The `where Self: Sized` bound
+    /// enforces this; consumers that hold a `dyn EventBus` should
+    /// use [`EventBus::subscribe`] with
+    /// `EventFilter::EventType(E::EVENT_TYPE)` directly.
+    ///
+    /// # When to use
+    ///
+    /// Prefer `subscribe_typed` over the untyped
+    /// [`EventBus::subscribe`] when you would otherwise hand-write
+    /// `SubscribeOptions { filter: Some(EventFilter::EventType(
+    /// E::EVENT_TYPE)), .. }` at every call site. The typed
+    /// helper centralises the boilerplate and prevents drift
+    /// between the type's `EVENT_TYPE` constant and the filter
+    /// string.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(_)` if the underlying [`EventBus::subscribe`]
+    /// call fails. Deserialization failures of matching envelopes
+    /// surface as `Some(Err(DomainError::Validation(_)))` from
+    /// [`TypedEventSubscription::next`], not from this method.
+    async fn subscribe_typed<E>(
+        &self,
+        options: TypedSubscribeOptions,
+    ) -> Result<TypedEventSubscription<E>>
+    where
+        E: DomainEvent + Serialize + DeserializeOwned + 'static,
+        Self: Sized,
+    {
+        let event_type: &'static str = E::EVENT_TYPE;
+        let opts = SubscribeOptions {
+            consumer: options.consumer,
+            topic: options.topic,
+            filter: Some(EventFilter::EventType(event_type)),
+            start: options.start,
+            batch_size: options.batch_size,
+            visibility_timeout: options.visibility_timeout,
+        };
+        let inner = self.subscribe(opts).await?;
+        Ok(TypedEventSubscription {
+            inner,
+            _marker: PhantomData,
+        })
     }
 }
 
@@ -151,6 +223,152 @@ impl SubscribeOptions {
             batch_size: 32,
             visibility_timeout: Duration::from_secs(300),
         }
+    }
+}
+
+/// Options for [`EventBus::subscribe_typed`].
+///
+/// A thin wrapper over [`SubscribeOptions`] that omits the
+/// `filter` field — the filter is fixed to
+/// [`EventFilter::EventType(E::EVENT_TYPE)`] by the typed
+/// subscription because it only delivers events of type `E`.
+/// Consumers supply the consumer id, topic, and start position;
+/// the rest of [`SubscribeOptions`] is preserved.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypedSubscribeOptions {
+    /// Stable identifier for the consumer. The bus uses it for
+    /// offset tracking and observability.
+    pub consumer: ConsumerId,
+    /// The topic to subscribe to. See [`SubscribeOptions::topic`].
+    pub topic: Topic,
+    /// Where to start reading. See [`StartPosition`].
+    pub start: StartPosition,
+    /// Maximum number of envelopes the subscription may buffer
+    /// locally. Adapters clamp this to a sane range (e.g. 1..=1024).
+    pub batch_size: u32,
+    /// Visibility timeout for in-flight envelopes. After this
+    /// duration the bus may redeliver the envelope to another
+    /// consumer.
+    pub visibility_timeout: Duration,
+}
+
+impl TypedSubscribeOptions {
+    /// Constructs a default `TypedSubscribeOptions` for a
+    /// consumer reading the latest events on a topic.
+    #[must_use]
+    pub fn for_consumer(consumer: ConsumerId, topic: Topic) -> Self {
+        Self {
+            consumer,
+            topic,
+            start: StartPosition::Latest,
+            batch_size: 32,
+            visibility_timeout: Duration::from_secs(300),
+        }
+    }
+}
+
+/// A typed subscription returned by [`EventBus::subscribe_typed`].
+///
+/// The wrapper holds an underlying [`EventSubscription`] and
+/// filters / deserializes envelopes before yielding them to the
+/// caller. Envelopes whose `event_type` does not match
+/// `E::EVENT_TYPE` are silently skipped (the consumer-side
+/// re-application of the filter per the bus-port contract);
+/// envelopes that match but fail to deserialize to `E` surface
+/// as `Some(Err(DomainError::Validation(_)))` from
+/// [`TypedEventSubscription::next`].
+///
+/// # Skipped envelopes
+///
+/// The `next()` method silently drops non-matching envelopes
+/// without acking them. The bus will redeliver the envelope to
+/// another consumer after the visibility timeout if no ack is
+/// received. This is the correct behavior for a typed
+/// subscription: the wrapper's filter is the contract, and
+/// non-matching envelopes are simply not for this consumer.
+///
+/// # Ack / nack / close
+///
+/// The wrapper delegates `ack`, `nack`, and `close` to the
+/// underlying subscription unchanged. Consumers ack the
+/// `EventId` of envelopes they have successfully processed;
+/// the typed wrapper exposes those ids through the `E::event_id`
+/// method after deserialization.
+pub struct TypedEventSubscription<E> {
+    /// The underlying untyped subscription. Exposed for adapters
+    /// that need to introspect the wire-level state; consumers
+    /// should prefer the typed `next`/`ack`/`nack`/`close`
+    /// helpers on this wrapper.
+    pub inner: Box<dyn EventSubscription>,
+    /// Phantom marker for the typed payload. Uses `fn() -> E`
+    /// (a contravariant fn pointer) so `TypedEventSubscription`
+    /// is covariant in `E` rather than invariant — the wrapper
+    /// never mutably borrows an `E`.
+    _marker: PhantomData<fn() -> E>,
+}
+
+impl<E> fmt::Debug for TypedEventSubscription<E> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TypedEventSubscription")
+            .field("inner", &"<dyn EventSubscription>")
+            .finish()
+    }
+}
+
+impl<E: DomainEvent + DeserializeOwned + 'static> TypedEventSubscription<E> {
+    /// Returns the next typed event, or `None` if the
+    /// underlying subscription is closed.
+    ///
+    /// Envelopes whose `event_type` does not match
+    /// `E::EVENT_TYPE` are silently skipped (no ack is issued
+    /// for them; the bus will redeliver after the visibility
+    /// timeout). Envelopes that match but fail to deserialize
+    /// to `E` surface as `Some(Err(DomainError::Validation(_)))`.
+    pub async fn next(&mut self) -> Option<Result<E>> {
+        loop {
+            match self.inner.next().await {
+                Some(Ok(env)) => {
+                    if env.event_type != E::EVENT_TYPE {
+                        // Client-side re-application of the filter.
+                        continue;
+                    }
+                    match serde_json::from_value::<E>(env.payload) {
+                        Ok(event) => return Some(Ok(event)),
+                        Err(e) => {
+                            return Some(Err(DomainError::Validation(format!(
+                                "subscribe_typed: failed to deserialize event {} \
+                                 to type {}: {}",
+                                env.event_type,
+                                std::any::type_name::<E>(),
+                                e,
+                            ))));
+                        }
+                    }
+                }
+                Some(Err(e)) => return Some(Err(e)),
+                None => return None,
+            }
+        }
+    }
+
+    /// Acknowledges processing of `event_id`. Idempotent.
+    /// Delegates to the underlying subscription unchanged.
+    pub async fn ack(&mut self, event_id: EventId) -> Result<AckOutcome> {
+        self.inner.ack(event_id).await
+    }
+
+    /// Negatively acknowledges `event_id`. `requeue = true`
+    /// puts the event back on the bus; `requeue = false`
+    /// routes it to the dead-letter queue. Delegates to the
+    /// underlying subscription.
+    pub async fn nack(&mut self, event_id: EventId, requeue: bool) -> Result<AckOutcome> {
+        self.inner.nack(event_id, requeue).await
+    }
+
+    /// Closes the subscription, releasing adapter-level
+    /// resources. Consumes the wrapper.
+    pub async fn close(self: Box<Self>) -> Result<()> {
+        self.inner.close().await
     }
 }
 
@@ -982,5 +1200,230 @@ mod tests {
         assert_eq!(id.as_str(), "finance.fee-assigner");
         let from_str: ConsumerId = "x".into();
         assert_eq!(from_str.0, "x");
+    }
+
+    /// Local `DomainEvent` for typed-subscription tests. Mirrors
+    /// the shape of the `TestEvent` in `domain_event::tests` but
+    /// is duplicated here so the event-bus tests do not depend on
+    /// a private symbol from the `domain_event` module.
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    struct TypedBusTestEvent {
+        event_id: EventId,
+        school_id: SchoolId,
+        aggregate_id: uuid::Uuid,
+        occurred_at: Timestamp,
+        name: String,
+    }
+
+    impl DomainEvent for TypedBusTestEvent {
+        const EVENT_TYPE: &'static str = "test.event.created";
+        const SCHEMA_VERSION: u32 = 1;
+        const AGGREGATE_TYPE: &'static str = "test_event";
+        fn event_id(&self) -> EventId {
+            self.event_id
+        }
+        fn aggregate_id(&self) -> uuid::Uuid {
+            self.aggregate_id
+        }
+        fn school_id(&self) -> SchoolId {
+            self.school_id
+        }
+        fn occurred_at(&self) -> Timestamp {
+            self.occurred_at
+        }
+    }
+
+    /// A mock `EventSubscription` that yields a fixed queue of
+    /// envelopes (in order) and reports Accepted for ack/nack.
+    /// Used by the `subscribe_typed` tests to exercise the
+    /// client-side filter and deserialization paths without
+    /// standing up a full bus adapter.
+    struct MockSubscription {
+        envelopes: std::collections::VecDeque<EventEnvelope>,
+    }
+
+    #[async_trait::async_trait]
+    impl EventSubscription for MockSubscription {
+        async fn next(&mut self) -> Option<Result<EventEnvelope>> {
+            self.envelopes.pop_front().map(Ok)
+        }
+
+        async fn ack(&mut self, _event_id: EventId) -> Result<AckOutcome> {
+            Ok(AckOutcome::Accepted)
+        }
+
+        async fn nack(&mut self, _event_id: EventId, _requeue: bool) -> Result<AckOutcome> {
+            Ok(AckOutcome::Accepted)
+        }
+
+        async fn close(self: Box<Self>) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    fn typed_matching_envelope(school: SchoolId, name: &str) -> EventEnvelope {
+        let mut env = sample_envelope(school);
+        env.event_type = TypedBusTestEvent::EVENT_TYPE.to_owned();
+        // Round-trip the payload through `serde_json::to_value` to
+        // match the wire format the typed subscription will
+        // deserialise from in production.
+        let event = TypedBusTestEvent {
+            event_id: env.event_id,
+            school_id: school,
+            aggregate_id: env.aggregate_id,
+            occurred_at: env.occurred_at,
+            name: name.to_owned(),
+        };
+        env.payload = serde_json::to_value(&event).expect("serialize test event");
+        env
+    }
+
+    fn typed_non_matching_envelope(school: SchoolId) -> EventEnvelope {
+        let mut env = sample_envelope(school);
+        env.event_type = "other.event.created".to_owned();
+        env
+    }
+
+    #[tokio::test]
+    async fn subscribe_typed_filters_by_event_type() {
+        let s = SchoolId::from_uuid(uuid::Uuid::nil());
+        let mut envelopes = std::collections::VecDeque::new();
+        // Order: non-matching, matching, non-matching, matching,
+        // non-matching — the wrapper must skip the non-matching
+        // envelopes and yield only the two matching ones.
+        envelopes.push_back(typed_non_matching_envelope(s));
+        envelopes.push_back(typed_matching_envelope(s, "first"));
+        envelopes.push_back(typed_non_matching_envelope(s));
+        envelopes.push_back(typed_matching_envelope(s, "second"));
+        envelopes.push_back(typed_non_matching_envelope(s));
+
+        let mock = MockSubscription { envelopes };
+        let inner: Box<dyn EventSubscription> = Box::new(mock);
+        let mut typed: TypedEventSubscription<TypedBusTestEvent> = TypedEventSubscription {
+            inner,
+            _marker: PhantomData,
+        };
+
+        let first = typed
+            .next()
+            .await
+            .expect("subscription yielded Some")
+            .expect("first event deserialised");
+        assert_eq!(first.name, "first");
+
+        let second = typed
+            .next()
+            .await
+            .expect("subscription yielded Some")
+            .expect("second event deserialised");
+        assert_eq!(second.name, "second");
+
+        // The remaining envelope is non-matching, so the wrapper
+        // must consume it and return None (the underlying
+        // subscription is empty).
+        assert!(typed.next().await.is_none());
+    }
+
+    #[tokio::test]
+    async fn subscribe_typed_returns_none_when_underlying_closes() {
+        let mock = MockSubscription {
+            envelopes: std::collections::VecDeque::new(),
+        };
+        let inner: Box<dyn EventSubscription> = Box::new(mock);
+        let mut typed: TypedEventSubscription<TypedBusTestEvent> = TypedEventSubscription {
+            inner,
+            _marker: PhantomData,
+        };
+        assert!(typed.next().await.is_none());
+    }
+
+    #[tokio::test]
+    async fn subscribe_typed_surfaces_deserialization_errors() {
+        let s = SchoolId::from_uuid(uuid::Uuid::nil());
+        // Matching event_type but the payload is missing the
+        // `name` field — deserialization must fail.
+        let mut env = sample_envelope(s);
+        env.event_type = TypedBusTestEvent::EVENT_TYPE.to_owned();
+        env.payload = serde_json::json!({
+            "event_id": env.event_id,
+            "school_id": s,
+            "aggregate_id": env.aggregate_id,
+            "occurred_at": env.occurred_at,
+        });
+        let mock = MockSubscription {
+            envelopes: std::collections::VecDeque::from(vec![env]),
+        };
+        let inner: Box<dyn EventSubscription> = Box::new(mock);
+        let mut typed: TypedEventSubscription<TypedBusTestEvent> = TypedEventSubscription {
+            inner,
+            _marker: PhantomData,
+        };
+        let err = typed
+            .next()
+            .await
+            .expect("subscription yielded Some")
+            .expect_err("deserialization must fail");
+        let DomainError::Validation(msg) = err else {
+            panic!("expected DomainError::Validation, got {err:?}");
+        };
+        assert!(msg.contains("subscribe_typed"), "unexpected message: {msg}");
+    }
+
+    #[tokio::test]
+    async fn typed_subscribe_options_default_construction() {
+        let opts = TypedSubscribeOptions::for_consumer(
+            ConsumerId::new("test-consumer"),
+            Topic::All,
+        );
+        assert_eq!(opts.batch_size, 32);
+        assert_eq!(opts.visibility_timeout, Duration::from_secs(300));
+        assert_eq!(opts.start, StartPosition::Latest);
+    }
+
+    #[tokio::test]
+    async fn typed_subscription_delegates_ack_nack_close() {
+        let s = SchoolId::from_uuid(uuid::Uuid::nil());
+        let event_id = SystemIdGen.next_event_id();
+        let mut env = sample_envelope(s);
+        env.event_type = TypedBusTestEvent::EVENT_TYPE.to_owned();
+        env.payload = serde_json::json!({
+            "event_id": event_id,
+            "school_id": s,
+            "aggregate_id": env.aggregate_id,
+            "occurred_at": env.occurred_at,
+            "name": "ack-me".to_owned(),
+        });
+        let mock = MockSubscription {
+            envelopes: std::collections::VecDeque::from(vec![env]),
+        };
+        let inner: Box<dyn EventSubscription> = Box::new(mock);
+        let mut typed: TypedEventSubscription<TypedBusTestEvent> = TypedEventSubscription {
+            inner,
+            _marker: PhantomData,
+        };
+        let _event = typed.next().await.expect("some").expect("ok");
+        // ack / nack / close all delegate to the underlying
+        // subscription (the MockSubscription returns Accepted).
+        assert_eq!(typed.ack(event_id).await.expect("ack"), AckOutcome::Accepted);
+        assert_eq!(
+            typed.nack(event_id, false).await.expect("nack"),
+            AckOutcome::Accepted
+        );
+        Box::new(typed).close().await.expect("close");
+    }
+
+    #[test]
+    fn typed_subscription_debug_includes_inner() {
+        let mock = MockSubscription {
+            envelopes: std::collections::VecDeque::new(),
+        };
+        let inner: Box<dyn EventSubscription> = Box::new(mock);
+        let typed: TypedEventSubscription<TypedBusTestEvent> = TypedEventSubscription {
+            inner,
+            _marker: PhantomData,
+        };
+        let dbg = format!("{typed:?}");
+        assert!(dbg.contains("TypedEventSubscription"), "debug: {dbg}");
+        assert!(dbg.contains("inner"), "debug: {dbg}");
     }
 }
