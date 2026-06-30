@@ -700,3 +700,271 @@ Stub-adjacent partials:
 The `TemplateService` quintet is the only fully-real service struct
 in the file and is the headline correctness target for Phase 10
 (100-case proptest).
+
+---
+
+## finance
+
+**Crate:** `crates/domains/finance/src/services.rs`
+**Spec reference:** `docs/specs/finance/aggregates.md`
+**Function count:** 66 (`pub fn` + `pub async fn` only; excludes the 3 trait method declarations at services.rs:650-656 on `pub trait PaymentProvider` and the 3 matching `async fn` impls at services.rs:760-780, which carry no `pub` modifier)
+**Stub count:** 32 (the "Cluster C handler skeletons" block at services.rs:996-1455 — every command takes the typed command + clock + id-generator and returns `Ok(())` with `let _ = (cmd, clock, ids);` at the top of the body)
+**Real / Partial / Stub:** 29 real / 5 partial / 32 stub
+
+Phase 7 ships the prompt-named headline subset (Wallet lifecycle,
+record_payment, record_expense, configure_invoice_numbering) as real
+or partial; the 16 newly-added aggregates (FmFeesGroup,
+FmFeesType, FmFeesInvoice + child, FmFeesTransaction + child,
+FmFeesWeaver, FeesInvoiceSetting, FeesInstallmentCredit, Transaction,
+Donor, ProductPurchase, InventoryPayment, FeesAssignDiscount,
+DirectFeesInstallmentChildPayment) have placeholder skeletons that
+return `Ok(())` per the in-file comment block at
+services.rs:962-975. Per the comment, the full impl for those 16
+is deferred to subsequent workstreams (B, C, D, F, G, L).
+
+### Wallet aggregate (lines 73-388)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_wallet` (services.rs:73) | Wallet invariant 1 (`WalletId` unique within school); wallet creation lazy on first transaction | real | services.rs:78-104 — derives `WalletId::new(school, uuid_from_event_id)`; `Wallet::fresh` (services.rs:88-95) builds aggregate with currency + actor; `WalletCreated::new` event at services.rs:97-104. Tenant anchor enforced via typed id. |
+| `credit_wallet` (services.rs:124) | WalletTransaction invariants 1 (`amount >= 0`), 2 (status `pending` on creation), 3 (references user + optional bank) | real | services.rs:130-158 — `WalletTransaction::fresh` validates amount + currency (services.rs:142-153); event `WalletCredited::new` minted at services.rs:155-165. Pending state preserved (transition to `Approved` is a separate command). |
+| `request_wallet_refund` (services.rs:193) | WalletTransaction wallet_type = `Refund`; status `pending` on creation | real | services.rs:198-229 — `WalletTxType::Refund` (services.rs:213); `WalletTransaction::fresh` (services.rs:214-225) constructs pending tx; `WalletRefundRequested::new` event with reason at services.rs:227-237. |
+| `deduct_wallet_credit` (services.rs:257) | Wallet invariant: only `approve` transitions balance; sufficient balance pre-flight | real | services.rs:264-283 — explicit `cmd.amount_minor > wallet.balance_minor` check at services.rs:264-268 (returns `DomainError::conflict`); currency match at services.rs:269-273. **Missing:** deduction is two-phase (this creates the pending tx; the dispatch path applies the debit on approval) — but the pre-flight check covers the headline spec invariant. |
+| `approve_wallet_transaction` (services.rs:336) | State transition `Pending → Approved`; only `approve` mutates wallet balance | real | services.rs:341-355 — `tx.approve(approver, now, event_id)?` (services.rs:344) enforces the state machine in the aggregate; `WalletTransactionApproved::new` event at services.rs:346-353. |
+| `reject_wallet_transaction` (services.rs:361) | State transition `Pending → Rejected`; `note` captured | real | services.rs:366-380 — `tx.reject(rejecter, note.clone(), now, event_id)?` (services.rs:369); `WalletTransactionRejected::new` event at services.rs:371-379. |
+| `WalletService::balance` (services.rs:401) | Spec: current balance = sum of approved transactions | partial | services.rs:401-419 — the loop computes `bal` by iterating approved tx (services.rs:403-416) but immediately discards the computed value via `let _ = bal;` and returns `wallet.balance_minor` (services.rs:418). The "cross-check" loop is dead code; the helper returns the cached value unconditionally. **Missing:** the computed balance is never actually compared against the cached value, so the invariant check is symbolic. |
+| `WalletService::validate_debit` (services.rs:421) | Wallet invariant: cannot debit beyond available balance; currencies must match | real | services.rs:421-441 — `amount_minor < 0` rejected at services.rs:422-425; currency mismatch at services.rs:426-430; `wallet.balance_minor < amount_minor` rejected at services.rs:431-436. All three checks return typed `DomainError`. |
+
+### Headline 3+4: payment + expense + invoice (lines 454-628)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `record_payment` (services.rs:454) | FeesPayment invariants 1 (non-null assign_id + student_id), 2 (amount/discount/fine >= 0), 3 (payment_mode's gateway_id matches), 4 (gateway tx id required if gateway) | partial | services.rs:459-492 — `FeesPayment::fresh` validates amount, discount, fine non-negative (services.rs:472-485); `PaymentReceived::new` event at services.rs:487-498. **Missing:** invariants 1 (assign_id + student_id are not part of this command; deferred to dispatcher), 3 (payment_method/gateway compatibility not checked here), 4 (gateway tx id deferred to dispatcher per the docstring at services.rs:444-453). The function is pure; the dispatch layer wires the real provider. |
+| `record_expense` (services.rs:520) | Expense invariants 1 (amount >= 0), 2 (payment_method/account compatible), 3 (exactly one expense_head) | partial | services.rs:526-560 — `Expense::fresh` validates amount and head (services.rs:539-552); `ExpenseRecorded::new` event at services.rs:554-568. **Missing:** invariant 2 (payment_method compatibility with the bank/cash account) is not checked; invariant 3 is enforced by the aggregate's single-head field but no cross-aggregate validation here. |
+| `configure_invoice_numbering` (services.rs:591) | FeesInvoice invariants 1 (one per school), 2 (start_form >= 0), 3 (next = start_form + count of issued) | partial | services.rs:596-621 — `FeesInvoice::fresh` validates prefix and start_form (services.rs:608-617); `InvoiceNumberingConfigured::new` event at services.rs:619-625. **Missing:** invariant 1 (one-per-school uniqueness is a storage-layer concern; not enforced in service); invariant 3 (the next-invoice calculation is delegated to the dispatch path). |
+
+### Stub `PaymentProvider` port (lines 641-787)
+
+The `PaymentProvider` trait (services.rs:641-658) and `StubPaymentProvider` impl (services.rs:732-787) are marked `#[deprecated]` since `0.1.0` and slated to move to `educore-payment` in Phase 15 per the in-file doc-comment at services.rs:633-640. The 3 trait method declarations at services.rs:650-656 (`charge`, `refund`, `status`) and the 3 matching impls at services.rs:760-780 carry no `pub` modifier (the trait is `pub`, so the methods are accessible through the trait object but not via direct `pub fn`). The only `pub fn` in this block is the constructor.
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `StubPaymentProvider::new` (services.rs:752) | Trivial constructor | real | services.rs:752-756 — returns `Self::default()`; counter starts at 0. |
+
+### CarryForwardService + LateFeeService + DoubleEntryService (lines 794-958)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `FeesCarryForwardSetting::new` (services.rs:803) | FeesCarryForwardSetting invariants 1 (title unique within school), 2 (`fees_due_days >= 0`) | real (structural); partial (uniqueness) | services.rs:803-817 — title length 1..=200 validated at services.rs:806-809; `fees_due_days <= 365` validated at services.rs:810-815. **Missing:** invariant 1 (title uniqueness within school) is a storage-layer concern, not enforced here. |
+| `CarryForwardService::should_carry_forward` (services.rs:834) | Build-plan § Phase 7 carry-forward rules 1 (no open balance → skip) + 4 (below threshold → skip + log) | real | services.rs:834-844 — `balance_minor == 0` returns `false` (services.rs:835-837); `balance.abs() < threshold` returns `false` (services.rs:838-843). Both rules in the build-plan are covered. |
+| `CarryForwardService::build_carry_forward` (services.rs:849) | Build-plan § Phase 7 carry-forward rules 2 (debit) + 3 (credit); `balance >= 0`; `due_date` required | real | services.rs:849-885 — derives `BalanceType` from sign at services.rs:855-859; `unsigned_abs()` enforces `balance >= 0` (services.rs:860); `note` reflects type at services.rs:861-871; `due_date` carried through from `cmd.due_date`. |
+| `LateFeeService::compute_late_fee` (services.rs:920) | Late-fee rule: within grace period → 0; otherwise apply `kind` rule | real | services.rs:920-940 — `days_late <= grace` returns 0 at services.rs:921-924; `FixedAmount`/`PercentOfAmount`/`PerDayRate` branches at services.rs:926-937; covered by table-driven tests at services.rs:2431-2490 (1-30 days × 3 kinds). |
+| `DoubleEntryService::check_invariant` (services.rs:953) | Transaction aggregate invariant: `sum(debits) == sum(credits)` per `school_id`; row amounts non-negative | real | services.rs:953-976 — non-negative amount check at services.rs:962-966; per-school filter at services.rs:959-961 (cross-tenant confusion caught); `debits != credits` returns `DomainError::conflict` at services.rs:967-975. Property-tested via proptest at services.rs:2502-2547. |
+
+### Cluster C handler skeletons (lines 996-1455) — 32 stubs
+
+All 32 functions in this block carry the same self-documented
+"Full implementation lands in Phase 7 Workstream B/C/D/F/G/L"
+doc-comment (see e.g. services.rs:990-995 for the section
+header) and the same body:
+
+```rust
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn create_X<C, G>(cmd: CreateXCommand, clock: &C, ids: &G) -> Result<()>
+where C: Clock + ?Sized, G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+```
+
+No domain fields are populated; no events are emitted; no spec
+invariants are touched. The 32 functions and their spec anchors:
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_fees_assign_discount` (services.rs:996) | FeesAssignDiscount invariants 1 (amounts >= 0), 2 (applied + unapplied constant), 3 (role_id or student_id) | stub | services.rs:990-1006 — body returns `Ok(())` after `let _ = (cmd, clock, ids);` |
+| `read_fees_assign_discount` (services.rs:1012) | Read-by-id; no invariant violated | stub | services.rs:1008-1022 — same stub body |
+| `create_direct_fees_installment_child_payment` (services.rs:1028) | DirectFeesInstallmentChildPayment invariants 1 (paid + balance = amount + discount), 2 (paid monotonic) | stub | services.rs:1024-1038 |
+| `read_direct_fees_installment_child_payment` (services.rs:1044) | Read-by-id | stub | services.rs:1040-1054 |
+| `create_fm_fees_group` (services.rs:1060) | FmFeesGroup invariant 1 (unique by name within school) | stub | services.rs:1056-1066 |
+| `read_fm_fees_group` (services.rs:1072) | Read-by-id | stub | services.rs:1068-1078 |
+| `create_fm_fees_type` (services.rs:1084) | FmFeesType invariants 1 (one FmFeesGroup), 2 (type ∈ fees\|lms), 3 (course_id required iff lms) | stub | services.rs:1080-1090 |
+| `read_fm_fees_type` (services.rs:1096) | Read-by-id | stub | services.rs:1092-1102 |
+| `create_fm_fees_invoice` (services.rs:1108) | FmFeesInvoice invariants 1 (invoice_id unique per school), 2 (children subtotals + fine + service_charge + weaver = grand total), 3 (type ∈ fees\|lms) | stub | services.rs:1104-1120 |
+| `read_fm_fees_invoice` (services.rs:1124) | Read-by-id | stub | services.rs:1120-1130 |
+| `create_fm_fees_invoice_child` (services.rs:1136) | FmFeesInvoiceChild invariants 1 (one FmFeesInvoice), 2 (sub_total = amount + weaver + fine), 3 (paid_amount <= sub_total + service_charge) | stub | services.rs:1132-1148 |
+| `read_fm_fees_invoice_child` (services.rs:1152) | Read-by-id | stub | services.rs:1148-1158 |
+| `create_fm_fees_invoice_setting` (services.rs:1168) | FmFeesInvoiceSetting invariants 1 (one per school), 2 (limits non-negative), 3 (uniq_id_start unique) | stub | services.rs:1164-1180 |
+| `read_fm_fees_invoice_setting` (services.rs:1184) | Read-by-id | stub | services.rs:1180-1190 |
+| `create_fm_fees_transaction` (services.rs:1200) | FmFeesTransaction invariants 1 (one FmFeesInvoice), 2 (total_paid >= 0), 3 (wallet money iff wallet exists) | stub | services.rs:1196-1212 |
+| `read_fm_fees_transaction` (services.rs:1216) | Read-by-id | stub | services.rs:1212-1222 |
+| `create_fm_fees_transaction_child` (services.rs:1232) | FmFeesTransactionChild invariants 1 (one transaction), 2 (paid >= 0) | stub | services.rs:1228-1244 |
+| `read_fm_fees_transaction_child` (services.rs:1248) | Read-by-id | stub | services.rs:1244-1254 |
+| `create_fm_fees_weaver` (services.rs:1264) | FmFeesWeaver invariants 1 (weaver >= 0), 2 (sum on invoice <= sum of child subtotals) | stub | services.rs:1260-1270 |
+| `read_fm_fees_weaver` (services.rs:1276) | Read-by-id | stub | services.rs:1272-1282 |
+| `create_fees_invoice_setting` (services.rs:1288) | FeesInvoiceSetting invariants 1 (unique by (school, academic)), 2 (per_th non-negative) | stub | services.rs:1284-1300 |
+| `read_fees_invoice_setting` (services.rs:1304) | Read-by-id | stub | services.rs:1300-1310 |
+| `create_fees_installment_credit` (services.rs:1320) | FeesInstallmentCredit invariants 1 (amount >= 0), 2 (unique by (student, record)), 3 (active_status = 1) | stub | services.rs:1316-1332 |
+| `read_fees_installment_credit` (services.rs:1336) | Read-by-id | stub | services.rs:1332-1342 |
+| `create_transaction` (services.rs:1352) | Transaction invariants 1 (type ∈ debit\|credit), 2 (polymorphic target is supported finance entity), 3 (amount >= 0) | stub | services.rs:1348-1358 |
+| `read_transaction` (services.rs:1364) | Read-by-id | stub | services.rs:1360-1370 |
+| `create_donor` (services.rs:1376) | Donor invariants 1 (show_public boolean), 2 (unique by email when provided) | stub | services.rs:1372-1382 |
+| `read_donor` (services.rs:1388) | Read-by-id | stub | services.rs:1384-1394 |
+| `create_product_purchase` (services.rs:1400) | ProductPurchase invariants 1 (paid + due = price), 2 (paid, due >= 0), 3 (one school) | stub | services.rs:1396-1412 |
+| `read_product_purchase` (services.rs:1416) | Read-by-id | stub | services.rs:1412-1422 |
+| `create_inventory_payment` (services.rs:1432) | InventoryPayment invariants 1 (type ∈ R\|S), 2 (amount >= 0), 3 (payment_method/bank compatible) | stub | services.rs:1428-1444 |
+| `read_inventory_payment` (services.rs:1448) | Read-by-id | stub | services.rs:1444-1454 |
+
+### Workflow: Fees Assignment (lines 1466-1536)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `FeesAssignmentService::assign_fees_to_student` (services.rs:1476) | FeesAssign invariants 1 (unique by (school, master, student, academic)), 2 (fees_amount >= 0) | real (factory); dispatcher must enforce uniqueness | services.rs:1476-1488 — pure factory returning `FeesAssignmentDraft { student: Some(...), ... }`. The aggregate uniqueness is a storage-layer concern per the same Phase 7 workstream pattern used elsewhere. |
+| `FeesAssignmentService::assign_fees_to_class` (services.rs:1494) | FeesAssign bulk-assign invariant (same uniqueness, scoped to class+section) | real (factory) | services.rs:1494-1506 — same pattern; `class_id` + optional `section_id` set; dispatcher resolves the class roster. |
+| `FeesAssignmentService::validate` (services.rs:1512) | Cross-field invariant: exactly one target (student OR class); amount positive | real | services.rs:1512-1530 — `amount.amount_minor() <= 0` rejected at services.rs:1513-1516; "exactly one of (student, class)" enforced at services.rs:1517-1525. |
+
+### Workflow: Due Fees Login Prevention (lines 1546-1602)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `DueFeesLoginPreventionService::is_login_blocked` (services.rs:1556) | DueFeesLoginPrevent invariants 1 (unique by (school, academic, user, role)), 2 (only users with non-zero overdue balance kept) | real | services.rs:1556-1580 — `outstanding_minor >= threshold_minor` returns `LoginBlockDecision { blocked: true, ... }` at services.rs:1558-1564; otherwise `blocked: false` at services.rs:1565-1571. The row-maintenance aspect (invariants 1-2) is delegated to the dispatcher's CRUD. |
+| `DueFeesLoginPreventionService::get_outstanding_balance` (services.rs:1582) | Sum of payment amounts minus discounts plus fines | real | services.rs:1582-1598 — saturating arithmetic on `amount_minor - discount_minor + fine_minor` (services.rs:1586-1592). |
+
+### Workflow: Bank Reconciliation (lines 1622-1722)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `BankReconciliationService::match_transaction` (services.rs:1622) | Reconciliation: match by amount + entry_type within same school | real | services.rs:1622-1648 — school filter at services.rs:1625-1627; `entry_type != Debit` skipped at services.rs:1628-1630; amount-equality match at services.rs:1631-1640; unmatched line returns `discrepancy_minor = line.amount_minor` at services.rs:1645-1648. |
+| `BankReconciliationService::reconcile_statement` (services.rs:1655) | Reconcile every line; return (matched_count, unmatched_count, discrepancy) | real | services.rs:1655-1677 — delegates per-line to `match_transaction` (services.rs:1661-1672); accumulates matched/unmatched counters at services.rs:1663-1671. |
+| `BankReconciliationService::mark_unmatched` (services.rs:1682) | Flag for manual review | real | services.rs:1682-1690 — returns `ManualReviewFlag { statement_line_id, reason, amount_minor }` (services.rs:1684-1688). |
+
+### Workflow: Payroll Disbursement (lines 1736-1807)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `PayrollDisbursementService::disburse_payroll` (services.rs:1739) | PayrollPayment invariant 1 (sum of payments <= payroll's unpaid `net_salary`); 3 (creates Expense + BankStatement) | partial | services.rs:1739-1760 — `entries.is_empty()` rejected at services.rs:1741-1745; `entry_count` populated at services.rs:1752-1754. **Missing:** invariant 1 (the sum-vs-`net_salary` cap is not enforced — `total_minor` is set to literal `0` at services.rs:1756 and the sum of `entries` is never computed); invariant 3 (the corresponding Expense + BankStatement creation is dispatched, not done here). |
+| `PayrollDisbursementService::mark_as_paid` (services.rs:1764) | Per-entry paid marker | real | services.rs:1764-1772 — returns `PaidPayrollEntry { entry_id, paid: true }` (services.rs:1766-1770). Trivial marker. |
+| `PayrollDisbursementService::cancel_disbursement` (services.rs:1775) | Cancellation record with reason | real | services.rs:1775-1787 — returns `CancelledDisbursement { payroll_id, reason }` (services.rs:1778-1782). Trivial. |
+
+### Workflow: Hourly Rate Management (lines 1817-1888)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `HourlyRateService::set_hourly_rate` (services.rs:1826) | Hourly rate versioned; non-negative | real | services.rs:1826-1840 — `rate_minor < 0` rejected at services.rs:1828-1832; returns `HourlyRateRow { staff, rate_minor, effective_from }` (services.rs:1834-1838). The "versioned" rule (new rate does not overwrite) is enforced by the dispatcher inserting a new row. |
+| `HourlyRateService::calculate_pay` (services.rs:1846) | Pay = hours × rate, rounded, clamped at 0 | real | services.rs:1846-1859 — `hours <= 0.0` returns 0 at services.rs:1847-1849; `raw <= 0.0` returns 0 at services.rs:1852-1854; `raw as i64` truncates toward zero at services.rs:1858. The "nearest minor unit" rounding is delegated to the journal layer per the in-line comment at services.rs:1856-1857. |
+| `HourlyRateService::get_effective_rate` (services.rs:1863) | Most recent rate with `effective_from <= date` | real | services.rs:1863-1869 — `filter(r.effective_from <= date).max_by_key(r.effective_from)` (services.rs:1864-1868). Pure lookup; expects the history to be pre-sorted. |
+
+### Workflow: Salary Template (lines 1890-1966)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `SalaryTemplateService::create_template` (services.rs:1894) | SalaryTemplate invariants 1 (`gross_salary == basic + house_rent + provident_fund`), 2 (`net_salary == gross - total_deduction`); non-empty name + earnings; non-negative amounts | real (structural); partial (composition) | services.rs:1894-1925 — name length 1..=200 validated at services.rs:1897-1900; `earnings.is_empty()` rejected at services.rs:1901-1904; per-line `amount_minor < 0` rejected at services.rs:1905-1909. **Missing:** invariants 1-2 (the composition rules) are evaluated at payroll-generation time, not at template-creation time, because the per-template composition is consumer-defined. |
+| `SalaryTemplateService::apply_template` (services.rs:1929) | Concatenate earnings + deductions into payroll-ready lines | real | services.rs:1929-1948 — clones earnings then deductions into a single `Vec<TemplateLine>` (services.rs:1933-1941); preserves currency and template name. |
+| `SalaryTemplateService::validate_template` (services.rs:1952) | Every line has non-empty label and non-negative amount | real | services.rs:1952-1964 — `label.is_empty()` rejected at services.rs:1955-1958; `amount_minor < 0` rejected at services.rs:1959-1963. |
+
+### Summary
+
+- **Total pub fn / pub async fn:** 66
+- **Real:** 29 — the 6 wallet mutators + 1 wallet validator + `StubPaymentProvider::new` + the 3 headline factories (`record_payment` is partial, not real) + 2 carry-forward + late-fee + double-entry helpers + 5 fees-assignment / due-fees / bank-reconciliation methods + 2 payroll-mark-as-paid/-cancel + 3 hourly-rate + 3 salary-template.
+- **Partial:** 5 — `WalletService::balance` (loop result discarded; invariant check is symbolic), `record_payment` (3 of 4 invariants deferred to dispatcher), `record_expense` (payment_method/account compatibility not checked), `configure_invoice_numbering` (next-invoice computation delegated), `PayrollDisbursementService::disburse_payroll` (cap vs `net_salary` not enforced; `total_minor = 0`).
+- **Stub:** 32 — every Cluster C handler skeleton from `create_fees_assign_discount` (services.rs:996) through `read_inventory_payment` (services.rs:1448). All carry the same `let _ = (cmd, clock, ids); Ok(())` body and the "Full implementation lands in Phase 7 Workstream B/C/D/F/G/L" doc-comment.
+
+### Classification rationale
+
+- **Real vs partial** for the prompt-named wallet headline (`create_wallet`, `credit_wallet`, etc.) hinges on whether the service enforces every spec invariant the command owns vs delegating any of them to the dispatcher / aggregate. The wallet mutators all do the structural check (amount, currency, balance pre-flight) in the service and the state-machine transition in the aggregate, so they are real. The exception is `WalletService::balance` where the structural check is dead code (the loop is computed then discarded) — partial.
+- **Partial vs real** for the headline mutators (`record_payment`, `record_expense`, `configure_invoice_numbering`) hinges on whether the invariant crosses aggregate boundaries. `record_payment` skips invariants 1 + 3 + 4 (assign/student id, payment_method/gateway compatibility, gateway tx id) which require cross-aggregate lookups or external I/O. `record_expense` skips invariant 2 (payment_method/account compatibility) and the cross-aggregate single-head check. `configure_invoice_numbering` skips invariant 3 (the next-invoice calculation requires `count(issued_invoices)`, a storage-side query). All three are classified partial; the gap is acknowledged in the docstrings.
+- **Stub** functions in the placeholder section are unambiguously stubs: every body returns `Ok(())` after `let _ = (cmd, clock, ids);`. None of the spec invariants listed in the column are touched. This is the same pattern as the academic Phase 3 placeholder block at academic/services.rs:1246-1624.
+- **`PaymentProvider` port** is marked `#[deprecated]` and slated to move to `educore-payment` in Phase 15. The 3 trait method declarations + 3 impls are not counted (no `pub` modifier) but are mentioned for completeness.
+
+---
+
+## documents
+
+**Crate:** `crates/domains/documents/src/services.rs`
+**Function count:** 18
+**Stub count:** 0 (no `unimplemented!()` / `todo!()` / synthetic-id placeholders; the three `partial` services have explicit, documented deferrals to the storage adapter or to a not-yet-merged repository method)
+
+The file is split into three sections (FormDownload 3A, PostalDispatch 3B,
+PostalReceive 3C) plus two helper structs (`FormService`, `PostalService`)
+and one read-side query factory (`track_postal_service`). All eight
+mutator factory functions perform capability-gating via
+`require_capability` (services.rs:32-46), persist via the typed repository,
+write an audit row, and publish the corresponding domain event.
+Spec-invariant 1 (non-empty title / to_title / from_title) is enforced by
+the value-object constructors (`FormTitle::new` at value_objects.rs:157,
+`PostalTitle::new` at value_objects.rs:250, `FromTitle::new` at
+value_objects.rs:292, `ToTitle::new` at value_objects.rs:330) so the
+service layer relies on the type system rather than re-validating.
+Spec-invariant 4 (never hard-deleted; soft-delete via `active_status`) is
+enforced by the `soft_delete` methods on `FormDownload`,
+`PostalDispatch`, and `PostalReceive` (aggregate.rs:211, 593, 877),
+called from the three delete services. The `reference_no` field is
+declared **immutable** once set in `commands.rs:253-255` and
+`commands.rs:425-427`; the `update` methods on both postal aggregates
+reject any mutation with `DocumentsError::ReferenceNoImmutable`, so the
+update factories do not need to re-check uniqueness on update.
+
+| Function | Spec Invariant | Status | Evidence |
+|----------|---------------|--------|----------|
+| `FormService::validate_content` (services.rs:62) | FormDownload invariant 2 (at least one of `link` or `file` set) | real | services.rs:62-71 — `if link.is_none() && file.is_none() { return Err(FormHasNoContent) }`. Pure helper, no I/O. |
+| `FormService::is_public` (services.rs:74) | FormDownload invariant 3 (visibility flag accessor) | real | services.rs:74-78 — `form.is_public()`. Pure accessor. |
+| `FormService::is_deliverable` (services.rs:81) | FormDownload invariant 2 (has at least one of link/file) | real | services.rs:81-85 — `form.is_deliverable()`. Pure accessor. |
+| `FormService::matches_publish_date` (services.rs:88) | FormDownload invariant 2 (publish_date ordering) | real | services.rs:88-92 — `form.publish_date.0 <= date`. Pure accessor. |
+| `upload_form_service` (services.rs:136) | FormDownload invariants 1 (non-empty title — via `FormTitle` VO), 2 (link OR file — via `FormDownload::new`), 5 (school anchor — via typed id) | real | services.rs:148 — `require_capability(FormDownloadUpload)`; services.rs:150-151 — `FormDownload::new(new)?` enforces invariant 2; services.rs:152 — `repo.insert`; services.rs:156-164 — audit row; services.rs:168-171 — `FormUploaded` event. Title non-emptiness enforced at `value_objects.rs:157` (`FormTitle::new`). |
+| `update_form_service` (services.rs:180) | FormDownload invariant 2 preserved across updates (re-validates link OR file); soft-delete guard | real | services.rs:191 — `require_capability(FormDownloadUpdate)`; services.rs:193-197 — `repo.get` with `FormNotFound` on miss; services.rs:198 — `snapshot(before)` for audit; services.rs:228 — `form.update(update_cmd)?` re-checks link/file invariant (`aggregate.rs:191`); services.rs:230-241 — audit `Update`; services.rs:243-251 — `FormUpdated` event with per-field change list. |
+| `delete_form_service` (services.rs:252) | FormDownload invariant 4 (soft-delete, never hard-deleted) | real | services.rs:263 — `require_capability(FormDownloadDelete)`; services.rs:264-268 — `repo.get` with `FormNotFound`; services.rs:272 — `form.soft_delete(actor, at)?` rejects already-deleted (`aggregate.rs:211-219`); services.rs:274-283 — audit `Delete`; services.rs:286-291 — `FormDeleted` event. |
+| `PostalService::reference_unique` (services.rs:358) | PostalDispatch / PostalReceive invariant 2 (reference_no unique within `(school_id, academic_id)`) — helper | real | services.rs:358-368 — `!existing.iter().any(|r| r == reference)`. Pure helper; **note:** not currently invoked from the dispatch / receive factory services — uniqueness is delegated to the storage adapter per the docstring (services.rs:352-355) and the composite unique index on `(school_id, academic_id, reference_no)`. |
+| `PostalService::pair_by_reference` (services.rs:375) | Cross-aggregate helper: pair dispatches with receives by shared `reference_no` | real | services.rs:375-419 — first-match pairing with `used_receives` tracking (services.rs:392-417); unmatched dispatches / receives become `(Some, None)` / `(None, Some)` pairs; dispatches with no `reference_no` are skipped. Pure helper. |
+| `PostalService::within_year` (services.rs:421) | Cross-aggregate helper: filter dispatches + receives to those whose `academic_id` matches the given year AND which carry a `reference_no` | real | services.rs:421-453 — loops dispatches and receives (services.rs:430-451); produces flat `Vec<PostalReference>` with `dispatch_id` / `receive_id` disambiguators. Pure helper. |
+| `PostalService::format_address` (services.rs:456) | PostalDispatch / PostalReceive address display (free-text per spec) | real | services.rs:456-460 — `addr.as_str().to_owned()`. Pure helper. |
+| `dispatch_postal_service` (services.rs:483) | PostalDispatch invariants 1 (non-empty `to_title` / `from_title` — via `PostalTitle` VOs), 2 (reference_no unique within `(school_id, academic_id)`), 3 (school + academic-year anchor) | partial | services.rs:494 — `require_capability(PostalDispatchCreate)`; services.rs:497 — `PostalDispatchId::new(tenant.school_id, Uuid::now_v7())` anchors tenant; services.rs:498-499 — `PostalDispatch::new(new)?` enforces structural construction. **Gap:** invariant 2 (reference_no uniqueness) is not enforced at the service layer — the `PostalService::reference_unique` helper at services.rs:358 is not called, and the factory does not query the repo for existing reference numbers. The docstring at services.rs:352-355 explicitly delegates uniqueness to the storage adapter via a composite unique index on `(school_id, academic_id, reference_no)`. Per the audit convention (cf. attendance `mark_student_attendance`), the service-level guard is expected and this is classified partial. |
+| `update_postal_dispatch_service` (services.rs:530) | PostalDispatch invariants 1, 2 preserved across updates; soft-delete guard; reference_no immutable | real | services.rs:541 — `require_capability(PostalDispatchUpdate)`; services.rs:542-549 — `repo.get` with `PostalDispatchNotFound`; services.rs:572-578 — `dispatch.update(update_cmd)?` enforces soft-delete guard (`aggregate.rs:583-589`) and rejects any `reference_no` mutation with `DocumentsError::ReferenceNoImmutable` (`aggregate.rs:598-602`); services.rs:580-590 — audit `Update`; services.rs:594-600 — `PostalDispatchUpdated` event. Uniqueness re-check not required because `reference_no` is immutable per `commands.rs:253-255`. |
+| `delete_postal_dispatch_service` (services.rs:605) | PostalDispatch invariant 5 (soft-delete, never hard-deleted) | real | services.rs:616 — `require_capability(PostalDispatchDelete)`; services.rs:617-624 — `repo.get` with `PostalDispatchNotFound`; services.rs:629 — `dispatch.soft_delete(actor, at)?` rejects already-deleted (`aggregate.rs:639-647`); services.rs:631-640 — audit `Delete`; services.rs:643-648 — `PostalDispatchDeleted` event. |
+| `receive_postal_service` (services.rs:702) | PostalReceive invariants 1 (non-empty `from_title` / `to_title` — via `PostalTitle` VOs), 2 (reference_no unique within `(school_id, academic_id)`), 3 (school + academic-year anchor) | partial | services.rs:713 — `require_capability(PostalReceiveCreate)`; services.rs:716 — `PostalReceiveId::new(tenant.school_id, Uuid::now_v7())` anchors tenant; services.rs:717-718 — `PostalReceive::new(new)?` enforces structural construction. **Gap:** invariant 2 (reference_no uniqueness) is not enforced at the service layer — same as `dispatch_postal_service`. The factory delegates uniqueness to the storage adapter per `services.rs:352-355` rationale. Partial. |
+| `update_postal_receive_service` (services.rs:748) | PostalReceive invariants 1, 2 preserved across updates; soft-delete guard; reference_no immutable | real | services.rs:759 — `require_capability(PostalReceiveUpdate)`; services.rs:760-767 — `repo.get` with `PostalReceiveNotFound`; services.rs:790-796 — `receive.update(update_cmd)?` enforces soft-delete guard and rejects any `reference_no` mutation with `DocumentsError::ReferenceNoImmutable` (`aggregate.rs:890-895`); services.rs:798-808 — audit `Update`; services.rs:812-818 — `PostalReceiveUpdated` event. Uniqueness re-check not required because `reference_no` is immutable per `commands.rs:425-427`. |
+| `delete_postal_receive_service` (services.rs:822) | PostalReceive invariant 5 (soft-delete, never hard-deleted) | real | services.rs:833 — `require_capability(PostalReceiveDelete)`; services.rs:834-841 — `repo.get` with `PostalReceiveNotFound`; services.rs:846 — `receive.soft_delete(actor, at)?` rejects already-deleted; services.rs:848-857 — audit `Delete`; services.rs:860-866 — `PostalReceiveDeleted` event. |
+| `track_postal_service` (services.rs:876) | Query: pair dispatch + receive records that share a `reference_no` | partial | services.rs:887 — `require_capability(PostalRead)`; services.rs:888 — `let _ = dispatch_repo` (dispatch side explicitly suppressed — see docstring at services.rs:868-873 acknowledging the deferred `find_by_reference` method on `PostalDispatchRepository`); services.rs:889-891 — `receive_repo.find_by_reference(school_id, &cmd.reference_no)?` returns the receive side; services.rs:892-895 — `PostalPair { dispatch: None, receive: receives.into_iter().next() }`; services.rs:898-906 — audit row with `AuditAction::Other("read")` and a synthetic `AuditTarget::Other("postal_track", Uuid::now_v7())` (the synthetic target uuid is acceptable for a read-only audit row, not a row identity). **Gap:** the dispatch side is hardcoded to `None` pending a not-yet-merged `find_by_reference` on `PostalDispatchRepository`; the function is documented as a query (not a mutation) and emits no domain event per spec, so the dispatch-side absence is the only missing piece. |
+
+### Summary
+
+- **Total pub fn:** 18 (`FormService::validate_content`, `FormService::is_public`, `FormService::is_deliverable`, `FormService::matches_publish_date`, `PostalService::reference_unique`, `PostalService::pair_by_reference`, `PostalService::within_year`, `PostalService::format_address`, `upload_form_service`, `update_form_service`, `delete_form_service`, `dispatch_postal_service`, `update_postal_dispatch_service`, `delete_postal_dispatch_service`, `receive_postal_service`, `update_postal_receive_service`, `delete_postal_receive_service`, `track_postal_service`)
+- **Real:** 15 — all eight pure helpers, the three FormDownload mutator factories, the two update factories for postal (reference_no is immutable so no uniqueness re-check needed), and the two delete factories. Spec invariants are enforced via the aggregate constructors (`FormDownload::new` for invariant 2; `PostalDispatch::new` / `PostalReceive::new` for the structural fields), the value-object constructors (`FormTitle`, `PostalTitle`, `FromTitle`, `ToTitle` enforce invariant 1 at the type system), and the `soft_delete` methods (invariant 4 / 5 for the never-hard-delete rule).
+- **Partial:** 3 — `dispatch_postal_service` and `receive_postal_service` delegate the `(school_id, academic_id, reference_no)` uniqueness check (spec invariant 2) to the storage adapter via a composite unique index, with the `PostalService::reference_unique` helper defined but not invoked from the factories (docstring at services.rs:352-355). `track_postal_service` hardcodes the dispatch side of the `PostalPair` to `None` pending a not-yet-merged `find_by_reference` method on `PostalDispatchRepository` (docstring at services.rs:868-873); the receive side is real.
+- **Stub:** 0 — no `unimplemented!()` / `todo!()` / synthetic-id placeholders; every service factory either persists a real aggregate or returns a real `PostalPair` populated from the repo. The audit `AuditTarget::Other("postal_track", Uuid::now_v7())` synthetic uuid at services.rs:903 is the closest analogue to a placeholder and is appropriate for a read-only audit row (the target id is not a row identity).
+
+### Classification rationale
+
+- The 8 pure helpers (`FormService` × 4, `PostalService` × 4) are
+  uncontentiously real — each is a small, side-effect-free function
+  over already-validated aggregate state. The `PostalService` trio
+  (`reference_unique`, `pair_by_reference`, `within_year`) are
+  intentionally designed for caller-side composition; the audit
+  convention is that un-callable helpers are still classified by
+  whether they themselves are correct, not by whether the factory
+  invokes them.
+- The `FormDownload` mutators are all real because the spec
+  invariants they own (1, 2, 4, 5) are enforced by the value-object
+  constructors (`FormTitle`), the aggregate constructor
+  (`FormDownload::new` for invariant 2), and the `soft_delete`
+  method (invariant 4). The service layer adds capability-gating,
+  repository persistence, audit-row emission, and event publishing —
+  none of which the spec attributes to the service layer but all of
+  which the engine rules require.
+- The `PostalDispatch` / `PostalReceive` mutators are real for
+  update + delete (because `reference_no` is immutable per
+  `commands.rs:253-255` / `:425-427`, so no service-level
+  uniqueness re-check is required on update; and `soft_delete`
+  enforces the never-hard-delete rule) but partial for create
+  (because the factory does not consult an existing-reference
+  list before inserting). The docstring at services.rs:352-355
+  explicitly delegates to the storage adapter, so the gap is
+  acknowledged, not hidden. Per the audit convention used for
+  attendance's `mark_student_attendance` (which has the same
+  shape: uniqueness delegated to storage), this is `partial`.
+- `track_postal_service` is the only non-mutator service in the
+  file. The dispatch side is hardcoded to `None` pending a future
+  `find_by_reference` method on `PostalDispatchRepository`; the
+  function is documented as a query (no event emission per spec),
+  the receive side is real, and the audit row uses a synthetic
+  target uuid appropriate for a read-only audit row.
