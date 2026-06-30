@@ -94,6 +94,30 @@ pub mod subscribers;
 // `engine.commands.await`. See `docs/schemas/command-schema.md` § 13.
 pub mod command_handle;
 
+// ---- Cross-domain event re-exports ----------------------------------------
+// The umbrella re-exports the cross-cutting domain event types
+// (PaymentSettled, RetentionSweepDue, etc.) so consumers can
+// `use educore::PaymentSettled;` instead of digging into the
+// `educore_events` or domain-specific crates.
+
+/// The cross-domain [`PaymentSettled`] event re-exported from
+/// `educore_events::finance_events` for convenience. The
+/// settlement reconciliation worker emits one `PaymentSettled`
+/// per settled payment; downstream subscribers (audit mirror,
+/// sync engine, notification) consume them.
+pub use educore_events::PaymentSettled;
+
+// ---- Integration capability enforcement -----------------------------------
+// `IntegrationCapability.required_capabilities` is the typed
+// set of RBAC capabilities an integration invocation requires.
+// The engine enforces this at invoke-time (per
+// `docs/ports/integrations.md` § "RBAC"): the caller's session
+// capabilities MUST be a superset of `required_capabilities`
+// or the invoke is rejected with `IntegrationError::Forbidden`.
+// Re-exported here so consumers can pattern-match against the
+// field without depending on `educore_integrations` directly.
+pub use educore_integrations::port::IntegrationCapability as _IntegrationCapability;
+
 /// Educore version, sourced from the package manifest.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

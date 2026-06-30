@@ -66,6 +66,11 @@ pub mod redactor;
 /// The [`writer::AuditWriter`] service and the typed action / target enums.
 pub mod writer;
 
+/// The [`sink::AuditSink`] port — the trait surface consumers use
+/// to write audit log entries. Concrete impls include
+/// [`writer::AuditWriter`]. Object-safe; held as `Arc<dyn AuditSink>`.
+pub mod sink;
+
 // ---- Re-exports ------------------------------------------------------------
 
 /// The storage-port [`AuditLogEntry`] re-exported so consumers can
