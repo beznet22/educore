@@ -1575,3 +1575,125 @@ shape for Phase 12.
 - **Stub** for `TestimonialService::average_rating` is unambiguous: the body computes `total`, drops it with `let _ = total;`, and returns a constant. The function name + doc-string promise a mean; the body returns `1.0`. No comment acknowledges this as a deferred implementation; it is silently broken.
 - **`form_uploaded_public_indexing_subscriber`** is a passive subscriber (Phase 11 OQ #6). It does not mutate state; it inspects an event envelope and returns a decision enum (`FormIndexAction::Index` / `Ignore`). The defensive `unwrap_or(false)` on the `show_public` field means an absent or malformed field is treated as "not public" — the conservative default for an indexing subscriber. Real.
 - **Missing surface:** per `docs/handoff/PHASE-12-HANDOFF.md`, Phase 12 ships only Create factories for the named aggregates; Update / Delete / Dispatch / Cancel / Archive are emitted as event types but not as service factories. The 14 aggregates documented as `New*` / `Update*` placeholders in `docs/specs/cms/aggregates.md` (the `code_to_spec:undocumented_public_item` lint-gate entries) have type-only definitions in `crates/domains/cms/src/aggregate.rs` and no corresponding factory functions in `services.rs`. They are out of scope for this audit (the file's purpose is to audit the factory surface; type-only aggregates have nothing to audit).
+---
+
+## attendance — Deep Invariant Audit
+
+**Spec source:** `docs/specs/attendance/aggregates.md`
+**Code source:** `crates/domains/attendance/src/{aggregate.rs, value_objects.rs, services.rs}`
+**Generated:** Phase 1 Step 2, Engine Production Readiness ferment
+**Methodology:** Walk each spec invariant line-by-line, cross-reference against
+the aggregate constructor / field types and the service-function body, classify
+as `enforced`, `partial`, or `missing`. "Enforced" requires an in-process
+runtime check (service function or aggregate constructor); compile-time typing
+alone is not enforcement.
+
+### StudentAttendance invariants (spec aggregates.md:9-19)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| SA-I1 | Unique by `(school_id, student_id, attendance_date)` per academic year | enforced (partial-year scope) | `services.rs:122-125` checks via `uniqueness.student_day_exists` in `mark_student_attendance`; returns `DomainError::Conflict` on hit. Storage adapter enforces the unique index. **Partial:** the academic-year narrowing is not asserted (the command carries `attendance_date` but not `academic_year_id`); year scoping is deferred to the storage layer / dispatcher. |
+| SA-I2 | `attendance_date` is not in the future | missing | No future-date guard anywhere in `mark_student_attendance` (services.rs:108-152), `update_student_attendance` (services.rs:182-224), or `bulk_mark_student_attendance` (services.rs:259-). `services.rs:947` docstring promises "every row's attendance_date is not in the future" but `validate_bulk_import` (services.rs:962-1019) does not actually compare against `clock.now()`. |
+| SA-I3 | A student cannot be both `Present` and `Absent` | enforced | `AttendanceType` enum (`value_objects.rs:286-329`) is closed and 1-of-5 — `Present`/`Absent`/`Late`/`HalfDay`/`Holiday` are mutually exclusive. Aggregate constructor `StudentAttendance::fresh` takes one `AttendanceType` (`aggregate.rs:108-148`); the field type prevents two states being set. `is_absent` is a derived bool (`value_objects.rs:316-321`: only `Absent` returns `true`). |
+| SA-I4 | Updates append a new event; the latest row replaces the prior state for read | enforced | `update_student_attendance` (services.rs:182-224): field-level change tracking at rs:195-203 (only emits changes when fields actually differ); `no changes` rejected at rs:213-216; `version` bumped at rs:209; `StudentAttendanceUpdated` event minted at rs:217-224 with a fresh `EventId::from_uuid(uuid::Uuid::now_v7())`. The latest-row-wins semantics live at the storage adapter (read-side projection), not in the service. |
+| SA-I5 | If `is_absent=true`, then `attendance_type=Absent` and `notes` may record the reason | enforced | `is_absent` is derived: `mark_student_attendance` sets it as `cmd.attendance_type.is_absent()` at services.rs:138 (`aggregate.rs:135`), and `update_student_attendance` re-derives on type change at services.rs:199-200 (`attendance.is_absent = t.is_absent()`). The two fields cannot diverge at runtime — `update_staff_attendance`-style drift is prevented. `notes` is allowed (no length violation); `validate_notes` (value_objects.rs:498-507) caps at 500 chars and is invoked at services.rs:118-120. |
+| SA-I6 | The class-section recorded on the row must match the student's `StudentRecord` for the date | missing | The command carries `class_id`, `section_id`, `student_record_id` as inputs (no derivation). No lookup against `StudentRecord` for the date happens in `mark_student_attendance` or `bulk_mark_student_attendance`. Cross-aggregate validation is deferred to the dispatcher (per Phase 3 scope). |
+| SA-I7 | The `MarkedBy` user must be authorized (`Attendance.Mark` or `Attendance.Update`) | missing | `mark_student_attendance` does not call `RbacPort::require()`. `actor = cmd.tenant.actor_id` (services.rs:117) is read from the command but not checked against a capability. The Phase 1 audit's `mark_student_attendance` row flagged this; Phase 3 will wire the dispatcher to call `RbacPort::require()` per `docs/ports/authentication.md`. |
+
+### SubjectAttendance invariants (spec aggregates.md:60-67)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| SB-I1 | Unique by `(school_id, student_id, subject_id, attendance_date)` | enforced | `services.rs:500-504` — `uniqueness.subject_day_exists` in `mark_subject_attendance`; returns `DomainError::Conflict`. Storage unique index. |
+| SB-I2 | The subject must be assigned to the student's class-section for the date | missing | No subject-to-section assignment lookup. The command carries `subject_id` as an input without cross-validating against a class-section assignment table. |
+| SB-I3 | A subject marked `Absent` and the same student marked `Present` for the day is a conflict; the operator must reconcile | missing | No cross-aggregate check between `StudentAttendance` (daily) and `SubjectAttendance` (per-period). The two services are independent. No reconcile workflow exists in `services.rs`. |
+| SB-I4 | `Notify=true` indicates a notification has been requested for this absence (e.g. parent SMS) | partial | `notify: bool` field exists on `SubjectAttendance` (`aggregate.rs:321`) and is settable via `cmd.notify` (services.rs:486-547). `update_subject_attendance` tracks the change at services.rs:587-590. **Missing:** `Notify=true` does NOT auto-mint an `AbsenceNotificationRequested` event; the caller (dispatcher) is responsible for translating `notify` into the notification request. There is no automatic trigger from `mark_subject_attendance` to `request_absence_notification`. |
+
+### StaffAttendance invariants (spec aggregates.md:78-84)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| SF-I1 | Unique by `(school_id, staff_id, attendance_date)` | enforced | `services.rs:635-639` — `uniqueness.staff_day_exists` in `mark_staff_attendance`; returns `DomainError::Conflict`. Storage unique index. |
+| SF-I2 | The staff member must be active (not terminated) on the date | missing | No active-roster check against an `Staff` aggregate (HR domain, Phase 6). `StaffId` is a placeholder type re-exported in `value_objects.rs:200-217`; no lookup port exists. |
+| SF-I3 | A staff member on approved leave is `OnLeave`, not `Absent` | enforced | `AttendanceType` enum (`value_objects.rs:286-329`) has 5 variants — `OnLeave` is NOT one of them. It exists as `AttendanceStatus::OnLeave` (`value_objects.rs:215-228`) but not as an `AttendanceType` code. **Note:** the spec says the staff path uses `OnLeave` distinct from `Absent`; the code path conflates these at the `AttendanceType` level (the single-character code form). The richer `AttendanceStatus::OnLeave` exists in `value_objects.rs:215-263` but is not wired into `StaffAttendance` (which carries `AttendanceType`, not `AttendanceStatus`). The `is_absent()` predicate on `StaffAttendance` (`aggregate.rs:281-283`) checks `attendance_type.is_absent()` and only `Absent` returns `true`, so `OnLeave` (if it were an `AttendanceType`) would NOT count as absent. The construction path cannot produce `OnLeave` from the existing `AttendanceType` enum. |
+| SF-I4 | Late arrival is allowed; `Late` is a status, not an automatic deduction | enforced | `AttendanceType::Late` (`value_objects.rs:298-300`) is a first-class variant; `is_absent()` returns `false` for `Late` (value_objects.rs:316-321). `mark_staff_attendance` stores the operator-supplied `attendance_type` without override (services.rs:649-664). `AttendanceService::is_late` is the only "automatic" path and is a self-documented Phase 5 stub returning `false` (services.rs:1242-1252). |
+
+### ExamAttendance invariants (spec aggregates.md:86-99; owned by assessment)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| EX-I1 | Per-exam `(school, exam, student, exam_date)` row; one row per student per exam | partial | `ExamAttendance` aggregate (`aggregate.rs:412-477`) has all required fields. `services.rs:737-783` (`mark_exam_attendance`) constructs the aggregate and event. **Missing:** the `_uniqueness` parameter is ignored (services.rs:741, 749); no `uniqueness.exam_day_exists` call despite the port trait defining it. Future-date check missing. Cross-domain ownership: per spec aggregates.md:86-88 the aggregate is owned by the assessment domain but the function lives in `crates/domains/attendance/`. Phase 3 should either move the function or replace it with a delegation to `educore-assessment`. |
+| EX-I2 | Updates append a new event; tracks `attendance_type` / `notes` changes | enforced | `update_exam_attendance` (services.rs:798-836): field-level change tracking at rs:810-819; `no changes` rejection at rs:821-824; version bump at rs:827; `ExamAttendanceUpdated` event at rs:828-835. |
+
+### BulkAttendanceImport invariants (spec aggregates.md:120-131)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| BI-I1 | A bulk import belongs to exactly one school and one academic year | enforced | `BulkAttendanceImport` (`aggregate.rs:506-549`) carries `school_id` (embedded in `BulkAttendanceImportId`) and `academic_year_id: AcademicYearId` (explicit field). Constructor `fresh` (aggregate.rs:559-588) takes `academic_year_id` as a required input. |
+| BI-I2 | The import's `Source` is a string identifier (e.g. "biometric-1", "csv-may-2026") | enforced | `source: AttendanceSource` (`aggregate.rs:524`); `validate_source` (value_objects.rs:509-517) caps at 100 chars. The command at services.rs:855 carries `cmd.source` typed as `AttendanceSource`. |
+| BI-I3 | The import is idempotent on `(school_id, source, attendance_date)`; a duplicate is rejected | enforced (single-row case) / partial (multi-row case) | `services.rs:887-893`: when all rows share a single `attendance_date`, the uniqueness port's `import_source_date_exists` is called and returns `DomainError::Conflict` on a hit. **Missing for multi-row imports:** when rows span multiple dates, the per-source-per-day check is skipped (services.rs:884-886 comment acknowledges: "The dispatcher is responsible for the cross-row date uniqueness check"). |
+| BI-I4 | The import may be `Pending`, `Validated`, `Committed`, or `Failed` | enforced (status type) / partial (Cancelled state) | `ImportStatus` enum (value_objects.rs:391-460) has 5 variants: `Pending`, `Validated`, `Committed`, `Failed`, `Cancelled`. The spec lists 4 (no `Cancelled`); the engine adds `Cancelled` as a 5th terminal state, which is consistent with `cancel_bulk_import` (services.rs:1148-1181). The spec is silent on `Cancelled` rather than forbidding it; treat as a superset. |
+| BI-I5 | A failed import does not produce any attendance rows; the staging rows carry the failure reason | enforced | `validate_bulk_import` (services.rs:962-1019): per-row validation at rs:984-992; on any row failing, status transitions to `Failed` (rs:996-1015) and `BulkImportFailed` event is emitted with the failure reason. `commit_bulk_import` guards on `status == Validated` (services.rs:1067-1071) so a `Failed` import cannot be committed. |
+| BI-I6 | The import's `MarkedBy` is the user that initiated the upload | enforced | `marked_by: UserId` (`aggregate.rs:533`); set to `cmd.tenant.actor_id` in `import_attendance` (services.rs:865) and propagated through the aggregate. Immutable post-create (no update path mutates `marked_by`). |
+
+### BulkAttendanceImport staging-row invariants (spec aggregates.md:134-167)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| ST-I1 | `StudentAttendanceImport`: Belongs to exactly one `BulkAttendanceImport` | enforced | `bulk_import_id: BulkAttendanceImportId` field on `StudentAttendanceImport` (services.rs:917-927 sets `bulk_import_id: bulk.id`). |
+| ST-I2 | `StudentAttendanceImport`: Validates against the school's `StudentRecord` for the date | missing | `validate_bulk_import` (services.rs:962-1019) only checks well-formed input (notes length, `attendance_type` parse, future date per docstring but not enforced). No `StudentRecord` lookup. |
+| ST-I3 | `StaffAttendanceImport`: Belongs to exactly one `BulkAttendanceImport` | enforced | Same pattern as ST-I1; `StaffAttendanceImport` carries `bulk_import_id`. |
+| ST-I4 | `StaffAttendanceImport`: Validates against the active staff roster for the date | missing | No active-roster lookup. The `StaffId` is a placeholder (`value_objects.rs:200-217`); the HR domain's `Staff` aggregate is Phase 6. |
+
+### ClassAttendance projection invariants (spec aggregates.md:206-219)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| CA-I1 | Unique by `(school_id, student_id, exam_type_id, academic_id)` | enforced (type-level) / partial (runtime) | The `ClassAttendance` aggregate (`aggregate.rs:652-703`) carries all four fields. The storage layer is expected to enforce the unique index. No service function exists to populate or upsert a `ClassAttendance` row; per spec aggregates.md:218 "(None — ClassAttendance is a projection; the engine recomputes it on demand from the underlying events and rows)." `ClassAttendance::verify_invariants` is a self-documented stub (`aggregate.rs:703-714`) returning `DomainError::not_supported`. |
+| CA-I2 | `days_opened = days_present + days_absent + days_on_leave + days_half_day * 0.5 + days_late` | missing | `ClassAttendance::verify_invariants` is the only enforcement surface; it returns `Err(not_supported)` (`aggregate.rs:713`). The spec invariant is unimplemented. |
+
+### AttendanceBulk staging-row invariants (spec aggregates.md:235-248)
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| AB-I1 | Belongs to exactly one `BulkAttendanceImport` | enforced | `bulk_import_id: BulkAttendanceImportId` (`aggregate.rs:740`); constructor takes it (aggregate.rs:759-782). |
+| AB-I2 | On commit, the engine promotes each row into a `StudentAttendance` | missing | `AttendanceBulk::promote_to_student_attendance` (`aggregate.rs:792-803`) is a self-documented stub returning `DomainError::not_supported`. `commit_bulk_import` (services.rs:1043-1146) does NOT call this method; instead it synthesizes a new `StudentAttendance` per validated row using `event_id_to_uuid(event_id)` as the synthetic id for `student_record_id`, `class_id`, and `section_id` (services.rs:1098-1113). Real-roster resolution is deferred to the dispatcher (in-file comment at services.rs:1098-1101). |
+
+### Cross-cutting absence notification trigger
+
+| Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|
+| AN-I1 | `StudentAbsentForDay` is emitted on the first transition into `Absent` for the day (derived) | partial | `bulk_mark_student_attendance` mints `StudentAbsentForDay` events directly per absent student (services.rs:319, 370, 456); these are NOT deduplicated within the function (the dedup helper `dedup_within_day` exists at services.rs:1293-1304 but is NOT called by `bulk_mark_student_attendance`). `AttendanceService::emit_absence_event` (services.rs:1259-1286) mints a `StudentAbsentForDay` from a row iff the row is absent AND carries `last_event_id`; it returns `None` for missing `last_event_id` (no silent fallback). **Missing for single-mark path:** `mark_student_attendance` does NOT emit `StudentAbsentForDay` at all — it returns only `StudentAttendanceMarked`. The dispatcher must invoke `emit_absence_event` after persisting the aggregate (since persistence is what sets `last_event_id`). |
+| AN-I2 | `AbsenceNotificationRequested` resolves the real `(student_id, attendance_date)` from `student_attendance_id` | missing | `request_absence_notification` (services.rs:1190-1224) is a self-documented Phase 5 stub: `placeholder_date` is `1970-01-01` (rs:1210) and `placeholder_uuid` is a fresh `Uuid::now_v7()` (rs:1203). Real values are deferred to the dispatcher. The function name and event promise a resolved notification; the body produces placeholders. |
+
+### Phase-5 stubs disclosed in the source (synthesis)
+
+| Surface | Spec Requirement | Status | Evidence |
+|---|---|---|---|
+| `bulk_mark_student_attendance` (services.rs:259-) | Per-student uniqueness on `(school, student, date)`; roster-aware default-status emission | stub | The `default_type` aggregate carries a placeholder `StudentId` derived from `event_id_to_uuid(event_id)` (services.rs:295-302). `uniqueness` parameter unused (services.rs:262). |
+| `commit_bulk_import` (services.rs:1043-1146) | `Validated → Committed` with real `student_record_id`, `class_id`, `section_id` resolved from enrollment | stub | Self-documented "Phase 5 stub" comments at services.rs:1098-1101 and 1108-1113. The promoted aggregate uses `event_id_to_uuid(event_id)` for all three fields. |
+| `request_absence_notification` (services.rs:1190-1224) | Resolved `(student_id, attendance_date)` for the row | stub | Self-documented Phase 5 stub at rs:1203-1208. Epoch placeholder date. |
+| `AttendanceService::is_late` (services.rs:1242-1252) | Late-arrival detection considering `late_threshold_minutes` + day-of-week | stub | Self-documented Phase 5 stub. Body returns `false` unconditionally. |
+| `ClassAttendance::verify_invariants` (aggregate.rs:703-714) | Enforce `days_opened = days_present + ...` | stub | Returns `DomainError::not_supported`. |
+| `AttendanceBulk::promote_to_student_attendance` (aggregate.rs:792-803) | Promote staging row into `StudentAttendance` | stub | Returns `DomainError::not_supported`. |
+
+### Summary
+
+- **Invariants checked:** 27 (7 StudentAttendance + 4 SubjectAttendance + 4 StaffAttendance + 2 ExamAttendance + 6 BulkAttendanceImport + 4 staging + 2 ClassAttendance + 1 AttendanceBulk + 2 cross-cutting notification)
+- **Enforced:** 13 (SA-I1 partial-year, SA-I3, SA-I4, SA-I5, SB-I1, SF-I1, SF-I3, SF-I4, EX-I2, BI-I1, BI-I2, BI-I3 partial, BI-I5, BI-I6, ST-I1, ST-I3, CA-I1 type-level, AB-I1, AN-I1 partial, plus update-paths — **15 enforced**, **3 partial** in that set)
+- **Partial:** 3 (BI-I3 multi-row case; EX-I1 uniqueness ignored; AN-I1 single-mark path missing)
+- **Missing:** 9 (SA-I2 future-date, SA-I6 class-section match, SA-I7 RBAC, SB-I2 subject assignment, SB-I3 day-vs-period conflict, SB-I4 notify auto-trigger, SF-I2 active roster, ST-I2 enrollment validation, ST-I4 staff roster validation, CA-I2 invariant check, AN-I2 placeholder resolution, AB-I2 promotion)
+- **Self-documented Phase 5 stubs:** 6 (`bulk_mark_student_attendance`, `commit_bulk_import`, `request_absence_notification`, `AttendanceService::is_late`, `ClassAttendance::verify_invariants`, `AttendanceBulk::promote_to_student_attendance`)
+
+### Classification rationale
+
+- **Enforced** requires an in-process runtime check. The storage-layer unique index counts because it rejects the write; the aggregate constructor counts because it accepts/rejects at construction time; the service function counts when it returns a `DomainError` variant.
+- **Partial** for SA-I1 (academic-year scope): the command does not carry `academic_year_id`; the year is implicit in the storage-row scope. The uniqueness check itself is correct; the year narrowing is delegated.
+- **Partial** for BI-I3: the single-row case (all rows share one date) is checked; the multi-row case is explicitly deferred to the dispatcher per the in-file comment.
+- **Partial** for EX-I1: the aggregate is constructed correctly but the `_uniqueness` parameter is unused; the function ignores a collision rather than returning `Conflict`.
+- **Partial** for AN-I1: the bulk path mints `StudentAbsentForDay` events directly but does not dedup; the single-mark path does not mint them at all. The helper `dedup_within_day` exists but is not called by the bulk path.
+- **Missing** for SA-I7 (RBAC): the engine's RBAC port (`RbacPort::require()` per `docs/ports/authentication.md`) is the spec-defined enforcement method. The service function does not call it. Phase 3 introduces a `CommandDispatcher` that wires this; the service functions are expected to be called from the dispatcher. The current absence is a deliberate pre-Phase-3 deferred hookup.
+- **Missing** for SA-I6, SB-I2, SB-I3, SF-I2, ST-I2, ST-I4: each is a cross-aggregate lookup against an aggregate that lives in another domain (academic / assessment / HR). The engine does not yet ship those cross-aggregate validation ports; the implementation is deferred.
+- **Missing** for AN-I2 (placeholder resolution): self-documented as a Phase 5 stub. The dispatcher is expected to resolve the real `(student_id, attendance_date)` from the `student_attendance_id` before publishing the notification.
+- **Missing** for CA-I2 (`verify_invariants`): self-documented stub returning `not_supported`. The spec invariant is unimplemented.
+- **Missing** for AB-I2 (`promote_to_student_attendance`): self-documented stub returning `not_supported`. `commit_bulk_import` works around this with a synthetic-id allocation.
