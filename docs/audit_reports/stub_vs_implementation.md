@@ -1402,3 +1402,140 @@ populated event with a real `last_event_id` chain.
 - **`BookIssueEligibility` / `BookRenewalEligibility`** are the pure policy services the dispatcher calls before persisting an issue / renewal. Both implement every check their docstring promises (4 checks for issue, 2 for renewal). They are the partial-fill for `create_book_issue` and `renew_book`: the spec invariants are enforced, just by a policy helper invoked from the dispatcher rather than by the command factory itself.
 - **`ReportsService`** ships 4 async report queries; 3 are real (`borrow_summary`, `overdue_list`, `inventory_status`) and 1 is partial (`fine_collection`) due to the engine's missing "paid" flag on `Fine`. The report structs round-trip via `serde_json` (tests at `services.rs:1881-1948`); `DateRange` validates inclusive bounds at `services.rs:963-973`; the service is object-safe (test at `services.rs:2051-2058`).
 - **Stub count discrepancy with the earlier audit (15 vs 16):** the earlier audit counted 16 stubs; this audit counts 15 (`delete_book_category`, `update_book`, `delete_book`, `adjust_book_quantity`, `update_library_member`, `deactivate_library_member`, `reactivate_library_member`, `delete_library_member`, `renew_book`, `mark_book_lost`, `record_book_return`, `waive_book_issue_fine`, `search_books`, `list_overdue_issues`, `list_member_issues`). The earlier count likely double-counted `update_book_category`, which is documented under the same "handler skeleton" heading at `services.rs:643-657` but is in fact fully implemented (id / tenant / no-op guards + mutation + event at `services.rs:672-707`).
+
+---
+
+## cms
+
+**Crate:** `crates/domains/cms/src/services.rs`
+**Spec reference:** `docs/specs/cms/aggregates.md`
+**Function count:** 33 (`pub fn` + `pub async fn` only; excludes the file-private `snapshot` / `require_capability` helpers and the file-private `PageService::_use_current` / `ContentService::_use_current` no-ops)
+**Stub count:** 1 (`TestimonialService::average_rating`)
+
+Phase 12 ships the prompt-named subset (PageService, NewsService,
+ContentService, TestimonialService, HomeSliderService,
+ContentShareListService) as real or partial; the per-CRUD surface is
+limited to Create factories for most aggregates (Update / Delete /
+Dispatch / Cancel are emitted as event types but not as service
+factories — the remaining 14 aggregates documented in the spec carry
+type-only definitions and no factory functions in `services.rs`).
+Per `docs/handoff/PHASE-12-HANDOFF.md`, this is the spec-faithful
+shape for Phase 12.
+
+### PageService (helper struct)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `PageService::validate_slug` (services.rs:87) | Page invariant 2: `slug` unique within `(school_id, slug)` when set | real | services.rs:87-94 — `!existing.iter().any(|s| s == slug)` (rs:93); pure uniqueness check against the caller-supplied existing-slug list. Caller (the storage adapter or dispatcher) supplies the list scoped to the school. |
+| `PageService::is_home_page` (services.rs:96) | Page invariant 4: at most one `Page` per school may have `home_page = true` (predicate) | real | services.rs:96-99 — pass-through to `page.is_home_page()` (rs:98); pure read. |
+| `PageService::is_published` (services.rs:102) | Page invariant 3: status is `draft` or `published` (predicate) | real | services.rs:102-105 — pass-through to `page.is_published()` (rs:104); pure read. |
+| `PageService::next_status` (services.rs:108) | Page invariant 3: status transition `draft ↔ published` | partial | services.rs:108-119 — body matches the action to a target status and returns it (rs:113-118); `_current` parameter is explicitly ignored with a no-op helper (rs:122). **Missing:** precondition enforcement — the function does not reject an invalid transition (e.g. `Publish` from `Published`); the `Page` aggregate constructor is where any state-machine guard lives. |
+
+### Page factory functions
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_page_service` (services.rs:128) | Page invariants 1 (non-empty title), 2 (slug uniqueness), 3 (status), 6 (tenant anchor) | partial | services.rs:140 — RBAC via `Capability::CmsPageCreate`; services.rs:141-145 — `PageId` minting + `Page::new` construction (invariant 1 enforced at `Page::new`); services.rs:146-149 — `repo.insert`; services.rs:150-163 — audit row + `PageCreated` event. **Missing:** invariant 2 (slug uniqueness within school) is not enforced at the factory — there is no `slug_exists` parameter or storage query; invariant 4 (one home page per school) is not enforced — multiple `home_page = true` rows could be persisted before the dispatcher / storage catches it. |
+| `update_page_service` (services.rs:172) | Page invariants 2 (slug uniqueness), 4 (one home page), 5 (default page not deletable) | partial | services.rs:193 — RBAC; services.rs:194-202 — load page (not-found guard at rs:199-201); services.rs:205-216 — change tracking (`title`, `description`, `slug`); services.rs:218 — `page.update`; services.rs:219-242 — audit + `PageUpdated` event. **Missing:** invariant 2 (slug uniqueness check on rename); invariant 4 (cannot set `home_page = true` if another home page exists); only 3 of the page's fields are tracked in the `changes` vector (other mutable fields — `home_page`, `is_default`, `status` — are silently ignored). |
+| `publish_page_service` (services.rs:241) | Page invariant 3 (`draft → published`) | real | services.rs:260 — RBAC; services.rs:261-269 — load page; services.rs:270 — `page.publish(actor, ts, event_id)` (state transition enforced at `Page::publish`); services.rs:271-296 — `repo.update` + audit (`AuditAction::Other("publish")`) + `PagePublished` event. Full chain. |
+| `archive_page_service` (services.rs:294) | Page invariant 3 (`published → draft`) | real | services.rs:313 — RBAC; services.rs:314-322 — load page; services.rs:323 — `page.archive`; services.rs:324-349 — `repo.update` + audit + `PageArchived` event. Full chain. |
+| `delete_page_service` (services.rs:347) | Page invariant 5: default page not deletable | partial | services.rs:366 — RBAC; services.rs:367-375 — load page; services.rs:376 — `page.soft_delete`; services.rs:377-400 — `repo.update` + audit (`AuditAction::Delete`) + `PageDeleted` event. **Missing:** invariant 5 — the service does not check `page.is_default` before deleting; the comment on `Page::soft_delete` is where any default-page guard lives (the helper itself does not surface one). |
+
+### NewsService (helper struct)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `NewsService::is_visible` (services.rs:406) | News invariant 3 (`active_status` flag), invariant 4 (`is_global` flag) | real | services.rs:406-410 — pass-through to `news.is_visible(today)` (rs:409); the aggregate's predicate considers `active_status`, publish date, and `is_global`. |
+| `NewsService::can_comment` (services.rs:412) | News invariant 6 (`is_comment = 1` enables comments) | real | services.rs:412-415 — `news.is_comment.is_true()` (rs:414); pure read. |
+| `NewsService::is_approved` (services.rs:418) | NewsComment invariant 3: status `0` (pending) or `1` (approved) | real | services.rs:418-421 — pass-through to `comment.is_approved()` (rs:420); pure read. |
+| `NewsService::visible_comments` (services.rs:424) | NewsComment invariant 4 (moderation is a status update; visible iff approved) | real | services.rs:424-432 — filters comments to `NewsCommentStatus::Approved` (rs:427-431); matches the spec's "visible" surface. |
+| `NewsService::increment_view` (services.rs:435) | News invariant 8 (non-decreasing counter) | real | services.rs:435-439 — delegates to `news.increment_view()` (rs:437) which appends a `view_count` delta event; returns the new count (rs:438). Pure mutation through the aggregate. |
+
+### News factory functions
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_news_service` (services.rs:443) | News invariants 1 (non-empty title), 2 (school + category anchor), 3 (active_status flag), 4 (is_global flag), 7 (order field) | partial | services.rs:458 — RBAC; services.rs:459-463 — id minting + `News::new` (invariant 1 enforced at constructor); services.rs:464-481 — `repo.insert` + audit + `NewsCreated` event. **Missing:** invariant 5 (`auto_approve` flag) and invariant 6 (`is_comment` flag) are not validated at the factory — the spec calls them "may have" flags, so no enforcement is required, but there is no policy guard for invalid combinations; the `News` aggregate constructor is the only enforcement point. |
+
+### TestimonialService (helper struct)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `TestimonialService::validate_rating` (services.rs:491) | Testimonial invariant 2 (`star_rating` in `1..=5`) | real | services.rs:491-501 — rejects ratings `< 1` or `> 5` with `CmsError::Validation` (rs:494-499). Invariant 2 fully enforced. |
+| `TestimonialService::is_visible` (services.rs:504) | Testimonial (visibility: active and not soft-deleted) | real | services.rs:504-507 — `testimonial.active_status.is_active()` (rs:506); pure read. |
+| `TestimonialService::average_rating` (services.rs:511) | Doc-string promises: weighted mean rating across testimonials | stub | services.rs:511-528 — computes the `total` (rs:514-517) and `count` (rs:518), then **explicitly discards `total`** with `let _ = total;` (rs:521), and returns `1.0` for any non-empty list (rs:526). The function name and doc-string promise a mean; the body returns a constant. **Stub:** the actual `total / count` arithmetic is missing. |
+
+### Testimonial factory functions
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_testimonial_service` (services.rs:533) | Testimonial invariants 1 (non-empty name / designation / institution), 2 (`star_rating` in `1..=5`), 3 (`FileReference`), 4 (tenant anchor) | real | services.rs:552 — RBAC; services.rs:553-557 — id minting; services.rs:558 — `TestimonialService::validate_rating` enforces invariant 2; services.rs:559 — `Testimonial::new` enforces invariant 1 (the non-empty field checks live at the aggregate constructor); services.rs:560-578 — `repo.insert` + audit + `TestimonialCreated` event. Invariant 3 (`FileReference`) is field-typed at the aggregate. |
+
+### HomeSliderService (helper struct)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `HomeSliderService::ordered` (services.rs:579) | Display ordering by `id` (insertion order) | real | services.rs:579-584 — sorts by `id.as_uuid()` (rs:583); pure transform. |
+| `HomeSliderService::active` (services.rs:587) | Visibility predicate (`active_status = true`) | real | services.rs:587-592 — filters by `active_status.is_active()` (rs:590-591); pure read. |
+
+### HomeSlider factory functions
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `create_home_slider_service` (services.rs:597) | HomeSlider invariants 1 (`FileReference`), 2 (URL), 3 (tenant anchor) | real | services.rs:614 — RBAC; services.rs:615-619 — id minting + `HomeSlider::new`; services.rs:620-639 — `repo.insert` + audit + `HomeSliderCreated` event. Invariants 1 + 2 are field-typed at the aggregate (the `image` field is a `FileReference`, the `link` field validates as a `Url` at construction). |
+
+### ContentService (helper struct)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `ContentService::available_to_role` (services.rs:647) | Content (visibility: role-scoped) | real | services.rs:647-651 — pass-through to `content.available_to_role(role)` (rs:650); pure read. |
+| `ContentService::available_to_class` (services.rs:654) | Content (visibility: class-section scoped) | real | services.rs:654-661 — pass-through to `content.available_to_class(class, section)` (rs:660); pure read. |
+| `ContentService::is_within_share_window` (services.rs:665) | ContentShareList invariant 3 (`valid_upto >= share_date` predicate) | real | services.rs:665-669 — pass-through to `list.is_within_share_window(date)` (rs:668); the predicate is implemented at the aggregate. |
+| `ContentService::next_status` (services.rs:671) | ContentShareList invariant 5 (`Draft → Dispatched` / `Draft → Cancelled`) | partial | services.rs:671-684 — body matches `ContentStatusAction::Dispatch` / `Cancel` to `Dispatched` / `Cancelled` and returns it (rs:677-682); `_current` parameter is ignored (no-op helper at rs:687). **Missing:** precondition enforcement — the function does not reject dispatching a `Dispatched` / `Cancelled` list; the `ContentShareList` aggregate constructor is the only enforcement point. Same shape as `PageService::next_status`. |
+
+### Content factory functions
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `content_service` (services.rs:697) | Content invariants 1 (anchored to `ContentType` + school), 2 (FileReference + youtube_link), 3 (`uploaded_by`), 4 (academic year) | partial | services.rs:711 — RBAC; services.rs:712-716 — id minting + `Content::new` (invariants 1, 2, 3, 4 enforced at the aggregate constructor — `Content` is field-typed with `ContentTypeId`, `SchoolId`, `UserId`, `AcademicYearId`); services.rs:717-735 — `repo.insert` + audit + `ContentCreated` event. **Partial:** the factory itself does not validate any cross-aggregate invariant (e.g. that `ContentTypeId` exists); all enforcement is at the constructor or storage layer. |
+
+### ContentShareListService (helper struct)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `ContentShareListService::resolve_audience` (services.rs:745) | ContentShareList invariant 2 (`send_type ∈ {G, C, I, P}`); audience is frozen at dispatch | real | services.rs:745-759 — clones `gr_role_ids` / `ind_user_ids` and pairs `class_id` with `section_ids` (rs:747-756); builds `ResolvedAudience` with the three branches matching `send_type` (rs:757-761). Pure transform. |
+| `ContentShareListService::freeze_audience` (services.rs:762) | ContentShareList invariant: audience frozen at dispatch | real | services.rs:762-765 — returns `list.clone()` (rs:764); pure clone. (The docstring promises a "frozen audience snapshot" — the implementation is a deep clone via the `Clone` derive, which is the same shape as the input. Real but minimal.) |
+| `ContentShareListService::is_valid` (services.rs:769) | ContentShareList invariant 3 (`valid_upto >= share_date`) | real | services.rs:769-773 — pass-through to `list.is_within_share_window(date)` (rs:772); the predicate is implemented at the aggregate. |
+
+### ContentShareList factory functions
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `content_share_list_service` (services.rs:787) | ContentShareList invariants 1 (non-empty title), 2 (send_type), 3 (valid_upto >= share_date), 4 (school + academic year anchor), 5 (Draft / Dispatched / Cancelled) | partial | services.rs:801 — RBAC; services.rs:802-806 — id minting + `ContentShareList::new` (invariants 1, 2, 3, 5 enforced at constructor; invariant 4 enforced at id construction since the id carries `SchoolId`); services.rs:807-824 — `repo.insert` + audit + `ContentShareListCreated` event. **Partial:** the factory itself does not cross-validate invariants against the storage (e.g. does not verify `ContentShareListId`'s academic year is the school's current year); all enforcement is at the constructor or storage layer. |
+
+### HomePageSetting factory functions
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `configure_home_page_service` (services.rs:839) | HomePageSetting invariants 1 (school anchor), 2 (at most one active per school) | partial | services.rs:858 — RBAC; services.rs:863-868 — `repo.find_active(school_id)` (the "at most one active" predicate is at the storage layer per invariant 2). **Create path** (services.rs:889-915) is real: id mint + `HomePageSetting::new` + `repo.insert` + audit + `HomePageSettingConfigured` event. **Update path** (services.rs:869-887) is partial: when a setting exists, the function returns it as-is and emits a `HomePageSettingUpdated` event with the hard-coded changes vector `vec!["title".to_owned()]` (rs:880). The in-file comment at services.rs:864-867 acknowledges this — "the actual update logic is out of scope per the prompt's spec-faithful interpretation". The ConfigureHomePage command carries the new fields, but they are never applied to the existing aggregate. |
+
+### Phase-11 OQ #6 bus subscriber (events-only)
+
+| Function | Spec Invariant | Status | Evidence |
+| --- | --- | --- | --- |
+| `form_uploaded_public_indexing_subscriber` (services.rs:929) | Phase 11 OQ #6: CMS subscribes to `documents.form_download.uploaded`, inspects `show_public`, returns `Index` / `Ignore` | real | services.rs:929-947 — defensive parse of `envelope.payload["show_public"]` (rs:937-940, `unwrap_or(false)`); returns `FormIndexAction::Index` when `show_public = true` (rs:941-944) or `FormIndexAction::Ignore` otherwise (rs:944-946). Pure decision function; no `educore-documents` dep (services.rs:925-928). Mirrors Phase 10 OQ #5's `AbsentNotificationService` pattern. |
+
+### Summary
+
+- **Total pub fn:** 33
+- **Real:** 23 — every PageService predicate, every NewsService predicate (including `visible_comments` / `increment_view`), `publish_page_service`, `archive_page_service`, `TestimonialService::validate_rating`, `TestimonialService::is_visible`, `create_testimonial_service`, `HomeSliderService::ordered`, `HomeSliderService::active`, `create_home_slider_service`, every `ContentService` predicate, every `ContentShareListService` predicate, `form_uploaded_public_indexing_subscriber`. These are the functions whose bodies match their doc-strings end-to-end.
+- **Partial:** 9 — `PageService::next_status` (state-machine precondition not enforced); `create_page_service` (slug uniqueness + one-home-page invariants not enforced at factory); `update_page_service` (slug uniqueness + home-page invariant + only 3 of N mutable fields tracked); `delete_page_service` (default-page guard not enforced); `create_news_service` (cross-aggregate invariants deferred to aggregate constructor); `ContentService::next_status` (same shape as `PageService::next_status`); `content_service` (cross-aggregate validation deferred); `content_share_list_service` (cross-aggregate validation deferred); `configure_home_page_service` (the update path returns the existing aggregate unchanged and emits a hard-coded `vec!["title"]` changes vector per the in-file comment).
+- **Stub:** 1 — `TestimonialService::average_rating` (computes `total`, explicitly discards it with `let _ = total;`, and returns `1.0` for any non-empty list; the doc-string promises a weighted mean that the body never computes).
+
+### Classification rationale
+
+- **Real vs partial** for the Create factories hinges on whether the spec invariant requires a cross-aggregate lookup (storage) or a uniqueness check that the factory itself does not perform. CMS relies on the aggregate constructor (`Page::new`, `News::new`, `Testimonial::new`, `HomeSlider::new`, `Content::new`, `ContentShareList::new`, `HomePageSetting::new`) to enforce field-level invariants (non-empty strings, valid enums, `valid_upto >= share_date`); the factory wires the constructor to repo + audit + bus. When the invariant requires a storage query (slug uniqueness, one-home-page per school, default-page guard), the factory is partial.
+- **Real vs partial** for the state-machine helpers (`PageService::next_status`, `ContentService::next_status`) hinges on whether the body enforces preconditions. Both bodies match an action to a target status but ignore the `_current` parameter; the in-source no-op helpers (`PageService::_use_current`, `ContentService::_use_current`) acknowledge this. The actual precondition enforcement is delegated to the aggregate constructor. Per the audit convention used for finance `DoubleEntryService` and attendance `AttendanceService::is_late` (same shape: precondition deferred to aggregate / dispatcher), these are classified partial.
+- **Stub** for `TestimonialService::average_rating` is unambiguous: the body computes `total`, drops it with `let _ = total;`, and returns a constant. The function name + doc-string promise a mean; the body returns `1.0`. No comment acknowledges this as a deferred implementation; it is silently broken.
+- **`form_uploaded_public_indexing_subscriber`** is a passive subscriber (Phase 11 OQ #6). It does not mutate state; it inspects an event envelope and returns a decision enum (`FormIndexAction::Index` / `Ignore`). The defensive `unwrap_or(false)` on the `show_public` field means an absent or malformed field is treated as "not public" — the conservative default for an indexing subscriber. Real.
+- **Missing surface:** per `docs/handoff/PHASE-12-HANDOFF.md`, Phase 12 ships only Create factories for the named aggregates; Update / Delete / Dispatch / Cancel / Archive are emitted as event types but not as service factories. The 14 aggregates documented as `New*` / `Update*` placeholders in `docs/specs/cms/aggregates.md` (the `code_to_spec:undocumented_public_item` lint-gate entries) have type-only definitions in `crates/domains/cms/src/aggregate.rs` and no corresponding factory functions in `services.rs`. They are out of scope for this audit (the file's purpose is to audit the factory surface; type-only aggregates have nothing to audit).
