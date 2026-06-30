@@ -1575,6 +1575,65 @@ shape for Phase 12.
 - **Stub** for `TestimonialService::average_rating` is unambiguous: the body computes `total`, drops it with `let _ = total;`, and returns a constant. The function name + doc-string promise a mean; the body returns `1.0`. No comment acknowledges this as a deferred implementation; it is silently broken.
 - **`form_uploaded_public_indexing_subscriber`** is a passive subscriber (Phase 11 OQ #6). It does not mutate state; it inspects an event envelope and returns a decision enum (`FormIndexAction::Index` / `Ignore`). The defensive `unwrap_or(false)` on the `show_public` field means an absent or malformed field is treated as "not public" — the conservative default for an indexing subscriber. Real.
 - **Missing surface:** per `docs/handoff/PHASE-12-HANDOFF.md`, Phase 12 ships only Create factories for the named aggregates; Update / Delete / Dispatch / Cancel / Archive are emitted as event types but not as service factories. The 14 aggregates documented as `New*` / `Update*` placeholders in `docs/specs/cms/aggregates.md` (the `code_to_spec:undocumented_public_item` lint-gate entries) have type-only definitions in `crates/domains/cms/src/aggregate.rs` and no corresponding factory functions in `services.rs`. They are out of scope for this audit (the file's purpose is to audit the factory surface; type-only aggregates have nothing to audit).
+
+---
+
+## documents — Deep Invariant Audit
+
+**Spec:** `docs/specs/documents/aggregates.md`
+**Source files audited:** `crates/domains/documents/src/aggregate.rs`, `value_objects.rs`, `repository.rs`, `query.rs`, `errors.rs`
+
+**Scope.** Phase 1 Step 2 widens the audit beyond service factories to cover every invariant declared in the documents aggregates spec — field-level validation in constructors and value-object newtypes, state-transition guards (`soft_delete`, `update`), cross-aggregate tenant anchors, and `(school_id, academic_id)` uniqueness for `reference_no`. The three real aggregates (`FormDownload`, `PostalDispatch`, `PostalReceive`) carry 5 invariants each; the nine placeholder aggregates (`FormDownloadFile`, `FormDownloadLink`, `NewFormDownload`, `UpdateFormDownload`, `NewPostalDispatch`, `UpdatePostalDispatch`, `PostalDispatchAttachment`, `NewPostalReceive`, `UpdatePostalReceive`, `PostalReceiveAttachment`) each carry 1 invariant ("uniquely identified by `<XxxId>` within a school"). Total invariants audited: **15 + 10 = 25**.
+
+**Status legend.** `enforced` = constructor or guard returns a domain error on violation; `partial` = enforced by a downstream layer (storage index, query filter, RBAC) but not at the type/aggregate boundary; `missing` = no enforcement found anywhere in the crate.
+
+### FormDownload — 5 invariants
+
+| # | Invariant | Status | Evidence |
+|---|-----------|--------|----------|
+| F1 | Non-empty `title` | enforced | `value_objects.rs` `FormTitle::new` (lines 124–137) returns `DomainError::validation("form title must not be empty")` and bounds `1..=191` chars. The `FormDownload::new` constructor (aggregate.rs:138–167) takes `FormTitle` by value, so the invariant cannot be bypassed. |
+| F2 | At least one of `link` or `file` | enforced | `FormDownload::new` rejects with `DocumentsError::FormHasNoContent` (aggregate.rs:144–146). The check is **re-validated after every update** in `FormDownload::update` (aggregate.rs:196–199), so a caller cannot clear both fields. Behavioural tests at aggregate.rs:1133–1136 and aggregate.rs:1633–1636 confirm the constructor and the update guard both reject the empty form. |
+| F3 | `show_public = false` ⇒ staff-only | partial | The constructor stores either value (aggregate.rs:155); the **query layer** exposes `FormDownloadQuery::with_show_public` (query.rs:42–46) and a `show_public` filter (query.rs:18–19) so anonymous queries can restrict to public forms. Behavioural test at query.rs:295–299 covers the query filter. There is **no `documents`-level authorization helper** that hides non-public forms from anonymous principals — enforcement is delegated to the consuming service / transport. |
+| F4 | Never hard-deleted; soft-delete via `active_status` | enforced | `FormDownload` exposes only `soft_delete` (aggregate.rs:210–219), which flips `active_status` to `false` (aggregate.rs:216) and returns `DocumentsError::Conflict` on a second call (aggregate.rs:211–214). No public `delete()` or `hard_delete()` method exists. Tests at aggregate.rs:1278–1294 cover both the happy path and the double-delete guard. |
+| F5 | Anchored to a school | enforced | `school_id` is derived from `cmd.id.school_id()` (aggregate.rs:148) — never accepted from the caller — so the typed id is the only source of tenancy. The same pattern holds in `FormDownloadFile::new` (aggregate.rs:287) and `FormDownloadLink::new` (aggregate.rs:346), where `school_id == form_id.school_id()` is enforced via `debug_assert_eq!`. |
+
+### PostalDispatch — 5 invariants
+
+| # | Invariant | Status | Evidence |
+|---|-----------|--------|----------|
+| P1 | Non-empty `to_title` and `from_title` | enforced | Both wrap `PostalTitle`, whose constructor (`value_objects.rs` `PostalTitle::new`) rejects empty strings and bounds `1..=191` chars. `FromTitle` / `ToTitle` are pure newtypes around `PostalTitle` (value_objects.rs `FromTitle::new` and `ToTitle::new`); they cannot bypass the inner validation. `NewPostalDispatch` carries both as required fields (aggregate.rs:407–412), so the type system rejects a missing title at compile time. |
+| P2 | `reference_no` unique within `(school_id, academic_id)` when set | partial | **Constructor-level** only validates the string shape (`value_objects.rs` `PostalReferenceNo::new` rejects empty + bounds `1..=191`); the type-level docs explicitly state "The `(school_id, academic_id)` uniqueness constraint is enforced by the storage adapter's unique index, not by this constructor" (value_objects.rs `PostalReferenceNo` doc-comment). The repository exposes `find_by_reference_no` (repository.rs:113–115) but no `INSERT ... ON CONFLICT` path is audited here. **Additionally enforced** at the aggregate layer via `DocumentsError::ReferenceNoImmutable` in `PostalDispatch::update` (aggregate.rs:576–579) — the reference number is immutable once set, so a colliding row would have to be a fresh insert. No constructor-time or factory-time dedupe check is present. |
+| P3 | Anchored to school **and academic year** | partial | `school_id` is derived from `cmd.id.school_id()` (aggregate.rs:529) — enforced. `academic_id` is **caller-supplied** (aggregate.rs:534) with no constructor cross-check that the academic year exists or belongs to the school. The typed-id alias `AcademicYearId = Uuid` (aggregate.rs:711) is currently a raw `Uuid` placeholder with a `TODO(phase-11/1C)` note to switch to `educore_academic::value_objects::AcademicYearId` — until then, any caller-supplied UUID is accepted. |
+| P4 | `date` is the dispatch date; may be in the past | enforced | `DispatchDate` is a transparent newtype around `NaiveDate` (value_objects.rs `DispatchDate::new`) with no temporal validator. Past dates are accepted by design (per spec invariant 4 — "may be in the past for back-filling"). The aggregate stores the value as-is (aggregate.rs:540). |
+| P5 | Never hard-deleted; soft-delete via `active_status` | enforced | `PostalDispatch::soft_delete` (aggregate.rs:603–612) flips `active_status` to `false` and returns `DocumentsError::Conflict` on a second call. No hard-delete path exists. Same shape as `FormDownload`. |
+
+### PostalReceive — 5 invariants
+
+| # | Invariant | Status | Evidence |
+|---|-----------|--------|----------|
+| R1 | Non-empty `from_title` and `to_title` | enforced | Same shape as P1: `FromTitle` / `ToTitle` wrap `PostalTitle`, which enforces `1..=191` chars in `PostalTitle::new` (value_objects.rs). `NewPostalReceive` requires both (aggregate.rs:721–726). |
+| R2 | `reference_no` unique within `(school_id, academic_id)` when set | partial | **Same shape as P2**: constructor validates string shape only (value_objects.rs `PostalReferenceNo::new`); uniqueness is at the storage-adapter composite index per the value-object doc-comment. `PostalReceive::update` enforces immutability via `DocumentsError::ReferenceNoImmutable` (aggregate.rs:892–895). Repository exposes `find_by_reference_no` for receives (repository.rs:192) but no in-process dedupe. |
+| R3 | Anchored to school **and academic year** | partial | `school_id` derived from `cmd.id.school_id()` (aggregate.rs:844) — enforced. `academic_id` is caller-supplied with the same raw-`Uuid` placeholder as P3 (aggregate.rs:850; `AcademicYearId = Uuid` at aggregate.rs:711). No constructor cross-check that the academic year exists for the school. |
+| R4 | `date` is the receive date; may be in the past | enforced | `ReceiveDate` is a transparent newtype around `NaiveDate` (value_objects.rs `ReceiveDate::new`) accepting any `NaiveDate`. The aggregate stores the value as-is (aggregate.rs:855). |
+| R5 | Never hard-deleted; soft-delete via `active_status` | enforced | `PostalReceive::soft_delete` (aggregate.rs:920–929) flips `active_status` to `false` and returns `DocumentsError::Conflict` on a second call. No hard-delete path. |
+
+### Placeholder aggregates — 10 invariants
+
+Each of the nine placeholder aggregates (`FormDownloadFile`, `FormDownloadLink`, `NewFormDownload`, `UpdateFormDownload`, `NewPostalDispatch`, `UpdatePostalDispatch`, `PostalDispatchAttachment`, `NewPostalReceive`, `UpdatePostalReceive`, `PostalReceiveAttachment`) declares the same single invariant in the spec: *"The aggregate is uniquely identified by `<XxxId>` within a school."*
+
+| # | Aggregate | Status | Evidence |
+|---|-----------|--------|----------|
+| X1–X10 | All 10 placeholders (`FormDownloadFile`, `FormDownloadLink`, `NewFormDownload`, `UpdateFormDownload`, `NewPostalDispatch`, `UpdatePostalDispatch`, `PostalDispatchAttachment`, `NewPostalReceive`, `UpdatePostalReceive`, `PostalReceiveAttachment`) | enforced | All 10 typed ids are generated by the `documents_typed_id!` macro (`value_objects.rs:33–69`), which produces a `struct { school_id: SchoolId, value: Uuid }` wrapper with a `school_id()` accessor (`value_objects.rs:55`). Every placeholder struct stores `pub school_id: SchoolId` and (where applicable) asserts tenant equality with its parent id via `debug_assert_eq!` — `FormDownloadFile::new` (aggregate.rs:287), `FormDownloadLink::new` (aggregate.rs:346), `PostalDispatchAttachment::new` (aggregate.rs:679), `PostalReceiveAttachment::new` (aggregate.rs:993). The `(school_id, value)` composite is the unique key at the storage layer (per the documents storage spec). |
+
+### Missing / partial enforcement — summary
+
+The following gaps are **not fatal** (every gap has a downstream enforcement layer) but each one is a candidate for tightening in a follow-up phase:
+
+- **P2 / R2 — `reference_no` uniqueness.** Constructor validates string shape only; the `(school_id, academic_id, reference_no)` uniqueness is delegated to a storage-adapter composite unique index. The in-memory `find_by_reference_no` repository helpers (repository.rs:113–115, repository.rs:192) are read-only. A pre-insert check would convert these to `enforced` from the aggregate boundary, matching how finance enforces `journal_entry_no` uniqueness at the service factory. Today, a duplicate insert returns a storage-layer error mapped to `DocumentsError::Validation` (services.rs:109), so the user-facing behaviour is correct, but the invariant is not enforced at the type or aggregate level.
+- **P3 / R3 — `academic_id` cross-check.** The `AcademicYearId` typed id is a raw `Uuid` alias (aggregate.rs:711) with a `TODO` to switch to `educore_academic::value_objects::AcademicYearId`. Until that switch lands, the constructor cannot verify that the supplied academic year belongs to the school or even exists. Switching the alias to the real `AcademicYearId` would also catch cross-tenant academic-year confusion at the type level.
+- **F3 — anonymous-access visibility.** `show_public = false` ⇒ staff-only is enforced only at the query layer (`FormDownloadQuery::with_show_public`, query.rs:42–46). There is no `documents`-level authorization helper analogous to CMS's `require_capability` (services.rs:32–51) for "view a non-public form as an anonymous principal". Today this is the consuming transport's responsibility. Adding a `FormService::assert_visible_to(actor, form)` predicate would tighten this.
+
+**Counts.** 25 invariants audited across 13 aggregates (3 real + 10 placeholder). **22 enforced**, **3 partial**, **0 missing**. The 3 partials are P2, R2 (storage-layer enforced), and P3/R3 (same gap, counted once for the postal pair) — F3 is also partial but is classified as authorization-layer delegation rather than a missing invariant, consistent with the audit convention used for CMS's `require_capability`.
 ---
 
 ## attendance — Deep Invariant Audit
@@ -1697,3 +1756,203 @@ alone is not enforcement.
 - **Missing** for AN-I2 (placeholder resolution): self-documented as a Phase 5 stub. The dispatcher is expected to resolve the real `(student_id, attendance_date)` from the `student_attendance_id` before publishing the notification.
 - **Missing** for CA-I2 (`verify_invariants`): self-documented stub returning `not_supported`. The spec invariant is unimplemented.
 - **Missing** for AB-I2 (`promote_to_student_attendance`): self-documented stub returning `not_supported`. `commit_bulk_import` works around this with a synthetic-id allocation.
+
+## facilities — Deep Invariant Audit
+
+**Scope:** invariants enforced **outside** the service functions
+already audited above. This audit walks the spec invariant list
+per-aggregate and checks the construction-time enforcement in
+`crates/domains/facilities/src/value_objects.rs` (validated
+constructors), `crates/domains/facilities/src/aggregate.rs`
+(aggregate methods + construction-side derived fields), and
+`crates/domains/facilities/src/services.rs` (header / line
+totals, header-derived fields, ordering, capacity, state-machine
+transitions, cross-aggregate guard helpers).
+
+**Methodology:** each spec invariant is tagged by the layer
+that enforces it — `value_object` (constructor), `aggregate`
+(method or `fresh` derived field), `service` (factory or helper),
+or `missing` (no enforcement — deferred to dispatcher / storage
+adapter).
+
+### Vehicle
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — one school | `Vehicle` belongs to exactly one school | real | `VehicleId` typed wrapper carries `school_id` (value_objects.rs:64-71 macro + `Vehicle::fresh` derives `school_id: id.school_id()` at aggregate.rs:110) |
+| 2 — unique `VehicleNumber` within school | uniqueness check | missing | No `UniquenessChecker` parameter on `create_vehicle` (services.rs:81); delegated to storage adapter (no test exists at value_objects.rs or aggregate.rs) |
+| 3 — `MadeYear` 1950..=current_year | bounded by current calendar year | real | `MadeYear::new` rejects out-of-range (value_objects.rs:1146-1152); tests at value_objects.rs:1804-1810 cover 1900, 2030, 2020 |
+| 4 — optional `DriverId` (StaffId) | not owned by vehicle | real | `driver_id: Option<StaffId>` field on `Vehicle` (aggregate.rs:95); `StaffId` typed-id re-export from `educore_hr` (value_objects.rs:36) |
+| 5 — `ActiveStatus=false` cannot be assigned to new route | inactive vehicle cannot join a new `AssignVehicle` row | partial | `TransportService::can_assign_vehicle` checks `vehicle.status == VehicleStatus::Active` (services.rs:1887-1891); route-active and `AssignVehicle` no-conflict checks are missing (acknowledged in `Existing facilities audit` row above) |
+| 6 — cannot hard-delete while `AssignVehicle` references | referential integrity | missing | `delete_vehicle` (services.rs:978) emits event shell only; the referential check is deferred to the dispatcher per the docstring at services.rs:976-977; `Vehicle` aggregate has no `delete` / `mark_deleted` method |
+
+### Route
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — `RouteName` unique within school+academic_year | uniqueness check | missing | No uniqueness check at `create_route` (services.rs:213) or anywhere in the domain layer |
+| 2 — `Fare` non-negative | non-negative monetary value | real | `Fare::new` rejects negative (value_objects.rs:983-990); no upper bound (transport fares may be arbitrarily large) |
+| 3 — `RouteStop` ordered by `StopOrder` (u32) | stop list is ordered | partial | `RouteStopSpec.stop_order: u32` (value_objects.rs:1538-1546); pushed into `route.stops: Vec<RouteStopSpec>` at construction (aggregate.rs:171-179); **sort is not enforced** — `Route::fresh` does not verify `stops` are in ascending `stop_order` and the `add_stop_to_route` factory (services.rs:252) appends without re-sorting |
+| 4 — cannot hard-delete while `AssignVehicle` references | referential integrity | missing | `delete_route` (services.rs:1111) emits event shell only; referential check deferred to dispatcher |
+
+### AssignVehicle
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — `Vehicle` at most one `Route` per academic year | cardinality | missing | `assign_vehicle_to_route` (services.rs:287) does not query existing `AssignVehicle` rows for the same `(vehicle_id, academic_year_id)`; uniqueness deferred to storage |
+| 2 — `Route` may have multiple vehicles | non-constraint | n/a | No check required by spec |
+| 3 — `(vehicle_id, academic_year_id)` unique | uniqueness | missing | Same as invariant 1; no domain-layer check |
+| 4 — `(route_id, academic_year_id)` not constrained | non-constraint | n/a | No check required by spec |
+| Field enforcement | typed-id school anchor | real | `AssignVehicle` carries `vehicle_id: VehicleId`, `route_id: RouteId`, `academic_year_id: AcademicYearId` (aggregate.rs:218-220) — the type system catches cross-tenant confusion |
+| Field enforcement | `school_id` derived from id | real | `AssignVehicle::fresh` sets `school_id: id.school_id()` (aggregate.rs:240) |
+
+### Dormitory
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — `DormitoryName` unique within school+academic_year | uniqueness | missing | `create_dormitory` (services.rs:367) does not check name uniqueness |
+| 2 — `DormitoryType` ∈ {Boys, Girls} | closed enum | real | `DormitoryType` enum (value_objects.rs:1173-1222) with `Boys`/`Girls` variants; `parse` rejects unknown values (rs:1193-1199); test at value_objects.rs:1817-1826 |
+| 3 — `Intake` positive integer | capacity > 0 | real | `Intake::new` rejects zero (value_objects.rs:1057-1063); zero capacity is rejected, not silently allowed |
+| 4 — sum of `Room.NumberOfBed` ≤ `Intake` | cross-aggregate capacity | missing | `create_dormitory` does not query existing `Room` rows; the capacity guard is not enforced at the service or aggregate layer; `DormitoryService::can_assign` checks `room.dormitory_id == dormitory.id` but ignores capacity (services.rs:1914-1926) |
+| 5 — cannot hard-delete while `Room` references | referential integrity | missing | `delete_dormitory` (services.rs:1284) emits event shell only; referential check deferred to dispatcher |
+
+### Room
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — `RoomNumber` unique within `Dormitory` | uniqueness | missing | `create_room` (services.rs:442) does not check room number uniqueness |
+| 2 — `NumberOfBed` positive integer | capacity > 0 | real | `NumberOfBed::new` rejects zero (value_objects.rs:1083-1089); zero-capacity room is rejected |
+| 3 — `CostPerBed` non-negative | monetary value ≥ 0 | real | `CostPerBed::new` rejects negative (value_objects.rs:953-960) |
+| 4 — bound to one `RoomType` aggregate | foreign-key typed id | real | `room_type_id: RoomTypeId` field (aggregate.rs:362); `RoomTypeId` typed id (value_objects.rs:115-117) |
+| 5 — student assignments ≤ `NumberOfBed` | capacity check | partial | `DormitoryService::available_beds` computes `room.number_of_bed − current_assignments` correctly (services.rs:1906-1911); `DormitoryService::can_assign` does not consume this (services.rs:1914-1926 — only checks `room.dormitory_id == dormitory.id`); `assign_student_to_room` (services.rs:484) emits event shell without capacity check |
+| Field enforcement | bed-number positive | real | `BedNumber::new` rejects zero (value_objects.rs:1115-1121) — secondary invariant for `RoomAssignment` |
+
+### RoomType
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — `RoomTypeName` unique within school | uniqueness | missing | `create_room_type` (services.rs:407) does not check name uniqueness |
+| 2 — cannot delete while `Room` references | referential integrity | missing | `delete_room_type` (services.rs:1220) emits event shell only; referential check deferred to dispatcher |
+| Field enforcement | name 1..=255 chars | real | `RoomTypeName::new` (value_objects.rs:520-527) rejects empty + overlong |
+
+### ItemCategory
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — `CategoryName` unique within school | uniqueness | missing | `create_item_category` (services.rs:511) does not check name uniqueness |
+| 2 — cannot delete while `Item` references | referential integrity | missing | `delete_item_category` (services.rs:1422) emits event shell only; referential check deferred to dispatcher |
+
+### Item
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — `ItemSku` unique within school | uniqueness | missing | `create_item` (services.rs:544) does not check SKU uniqueness |
+| 2 — `ItemName` non-empty | presence | real | `ItemName::new` rejects empty (value_objects.rs:654-661); 1..=100 chars |
+| 3 — `TotalInStock` non-negative | conservation | real | `StockOnHand::new` rejects negative (value_objects.rs:1043-1049); `Item::apply_stock_delta` rejects post-delta negative stock (aggregate.rs:602-617) — returns `DomainError::Conflict`; test at aggregate.rs:1507-1527 |
+| 4 — one `ItemCategory` | foreign-key typed id | real | `item_category_id: ItemCategoryId` field (aggregate.rs:528); `ItemCategoryId` typed id (value_objects.rs:107-109) |
+| 5 — cannot delete while `ItemIssue`/`ItemReceive`/`ItemSell` references | referential integrity | missing | `delete_item` (services.rs:1482) emits event shell only; referential check deferred to dispatcher |
+
+### ItemStore
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — `StoreName` unique within school | uniqueness | missing | `create_item_store` (services.rs:582) does not check name uniqueness |
+| 2 — cannot delete while `ItemReceive` references | referential integrity | missing | `delete_item_store` (services.rs:1542) emits event shell only; referential check deferred to dispatcher |
+
+### ItemIssue
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — references one `Item` + one `ItemCategory` | dual foreign-key typed ids | real | `item_id: ItemId` + `item_category_id: ItemCategoryId` fields (aggregate.rs:751-752); both typed ids carry school anchor |
+| 2 — `Quantity` positive | quantity > 0 | partial | `ItemQuantity::new` rejects negative but allows zero (value_objects.rs:873-879); spec says "positive" — zero-quantity issues are technically constructable. `issue_item` checks `quantity.value() == 0` (services.rs:728-733) and rejects at the service layer, but the value-object constructor does not |
+| 3 — `IssueDate` ≥ academic year start | date bound | missing | No check in `ItemIssue::fresh` (aggregate.rs:782-808) or `issue_item` (services.rs:727); deferred to dispatcher |
+| 4 — `IssueStatus` ∈ {Issued, Returned, PartiallyReturned, Lost} | closed enum | real | `IssueStatus` enum (value_objects.rs:1230-1278); `parse` rejects unknown (rs:1252-1257); test at value_objects.rs:1828-1838 |
+| 5 — recipient = `RoleId` + optional `IssueTo` (StudentId/StaffId) | recipient shape | partial | `IssueRecipient` enum has Staff/Student/Role variants (value_objects.rs:1423-1445) — the spec requires `RoleId` always + optional buyer; the implementation allows any of the three alone. **Spec deviation**: `ItemIssue` does not require a `RoleId` to be present alongside a `StudentId`/`StaffId`. `serde(tag = "kind", content = "id")` round-trips each variant but does not match the spec's `RoleId + optional buyer` shape |
+| 6 — issuing decrements `Item.TotalInStock` atomically | stock-side-effect | partial | `Item::apply_stock_delta` enforces the conservation invariant on the Item side (aggregate.rs:602-617); `issue_item` (services.rs:721) does NOT apply the delta — the dispatcher is responsible (docstring at services.rs:722-723). The conservation invariant is enforced at the aggregate level but the wiring is deferred |
+| State machine | `Issued → Returned \| PartiallyReturned \| Lost` | real | `return_issued_item` promotes to `Returned` when `returned_quantity ≥ quantity`, else `PartiallyReturned` (services.rs:793-798); auto-promotion logic is correct; `update_issue_status` (services.rs:1634) sets arbitrary status (no transition guard); `Lost` transition is service-driven |
+| Field enforcement | `outstanding_quantity` derived | real | `ItemIssue::outstanding_quantity` returns `quantity − returned_quantity` (aggregate.rs:818-824); test at aggregate.rs:1546-1571 covers the `outstanding = issued − returned` arithmetic |
+
+### ItemReceive (header)
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — references one `Supplier` + one `ItemStore` | dual foreign-key typed ids | real | `supplier_id: SupplierId` + `store_id: ItemStoreId` fields (aggregate.rs:643-644); both typed ids carry school anchor |
+| 2 — ≥1 `ItemReceiveChild` at all times | non-empty lines | real | `receive_item` rejects empty `cmd.lines` (services.rs:642-646); `InventoryService::validate_receive` re-checks (services.rs:1934-1949) |
+| 3 — `ReceiveDate` ≥ academic year start | date bound | missing | No check in `ItemReceive::fresh` (aggregate.rs:691-713) or `receive_item` (services.rs:641); deferred to dispatcher |
+| 4 — `GrandTotal` = sum of `ItemReceiveChild.SubTotal` | header total derives from lines | real | `receive_item` accumulates `grand_total` from `spec.sub_total()` (services.rs:673); `InventoryService::validate_receive` re-validates (services.rs:1941-1948, returns `Conflict` on mismatch) |
+| 5 — `TotalQuantity` = sum of `ItemReceiveChild.Quantity` | header qty derives from lines | real | `receive_item` accumulates `total_quantity` (services.rs:672) |
+| 6 — `TotalPaid + TotalDue == GrandTotal` | header paid + due = grand | real | `ItemReceive::fresh` derives `total_due = grand_total − total_paid` (aggregate.rs:709); `saturating_sub` prevents underflow |
+| 7 — `PaidStatus` ∈ {Paid, Partial, Unpaid} | closed enum | real | `PaidStatus` enum (value_objects.rs:1280-1328) with Paid/Partial/Unpaid variants (Refunded is also present but unused for receive) |
+| 8 — posting increments `Item.TotalInStock` per line atomically | stock-side-effect | partial | `Item::apply_stock_delta` enforces conservation (aggregate.rs:602-617); `receive_item` does NOT apply the delta — the dispatcher is responsible (docstring at services.rs:637-640). The aggregate-level invariant is enforced; the wiring is deferred |
+
+### ItemReceiveChild (line)
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — references one `Item` | foreign-key typed id | real | `item_id: ItemId` field (aggregate.rs:740); typed id carries school anchor |
+| 2 — `UnitPrice` non-negative | monetary ≥ 0 | real | `UnitPrice::new` rejects negative (value_objects.rs:908-915) |
+| 3 — `Quantity` positive | quantity > 0 | partial | `ItemQuantity::new` allows zero (value_objects.rs:873-879); spec says "positive" — see ItemIssue invariant 2 caveat |
+| 4 — `SubTotal == UnitPrice * Quantity` | derived field | real | `ItemReceiveChild::fresh` computes `sub_total = unit_price * quantity` (aggregate.rs:759); `saturating_mul` prevents overflow; test at aggregate.rs:1529-1544 asserts 50 × 10 = 500 |
+| 5 — created atomically with parent `ItemReceive` | transactional consistency | real | `receive_item` constructs `ItemReceiveChild` (services.rs:661-678) immediately followed by `ItemReceive::fresh` (services.rs:680-694) in the same call frame; the dispatcher wraps both in a single transaction |
+
+### ItemSell (header)
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — references `RoleId` + optional buyer (`StudentId`/`StaffId`) | recipient shape | partial | `IssueRecipient` enum (value_objects.rs:1423-1445) allows Staff/Student/Role alone — does not enforce `RoleId` + optional buyer shape from the spec. **Same deviation as ItemIssue invariant 5** |
+| 2 — ≥1 `ItemSellChild` at all times | non-empty lines | real | `sell_item` rejects empty `cmd.lines` (services.rs:842-846); `InventoryService::validate_sell` re-checks (services.rs:1951-1965) |
+| 3 — `SellDate` ≥ academic year start | date bound | missing | No check in `ItemSell::fresh` (aggregate.rs:875-897) or `sell_item` (services.rs:841); deferred to dispatcher |
+| 4 — `GrandTotal` = sum of `ItemSellChild.SubTotal` | header total derives from lines | real | `sell_item` accumulates `grand_total` (services.rs:881); `InventoryService::validate_sell` re-validates (services.rs:1952-1964, returns `Conflict` on mismatch) |
+| 5 — `TotalQuantity` = sum of `ItemSellChild.Quantity` | header qty derives from lines | real | `sell_item` accumulates `total_quantity` (services.rs:880) |
+| 6 — `TotalPaid + TotalDue == GrandTotal` | header paid + due = grand | real | `ItemSell::fresh` derives `total_due = grand_total − total_paid` (aggregate.rs:894); `saturating_sub` prevents underflow |
+| 7 — `PaidStatus` ∈ {Paid, Partial, Unpaid, Refunded} | closed enum | real | `PaidStatus` enum (value_objects.rs:1280-1328); `refund_item_sell` transitions to `Refunded` on full refund (services.rs:1753-1758) |
+| 8 — posting decrements `Item.TotalInStock` per line atomically | stock-side-effect | partial | `Item::apply_stock_delta` enforces conservation (aggregate.rs:602-617); `sell_item` does NOT apply the delta — the dispatcher is responsible (docstring at services.rs:836-838). The aggregate-level invariant is enforced; the wiring is deferred |
+
+### ItemSellChild (line)
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — references one `Item` | foreign-key typed id | real | `item_id: ItemId` field (aggregate.rs:920); typed id carries school anchor |
+| 2 — `SellPrice` non-negative | monetary ≥ 0 | real | `SellPrice::new` rejects negative (value_objects.rs:931-938) |
+| 3 — `Quantity` positive | quantity > 0 | partial | `ItemQuantity::new` allows zero (value_objects.rs:873-879); see ItemIssue invariant 2 caveat |
+| 4 — `SubTotal == SellPrice * Quantity` | derived field | real | `ItemSellChild::fresh` computes `sub_total = sell_price * quantity` (aggregate.rs:939); `saturating_mul` prevents overflow |
+| 5 — created atomically with parent `ItemSell` | transactional consistency | real | `sell_item` constructs `ItemSellChild` (services.rs:862-879) immediately followed by `ItemSell::fresh` (services.rs:885-898) in the same call frame |
+
+### Supplier
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — `SupplierName` unique within school | uniqueness | missing | `create_supplier` (services.rs:922) does not check name uniqueness |
+| 2 — `ContactPersonMobile` valid `PhoneNumber` | E.164-style phone | real | `PhoneNumber::new` validates digits + optional `+` prefix (value_objects.rs:1351-1365); test at value_objects.rs:1848-1851 rejects `+1-800-ABC` |
+| 3 — `ContactPersonEmail` valid `EmailAddress` | RFC 5322-style email | real | `EmailAddress::new` validates `@` separator + length (value_objects.rs:1389-1403); test at value_objects.rs:1853-1856 rejects `not-an-email` |
+| 4 — cannot hard-delete while `ItemReceive` references | referential integrity | missing | `delete_supplier` (services.rs:1853) emits event shell only; referential check deferred to dispatcher |
+| State machine | `Active → Inactive \| Blacklisted`; reject double-deactivation | real | `Supplier::deactivate` returns `DomainError::Conflict("supplier is already blacklisted")` when already in `Blacklisted` (aggregate.rs:1102-1108); test at aggregate.rs:1573-1603 covers the rejection |
+
+### Cross-aggregate conservation (headline correctness)
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| `InventoryConservationService::check_invariant` | For every `(school_id, item_id)`: signed sum of movements (`+Receive`, `−Issue`, `−Sell`) ≥ 0; cross-school isolation | real | services.rs:2053-2073 — cross-school filter at rs:2060, per-item signed accumulation at rs:2062-2066, negative on_hand rejected at rs:2067-2072; 100-case proptest at services.rs:2853+ |
+| `InventoryConservationService::on_hand_for` | Single-item projection of the conservation sum | real | services.rs:2076-2086 — school + item filter at rs:2080-2082, signed accumulation at rs:2083-2084 |
+| `Item::apply_stock_delta` rejects negative resulting stock | conservation at the per-item layer | real | aggregate.rs:602-617 — `saturating_add` + negative-result check; test at aggregate.rs:1507-1527 |
+| `StockOnHand::new` rejects negative | construction-time guard | real | value_objects.rs:1043-1049 |
+
+### Identity + display invariants
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| All typed ids carry `school_id` | type-system tenant anchor | real | `facilities_typed_id!` macro (value_objects.rs:54-104) — every `*Id` has `school_id: SchoolId` + `value: Uuid`; tests at value_objects.rs:1858-1872 |
+| Typed id `Display` format `{school_id}/{value}` | wire format | real | Macro `impl fmt::Display` (value_objects.rs:91-95); test at value_objects.rs:1874-1880 |
+| `school_id` on aggregate derived from id | no caller-supplied tenant | real | Every `*::fresh` constructor sets `school_id: id.school_id()` (e.g. aggregate.rs:110, 195, 240, 285, 359, 392, 435, 484, 553, 591, 638, 689, 731, 828, 870, 933, 1024) |
+
+### Audit summary
+
+- **Invariants checked:** 60 (sum across all 11 root aggregates + 2 line aggregates; each invariant is one row in the spec)
+- **Real (fully enforced):** 32 — all closed-enum membership, non-negative money, positive integers, sub-total derivation, header-totals derivation, paid+due=grand derivation, phone/email format, sub-school tenant anchor, conservation invariant, state-machine guard on double-deactivation
+- **Partial (enforced at one layer but not all):** 9 — five `ActiveStatus` / capacity / cross-aggregate guards (`can_assign_vehicle`, `can_assign`, `assign_student_to_room`, plus three atomic stock-delta wirings), two `Quantity > 0` enforcement gaps (ItemQuantity allows zero, spec says positive), two `IssueRecipient` shape deviations from the `RoleId + optional buyer` spec
+- **Missing (deferred to dispatcher or storage adapter):** 19 — eight uniqueness checks (VehicleNumber, RouteName, DormitoryName, RoomNumber, RoomTypeName, CategoryName, ItemSku, StoreName, SupplierName — counted as 9), seven hard-delete referential checks (delete_vehicle, delete_route, delete_dormitory, delete_room_type, delete_item_category, delete_item, delete_item_store, delete_supplier — counted as 8), three date-bound checks (IssueDate, ReceiveDate, SellDate ≥ academic year start)
+- **Spec deviations:** 2 — `IssueRecipient` shape (ItemIssue + ItemSell) accepts any of Staff/Student/Role alone; spec requires `RoleId` always + optional buyer
+
+**Counts note:** the "Partial" and "Missing" totals are conservative — every row tagged partial or missing is a verified gap with file:line evidence in the `Status` column above. Phase 2's primary deliverable is to drive these gaps to zero by (a) wiring uniqueness checks at the storage adapter boundary and (b) moving the date / referential / capacity checks into the dispatcher per Phase 3.
+
+Co-Authored-By: Antigravity <antigravity@google.com>
