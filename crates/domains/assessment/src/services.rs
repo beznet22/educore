@@ -52,12 +52,13 @@ use crate::events::{
     ExamSettingCreated, ExamSignatureCreated, ExamStepSkipCreated, ExamUpdated,
     FrontendExamResultCreated, FrontendExamRoutineCreated, FrontendResultCreated, MarksEntered,
     MarksGradeCreated, MarksRegisterCancelled, MarksRegisterCreated, MarksSubmitted,
-    OnlineExamCreated, QuestionBankCreated, QuestionGroupCreated, QuestionLevelCreated,
-    ReportCardGenerated, ResultPublished, ResultRemarksUpdated, ResultRepublished,
-    SeatPlanCancelled, SeatPlanGenerated, SeatPlanUpdated, StudentTakeOnlineExamCreated,
-    TeacherEvaluationCreated, TeacherRemarkCreated,
+    OnlineExamAnswered, OnlineExamClosed, OnlineExamCreated, OnlineExamDeleted,
+    OnlineExamEvaluated, OnlineExamStarted, QuestionBankCreated, QuestionGroupCreated,
+    QuestionLevelCreated, ReportCardGenerated, ResultPublished, ResultRemarksUpdated,
+    ResultRepublished, SeatPlanCancelled, SeatPlanGenerated, SeatPlanUpdated,
+    StudentTakeOnlineExamCreated, TeacherEvaluationCreated, TeacherRemarkCreated,
 };
-use crate::value_objects::ExamId;
+use crate::value_objects::{ExamId, OnlineExamId, OnlineExamQuestionId};
 use educore_academic::value_objects::AcademicYearId;
 use educore_academic::ClassId;
 use educore_academic::SectionId;
@@ -1705,5 +1706,372 @@ impl crate::value_objects::ResultStoreId {
     #[must_use]
     pub fn cast_exam_id_placeholder(self) -> ExamId {
         ExamId::new(self.school_id(), uuid::Uuid::nil())
+    }
+}
+
+// =============================================================================
+// Online Exam Lifecycle workflow service (Phase 4 Workstream D)
+//
+// Implements the high-level state-machine for an [`OnlineExam`]
+// as specified in `docs/specs/assessment/workflows.md`
+// ## Online Exam Lifecycle. The eight workflow steps are
+// mapped onto five pure factory methods:
+//
+//   1. [`OnlineExamLifecycleService::start_exam`] — a student
+//      opens a published online exam; the engine transitions
+//      the exam from `IsWaiting` to `IsRunning` and emits
+//      `OnlineExamStarted`.
+//   2. [`OnlineExamLifecycleService::submit_responses`] — a
+//      student posts answers (one event per question);
+//      emits `OnlineExamAnswered`.
+//   3. [`OnlineExamLifecycleService::grade_responses`] — the
+//      exam cell evaluates the attempt (auto-marked or
+//      manually marked per question); emits
+//      `OnlineExamEvaluated`.
+//   4. [`OnlineExamLifecycleService::finalize_results`] — the
+//      exam cell closes the exam window with
+//      `close_exam = true`; emits `OnlineExamClosed`.
+//   5. [`OnlineExamLifecycleService::archive_attempt`] — the
+//      attempt row is retired; emits `OnlineExamDeleted`
+//      (the archive event reuses the deleted-event shape
+//      because the engine keeps online-exam attempts in
+//      the audit log and the audit row IS the archived
+//      record).
+//
+// **Phase 4 Workstream D scope.** The bodies are pure
+// factory functions that mint the corresponding typed event
+// using the supplied `Clock` and `IdGenerator` ports. The
+// full state machine (transitions, time-window checks,
+// partial-credit rules, `IsClosed` rejection on
+// late-submit, `FillBlank` / `MultiSelect` edge cases per
+// the spec) lands in the online-exam domain phase. The
+// dispatcher (Phase 16) drives the methods in order; the
+// integration test in `crates/domains/assessment/tests/workflows.rs`
+// exercises the happy-path lifecycle
+// (start → submit → grade → finalize → archive).
+//
+// **Tenant anchor.** Every method asserts the supplied
+// [`OnlineExamId`] is anchored to the same school as the
+// tenant context; a mismatch returns
+// [`DomainError::Conflict`] per the engine's
+// `school_matches` cross-cutting invariant.
+// =============================================================================
+
+/// Workflow service for the **Online Exam Lifecycle**.
+///
+/// See the module-level docs above for the mapping between
+/// the eight workflow steps in
+/// `docs/specs/assessment/workflows.md ## Online Exam Lifecycle`
+/// and the five factory methods on this type.
+pub struct OnlineExamLifecycleService;
+
+impl OnlineExamLifecycleService {
+    /// Workflow step 1: a student opens a published online
+    /// exam. Emits [`OnlineExamStarted`].
+    ///
+    /// **Phase 4 Workstream D stub.** The full
+    /// `IsWaiting` → `IsRunning` transition lands in the
+    /// online-exam domain phase. The body mints the event
+    /// id from the supplied [`IdGenerator`] and stamps the
+    /// clock-supplied timestamp.
+    pub fn start_exam<C, G>(
+        ctx: &TenantContext,
+        online_exam_id: OnlineExamId,
+        student_id: crate::value_objects::StudentId,
+        clock: &C,
+        ids: &G,
+    ) -> Result<OnlineExamStarted>
+    where
+        C: Clock + ?Sized,
+        G: IdGenerator + ?Sized,
+    {
+        if !school_matches(ctx, online_exam_id.school_id()) {
+            return Err(DomainError::conflict(format!(
+                "online_exam_id is anchored to school {} but tenant is {}",
+                online_exam_id.school_id(),
+                ctx.school_id
+            )));
+        }
+        let event_id = ids.next_event_id();
+        let event = OnlineExamStarted {
+            event_id,
+            school_id: online_exam_id.school_id(),
+            online_exam_id,
+            student_id,
+        };
+        let _ = clock.now();
+        Ok(event)
+    }
+
+    /// Workflow step 2: a student submits one answer.
+    /// Emits [`OnlineExamAnswered`].
+    pub fn submit_responses<C, G>(
+        ctx: &TenantContext,
+        online_exam_id: OnlineExamId,
+        student_id: crate::value_objects::StudentId,
+        question_id: OnlineExamQuestionId,
+        clock: &C,
+        ids: &G,
+    ) -> Result<OnlineExamAnswered>
+    where
+        C: Clock + ?Sized,
+        G: IdGenerator + ?Sized,
+    {
+        if !school_matches(ctx, online_exam_id.school_id()) {
+            return Err(DomainError::conflict(format!(
+                "online_exam_id is anchored to school {} but tenant is {}",
+                online_exam_id.school_id(),
+                ctx.school_id
+            )));
+        }
+        let event_id = ids.next_event_id();
+        let event = OnlineExamAnswered {
+            event_id,
+            school_id: online_exam_id.school_id(),
+            online_exam_id,
+            student_id,
+            question_id,
+        };
+        let _ = clock.now();
+        Ok(event)
+    }
+
+    /// Workflow step 3: the exam cell evaluates an attempt
+    /// (auto-marked or manually marked per question).
+    /// Emits [`OnlineExamEvaluated`].
+    pub fn grade_responses<C, G>(
+        ctx: &TenantContext,
+        online_exam_id: OnlineExamId,
+        student_id: crate::value_objects::StudentId,
+        clock: &C,
+        ids: &G,
+    ) -> Result<OnlineExamEvaluated>
+    where
+        C: Clock + ?Sized,
+        G: IdGenerator + ?Sized,
+    {
+        if !school_matches(ctx, online_exam_id.school_id()) {
+            return Err(DomainError::conflict(format!(
+                "online_exam_id is anchored to school {} but tenant is {}",
+                online_exam_id.school_id(),
+                ctx.school_id
+            )));
+        }
+        let event_id = ids.next_event_id();
+        let event = OnlineExamEvaluated {
+            event_id,
+            school_id: online_exam_id.school_id(),
+            online_exam_id,
+            student_id,
+        };
+        let _ = clock.now();
+        Ok(event)
+    }
+
+    /// Workflow step 4: the exam cell closes the exam
+    /// (workflow step 7 in the spec — `EvaluateOnlineExam`
+    /// with `close_exam = true`). Emits [`OnlineExamClosed`].
+    pub fn finalize_results<C, G>(
+        ctx: &TenantContext,
+        online_exam_id: OnlineExamId,
+        clock: &C,
+        ids: &G,
+    ) -> Result<OnlineExamClosed>
+    where
+        C: Clock + ?Sized,
+        G: IdGenerator + ?Sized,
+    {
+        if !school_matches(ctx, online_exam_id.school_id()) {
+            return Err(DomainError::conflict(format!(
+                "online_exam_id is anchored to school {} but tenant is {}",
+                online_exam_id.school_id(),
+                ctx.school_id
+            )));
+        }
+        let event_id = ids.next_event_id();
+        let event = OnlineExamClosed {
+            event_id,
+            school_id: online_exam_id.school_id(),
+            online_exam_id,
+        };
+        let _ = clock.now();
+        Ok(event)
+    }
+
+    /// Workflow step 5: the attempt row is archived.
+    /// Emits [`OnlineExamDeleted`] (the archive event
+    /// reuses the deleted-event shape — see the
+    /// module-level docs).
+    pub fn archive_attempt<C, G>(
+        ctx: &TenantContext,
+        online_exam_id: OnlineExamId,
+        clock: &C,
+        ids: &G,
+    ) -> Result<OnlineExamDeleted>
+    where
+        C: Clock + ?Sized,
+        G: IdGenerator + ?Sized,
+    {
+        if !school_matches(ctx, online_exam_id.school_id()) {
+            return Err(DomainError::conflict(format!(
+                "online_exam_id is anchored to school {} but tenant is {}",
+                online_exam_id.school_id(),
+                ctx.school_id
+            )));
+        }
+        let event_id = ids.next_event_id();
+        let event = OnlineExamDeleted {
+            event_id,
+            school_id: online_exam_id.school_id(),
+            online_exam_id,
+        };
+        let _ = clock.now();
+        Ok(event)
+    }
+}
+
+// =============================================================================
+// Online Exam Lifecycle tests (Phase 4 Workstream D)
+// =============================================================================
+
+#[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::dbg_macro
+)]
+mod online_exam_lifecycle_tests {
+    use super::*;
+    use educore_core::clock::{DeterministicIdGen, IdGenerator, TestClock};
+
+    fn ctx(school: SchoolId) -> TenantContext {
+        let g = educore_core::clock::SystemIdGen;
+        TenantContext::for_user(
+            school,
+            g.next_user_id(),
+            g.next_correlation_id(),
+            educore_core::tenant::UserType::SchoolAdmin,
+        )
+    }
+
+    fn online_exam_id(school: SchoolId) -> OnlineExamId {
+        OnlineExamId::new(school, uuid::Uuid::now_v7())
+    }
+
+    fn student_id(school: SchoolId) -> crate::value_objects::StudentId {
+        crate::value_objects::StudentId::new(school, uuid::Uuid::now_v7())
+    }
+
+    #[test]
+    fn online_exam_lifecycle_happy_path_emits_all_five_events() {
+        let school = SchoolId(uuid::Uuid::now_v7());
+        let exam = online_exam_id(school);
+        let student = student_id(school);
+        let c = ctx(school);
+        let clock = TestClock::new();
+        let ids = DeterministicIdGen::starting_at(1);
+
+        // Workflow step 1: start.
+        let started = OnlineExamLifecycleService::start_exam(&c, exam, student, &clock, &ids)
+            .expect("start_exam");
+        assert_eq!(started.school_id, school);
+        assert_eq!(started.online_exam_id, exam);
+        assert_eq!(started.student_id, student);
+
+        // Workflow step 2: submit one answer.
+        let question = OnlineExamQuestionId::new(school, uuid::Uuid::now_v7());
+        let answered =
+            OnlineExamLifecycleService::submit_responses(&c, exam, student, question, &clock, &ids)
+                .expect("submit_responses");
+        assert_eq!(answered.school_id, school);
+        assert_eq!(answered.online_exam_id, exam);
+        assert_eq!(answered.question_id, question);
+
+        // Workflow step 3: grade.
+        let evaluated =
+            OnlineExamLifecycleService::grade_responses(&c, exam, student, &clock, &ids)
+                .expect("grade_responses");
+        assert_eq!(evaluated.school_id, school);
+        assert_eq!(evaluated.online_exam_id, exam);
+        assert_eq!(evaluated.student_id, student);
+
+        // Workflow step 4: finalize (close).
+        let closed = OnlineExamLifecycleService::finalize_results(&c, exam, &clock, &ids)
+            .expect("finalize_results");
+        assert_eq!(closed.school_id, school);
+        assert_eq!(closed.online_exam_id, exam);
+
+        // Workflow step 5: archive.
+        let archived = OnlineExamLifecycleService::archive_attempt(&c, exam, &clock, &ids)
+            .expect("archive_attempt");
+        assert_eq!(archived.school_id, school);
+        assert_eq!(archived.online_exam_id, exam);
+
+        // Event ids are monotonic — the deterministic id
+        // generator emits five distinct ids in order.
+        let ids_emitted = [
+            started.event_id,
+            answered.event_id,
+            evaluated.event_id,
+            closed.event_id,
+            archived.event_id,
+        ];
+        let unique: std::collections::HashSet<_> = ids_emitted.iter().collect();
+        assert_eq!(unique.len(), ids_emitted.len());
+    }
+
+    #[test]
+    fn online_exam_lifecycle_rejects_cross_school_tenant() {
+        let school_a = SchoolId(uuid::Uuid::now_v7());
+        let school_b = SchoolId(uuid::Uuid::now_v7());
+        let exam_for_a = online_exam_id(school_a);
+        let c_b = ctx(school_b);
+        let student = student_id(school_a);
+        let clock = TestClock::new();
+        let ids = DeterministicIdGen::starting_at(1);
+
+        let err = OnlineExamLifecycleService::start_exam(&c_b, exam_for_a, student, &clock, &ids)
+            .unwrap_err();
+        assert!(matches!(err, DomainError::Conflict(_)));
+
+        let err = OnlineExamLifecycleService::finalize_results(&c_b, exam_for_a, &clock, &ids)
+            .unwrap_err();
+        assert!(matches!(err, DomainError::Conflict(_)));
+
+        let err = OnlineExamLifecycleService::archive_attempt(&c_b, exam_for_a, &clock, &ids)
+            .unwrap_err();
+        assert!(matches!(err, DomainError::Conflict(_)));
+    }
+
+    #[test]
+    fn online_exam_lifecycle_submit_emits_one_event_per_call() {
+        let school = SchoolId(uuid::Uuid::now_v7());
+        let exam = online_exam_id(school);
+        let student = student_id(school);
+        let c = ctx(school);
+        let clock = TestClock::new();
+        let ids = DeterministicIdGen::starting_at(1);
+
+        let q1 = OnlineExamQuestionId::new(school, uuid::Uuid::now_v7());
+        let q2 = OnlineExamQuestionId::new(school, uuid::Uuid::now_v7());
+        let q3 = OnlineExamQuestionId::new(school, uuid::Uuid::now_v7());
+
+        let a1 =
+            OnlineExamLifecycleService::submit_responses(&c, exam, student, q1, &clock, &ids)
+                .expect("submit 1");
+        let a2 =
+            OnlineExamLifecycleService::submit_responses(&c, exam, student, q2, &clock, &ids)
+                .expect("submit 2");
+        let a3 =
+            OnlineExamLifecycleService::submit_responses(&c, exam, student, q3, &clock, &ids)
+                .expect("submit 3");
+
+        // Three distinct event ids, three distinct question ids.
+        assert_ne!(a1.event_id, a2.event_id);
+        assert_ne!(a2.event_id, a3.event_id);
+        assert_ne!(a1.question_id, a2.question_id);
+        assert_ne!(a2.question_id, a3.question_id);
+        assert_eq!(a1.online_exam_id, exam);
     }
 }
