@@ -21,6 +21,11 @@ pub mod query;
 mod repository;
 pub mod services;
 
+/// Notification template aggregate stub (per
+/// `docs/specs/communication/aggregates.md`). Full repository /
+/// port wiring lands in a later phase.
+pub mod template;
+
 /// Package name constant. Re-exported so consumers can assert they
 /// are using the right crate version at compile time.
 pub const PACKAGE_NAME: &str = "educore-communication";

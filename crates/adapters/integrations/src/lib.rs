@@ -102,6 +102,12 @@ pub mod services;
 /// (see `docs/ports/integrations.md` § OAuth2 Client Credentials).
 pub mod oauth2;
 
+/// PollingIntegration adapter scaffold (see
+/// `docs/ports/integrations.md` § Polling Adapter). The polling
+/// adapter drives integrations whose only feasible interaction
+/// mode is a periodic pull against a remote API.
+pub mod polling;
+
 /// Re-exports of the engine types and the port's request/response
 /// surface. Consumers typically
 /// `use educore_integrations::prelude::*;` once at the top of a
@@ -112,6 +118,7 @@ pub mod prelude {
         LmsIntegration, LmsIntegrationBuilder, ACTION_COURSE_CREATE, ACTION_ROSTER_SYNC,
         ACTION_SUBMISSIONS_PULL, LMS_INTEGRATION_ID,
     };
+    pub use crate::polling::{PollingConfig, PollingCursor, PollingIntegration, PollingSchedule};
     pub use crate::port::{
         HealthStatus, IntegrationAction, IntegrationCapability, IntegrationCost,
         IntegrationGateway, IntegrationHealth, IntegrationId, IntegrationRequest,
