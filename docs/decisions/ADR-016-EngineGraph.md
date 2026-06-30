@@ -21,8 +21,13 @@ git-merge-driver union-merge, and post-commit hooks.
 Index the engine source tree (`crates/`, `docs/`, `migrations/`,
 and the top-level `*.md` files) with `graphify`, output at
 `graphify-out/` at the repo root. Auto-rebuild on every commit
-via the local `graphify hook install` (one-time per-user setup,
-AST-only regen, no API cost).
+via a tracked post-commit hook at `.githooks/post-commit`
+(per ADR-016 update, 2026-06-30). Users opt in once per clone
+with `git config core.hooksPath .githooks`; the hook is
+non-fatal (warn-but-do-not-fail) so a missing `graphify`
+binary never blocks a commit. The legacy per-user
+`graphify hook install` path remains supported for users who
+already have it set up.
 
 The legacy `schoolify/graphify-out/` is **frozen** and retained
 as a research artefact only; AGENTS.md no longer directs agents
@@ -70,7 +75,14 @@ browsing; new contributors get the latest graph on clone.
 - (+) Sub-second exploration queries via `graphify query`.
 - (+) Auto-rebuild on commit; no manual step.
 - (+) Git merge driver prevents graph.json conflict markers.
-- (-) One-time `graphify hook install` per user.
+- (+) **Fresh-clone parity**: the post-commit hook at
+  `.githooks/post-commit` is committed in the repo
+  (Wave 33, ADR-016-GRAPHIFY-HOOK). New contributors no
+  longer miss the automation — they only need a one-line
+  `git config core.hooksPath .githooks` after cloning.
+- (-) One-time `git config core.hooksPath .githooks` per
+  clone (replaces the prior per-user `graphify hook install`
+  step; lower friction).
 - (-) New 5th validation criterion (graph regen freshness) in
   `docs/build-plan.md` § No-Gaps Gates.
 
@@ -87,6 +99,8 @@ browsing; new contributors get the latest graph on clone.
 
 ## See also
 
+- [`.githooks/post-commit`](../../.githooks/post-commit) — the
+  committed post-commit hook (Wave 33, ADR-016-GRAPHIFY-HOOK)
 - [`AGENTS.md` § "Engine Graph (graphify)"](../../AGENTS.md#engine-graph-graphify)
 - `graphify-out/GRAPH_REPORT.md` — the engine graph report
 - `schoolify/graphify-out/` — the legacy Laravel graph (frozen)
