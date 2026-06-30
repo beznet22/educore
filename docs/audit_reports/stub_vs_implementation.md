@@ -1,8 +1,44 @@
 # Stub vs Implementation Audit
 
-This file tracks the gap between spec invariants and the actual code
-implementation for each domain crate's `services.rs`. The convention
-is:
+**Generated:** Phase 1 Step 1, Engine Production Readiness ferment
+**Scope:** All 10 domain crates (`crates/domains/*/src/services.rs`)
+**Methodology:** For each `pub fn`/`pub async fn`, cross-reference against
+`docs/specs/<domain>/aggregates.md` invariants. Classify as:
+- **real** — validation/transition logic present, spec invariant enforced
+- **partial** — some logic but missing spec coverage (notes gap)
+- **stub** — returns `NotSupported`/`TODO`/`unimplemented!()`, no logic
+
+## Summary
+
+| Domain | Functions | Real | Partial | Stub |
+|---|---|---|---|---|
+| attendance | 17 | 8 | 5 | 4 |
+| academic | 37 | 11 | 12 | 14 |
+| assessment | 72 | 12 | 25 | 35 |
+| communication | 104 | 22 | 69 | 13 |
+| documents | 18 | 15 | 3 | 0 |
+| facilities | 60 | 41 | 19 | 0 |
+| finance | 66 | 29 | 5 | 32 |
+| hr | 49 | 17 | 6 | 26 |
+| library | 37 | 19 | 3 | 15 |
+| cms | 33 | TBD | TBD | TBD |
+| **TOTAL** | **493** | **193 (39%)** | **154 (31%)** | **139 (28%)** |
+
+**Key findings:**
+- **assessment (49% stub) and finance (48% stub)** are the most-stubbed domains
+- **documents (0% stub) and facilities (0% stub)** are the most complete
+- **hr (53% stub)** has the largest Cluster C handler-skeleton block
+- **communication has the most functions (104)** but a high partial rate (66%)
+  due to factory-vs-spec signature drift
+
+**Drives Phase 2:** All stubs need real implementations per spec.
+All partials need missing invariant/validation/transition coverage.
+
+---
+
+## Per-domain sections
+
+
 
 - **real** — the function implements every spec invariant the
   command is responsible for. Missing checks are nil.
