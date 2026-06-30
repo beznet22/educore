@@ -344,6 +344,67 @@ impl SubscriberRegistry {
     }
 }
 
+/// Subscriber scaffolding for the event → audit mirror path.
+///
+/// Per `docs/schemas/event-schema.md` § 13 ("Every event must
+/// be mirrored to the audit_log") the engine emits one audit
+/// row per dispatched event so the audit trail captures the
+/// full event lifecycle. The full subscriber implementation
+/// lives in `educore-audit::subscriber::AuditMirrorSubscriber`
+/// (which holds an `Arc<dyn AuditSink>` from
+/// `educore_audit::sink::AuditSink`); this module declares the
+/// trait shape so the events crate can document the mirror
+/// contract without taking a dependency on the audit crate
+/// (the dependency graph is `educore-audit → educore-events`,
+/// not the reverse).
+///
+/// Wiring summary (in the umbrella's `subscribers.rs`):
+///
+/// 1. Construct `educore_audit::subscriber::AuditMirrorSubscriber`
+///    wrapping the `AuditWriter` (which implements
+///    `AuditSink`).
+/// 2. Register it with the `SubscriberRegistry` alongside the
+///    domain subscribers:
+///    `registry.register(SubscriptionFilter::All, mirror);`
+///
+/// The mirror subscriber's `handle(envelope)` method:
+///
+/// - Builds an `AuditLogEntry` with `target_id = envelope.event_id`
+///   and `action = "publish:<event_type>"`.
+/// - Calls `audit_sink.write(entry).await` (returns the
+///   wrapped AuditWriter's [`AuditSink::write`] result).
+/// - Surfaces a typed error via [`crate::errors::EventError`]
+///   on write failure so the dispatcher fails fast (per
+///   FND-SEC-AUDIT-001, audit writes MUST NOT silently drop).
+///
+/// This module also exposes [`AuditMirrorConfig`] so consumers
+/// can carry the configuration (which audit_log table to write
+/// to, etc.) without referencing the audit crate directly.
+pub struct AuditMirrorConfig {
+    /// The action verb prefix for mirrored events.
+    /// Default: `"publish"`. Consumers can override to
+    /// `"event"` or `"bus.dispatch"` as the audit taxonomy
+    /// requires.
+    pub action_prefix: String,
+}
+
+impl Default for AuditMirrorConfig {
+    fn default() -> Self {
+        Self {
+            action_prefix: "publish".to_owned(),
+        }
+    }
+}
+
+impl AuditMirrorConfig {
+    /// Returns a new `AuditMirrorConfig` with the default
+    /// action verb prefix.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,

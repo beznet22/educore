@@ -245,6 +245,88 @@ pub enum Credential {
 }
 
 // ---------------------------------------------------------------------------
+// MfaChallenge
+// ---------------------------------------------------------------------------
+
+/// A pending MFA challenge. Per `docs/ports/authentication.md`
+/// § "Multi-Factor Authentication", the engine uses a
+/// two-phase flow for sensitive operations:
+///
+/// 1. **Phase 1** — the caller presents a primary credential
+///    (e.g. `Credential::UsernamePassword`). The
+///    `AuthProvider` validates it and, if MFA is required for
+///    the user, returns a [`Session`] with `mfa_satisfied =
+///    false` plus an `MfaChallenge` carrying the challenge id
+///    and the delivery channel (TOTP, SMS, email, push).
+/// 2. **Phase 2** — the caller presents the MFA proof
+///    (`Credential::MfaResponse { challenge_id, code }`).
+///    The `AuthProvider` validates the proof and returns a
+///    [`Session`] with `mfa_satisfied = true`.
+///
+/// `MfaChallenge` is **opaque** to the caller: it carries only
+/// the minimum surface (id, method, expiry, delivery hint) so
+/// the caller can route the user to the correct UI but cannot
+/// replay or forge challenges.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub struct MfaChallenge {
+    /// The challenge id (UUIDv7). The caller echoes this back
+    /// in `Credential::MfaResponse::challenge_id`.
+    pub challenge_id: uuid::Uuid,
+    /// The MFA method the challenge was issued for.
+    pub method: MfaMethod,
+    /// When the challenge expires. The caller MUST submit the
+    /// response before this instant; after it the challenge is
+    /// rejected and the caller must restart Phase 1.
+    pub expires_at: Timestamp,
+    /// Optional delivery hint: where the challenge was sent
+    /// (the redacted phone number for SMS, the email address
+    /// for email, the device name for push). May be `None`
+    /// for TOTP (no delivery, the code lives in the user's
+    /// authenticator app).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub delivery_hint: Option<String>,
+}
+
+impl MfaChallenge {
+    /// Constructs a fresh `MfaChallenge` with a new UUIDv7
+    /// `challenge_id` and the supplied fields.
+    #[must_use]
+    pub fn new(method: MfaMethod, expires_at: Timestamp, delivery_hint: Option<String>) -> Self {
+        Self {
+            challenge_id: uuid::Uuid::now_v7(),
+            method,
+            expires_at,
+            delivery_hint,
+        }
+    }
+
+    /// Returns `true` iff this challenge has expired (i.e.
+    /// `now > expires_at`).
+    #[must_use]
+    pub fn is_expired(&self, now: Timestamp) -> bool {
+        now > self.expires_at
+    }
+}
+
+/// The MFA method a challenge was issued for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub enum MfaMethod {
+    /// Time-based One-Time Password (RFC 6238). The code
+    /// lives in the user's authenticator app (Google
+    /// Authenticator, Authy, 1Password, etc.).
+    Totp,
+    /// SMS-delivered one-time code.
+    Sms,
+    /// Email-delivered one-time code.
+    Email,
+    /// Push notification to a registered device; the user
+    /// taps "Approve" or "Deny" on their device.
+    Push,
+    /// Hardware security key (WebAuthn / FIDO2).
+    HardwareKey,
+}
+
+// ---------------------------------------------------------------------------
 // AuthProvider
 // ---------------------------------------------------------------------------
 
