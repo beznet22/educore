@@ -1454,6 +1454,10 @@ pub mod runner {
     /// - The umbrella crate is exempted entirely.
     /// - Workspace members not under `crates/` (none in this engine)
     ///   are ignored.
+    ///
+    /// Also enforces `check_no_tier_cargo`: no `Cargo.toml` may
+    /// appear directly at a tier_root (the umbrella crate is
+    /// exempt — it has its own `Cargo.toml`).
     pub fn check_tier_boundaries(repo_root: &Path, report: &mut LintReport) {
         let crates_dir = repo_root.join("crates");
 

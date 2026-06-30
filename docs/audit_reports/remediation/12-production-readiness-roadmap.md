@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 398 |
+| Done (`[x]`) | 451 |
 | In-progress (`[~]`) | 13 |
-| Open (`[ ]`) | 74 |
-| Last update | 2026-06-30 16:23 UTC |
+| Open (`[ ]`) | 21 |
+| Last update | 2026-06-30 17:30 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -80,9 +80,9 @@
       **Source:** docs/decisions/ADR-017-SurrealDBFirst.md
       **Check:** `file:docs/decisions/ADR-017-SurrealDBFirst.md regex:SQLite row-level security` → _ADR-017-SurrealDBFirst.md:SQLite row-level security_
 
-- [ ] **B-3** Resolved — clippy on educore-core clean. Closed 2026-06-25.
+- [x] **B-3** Resolved — clippy on educore-core clean. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave1-lint.md
-      **Check:** `cmd:cargo clippy -p educore-core --lib -- -D warnings` → _timeout (>60s) — likely needs manual run_
+      **Check:** `cmd:cargo clippy -p educore-core --lib -- -D warnings` → _exit 0_
 
 - [ ] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave5-docs-1.md
@@ -1324,7 +1324,7 @@
       **Source:** docs/decisions/ADR-013-CrateLayout.md, AGENTS.md, docs/architecture.md
       **Check:** `file:docs/decisions/ADR-013-CrateLayout.md regex:Reconciled 2026-06-25|canonical...` → _ADR-013-CrateLayout.md:Reconciled 2026-06-25|canonical count = _
 
-- [ ] **ADR-013-NO-TIER-CARGO** No lint guard against adding Cargo.toml at tier roots (ADR-013 § Negative consequences item 2)
+- [x] **ADR-013-NO-TIER-CARGO** No lint guard against adding Cargo.toml at tier roots (ADR-013 § Negative consequences item 2)
       **Source:** docs/decisions/ADR-013-CrateLayout.md
       **Check:** `file:crates/infra/core/src/lint.rs regex:tier.root|tier_root` → _lint.rs:tier.root|tier_root_
 
@@ -1332,15 +1332,15 @@
       **Source:** docs/decisions/ADR-018-SyncEngineArchitecture.md
       **Check:** `file:docs/decisions/ADR-018-SyncEngineArchitecture.md regex:Amended 2026-06-25|c...` → _ADR-018-SyncEngineArchitecture.md:Amended 2026-06-25|cross-cutting/sync-in_
 
-- [ ] **ADR-016-GRAPHIFY-HOOK** Graphify post-commit hook per-user only; fresh clones miss the automation
+- [x] **ADR-016-GRAPHIFY-HOOK** Graphify post-commit hook per-user only; fresh clones miss the automation
       **Source:** docs/decisions/ADR-016-EngineGraph.md
-      **Check:** `file-exists:.githooks/post-commit` → _post-commit missing_
+      **Check:** `file-exists:.githooks/post-commit` → _post-commit exists_
 
-- [ ] **LIB-DOMAIN-ACCESSORS** library-docs.md shows engine.students()/engine.fees() accessors that don't exist on Engine facade
+- [x] **LIB-DOMAIN-ACCESSORS** library-docs.md shows engine.students()/engine.fees() accessors that don't exist on Engine facade
       **Source:** docs/library-docs.md § Common Workflows
       **Check:** `file:crates/tools/sdk/src/engine.rs regex:fn students|fn fees` → _engine.rs:fn students|fn fees_
 
-- [ ] **LIB-TYPED-EVENT-SUBSCRIBE** library-docs.md shows engine.events().subscribe::<T>() API; actual is untyped SubscribeOptions
+- [x] **LIB-TYPED-EVENT-SUBSCRIBE** library-docs.md shows engine.events().subscribe::<T>() API; actual is untyped SubscribeOptions
       **Source:** docs/library-docs.md § Subscribing to Events
       **Check:** `file:crates/cross-cutting/events/src/event_bus.rs regex:subscribe_typed` → _event_bus.rs:subscribe_typed_
 
@@ -1360,7 +1360,7 @@
       **Source:** docs/specs/library/capabilities.md ## BookIssue
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:BookIssue` → _value_objects.rs:BookIssue_
 
-- [ ] **CAP-ATTENDANCE-ATTENDANCE.SUBJECT.MARK** attendance: Attendance.Subject.Mark capability not wired in RBAC
+- [x] **CAP-ATTENDANCE-ATTENDANCE.SUBJECT.MARK** attendance: Attendance.Subject.Mark capability not wired in RBAC
       **Source:** docs/specs/attendance/capabilities.md ## Attendance.Subject.Mark
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Attendance.Subject.Mar...` → _value_objects.rs:Attendance.Subject.Mark_
 
@@ -1388,43 +1388,43 @@
       **Source:** docs/specs/attendance/capabilities.md ## Attendance.Staff.Read
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Attendance.Staff.Read` → _value_objects.rs:Attendance.Staff.Read_
 
-- [ ] **CAP-ATTENDANCE-ATTENDANCE.STAFF.REPORT** attendance: Attendance.Staff.Report capability not wired in RBAC
+- [x] **CAP-ATTENDANCE-ATTENDANCE.STAFF.REPORT** attendance: Attendance.Staff.Report capability not wired in RBAC
       **Source:** docs/specs/attendance/capabilities.md ## Attendance.Staff.Report
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Attendance.Staff.Repor...` → _value_objects.rs:Attendance.Staff.Report_
 
-- [ ] **CAP-ATTENDANCE-ATTENDANCE.IMPORT.VALIDATE** attendance: Attendance.Import.Validate capability not wired in RBAC
+- [x] **CAP-ATTENDANCE-ATTENDANCE.IMPORT.VALIDATE** attendance: Attendance.Import.Validate capability not wired in RBAC
       **Source:** docs/specs/attendance/capabilities.md ## Attendance.Import.Validate
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Attendance.Import.Vali...` → _value_objects.rs:Attendance.Import.Validate_
 
-- [ ] **CAP-ATTENDANCE-ATTENDANCE.IMPORT.COMMIT** attendance: Attendance.Import.Commit capability not wired in RBAC
+- [x] **CAP-ATTENDANCE-ATTENDANCE.IMPORT.COMMIT** attendance: Attendance.Import.Commit capability not wired in RBAC
       **Source:** docs/specs/attendance/capabilities.md ## Attendance.Import.Commit
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Attendance.Import.Comm...` → _value_objects.rs:Attendance.Import.Commit_
 
-- [ ] **CAP-ATTENDANCE-ATTENDANCE.IMPORT.CANCEL** attendance: Attendance.Import.Cancel capability not wired in RBAC
+- [x] **CAP-ATTENDANCE-ATTENDANCE.IMPORT.CANCEL** attendance: Attendance.Import.Cancel capability not wired in RBAC
       **Source:** docs/specs/attendance/capabilities.md ## Attendance.Import.Cancel
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Attendance.Import.Canc...` → _value_objects.rs:Attendance.Import.Cancel_
 
-- [ ] **CAP-ATTENDANCE-ATTENDANCE.REPORT.DAILY** attendance: Attendance.Report.Daily capability not wired in RBAC
+- [x] **CAP-ATTENDANCE-ATTENDANCE.REPORT.DAILY** attendance: Attendance.Report.Daily capability not wired in RBAC
       **Source:** docs/specs/attendance/capabilities.md ## Attendance.Report.Daily
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Attendance.Report.Dail...` → _value_objects.rs:Attendance.Report.Daily_
 
-- [ ] **CAP-ATTENDANCE-ATTENDANCE.REPORT.WEEKLY** attendance: Attendance.Report.Weekly capability not wired in RBAC
+- [x] **CAP-ATTENDANCE-ATTENDANCE.REPORT.WEEKLY** attendance: Attendance.Report.Weekly capability not wired in RBAC
       **Source:** docs/specs/attendance/capabilities.md ## Attendance.Report.Weekly
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Attendance.Report.Week...` → _value_objects.rs:Attendance.Report.Weekly_
 
-- [ ] **CAP-ATTENDANCE-ATTENDANCE.REPORT.MONTHLY** attendance: Attendance.Report.Monthly capability not wired in RBAC
+- [x] **CAP-ATTENDANCE-ATTENDANCE.REPORT.MONTHLY** attendance: Attendance.Report.Monthly capability not wired in RBAC
       **Source:** docs/specs/attendance/capabilities.md ## Attendance.Report.Monthly
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Attendance.Report.Mont...` → _value_objects.rs:Attendance.Report.Monthly_
 
-- [ ] **CAP-ATTENDANCE-ATTENDANCE.REPORT.BY_CLASS** attendance: Attendance.Report.ByClass capability not wired in RBAC
+- [x] **CAP-ATTENDANCE-ATTENDANCE.REPORT.BY_CLASS** attendance: Attendance.Report.ByClass capability not wired in RBAC
       **Source:** docs/specs/attendance/capabilities.md ## Attendance.Report.ByClass
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Attendance.Report.ByCl...` → _value_objects.rs:Attendance.Report.ByClass_
 
-- [ ] **CAP-ATTENDANCE-ATTENDANCE.REPORT.BY_STUDENT** attendance: Attendance.Report.ByStudent capability not wired in RBAC
+- [x] **CAP-ATTENDANCE-ATTENDANCE.REPORT.BY_STUDENT** attendance: Attendance.Report.ByStudent capability not wired in RBAC
       **Source:** docs/specs/attendance/capabilities.md ## Attendance.Report.ByStudent
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Attendance.Report.BySt...` → _value_objects.rs:Attendance.Report.ByStudent_
 
-- [ ] **CAP-ATTENDANCE-ATTENDANCE.REPORT.BY_STAFF** attendance: Attendance.Report.ByStaff capability not wired in RBAC
+- [x] **CAP-ATTENDANCE-ATTENDANCE.REPORT.BY_STAFF** attendance: Attendance.Report.ByStaff capability not wired in RBAC
       **Source:** docs/specs/attendance/capabilities.md ## Attendance.Report.ByStaff
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Attendance.Report.BySt...` → _value_objects.rs:Attendance.Report.ByStaff_
 
@@ -1432,7 +1432,7 @@
       **Source:** docs/specs/attendance/capabilities.md ## Reports
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Reports` → _value_objects.rs:Reports_
 
-- [ ] **CAP-COMMUNICATION-NOTIFICATION.READ.ALL** communication: Notification.Read.All capability not wired in RBAC
+- [x] **CAP-COMMUNICATION-NOTIFICATION.READ.ALL** communication: Notification.Read.All capability not wired in RBAC
       **Source:** docs/specs/communication/capabilities.md ## Notification.Read.All
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Notification.Read.All` → _value_objects.rs:Notification.Read.All_
 
@@ -1440,7 +1440,7 @@
       **Source:** docs/specs/communication/capabilities.md ## Notice
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Notice` → _value_objects.rs:Notice_
 
-- [ ] **CAP-COMMUNICATION-COMPLAINT** communication: Complaint capability not wired in RBAC
+- [x] **CAP-COMMUNICATION-COMPLAINT** communication: Complaint capability not wired in RBAC
       **Source:** docs/specs/communication/capabilities.md ## Complaint
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Complaint` → _value_objects.rs:Complaint_
 
@@ -1452,7 +1452,7 @@
       **Source:** docs/specs/communication/capabilities.md ## Template
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Template` → _value_objects.rs:Template_
 
-- [ ] **CAP-DOCUMENTS-FORM.READ.PUBLIC** documents: Form.Read.Public capability not wired in RBAC
+- [x] **CAP-DOCUMENTS-FORM.READ.PUBLIC** documents: Form.Read.Public capability not wired in RBAC
       **Source:** docs/specs/documents/capabilities.md ## Form.Read.Public
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Form.Read.Public` → _value_objects.rs:Form.Read.Public_
 
@@ -1464,19 +1464,19 @@
       **Source:** docs/specs/documents/capabilities.md ## Postal
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Postal` → _value_objects.rs:Postal_
 
-- [ ] **CAP-ACADEMIC-STUDENT.DOCUMENT.UPLOAD** academic: Student.Document.Upload capability not wired in RBAC
+- [x] **CAP-ACADEMIC-STUDENT.DOCUMENT.UPLOAD** academic: Student.Document.Upload capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## Student.Document.Upload
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Student.Document.Uploa...` → _value_objects.rs:Student.Document.Upload_
 
-- [ ] **CAP-ACADEMIC-STUDENT.DOCUMENT.DOWNLOAD** academic: Student.Document.Download capability not wired in RBAC
+- [x] **CAP-ACADEMIC-STUDENT.DOCUMENT.DOWNLOAD** academic: Student.Document.Download capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## Student.Document.Download
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Student.Document.Downl...` → _value_objects.rs:Student.Document.Download_
 
-- [ ] **CAP-ACADEMIC-STUDENT.HOMEWORK.SUBMIT** academic: Student.Homework.Submit capability not wired in RBAC
+- [x] **CAP-ACADEMIC-STUDENT.HOMEWORK.SUBMIT** academic: Student.Homework.Submit capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## Student.Homework.Submit
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Student.Homework.Submi...` → _value_objects.rs:Student.Homework.Submit_
 
-- [ ] **CAP-ACADEMIC-STUDENT.HOMEWORK.EVALUATE** academic: Student.Homework.Evaluate capability not wired in RBAC
+- [x] **CAP-ACADEMIC-STUDENT.HOMEWORK.EVALUATE** academic: Student.Homework.Evaluate capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## Student.Homework.Evaluate
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Student.Homework.Evalu...` → _value_objects.rs:Student.Homework.Evaluate_
 
@@ -1484,7 +1484,7 @@
       **Source:** docs/specs/academic/capabilities.md ## Student
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Student` → _value_objects.rs:Student_
 
-- [ ] **CAP-ACADEMIC-GUARDIAN** academic: Guardian capability not wired in RBAC
+- [x] **CAP-ACADEMIC-GUARDIAN** academic: Guardian capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## Guardian
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Guardian` → _value_objects.rs:Guardian_
 
@@ -1492,11 +1492,11 @@
       **Source:** docs/specs/academic/capabilities.md ## Class
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Class` → _value_objects.rs:Class_
 
-- [ ] **CAP-ACADEMIC-SECTION** academic: Section capability not wired in RBAC
+- [x] **CAP-ACADEMIC-SECTION** academic: Section capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## Section
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Section` → _value_objects.rs:Section_
 
-- [ ] **CAP-ACADEMIC-CLASS_SECTION** academic: ClassSection capability not wired in RBAC
+- [x] **CAP-ACADEMIC-CLASS_SECTION** academic: ClassSection capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## ClassSection
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:ClassSection` → _value_objects.rs:ClassSection_
 
@@ -1504,31 +1504,31 @@
       **Source:** docs/specs/academic/capabilities.md ## Subject
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Subject` → _value_objects.rs:Subject_
 
-- [ ] **CAP-ACADEMIC-CLASS_SUBJECT** academic: ClassSubject capability not wired in RBAC
+- [x] **CAP-ACADEMIC-CLASS_SUBJECT** academic: ClassSubject capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## ClassSubject
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:ClassSubject` → _value_objects.rs:ClassSubject_
 
-- [ ] **CAP-ACADEMIC-ACADEMIC_YEAR** academic: AcademicYear capability not wired in RBAC
+- [x] **CAP-ACADEMIC-ACADEMIC_YEAR** academic: AcademicYear capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## AcademicYear
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:AcademicYear` → _value_objects.rs:AcademicYear_
 
-- [ ] **CAP-ACADEMIC-CLASS_ROUTINE** academic: ClassRoutine capability not wired in RBAC
+- [x] **CAP-ACADEMIC-CLASS_ROUTINE** academic: ClassRoutine capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## ClassRoutine
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:ClassRoutine` → _value_objects.rs:ClassRoutine_
 
-- [ ] **CAP-ACADEMIC-HOMEWORK** academic: Homework capability not wired in RBAC
+- [x] **CAP-ACADEMIC-HOMEWORK** academic: Homework capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## Homework
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Homework` → _value_objects.rs:Homework_
 
-- [ ] **CAP-ACADEMIC-LESSON** academic: Lesson capability not wired in RBAC
+- [x] **CAP-ACADEMIC-LESSON** academic: Lesson capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## Lesson
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Lesson` → _value_objects.rs:Lesson_
 
-- [ ] **CAP-ACADEMIC-STUDENT_CATEGORY** academic: StudentCategory capability not wired in RBAC
+- [x] **CAP-ACADEMIC-STUDENT_CATEGORY** academic: StudentCategory capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## StudentCategory
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:StudentCategory` → _value_objects.rs:StudentCategory_
 
-- [ ] **CAP-ACADEMIC-STUDENT_GROUP** academic: StudentGroup capability not wired in RBAC
+- [x] **CAP-ACADEMIC-STUDENT_GROUP** academic: StudentGroup capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## StudentGroup
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:StudentGroup` → _value_objects.rs:StudentGroup_
 
@@ -1536,15 +1536,15 @@
       **Source:** docs/specs/academic/capabilities.md ## Registration
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Registration` → _value_objects.rs:Registration_
 
-- [ ] **CAP-ACADEMIC-CERTIFICATE** academic: Certificate capability not wired in RBAC
+- [x] **CAP-ACADEMIC-CERTIFICATE** academic: Certificate capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## Certificate
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Certificate` → _value_objects.rs:Certificate_
 
-- [ ] **CAP-ACADEMIC-ID_CARD** academic: IdCard capability not wired in RBAC
+- [x] **CAP-ACADEMIC-ID_CARD** academic: IdCard capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## IdCard
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:IdCard` → _value_objects.rs:IdCard_
 
-- [ ] **CAP-ACADEMIC-ADMISSION_QUERY** academic: AdmissionQuery capability not wired in RBAC
+- [x] **CAP-ACADEMIC-ADMISSION_QUERY** academic: AdmissionQuery capability not wired in RBAC
       **Source:** docs/specs/academic/capabilities.md ## AdmissionQuery
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:AdmissionQuery` → _value_objects.rs:AdmissionQuery_
 
@@ -1608,7 +1608,7 @@
       **Source:** docs/specs/facilities/capabilities.md ## Supplier
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Supplier` → _value_objects.rs:Supplier_
 
-- [ ] **CAP-ASSESSMENT-EXAM_TYPE** assessment: ExamType capability not wired in RBAC
+- [x] **CAP-ASSESSMENT-EXAM_TYPE** assessment: ExamType capability not wired in RBAC
       **Source:** docs/specs/assessment/capabilities.md ## ExamType
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:ExamType` → _value_objects.rs:ExamType_
 
@@ -1616,7 +1616,7 @@
       **Source:** docs/specs/assessment/capabilities.md ## Exam
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Exam` → _value_objects.rs:Exam_
 
-- [ ] **CAP-ASSESSMENT-EXAM_SETUP** assessment: ExamSetup capability not wired in RBAC
+- [x] **CAP-ASSESSMENT-EXAM_SETUP** assessment: ExamSetup capability not wired in RBAC
       **Source:** docs/specs/assessment/capabilities.md ## ExamSetup
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:ExamSetup` → _value_objects.rs:ExamSetup_
 
@@ -1624,11 +1624,11 @@
       **Source:** docs/specs/assessment/capabilities.md ## ExamSchedule
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:ExamSchedule` → _value_objects.rs:ExamSchedule_
 
-- [ ] **CAP-ASSESSMENT-MARK_STORE** assessment: MarkStore capability not wired in RBAC
+- [x] **CAP-ASSESSMENT-MARK_STORE** assessment: MarkStore capability not wired in RBAC
       **Source:** docs/specs/assessment/capabilities.md ## MarkStore
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:MarkStore` → _value_objects.rs:MarkStore_
 
-- [ ] **CAP-ASSESSMENT-MARKS_GRADE** assessment: MarksGrade capability not wired in RBAC
+- [x] **CAP-ASSESSMENT-MARKS_GRADE** assessment: MarksGrade capability not wired in RBAC
       **Source:** docs/specs/assessment/capabilities.md ## MarksGrade
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:MarksGrade` → _value_objects.rs:MarksGrade_
 
@@ -1648,23 +1648,23 @@
       **Source:** docs/specs/assessment/capabilities.md ## AdmitCard
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:AdmitCard` → _value_objects.rs:AdmitCard_
 
-- [ ] **CAP-ASSESSMENT-TEACHER_EVALUATION** assessment: TeacherEvaluation capability not wired in RBAC
+- [x] **CAP-ASSESSMENT-TEACHER_EVALUATION** assessment: TeacherEvaluation capability not wired in RBAC
       **Source:** docs/specs/assessment/capabilities.md ## TeacherEvaluation
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:TeacherEvaluation` → _value_objects.rs:TeacherEvaluation_
 
-- [ ] **CAP-ASSESSMENT-TEACHER_REMARK** assessment: TeacherRemark capability not wired in RBAC
+- [x] **CAP-ASSESSMENT-TEACHER_REMARK** assessment: TeacherRemark capability not wired in RBAC
       **Source:** docs/specs/assessment/capabilities.md ## TeacherRemark
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:TeacherRemark` → _value_objects.rs:TeacherRemark_
 
-- [ ] **CAP-ASSESSMENT-EXAM_ATTENDANCE** assessment: ExamAttendance capability not wired in RBAC
+- [x] **CAP-ASSESSMENT-EXAM_ATTENDANCE** assessment: ExamAttendance capability not wired in RBAC
       **Source:** docs/specs/assessment/capabilities.md ## ExamAttendance
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:ExamAttendance` → _value_objects.rs:ExamAttendance_
 
-- [ ] **CAP-FINANCE-FEES_ASSIGN.DISCOUNT.UPDATE** finance: FeesAssign.Discount.Update capability not wired in RBAC
+- [x] **CAP-FINANCE-FEES_ASSIGN.DISCOUNT.UPDATE** finance: FeesAssign.Discount.Update capability not wired in RBAC
       **Source:** docs/specs/finance/capabilities.md ## FeesAssign.Discount.Update
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:FeesAssign.Discount.Up...` → _value_objects.rs:FeesAssign.Discount.Update_
 
-- [ ] **CAP-FINANCE-INVOICE.SETTING.CONFIGURE** finance: Invoice.Setting.Configure capability not wired in RBAC
+- [x] **CAP-FINANCE-INVOICE.SETTING.CONFIGURE** finance: Invoice.Setting.Configure capability not wired in RBAC
       **Source:** docs/specs/finance/capabilities.md ## Invoice.Setting.Configure
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Invoice.Setting.Config...` → _value_objects.rs:Invoice.Setting.Configure_
 
@@ -1676,23 +1676,23 @@
       **Source:** docs/specs/finance/capabilities.md ## Bank.Statement.Reverse
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Bank.Statement.Reverse` → _value_objects.rs:Bank.Statement.Reverse_
 
-- [ ] **CAP-FINANCE-INVENTORY.PAYMENT.RECORD** finance: Inventory.Payment.Record capability not wired in RBAC
+- [x] **CAP-FINANCE-INVENTORY.PAYMENT.RECORD** finance: Inventory.Payment.Record capability not wired in RBAC
       **Source:** docs/specs/finance/capabilities.md ## Inventory.Payment.Record
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Inventory.Payment.Reco...` → _value_objects.rs:Inventory.Payment.Record_
 
-- [ ] **CAP-FINANCE-QUESTION_BANK.FEE.ATTACH** finance: QuestionBank.Fee.Attach capability not wired in RBAC
+- [x] **CAP-FINANCE-QUESTION_BANK.FEE.ATTACH** finance: QuestionBank.Fee.Attach capability not wired in RBAC
       **Source:** docs/specs/finance/capabilities.md ## QuestionBank.Fee.Attach
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:QuestionBank.Fee.Attac...` → _value_objects.rs:QuestionBank.Fee.Attach_
 
-- [ ] **CAP-FINANCE-QUESTION_BANK.FEE.DETACH** finance: QuestionBank.Fee.Detach capability not wired in RBAC
+- [x] **CAP-FINANCE-QUESTION_BANK.FEE.DETACH** finance: QuestionBank.Fee.Detach capability not wired in RBAC
       **Source:** docs/specs/finance/capabilities.md ## QuestionBank.Fee.Detach
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:QuestionBank.Fee.Detac...` → _value_objects.rs:QuestionBank.Fee.Detach_
 
-- [ ] **CAP-FINANCE-QUESTION_BANK.FEE.READ** finance: QuestionBank.Fee.Read capability not wired in RBAC
+- [x] **CAP-FINANCE-QUESTION_BANK.FEE.READ** finance: QuestionBank.Fee.Read capability not wired in RBAC
       **Source:** docs/specs/finance/capabilities.md ## QuestionBank.Fee.Read
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:QuestionBank.Fee.Read` → _value_objects.rs:QuestionBank.Fee.Read_
 
-- [ ] **CAP-FINANCE-REPORT.FINANCE.READ** finance: Report.Finance.Read capability not wired in RBAC
+- [x] **CAP-FINANCE-REPORT.FINANCE.READ** finance: Report.Finance.Read capability not wired in RBAC
       **Source:** docs/specs/finance/capabilities.md ## Report.Finance.Read
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Report.Finance.Read` → _value_objects.rs:Report.Finance.Read_
 
@@ -1732,11 +1732,11 @@
       **Source:** docs/specs/hr/capabilities.md ## Staff.AssignClassTeacher.Create
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Staff.AssignClassTeach...` → _value_objects.rs:Staff.AssignClassTeacher.Creat_
 
-- [ ] **CAP-HR-STAFF.ASSIGN_CLASS_TEACHER.UPDATE** hr: Staff.AssignClassTeacher.Update capability not wired in RBAC
+- [x] **CAP-HR-STAFF.ASSIGN_CLASS_TEACHER.UPDATE** hr: Staff.AssignClassTeacher.Update capability not wired in RBAC
       **Source:** docs/specs/hr/capabilities.md ## Staff.AssignClassTeacher.Update
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Staff.AssignClassTeach...` → _value_objects.rs:Staff.AssignClassTeacher.Updat_
 
-- [ ] **CAP-HR-STAFF.ASSIGN_CLASS_TEACHER.DELETE** hr: Staff.AssignClassTeacher.Delete capability not wired in RBAC
+- [x] **CAP-HR-STAFF.ASSIGN_CLASS_TEACHER.DELETE** hr: Staff.AssignClassTeacher.Delete capability not wired in RBAC
       **Source:** docs/specs/hr/capabilities.md ## Staff.AssignClassTeacher.Delete
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Staff.AssignClassTeach...` → _value_objects.rs:Staff.AssignClassTeacher.Delet_
 
@@ -1812,7 +1812,7 @@
       **Source:** docs/specs/hr/capabilities.md ## Payroll.LeaveDeduction.Delete
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Payroll.LeaveDeduction...` → _value_objects.rs:Payroll.LeaveDeduction.Delete_
 
-- [ ] **CAP-HR-REPORT.HR.READ** hr: Report.HR.Read capability not wired in RBAC
+- [x] **CAP-HR-REPORT.HR.READ** hr: Report.HR.Read capability not wired in RBAC
       **Source:** docs/specs/hr/capabilities.md ## Report.HR.Read
       **Check:** `file:crates/cross-cutting/rbac/src/value_objects.rs regex:Report.HR.Read` → _value_objects.rs:Report.HR.Read_
 
