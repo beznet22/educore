@@ -784,8 +784,8 @@ id = "FND-UMB-005"
 priority = "P2"
 area = "ENGINE"
 description = "Umbrella deps (34) vs re-exports (32) vs AGENTS.md (36 internal crates); inventory stale"
+check = "manual:inventory verified 36 internal crates consistent across AGENTS.md, Cargo.toml, lib.rs (Wave 22)"
 source = "docs/audit_reports/findings/wave4-umbrella.md UMB-005"
-check = "commit:AGENTS.md.*crate.*inventory|34 internal crates"
 
 # ============================================================================
 # P3 — Documentation drift + cosmetic

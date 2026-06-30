@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 196 |
-| In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 277 |
-| Last update | 2026-06-30 07:03 UTC |
+| Done (`[x]`) | 398 |
+| In-progress (`[~]`) | 13 |
+| Open (`[ ]`) | 74 |
+| Last update | 2026-06-30 16:23 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
@@ -41,8 +41,8 @@
       _check: `manual:cargo test --workspace` → manual: cargo test --workspace_
 - [ ] **Gate-3 Clippy:** `cargo clippy --workspace --all-targets -- -D warnings` exits 0
       _check: `cmd:cargo clippy --workspace --all-targets -- -D warnings` → exit 101_
-- [x] **Gate-4 Fmt:** `cargo fmt --all -- --check` exits 0
-      _check: `cmd:cargo fmt --all -- --check` → exit 0_
+- [ ] **Gate-4 Fmt:** `cargo fmt --all -- --check` exits 0
+      _check: `cmd:cargo fmt --all -- --check` → exit 1_
 - [ ] **Gate-5 Adapters:** All 4 storage adapters' `create_schema()` round-trip on a fresh DB
       _check: `manual:cargo test -p educore-storage-parity --features all-dbs` → manual: cargo test -p educore-storage-parity --features all-dbs_
 - [ ] **Gate-6 Decisions:** All items in `13-decision-needed.md` resolved
@@ -80,9 +80,9 @@
       **Source:** docs/decisions/ADR-017-SurrealDBFirst.md
       **Check:** `file:docs/decisions/ADR-017-SurrealDBFirst.md regex:SQLite row-level security` → _ADR-017-SurrealDBFirst.md:SQLite row-level security_
 
-- [x] **B-3** Resolved — clippy on educore-core clean. Closed 2026-06-25.
+- [ ] **B-3** Resolved — clippy on educore-core clean. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave1-lint.md
-      **Check:** `cmd:cargo clippy -p educore-core --lib -- -D warnings` → _exit 0_
+      **Check:** `cmd:cargo clippy -p educore-core --lib -- -D warnings` → _timeout (>60s) — likely needs manual run_
 
 - [ ] **D-9** Resolved — clippy on educore-auth clean. Closed 2026-06-25.
       **Source:** docs/audit_reports/findings/wave5-docs-1.md
@@ -462,821 +462,821 @@
       **Source:** docs/decisions/ADR-014-Idempotency.md § Decision 6
       **Check:** `file:crates/infra/storage/src/idempotency.rs regex:aggregate_version|etag` → _idempotency.rs:aggregate_version|etag_
 
-- [ ] **ADR-015-CARGO-DENY** No deny.toml / cargo deny; license audit unverified (ADR-015 § Dependency hygiene policy rule 5)
+- [x] **ADR-015-CARGO-DENY** No deny.toml / cargo deny; license audit unverified (ADR-015 § Dependency hygiene policy rule 5)
       **Source:** docs/decisions/ADR-015-ExternalCrates.md
-      **Check:** `file-exists:deny.toml` → _deny.toml missing_
+      **Check:** `file-exists:deny.toml` → _deny.toml exists_
 
-- [ ] **FND-SPEC-3-001** HR spec uses legacy Sm_ brand prefix (SmAssignClassTeacher) violating AGENTS.md 'Brand is Educore'
+- [x] **FND-SPEC-3-001** HR spec uses legacy Sm_ brand prefix (SmAssignClassTeacher) violating AGENTS.md 'Brand is Educore'
       **Source:** docs/audit_reports/findings/wave6-specs-3.md SPEC-3-001
       **Check:** `commit:Sm_.*rename|hr.*brand.*cleanup` → _git log grep: Sm_.*rename|hr.*brand.*cleanup_
 
-- [ ] **FND-SPEC-4-001** docs/specs/sync/ contains only overview.md (1 of 11 files)
+- [x] **FND-SPEC-4-001** docs/specs/sync/ contains only overview.md (1 of 11 files)
       **Source:** docs/audit_reports/findings/wave6-specs-4.md SPEC-4-001
       **Check:** `commit:sync.*spec|specs/sync/tables.md` → _git log grep: sync.*spec|specs/sync/tables.md_
 
-- [ ] **FND-CORE-005** ids module rustdoc links to crate::id_gen::IdGenerator but no id_gen module exists
+- [x] **FND-CORE-005** ids module rustdoc links to crate::id_gen::IdGenerator but no id_gen module exists
       **Source:** docs/audit_reports/findings/wave4-core.md CORE-005
       **Check:** `commit:id_gen.*module|core.*id_gen` → _git log grep: id_gen.*module|core.*id_gen_
 
-- [ ] **FND-UMB-005** Umbrella deps (34) vs re-exports (32) vs AGENTS.md (36 internal crates); inventory stale
+- [~] **FND-UMB-005** Umbrella deps (34) vs re-exports (32) vs AGENTS.md (36 internal crates); inventory stale
       **Source:** docs/audit_reports/findings/wave4-umbrella.md UMB-005
-      **Check:** `commit:AGENTS.md.*crate.*inventory|34 internal crates` → _git log grep: AGENTS.md.*crate.*inventory|34 internal crates_
+      **Check:** `manual:inventory verified 36 internal crates consistent across AGENTS.md, Cargo....` → _manual: inventory verified 36 internal crates consistent across AGENTS.md, Cargo.toml, lib.rs (Wave 22)_
 
-- [ ] **AGG-LIBRARY-LIBRARY_MEMBER** library: LibraryMember aggregate has no integration test
+- [x] **AGG-LIBRARY-LIBRARY_MEMBER** library: LibraryMember aggregate has no integration test
       **Source:** docs/specs/library/aggregates.md ## LibraryMember
-      **Check:** `file-exists:crates/domains/library/tests/library_member.rs` → _library_member.rs missing_
+      **Check:** `file-exists:crates/domains/library/tests/library_member.rs` → _library_member.rs exists_
 
-- [ ] **AGG-LIBRARY-BOOK_ACQUISITION** library: BookAcquisition aggregate has no integration test
+- [x] **AGG-LIBRARY-BOOK_ACQUISITION** library: BookAcquisition aggregate has no integration test
       **Source:** docs/specs/library/aggregates.md ## BookAcquisition
-      **Check:** `file-exists:crates/domains/library/tests/book_acquisition.rs` → _book_acquisition.rs missing_
+      **Check:** `file-exists:crates/domains/library/tests/book_acquisition.rs` → _book_acquisition.rs exists_
 
-- [ ] **AGG-LIBRARY-BOOK_CATALOG_ENTRY** library: BookCatalogEntry aggregate has no integration test
+- [x] **AGG-LIBRARY-BOOK_CATALOG_ENTRY** library: BookCatalogEntry aggregate has no integration test
       **Source:** docs/specs/library/aggregates.md ## BookCatalogEntry
-      **Check:** `file-exists:crates/domains/library/tests/book_catalog_entry.rs` → _book_catalog_entry.rs missing_
+      **Check:** `file-exists:crates/domains/library/tests/book_catalog_entry.rs` → _book_catalog_entry.rs exists_
 
-- [ ] **AGG-LIBRARY-BOOK_RETURN** library: BookReturn aggregate has no integration test
+- [x] **AGG-LIBRARY-BOOK_RETURN** library: BookReturn aggregate has no integration test
       **Source:** docs/specs/library/aggregates.md ## BookReturn
-      **Check:** `file-exists:crates/domains/library/tests/book_return.rs` → _book_return.rs missing_
+      **Check:** `file-exists:crates/domains/library/tests/book_return.rs` → _book_return.rs exists_
 
-- [ ] **AGG-LIBRARY-FINE** library: Fine aggregate has no integration test
+- [x] **AGG-LIBRARY-FINE** library: Fine aggregate has no integration test
       **Source:** docs/specs/library/aggregates.md ## Fine
-      **Check:** `file-exists:crates/domains/library/tests/fine.rs` → _fine.rs missing_
+      **Check:** `file-exists:crates/domains/library/tests/fine.rs` → _fine.rs exists_
 
-- [ ] **AGG-LIBRARY-LIBRARY_MEMBER_NOTE** library: LibraryMemberNote aggregate has no integration test
+- [x] **AGG-LIBRARY-LIBRARY_MEMBER_NOTE** library: LibraryMemberNote aggregate has no integration test
       **Source:** docs/specs/library/aggregates.md ## LibraryMemberNote
-      **Check:** `file-exists:crates/domains/library/tests/library_member_note.rs` → _library_member_note.rs missing_
+      **Check:** `file-exists:crates/domains/library/tests/library_member_note.rs` → _library_member_note.rs exists_
 
-- [ ] **WF-LIBRARY-REPORTS** library: 'Reports' workflow not implemented
+- [x] **WF-LIBRARY-REPORTS** library: 'Reports' workflow not implemented
       **Source:** docs/specs/library/workflows.md ## Reports
       **Check:** `file:crates/domains/library/src/services.rs regex:Reports` → _services.rs:Reports_
 
-- [ ] **AGG-ATTENDANCE-STAFF_ATTENDANCE** attendance: StaffAttendance aggregate has no integration test
+- [x] **AGG-ATTENDANCE-STAFF_ATTENDANCE** attendance: StaffAttendance aggregate has no integration test
       **Source:** docs/specs/attendance/aggregates.md ## StaffAttendance
-      **Check:** `file-exists:crates/domains/attendance/tests/staff_attendance.rs` → _staff_attendance.rs missing_
+      **Check:** `file-exists:crates/domains/attendance/tests/staff_attendance.rs` → _staff_attendance.rs exists_
 
-- [ ] **AGG-COMMUNICATION-ABSENT_NOTIFICATION_TIME_SETUP** communication: AbsentNotificationTimeSetup aggregate has no integration test
+- [x] **AGG-COMMUNICATION-ABSENT_NOTIFICATION_TIME_SETUP** communication: AbsentNotificationTimeSetup aggregate has no integration test
       **Source:** docs/specs/communication/aggregates.md ## AbsentNotificationTimeSetup
-      **Check:** `file-exists:crates/domains/communication/tests/absent_notification_time_setup.rs` → _absent_notification_time_setup.rs missing_
+      **Check:** `file-exists:crates/domains/communication/tests/absent_notification_time_setup.rs` → _absent_notification_time_setup.rs exists_
 
-- [ ] **AGG-DOCUMENTS-FORM_DOWNLOAD_FILE** documents: FormDownloadFile aggregate has no integration test
+- [x] **AGG-DOCUMENTS-FORM_DOWNLOAD_FILE** documents: FormDownloadFile aggregate has no integration test
       **Source:** docs/specs/documents/aggregates.md ## FormDownloadFile
-      **Check:** `file-exists:crates/domains/documents/tests/form_download_file.rs` → _form_download_file.rs missing_
+      **Check:** `file-exists:crates/domains/documents/tests/form_download_file.rs` → _form_download_file.rs exists_
 
-- [ ] **AGG-DOCUMENTS-FORM_DOWNLOAD_LINK** documents: FormDownloadLink aggregate has no integration test
+- [x] **AGG-DOCUMENTS-FORM_DOWNLOAD_LINK** documents: FormDownloadLink aggregate has no integration test
       **Source:** docs/specs/documents/aggregates.md ## FormDownloadLink
-      **Check:** `file-exists:crates/domains/documents/tests/form_download_link.rs` → _form_download_link.rs missing_
+      **Check:** `file-exists:crates/domains/documents/tests/form_download_link.rs` → _form_download_link.rs exists_
 
-- [ ] **AGG-DOCUMENTS-NEW_FORM_DOWNLOAD** documents: NewFormDownload aggregate has no integration test
+- [x] **AGG-DOCUMENTS-NEW_FORM_DOWNLOAD** documents: NewFormDownload aggregate has no integration test
       **Source:** docs/specs/documents/aggregates.md ## NewFormDownload
-      **Check:** `file-exists:crates/domains/documents/tests/new_form_download.rs` → _new_form_download.rs missing_
+      **Check:** `file-exists:crates/domains/documents/tests/new_form_download.rs` → _new_form_download.rs exists_
 
-- [ ] **AGG-DOCUMENTS-NEW_POSTAL_DISPATCH** documents: NewPostalDispatch aggregate has no integration test
+- [x] **AGG-DOCUMENTS-NEW_POSTAL_DISPATCH** documents: NewPostalDispatch aggregate has no integration test
       **Source:** docs/specs/documents/aggregates.md ## NewPostalDispatch
-      **Check:** `file-exists:crates/domains/documents/tests/new_postal_dispatch.rs` → _new_postal_dispatch.rs missing_
+      **Check:** `file-exists:crates/domains/documents/tests/new_postal_dispatch.rs` → _new_postal_dispatch.rs exists_
 
-- [ ] **AGG-DOCUMENTS-NEW_POSTAL_RECEIVE** documents: NewPostalReceive aggregate has no integration test
+- [x] **AGG-DOCUMENTS-NEW_POSTAL_RECEIVE** documents: NewPostalReceive aggregate has no integration test
       **Source:** docs/specs/documents/aggregates.md ## NewPostalReceive
-      **Check:** `file-exists:crates/domains/documents/tests/new_postal_receive.rs` → _new_postal_receive.rs missing_
+      **Check:** `file-exists:crates/domains/documents/tests/new_postal_receive.rs` → _new_postal_receive.rs exists_
 
-- [ ] **AGG-DOCUMENTS-POSTAL_DISPATCH_ATTACHMENT** documents: PostalDispatchAttachment aggregate has no integration test
+- [x] **AGG-DOCUMENTS-POSTAL_DISPATCH_ATTACHMENT** documents: PostalDispatchAttachment aggregate has no integration test
       **Source:** docs/specs/documents/aggregates.md ## PostalDispatchAttachment
-      **Check:** `file-exists:crates/domains/documents/tests/postal_dispatch_attachment.rs` → _postal_dispatch_attachment.rs missing_
+      **Check:** `file-exists:crates/domains/documents/tests/postal_dispatch_attachment.rs` → _postal_dispatch_attachment.rs exists_
 
-- [ ] **AGG-DOCUMENTS-POSTAL_RECEIVE_ATTACHMENT** documents: PostalReceiveAttachment aggregate has no integration test
+- [x] **AGG-DOCUMENTS-POSTAL_RECEIVE_ATTACHMENT** documents: PostalReceiveAttachment aggregate has no integration test
       **Source:** docs/specs/documents/aggregates.md ## PostalReceiveAttachment
-      **Check:** `file-exists:crates/domains/documents/tests/postal_receive_attachment.rs` → _postal_receive_attachment.rs missing_
+      **Check:** `file-exists:crates/domains/documents/tests/postal_receive_attachment.rs` → _postal_receive_attachment.rs exists_
 
-- [ ] **AGG-DOCUMENTS-UPDATE_FORM_DOWNLOAD** documents: UpdateFormDownload aggregate has no integration test
+- [x] **AGG-DOCUMENTS-UPDATE_FORM_DOWNLOAD** documents: UpdateFormDownload aggregate has no integration test
       **Source:** docs/specs/documents/aggregates.md ## UpdateFormDownload
-      **Check:** `file-exists:crates/domains/documents/tests/update_form_download.rs` → _update_form_download.rs missing_
+      **Check:** `file-exists:crates/domains/documents/tests/update_form_download.rs` → _update_form_download.rs exists_
 
-- [ ] **AGG-DOCUMENTS-UPDATE_POSTAL_DISPATCH** documents: UpdatePostalDispatch aggregate has no integration test
+- [x] **AGG-DOCUMENTS-UPDATE_POSTAL_DISPATCH** documents: UpdatePostalDispatch aggregate has no integration test
       **Source:** docs/specs/documents/aggregates.md ## UpdatePostalDispatch
-      **Check:** `file-exists:crates/domains/documents/tests/update_postal_dispatch.rs` → _update_postal_dispatch.rs missing_
+      **Check:** `file-exists:crates/domains/documents/tests/update_postal_dispatch.rs` → _update_postal_dispatch.rs exists_
 
-- [ ] **AGG-DOCUMENTS-UPDATE_POSTAL_RECEIVE** documents: UpdatePostalReceive aggregate has no integration test
+- [x] **AGG-DOCUMENTS-UPDATE_POSTAL_RECEIVE** documents: UpdatePostalReceive aggregate has no integration test
       **Source:** docs/specs/documents/aggregates.md ## UpdatePostalReceive
-      **Check:** `file-exists:crates/domains/documents/tests/update_postal_receive.rs` → _update_postal_receive.rs missing_
+      **Check:** `file-exists:crates/domains/documents/tests/update_postal_receive.rs` → _update_postal_receive.rs exists_
 
-- [ ] **AGG-ACADEMIC-GUARDIAN** academic: Guardian aggregate has no integration test
+- [x] **AGG-ACADEMIC-GUARDIAN** academic: Guardian aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## Guardian
-      **Check:** `file-exists:crates/domains/academic/tests/guardian.rs` → _guardian.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/guardian.rs` → _guardian.rs exists_
 
-- [ ] **AGG-ACADEMIC-CLASS_SECTION** academic: ClassSection aggregate has no integration test
+- [x] **AGG-ACADEMIC-CLASS_SECTION** academic: ClassSection aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## ClassSection
-      **Check:** `file-exists:crates/domains/academic/tests/class_section.rs` → _class_section.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/class_section.rs` → _class_section.rs exists_
 
-- [ ] **AGG-ACADEMIC-CLASS_SUBJECT** academic: ClassSubject aggregate has no integration test
+- [x] **AGG-ACADEMIC-CLASS_SUBJECT** academic: ClassSubject aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## ClassSubject
-      **Check:** `file-exists:crates/domains/academic/tests/class_subject.rs` → _class_subject.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/class_subject.rs` → _class_subject.rs exists_
 
-- [ ] **AGG-ACADEMIC-ACADEMIC_YEAR** academic: AcademicYear aggregate has no integration test
+- [x] **AGG-ACADEMIC-ACADEMIC_YEAR** academic: AcademicYear aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## AcademicYear
-      **Check:** `file-exists:crates/domains/academic/tests/academic_year.rs` → _academic_year.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/academic_year.rs` → _academic_year.rs exists_
 
-- [ ] **AGG-ACADEMIC-CLASS_ROUTINE** academic: ClassRoutine aggregate has no integration test
+- [x] **AGG-ACADEMIC-CLASS_ROUTINE** academic: ClassRoutine aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## ClassRoutine
-      **Check:** `file-exists:crates/domains/academic/tests/class_routine.rs` → _class_routine.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/class_routine.rs` → _class_routine.rs exists_
 
-- [ ] **AGG-ACADEMIC-HOMEWORK** academic: Homework aggregate has no integration test
+- [x] **AGG-ACADEMIC-HOMEWORK** academic: Homework aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## Homework
-      **Check:** `file-exists:crates/domains/academic/tests/homework.rs` → _homework.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/homework.rs` → _homework.rs exists_
 
-- [ ] **AGG-ACADEMIC-LESSON_PLAN** academic: LessonPlan aggregate has no integration test
+- [x] **AGG-ACADEMIC-LESSON_PLAN** academic: LessonPlan aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## LessonPlan
-      **Check:** `file-exists:crates/domains/academic/tests/lesson_plan.rs` → _lesson_plan.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/lesson_plan.rs` → _lesson_plan.rs exists_
 
-- [ ] **AGG-ACADEMIC-LESSON** academic: Lesson aggregate has no integration test
+- [x] **AGG-ACADEMIC-LESSON** academic: Lesson aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## Lesson
-      **Check:** `file-exists:crates/domains/academic/tests/lesson.rs` → _lesson.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/lesson.rs` → _lesson.rs exists_
 
-- [ ] **AGG-ACADEMIC-LESSON_TOPIC** academic: LessonTopic aggregate has no integration test
+- [x] **AGG-ACADEMIC-LESSON_TOPIC** academic: LessonTopic aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## LessonTopic
-      **Check:** `file-exists:crates/domains/academic/tests/lesson_topic.rs` → _lesson_topic.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/lesson_topic.rs` → _lesson_topic.rs exists_
 
-- [ ] **AGG-ACADEMIC-STUDENT_RECORD** academic: StudentRecord aggregate has no integration test
+- [x] **AGG-ACADEMIC-STUDENT_RECORD** academic: StudentRecord aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## StudentRecord
-      **Check:** `file-exists:crates/domains/academic/tests/student_record.rs` → _student_record.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/student_record.rs` → _student_record.rs exists_
 
-- [ ] **AGG-ACADEMIC-STUDENT_PROMOTION** academic: StudentPromotion aggregate has no integration test
+- [x] **AGG-ACADEMIC-STUDENT_PROMOTION** academic: StudentPromotion aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## StudentPromotion
-      **Check:** `file-exists:crates/domains/academic/tests/student_promotion.rs` → _student_promotion.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/student_promotion.rs` → _student_promotion.rs exists_
 
-- [ ] **AGG-ACADEMIC-STUDENT_CATEGORY** academic: StudentCategory aggregate has no integration test
+- [x] **AGG-ACADEMIC-STUDENT_CATEGORY** academic: StudentCategory aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## StudentCategory
-      **Check:** `file-exists:crates/domains/academic/tests/student_category.rs` → _student_category.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/student_category.rs` → _student_category.rs exists_
 
-- [ ] **AGG-ACADEMIC-STUDENT_GROUP** academic: StudentGroup aggregate has no integration test
+- [x] **AGG-ACADEMIC-STUDENT_GROUP** academic: StudentGroup aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## StudentGroup
-      **Check:** `file-exists:crates/domains/academic/tests/student_group.rs` → _student_group.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/student_group.rs` → _student_group.rs exists_
 
-- [ ] **AGG-ACADEMIC-REGISTRATION_FIELD** academic: RegistrationField aggregate has no integration test
+- [x] **AGG-ACADEMIC-REGISTRATION_FIELD** academic: RegistrationField aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## RegistrationField
-      **Check:** `file-exists:crates/domains/academic/tests/registration_field.rs` → _registration_field.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/registration_field.rs` → _registration_field.rs exists_
 
-- [ ] **AGG-ACADEMIC-CERTIFICATE** academic: Certificate aggregate has no integration test
+- [x] **AGG-ACADEMIC-CERTIFICATE** academic: Certificate aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## Certificate
-      **Check:** `file-exists:crates/domains/academic/tests/certificate.rs` → _certificate.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/certificate.rs` → _certificate.rs exists_
 
-- [ ] **AGG-ACADEMIC-ID_CARD** academic: IdCard aggregate has no integration test
+- [x] **AGG-ACADEMIC-ID_CARD** academic: IdCard aggregate has no integration test
       **Source:** docs/specs/academic/aggregates.md ## IdCard
-      **Check:** `file-exists:crates/domains/academic/tests/id_card.rs` → _id_card.rs missing_
+      **Check:** `file-exists:crates/domains/academic/tests/id_card.rs` → _id_card.rs exists_
 
-- [ ] **AGG-CMS-NEWS_COMMENT** cms: NewsComment aggregate has no integration test
+- [x] **AGG-CMS-NEWS_COMMENT** cms: NewsComment aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewsComment
-      **Check:** `file-exists:crates/domains/cms/tests/news_comment.rs` → _news_comment.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/news_comment.rs` → _news_comment.rs exists_
 
-- [ ] **AGG-CMS-NEWS_PAGE** cms: NewsPage aggregate has no integration test
+- [x] **AGG-CMS-NEWS_PAGE** cms: NewsPage aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewsPage
-      **Check:** `file-exists:crates/domains/cms/tests/news_page.rs` → _news_page.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/news_page.rs` → _news_page.rs exists_
 
-- [ ] **AGG-CMS-NOTICE_BOARD** cms: NoticeBoard aggregate has no integration test
+- [x] **AGG-CMS-NOTICE_BOARD** cms: NoticeBoard aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NoticeBoard
-      **Check:** `file-exists:crates/domains/cms/tests/notice_board.rs` → _notice_board.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/notice_board.rs` → _notice_board.rs exists_
 
-- [ ] **AGG-CMS-TESTIMONIAL** cms: Testimonial aggregate has no integration test
+- [x] **AGG-CMS-TESTIMONIAL** cms: Testimonial aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## Testimonial
-      **Check:** `file-exists:crates/domains/cms/tests/testimonial.rs` → _testimonial.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/testimonial.rs` → _testimonial.rs exists_
 
-- [ ] **AGG-CMS-HOME_SLIDER** cms: HomeSlider aggregate has no integration test
+- [x] **AGG-CMS-HOME_SLIDER** cms: HomeSlider aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## HomeSlider
-      **Check:** `file-exists:crates/domains/cms/tests/home_slider.rs` → _home_slider.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/home_slider.rs` → _home_slider.rs exists_
 
-- [ ] **AGG-CMS-SPEECH_SLIDER** cms: SpeechSlider aggregate has no integration test
+- [x] **AGG-CMS-SPEECH_SLIDER** cms: SpeechSlider aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## SpeechSlider
-      **Check:** `file-exists:crates/domains/cms/tests/speech_slider.rs` → _speech_slider.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/speech_slider.rs` → _speech_slider.rs exists_
 
-- [ ] **AGG-CMS-CONTENT_SHARE_LIST** cms: ContentShareList aggregate has no integration test
+- [x] **AGG-CMS-CONTENT_SHARE_LIST** cms: ContentShareList aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## ContentShareList
-      **Check:** `file-exists:crates/domains/cms/tests/content_share_list.rs` → _content_share_list.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/content_share_list.rs` → _content_share_list.rs exists_
 
-- [ ] **AGG-CMS-TEACHER_UPLOAD_CONTENT** cms: TeacherUploadContent aggregate has no integration test
+- [x] **AGG-CMS-TEACHER_UPLOAD_CONTENT** cms: TeacherUploadContent aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## TeacherUploadContent
-      **Check:** `file-exists:crates/domains/cms/tests/teacher_upload_content.rs` → _teacher_upload_content.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/teacher_upload_content.rs` → _teacher_upload_content.rs exists_
 
-- [ ] **AGG-CMS-UPLOAD_CONTENT** cms: UploadContent aggregate has no integration test
+- [x] **AGG-CMS-UPLOAD_CONTENT** cms: UploadContent aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## UploadContent
-      **Check:** `file-exists:crates/domains/cms/tests/upload_content.rs` → _upload_content.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/upload_content.rs` → _upload_content.rs exists_
 
-- [ ] **AGG-CMS-ABOUT_PAGE** cms: AboutPage aggregate has no integration test
+- [x] **AGG-CMS-ABOUT_PAGE** cms: AboutPage aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## AboutPage
-      **Check:** `file-exists:crates/domains/cms/tests/about_page.rs` → _about_page.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/about_page.rs` → _about_page.rs exists_
 
-- [ ] **AGG-CMS-CONTACT_PAGE** cms: ContactPage aggregate has no integration test
+- [x] **AGG-CMS-CONTACT_PAGE** cms: ContactPage aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## ContactPage
-      **Check:** `file-exists:crates/domains/cms/tests/contact_page.rs` → _contact_page.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/contact_page.rs` → _contact_page.rs exists_
 
-- [ ] **AGG-CMS-COURSE_PAGE** cms: CoursePage aggregate has no integration test
+- [x] **AGG-CMS-COURSE_PAGE** cms: CoursePage aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## CoursePage
-      **Check:** `file-exists:crates/domains/cms/tests/course_page.rs` → _course_page.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/course_page.rs` → _course_page.rs exists_
 
-- [ ] **AGG-CMS-HOME_PAGE_SETTING** cms: HomePageSetting aggregate has no integration test
+- [x] **AGG-CMS-HOME_PAGE_SETTING** cms: HomePageSetting aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## HomePageSetting
-      **Check:** `file-exists:crates/domains/cms/tests/home_page_setting.rs` → _home_page_setting.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/home_page_setting.rs` → _home_page_setting.rs exists_
 
-- [ ] **AGG-CMS-FRONTEND_PAGE** cms: FrontendPage aggregate has no integration test
+- [x] **AGG-CMS-FRONTEND_PAGE** cms: FrontendPage aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## FrontendPage
-      **Check:** `file-exists:crates/domains/cms/tests/frontend_page.rs` → _frontend_page.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/frontend_page.rs` → _frontend_page.rs exists_
 
-- [ ] **AGG-CMS-NEW_ABOUT_PAGE** cms: NewAboutPage aggregate has no integration test
+- [x] **AGG-CMS-NEW_ABOUT_PAGE** cms: NewAboutPage aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewAboutPage
-      **Check:** `file-exists:crates/domains/cms/tests/new_about_page.rs` → _new_about_page.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_about_page.rs` → _new_about_page.rs exists_
 
-- [ ] **AGG-CMS-NEW_CONTACT_PAGE** cms: NewContactPage aggregate has no integration test
+- [x] **AGG-CMS-NEW_CONTACT_PAGE** cms: NewContactPage aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewContactPage
-      **Check:** `file-exists:crates/domains/cms/tests/new_contact_page.rs` → _new_contact_page.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_contact_page.rs` → _new_contact_page.rs exists_
 
-- [ ] **AGG-CMS-NEW_CONTENT_SHARE_LIST** cms: NewContentShareList aggregate has no integration test
+- [x] **AGG-CMS-NEW_CONTENT_SHARE_LIST** cms: NewContentShareList aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewContentShareList
-      **Check:** `file-exists:crates/domains/cms/tests/new_content_share_list.rs` → _new_content_share_list.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_content_share_list.rs` → _new_content_share_list.rs exists_
 
-- [ ] **AGG-CMS-NEW_CONTENT_TYPE** cms: NewContentType aggregate has no integration test
+- [x] **AGG-CMS-NEW_CONTENT_TYPE** cms: NewContentType aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewContentType
-      **Check:** `file-exists:crates/domains/cms/tests/new_content_type.rs` → _new_content_type.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_content_type.rs` → _new_content_type.rs exists_
 
-- [ ] **AGG-CMS-NEW_COURSE_PAGE** cms: NewCoursePage aggregate has no integration test
+- [x] **AGG-CMS-NEW_COURSE_PAGE** cms: NewCoursePage aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewCoursePage
-      **Check:** `file-exists:crates/domains/cms/tests/new_course_page.rs` → _new_course_page.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_course_page.rs` → _new_course_page.rs exists_
 
-- [ ] **AGG-CMS-NEW_FRONTEND_PAGE** cms: NewFrontendPage aggregate has no integration test
+- [x] **AGG-CMS-NEW_FRONTEND_PAGE** cms: NewFrontendPage aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewFrontendPage
-      **Check:** `file-exists:crates/domains/cms/tests/new_frontend_page.rs` → _new_frontend_page.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_frontend_page.rs` → _new_frontend_page.rs exists_
 
-- [ ] **AGG-CMS-NEW_HOME_PAGE_SETTING** cms: NewHomePageSetting aggregate has no integration test
+- [x] **AGG-CMS-NEW_HOME_PAGE_SETTING** cms: NewHomePageSetting aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewHomePageSetting
-      **Check:** `file-exists:crates/domains/cms/tests/new_home_page_setting.rs` → _new_home_page_setting.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_home_page_setting.rs` → _new_home_page_setting.rs exists_
 
-- [ ] **AGG-CMS-NEW_HOME_SLIDER** cms: NewHomeSlider aggregate has no integration test
+- [x] **AGG-CMS-NEW_HOME_SLIDER** cms: NewHomeSlider aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewHomeSlider
-      **Check:** `file-exists:crates/domains/cms/tests/new_home_slider.rs` → _new_home_slider.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_home_slider.rs` → _new_home_slider.rs exists_
 
-- [ ] **AGG-CMS-NEW_NEWS_CATEGORY** cms: NewNewsCategory aggregate has no integration test
+- [x] **AGG-CMS-NEW_NEWS_CATEGORY** cms: NewNewsCategory aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewNewsCategory
-      **Check:** `file-exists:crates/domains/cms/tests/new_news_category.rs` → _new_news_category.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_news_category.rs` → _new_news_category.rs exists_
 
-- [ ] **AGG-CMS-NEW_NEWS_COMMENT** cms: NewNewsComment aggregate has no integration test
+- [x] **AGG-CMS-NEW_NEWS_COMMENT** cms: NewNewsComment aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewNewsComment
-      **Check:** `file-exists:crates/domains/cms/tests/new_news_comment.rs` → _new_news_comment.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_news_comment.rs` → _new_news_comment.rs exists_
 
-- [ ] **AGG-CMS-NEW_NEWS_PAGE** cms: NewNewsPage aggregate has no integration test
+- [x] **AGG-CMS-NEW_NEWS_PAGE** cms: NewNewsPage aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewNewsPage
-      **Check:** `file-exists:crates/domains/cms/tests/new_news_page.rs` → _new_news_page.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_news_page.rs` → _new_news_page.rs exists_
 
-- [ ] **AGG-CMS-NEW_NOTICE_BOARD** cms: NewNoticeBoard aggregate has no integration test
+- [x] **AGG-CMS-NEW_NOTICE_BOARD** cms: NewNoticeBoard aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewNoticeBoard
-      **Check:** `file-exists:crates/domains/cms/tests/new_notice_board.rs` → _new_notice_board.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_notice_board.rs` → _new_notice_board.rs exists_
 
-- [ ] **AGG-CMS-NEW_PAGE** cms: NewPage aggregate has no integration test
+- [x] **AGG-CMS-NEW_PAGE** cms: NewPage aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewPage
-      **Check:** `file-exists:crates/domains/cms/tests/new_page.rs` → _new_page.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_page.rs` → _new_page.rs exists_
 
-- [ ] **AGG-CMS-NEW_PAGE_REVISION** cms: NewPageRevision aggregate has no integration test
+- [x] **AGG-CMS-NEW_PAGE_REVISION** cms: NewPageRevision aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewPageRevision
-      **Check:** `file-exists:crates/domains/cms/tests/new_page_revision.rs` → _new_page_revision.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_page_revision.rs` → _new_page_revision.rs exists_
 
-- [ ] **AGG-CMS-NEW_SPEECH_SLIDER** cms: NewSpeechSlider aggregate has no integration test
+- [x] **AGG-CMS-NEW_SPEECH_SLIDER** cms: NewSpeechSlider aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewSpeechSlider
-      **Check:** `file-exists:crates/domains/cms/tests/new_speech_slider.rs` → _new_speech_slider.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_speech_slider.rs` → _new_speech_slider.rs exists_
 
-- [ ] **AGG-CMS-NEW_TEACHER_UPLOAD_CONTENT** cms: NewTeacherUploadContent aggregate has no integration test
+- [x] **AGG-CMS-NEW_TEACHER_UPLOAD_CONTENT** cms: NewTeacherUploadContent aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewTeacherUploadContent
-      **Check:** `file-exists:crates/domains/cms/tests/new_teacher_upload_content.rs` → _new_teacher_upload_content.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_teacher_upload_content.rs` → _new_teacher_upload_content.rs exists_
 
-- [ ] **AGG-CMS-NEW_TESTIMONIAL** cms: NewTestimonial aggregate has no integration test
+- [x] **AGG-CMS-NEW_TESTIMONIAL** cms: NewTestimonial aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewTestimonial
-      **Check:** `file-exists:crates/domains/cms/tests/new_testimonial.rs` → _new_testimonial.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_testimonial.rs` → _new_testimonial.rs exists_
 
-- [ ] **AGG-CMS-NEW_UPLOAD_CONTENT** cms: NewUploadContent aggregate has no integration test
+- [x] **AGG-CMS-NEW_UPLOAD_CONTENT** cms: NewUploadContent aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## NewUploadContent
-      **Check:** `file-exists:crates/domains/cms/tests/new_upload_content.rs` → _new_upload_content.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/new_upload_content.rs` → _new_upload_content.rs exists_
 
-- [ ] **AGG-CMS-UPDATE_CONTENT** cms: UpdateContent aggregate has no integration test
+- [x] **AGG-CMS-UPDATE_CONTENT** cms: UpdateContent aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## UpdateContent
-      **Check:** `file-exists:crates/domains/cms/tests/update_content.rs` → _update_content.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/update_content.rs` → _update_content.rs exists_
 
-- [ ] **AGG-CMS-UPDATE_NEWS** cms: UpdateNews aggregate has no integration test
+- [x] **AGG-CMS-UPDATE_NEWS** cms: UpdateNews aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## UpdateNews
-      **Check:** `file-exists:crates/domains/cms/tests/update_news.rs` → _update_news.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/update_news.rs` → _update_news.rs exists_
 
-- [ ] **AGG-CMS-UPDATE_PAGE** cms: UpdatePage aggregate has no integration test
+- [x] **AGG-CMS-UPDATE_PAGE** cms: UpdatePage aggregate has no integration test
       **Source:** docs/specs/cms/aggregates.md ## UpdatePage
-      **Check:** `file-exists:crates/domains/cms/tests/update_page.rs` → _update_page.rs missing_
+      **Check:** `file-exists:crates/domains/cms/tests/update_page.rs` → _update_page.rs exists_
 
-- [ ] **AGG-FACILITIES-ASSIGN_VEHICLE** facilities: AssignVehicle aggregate has no integration test
+- [x] **AGG-FACILITIES-ASSIGN_VEHICLE** facilities: AssignVehicle aggregate has no integration test
       **Source:** docs/specs/facilities/aggregates.md ## AssignVehicle
-      **Check:** `file-exists:crates/domains/facilities/tests/assign_vehicle.rs` → _assign_vehicle.rs missing_
+      **Check:** `file-exists:crates/domains/facilities/tests/assign_vehicle.rs` → _assign_vehicle.rs exists_
 
-- [ ] **AGG-FACILITIES-ITEM_STORE** facilities: ItemStore aggregate has no integration test
+- [x] **AGG-FACILITIES-ITEM_STORE** facilities: ItemStore aggregate has no integration test
       **Source:** docs/specs/facilities/aggregates.md ## ItemStore
-      **Check:** `file-exists:crates/domains/facilities/tests/item_store.rs` → _item_store.rs missing_
+      **Check:** `file-exists:crates/domains/facilities/tests/item_store.rs` → _item_store.rs exists_
 
-- [ ] **AGG-FACILITIES-ITEM_ISSUE** facilities: ItemIssue aggregate has no integration test
+- [x] **AGG-FACILITIES-ITEM_ISSUE** facilities: ItemIssue aggregate has no integration test
       **Source:** docs/specs/facilities/aggregates.md ## ItemIssue
-      **Check:** `file-exists:crates/domains/facilities/tests/item_issue.rs` → _item_issue.rs missing_
+      **Check:** `file-exists:crates/domains/facilities/tests/item_issue.rs` → _item_issue.rs exists_
 
-- [ ] **AGG-FACILITIES-ITEM_RECEIVE** facilities: ItemReceive aggregate has no integration test
+- [x] **AGG-FACILITIES-ITEM_RECEIVE** facilities: ItemReceive aggregate has no integration test
       **Source:** docs/specs/facilities/aggregates.md ## ItemReceive
-      **Check:** `file-exists:crates/domains/facilities/tests/item_receive.rs` → _item_receive.rs missing_
+      **Check:** `file-exists:crates/domains/facilities/tests/item_receive.rs` → _item_receive.rs exists_
 
-- [ ] **AGG-FACILITIES-ITEM_RECEIVE_CHILD** facilities: ItemReceiveChild aggregate has no integration test
+- [x] **AGG-FACILITIES-ITEM_RECEIVE_CHILD** facilities: ItemReceiveChild aggregate has no integration test
       **Source:** docs/specs/facilities/aggregates.md ## ItemReceiveChild
-      **Check:** `file-exists:crates/domains/facilities/tests/item_receive_child.rs` → _item_receive_child.rs missing_
+      **Check:** `file-exists:crates/domains/facilities/tests/item_receive_child.rs` → _item_receive_child.rs exists_
 
-- [ ] **AGG-FACILITIES-ITEM_SELL** facilities: ItemSell aggregate has no integration test
+- [x] **AGG-FACILITIES-ITEM_SELL** facilities: ItemSell aggregate has no integration test
       **Source:** docs/specs/facilities/aggregates.md ## ItemSell
-      **Check:** `file-exists:crates/domains/facilities/tests/item_sell.rs` → _item_sell.rs missing_
+      **Check:** `file-exists:crates/domains/facilities/tests/item_sell.rs` → _item_sell.rs exists_
 
-- [ ] **AGG-FACILITIES-ITEM_SELL_CHILD** facilities: ItemSellChild aggregate has no integration test
+- [x] **AGG-FACILITIES-ITEM_SELL_CHILD** facilities: ItemSellChild aggregate has no integration test
       **Source:** docs/specs/facilities/aggregates.md ## ItemSellChild
-      **Check:** `file-exists:crates/domains/facilities/tests/item_sell_child.rs` → _item_sell_child.rs missing_
+      **Check:** `file-exists:crates/domains/facilities/tests/item_sell_child.rs` → _item_sell_child.rs exists_
 
-- [ ] **AGG-FACILITIES-SUPPLIER** facilities: Supplier aggregate has no integration test
+- [x] **AGG-FACILITIES-SUPPLIER** facilities: Supplier aggregate has no integration test
       **Source:** docs/specs/facilities/aggregates.md ## Supplier
-      **Check:** `file-exists:crates/domains/facilities/tests/supplier.rs` → _supplier.rs missing_
+      **Check:** `file-exists:crates/domains/facilities/tests/supplier.rs` → _supplier.rs exists_
 
-- [ ] **AGG-ASSESSMENT-EXAM_SETUP** assessment: ExamSetup aggregate has no integration test
+- [x] **AGG-ASSESSMENT-EXAM_SETUP** assessment: ExamSetup aggregate has no integration test
       **Source:** docs/specs/assessment/aggregates.md ## ExamSetup
-      **Check:** `file-exists:crates/domains/assessment/tests/exam_setup.rs` → _exam_setup.rs missing_
+      **Check:** `file-exists:crates/domains/assessment/tests/exam_setup.rs` → _exam_setup.rs exists_
 
-- [ ] **AGG-ASSESSMENT-EXAM_SCHEDULE** assessment: ExamSchedule aggregate has no integration test
+- [x] **AGG-ASSESSMENT-EXAM_SCHEDULE** assessment: ExamSchedule aggregate has no integration test
       **Source:** docs/specs/assessment/aggregates.md ## ExamSchedule
-      **Check:** `file-exists:crates/domains/assessment/tests/exam_schedule.rs` → _exam_schedule.rs missing_
+      **Check:** `file-exists:crates/domains/assessment/tests/exam_schedule.rs` → _exam_schedule.rs exists_
 
-- [ ] **AGG-ASSESSMENT-MARK_STORE** assessment: MarkStore aggregate has no integration test
+- [x] **AGG-ASSESSMENT-MARK_STORE** assessment: MarkStore aggregate has no integration test
       **Source:** docs/specs/assessment/aggregates.md ## MarkStore
-      **Check:** `file-exists:crates/domains/assessment/tests/mark_store.rs` → _mark_store.rs missing_
+      **Check:** `file-exists:crates/domains/assessment/tests/mark_store.rs` → _mark_store.rs exists_
 
-- [ ] **AGG-ASSESSMENT-EXAM_SETTING** assessment: ExamSetting aggregate has no integration test
+- [x] **AGG-ASSESSMENT-EXAM_SETTING** assessment: ExamSetting aggregate has no integration test
       **Source:** docs/specs/assessment/aggregates.md ## ExamSetting
-      **Check:** `file-exists:crates/domains/assessment/tests/exam_setting.rs` → _exam_setting.rs missing_
+      **Check:** `file-exists:crates/domains/assessment/tests/exam_setting.rs` → _exam_setting.rs exists_
 
-- [ ] **AGG-ASSESSMENT-EXAM_SIGNATURE** assessment: ExamSignature aggregate has no integration test
+- [x] **AGG-ASSESSMENT-EXAM_SIGNATURE** assessment: ExamSignature aggregate has no integration test
       **Source:** docs/specs/assessment/aggregates.md ## ExamSignature
-      **Check:** `file-exists:crates/domains/assessment/tests/exam_signature.rs` → _exam_signature.rs missing_
+      **Check:** `file-exists:crates/domains/assessment/tests/exam_signature.rs` → _exam_signature.rs exists_
 
-- [ ] **AGG-ASSESSMENT-ONLINE_EXAM** assessment: OnlineExam aggregate has no integration test
+- [x] **AGG-ASSESSMENT-ONLINE_EXAM** assessment: OnlineExam aggregate has no integration test
       **Source:** docs/specs/assessment/aggregates.md ## OnlineExam
-      **Check:** `file-exists:crates/domains/assessment/tests/online_exam.rs` → _online_exam.rs missing_
+      **Check:** `file-exists:crates/domains/assessment/tests/online_exam.rs` → _online_exam.rs exists_
 
-- [ ] **AGG-ASSESSMENT-QUESTION_BANK** assessment: QuestionBank aggregate has no integration test
+- [x] **AGG-ASSESSMENT-QUESTION_BANK** assessment: QuestionBank aggregate has no integration test
       **Source:** docs/specs/assessment/aggregates.md ## QuestionBank
-      **Check:** `file-exists:crates/domains/assessment/tests/question_bank.rs` → _question_bank.rs missing_
+      **Check:** `file-exists:crates/domains/assessment/tests/question_bank.rs` → _question_bank.rs exists_
 
-- [ ] **AGG-ASSESSMENT-STUDENT_TAKE_ONLINE_EXAM** assessment: StudentTakeOnlineExam aggregate has no integration test
+- [x] **AGG-ASSESSMENT-STUDENT_TAKE_ONLINE_EXAM** assessment: StudentTakeOnlineExam aggregate has no integration test
       **Source:** docs/specs/assessment/aggregates.md ## StudentTakeOnlineExam
-      **Check:** `file-exists:crates/domains/assessment/tests/student_take_online_exam.rs` → _student_take_online_exam.rs missing_
+      **Check:** `file-exists:crates/domains/assessment/tests/student_take_online_exam.rs` → _student_take_online_exam.rs exists_
 
-- [ ] **AGG-ASSESSMENT-SEAT_PLAN** assessment: SeatPlan aggregate has no integration test
+- [x] **AGG-ASSESSMENT-SEAT_PLAN** assessment: SeatPlan aggregate has no integration test
       **Source:** docs/specs/assessment/aggregates.md ## SeatPlan
-      **Check:** `file-exists:crates/domains/assessment/tests/seat_plan.rs` → _seat_plan.rs missing_
+      **Check:** `file-exists:crates/domains/assessment/tests/seat_plan.rs` → _seat_plan.rs exists_
 
-- [ ] **AGG-ASSESSMENT-ADMIT_CARD** assessment: AdmitCard aggregate has no integration test
+- [x] **AGG-ASSESSMENT-ADMIT_CARD** assessment: AdmitCard aggregate has no integration test
       **Source:** docs/specs/assessment/aggregates.md ## AdmitCard
-      **Check:** `file-exists:crates/domains/assessment/tests/admit_card.rs` → _admit_card.rs missing_
+      **Check:** `file-exists:crates/domains/assessment/tests/admit_card.rs` → _admit_card.rs exists_
 
-- [ ] **AGG-ASSESSMENT-TEACHER_EVALUATION** assessment: TeacherEvaluation aggregate has no integration test
+- [x] **AGG-ASSESSMENT-TEACHER_EVALUATION** assessment: TeacherEvaluation aggregate has no integration test
       **Source:** docs/specs/assessment/aggregates.md ## TeacherEvaluation
-      **Check:** `file-exists:crates/domains/assessment/tests/teacher_evaluation.rs` → _teacher_evaluation.rs missing_
+      **Check:** `file-exists:crates/domains/assessment/tests/teacher_evaluation.rs` → _teacher_evaluation.rs exists_
 
-- [ ] **AGG-ASSESSMENT-TEACHER_REMARK** assessment: TeacherRemark aggregate has no integration test
+- [x] **AGG-ASSESSMENT-TEACHER_REMARK** assessment: TeacherRemark aggregate has no integration test
       **Source:** docs/specs/assessment/aggregates.md ## TeacherRemark
-      **Check:** `file-exists:crates/domains/assessment/tests/teacher_remark.rs` → _teacher_remark.rs missing_
+      **Check:** `file-exists:crates/domains/assessment/tests/teacher_remark.rs` → _teacher_remark.rs exists_
 
-- [ ] **AGG-ASSESSMENT-EXAM_ATTENDANCE** assessment: ExamAttendance aggregate has no integration test
+- [x] **AGG-ASSESSMENT-EXAM_ATTENDANCE** assessment: ExamAttendance aggregate has no integration test
       **Source:** docs/specs/assessment/aggregates.md ## ExamAttendance
-      **Check:** `file-exists:crates/domains/assessment/tests/exam_attendance.rs` → _exam_attendance.rs missing_
+      **Check:** `file-exists:crates/domains/assessment/tests/exam_attendance.rs` → _exam_attendance.rs exists_
 
-- [ ] **WF-ASSESSMENT-ONLINE_EXAM_LIFECYCLE** assessment: 'Online Exam Lifecycle' workflow not implemented
+- [x] **WF-ASSESSMENT-ONLINE_EXAM_LIFECYCLE** assessment: 'Online Exam Lifecycle' workflow not implemented
       **Source:** docs/specs/assessment/workflows.md ## Online Exam Lifecycle
       **Check:** `file:crates/domains/assessment/src/services.rs regex:Online Exam Lifecycle` → _services.rs:Online Exam Lifecycle_
 
-- [ ] **AGG-FINANCE-FEES_GROUP** finance: FeesGroup aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_GROUP** finance: FeesGroup aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesGroup
-      **Check:** `file-exists:crates/domains/finance/tests/fees_group.rs` → _fees_group.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_group.rs` → _fees_group.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_TYPE** finance: FeesType aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_TYPE** finance: FeesType aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesType
-      **Check:** `file-exists:crates/domains/finance/tests/fees_type.rs` → _fees_type.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_type.rs` → _fees_type.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_MASTER** finance: FeesMaster aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_MASTER** finance: FeesMaster aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesMaster
-      **Check:** `file-exists:crates/domains/finance/tests/fees_master.rs` → _fees_master.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_master.rs` → _fees_master.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_ASSIGN** finance: FeesAssign aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_ASSIGN** finance: FeesAssign aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesAssign
-      **Check:** `file-exists:crates/domains/finance/tests/fees_assign.rs` → _fees_assign.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_assign.rs` → _fees_assign.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_ASSIGN_DISCOUNT** finance: FeesAssignDiscount aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_ASSIGN_DISCOUNT** finance: FeesAssignDiscount aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesAssignDiscount
-      **Check:** `file-exists:crates/domains/finance/tests/fees_assign_discount.rs` → _fees_assign_discount.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_assign_discount.rs` → _fees_assign_discount.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_DISCOUNT** finance: FeesDiscount aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_DISCOUNT** finance: FeesDiscount aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesDiscount
-      **Check:** `file-exists:crates/domains/finance/tests/fees_discount.rs` → _fees_discount.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_discount.rs` → _fees_discount.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_INVOICE** finance: FeesInvoice aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_INVOICE** finance: FeesInvoice aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesInvoice
-      **Check:** `file-exists:crates/domains/finance/tests/fees_invoice.rs` → _fees_invoice.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_invoice.rs` → _fees_invoice.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_INSTALLMENT** finance: FeesInstallment aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_INSTALLMENT** finance: FeesInstallment aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesInstallment
-      **Check:** `file-exists:crates/domains/finance/tests/fees_installment.rs` → _fees_installment.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_installment.rs` → _fees_installment.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_INSTALLMENT_ASSIGN** finance: FeesInstallmentAssign aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_INSTALLMENT_ASSIGN** finance: FeesInstallmentAssign aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesInstallmentAssign
-      **Check:** `file-exists:crates/domains/finance/tests/fees_installment_assign.rs` → _fees_installment_assign.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_installment_assign.rs` → _fees_installment_assign.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_PAYMENT** finance: FeesPayment aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_PAYMENT** finance: FeesPayment aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesPayment
-      **Check:** `file-exists:crates/domains/finance/tests/fees_payment.rs` → _fees_payment.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_payment.rs` → _fees_payment.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_CARRY_FORWARD** finance: FeesCarryForward aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_CARRY_FORWARD** finance: FeesCarryForward aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesCarryForward
-      **Check:** `file-exists:crates/domains/finance/tests/fees_carry_forward.rs` → _fees_carry_forward.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_carry_forward.rs` → _fees_carry_forward.rs exists_
 
-- [ ] **AGG-FINANCE-DIRECT_FEES_INSTALLMENT** finance: DirectFeesInstallment aggregate has no integration test
+- [x] **AGG-FINANCE-DIRECT_FEES_INSTALLMENT** finance: DirectFeesInstallment aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## DirectFeesInstallment
-      **Check:** `file-exists:crates/domains/finance/tests/direct_fees_installment.rs` → _direct_fees_installment.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/direct_fees_installment.rs` → _direct_fees_installment.rs exists_
 
-- [ ] **AGG-FINANCE-DIRECT_FEES_INSTALLMENT_ASSIGN** finance: DirectFeesInstallmentAssign aggregate has no integration test
+- [x] **AGG-FINANCE-DIRECT_FEES_INSTALLMENT_ASSIGN** finance: DirectFeesInstallmentAssign aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## DirectFeesInstallmentAssign
-      **Check:** `file-exists:crates/domains/finance/tests/direct_fees_installment_assign.rs` → _direct_fees_installment_assign.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/direct_fees_installment_assign.rs` → _direct_fees_installment_assign.rs exists_
 
-- [ ] **AGG-FINANCE-DIRECT_FEES_INSTALLMENT_CHILD_PAYMENT** finance: DirectFeesInstallmentChildPayment aggregate has no integration test
+- [x] **AGG-FINANCE-DIRECT_FEES_INSTALLMENT_CHILD_PAYMENT** finance: DirectFeesInstallmentChildPayment aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## DirectFeesInstallmentChildPayment
-      **Check:** `file-exists:crates/domains/finance/tests/direct_fees_installment_child_payment.r...` → _direct_fees_installment_child_payment.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/direct_fees_installment_child_payment.r...` → _direct_fees_installment_child_payment.rs exists_
 
-- [ ] **AGG-FINANCE-FM_FEES_TYPE** finance: FmFeesType aggregate has no integration test
+- [x] **AGG-FINANCE-FM_FEES_TYPE** finance: FmFeesType aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FmFeesType
-      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_type.rs` → _fm_fees_type.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_type.rs` → _fm_fees_type.rs exists_
 
-- [ ] **AGG-FINANCE-FM_FEES_INVOICE** finance: FmFeesInvoice aggregate has no integration test
+- [x] **AGG-FINANCE-FM_FEES_INVOICE** finance: FmFeesInvoice aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FmFeesInvoice
-      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_invoice.rs` → _fm_fees_invoice.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_invoice.rs` → _fm_fees_invoice.rs exists_
 
-- [ ] **AGG-FINANCE-FM_FEES_INVOICE_CHILD** finance: FmFeesInvoiceChild aggregate has no integration test
+- [x] **AGG-FINANCE-FM_FEES_INVOICE_CHILD** finance: FmFeesInvoiceChild aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FmFeesInvoiceChild
-      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_invoice_child.rs` → _fm_fees_invoice_child.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_invoice_child.rs` → _fm_fees_invoice_child.rs exists_
 
-- [ ] **AGG-FINANCE-FM_FEES_TRANSACTION** finance: FmFeesTransaction aggregate has no integration test
+- [x] **AGG-FINANCE-FM_FEES_TRANSACTION** finance: FmFeesTransaction aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FmFeesTransaction
-      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_transaction.rs` → _fm_fees_transaction.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_transaction.rs` → _fm_fees_transaction.rs exists_
 
-- [ ] **AGG-FINANCE-FM_FEES_TRANSACTION_CHILD** finance: FmFeesTransactionChild aggregate has no integration test
+- [x] **AGG-FINANCE-FM_FEES_TRANSACTION_CHILD** finance: FmFeesTransactionChild aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FmFeesTransactionChild
-      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_transaction_child.rs` → _fm_fees_transaction_child.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_transaction_child.rs` → _fm_fees_transaction_child.rs exists_
 
-- [ ] **AGG-FINANCE-FM_FEES_WEAVER** finance: FmFeesWeaver aggregate has no integration test
+- [x] **AGG-FINANCE-FM_FEES_WEAVER** finance: FmFeesWeaver aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FmFeesWeaver
-      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_weaver.rs` → _fm_fees_weaver.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_weaver.rs` → _fm_fees_weaver.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_INVOICE_SETTING** finance: FeesInvoiceSetting aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_INVOICE_SETTING** finance: FeesInvoiceSetting aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesInvoiceSetting
-      **Check:** `file-exists:crates/domains/finance/tests/fees_invoice_setting.rs` → _fees_invoice_setting.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_invoice_setting.rs` → _fees_invoice_setting.rs exists_
 
-- [ ] **AGG-FINANCE-INVOICE_SETTING** finance: InvoiceSetting aggregate has no integration test
+- [x] **AGG-FINANCE-INVOICE_SETTING** finance: InvoiceSetting aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## InvoiceSetting
-      **Check:** `file-exists:crates/domains/finance/tests/invoice_setting.rs` → _invoice_setting.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/invoice_setting.rs` → _invoice_setting.rs exists_
 
-- [ ] **AGG-FINANCE-FM_FEES_INVOICE_SETTING** finance: FmFeesInvoiceSetting aggregate has no integration test
+- [x] **AGG-FINANCE-FM_FEES_INVOICE_SETTING** finance: FmFeesInvoiceSetting aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FmFeesInvoiceSetting
-      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_invoice_setting.rs` → _fm_fees_invoice_setting.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_invoice_setting.rs` → _fm_fees_invoice_setting.rs exists_
 
-- [ ] **AGG-FINANCE-BANK_STATEMENT** finance: BankStatement aggregate has no integration test
+- [x] **AGG-FINANCE-BANK_STATEMENT** finance: BankStatement aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## BankStatement
-      **Check:** `file-exists:crates/domains/finance/tests/bank_statement.rs` → _bank_statement.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/bank_statement.rs` → _bank_statement.rs exists_
 
-- [ ] **AGG-FINANCE-BANK_PAYMENT_SLIP** finance: BankPaymentSlip aggregate has no integration test
+- [x] **AGG-FINANCE-BANK_PAYMENT_SLIP** finance: BankPaymentSlip aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## BankPaymentSlip
-      **Check:** `file-exists:crates/domains/finance/tests/bank_payment_slip.rs` → _bank_payment_slip.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/bank_payment_slip.rs` → _bank_payment_slip.rs exists_
 
-- [ ] **AGG-FINANCE-EXPENSE** finance: Expense aggregate has no integration test
+- [x] **AGG-FINANCE-EXPENSE** finance: Expense aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## Expense
-      **Check:** `file-exists:crates/domains/finance/tests/expense.rs` → _expense.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/expense.rs` → _expense.rs exists_
 
-- [ ] **AGG-FINANCE-INCOME** finance: Income aggregate has no integration test
+- [x] **AGG-FINANCE-INCOME** finance: Income aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## Income
-      **Check:** `file-exists:crates/domains/finance/tests/income.rs` → _income.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/income.rs` → _income.rs exists_
 
-- [ ] **AGG-FINANCE-DONOR** finance: Donor aggregate has no integration test
+- [x] **AGG-FINANCE-DONOR** finance: Donor aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## Donor
-      **Check:** `file-exists:crates/domains/finance/tests/donor.rs` → _donor.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/donor.rs` → _donor.rs exists_
 
-- [ ] **AGG-FINANCE-EXPENSE_HEAD** finance: ExpenseHead aggregate has no integration test
+- [x] **AGG-FINANCE-EXPENSE_HEAD** finance: ExpenseHead aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## ExpenseHead
-      **Check:** `file-exists:crates/domains/finance/tests/expense_head.rs` → _expense_head.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/expense_head.rs` → _expense_head.rs exists_
 
-- [ ] **AGG-FINANCE-INCOME_HEAD** finance: IncomeHead aggregate has no integration test
+- [x] **AGG-FINANCE-INCOME_HEAD** finance: IncomeHead aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## IncomeHead
-      **Check:** `file-exists:crates/domains/finance/tests/income_head.rs` → _income_head.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/income_head.rs` → _income_head.rs exists_
 
-- [ ] **AGG-FINANCE-WALLET_TRANSACTION** finance: WalletTransaction aggregate has no integration test
+- [x] **AGG-FINANCE-WALLET_TRANSACTION** finance: WalletTransaction aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## WalletTransaction
-      **Check:** `file-exists:crates/domains/finance/tests/wallet_transaction.rs` → _wallet_transaction.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/wallet_transaction.rs` → _wallet_transaction.rs exists_
 
-- [ ] **AGG-FINANCE-TRANSACTION** finance: Transaction aggregate has no integration test
+- [x] **AGG-FINANCE-TRANSACTION** finance: Transaction aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## Transaction
-      **Check:** `file-exists:crates/domains/finance/tests/transaction.rs` → _transaction.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/transaction.rs` → _transaction.rs exists_
 
-- [ ] **AGG-FINANCE-PAYROLL_PAYMENT** finance: PayrollPayment aggregate has no integration test
+- [x] **AGG-FINANCE-PAYROLL_PAYMENT** finance: PayrollPayment aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## PayrollPayment
-      **Check:** `file-exists:crates/domains/finance/tests/payroll_payment.rs` → _payroll_payment.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/payroll_payment.rs` → _payroll_payment.rs exists_
 
-- [ ] **AGG-FINANCE-PAYROLL_GENERATE** finance: PayrollGenerate aggregate has no integration test
+- [x] **AGG-FINANCE-PAYROLL_GENERATE** finance: PayrollGenerate aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## PayrollGenerate
-      **Check:** `file-exists:crates/domains/finance/tests/payroll_generate.rs` → _payroll_generate.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/payroll_generate.rs` → _payroll_generate.rs exists_
 
-- [ ] **AGG-FINANCE-PAYROLL_EARN_DEDUC** finance: PayrollEarnDeduc aggregate has no integration test
+- [x] **AGG-FINANCE-PAYROLL_EARN_DEDUC** finance: PayrollEarnDeduc aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## PayrollEarnDeduc
-      **Check:** `file-exists:crates/domains/finance/tests/payroll_earn_deduc.rs` → _payroll_earn_deduc.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/payroll_earn_deduc.rs` → _payroll_earn_deduc.rs exists_
 
-- [ ] **AGG-FINANCE-SALARY_TEMPLATE** finance: SalaryTemplate aggregate has no integration test
+- [x] **AGG-FINANCE-SALARY_TEMPLATE** finance: SalaryTemplate aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## SalaryTemplate
-      **Check:** `file-exists:crates/domains/finance/tests/salary_template.rs` → _salary_template.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/salary_template.rs` → _salary_template.rs exists_
 
-- [ ] **AGG-FINANCE-PRODUCT_PURCHASE** finance: ProductPurchase aggregate has no integration test
+- [x] **AGG-FINANCE-PRODUCT_PURCHASE** finance: ProductPurchase aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## ProductPurchase
-      **Check:** `file-exists:crates/domains/finance/tests/product_purchase.rs` → _product_purchase.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/product_purchase.rs` → _product_purchase.rs exists_
 
-- [ ] **AGG-FINANCE-INVENTORY_PAYMENT** finance: InventoryPayment aggregate has no integration test
+- [x] **AGG-FINANCE-INVENTORY_PAYMENT** finance: InventoryPayment aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## InventoryPayment
-      **Check:** `file-exists:crates/domains/finance/tests/inventory_payment.rs` → _inventory_payment.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/inventory_payment.rs` → _inventory_payment.rs exists_
 
-- [ ] **AGG-FINANCE-AMOUNT_TRANSFER** finance: AmountTransfer aggregate has no integration test
+- [x] **AGG-FINANCE-AMOUNT_TRANSFER** finance: AmountTransfer aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## AmountTransfer
-      **Check:** `file-exists:crates/domains/finance/tests/amount_transfer.rs` → _amount_transfer.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/amount_transfer.rs` → _amount_transfer.rs exists_
 
-- [ ] **AGG-FINANCE-CHART_OF_ACCOUNT** finance: ChartOfAccount aggregate has no integration test
+- [x] **AGG-FINANCE-CHART_OF_ACCOUNT** finance: ChartOfAccount aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## ChartOfAccount
-      **Check:** `file-exists:crates/domains/finance/tests/chart_of_account.rs` → _chart_of_account.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/chart_of_account.rs` → _chart_of_account.rs exists_
 
-- [ ] **AGG-FINANCE-QUESTION_BANK_FEE** finance: QuestionBankFee aggregate has no integration test
+- [x] **AGG-FINANCE-QUESTION_BANK_FEE** finance: QuestionBankFee aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## QuestionBankFee
-      **Check:** `file-exists:crates/domains/finance/tests/question_bank_fee.rs` → _question_bank_fee.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/question_bank_fee.rs` → _question_bank_fee.rs exists_
 
-- [ ] **AGG-FINANCE-PAYMENT_GATEWAY_SETTING** finance: PaymentGatewaySetting aggregate has no integration test
+- [x] **AGG-FINANCE-PAYMENT_GATEWAY_SETTING** finance: PaymentGatewaySetting aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## PaymentGatewaySetting
-      **Check:** `file-exists:crates/domains/finance/tests/payment_gateway_setting.rs` → _payment_gateway_setting.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/payment_gateway_setting.rs` → _payment_gateway_setting.rs exists_
 
-- [ ] **AGG-FINANCE-DIRECT_FEES_REMINDER** finance: DirectFeesReminder aggregate has no integration test
+- [x] **AGG-FINANCE-DIRECT_FEES_REMINDER** finance: DirectFeesReminder aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## DirectFeesReminder
-      **Check:** `file-exists:crates/domains/finance/tests/direct_fees_reminder.rs` → _direct_fees_reminder.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/direct_fees_reminder.rs` → _direct_fees_reminder.rs exists_
 
-- [ ] **AGG-FINANCE-DUE_FEES_LOGIN_PREVENT** finance: DueFeesLoginPrevent aggregate has no integration test
+- [x] **AGG-FINANCE-DUE_FEES_LOGIN_PREVENT** finance: DueFeesLoginPrevent aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## DueFeesLoginPrevent
-      **Check:** `file-exists:crates/domains/finance/tests/due_fees_login_prevent.rs` → _due_fees_login_prevent.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/due_fees_login_prevent.rs` → _due_fees_login_prevent.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_CARRY_FORWARD_LOG** finance: FeesCarryForwardLog aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_CARRY_FORWARD_LOG** finance: FeesCarryForwardLog aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesCarryForwardLog
-      **Check:** `file-exists:crates/domains/finance/tests/fees_carry_forward_log.rs` → _fees_carry_forward_log.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_carry_forward_log.rs` → _fees_carry_forward_log.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_INSTALLMENT_CREDIT** finance: FeesInstallmentCredit aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_INSTALLMENT_CREDIT** finance: FeesInstallmentCredit aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesInstallmentCredit
-      **Check:** `file-exists:crates/domains/finance/tests/fees_installment_credit.rs` → _fees_installment_credit.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_installment_credit.rs` → _fees_installment_credit.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_CARRY_FORWARD_SETTING** finance: FeesCarryForwardSetting aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_CARRY_FORWARD_SETTING** finance: FeesCarryForwardSetting aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesCarryForwardSetting
-      **Check:** `file-exists:crates/domains/finance/tests/fees_carry_forward_setting.rs` → _fees_carry_forward_setting.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_carry_forward_setting.rs` → _fees_carry_forward_setting.rs exists_
 
-- [ ] **AGG-FINANCE-DIRECT_FEES_SETTING** finance: DirectFeesSetting aggregate has no integration test
+- [x] **AGG-FINANCE-DIRECT_FEES_SETTING** finance: DirectFeesSetting aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## DirectFeesSetting
-      **Check:** `file-exists:crates/domains/finance/tests/direct_fees_setting.rs` → _direct_fees_setting.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/direct_fees_setting.rs` → _direct_fees_setting.rs exists_
 
-- [ ] **AGG-FINANCE-BANK_PAYMENT_SLIP_AUDIT** finance: BankPaymentSlipAudit aggregate has no integration test
+- [x] **AGG-FINANCE-BANK_PAYMENT_SLIP_AUDIT** finance: BankPaymentSlipAudit aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## BankPaymentSlipAudit
-      **Check:** `file-exists:crates/domains/finance/tests/bank_payment_slip_audit.rs` → _bank_payment_slip_audit.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/bank_payment_slip_audit.rs` → _bank_payment_slip_audit.rs exists_
 
-- [ ] **AGG-FINANCE-BANK_STATEMENT_ATTACHMENT** finance: BankStatementAttachment aggregate has no integration test
+- [x] **AGG-FINANCE-BANK_STATEMENT_ATTACHMENT** finance: BankStatementAttachment aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## BankStatementAttachment
-      **Check:** `file-exists:crates/domains/finance/tests/bank_statement_attachment.rs` → _bank_statement_attachment.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/bank_statement_attachment.rs` → _bank_statement_attachment.rs exists_
 
-- [ ] **AGG-FINANCE-DIRECT_FEES_INSTALLMENT_ASSIGN_CHILD** finance: DirectFeesInstallmentAssignChild aggregate has no integration test
+- [x] **AGG-FINANCE-DIRECT_FEES_INSTALLMENT_ASSIGN_CHILD** finance: DirectFeesInstallmentAssignChild aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## DirectFeesInstallmentAssignChild
-      **Check:** `file-exists:crates/domains/finance/tests/direct_fees_installment_assign_child.rs` → _direct_fees_installment_assign_child.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/direct_fees_installment_assign_child.rs` → _direct_fees_installment_assign_child.rs exists_
 
-- [ ] **AGG-FINANCE-EXPENSE_APPROVAL** finance: ExpenseApproval aggregate has no integration test
+- [x] **AGG-FINANCE-EXPENSE_APPROVAL** finance: ExpenseApproval aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## ExpenseApproval
-      **Check:** `file-exists:crates/domains/finance/tests/expense_approval.rs` → _expense_approval.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/expense_approval.rs` → _expense_approval.rs exists_
 
-- [ ] **AGG-FINANCE-FEES_INSTALLMENT_ASSIGN_DISCOUNT** finance: FeesInstallmentAssignDiscount aggregate has no integration test
+- [x] **AGG-FINANCE-FEES_INSTALLMENT_ASSIGN_DISCOUNT** finance: FeesInstallmentAssignDiscount aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FeesInstallmentAssignDiscount
-      **Check:** `file-exists:crates/domains/finance/tests/fees_installment_assign_discount.rs` → _fees_installment_assign_discount.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fees_installment_assign_discount.rs` → _fees_installment_assign_discount.rs exists_
 
-- [ ] **AGG-FINANCE-FM_FEES_INVOICE_LINE_NOTE** finance: FmFeesInvoiceLineNote aggregate has no integration test
+- [x] **AGG-FINANCE-FM_FEES_INVOICE_LINE_NOTE** finance: FmFeesInvoiceLineNote aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FmFeesInvoiceLineNote
-      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_invoice_line_note.rs` → _fm_fees_invoice_line_note.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_invoice_line_note.rs` → _fm_fees_invoice_line_note.rs exists_
 
-- [ ] **AGG-FINANCE-FM_FEES_TRANSACTION_LINE_NOTE** finance: FmFeesTransactionLineNote aggregate has no integration test
+- [x] **AGG-FINANCE-FM_FEES_TRANSACTION_LINE_NOTE** finance: FmFeesTransactionLineNote aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## FmFeesTransactionLineNote
-      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_transaction_line_note.rs` → _fm_fees_transaction_line_note.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/fm_fees_transaction_line_note.rs` → _fm_fees_transaction_line_note.rs exists_
 
-- [ ] **AGG-FINANCE-INCOME_APPROVAL** finance: IncomeApproval aggregate has no integration test
+- [x] **AGG-FINANCE-INCOME_APPROVAL** finance: IncomeApproval aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## IncomeApproval
-      **Check:** `file-exists:crates/domains/finance/tests/income_approval.rs` → _income_approval.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/income_approval.rs` → _income_approval.rs exists_
 
-- [ ] **AGG-FINANCE-PAYROLL_PAYMENT_APPROVAL** finance: PayrollPaymentApproval aggregate has no integration test
+- [x] **AGG-FINANCE-PAYROLL_PAYMENT_APPROVAL** finance: PayrollPaymentApproval aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## PayrollPaymentApproval
-      **Check:** `file-exists:crates/domains/finance/tests/payroll_payment_approval.rs` → _payroll_payment_approval.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/payroll_payment_approval.rs` → _payroll_payment_approval.rs exists_
 
-- [ ] **AGG-FINANCE-WALLET_TRANSACTION_APPROVAL** finance: WalletTransactionApproval aggregate has no integration test
+- [x] **AGG-FINANCE-WALLET_TRANSACTION_APPROVAL** finance: WalletTransactionApproval aggregate has no integration test
       **Source:** docs/specs/finance/aggregates.md ## WalletTransactionApproval
-      **Check:** `file-exists:crates/domains/finance/tests/wallet_transaction_approval.rs` → _wallet_transaction_approval.rs missing_
+      **Check:** `file-exists:crates/domains/finance/tests/wallet_transaction_approval.rs` → _wallet_transaction_approval.rs exists_
 
-- [ ] **WF-FINANCE-FEES_ASSIGNMENT** finance: 'Fees Assignment' workflow not implemented
+- [x] **WF-FINANCE-FEES_ASSIGNMENT** finance: 'Fees Assignment' workflow not implemented
       **Source:** docs/specs/finance/workflows.md ## Fees Assignment
       **Check:** `file:crates/domains/finance/src/services.rs regex:Fees Assignment` → _services.rs:Fees Assignment_
 
-- [ ] **WF-FINANCE-DUE_FEES_LOGIN_PREVENTION** finance: 'Due Fees Login Prevention' workflow not implemented
+- [x] **WF-FINANCE-DUE_FEES_LOGIN_PREVENTION** finance: 'Due Fees Login Prevention' workflow not implemented
       **Source:** docs/specs/finance/workflows.md ## Due Fees Login Prevention
       **Check:** `file:crates/domains/finance/src/services.rs regex:Due Fees Login Prevention` → _services.rs:Due Fees Login Prevention_
 
-- [ ] **WF-FINANCE-BANK_RECONCILIATION** finance: 'Bank Reconciliation' workflow not implemented
+- [x] **WF-FINANCE-BANK_RECONCILIATION** finance: 'Bank Reconciliation' workflow not implemented
       **Source:** docs/specs/finance/workflows.md ## Bank Reconciliation
       **Check:** `file:crates/domains/finance/src/services.rs regex:Bank Reconciliation` → _services.rs:Bank Reconciliation_
 
-- [ ] **WF-FINANCE-PAYROLL_DISBURSEMENT** finance: 'Payroll Disbursement' workflow not implemented
+- [x] **WF-FINANCE-PAYROLL_DISBURSEMENT** finance: 'Payroll Disbursement' workflow not implemented
       **Source:** docs/specs/finance/workflows.md ## Payroll Disbursement
       **Check:** `file:crates/domains/finance/src/services.rs regex:Payroll Disbursement` → _services.rs:Payroll Disbursement_
 
-- [ ] **WF-FINANCE-HOURLY_RATE_MANAGEMENT** finance: 'Hourly Rate Management' workflow not implemented
+- [x] **WF-FINANCE-HOURLY_RATE_MANAGEMENT** finance: 'Hourly Rate Management' workflow not implemented
       **Source:** docs/specs/finance/workflows.md ## Hourly Rate Management
       **Check:** `file:crates/domains/finance/src/services.rs regex:Hourly Rate Management` → _services.rs:Hourly Rate Management_
 
-- [ ] **WF-FINANCE-SALARY_TEMPLATE** finance: 'Salary Template' workflow not implemented
+- [x] **WF-FINANCE-SALARY_TEMPLATE** finance: 'Salary Template' workflow not implemented
       **Source:** docs/specs/finance/workflows.md ## Salary Template
       **Check:** `file:crates/domains/finance/src/services.rs regex:Salary Template` → _services.rs:Salary Template_
 
-- [ ] **AGG-HR-LEAVE_DEFINE** hr: LeaveDefine aggregate has no integration test
+- [x] **AGG-HR-LEAVE_DEFINE** hr: LeaveDefine aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## LeaveDefine
-      **Check:** `file-exists:crates/domains/hr/tests/leave_define.rs` → _leave_define.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/leave_define.rs` → _leave_define.rs exists_
 
-- [ ] **AGG-HR-LEAVE_REQUEST** hr: LeaveRequest aggregate has no integration test
+- [x] **AGG-HR-LEAVE_REQUEST** hr: LeaveRequest aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## LeaveRequest
-      **Check:** `file-exists:crates/domains/hr/tests/leave_request.rs` → _leave_request.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/leave_request.rs` → _leave_request.rs exists_
 
-- [ ] **AGG-HR-STAFF_ATTENDANCE** hr: StaffAttendance aggregate has no integration test
+- [x] **AGG-HR-STAFF_ATTENDANCE** hr: StaffAttendance aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffAttendance
-      **Check:** `file-exists:crates/domains/hr/tests/staff_attendance.rs` → _staff_attendance.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_attendance.rs` → _staff_attendance.rs exists_
 
-- [ ] **AGG-HR-STAFF_ATTENDANCE_IMPORT** hr: StaffAttendanceImport aggregate has no integration test
+- [x] **AGG-HR-STAFF_ATTENDANCE_IMPORT** hr: StaffAttendanceImport aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffAttendanceImport
-      **Check:** `file-exists:crates/domains/hr/tests/staff_attendance_import.rs` → _staff_attendance_import.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_attendance_import.rs` → _staff_attendance_import.rs exists_
 
-- [ ] **AGG-HR-ASSIGN_CLASS_TEACHER** hr: AssignClassTeacher aggregate has no integration test
+- [x] **AGG-HR-ASSIGN_CLASS_TEACHER** hr: AssignClassTeacher aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## AssignClassTeacher
-      **Check:** `file-exists:crates/domains/hr/tests/assign_class_teacher.rs` → _assign_class_teacher.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/assign_class_teacher.rs` → _assign_class_teacher.rs exists_
 
-- [ ] **AGG-HR-HOURLY_RATE** hr: HourlyRate aggregate has no integration test
+- [x] **AGG-HR-HOURLY_RATE** hr: HourlyRate aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## HourlyRate
-      **Check:** `file-exists:crates/domains/hr/tests/hourly_rate.rs` → _hourly_rate.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/hourly_rate.rs` → _hourly_rate.rs exists_
 
-- [ ] **AGG-HR-SALARY_TEMPLATE** hr: SalaryTemplate aggregate has no integration test
+- [x] **AGG-HR-SALARY_TEMPLATE** hr: SalaryTemplate aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## SalaryTemplate
-      **Check:** `file-exists:crates/domains/hr/tests/salary_template.rs` → _salary_template.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/salary_template.rs` → _salary_template.rs exists_
 
-- [ ] **AGG-HR-PAYROLL_GENERATE** hr: PayrollGenerate aggregate has no integration test
+- [x] **AGG-HR-PAYROLL_GENERATE** hr: PayrollGenerate aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## PayrollGenerate
-      **Check:** `file-exists:crates/domains/hr/tests/payroll_generate.rs` → _payroll_generate.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/payroll_generate.rs` → _payroll_generate.rs exists_
 
-- [ ] **AGG-HR-PAYROLL_EARN_DEDUC** hr: PayrollEarnDeduc aggregate has no integration test
+- [x] **AGG-HR-PAYROLL_EARN_DEDUC** hr: PayrollEarnDeduc aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## PayrollEarnDeduc
-      **Check:** `file-exists:crates/domains/hr/tests/payroll_earn_deduc.rs` → _payroll_earn_deduc.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/payroll_earn_deduc.rs` → _payroll_earn_deduc.rs exists_
 
-- [ ] **AGG-HR-LEAVE_DEDUCTION_INFO** hr: LeaveDeductionInfo aggregate has no integration test
+- [x] **AGG-HR-LEAVE_DEDUCTION_INFO** hr: LeaveDeductionInfo aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## LeaveDeductionInfo
-      **Check:** `file-exists:crates/domains/hr/tests/leave_deduction_info.rs` → _leave_deduction_info.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/leave_deduction_info.rs` → _leave_deduction_info.rs exists_
 
-- [ ] **AGG-HR-STAFF_REGISTRATION_FIELD** hr: StaffRegistrationField aggregate has no integration test
+- [x] **AGG-HR-STAFF_REGISTRATION_FIELD** hr: StaffRegistrationField aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffRegistrationField
-      **Check:** `file-exists:crates/domains/hr/tests/staff_registration_field.rs` → _staff_registration_field.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_registration_field.rs` → _staff_registration_field.rs exists_
 
-- [ ] **AGG-HR-STAFF_IMPORT_BULK_TEMPORARY** hr: StaffImportBulkTemporary aggregate has no integration test
+- [x] **AGG-HR-STAFF_IMPORT_BULK_TEMPORARY** hr: StaffImportBulkTemporary aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffImportBulkTemporary
-      **Check:** `file-exists:crates/domains/hr/tests/staff_import_bulk_temporary.rs` → _staff_import_bulk_temporary.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_import_bulk_temporary.rs` → _staff_import_bulk_temporary.rs exists_
 
-- [ ] **AGG-HR-ASSIGN_CLASS_TEACHER_SCOPE** hr: AssignClassTeacherScope aggregate has no integration test
+- [x] **AGG-HR-ASSIGN_CLASS_TEACHER_SCOPE** hr: AssignClassTeacherScope aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## AssignClassTeacherScope
-      **Check:** `file-exists:crates/domains/hr/tests/assign_class_teacher_scope.rs` → _assign_class_teacher_scope.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/assign_class_teacher_scope.rs` → _assign_class_teacher_scope.rs exists_
 
-- [ ] **AGG-HR-BULK_IMPORT_JOB** hr: BulkImportJob aggregate has no integration test
+- [x] **AGG-HR-BULK_IMPORT_JOB** hr: BulkImportJob aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## BulkImportJob
-      **Check:** `file-exists:crates/domains/hr/tests/bulk_import_job.rs` → _bulk_import_job.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/bulk_import_job.rs` → _bulk_import_job.rs exists_
 
-- [ ] **AGG-HR-DEPARTMENT_HEAD** hr: DepartmentHead aggregate has no integration test
+- [x] **AGG-HR-DEPARTMENT_HEAD** hr: DepartmentHead aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## DepartmentHead
-      **Check:** `file-exists:crates/domains/hr/tests/department_head.rs` → _department_head.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/department_head.rs` → _department_head.rs exists_
 
-- [ ] **AGG-HR-DESIGNATION_GRADE** hr: DesignationGrade aggregate has no integration test
+- [x] **AGG-HR-DESIGNATION_GRADE** hr: DesignationGrade aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## DesignationGrade
-      **Check:** `file-exists:crates/domains/hr/tests/designation_grade.rs` → _designation_grade.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/designation_grade.rs` → _designation_grade.rs exists_
 
-- [ ] **AGG-HR-HOURLY_RATE_OVERRIDE** hr: HourlyRateOverride aggregate has no integration test
+- [x] **AGG-HR-HOURLY_RATE_OVERRIDE** hr: HourlyRateOverride aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## HourlyRateOverride
-      **Check:** `file-exists:crates/domains/hr/tests/hourly_rate_override.rs` → _hourly_rate_override.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/hourly_rate_override.rs` → _hourly_rate_override.rs exists_
 
-- [ ] **AGG-HR-LEAVE_DEFINE_ADJUSTMENT** hr: LeaveDefineAdjustment aggregate has no integration test
+- [x] **AGG-HR-LEAVE_DEFINE_ADJUSTMENT** hr: LeaveDefineAdjustment aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## LeaveDefineAdjustment
-      **Check:** `file-exists:crates/domains/hr/tests/leave_define_adjustment.rs` → _leave_define_adjustment.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/leave_define_adjustment.rs` → _leave_define_adjustment.rs exists_
 
-- [ ] **AGG-HR-LEAVE_REQUEST_APPROVAL** hr: LeaveRequestApproval aggregate has no integration test
+- [x] **AGG-HR-LEAVE_REQUEST_APPROVAL** hr: LeaveRequestApproval aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## LeaveRequestApproval
-      **Check:** `file-exists:crates/domains/hr/tests/leave_request_approval.rs` → _leave_request_approval.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/leave_request_approval.rs` → _leave_request_approval.rs exists_
 
-- [ ] **AGG-HR-LEAVE_REQUEST_ATTACHMENT** hr: LeaveRequestAttachment aggregate has no integration test
+- [x] **AGG-HR-LEAVE_REQUEST_ATTACHMENT** hr: LeaveRequestAttachment aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## LeaveRequestAttachment
-      **Check:** `file-exists:crates/domains/hr/tests/leave_request_attachment.rs` → _leave_request_attachment.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/leave_request_attachment.rs` → _leave_request_attachment.rs exists_
 
-- [ ] **AGG-HR-PAYROLL_GENERATE_AUDIT** hr: PayrollGenerateAudit aggregate has no integration test
+- [x] **AGG-HR-PAYROLL_GENERATE_AUDIT** hr: PayrollGenerateAudit aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## PayrollGenerateAudit
-      **Check:** `file-exists:crates/domains/hr/tests/payroll_generate_audit.rs` → _payroll_generate_audit.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/payroll_generate_audit.rs` → _payroll_generate_audit.rs exists_
 
-- [ ] **AGG-HR-PAYROLL_PAYMENT_LINK** hr: PayrollPaymentLink aggregate has no integration test
+- [x] **AGG-HR-PAYROLL_PAYMENT_LINK** hr: PayrollPaymentLink aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## PayrollPaymentLink
-      **Check:** `file-exists:crates/domains/hr/tests/payroll_payment_link.rs` → _payroll_payment_link.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/payroll_payment_link.rs` → _payroll_payment_link.rs exists_
 
-- [ ] **AGG-HR-STAFF_ADDRESS** hr: StaffAddress aggregate has no integration test
+- [x] **AGG-HR-STAFF_ADDRESS** hr: StaffAddress aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffAddress
-      **Check:** `file-exists:crates/domains/hr/tests/staff_address.rs` → _staff_address.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_address.rs` → _staff_address.rs exists_
 
-- [ ] **AGG-HR-STAFF_ATTENDANCE_IMPORT_BATCH** hr: StaffAttendanceImportBatch aggregate has no integration test
+- [x] **AGG-HR-STAFF_ATTENDANCE_IMPORT_BATCH** hr: StaffAttendanceImportBatch aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffAttendanceImportBatch
-      **Check:** `file-exists:crates/domains/hr/tests/staff_attendance_import_batch.rs` → _staff_attendance_import_batch.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_attendance_import_batch.rs` → _staff_attendance_import_batch.rs exists_
 
-- [ ] **AGG-HR-STAFF_ATTENDANCE_PUNCH** hr: StaffAttendancePunch aggregate has no integration test
+- [x] **AGG-HR-STAFF_ATTENDANCE_PUNCH** hr: StaffAttendancePunch aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffAttendancePunch
-      **Check:** `file-exists:crates/domains/hr/tests/staff_attendance_punch.rs` → _staff_attendance_punch.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_attendance_punch.rs` → _staff_attendance_punch.rs exists_
 
-- [ ] **AGG-HR-STAFF_BANK_DETAIL** hr: StaffBankDetail aggregate has no integration test
+- [x] **AGG-HR-STAFF_BANK_DETAIL** hr: StaffBankDetail aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffBankDetail
-      **Check:** `file-exists:crates/domains/hr/tests/staff_bank_detail.rs` → _staff_bank_detail.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_bank_detail.rs` → _staff_bank_detail.rs exists_
 
-- [ ] **AGG-HR-STAFF_CUSTOM_FIELD** hr: StaffCustomField aggregate has no integration test
+- [x] **AGG-HR-STAFF_CUSTOM_FIELD** hr: StaffCustomField aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffCustomField
-      **Check:** `file-exists:crates/domains/hr/tests/staff_custom_field.rs` → _staff_custom_field.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_custom_field.rs` → _staff_custom_field.rs exists_
 
-- [ ] **AGG-HR-STAFF_DOCUMENT** hr: StaffDocument aggregate has no integration test
+- [x] **AGG-HR-STAFF_DOCUMENT** hr: StaffDocument aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffDocument
-      **Check:** `file-exists:crates/domains/hr/tests/staff_document.rs` → _staff_document.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_document.rs` → _staff_document.rs exists_
 
-- [ ] **AGG-HR-STAFF_DRIVING_LICENSE** hr: StaffDrivingLicense aggregate has no integration test
+- [x] **AGG-HR-STAFF_DRIVING_LICENSE** hr: StaffDrivingLicense aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffDrivingLicense
-      **Check:** `file-exists:crates/domains/hr/tests/staff_driving_license.rs` → _staff_driving_license.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_driving_license.rs` → _staff_driving_license.rs exists_
 
-- [ ] **AGG-HR-STAFF_IMPORT_RESOLUTION** hr: StaffImportResolution aggregate has no integration test
+- [x] **AGG-HR-STAFF_IMPORT_RESOLUTION** hr: StaffImportResolution aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffImportResolution
-      **Check:** `file-exists:crates/domains/hr/tests/staff_import_resolution.rs` → _staff_import_resolution.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_import_resolution.rs` → _staff_import_resolution.rs exists_
 
-- [ ] **AGG-HR-STAFF_LEAVE_BALANCE** hr: StaffLeaveBalance aggregate has no integration test
+- [x] **AGG-HR-STAFF_LEAVE_BALANCE** hr: StaffLeaveBalance aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffLeaveBalance
-      **Check:** `file-exists:crates/domains/hr/tests/staff_leave_balance.rs` → _staff_leave_balance.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_leave_balance.rs` → _staff_leave_balance.rs exists_
 
-- [ ] **AGG-HR-STAFF_LEAVE_HISTORY** hr: StaffLeaveHistory aggregate has no integration test
+- [x] **AGG-HR-STAFF_LEAVE_HISTORY** hr: StaffLeaveHistory aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffLeaveHistory
-      **Check:** `file-exists:crates/domains/hr/tests/staff_leave_history.rs` → _staff_leave_history.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_leave_history.rs` → _staff_leave_history.rs exists_
 
-- [ ] **AGG-HR-STAFF_PAYROLL_HISTORY** hr: StaffPayrollHistory aggregate has no integration test
+- [x] **AGG-HR-STAFF_PAYROLL_HISTORY** hr: StaffPayrollHistory aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffPayrollHistory
-      **Check:** `file-exists:crates/domains/hr/tests/staff_payroll_history.rs` → _staff_payroll_history.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_payroll_history.rs` → _staff_payroll_history.rs exists_
 
-- [ ] **AGG-HR-STAFF_PROFILE_PHOTO** hr: StaffProfilePhoto aggregate has no integration test
+- [x] **AGG-HR-STAFF_PROFILE_PHOTO** hr: StaffProfilePhoto aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffProfilePhoto
-      **Check:** `file-exists:crates/domains/hr/tests/staff_profile_photo.rs` → _staff_profile_photo.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_profile_photo.rs` → _staff_profile_photo.rs exists_
 
-- [ ] **AGG-HR-STAFF_REGISTRATION_FIELD_OPTION** hr: StaffRegistrationFieldOption aggregate has no integration test
+- [x] **AGG-HR-STAFF_REGISTRATION_FIELD_OPTION** hr: StaffRegistrationFieldOption aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffRegistrationFieldOption
-      **Check:** `file-exists:crates/domains/hr/tests/staff_registration_field_option.rs` → _staff_registration_field_option.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_registration_field_option.rs` → _staff_registration_field_option.rs exists_
 
-- [ ] **AGG-HR-STAFF_ROLE_ASSIGNMENT** hr: StaffRoleAssignment aggregate has no integration test
+- [x] **AGG-HR-STAFF_ROLE_ASSIGNMENT** hr: StaffRoleAssignment aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffRoleAssignment
-      **Check:** `file-exists:crates/domains/hr/tests/staff_role_assignment.rs` → _staff_role_assignment.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_role_assignment.rs` → _staff_role_assignment.rs exists_
 
-- [ ] **AGG-HR-STAFF_SOCIAL_LINK** hr: StaffSocialLink aggregate has no integration test
+- [x] **AGG-HR-STAFF_SOCIAL_LINK** hr: StaffSocialLink aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffSocialLink
-      **Check:** `file-exists:crates/domains/hr/tests/staff_social_link.rs` → _staff_social_link.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_social_link.rs` → _staff_social_link.rs exists_
 
-- [ ] **AGG-HR-STAFF_TIMELINE** hr: StaffTimeline aggregate has no integration test
+- [x] **AGG-HR-STAFF_TIMELINE** hr: StaffTimeline aggregate has no integration test
       **Source:** docs/specs/hr/aggregates.md ## StaffTimeline
-      **Check:** `file-exists:crates/domains/hr/tests/staff_timeline.rs` → _staff_timeline.rs missing_
+      **Check:** `file-exists:crates/domains/hr/tests/staff_timeline.rs` → _staff_timeline.rs exists_
 
-- [ ] **WF-HR-CLASS_TEACHER_ASSIGNMENT** hr: 'Class Teacher Assignment' workflow not implemented
+- [x] **WF-HR-CLASS_TEACHER_ASSIGNMENT** hr: 'Class Teacher Assignment' workflow not implemented
       **Source:** docs/specs/hr/workflows.md ## Class Teacher Assignment
       **Check:** `file:crates/domains/hr/src/services.rs regex:Class Teacher Assignment` → _services.rs:Class Teacher Assignment_
 
-- [ ] **WF-HR-SUBJECT_TEACHER_ASSIGNMENT** hr: 'Subject Teacher Assignment' workflow not implemented
+- [x] **WF-HR-SUBJECT_TEACHER_ASSIGNMENT** hr: 'Subject Teacher Assignment' workflow not implemented
       **Source:** docs/specs/hr/workflows.md ## Subject Teacher Assignment
       **Check:** `file:crates/domains/hr/src/services.rs regex:Subject Teacher Assignment` → _services.rs:Subject Teacher Assignment_
 
-- [ ] **WF-HR-HOURLY_RATE_MANAGEMENT** hr: 'Hourly Rate Management' workflow not implemented
+- [x] **WF-HR-HOURLY_RATE_MANAGEMENT** hr: 'Hourly Rate Management' workflow not implemented
       **Source:** docs/specs/hr/workflows.md ## Hourly Rate Management
       **Check:** `file:crates/domains/hr/src/services.rs regex:Hourly Rate Management` → _services.rs:Hourly Rate Management_
 
-- [ ] **AGG-EVENTS-ASSIGN_INCIDENT** events: AssignIncident aggregate has no integration test
+- [x] **AGG-EVENTS-ASSIGN_INCIDENT** events: AssignIncident aggregate has no integration test
       **Source:** docs/specs/events/aggregates.md ## AssignIncident
-      **Check:** `file-exists:crates/cross-cutting/events-domain/tests/assign_incident.rs` → _assign_incident.rs missing_
+      **Check:** `file-exists:crates/cross-cutting/events-domain/tests/assign_incident.rs` → _assign_incident.rs exists_
 
-- [ ] **AGG-EVENTS-INCIDENT_COMMENT** events: IncidentComment aggregate has no integration test
+- [x] **AGG-EVENTS-INCIDENT_COMMENT** events: IncidentComment aggregate has no integration test
       **Source:** docs/specs/events/aggregates.md ## IncidentComment
-      **Check:** `file-exists:crates/cross-cutting/events-domain/tests/incident_comment.rs` → _incident_comment.rs missing_
+      **Check:** `file-exists:crates/cross-cutting/events-domain/tests/incident_comment.rs` → _incident_comment.rs exists_
 <!-- END COMPUTED -->
 
 ---
