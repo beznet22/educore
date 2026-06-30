@@ -212,6 +212,8 @@ docker-compose.override.yml
 *.orig
 *.rej
 *.swp
+# Rust source backups (rustfmt / rust-analyzer / editor temp)
+**/*.rs.bk
 
 # -----------------------------------------------------------------------------
 # Local data / fixtures
