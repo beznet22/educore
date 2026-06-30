@@ -64,6 +64,17 @@ pub mod sync;
 /// `docs/schemas/command-schema.md` § 12).
 pub mod bulk_events;
 
+/// The [`SchemaRegistry`](schema_registry::SchemaRegistry) port:
+/// per-school registry of event / command / aggregate-state
+/// schemas. Storage adapters implement the trait; consumers
+/// consult it before publishing or consuming envelopes.
+pub mod schema_registry;
+
+/// The [`ConflictResolver`](conflict::ConflictResolver) trait
+/// and supporting types (`Conflict<T>`, `ConflictKind`,
+/// `ConflictResolution<T>`) per ADR-018 § 6 + ADR-008.
+pub mod conflict;
+
 /// The typed event the engine publishes when an event-log
 /// retention sweep is due (see `docs/schemas/event-schema.md`
 /// § 9). Parallel to the audit crate's `RetentionSweepDue`.
@@ -90,6 +101,10 @@ pub mod prelude {
     pub use crate::bulk_events::{
         BulkCommandCompleted, BulkCommandItemProcessed, BulkCommandStarted, BulkFailurePolicy,
     };
+    pub use crate::conflict::{
+        Conflict, ConflictKind, ConflictResolution, ConflictResolver, FirstWriteWinsResolver,
+        KindPolicyResolver, LastWriteWinsResolver, RejectAllResolver,
+    };
     pub use crate::domain_event::{DomainEvent, EmittedEvent, EventFactory};
     pub use crate::envelope::EventEnvelope;
     pub use crate::errors::EventError;
@@ -101,6 +116,9 @@ pub mod prelude {
     pub use crate::event_retention::{EventLogRetentionPolicy, EventLogRetentionSweepDue};
     pub use crate::idempotency_retention::{IdempotencyRetentionPolicy, IdempotencyTtlSweepDue};
     pub use crate::relay::{OutboxRelay, RelayStats, DEFAULT_BATCH_SIZE, DEFAULT_IDLE_DELAY};
+    pub use crate::schema_registry::{
+        fresh_schema_cid, RegisteredSchema, SchemaKind, SchemaRegistry, SchemaVersion,
+    };
     pub use crate::subscribe::{
         DispatchStats, Subscriber, SubscriberFailure, SubscriberRegistry, SubscriptionFilter,
     };
