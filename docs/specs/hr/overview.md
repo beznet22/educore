@@ -70,7 +70,7 @@ aggregates (HR-owned writes; finance reads and pays).
    `net_salary == gross_salary - total_deduction - tax` on a
    `PayrollGenerate`.
 9. A `Staff` cannot be deleted while active
-   `SmAssignClassTeacher`, `LeaveRequest`, or `PayrollGenerate`
+   `AssignClassTeacher`, `LeaveRequest`, or `PayrollGenerate`
    references it.
 10. A `LeaveType` cannot be deleted while any `LeaveDefine` or
     `LeaveRequest` references it.

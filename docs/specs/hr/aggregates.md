@@ -1,5 +1,9 @@
 # HR Domain — Aggregates
 
+> **Brand cleanup (Wave 22, FND-SPEC-3-001):** All `Sm_` legacy
+> brand prefixes replaced with `Educore_` per AGENTS.md. Type
+> names align with `crates/domains/hr/src/aggregate.rs`.
+
 ## Staff
 
 **Root type:** `Staff`
