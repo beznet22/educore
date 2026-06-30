@@ -50,7 +50,7 @@ pub mod errors;
 pub mod events;
 mod query;
 mod repository;
-mod services;
+pub mod services;
 pub mod value_objects;
 
 /// Package name constant. Re-exported so consumers can
@@ -66,14 +66,25 @@ pub const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// The 5 prompt-named aggregate roots.
 pub use crate::aggregate::{AcademicYear, Class, Section, Student, Subject};
 
+/// The 14 placeholder aggregate stubs (Guardian, ClassSection,
+/// ClassSubject, etc.). Exposed at the crate root so integration
+/// tests can reach them.
+pub use crate::aggregate::{
+    Certificate, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework, IdCard, Lesson,
+    LessonPlan, LessonTopic, RegistrationField, StudentCategory, StudentGroup, StudentPromotion,
+};
+
 // ---- Typed events -----------------------------------------------------------
 
 /// The 19 typed events emitted by the academic commands.
 pub use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
-    ClassCreated, ClassDeleted, ClassUpdated, CurrentAcademicYearSet,
-    OptionalSubjectGpaThresholdSet, SectionCreated, SectionDeleted, SectionUpdated,
-    StudentAdmitted, StudentGraduated, StudentProfileUpdated, StudentPromoted, StudentReinstated,
+    CertificateCreated, ClassCreated, ClassDeleted, ClassRoutineScheduled, ClassSectionCreated,
+    ClassSubjectAssigned, ClassUpdated, CurrentAcademicYearSet, GuardianRegistered,
+    HomeworkAssigned, IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
+    OptionalSubjectGpaThresholdSet, RegistrationFieldCreated, SectionCreated, SectionDeleted,
+    SectionUpdated, StudentAdmitted, StudentCategoryCreated, StudentGraduated, StudentGroupCreated,
+    StudentProfileUpdated, StudentPromoted, StudentPromotionRecorded, StudentReinstated,
     StudentSuspended, StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted,
     SubjectUpdated,
 };
@@ -83,9 +94,13 @@ pub use crate::events::{
 /// The 19 pure factory functions that turn a command into
 /// an aggregate plus a typed event.
 pub use crate::services::{
-    admit_student, close_academic_year, copy_academic_year, create_academic_year, create_class,
-    create_section, create_subject, delete_class, delete_section, delete_subject, graduate_student,
-    promote_student, reinstate_student, school_matches, set_current_academic_year,
+    admit_student, close_academic_year, copy_academic_year, create_academic_year,
+    create_certificate, create_class, create_class_routine, create_class_section,
+    create_class_subject, create_homework, create_id_card, create_lesson, create_lesson_plan,
+    create_lesson_topic, create_registration_field, create_section, create_student_category,
+    create_student_group, create_subject, delete_class, delete_section, delete_subject,
+    graduate_student, promote_student, record_student_promotion, register_guardian,
+    reinstate_student, school_matches, set_current_academic_year,
     set_optional_subject_gpa_threshold, suspend_student, transfer_student,
     update_academic_year_dates, update_class, update_section, update_student_profile,
     update_subject, withdraw_student,
@@ -121,10 +136,12 @@ pub use crate::commands::UniquenessChecker;
 /// for downstream consumers.
 pub use crate::value_objects::{
     AcademicYearId, AcademicYearRange, AcademicYearTitle, Address, AdmissionNumber, BloodGroup,
-    ClassId, ClassName, DateOfBirth, FullName, Gender, OptionalSubjectGpaThreshold, PassMark,
-    PersonName, ResultStatus, RollNumber, SectionId, SectionName, StudentId, StudentRecordId,
-    StudentStatus, SubjectCode, SubjectId, SubjectType, SuspensionReason, TransferReason,
-    WithdrawalReason,
+    CertificateId, ClassId, ClassName, ClassRoutineId, ClassSectionId, ClassSubjectId, DateOfBirth,
+    FullName, Gender, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
+    OptionalSubjectGpaThreshold, PassMark, PersonName, RegistrationFieldId, ResultStatus,
+    RollNumber, SectionId, SectionName, StudentCategoryId, StudentGroupId, StudentId,
+    StudentPromotionId, StudentRecordId, StudentStatus, SubjectCode, SubjectId, SubjectType,
+    SuspensionReason, TransferReason, WithdrawalReason,
 };
 
 // ---- Re-exports of the engine types most commonly reached for ----------------
@@ -143,10 +160,20 @@ pub mod prelude {
     pub use educore_rbac::value_objects::Capability;
 
     pub use crate::aggregate::{AcademicYear, Class, Section, Student, Subject};
+    pub use crate::aggregate::{
+        Certificate, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework, IdCard, Lesson,
+        LessonPlan, LessonTopic, RegistrationField, StudentCategory, StudentGroup,
+        StudentPromotion,
+    };
     pub use crate::commands::{
         AdmitStudentCommand, CloseAcademicYearCommand, CreateAcademicYearCommand,
-        CreateClassCommand, CreateSectionCommand, CreateSubjectCommand, DeleteClassCommand,
-        DeleteSectionCommand, DeleteSubjectCommand, GraduateStudentCommand, PromoteStudentCommand,
+        CreateCertificateCommand, CreateClassCommand, CreateClassRoutineCommand,
+        CreateClassSectionCommand, CreateClassSubjectCommand, CreateHomeworkCommand,
+        CreateIdCardCommand, CreateLessonCommand, CreateLessonPlanCommand,
+        CreateLessonTopicCommand, CreateRegistrationFieldCommand, CreateSectionCommand,
+        CreateStudentCategoryCommand, CreateStudentGroupCommand, CreateSubjectCommand,
+        DeleteClassCommand, DeleteSectionCommand, DeleteSubjectCommand, GraduateStudentCommand,
+        PromoteStudentCommand, RecordStudentPromotionCommand, RegisterGuardianCommand,
         ReinstateStudentCommand, SetCurrentAcademicYearCommand,
         SetOptionalSubjectGpaThresholdCommand, SuspendStudentCommand, TransferStudentCommand,
         UniquenessChecker, UpdateAcademicYearDatesCommand, UpdateClassCommand,
@@ -157,11 +184,14 @@ pub mod prelude {
     pub use crate::errors::AcademicError;
     pub use crate::events::{
         AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
-        ClassCreated, ClassDeleted, ClassUpdated, CurrentAcademicYearSet,
-        OptionalSubjectGpaThresholdSet, SectionCreated, SectionDeleted, SectionUpdated,
-        StudentAdmitted, StudentGraduated, StudentProfileUpdated, StudentPromoted,
-        StudentReinstated, StudentSuspended, StudentTransferred, StudentWithdrawn, SubjectCreated,
-        SubjectDeleted, SubjectUpdated,
+        CertificateCreated, ClassCreated, ClassDeleted, ClassRoutineScheduled,
+        ClassSectionCreated, ClassSubjectAssigned, ClassUpdated, CurrentAcademicYearSet,
+        GuardianRegistered, HomeworkAssigned, IdCardCreated, LessonCreated, LessonPlanCreated,
+        LessonTopicCreated, OptionalSubjectGpaThresholdSet, RegistrationFieldCreated,
+        SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted, StudentCategoryCreated,
+        StudentGraduated, StudentGroupCreated, StudentProfileUpdated, StudentPromoted,
+        StudentPromotionRecorded, StudentReinstated, StudentSuspended, StudentTransferred,
+        StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
     };
     pub use crate::query::{
         AcademicYearQuery, ClassQuery, SectionQuery, StudentQuery, SubjectQuery,
@@ -171,19 +201,25 @@ pub mod prelude {
         SubjectRepository,
     };
     pub use crate::services::{
-        admit_student, close_academic_year, copy_academic_year, create_academic_year, create_class,
-        create_section, create_subject, delete_class, delete_section, delete_subject,
-        graduate_student, promote_student, reinstate_student, school_matches,
-        set_current_academic_year, set_optional_subject_gpa_threshold, suspend_student,
-        transfer_student, update_academic_year_dates, update_class, update_section,
-        update_student_profile, update_subject, withdraw_student,
+        admit_student, close_academic_year, copy_academic_year, create_academic_year,
+        create_certificate, create_class, create_class_routine, create_class_section,
+        create_class_subject, create_homework, create_id_card, create_lesson, create_lesson_plan,
+        create_lesson_topic, create_registration_field, create_section, create_student_category,
+        create_student_group, create_subject, delete_class, delete_section, delete_subject,
+        graduate_student, promote_student, record_student_promotion, register_guardian,
+        reinstate_student, school_matches, set_current_academic_year,
+        set_optional_subject_gpa_threshold, suspend_student, transfer_student,
+        update_academic_year_dates, update_class, update_section, update_student_profile,
+        update_subject, withdraw_student,
     };
     pub use crate::value_objects::{
         AcademicYearId, AcademicYearRange, AcademicYearTitle, Address, AdmissionNumber, BloodGroup,
-        ClassId, ClassName, DateOfBirth, FullName, Gender, OptionalSubjectGpaThreshold, PassMark,
-        PersonName, ResultStatus, RollNumber, SectionId, SectionName, StudentId, StudentRecordId,
-        StudentStatus, SubjectCode, SubjectId, SubjectType, SuspensionReason, TransferReason,
-        WithdrawalReason,
+        CertificateId, ClassId, ClassName, ClassRoutineId, ClassSectionId, ClassSubjectId,
+        DateOfBirth, FullName, Gender, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId,
+        LessonTopicId, OptionalSubjectGpaThreshold, PassMark, PersonName, RegistrationFieldId,
+        ResultStatus, RollNumber, SectionId, SectionName, StudentCategoryId, StudentGroupId,
+        StudentId, StudentPromotionId, StudentRecordId, StudentStatus, SubjectCode, SubjectId,
+        SubjectType, SuspensionReason, TransferReason, WithdrawalReason,
     };
 }
 
