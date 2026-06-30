@@ -23,10 +23,10 @@
 | Metric | Value |
 |---|---|
 | Total items | 485 |
-| Done (`[x]`) | 192 |
+| Done (`[x]`) | 196 |
 | In-progress (`[~]`) | 12 |
-| Open (`[ ]`) | 281 |
-| Last update | 2026-06-30 05:50 UTC |
+| Open (`[ ]`) | 277 |
+| Last update | 2026-06-30 07:03 UTC |
 | Last commit covered | `2eb7d88` |
 <!-- END COMPUTED -->
 
