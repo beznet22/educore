@@ -1493,6 +1493,99 @@ pub enum Capability {
     /// Schedule a video-conferencing meeting.
     VideoSchedule,
     // === Integrations.* (Phase 15 net-new) section end ===
+    /// Capability for `Attendance.Subject.Mark`.
+    AttendanceSubjectMark,
+    /// Capability for `Attendance.Staff.Report`.
+    AttendanceStaffReport,
+    /// Capability for `Attendance.Import.Validate`.
+    AttendanceImportValidate,
+    /// Capability for `Attendance.Import.Commit`.
+    AttendanceImportCommit,
+    /// Capability for `Attendance.Import.Cancel`.
+    AttendanceImportCancel,
+    /// Capability for `Attendance.Report.Daily`.
+    AttendanceReportDaily,
+    /// Capability for `Attendance.Report.Weekly`.
+    AttendanceReportWeekly,
+    /// Capability for `Attendance.Report.Monthly`.
+    AttendanceReportMonthly,
+    /// Capability for `Attendance.Report.By.Class`.
+    AttendanceReportByClass,
+    /// Capability for `Attendance.Report.By.Student`.
+    AttendanceReportByStudent,
+    /// Capability for `Attendance.Report.By.Staff`.
+    AttendanceReportByStaff,
+    /// Capability for `Communication.Notification.Read.All`.
+    CommunicationNotificationReadAll,
+    /// Capability for `Communication.Complaint`.
+    CommunicationComplaint,
+    /// Capability for `Documents.Form.Read.Public`.
+    DocumentsFormReadPublic,
+    /// Capability for `Academic.Student.Document.Upload`.
+    AcademicStudentDocumentUpload,
+    /// Capability for `Academic.Student.Document.Download`.
+    AcademicStudentDocumentDownload,
+    /// Capability for `Academic.Student.Homework.Submit`.
+    AcademicStudentHomeworkSubmit,
+    /// Capability for `Academic.Student.Homework.Evaluate`.
+    AcademicStudentHomeworkEvaluate,
+    /// Capability for `Academic.Guardian`.
+    AcademicGuardian,
+    /// Capability for `Academic.Section`.
+    AcademicSection,
+    /// Capability for `Academic.Class.Section`.
+    AcademicClassSection,
+    /// Capability for `Academic.Class.Subject`.
+    AcademicClassSubject,
+    /// Capability for `Academic.Academic.Year`.
+    AcademicAcademicYear,
+    /// Capability for `Academic.Class.Routine`.
+    AcademicClassRoutine,
+    /// Capability for `Academic.Homework`.
+    AcademicHomework,
+    /// Capability for `Academic.Lesson`.
+    AcademicLesson,
+    /// Capability for `Academic.Student.Category`.
+    AcademicStudentCategory,
+    /// Capability for `Academic.Student.Group`.
+    AcademicStudentGroup,
+    /// Capability for `Academic.Certificate`.
+    AcademicCertificate,
+    /// Capability for `Academic.Id.Card`.
+    AcademicIdCard,
+    /// Capability for `Academic.Admission.Query`.
+    AcademicAdmissionQuery,
+    /// Capability for `Assessment.Exam.Type`.
+    AssessmentExamType,
+    /// Capability for `Assessment.Exam.Setup`.
+    AssessmentExamSetup,
+    /// Capability for `Assessment.Mark.Store`.
+    AssessmentMarkStore,
+    /// Capability for `Assessment.Marks.Grade`.
+    AssessmentMarksGrade,
+    /// Capability for `Assessment.Teacher.Evaluation`.
+    AssessmentTeacherEvaluation,
+    /// Capability for `Assessment.Teacher.Remark`.
+    AssessmentTeacherRemark,
+    /// Capability for `Assessment.Exam.Attendance`.
+    AssessmentExamAttendance,
+    /// Capability for `Finance.Fees.Assign.Discount.Update`.
+    FinanceFeesAssignDiscountUpdate,
+    /// Capability for `Finance.Invoice.Setting.Configure`.
+    FinanceInvoiceSettingConfigure,
+    /// Capability for `Finance.Inventory.Payment.Record`.
+    FinanceInventoryPaymentRecord,
+    /// Capability for `Finance.Question.Bank.Fee.Attach`.
+    FinanceQuestionBankFeeAttach,
+    /// Capability for `Finance.Question.Bank.Fee.Detach`.
+    FinanceQuestionBankFeeDetach,
+    /// Capability for `Finance.Question.Bank.Fee.Read`.
+    FinanceQuestionBankFeeRead,
+    /// Capability for `Finance.Report.Finance.Read`.
+    FinanceReportFinanceRead,
+    /// Capability for `Hr.Report.Hr.Read`.
+    HrReportHrRead,
+
 }
 
 impl Capability {
@@ -2154,7 +2247,53 @@ impl Capability {
             | Self::PollingIn
             | Self::LmsRosterSync
             | Self::VideoSchedule => CapabilityDomain::Integrations,
-        }
+                    | Self::AttendanceSubjectMark => CapabilityDomain::Attendance,
+            | Self::AttendanceStaffReport => CapabilityDomain::Attendance,
+            | Self::AttendanceImportValidate => CapabilityDomain::Attendance,
+            | Self::AttendanceImportCommit => CapabilityDomain::Attendance,
+            | Self::AttendanceImportCancel => CapabilityDomain::Attendance,
+            | Self::AttendanceReportDaily => CapabilityDomain::Attendance,
+            | Self::AttendanceReportWeekly => CapabilityDomain::Attendance,
+            | Self::AttendanceReportMonthly => CapabilityDomain::Attendance,
+            | Self::AttendanceReportByClass => CapabilityDomain::Attendance,
+            | Self::AttendanceReportByStudent => CapabilityDomain::Attendance,
+            | Self::AttendanceReportByStaff => CapabilityDomain::Attendance,
+            | Self::CommunicationNotificationReadAll => CapabilityDomain::Communication,
+            | Self::CommunicationComplaint => CapabilityDomain::Communication,
+            | Self::DocumentsFormReadPublic => CapabilityDomain::Documents,
+            | Self::AcademicStudentDocumentUpload => CapabilityDomain::Academic,
+            | Self::AcademicStudentDocumentDownload => CapabilityDomain::Academic,
+            | Self::AcademicStudentHomeworkSubmit => CapabilityDomain::Academic,
+            | Self::AcademicStudentHomeworkEvaluate => CapabilityDomain::Academic,
+            | Self::AcademicGuardian => CapabilityDomain::Academic,
+            | Self::AcademicSection => CapabilityDomain::Academic,
+            | Self::AcademicClassSection => CapabilityDomain::Academic,
+            | Self::AcademicClassSubject => CapabilityDomain::Academic,
+            | Self::AcademicAcademicYear => CapabilityDomain::Academic,
+            | Self::AcademicClassRoutine => CapabilityDomain::Academic,
+            | Self::AcademicHomework => CapabilityDomain::Academic,
+            | Self::AcademicLesson => CapabilityDomain::Academic,
+            | Self::AcademicStudentCategory => CapabilityDomain::Academic,
+            | Self::AcademicStudentGroup => CapabilityDomain::Academic,
+            | Self::AcademicCertificate => CapabilityDomain::Academic,
+            | Self::AcademicIdCard => CapabilityDomain::Academic,
+            | Self::AcademicAdmissionQuery => CapabilityDomain::Academic,
+            | Self::AssessmentExamType => CapabilityDomain::Assessment,
+            | Self::AssessmentExamSetup => CapabilityDomain::Assessment,
+            | Self::AssessmentMarkStore => CapabilityDomain::Assessment,
+            | Self::AssessmentMarksGrade => CapabilityDomain::Assessment,
+            | Self::AssessmentTeacherEvaluation => CapabilityDomain::Assessment,
+            | Self::AssessmentTeacherRemark => CapabilityDomain::Assessment,
+            | Self::AssessmentExamAttendance => CapabilityDomain::Assessment,
+            | Self::FinanceFeesAssignDiscountUpdate => CapabilityDomain::Finance,
+            | Self::FinanceInvoiceSettingConfigure => CapabilityDomain::Finance,
+            | Self::FinanceInventoryPaymentRecord => CapabilityDomain::Finance,
+            | Self::FinanceQuestionBankFeeAttach => CapabilityDomain::Finance,
+            | Self::FinanceQuestionBankFeeDetach => CapabilityDomain::Finance,
+            | Self::FinanceQuestionBankFeeRead => CapabilityDomain::Finance,
+            | Self::FinanceReportFinanceRead => CapabilityDomain::Finance,
+            | Self::HrReportHrRead => CapabilityDomain::Hr,
+}
     }
 
     /// Returns the aggregate segment of the canonical string form
@@ -2373,7 +2512,7 @@ impl Capability {
             | Self::HrStaffDocumentDownload => "Staff",
             Self::HrStaffAssignClassTeacherCreate
             | Self::HrStaffAssignClassTeacherUpdate
-            | Self::HrStaffAssignClassTeacherDelete => "AssignClassTeacher",
+            | Self::HrStaffAssignClassTeacherDelete => "Hr.Staff.AssignClassTeacher.Delete",
             Self::HrDepartmentCreate
             | Self::HrDepartmentRead
             | Self::HrDepartmentUpdate
@@ -2808,7 +2947,32 @@ impl Capability {
             Self::PollingIn => "PollingIn",
             Self::LmsRosterSync => "Lms",
             Self::VideoSchedule => "Video",
-        }
+                    Self::AttendanceSubjectMark => "Subject",
+            Self::AttendanceStaffReport => "Staff",
+            Self::AttendanceImportValidate | Self::AttendanceImportCommit | Self::AttendanceImportCancel => "Import",
+            Self::AttendanceReportDaily | Self::AttendanceReportWeekly | Self::AttendanceReportMonthly | Self::AttendanceReportByClass | Self::AttendanceReportByStudent | Self::AttendanceReportByStaff | Self::FinanceReportFinanceRead | Self::HrReportHrRead => "Report.HR.Read",
+            Self::CommunicationNotificationReadAll => "Notification",
+            Self::CommunicationComplaint => "Complaint",
+            Self::DocumentsFormReadPublic => "Form",
+            Self::AcademicStudentDocumentUpload | Self::AcademicStudentDocumentDownload | Self::AcademicStudentHomeworkSubmit | Self::AcademicStudentHomeworkEvaluate | Self::AcademicStudentCategory | Self::AcademicStudentGroup => "Student",
+            Self::AcademicGuardian => "Guardian",
+            Self::AcademicSection => "Section",
+            Self::AcademicClassSection | Self::AcademicClassSubject | Self::AcademicClassRoutine => "Class",
+            Self::AcademicAcademicYear => "Academic",
+            Self::AcademicHomework => "Homework",
+            Self::AcademicLesson => "Lesson",
+            Self::AcademicCertificate => "Certificate",
+            Self::AcademicIdCard => "Id",
+            Self::AcademicAdmissionQuery => "Admission",
+            Self::AssessmentExamType | Self::AssessmentExamSetup | Self::AssessmentExamAttendance => "Exam",
+            Self::AssessmentMarkStore => "Mark",
+            Self::AssessmentMarksGrade => "Marks",
+            Self::AssessmentTeacherEvaluation | Self::AssessmentTeacherRemark => "Teacher",
+            Self::FinanceFeesAssignDiscountUpdate => "Finance.FeesAssign.Discount.Update",
+            Self::FinanceInvoiceSettingConfigure => "Invoice",
+            Self::FinanceInventoryPaymentRecord => "Inventory",
+            Self::FinanceQuestionBankFeeAttach | Self::FinanceQuestionBankFeeDetach | Self::FinanceQuestionBankFeeRead => "Finance.QuestionBank.Fee.Read",
+}
     }
 
     /// Returns the action segment of the canonical string form
@@ -3475,7 +3639,50 @@ impl Capability {
             Self::PollingIn => "PollingIn",
             Self::LmsRosterSync => "RosterSync",
             Self::VideoSchedule => "Schedule",
-        }
+                    Self::AttendanceSubjectMark => "Mark",
+            Self::AttendanceStaffReport => "Report",
+            Self::AttendanceImportValidate => "Validate",
+            Self::AttendanceImportCommit => "Commit",
+            Self::AttendanceImportCancel => "Cancel",
+            Self::AttendanceReportDaily => "Daily",
+            Self::AttendanceReportWeekly => "Weekly",
+            Self::AttendanceReportMonthly => "Monthly",
+            Self::AttendanceReportByClass => "Attendance.Report.ByClass",
+            Self::AttendanceReportByStudent => "Attendance.Report.ByStudent",
+            Self::AttendanceReportByStaff => "Attendance.Report.ByStaff",
+            Self::CommunicationNotificationReadAll => "All",
+            Self::CommunicationComplaint => "Complaint",
+            Self::DocumentsFormReadPublic => "Public",
+            Self::AcademicStudentDocumentUpload => "Upload",
+            Self::AcademicStudentDocumentDownload => "Download",
+            Self::AcademicStudentHomeworkSubmit => "Submit",
+            Self::AcademicStudentHomeworkEvaluate => "Evaluate",
+            Self::AcademicGuardian => "Guardian",
+            Self::AcademicSection | Self::AcademicClassSection => "Section",
+            Self::AcademicClassSubject => "Subject",
+            Self::AcademicAcademicYear => "Year",
+            Self::AcademicClassRoutine => "Routine",
+            Self::AcademicHomework => "Homework",
+            Self::AcademicLesson => "Lesson",
+            Self::AcademicStudentCategory => "Category",
+            Self::AcademicStudentGroup => "Group",
+            Self::AcademicCertificate => "Certificate",
+            Self::AcademicIdCard => "Card",
+            Self::AcademicAdmissionQuery => "Query",
+            Self::AssessmentExamType => "Type",
+            Self::AssessmentExamSetup => "Setup",
+            Self::AssessmentMarkStore => "Store",
+            Self::AssessmentMarksGrade => "Grade",
+            Self::AssessmentTeacherEvaluation => "Evaluation",
+            Self::AssessmentTeacherRemark => "Remark",
+            Self::AssessmentExamAttendance => "Attendance",
+            Self::FinanceFeesAssignDiscountUpdate => "Update",
+            Self::FinanceInvoiceSettingConfigure => "Configure",
+            Self::FinanceInventoryPaymentRecord => "Record",
+            Self::FinanceQuestionBankFeeAttach => "Finance.QuestionBank.Fee.Attach",
+            Self::FinanceQuestionBankFeeDetach => "Finance.QuestionBank.Fee.Detach",
+            Self::FinanceQuestionBankFeeRead | Self::FinanceReportFinanceRead | Self::HrReportHrRead => "Read",
+}
     }
 
     /// Returns the canonical dotted string form (e.g.
@@ -3559,7 +3766,7 @@ impl Capability {
             Self::HrStaffChangeRole => "Hr.Staff.ChangeRole",
             Self::HrStaffAssignSubjectTeacher => "Hr.Staff.AssignSubjectTeacher",
             Self::HrStaffAssignClassTeacherCreate => "Hr.AssignClassTeacher.Create",
-            Self::HrStaffAssignClassTeacherUpdate => "Hr.AssignClassTeacher.Update",
+            Self::HrStaffAssignClassTeacherUpdate => "Hr.Staff.AssignClassTeacher.Update",
             Self::HrStaffAssignClassTeacherDelete => "Hr.AssignClassTeacher.Delete",
             Self::HrStaffImportBulk => "Hr.Staff.ImportBulk",
             Self::HrStaffImportBulkPromote => "Hr.Staff.ImportBulk.Promote",
@@ -4138,7 +4345,53 @@ impl Capability {
             Self::PollingIn => "PollingIn",
             Self::LmsRosterSync => "Lms.RosterSync",
             Self::VideoSchedule => "Video.Schedule",
-        }
+                    Self::AttendanceSubjectMark => "Attendance.Subject.Mark",
+            Self::AttendanceStaffReport => "Attendance.Staff.Report",
+            Self::AttendanceImportValidate => "Attendance.Import.Validate",
+            Self::AttendanceImportCommit => "Attendance.Import.Commit",
+            Self::AttendanceImportCancel => "Attendance.Import.Cancel",
+            Self::AttendanceReportDaily => "Attendance.Report.Daily",
+            Self::AttendanceReportWeekly => "Attendance.Report.Weekly",
+            Self::AttendanceReportMonthly => "Attendance.Report.Monthly",
+            Self::AttendanceReportByClass => "Attendance.Report.By.Class",
+            Self::AttendanceReportByStudent => "Attendance.Report.By.Student",
+            Self::AttendanceReportByStaff => "Attendance.Report.By.Staff",
+            Self::CommunicationNotificationReadAll => "Communication.Notification.Read.All",
+            Self::CommunicationComplaint => "Communication.Complaint",
+            Self::DocumentsFormReadPublic => "Documents.Form.Read.Public",
+            Self::AcademicStudentDocumentUpload => "Academic.Student.Document.Upload",
+            Self::AcademicStudentDocumentDownload => "Academic.Student.Document.Download",
+            Self::AcademicStudentHomeworkSubmit => "Academic.Student.Homework.Submit",
+            Self::AcademicStudentHomeworkEvaluate => "Academic.Student.Homework.Evaluate",
+            Self::AcademicGuardian => "Academic.Guardian",
+            Self::AcademicSection => "Academic.Section",
+            Self::AcademicClassSection => "Academic.Class.Section",
+            Self::AcademicClassSubject => "Academic.Class.Subject",
+            Self::AcademicAcademicYear => "Academic.Academic.Year",
+            Self::AcademicClassRoutine => "Academic.Class.Routine",
+            Self::AcademicHomework => "Academic.Homework",
+            Self::AcademicLesson => "Academic.Lesson",
+            Self::AcademicStudentCategory => "Academic.Student.Category",
+            Self::AcademicStudentGroup => "Academic.Student.Group",
+            Self::AcademicCertificate => "Academic.Certificate",
+            Self::AcademicIdCard => "Academic.Id.Card",
+            Self::AcademicAdmissionQuery => "Academic.Admission.Query",
+            Self::AssessmentExamType => "Assessment.Exam.Type",
+            Self::AssessmentExamSetup => "Assessment.Exam.Setup",
+            Self::AssessmentMarkStore => "Assessment.Mark.Store",
+            Self::AssessmentMarksGrade => "Assessment.Marks.Grade",
+            Self::AssessmentTeacherEvaluation => "Assessment.Teacher.Evaluation",
+            Self::AssessmentTeacherRemark => "Assessment.Teacher.Remark",
+            Self::AssessmentExamAttendance => "Assessment.Exam.Attendance",
+            Self::FinanceFeesAssignDiscountUpdate => "Finance.Fees.Assign.Discount.Update",
+            Self::FinanceInvoiceSettingConfigure => "Finance.Invoice.Setting.Configure",
+            Self::FinanceInventoryPaymentRecord => "Finance.Inventory.Payment.Record",
+            Self::FinanceQuestionBankFeeAttach => "Finance.Question.Bank.Fee.Attach",
+            Self::FinanceQuestionBankFeeDetach => "Finance.Question.Bank.Fee.Detach",
+            Self::FinanceQuestionBankFeeRead => "Finance.Question.Bank.Fee.Read",
+            Self::FinanceReportFinanceRead => "Finance.Report.Finance.Read",
+            Self::HrReportHrRead => "Report.HR.Read",
+}
     }
 
     /// Returns the full set of variants defined by the catalog. Used
