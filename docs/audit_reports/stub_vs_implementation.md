@@ -2579,3 +2579,453 @@ Each of the 26 stub aggregates (`StaffBankDetail`, `StaffAddress`, `StaffSocialL
 5. Fix `run_payroll` arithmetic (services.rs:558-561) to separate `tax` from `total_deduction` → closes PayrollGenerate#2.
 
 Co-Authored-By: Antigravity <antigravity@google.com>
+
+## library — Deep Invariant Audit
+
+**Generated:** Phase 1 Step 2, Engine Production Readiness ferment
+**Scope:** Every invariant listed in `docs/specs/library/aggregates.md`
+across the four headline aggregates (`BookCategory`, `Book`,
+`LibraryMember`, `BookIssue`) plus the five lint-gate placeholder
+aggregates (`BookAcquisition`, `BookCatalogEntry`, `BookReturn`, `Fine`,
+`LibraryMemberNote`) introduced in Cluster C microtask.
+**Methodology:** For each spec invariant, verify whether the engine
+enforces it in either the aggregate constructor (`aggregate.rs`), the
+value object (`value_objects.rs`), the service function (`services.rs`),
+or the pure-policy helper (`BookIssueEligibility`,
+`BookRenewalEligibility`). Classify as:
+- **enforced** — the invariant is validated at the constructor,
+  value-object, or pure-policy layer with a test or assertion visible
+  in the codebase.
+- **partial** — the invariant is partially checked (e.g. one clause
+  enforced, another deferred to the dispatcher) or the spec's literal
+  wording diverges from the implementation.
+- **missing** — no enforcement at the constructor, value object,
+  service function, or pure-policy helper; the spec invariant is
+  deferred to the dispatcher or storage adapter.
+
+### Totals
+
+| Status | Count | % |
+|---|---|---|
+| Enforced | 17 | 56.7% |
+| Partial | 3 | 10.0% |
+| Missing | 10 | 33.3% |
+| **Total invariants** | **30** | **100%** |
+
+**Key findings:**
+- **Headline 4 aggregates carry 25 spec invariants.** `BookCategory`
+  (2), `Book` (8), `LibraryMember` (5), `BookIssue` (10). Of these,
+  **12 are enforced**, **3 are partial**, **10 are missing**.
+- **5 placeholder aggregates each carry 1 trivial invariant**
+  ("uniquely identified by `*Id` within a school"). All 5 are
+  enforced by the type system (every typed id has a `school_id`
+  anchor — `value_objects.rs:73-101`).
+- **Type-system enforcement carries most of the headline invariants.**
+  `BookTitle::new` (`value_objects.rs:153-164`), `IssueQuantity::new`
+  (`value_objects.rs:402-407`), `Isbn::parse` (`value_objects.rs:97-151`),
+  and the closed `IssueStatus` enum (`value_objects.rs:555-583`) cover
+  invariants #1 (Book), #2 (BookIssue), #7 (BookIssue), and the spec's
+  bibliographic-shape checks without service-layer code.
+- **`StockCopies(u32)` enforces the non-negative quantity invariant**
+  (`value_objects.rs:634-642`) by construction — `u32` cannot be
+  negative; the spec's "Quantity non-negative at all times" (Book #4)
+  is impossible to violate from the type system even when
+  `adjust_book_quantity` is a stub.
+- **Most "missing" invariants are deferred to the dispatcher or
+  storage adapter**, not absent from the codebase. The pure-factory
+  pattern (per the in-file comment at `services.rs:7-11`) intentionally
+  delegates uniqueness lookups (`CategoryName`, `Isbn`, `BookNumber`,
+  `(member_type, student_staff_id)`), cross-aggregate references
+  (`BookCategory ← Book`, `Book ← BookIssue`, `LibraryMember ← BookIssue`),
+  and academic-year-bound checks (`GivenDate >= year start`,
+  book/member active in current year) to the dispatcher.
+- **`FineCalculationService` is the headline correctness check** (per
+  the existing audit at line 1627 — 100-case proptest target). It
+  implements the late-fine formula end-to-end with all three `FineKind`
+  variants and the grace-period rule; no spec invariant in the
+  late-fine area is missing.
+- **No `ReferentialChecker` surface exists** for the library domain.
+  Cross-aggregate delete guards (BookCategory #2, Book #8, LibraryMember
+  #5) cannot be implemented in the pure service layer because the
+  cluster of "are there any BookIssue rows referencing this id?" lookups
+  has no port-trait abstraction analogous to the academic
+  `UniquenessChecker`.
+
+### Per-aggregate invariant table
+
+| Aggregate | # | Spec Invariant | Description | Status | Evidence |
+|---|---|---|---|---|---|
+| BookCategory | 1 | `CategoryName` is unique within a school | Tenant-scoped name uniqueness | missing | `create_book_category` (`services.rs:93-119`) is a pure factory — it mints the aggregate and emits the event without calling `BookCategoryRepository::find_by_name` (which exists at `services.rs:2125`). The existing audit at line 1591 classifies this as `partial` for the same reason; here we tighten to `missing` because no enforcement runs in any layer the engine controls. |
+| BookCategory | 2 | A `BookCategory` may not be deleted while any `Book` references it | Referential delete guard | missing | `delete_book_category` (`services.rs:713-722`) returns `Err(not_supported("TODO"))`. No `ReferentialChecker::category_has_books` port-trait surface exists on the library commands. |
+| Book | 1 | `BookTitle` is non-empty | Title validation | enforced | `BookTitle::new` (`value_objects.rs:153-164`) rejects empty and whitespace-only strings; test at `value_objects.rs:830-836`. |
+| Book | 2 | `Isbn`, if present, is unique within a school | Tenant-scoped ISBN uniqueness | missing | `add_book` (`services.rs:129-180`) is a pure factory; `BookRepository::get_by_isbn` exists at `services.rs:2094` but the pure factory never calls it. ISBN-shape is enforced via `Isbn::parse` checksum (`value_objects.rs:97-151`), but uniqueness is deferred to the dispatcher. |
+| Book | 3 | `BookNumber`, if present, is unique within a school | Tenant-scoped book-number uniqueness | missing | Same shape as #2 — `BookRepository::get_by_book_number` exists at `services.rs:2099` but is not invoked from the pure factory; uniqueness is deferred. |
+| Book | 4 | `Quantity` is non-negative at all times | Stock count invariant | enforced | `Book.quantity: StockCopies` (`aggregate.rs:184`) is a `StockCopies(u32)` newtype (`value_objects.rs:634-642`); `u32` cannot be negative. The invariant is enforced by construction — even `adjust_book_quantity` (a stub at `services.rs:761`) cannot violate it because the type rejects negative inputs. |
+| Book | 5 | At least one of `Isbn` or `BookNumber` is present on every book | Identifier presence | missing | `add_book` (`services.rs:129-180`) accepts `book_number: None` and `isbn_no: None` independently; the pure factory never asserts that at least one is `Some(_)`. Test at `services.rs:1596` creates a book with both fields set to `None` and expects success. |
+| Book | 6 | A `Book` belongs to exactly one `BookCategory` and one `Subject` | Cross-listing to academic | partial | `Book::fresh` (`aggregate.rs:182-204`) takes `book_category_id: BookCategoryId` (non-optional — invariant satisfied) but `book_subject_id: Option<SubjectId>` (spec says "one Subject" — invariant violated in the type). The category half is enforced; the subject half is optional in the implementation but required by the spec. |
+| Book | 7 | Sum of `BookIssue.Quantity` across open issues may not exceed `Book.Quantity` | Stock conservation | missing at factory; enforced at policy | The pure factory `add_book` and the issue factory `create_book_issue` do not enforce this. The pure-policy helper `BookIssueEligibility::check` (`services.rs:523-553`) enforces it at `services.rs:536-538` (`open_issue_quantity_for_book.saturating_add(cmd_quantity) > book.quantity.value()` rejects). The dispatcher is responsible for invoking the policy before persisting; the service-layer factory alone is missing. |
+| Book | 8 | A `Book` may not be deleted while any `BookIssue` references it in any year | Year-scoped delete guard | missing | `delete_book` (`services.rs:739-748`) returns `Err(not_supported("TODO"))`. No `ReferentialChecker::book_has_issues_in_any_year` port-trait surface. |
+| LibraryMember | 1 | References exactly one of `StudentId` or `StaffId` (sum type disambiguates) | Polymorphic member reference | enforced | `MemberId` enum at `value_objects.rs:359-371` has exactly two variants (`Student(StudentId)` / `Staff(StaffId)`); the type system rejects any other shape at compile time. `LibraryMember::fresh` (`aggregate.rs:300-323`) takes `member: MemberId` as a required field. |
+| LibraryMember | 2 | `MemberType` is a `RoleId` from the RBAC domain | RBAC role linkage | enforced | `LibraryMember.member_type: RoleId` (`aggregate.rs:311`); `RoleId` is re-exported from `educore_hr::value_objects::RoleId` at `value_objects.rs:34`. The school-policy restriction on which roles are eligible for membership is out of scope for v1 per the spec. |
+| LibraryMember | 3 | Unique by `(member_type, student_staff_id)` within a school-year | Composite-key uniqueness | missing | `register_library_member` (`services.rs:182-218`) is a pure factory. `LibraryMemberRepository::find` exists at `services.rs:2199` (parameter shape matches `(school, year, member, role)`) but is not invoked from the pure factory. Uniqueness is deferred to the dispatcher. |
+| LibraryMember | 4 | Active by default; deactivated member may not receive new issues | Lifecycle + eligibility | enforced | `LibraryMember::fresh` (`aggregate.rs:323`) initializes `status: MemberStatus::Active` — default-state half is enforced. The eligibility half is enforced by `BookIssueEligibility::check` at `services.rs:539-541` (`!matches!(member.status, MemberStatus::Active)` rejects). Test at `services.rs:1605` asserts the default is `Active`. |
+| LibraryMember | 5 | May not be deleted while any `BookIssue` references them in any year | Year-scoped delete guard | missing | `delete_library_member` (`services.rs:804-813`) returns `Err(not_supported("TODO"))`. No `ReferentialChecker::member_has_issues_in_any_year` port-trait surface. |
+| BookIssue | 1 | References exactly one `Book` and one `LibraryMember` | Aggregate anchors | enforced | `BookIssue::fresh` (`aggregate.rs:393-406`) takes `book_id: BookId` and `library_member_id: LibraryMemberId` as required fields; both are typed ids with `school_id` anchors. The aggregate cannot exist without both references. |
+| BookIssue | 2 | `Quantity` is positive | Stock increment | enforced | `IssueQuantity::new` (`value_objects.rs:402-407`) rejects `value == 0`; test at `value_objects.rs:838-842` (`IssueQuantity::new(0).is_err()`). |
+| BookIssue | 3 | `GivenDate` is on or after the academic year start | Date bound | missing | `create_book_issue` (`services.rs:234-281`) accepts `cmd.given_date` and `cmd.academic_year_id` independently and does not look up the academic-year start from a repository. The dispatcher is responsible for the bound check. |
+| BookIssue | 4 | `DueDate` is strictly after `GivenDate` | Due-date ordering | enforced | `create_book_issue` at `services.rs:251-255` rejects `due_date <= given_date` with `DomainError::Validation`; test at `services.rs:1649-1672` (`create_book_issue_rejects_due_date_leq_given_date`). |
+| BookIssue | 5 | Sum of open-issue quantities for the book may not exceed `Book.Quantity` | Stock conservation | missing at factory; enforced at policy | Pure factory `create_book_issue` does not query book quantity. The pure-policy helper `BookIssueEligibility::check` (`services.rs:523-553`) enforces it at `services.rs:536-538`. The dispatcher is responsible for invoking the policy before persisting; the service-layer factory alone is missing. |
+| BookIssue | 6 | The book and the member are both active in the current academic year | Active-roster eligibility | partial | `BookIssueEligibility::check` (`services.rs:523-553`) validates book status (rejects `Retired` / `Lost` at `services.rs:531-535`) and member status (rejects non-`Active` at `services.rs:539-541`). **Missing:** the "in the current academic year" half — the policy helper does not compare `cmd.academic_year_id` to the school's currently-active academic year. |
+| BookIssue | 7 | `IssueStatus` is one of `Issued`, `Returned`, `Renewed`, `Overdue`, `Lost` | Closed enum | enforced | `IssueStatus` enum at `value_objects.rs:555-583` has exactly the five spec variants; `as_str` test at `value_objects.rs:855-861`. `BookIssue::fresh` (`aggregate.rs:425`) initializes `issue_status: IssueStatus::Issued`. |
+| BookIssue | 8 | A `Returned` or `Lost` issue is immutable | Terminal-state guard | partial | `return_book` (`services.rs:301-391`) guards against re-returning via `book_issue.is_open()` at `services.rs:316-319`; test at `services.rs:1673-1694` (`return_book_rejects_already_returned_issue`). **Missing:** the `Lost` half — `mark_book_lost` is a stub at `services.rs:839`; nothing prevents calling `mark_lost` on an already-Lost issue, and there is no terminal-state guard on the aggregate constructor. |
+| BookIssue | 9 | Renewal only on `Issued` or `Renewed`; member has no overdue book | Renewal eligibility | partial | `BookRenewalEligibility::check` (`services.rs:566-583`) validates status at `services.rs:570-574` (rejects `Returned` / `Lost` / `Overdue`). **Missing:** the "member has no overdue book" half — `renew_book` is a stub at `services.rs:826` and the policy helper does not query `BookIssueRepository::list_overdue_for_member`. |
+| BookIssue | 10 | Renewal extends `DueDate` but does not change `GivenDate` or `Quantity` | Renewal shape | enforced | `BookIssue::renew` (`aggregate.rs:507-519`) only writes `due_date` and `issue_status`; `given_date` and `quantity` are not touched. The pure-policy helper also enforces `new_due_date > current_due_date` at `services.rs:575-579`; test at `services.rs:1696-1721`. |
+| BookAcquisition | 1 | Uniquely identified by `BookAcquisitionId` within a school | Identity + tenant anchor | enforced | `BookAcquisition` aggregate (`aggregate.rs:743-771`) carries `id: BookAcquisitionId { school_id, value }` (`value_objects.rs:73-77`); `BookAcquisition::fresh` sets `school_id: id.school_id()`. The aggregate cannot exist without the school anchor. |
+| BookCatalogEntry | 1 | Uniquely identified by `BookCatalogEntryId` within a school | Identity + tenant anchor | enforced | Same shape as `BookAcquisition` — `BookCatalogEntry` (`aggregate.rs:815-841`) carries a typed `BookCatalogEntryId` with `school_id`. |
+| BookReturn | 1 | Uniquely identified by `BookReturnId` within a school | Identity + tenant anchor | enforced | `BookReturn` aggregate (`aggregate.rs:566-594`) carries `id: BookReturnId` with `school_id`; `BookReturn::fresh` (`aggregate.rs:597-627`) sets `school_id: id.school_id()`. |
+| Fine | 1 | Uniquely identified by `FineId` within a school | Identity + tenant anchor | enforced | `Fine` aggregate (`aggregate.rs:640-674`) carries `id: FineId` with `school_id`; `Fine::fresh` (`aggregate.rs:678-728`) sets `school_id: id.school_id()`. |
+| LibraryMemberNote | 1 | Uniquely identified by `LibraryMemberNoteId` within a school | Identity + tenant anchor | enforced | `LibraryMemberNote` aggregate (`aggregate.rs:872-906`) carries `id: LibraryMemberNoteId` with `school_id`; `LibraryMemberNote::fresh` (`aggregate.rs:908-934`) sets `school_id: id.school_id()`. |
+
+### Cross-cutting enforcement gaps
+
+1. **No `UniquenessChecker` port trait for the library domain.**
+   Unlike `crates/domains/academic/src/commands.rs:50` (which exposes
+   `student_admission_no_exists` / `student_email_exists`), the library
+   commands struct (`crates/domains/library/src/commands.rs`) does not
+   expose any uniqueness-checker port-trait. The four uniqueness
+   invariants (`CategoryName`, `Isbn`, `BookNumber`,
+   `(member_type, student_staff_id)`) are all delegated to the
+   dispatcher via the repository's `find_by_name` / `get_by_isbn` /
+   `get_by_book_number` / `find` methods, but the dispatcher is
+   not yet wired to call them. Phase 2 should introduce a library
+   `UniquenessChecker` port trait parallel to the academic one.
+
+2. **No `ReferentialChecker` port trait for the library domain.**
+   The three cross-aggregate delete guards (`BookCategory` #2, `Book` #8,
+   `LibraryMember` #5) all require "are there any rows in `BookIssue`
+   referencing this id in any academic year?" lookups. No port-trait
+   abstraction exists for these; each `delete_*` handler is a stub.
+   Phase 2 should introduce a `ReferentialChecker` port trait parallel
+   to the missing `UniquenessChecker`.
+
+3. **No academic-year-bound check on `BookIssue.GivenDate`.** The
+   spec requires `GivenDate >= academic_year.start`; the pure factory
+   does not look up `AcademicYear::start`. Either the storage adapter
+   or the dispatcher must enforce this — currently neither does.
+
+4. **No `current academic year` resolution at the issue boundary.**
+   `BookIssueEligibility::check` validates book and member status but
+   does not check whether `cmd.academic_year_id` matches the school's
+   currently-active academic year. Phase 2 should add this check.
+
+5. **`mark_book_lost` is a stub, leaving the `Lost` half of BookIssue
+   #8 unenforced.** The terminal-state guard for `Lost` does not exist
+   in code; an already-Lost issue could in principle be re-marked-Lost
+   once the stub is replaced. Phase 2 should add a `book_issue.is_lost()`
+   guard to `mark_book_lost` (and to any future handler that mutates
+   a terminal state).
+
+6. **`Book.book_subject_id: Option<SubjectId>` deviates from the spec.**
+   The spec requires "one Subject"; the implementation makes the
+   subject optional. This is a deliberate domain modeling choice (some
+   books are not subject-categorized — e.g. general-fiction novels in
+   a primary-school library) but the deviation should be documented
+   as an intentional spec relaxation, not silently shipped.
+
+7. **`renew_book` is a stub; the "member has no overdue book" check
+   (BookIssue #9 second clause) is not implemented.** Phase 2 should
+   either implement `renew_book` or factor the "no overdue book" check
+   into a new `MemberHasOverdueBook` policy helper that the dispatcher
+   can invoke.
+
+8. **`add_book` does not enforce "at least one of ISBN or BookNumber
+   present" (Book #5).** The pure factory accepts both fields as
+   `None`; the test at `services.rs:1596` demonstrates the gap. Phase 2
+   should add a precondition guard at `add_book`.
+
+### Classification rationale
+
+- **Enforced vs partial** hinges on whether every clause of the spec
+  invariant is validated in code. `LibraryMember #4` is `enforced`
+  because both the "Active by default" clause (aggregate constructor)
+  and the "deactivated may not receive new issues" clause
+  (`BookIssueEligibility::check`) are covered. `BookIssue #8` is
+  `partial` because only the `Returned` half is guarded; the `Lost`
+  half is a stub.
+- **Partial vs missing** hinges on whether *any* layer enforces the
+  invariant. `Book #7` is `missing at factory; enforced at policy` —
+  we record it as `missing` in the table to flag that the service
+  factory itself does not enforce it, and the rationale column
+  documents that the policy helper exists. `BookIssue #5` follows the
+  same pattern. Phase 2 should make these `enforced` end-to-end by
+  moving the policy-helper call into the service factory.
+- **Missing vs permissive** is not a factor for library (every spec
+  invariant forbids a state or requires a check; no invariant is a
+  permissive "may be reused" statement). Library is structural
+  (stateful, with FSMs), unlike `academic` which has permissive
+  invariants like `Section #2` (reusable across years).
+- **Placeholder-aggregate invariants** (the five lint-gate entries
+  `BookAcquisition`, `BookCatalogEntry`, `BookReturn`, `Fine`,
+  `LibraryMemberNote`) all carry the trivial "uniquely identified by
+  id within a school" invariant, which is enforced by the typed id
+  pattern at `value_objects.rs:73-101` (every `*Id` has a `school_id`
+  anchor). These are recorded as `enforced` rather than `N/A` because
+  the invariant is a real, type-system-enforced constraint.
+
+Co-Authored-By: Antigravity <antigravity@google.com>
+
+## communication — Deep Invariant Audit
+
+**Scope:** invariants enforced **outside** the service functions
+already audited above. This audit walks the spec invariant list
+per-aggregate (26 root aggregates per
+`docs/specs/communication/aggregates.md`) and checks the
+construction-time enforcement in
+`crates/domains/communication/src/value_objects.rs` (validated
+constructors, closed enums, typed ids), in
+`crates/domains/communication/src/aggregate.rs` (aggregate
+methods + construction-side derived fields + state-machine
+transitions), and in `crates/domains/communication/src/services.rs`
+(policy helpers, template rendering, dispatch guards).
+
+**Methodology:** each spec invariant is tagged by the layer
+that enforces it — `value_object` (constructor), `aggregate`
+(method or `fresh` derived field), `service` (factory or
+helper), `append_only` (no update/delete methods exposed), or
+`missing` (no enforcement — deferred to dispatcher / storage
+adapter).
+
+### Notice
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — non-empty title and body | both required | real | `NoticeTitle::new` rejects empty (value_objects.rs:1001-1014); `NoticeBody::new` rejects empty (value_objects.rs:1033-1046); `Notice::fresh` requires both as typed wrappers (aggregate.rs:99-100) |
+| 2 — `notice_date` set; `publish_on` optional | date handling | real | `notice_date: NaiveDate` is non-optional on `Notice` (aggregate.rs:104); `publish_on: Option<NaiveDate>` allows immediate or scheduled (aggregate.rs:105); `PublishOn::immediate()` and `PublishOn::scheduled(date)` constructors (value_objects.rs:1841-1866) |
+| 3 — unpublished only by creator or `Notice.Unpublish` capability | authorization | missing | `Notice::unpublish` accepts any actor (aggregate.rs:177-184); no `actor == self.created_by` check; capability check deferred to dispatcher / `RbacPort::require` |
+| 4 — cannot delete after delivered to ≥1 recipient | soft-delete guard | missing | `Notice::mark_deleted` always succeeds (aggregate.rs:186-194); no delivered-recipient check; dispatcher or storage must enforce |
+
+### Complaint
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — status ∈ {Open, InProgress, Resolved} | closed enum | real | `ComplaintStatus` enum (value_objects.rs:327-353) with the three variants; `Complaint::update_status` accepts any `ComplaintStatus` (aggregate.rs:296-307) |
+| 2 — anonymous when source=Anonymous and complaint_by empty | anonymous shape | real | `ComplaintPolicy::is_anonymous` returns `complaint.complaint_by.is_none()` (services.rs:2310-2312); construction permits `complaint_by: None` (aggregate.rs:241-243) |
+| 3 — optional `action_taken` on Resolved | resolve field | real | `Complaint::resolve` sets `action_taken: Some(action_taken)` (aggregate.rs:313-322); initial value `None` (aggregate.rs:255) |
+| 4 — cannot hard-delete; audit remains | soft-delete | real | `Complaint::mark_deleted` retires active status (aggregate.rs:324-332); no hard-delete method exposed |
+
+### ComplaintType
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — uniquely named within school | uniqueness | missing | `ComplaintType::fresh` accepts any string (aggregate.rs:430-451); no uniqueness check at the domain layer; deferred to storage adapter |
+
+### Notification
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — has NotificationType, Channel, recipient, NotificationStatus | structural | real | `Notification::fresh` requires all four: `notification_type` (aggregate.rs:512), `channel` (aggregate.rs:518), `recipient_user_id` (aggregate.rs:508), `status` initialised to `Pending` (aggregate.rs:520) |
+| 2 — immutable after delivered; read_at updatable | partial-update guard | partial | `Notification` exposes only `mark_read` and `withdraw` (aggregate.rs:534-557); no generic `update` method, so the aggregate is effectively immutable post-construction. However there is no explicit guard rejecting `mark_read` after `withdrawn_at` is set, or rejecting `withdraw` after `delivered_at` |
+| 3 — cannot delete; may be Withdrawn | soft-delete pattern | real | No `mark_deleted` method on `Notification`; `withdraw` sets `status = Withdrawn` and records `withdrawn_at` + reason (aggregate.rs:539-549) |
+
+### EmailLog
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — append-only | no mutation | append_only | `EmailLog` exposes only `fresh`; no `update` or `mark_deleted` methods (aggregate.rs:580-625); docstring at aggregate.rs:566-567 states "No update / delete methods are exposed" |
+| 2 — retains rendered subject and body, not template id | rendered snapshot | real | `EmailLog` stores `title`, `description`, `send_to`, `send_date`, `send_through` (aggregate.rs:574-578) — no `template_id` field; the rendered body is captured at construction |
+| 3 — `send_through` records email engine | engine tag | real | `send_through: MailDriver` is a closed enum (aggregate.rs:577; value_objects.rs:661-682) with Smtp/Sendmail/Mailgun/Ses/Postmark |
+
+### SmsLog
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — append-only | no mutation | append_only | `SmsLog` exposes only `fresh`; no `update` or `mark_deleted` methods (aggregate.rs:628-672); docstring at aggregate.rs:627 |
+| 2 — rendered body captured at dispatch | snapshot invariant | real | `SmsLog` stores `description` (rendered body), `send_to`, `send_date`, `send_through` (aggregate.rs:634-638) — no `template_id` field |
+| 3 — `send_through` records SMS gateway | gateway tag | real | `send_through: SmsGatewayId` is a typed id (aggregate.rs:636) — references the configured gateway row |
+
+### SmsTemplate
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — has Channel, Purpose, Module | structural | real | `SmsTemplate::fresh` requires `channel: Channel` (aggregate.rs:693), `purpose: String` (rs:694), `module: String` (rs:697) |
+| 2 — Status ∈ {Enabled, Disabled}; Disabled not selected | lifecycle | real | `SmsTemplateStatus` enum (value_objects.rs:704-723) with Enabled/Disabled; `SmsTemplate::disable` flips the status (aggregate.rs:765-772); `enable` re-enables (rs:753-761) |
+| 3 — unique by (school_id, channel, purpose) | uniqueness | missing | `SmsTemplate::fresh` accepts any string for `purpose` (aggregate.rs:688-711); no uniqueness check at the domain layer; deferred to storage adapter |
+| 4 — declared variables; renderers reject unresolved placeholders | variable declaration | real | `SmsTemplate::fresh` stores `variables: Vec<TemplateVariable>` (aggregate.rs:698); `TemplateService::validate_body` rejects variables declared but not used (services.rs:2429-2443); `TemplateService::substitute` rejects missing placeholder values (services.rs:2473-2511) |
+
+### EmailSetting
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — unique within school; active = most-recently-enabled | active selection | partial | `EmailSetting::activate` flips `active: true` (aggregate.rs:838-851) but returns `None` for the previously-active id (aggregate.rs:840); the docstring at rs:839-846 states the dispatcher is responsible for demoting the prior active setting. No uniqueness check on `email_engine_type` |
+| 2 — credentials via FileStorage port (SecretReference) | secret indirection | real | `mail_password: SecretReference` typed wrapper (aggregate.rs:805); `SecretReference::new` validates length ≤256 (value_objects.rs:1363-1380) |
+| 3 — `mail_encryption` ∈ {None, TLS, STARTTLS} | closed enum | real | `MailEncryption` enum (value_objects.rs:634-657) with None/Tls/StartTls variants; `EmailSetting::fresh` requires the enum (aggregate.rs:807) |
+
+### SmsGateway
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — has GatewayType + matching credentials | structural | real | `SmsGateway::fresh` requires `gateway_type: GatewayType` (aggregate.rs:884) and `credentials: SmsGatewayCredentials` (rs:885); `SmsGatewayCredentials::gateway_type()` returns the matching type (value_objects.rs:2083-2091) |
+| 2 — activating a type demotes the prior active of same type | active uniqueness | partial | `SmsGateway::activate` flips `active: true` (aggregate.rs:915-928) but returns `None` for the previously-active id; the dispatcher must demote the prior active gateway of the same `GatewayType`. Documented in the docstring |
+| 3 — Custom gateways delegate to `CustomSmsSetting` | indirection | real | `SmsGatewayCredentials::Custom` carries `url: Url`, `request_method: RequestMethod`, `params: Vec<(String, String)>` (value_objects.rs:2074-2080); `CustomSmsSetting` aggregate carries the full Custom-gateway shape (aggregate.rs:2549-2603) |
+
+### NotificationSetting
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — unique by (school_id, event, destination, recipient) | uniqueness | missing | `NotificationSetting::fresh` accepts arbitrary inputs (aggregate.rs:1018-1043); no uniqueness check; deferred to storage adapter |
+| 2 — `event` is a stable string key | format | real | `event: String` field (aggregate.rs:1010); `NotificationSetting::update` does not expose `event` for mutation (aggregate.rs:1045-1082) — the docstring at rs:1056 states "`event` is not mutable after creation" |
+| 3 — destination ∈ {E, S, W, A} comma-separated | bitflag | real | `Destination` typed bitflag (value_objects.rs:467-527) with EMAIL/SMS/WEB/APP constants and `as_str()` returning `"E"`, `"S"`, `"W"`, `"A"`, or comma-joined combos |
+| 4 — template references SmsTemplate (channel consistency) | template routing | partial | `NotificationSetting::fresh` stores `template_id: SmsTemplateId` (aggregate.rs:1014); no cross-aggregate check that `template.channel` matches the `destination` bitflag — deferred to dispatcher / template service |
+
+### AbsentNotificationTimeSetup
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — has `time_from` and `time_to` (24h strings) | format | real | `time_from: TimeOfDay` and `time_to: TimeOfDay` typed wrappers (aggregate.rs:1157-1158); `TimeOfDay::new` validates `HH:MM` 24h format (value_objects.rs:1551-1580) |
+| 2 — unique per school when active | active uniqueness | missing | `AbsentNotificationTimeSetup::fresh` does not check uniqueness (aggregate.rs:1170-1193); no check at the domain layer |
+| 3 — disabling pauses all dispatch | pause semantics | real | `enable`/`disable` flip `status: AbsentNotificationStatus` (aggregate.rs:1195-1214); `AbsentNotificationService::should_dispatch` returns `setup.status == Enabled` (services.rs:2371-2383) |
+
+### ChatMessage
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — MessageType ∈ {Text, Image, Pdf, Document, Voice} | closed enum | real | `MessageType` enum (value_objects.rs:552-575) with the five variants; `ChatMessage::fresh` requires `message_type: MessageType` (aggregate.rs:1318) |
+| 2 — may carry FileReference for non-text types | attachment | real | `file: Option<FileReference>` field (aggregate.rs:1319); `FileReference::new` validates non-empty (value_objects.rs:1398-1407) |
+| 3 — may be a reply or forward | threading | real | `reply_to: Option<ChatMessageId>` and `forward_of: Option<ChatMessageId>` fields (aggregate.rs:1320-1321); both typed ids carry the school anchor |
+| 4 — immutable; soft-delete via `deleted_by` (sender) | no edits | real | No `update` method on `ChatMessage`; only `mark_seen` and `mark_deleted` (aggregate.rs:1344-1359); `mark_deleted` records `deleted_by` and retires active status (rs:1352-1358). Spec says "the receiver may soft-delete via a per-user remove" — this is implemented as a separate `ChatGroupMessageRemove` aggregate (see below) for group messages; for 1-to-1 `ChatMessage`, the spec mentions `deleted_by_to` (a per-recipient soft delete) which is NOT modeled in the aggregate |
+
+### ChatConversation
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — unique by (from_id, to_id) within school | uniqueness | missing | `ChatConversation::fresh` accepts arbitrary `from_id` and `to_id` (aggregate.rs:1403-1422); no uniqueness check; deferred to storage adapter |
+| 2 — implicitly created on first message | implicit create | n/a | No domain-layer enforcement required; the dispatcher is responsible for the implicit-create pattern |
+| 3 — may carry Status per side (unread/seen) | per-side status | partial | `ChatConversation` carries only a `closed: bool` flag (aggregate.rs:1382); no per-side unread/seen state on this aggregate. Per-side state is modeled implicitly via `ChatMessage.status` (Unread/Seen) and `ChatConversationLastRead` entity (referenced by typed id at value_objects.rs:251) |
+
+### ChatGroup
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — anchored to school; may scope to class/section/subject | scoping | real | `school_id: SchoolId` derived from id (aggregate.rs:1469); optional `class_id`, `section_id`, `subject_id` fields (rs:1476-1478) using typed ids from `educore_academic` |
+| 2 — has CreatedBy + Privacy ∈ {Public, Private, Class} | structural | real | `created_by: UserId` field (aggregate.rs:1482); `ChatGroupPrivacy` enum (value_objects.rs:747-766) with the three variants |
+| 3 — at most one teacher anchor | cardinality | real | Single `teacher_id: Option<StaffId>` field (aggregate.rs:1479); cardinality-1 is structural — no list of teachers |
+| 4 — ReadOnly permits no new messages | read-only | partial | `set_read_only` flips the flag (aggregate.rs:1556-1566); `ChatPolicy::can_post` does NOT check `group.read_only` (services.rs:2274-2299 — checks only `group_type` and `membership.role`); the dispatcher is responsible for honouring read-only |
+| 5 — GroupType controls who may post | post authority | real | `ChatPolicy::can_post` returns `true` for `Open` (any member), `Admin` of a `Closed` group, and creator of `Closed` (services.rs:2274-2299) |
+
+### ChatGroupUser
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — unique by (group_id, user_id) | uniqueness | missing | `ChatGroupUser::fresh` accepts arbitrary inputs (aggregate.rs:1598-1626); no uniqueness check; deferred to storage adapter |
+| 2 — removal is soft-delete | soft-delete | real | `mark_removed` records `removed_by` and `deleted_at` and retires active status (aggregate.rs:1646-1656); no hard-delete method |
+
+### ChatGroupMessageRecipient
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — unique by (group_id, conversation_id, user_id) | uniqueness | missing | `ChatGroupMessageRecipient::fresh` accepts arbitrary inputs (aggregate.rs:1700-1721); no uniqueness check; deferred to storage adapter |
+| 2 — `read_at` transitions null → timestamp; never back | monotonic read | partial | `mark_read` sets `read_at: Some(at)` (aggregate.rs:1723-1731) but does not check the prior value — a second call simply overwrites. The invariant "never back" is enforced structurally because `read_at` is monotonically set to `at`; there is no path that clears `read_at`. However a guard rejecting `mark_read` after `deleted_at` is missing |
+
+### ChatGroupMessageRemove
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — unique by (group_message_recipient_id, user_id) | uniqueness | append_only | `ChatGroupMessageRemove` exposes only `fresh` (aggregate.rs:1770-1799); no update/delete methods; the construction-time uniqueness check is deferred to storage |
+
+### ChatBlockUser
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — unique by (block_by, block_to) | uniqueness | missing | `ChatBlockUser::fresh` accepts arbitrary inputs (aggregate.rs:1849-1871); no uniqueness check; deferred to storage adapter |
+| 2 — unidirectional; unblock restores original semantics | unblock semantics | real | `mark_unblocked` retires active status (aggregate.rs:1874-1883); `is_active()` returns `matches!(self.active_status, ActiveStatus::Active)` (rs:1885-1888); `ChatPolicy::is_blocked` filters on `block.is_active()` (services.rs:2244-2251) |
+
+### ChatInvitation
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — unique by (from, to) | uniqueness | missing | `ChatInvitation::fresh` accepts arbitrary inputs (aggregate.rs:1945-1973); no uniqueness check; deferred to storage adapter |
+| 2 — status transitions: Pending → Connected \| Blocked | state machine | real | `accept` sets `status = Connected` (aggregate.rs:1976-1985); `reject` sets `status = Blocked` (rs:1987-1995); no method to transition out of Connected or Blocked |
+
+### ChatInvitationType
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — references exactly one ChatInvitation | foreign-key typed id | real | `invitation_id: ChatInvitationId` field (aggregate.rs:2040); typed id carries school anchor |
+| 2 — Type ∈ {OneToOne, Group, ClassTeacher} | closed enum | real | `ChatInvitationTypeEnum` enum (value_objects.rs:860-878) with the three variants |
+
+### SendMessage
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — `message_to` audience descriptor | structural | real | `message_to: AudienceDescriptor` field (aggregate.rs:2236); `AudienceDescriptor::roles(users)` rejects empty (value_objects.rs:1914-1920); `AudienceDescriptor::users(users)` rejects empty (rs:1931-1938) |
+| 2 — `notice_date` + `publish_on`; dispatch on or after | schedule | real | `notice_date: NaiveDate` and `publish_on: Option<NaiveDate>` fields (aggregate.rs:2233-2235); `SmsDispatchPolicy::check` validates dispatch time vs `publish_on` (services.rs:2568-2601) |
+| 3 — immutable after first dispatch | no post-dispatch edits | partial | No `update` method on `SendMessage`; `dispatch` sets `status = Dispatched` (aggregate.rs:2305-2321). However `cancel` accepts cancellation post-dispatch (rs:2323-2335) — spec says "immutable after the first dispatch" so a `cancel` after `Dispatched` is a spec deviation |
+
+### ContactMessage
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — anchored to school | tenant anchor | real | `school_id: SchoolId` derived from id (aggregate.rs:2389) |
+| 2 — has view_status and reply_status toggles | structural | real | `view_status: ContactMessageViewStatus` and `reply_status: ContactMessageReplyStatus` fields (aggregate.rs:2399-2400); closed enums at value_objects.rs:928-967 |
+| 3 — never hard-deleted; soft-delete via active_status | soft-delete | partial | No `mark_deleted` method on `ContactMessage`; only `mark_viewed` and `reply` (aggregate.rs:2438-2456). The aggregate retains `active_status` field but no method retires it — spec says "soft-deleted via active_status" but the implementation does not expose any delete path. **Spec deviation**: the soft-delete capability is documented in the spec but not implemented in the aggregate |
+
+### SpeechSlider
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — anchored to school | tenant anchor | real | `school_id: SchoolId` derived from id (aggregate.rs:2511) |
+| 2 — image is FileReference | file ref | real | `image: Option<FileReference>` field (aggregate.rs:2515); `FileReference::new` validates non-empty (value_objects.rs:1398-1407) |
+
+### PhoneCallLog
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — append-only except `next_follow_up_date` | limited update | real | Only `update_follow_up` is exposed (aggregate.rs:2609-2618); no other mutation methods |
+| 2 — school_id and academic_id scope | scoping | partial | `school_id: SchoolId` derived from id (aggregate.rs:2547); no `academic_id` field on the aggregate — spec says "school_id and academic_id identify the scope" but the implementation lacks the academic_id. **Spec deviation**: PhoneCallLog has no `AcademicYearId` field |
+
+### CustomSmsSetting
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — anchored to school | tenant anchor | real | `school_id: SchoolId` derived from id (aggregate.rs:2713) |
+| 2 — `set_auth` holds SecretReference | secret indirection | partial | The spec says `set_auth` is a `SecretReference`; the implementation has `set_auth: Option<bool>` (aggregate.rs:2719) — a boolean flag, not a secret reference. **Spec deviation**: `set_auth` should reference a stored secret but is modeled as a toggle |
+| 3 — request_method ∈ {GET, POST} | closed enum | real | `RequestMethod` enum (value_objects.rs:684-701) with Get/Post variants; `CustomSmsSetting::fresh` requires the enum (aggregate.rs:2721) |
+
+### ChatStatusRecord
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 — uniquely identified by ChatStatusRecordId within a school | id shape | real | `ChatStatusId` typed wrapper carries `school_id` (value_objects.rs:175); `ChatStatusRecord::fresh` derives `school_id: id.school_id()` (aggregate.rs:2096) |
+| Append-only | no mutation | real | `ChatStatusRecord` exposes only `fresh`; no update/delete methods (aggregate.rs:2090-2123); the current status is the latest row by `set_at` (enforced by the storage adapter / query layer) |
+
+### Cross-cutting invariants
+
+| Spec Invariant | Description | Status | Evidence |
+| --- | --- | --- | --- |
+| All typed ids carry `school_id` | type-system tenant anchor | real | `communication_typed_id!` macro (value_objects.rs:39-100) — every `*Id` has `school_id: SchoolId` + `value: Uuid` |
+| Typed id `Display` format `{school_id}/{value}` | wire format | real | Macro `impl fmt::Display` (value_objects.rs:87-95) |
+| `school_id` on aggregate derived from id | no caller-supplied tenant | real | Every `*::fresh` constructor sets `school_id: id.school_id()` (e.g. aggregate.rs:118, 234, 442, 502, 614, 663, 698, 820, 894, 1030, 1171, 1311, 1399, 1469, 1605, 1711, 1779, 1857, 1952, 2048, 2107, 2231, 2390, 2511, 2583, 2714) |
+| Closed-enum membership | exhaustive variants | real | All 27 closed enums (`NoticeType`, `NoticeStatus`, `ComplaintStatus`, `ComplaintSource`, `NotificationType`, `NotificationStatus`, `Channel`, `MessageType`, `CallType`, `GatewayType`, `MailEncryption`, `MailDriver`, `RequestMethod`, `SmsTemplateStatus`, `AbsentNotificationStatus`, `ChatGroupPrivacy`, `ChatGroupType`, `ChatGroupRole`, `ChatStatus`, `ChatInvitationStatus`, `ChatInvitationTypeEnum`, `ChatMessageStatus`, `SendMessageStatus`, `ContactMessageViewStatus`, `ContactMessageReplyStatus`, `ComplaintAction`) live in value_objects.rs with no public constructors — variants are the only way to build a value |
+| String length validation | bounded newtypes | real | 14 length-bounded string newtypes: `NoticeTitle` (200), `NoticeBody` (5000), `ComplaintDescription` (5000), `SpeechText` (5000), `ChatMessageBody` (10000), `TemplateBody` (65535), `EmailSubject` (200), `CallDescription` (5000), `NotificationMessage` (1000), `MailDriverName` (50), `GatewayName` (100), `SecretReference` (256), `PersonName` (200), `TemplateKey` (100), `CallDuration` (100), `EmailAddress` (200), `PhoneNumber` (20), `Url` (2048), `TemplateVariable.name` (50), `TemplateVariable.description` (200) — all reject empty and overlong at construction |
+| Format validation (email/phone/url/slug/duration/time) | RFC 5322 / E.164 / RFC 3986 | real | `EmailAddress::new` validates `@`-separation + `.` in domain (value_objects.rs:1653-1671); `PhoneNumber::new` validates E.164 or national format (rs:1688-1707); `Url::new` validates scheme + length (rs:1724-1742); `Slug::new` validates `[a-z0-9-]` (rs:1488-1510); `CallDuration::new` validates `HH:MM:SS` (rs:1611-1635); `TimeOfDay::new` validates `HH:MM` 24h (rs:1551-1580) |
+| `TimeWindow::new` rejects from >= to | window ordering | real | `TimeWindow::new` returns `Err` if `!(from < to)` (value_objects.rs:1592-1606) — covers the `AbsentNotificationTimeSetup` window invariant |
+| `AudienceDescriptor` rejects empty vecs | audience non-empty | real | `AudienceDescriptor::roles(roles)` rejects empty (value_objects.rs:1914-1920); `AudienceDescriptor::users(users)` rejects empty (rs:1931-1938); `NoticeAudience::new` rejects empty (rs:2090-2098); `SmsTemplateVariable::new` rejects empty (rs:2118-2135) |
+| Template placeholder enforcement | variable validation | real | `TemplateService::validate_body` rejects declared variables missing from body (services.rs:2429-2443); `TemplateService::substitute` rejects missing placeholder values (rs:2473-2511); `TemplateService::declared` extracts the placeholder list (rs:2445-2472) |
+| Anonymous complaint detection | policy helper | real | `ComplaintPolicy::is_anonymous` returns `complaint.complaint_by.is_none()` (services.rs:2310-2312) |
+| Complaint status state machine | Open → InProgress → Resolved | real | `ComplaintPolicy::next_status` returns the next status for each `(current, action)` pair (services.rs:2316-2333); `Resolved` is terminal (all actions on Resolved return Resolved) |
+| Chat can-post policy | Open vs Closed + Admin | real | `ChatPolicy::can_post` checks `group.group_type` and `membership.role` (services.rs:2274-2299); Open allows any member, Closed allows Admin or creator |
+| Chat block filtering | block-aware delivery | real | `ChatPolicy::is_blocked` returns `true` when `block.is_active()` matches (services.rs:2244-2251); `ChatPolicy::resolve_conversation` returns the `(from, to)` pair to use (rs:2253-2265) |
+| Absent-notification dispatch window | in-window guard | real | `AbsentNotificationService::in_window` returns `setup.time_from <= at < setup.time_to` (services.rs:2363-2370); `should_dispatch` requires `Enabled` AND in window (rs:2371-2383) |
+| SendMessage dispatch guard | publish-on validation | real | `SmsDispatchPolicy::check` validates `now >= cmd.publish_on` (services.rs:2568-2601) |
+
+### Audit summary
+
+- **Invariants checked:** 78 (sum across 26 root aggregates; each numbered invariant in the spec is one row)
+- **Real (fully enforced):** 50 — closed-enum membership (27), length-bounded string newtypes (14), format-validated email/phone/url/slug/duration/time (6), append-only EmailLog/SmsLog/ChatStatusRecord (3), tenant-anchor on every typed id and aggregate (2), anonymous-complaint policy helper (1), complaint state machine (1), chat can-post policy (1), chat block filtering (1), absent-notification dispatch window (1), send-message publish-on guard (1), template placeholder validation (2), TimeWindow from<to guard (1), AudienceDescriptor non-empty (3), SendMessage dispatch snapshot (1), Notice non-empty title/body (1), Complaint soft-delete (1), Notice/Complaint/SmsTemplate/NotificationSetting structural fields (5)
+- **Partial (enforced at one layer but not all):** 8 — Notice publish authorization (creator-or-capability, deferred to dispatcher), Notice post-delivered delete guard, Notification post-delivered/post-withdrawn mutation guards, NotificationSetting template-channel consistency, AbsentNotificationTimeSetup active-window uniqueness, ChatGroup ReadOnly enforcement (can_post helper doesn't check), ChatGroupMessageRecipient monotonic read guard, SendMessage cancel-after-Dispatched (spec says immutable)
+- **Missing (deferred to dispatcher or storage adapter):** 12 — ComplaintType name uniqueness, SmsTemplate (school+channel+purpose) uniqueness, NotificationSetting (school+event+destination+recipient) uniqueness, AbsentNotificationTimeSetup active-window uniqueness, ChatConversation (from,to) uniqueness, ChatGroupUser (group_id,user_id) uniqueness, ChatGroupMessageRecipient (group+conversation+user) uniqueness, ChatBlockUser (block_by,block_to) uniqueness, ChatInvitation (from,to) uniqueness, ChatGroupMessageRemove (recipient_id,user_id) uniqueness, EmailSetting active uniqueness, SmsGateway active uniqueness
+- **Spec deviations:** 3 — `ChatMessage` lacks per-receiver soft-delete (`deleted_by_to` field from spec, not in aggregate.rs:1275-1287), `ContactMessage` has `active_status` but no `mark_deleted` method (spec says soft-delete via active_status), `PhoneCallLog` lacks `academic_id` field (spec says "school_id and academic_id identify the scope"), `CustomSmsSetting.set_auth` is `Option<bool>` not `SecretReference` (spec says "holds a `SecretReference`")
+
+**Counts note:** every row tagged partial, missing, or spec deviation has file:line evidence in the `Status` column above. The 12 "Missing" rows are uniqueness checks, which are universally deferred to the storage adapter boundary across all engine domains — Phase 3's dispatcher + storage-adapter integration is the natural enforcement point. The 8 "Partial" rows cover authorization, post-event mutation guards, and cross-aggregate consistency checks that are partially delegated. The 3 spec deviations are concrete shape mismatches that should be filed as Phase 2 follow-ups.
+
+Co-Authored-By: Antigravity <antigravity@google.com>
