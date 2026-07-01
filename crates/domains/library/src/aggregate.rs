@@ -410,6 +410,28 @@ impl LibraryMember {
         }
     }
 
+    /// Updates the member. Bumps the version. Returns the
+    /// list of fields that actually changed (drives the
+    /// `LibraryMemberUpdated::changes` event payload).
+    pub fn update(
+        &mut self,
+        member_ud_id: Option<MemberUdId>,
+        actor: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> Vec<&'static str> {
+        let mut changes: Vec<&'static str> = Vec::new();
+        if let Some(new_ud_id) = member_ud_id {
+            self.member_ud_id = new_ud_id;
+            changes.push("member_ud_id");
+        }
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        changes
+    }
+
     /// Deactivates the member. Bumps the version.
     pub fn deactivate(&mut self, actor: UserId, at: Timestamp, event_id: EventId) {
         self.status = MemberStatus::Inactive;
@@ -424,6 +446,17 @@ impl LibraryMember {
     pub fn reactivate(&mut self, actor: UserId, at: Timestamp, event_id: EventId) {
         self.status = MemberStatus::Active;
         self.active_status = ActiveStatus::Active;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+    }
+
+    /// Marks the member as deleted (retired). Bumps the
+    /// version. Mirrors [`BookCategory::delete`].
+    pub fn delete(&mut self, actor: UserId, at: Timestamp, event_id: EventId) {
+        self.status = MemberStatus::Inactive;
+        self.active_status = ActiveStatus::Retired;
         self.updated_at = at;
         self.updated_by = actor;
         self.version = self.version.next();
