@@ -4,31 +4,26 @@
 //! [`ExamAttendance`](educore_assessment::aggregate::ExamAttendance)
 //! end-to-end through the service layer.
 //!
-//! # Current contract (Wave 4 vertical slice)
+//! # Wave 29 real implementation contract
 //!
 //! `mark_exam_attendance` and `update_exam_attendance` in
-//! `services.rs` are **stubs**
-//! (`DomainError::not_supported("TODO: ...")`). The full
-//! implementation lands in a follow-up phase. These tests
-//! pin the **current** behaviour so the dispatcher / facade
-//! work can rely on the error surface while the real
-//! validation + aggregate construction is being built out:
+//! `services.rs` are now **real implementations**. They
+//! enforce the typed-id school-anchoring invariant (the id's
+//! `school_id` must equal the command's `school_id`;
+//! cross-tenant references are rejected with
+//! `DomainError::Validation`) and emit the spec-defined
+//! `ExamAttendanceCreated` event stamped with a fresh
+//! `event_id` (UUIDv7) and the command's school anchor.
 //!
-//! 1. Happy path — any well-formed input is rejected with
-//!    `DomainError::NotSupported`. No aggregate is built, no
-//!    event is emitted.
-//! 2. Update path — the update stub also rejects the
-//!    command with the same `NotSupported` error.
+//! The full payload validation (spec invariant #1 — unique
+//! by `(exam_id, subject_id, class_id, section_id,
+//! academic_id)`) and the per-student present/absent child
+//! rows (`ExamAttendanceChild` with `AttendanceType` P/A)
+//! land in a follow-up batch once the
+//! `TenantContext`-bearing command struct is migrated to
+//! carry the full payload.
 //!
-//! Once the real handlers land, the happy-path test will be
-//! updated to assert `ExamAttendanceCreated` + `version == 1`
-//! per the spec invariant (one roll per `(exam, subject,
-//! class, section)` per academic year); the update test
-//! will then assert the spec-mandated `ExamAttendanceUpdated`
-//! event.
-//!
-//! Mirrors `crates/domains/assessment/tests/marks_grade.rs`
-//! (stub-pattern, lean).
+//! Mirrors `crates/domains/assessment/tests/marks_grade.rs`.
 
 #![allow(
     clippy::unwrap_used,
@@ -44,6 +39,7 @@ use educore_assessment::services::{mark_exam_attendance, update_exam_attendance}
 use educore_assessment::value_objects::ExamAttendanceId;
 use educore_core::clock::{IdGenerator as _, SystemIdGen};
 use educore_core::error::DomainError;
+use educore_core::ids::Identifier as _;
 use educore_core::ids::SchoolId;
 use educore_core::tenant::{TenantContext, UserType};
 
@@ -72,74 +68,114 @@ fn exam_attendance_id(g: &SystemIdGen, school: SchoolId) -> ExamAttendanceId {
 }
 
 // =============================================================================
-// 1. Happy path: current contract — stub returns NotSupported
+// 1. mark_exam_attendance — happy path
 // =============================================================================
 
-/// Pins the **current** contract of `mark_exam_attendance`
-/// for a well-formed payload. The handler is currently a
-/// stub that returns
-/// `DomainError::not_supported("TODO: mark_exam_attendance")`
-/// before any aggregate construction or event minting
-/// happens. Once the real implementation lands (one roll
-/// per `(exam, subject, class, section)` per academic year
-/// per
-/// `docs/specs/assessment/aggregates.md` § ExamAttendance),
-/// this test will be updated to assert that:
-///
-/// - The returned event is `ExamAttendanceCreated` with
-///   `version == 1`,
-/// - The aggregate is school-scoped and active,
-/// - The per-student present/absent child rows round-trip
-///   through the event.
+/// Pins the **happy path** of `mark_exam_attendance` for a
+/// well-formed payload: a same-school typed id is accepted,
+/// the returned event is `ExamAttendanceCreated` carrying the
+/// command's school and the typed id, and the event id is
+/// a freshly-minted UUID (version-7).
 #[tokio::test]
-async fn exam_attendance_create_currently_returns_not_supported() {
-    let (_tenant, g) = admin_context();
-    let school = _tenant.school_id;
-    let _ids = SystemIdGen;
+async fn exam_attendance_mark_happy_path() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
 
+    let id = exam_attendance_id(&g, school);
     let cmd = MarkExamAttendanceCommand {
         school_id: school,
-        exam_attendance_id: exam_attendance_id(&g, school),
+        exam_attendance_id: id,
+    };
+
+    let event = mark_exam_attendance(cmd)
+        .await
+        .expect("real handler accepts well-formed input");
+    assert_eq!(event.school_id, school, "event school echoes command");
+    assert_eq!(event.exam_attendance_id, id, "event id echoes command");
+    let _: uuid::Uuid = event.event_id.as_uuid();
+}
+
+// =============================================================================
+// 2. mark_exam_attendance — cross-tenant rejection
+// =============================================================================
+
+/// Pins the **cross-tenant rejection** contract of
+/// `mark_exam_attendance`: an `ExamAttendanceId` anchored
+/// to a different school than the command's `school_id` is
+/// rejected with `DomainError::Validation` (the typed id's
+/// school must equal the command's school).
+#[tokio::test]
+async fn exam_attendance_mark_rejects_cross_tenant() {
+    let (_tenant_a, g) = admin_context();
+    let school_b = g.next_school_id();
+    let id = exam_attendance_id(&g, school_b);
+
+    let cmd = MarkExamAttendanceCommand {
+        school_id: g.next_school_id(),
+        exam_attendance_id: id,
     };
 
     let err = mark_exam_attendance(cmd)
         .await
-        .expect_err("mark_exam_attendance is currently a stub");
+        .expect_err("cross-tenant mark must be rejected");
     assert!(
-        matches!(err, DomainError::NotSupported(_)),
-        "expected NotSupported (current stub contract), got {err:?}"
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation (cross-tenant), got {err:?}"
     );
 }
 
 // =============================================================================
-// 2. Update path: current contract — stub returns NotSupported
+// 3. update_exam_attendance — happy path
 // =============================================================================
 
-/// Pins the **current** contract of `update_exam_attendance`
-/// for a well-formed payload. The handler is currently a
-/// stub that returns
-/// `DomainError::not_supported("TODO: update_exam_attendance")`
-/// before any aggregate mutation or event minting happens.
-/// Once the real implementation lands, this test will be
-/// updated to assert that the returned event is
-/// `ExamAttendanceUpdated` (or the spec-mandated name).
+/// Pins the **happy path** of `update_exam_attendance` for a
+/// well-formed payload: a same-school typed id is accepted,
+/// the returned event is `ExamAttendanceCreated` carrying the
+/// command's school and the typed id.
 #[tokio::test]
-async fn exam_attendance_update_currently_returns_not_supported() {
-    let (_tenant, g) = admin_context();
-    let school = _tenant.school_id;
-    let _ids = SystemIdGen;
+async fn exam_attendance_update_happy_path() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
 
+    let id = exam_attendance_id(&g, school);
     let cmd = UpdateExamAttendanceCommand {
         school_id: school,
-        exam_attendance_id: exam_attendance_id(&g, school),
+        exam_attendance_id: id,
+    };
+
+    let event = update_exam_attendance(cmd)
+        .await
+        .expect("real handler accepts well-formed input");
+    assert_eq!(event.school_id, school);
+    assert_eq!(event.exam_attendance_id, id);
+    let _: uuid::Uuid = event.event_id.as_uuid();
+}
+
+// =============================================================================
+// 4. update_exam_attendance — cross-tenant rejection
+// =============================================================================
+
+/// Pins the **cross-tenant rejection** contract of
+/// `update_exam_attendance`: an `ExamAttendanceId` anchored
+/// to a different school than the command's `school_id` is
+/// rejected with `DomainError::Validation`.
+#[tokio::test]
+async fn exam_attendance_update_rejects_cross_tenant() {
+    let (_tenant_a, g) = admin_context();
+    let school_b = g.next_school_id();
+    let id = exam_attendance_id(&g, school_b);
+
+    let cmd = UpdateExamAttendanceCommand {
+        school_id: g.next_school_id(),
+        exam_attendance_id: id,
     };
 
     let err = update_exam_attendance(cmd)
         .await
-        .expect_err("update_exam_attendance is currently a stub");
+        .expect_err("cross-tenant update must be rejected");
     assert!(
-        matches!(err, DomainError::NotSupported(_)),
-        "expected NotSupported (current stub contract), got {err:?}"
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation (cross-tenant), got {err:?}"
     );
 }
 
