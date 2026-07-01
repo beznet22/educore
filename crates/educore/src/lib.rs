@@ -86,6 +86,15 @@ pub use educore_query_derive as query_derive;
 // WF-016.
 pub mod subscribers;
 
+// ---- Dispatcher wrapper (Phase 6 Step 1) ---------------------------------
+// `dispatch::dispatch_<verb>` is the spec-conformant entry point that
+// routes domain service calls through `CommandDispatcher`. Per
+// `docs/architecture.md` § "Command Bus + Dispatcher" the dispatcher
+// layer adds RBAC + idempotency + outbox + audit + bus publish in a
+// single transaction; domain services stay pure. See
+// `docs/guides/dispatcher-wrapper-pattern.md`.
+pub mod dispatch;
+
 // ---- Async command handle (SCHEMA-CMD-ASYNC, § 13) -------------------------
 // `command_handle::CommandRegistry` is the engine-facing port for
 // asynchronous commands (bulk imports, payroll generation, report
