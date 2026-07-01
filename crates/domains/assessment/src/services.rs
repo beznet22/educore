@@ -51,7 +51,8 @@ use crate::events::{
     ExamRoutinePageCreated, ExamScheduleCancelled, ExamScheduleUpdated, ExamScheduled,
     ExamSettingCreated, ExamSignatureCreated, ExamStepSkipCreated, ExamUpdated,
     FrontendExamResultCreated, FrontendExamRoutineCreated, FrontendResultCreated, MarksEntered,
-    MarksGradeCreated, MarksRegisterCancelled, MarksRegisterCreated, MarksSubmitted,
+    MarksGradeCreated, MarksGradeDeleted, MarksGradeUpdated, MarksRegisterCancelled,
+    MarksRegisterCreated, MarksSubmitted,
     OnlineExamAnswered, OnlineExamClosed, OnlineExamCreated, OnlineExamDeleted,
     OnlineExamEvaluated, OnlineExamStarted, QuestionBankCreated, QuestionGroupCreated,
     QuestionLevelCreated, ReportCardGenerated, ResultPublished, ResultRemarksUpdated,
@@ -1175,19 +1176,86 @@ where
 // land in their respective domain phases.
 // =============================================================================
 
-/// Handler skeleton for [`CreateMarksGradeCommand`].
-pub async fn create_marks_grade(_cmd: CreateMarksGradeCommand) -> Result<MarksGradeCreated> {
-    Err(DomainError::not_supported("TODO: create_marks_grade"))
+/// Real implementation for [`CreateMarksGradeCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § MarksGrade:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected) and the aggregate
+/// is a school-scoped grade boundary. Spec invariants #1
+/// (`From < Up`), #2 (`PercentFrom < PercentUpTo`), #3
+/// (non-overlapping / contiguous percentage range) and #4
+/// (exactly one `Gpa = 0.0` "Fail" boundary per school)
+/// require the full `GradeName` / `Gpa` / `From` / `Up` /
+/// `PercentFrom` / `PercentUpTo` / `Description` payload
+/// that lands in a follow-up batch once the
+/// `TenantContext`-bearing command struct is migrated; the
+/// current command only carries the typed id.
+pub async fn create_marks_grade(cmd: CreateMarksGradeCommand) -> Result<MarksGradeCreated> {
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.marks_grade_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "marks_grade_id school ({}) does not match command school ({})",
+            cmd.marks_grade_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(MarksGradeCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        marks_grade_id: cmd.marks_grade_id,
+    })
 }
 
-/// Handler skeleton for [`UpdateMarksGradeCommand`].
-pub async fn update_marks_grade(_cmd: UpdateMarksGradeCommand) -> Result<MarksGradeCreated> {
-    Err(DomainError::not_supported("TODO: update_marks_grade"))
+/// Real implementation for [`UpdateMarksGradeCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § MarksGrade:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The full
+/// `GradeName` / `Gpa` / `From` / `Up` / `PercentFrom` /
+/// `PercentUpTo` / `Description` payload (which carries
+/// spec invariants #1, #2, #3 and #4) lands in a follow-up
+/// batch once the `TenantContext`-bearing command struct is
+/// migrated; the current command only carries the typed id.
+pub async fn update_marks_grade(cmd: UpdateMarksGradeCommand) -> Result<MarksGradeUpdated> {
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.marks_grade_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "marks_grade_id school ({}) does not match command school ({})",
+            cmd.marks_grade_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(MarksGradeUpdated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        marks_grade_id: cmd.marks_grade_id,
+    })
 }
 
-/// Handler skeleton for [`DeleteMarksGradeCommand`].
-pub async fn delete_marks_grade(_cmd: DeleteMarksGradeCommand) -> Result<MarksGradeCreated> {
-    Err(DomainError::not_supported("TODO: delete_marks_grade"))
+/// Real implementation for [`DeleteMarksGradeCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § MarksGrade:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The full
+/// deletion-time validation (asserting no published
+/// results reference this grade boundary) lands in a
+/// follow-up batch once the `TenantContext`-bearing command
+/// struct is migrated; the current command only carries the
+/// typed id.
+pub async fn delete_marks_grade(cmd: DeleteMarksGradeCommand) -> Result<MarksGradeDeleted> {
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.marks_grade_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "marks_grade_id school ({}) does not match command school ({})",
+            cmd.marks_grade_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(MarksGradeDeleted {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        marks_grade_id: cmd.marks_grade_id,
+    })
 }
 
 /// Real implementation for [`CreateExamSettingCommand`].

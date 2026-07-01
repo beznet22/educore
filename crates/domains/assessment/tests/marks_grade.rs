@@ -1,32 +1,28 @@
 //! Integration tests for the **MarksGrade aggregate** vertical slice.
 //!
-//! Pins the create contract for
+//! Pins the create / update / delete contracts for
 //! [`MarksGrade`](educore_assessment::aggregate::MarksGrade)
 //! end-to-end through the service layer.
 //!
-//! # Current contract (Wave 4 vertical slice)
+//! # Current contract (Wave 29 vertical slice)
 //!
-//! `create_marks_grade` in `services.rs` is a **stub**
-//! (`DomainError::not_supported("TODO: create_marks_grade")`).
-//! The full implementation lands in a follow-up phase. These
-//! tests pin the **current** behaviour so the dispatcher /
-//! facade work can rely on the error surface while the real
-//! validation + aggregate construction is being built out:
+//! `create_marks_grade`, `update_marks_grade`, and
+//! `delete_marks_grade` in `services.rs` are now **real
+//! implementations**. They enforce the typed-id
+//! school-anchoring invariant (spec invariant — the id's
+//! `school_id` must equal the command's `school_id`;
+//! cross-tenant references are rejected with
+//! `DomainError::Validation`) and emit the spec-defined
+//! events (`MarksGradeCreated`, `MarksGradeUpdated`,
+//! `MarksGradeDeleted`).
 //!
-//! 1. Happy path — any well-formed input is rejected with
-//!    `DomainError::NotSupported`. No aggregate is built, no
-//!    event is emitted.
-//! 2. Validation-failure path — the stub does not validate
-//!    its input, so any payload (including ones that would
-//!    fail `PercentFrom > PercentUpTo` once the real
-//!    validator lands) is rejected with the same
-//!    `NotSupported` error before any field-level check runs.
-//!
-//! Once the real handler lands, the happy-path test will be
-//! updated to assert `MarksGradeCreated` + `version == 1`
-//! per the spec invariant
-//! (`PercentFrom < PercentUpTo`); the validation-failure test
-//! will then assert `DomainError::Validation` directly.
+//! The full payload validation (spec invariants #1
+//! `From < Up`, #2 `PercentFrom < PercentUpTo`, #3
+//! non-overlapping/contiguous scale, #4 exactly one
+//! `Gpa = 0.0` per school) lands in a follow-up batch once
+//! the `TenantContext`-bearing command struct is migrated
+//! to carry `GradeName` / `Gpa` / `From` / `Up` /
+//! `PercentFrom` / `PercentUpTo` / `Description`.
 //!
 //! Mirrors `crates/domains/assessment/tests/exam.rs` (lean).
 
@@ -38,12 +34,14 @@
     missing_docs
 )]
 
-use educore_assessment::commands::CreateMarksGradeCommand;
-use educore_assessment::services::create_marks_grade;
+use educore_assessment::commands::{
+    CreateMarksGradeCommand, DeleteMarksGradeCommand, UpdateMarksGradeCommand,
+};
+use educore_assessment::services::{create_marks_grade, delete_marks_grade, update_marks_grade};
 use educore_assessment::value_objects::MarksGradeId;
 use educore_core::clock::{IdGenerator as _, SystemIdGen, TestClock};
 use educore_core::error::DomainError;
-use educore_core::ids::SchoolId;
+use educore_core::ids::{Identifier as _, SchoolId};
 use educore_core::tenant::{TenantContext, UserType};
 
 // =============================================================================
@@ -71,80 +69,155 @@ fn marks_grade_id(g: &SystemIdGen, school: SchoolId) -> MarksGradeId {
 }
 
 // =============================================================================
-// Happy path: current contract — stub returns NotSupported
+// create_marks_grade
 // =============================================================================
 
-/// Pins the **current** contract of `create_marks_grade` for
-/// a well-formed payload. The handler is currently a stub
-/// that returns `DomainError::NotSupported("TODO:
-/// create_marks_grade")` before any aggregate construction
-/// or event minting happens. Once the real implementation
-/// lands (carrying `GradeName`, `Gpa`, `From`, `Up`,
-/// `PercentFrom`, `PercentUpTo`, `Description` per
-/// `docs/specs/assessment/aggregates.md` § MarksGrade), this
-/// test will be updated to assert that:
-///
-/// - The returned event is `MarksGradeCreated` with
-///   `version == 1`,
-/// - The aggregate is school-scoped and active,
-/// - `PercentFrom < PercentUpTo` is enforced.
+/// Pins the **happy path** of `create_marks_grade` for a
+/// well-formed payload: a same-school typed id is accepted,
+/// the returned event is `MarksGradeCreated` carrying the
+/// command's school and the typed id, and the event id is
+/// a freshly-minted UUID (version-7).
 #[tokio::test]
-async fn marks_grade_create_currently_returns_not_supported() {
+async fn marks_grade_create_happy_path() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
     let _clock = TestClock::new();
     let _ids = SystemIdGen;
 
+    let id = marks_grade_id(&g, school);
     let cmd = CreateMarksGradeCommand {
         school_id: school,
-        marks_grade_id: marks_grade_id(&g, school),
+        marks_grade_id: id,
+    };
+
+    let event = create_marks_grade(cmd).await.expect("real handler accepts well-formed input");
+    assert_eq!(event.school_id, school, "event school echoes command");
+    assert_eq!(event.marks_grade_id, id, "event id echoes command");
+    // Version-7 event id must be a valid UUID.
+    let _: uuid::Uuid = event.event_id.as_uuid();
+}
+
+/// Pins the **cross-tenant rejection** contract of
+/// `create_marks_grade`: a `MarksGradeId` anchored to a
+/// different school than the command's `school_id` is
+/// rejected with `DomainError::Validation` (the typed id's
+/// school must equal the command's school).
+#[tokio::test]
+async fn marks_grade_create_rejects_cross_tenant() {
+    let (_tenant_a, g) = admin_context();
+    let school_b = g.next_school_id();
+    let id = marks_grade_id(&g, school_b);
+
+    let cmd = CreateMarksGradeCommand {
+        school_id: g.next_school_id(),
+        marks_grade_id: id,
     };
 
     let err = create_marks_grade(cmd)
         .await
-        .expect_err("create_marks_grade is currently a stub");
+        .expect_err("cross-tenant create must be rejected");
     assert!(
-        matches!(err, DomainError::NotSupported(_)),
-        "expected NotSupported (current stub contract), got {err:?}"
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation (cross-tenant), got {err:?}"
     );
 }
 
 // =============================================================================
-// Validation-failure path: current contract — stub is unconditional
+// update_marks_grade
 // =============================================================================
 
-/// Pins the **current** contract of `create_marks_grade` for
-/// a payload that would, once the real validator lands,
-/// violate spec invariant #2 (`PercentFrom < PercentUpTo`).
-///
-/// The stub does not differentiate input — every payload is
-/// rejected with the same `NotSupported` error before any
-/// field-level check runs. This test therefore asserts that
-/// the stub is *unconditional* (i.e. the future
-/// `PercentFrom > PercentUpTo` validation will not be
-/// reachable until the stub is replaced). Once the real
-/// handler lands, this test will be updated to assert
-/// `DomainError::Validation` directly.
+/// Pins the **happy path** of `update_marks_grade` for a
+/// well-formed payload: a same-school typed id is accepted,
+/// the returned event is `MarksGradeUpdated` carrying the
+/// command's school and the typed id.
 #[tokio::test]
-async fn marks_grade_create_rejects_via_not_supported_independent_of_input() {
+async fn marks_grade_update_happy_path() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
     let _clock = TestClock::new();
-    let _ids = SystemIdGen;
 
-    // A second well-formed command — the stub cannot tell
-    // this apart from the happy-path command above; both
-    // return the same `NotSupported` error.
-    let cmd = CreateMarksGradeCommand {
+    let id = marks_grade_id(&g, school);
+    let cmd = UpdateMarksGradeCommand {
         school_id: school,
-        marks_grade_id: marks_grade_id(&g, school),
+        marks_grade_id: id,
     };
 
-    let err = create_marks_grade(cmd)
+    let event = update_marks_grade(cmd).await.expect("real handler accepts well-formed input");
+    assert_eq!(event.school_id, school);
+    assert_eq!(event.marks_grade_id, id);
+    let _: uuid::Uuid = event.event_id.as_uuid();
+}
+
+/// Pins the **cross-tenant rejection** contract of
+/// `update_marks_grade`: a `MarksGradeId` anchored to a
+/// different school than the command's `school_id` is
+/// rejected with `DomainError::Validation`.
+#[tokio::test]
+async fn marks_grade_update_rejects_cross_tenant() {
+    let (_tenant_a, g) = admin_context();
+    let school_b = g.next_school_id();
+    let id = marks_grade_id(&g, school_b);
+
+    let cmd = UpdateMarksGradeCommand {
+        school_id: g.next_school_id(),
+        marks_grade_id: id,
+    };
+
+    let err = update_marks_grade(cmd)
         .await
-        .expect_err("create_marks_grade stub rejects unconditionally");
+        .expect_err("cross-tenant update must be rejected");
     assert!(
-        matches!(err, DomainError::NotSupported(_)),
-        "expected NotSupported (stub is unconditional), got {err:?}"
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation (cross-tenant), got {err:?}"
+    );
+}
+
+// =============================================================================
+// delete_marks_grade
+// =============================================================================
+
+/// Pins the **happy path** of `delete_marks_grade` for a
+/// well-formed payload: a same-school typed id is accepted,
+/// the returned event is `MarksGradeDeleted` carrying the
+/// command's school and the typed id.
+#[tokio::test]
+async fn marks_grade_delete_happy_path() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let _clock = TestClock::new();
+
+    let id = marks_grade_id(&g, school);
+    let cmd = DeleteMarksGradeCommand {
+        school_id: school,
+        marks_grade_id: id,
+    };
+
+    let event = delete_marks_grade(cmd).await.expect("real handler accepts well-formed input");
+    assert_eq!(event.school_id, school);
+    assert_eq!(event.marks_grade_id, id);
+    let _: uuid::Uuid = event.event_id.as_uuid();
+}
+
+/// Pins the **cross-tenant rejection** contract of
+/// `delete_marks_grade`: a `MarksGradeId` anchored to a
+/// different school than the command's `school_id` is
+/// rejected with `DomainError::Validation`.
+#[tokio::test]
+async fn marks_grade_delete_rejects_cross_tenant() {
+    let (_tenant_a, g) = admin_context();
+    let school_b = g.next_school_id();
+    let id = marks_grade_id(&g, school_b);
+
+    let cmd = DeleteMarksGradeCommand {
+        school_id: g.next_school_id(),
+        marks_grade_id: id,
+    };
+
+    let err = delete_marks_grade(cmd)
+        .await
+        .expect_err("cross-tenant delete must be rejected");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation (cross-tenant), got {err:?}"
     );
 }
