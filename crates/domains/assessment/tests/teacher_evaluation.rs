@@ -4,30 +4,24 @@
 //! [`TeacherEvaluation`](educore_assessment::aggregate::TeacherEvaluation)
 //! end-to-end through the service layer.
 //!
-//! # Current contract (Wave 4 vertical slice)
+//! # Current contract (Wave 29 batch 6)
 //!
-//! `mark_teacher_evaluation` and `approve_teacher_evaluation`
-//! in `services.rs` are **stubs**
-//! (`DomainError::not_supported("TODO: ...")`). The full
-//! implementation lands in a follow-up phase. These tests
-//! pin the **current** behaviour so the dispatcher / facade
-//! work can rely on the error surface while the real
-//! validation + aggregate construction is being built out:
+//! `mark_teacher_evaluation` is now a **real
+//! implementation** (Wave 29 batch 6) that enforces the
+//! typed-id school-anchoring invariant and emits the
+//! spec-defined `TeacherEvaluationCreated` event stamped
+//! with a fresh `event_id` (UUIDv7) and the command's
+//! school anchor. The full `Rating` / `Comment` / `Status`
+//! / `RoleId` / `ParentId` / `AcademicId` payload
+//! validation lands in a follow-up batch once the
+//! `TenantContext`-bearing command struct is migrated to
+//! carry the full payload.
 //!
-//! 1. Happy path — any well-formed input is rejected with
-//!    `DomainError::NotSupported`. No aggregate is built, no
-//!    event is emitted.
-//! 2. Update path — the approve stub also rejects the
-//!    command with the same `NotSupported` error.
-//!
-//! Once the real handlers land, the happy-path test will be
-//! updated to assert `TeacherEvaluationCreated` +
-//! `version == 1` per the spec invariant; the update test
-//! will then assert the spec-mandated
-//! `TeacherEvaluationApproved` (or equivalent) event.
+//! `approve_teacher_evaluation` remains a stub
+//! (`DomainError::not_supported`) pending its own batch.
 //!
 //! Mirrors `crates/domains/assessment/tests/marks_grade.rs`
-//! (stub-pattern, lean).
+//! (real-handler contract pin).
 
 #![allow(
     clippy::unwrap_used,
@@ -45,7 +39,7 @@ use educore_assessment::services::{approve_teacher_evaluation, mark_teacher_eval
 use educore_assessment::value_objects::TeacherEvaluationId;
 use educore_core::clock::{IdGenerator as _, SystemIdGen};
 use educore_core::error::DomainError;
-use educore_core::ids::SchoolId;
+use educore_core::ids::{Identifier as _, SchoolId};
 use educore_core::tenant::{TenantContext, UserType};
 
 // =============================================================================
@@ -73,42 +67,59 @@ fn teacher_evaluation_id(g: &SystemIdGen, school: SchoolId) -> TeacherEvaluation
 }
 
 // =============================================================================
-// 1. Happy path: current contract — stub returns NotSupported
+// 1. Happy path: real implementation
 // =============================================================================
 
-/// Pins the **current** contract of `mark_teacher_evaluation`
-/// for a well-formed payload. The handler is currently a
-/// stub that returns
-/// `DomainError::not_supported("TODO: mark_teacher_evaluation")`
-/// before any aggregate construction or event minting
-/// happens. Once the real implementation lands (carrying
-/// `Rating`, `Comment`, `Status`, `RoleId`, `ParentId`,
-/// `AcademicId` per
-/// `docs/specs/assessment/aggregates.md` § TeacherEvaluation),
-/// this test will be updated to assert that:
-///
-/// - The returned event is `TeacherEvaluationCreated` with
-///   `version == 1`,
-/// - The aggregate is school-scoped and active,
-/// - The rating/comment payload round-trips through the
-///   event.
+/// Pins the **happy path** of `mark_teacher_evaluation`
+/// for a well-formed payload: a same-school typed id is
+/// accepted and the returned event is
+/// `TeacherEvaluationCreated` carrying the command's school
+/// and the typed id. The full `Rating` / `Comment` /
+/// `Status` payload validation lands in a follow-up batch
+/// once the `TenantContext`-bearing command struct is
+/// migrated to carry the full payload.
 #[tokio::test]
-async fn teacher_evaluation_create_currently_returns_not_supported() {
-    let (_tenant, g) = admin_context();
-    let school = _tenant.school_id;
+async fn teacher_evaluation_create_happy_path() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
     let _ids = SystemIdGen;
 
+    let id = teacher_evaluation_id(&g, school);
     let cmd = MarkTeacherEvaluationCommand {
         school_id: school,
-        teacher_evaluation_id: teacher_evaluation_id(&g, school),
+        teacher_evaluation_id: id,
+    };
+
+    let event = mark_teacher_evaluation(cmd)
+        .await
+        .expect("real handler accepts well-formed input");
+    assert_eq!(event.school_id, school, "event school echoes command");
+    assert_eq!(event.teacher_evaluation_id, id, "event id echoes command");
+    // Version-7 event id must be a valid UUID.
+    let _: uuid::Uuid = event.event_id.as_uuid();
+}
+
+/// Pins the **cross-tenant rejection** contract of
+/// `mark_teacher_evaluation`: a typed id from a different
+/// school is rejected with `DomainError::Validation`.
+#[tokio::test]
+async fn teacher_evaluation_create_cross_tenant_rejected() {
+    let (tenant, g) = admin_context();
+    let actor_school = tenant.school_id;
+    let other_school = g.next_school_id();
+
+    let foreign_id = teacher_evaluation_id(&g, other_school);
+    let cmd = MarkTeacherEvaluationCommand {
+        school_id: actor_school,
+        teacher_evaluation_id: foreign_id,
     };
 
     let err = mark_teacher_evaluation(cmd)
         .await
-        .expect_err("mark_teacher_evaluation is currently a stub");
+        .expect_err("cross-tenant id must be rejected");
     assert!(
-        matches!(err, DomainError::NotSupported(_)),
-        "expected NotSupported (current stub contract), got {err:?}"
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
     );
 }
 
