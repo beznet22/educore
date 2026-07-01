@@ -1,7 +1,7 @@
 //! Integration tests for the **LessonTopic aggregate** vertical slice.
 //!
 //! Pins the create contract for
-//! [`LessonTopic`](educore_academic::aggregate::LessonTopic)
+//! [`LessonTopic`](educore_academic::LessonTopic)
 //! end-to-end through the service layer:
 //!
 //! 1. `create_lesson_topic` validates the input (the typed id's

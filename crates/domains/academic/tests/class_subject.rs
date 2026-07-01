@@ -1,7 +1,7 @@
 //! Integration tests for the **ClassSubject aggregate** vertical slice.
 //!
 //! Pins the create contract for
-//! [`ClassSubject`](educore_academic::aggregate::ClassSubject)
+//! [`ClassSubject`](educore_academic::ClassSubject)
 //! end-to-end through the service layer:
 //!
 //! 1. `create_class_subject` validates that the typed id's

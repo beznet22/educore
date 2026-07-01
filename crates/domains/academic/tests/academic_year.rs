@@ -1,7 +1,7 @@
 //! Integration tests for the **AcademicYear aggregate** vertical slice.
 //!
 //! Pins the create + update contract for
-//! [`AcademicYear`](educore_academic::aggregate::AcademicYear)
+//! [`AcademicYear`](educore_academic::AcademicYear)
 //! end-to-end through the service layer:
 //!
 //! 1. `create_academic_year` validates the label + title +
@@ -126,7 +126,7 @@ fn academic_year_create_then_update_dates_mutates_aggregate_and_emits_events() {
         copy_with_academic_year: None,
     };
     let (mut agg, created_event) =
-        create_academic_year(create_cmd, &clock, &ids).expect("create");
+        create_academic_year(create_cmd, &clock, &ids, &NoOpUniquenessChecker).expect("create");
 
     // Aggregate fields are populated from the command.
     assert_eq!(agg.school_id, school);
@@ -177,7 +177,7 @@ fn academic_year_create_then_update_dates_mutates_aggregate_and_emits_events() {
         ending_date: new_end,
     };
     let updated_event =
-        update_academic_year_dates(&mut agg, update_cmd, &clock, &ids).expect("update");
+        update_academic_year_dates(&mut agg, update_cmd, &clock, &ids, &NoOpUniquenessChecker).expect("update");
 
     // The aggregate is mutated in place: the range
     // moved and the version bumped.
@@ -246,7 +246,7 @@ fn academic_year_create_with_inverted_range_returns_validation_error() {
         is_current: false,
         copy_with_academic_year: None,
     };
-    let err = create_academic_year(create_cmd, &clock, &ids)
+    let err = create_academic_year(create_cmd, &clock, &ids, &NoOpUniquenessChecker)
         .expect_err("inverted date range must fail validation");
     assert!(
         matches!(err, DomainError::Validation(_)),
@@ -270,5 +270,23 @@ fn academic_year_create_with_inverted_range_returns_validation_error() {
         copy_with_academic_year: None,
     };
     let (_agg, _event) =
-        create_academic_year(ok_cmd, &clock, &ids).expect("valid range must succeed");
+        create_academic_year(ok_cmd, &clock, &ids, &NoOpUniquenessChecker).expect("valid range must succeed");
+}
+
+// =============================================================================
+// No-op UniquenessChecker for tests
+// =============================================================================
+
+struct NoOpUniquenessChecker;
+
+impl educore_academic::commands::UniquenessChecker for NoOpUniquenessChecker {
+    fn student_admission_no_exists(&self, _school: educore_core::ids::SchoolId, _admission_no: &str) -> bool { false }
+    fn student_email_exists(&self, _school: educore_core::ids::SchoolId, _email: &str) -> bool { false }
+    fn roll_no_exists(&self, _school: educore_core::ids::SchoolId, _class_id: educore_academic::ClassId, _section_id: educore_academic::SectionId, _academic_year_id: educore_academic::AcademicYearId, _roll_no: &str) -> bool { false }
+    fn class_name_exists(&self, _school: educore_core::ids::SchoolId, _name: &str) -> bool { false }
+    fn section_name_exists(&self, _school: educore_core::ids::SchoolId, _name: &str) -> bool { false }
+    fn subject_code_exists(&self, _school: educore_core::ids::SchoolId, _code: &str) -> bool { false }
+    fn academic_year_overlaps(&self, _school: educore_core::ids::SchoolId, _range: educore_academic::AcademicYearRange, _exclude_id: Option<educore_academic::AcademicYearId>) -> bool { false }
+    fn optional_subject_assigned_exists(&self, _school: educore_core::ids::SchoolId, _student_id: educore_academic::StudentId, _academic_year_id: educore_academic::AcademicYearId) -> bool { false }
+    fn primary_guardian_link_exists(&self, _school: educore_core::ids::SchoolId, _student_id: educore_academic::StudentId) -> bool { false }
 }

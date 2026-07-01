@@ -1,7 +1,7 @@
 //! Integration tests for the **Class aggregate** vertical slice.
 //!
 //! Pins the create contract for
-//! [`Class`](educore_academic::aggregate::Class) end-to-end
+//! [`Class`](educore_academic::Class) end-to-end
 //! through the service layer:
 //!
 //! 1. `create_class` validates the input (the typed
@@ -108,7 +108,7 @@ fn class_create_builds_aggregate_and_emits_class_created_event() {
         class_name: "Grade 1".to_owned(),
         pass_mark: 35.0,
     };
-    let (agg, created_event) = create_class(create_cmd, &clock, &ids).expect("create");
+    let (agg, created_event) = create_class(create_cmd, &clock, &ids, &NoOpUniquenessChecker).expect("create");
 
     // Aggregate fields are populated from the command.
     assert_eq!(agg.school_id, school);
@@ -171,7 +171,7 @@ fn class_create_with_empty_name_returns_validation_error() {
         pass_mark: 35.0,
     };
     let err =
-        create_class(create_cmd, &clock, &ids).expect_err("empty class name must fail validation");
+        create_class(create_cmd, &clock, &ids, &NoOpUniquenessChecker).expect_err("empty class name must fail validation");
     assert!(
         matches!(err, DomainError::Validation(_)),
         "expected Validation, got {err:?}"
@@ -188,5 +188,92 @@ fn class_create_with_empty_name_returns_validation_error() {
         pass_mark: 35.0,
     };
     let (_agg, _event) =
-        create_class(ok_cmd, &clock, &ids).expect("non-empty class name must succeed");
+        create_class(ok_cmd, &clock, &ids, &NoOpUniquenessChecker).expect("non-empty class name must succeed");
+}
+
+// =============================================================================
+// No-op UniquenessChecker for tests
+// =============================================================================
+
+/// A no-op `UniquenessChecker` that returns `false` for all
+/// uniqueness queries. Tests that don't exercise uniqueness
+/// (e.g. happy-path create/update/delete tests) use this stub
+/// to satisfy the trait bound without dragging in a
+/// backing-store fixture.
+///
+/// Tests that need to assert uniqueness enforcement (e.g.
+/// "creating a class with a duplicate name must fail") use a
+/// different stub that records which names/codes have been
+/// minted in this test.
+struct NoOpUniquenessChecker;
+
+impl educore_academic::commands::UniquenessChecker for NoOpUniquenessChecker {
+    fn student_admission_no_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _admission_no: &str,
+    ) -> bool {
+        false
+    }
+    fn student_email_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _email: &str,
+    ) -> bool {
+        false
+    }
+    fn roll_no_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _class_id: educore_academic::ClassId,
+        _section_id: educore_academic::SectionId,
+        _academic_year_id: educore_academic::AcademicYearId,
+        _roll_no: &str,
+    ) -> bool {
+        false
+    }
+    fn class_name_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _name: &str,
+    ) -> bool {
+        false
+    }
+    fn section_name_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _name: &str,
+    ) -> bool {
+        false
+    }
+    fn subject_code_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _code: &str,
+    ) -> bool {
+        false
+    }
+    fn academic_year_overlaps(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _range: educore_academic::AcademicYearRange,
+        _exclude_id: Option<educore_academic::AcademicYearId>,
+    ) -> bool {
+        false
+    }
+    fn optional_subject_assigned_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _student_id: educore_academic::StudentId,
+        _academic_year_id: educore_academic::AcademicYearId,
+    ) -> bool {
+        false
+    }
+    fn primary_guardian_link_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _student_id: educore_academic::StudentId,
+    ) -> bool {
+        false
+    }
 }

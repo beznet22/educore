@@ -1,7 +1,7 @@
 //! Integration tests for the **ClassSection aggregate** vertical slice.
 //!
 //! Pins the create contract for
-//! [`ClassSection`](educore_academic::aggregate::ClassSection)
+//! [`ClassSection`](educore_academic::ClassSection)
 //! end-to-end through the service layer:
 //!
 //! 1. `create_class_section` validates that the typed id's

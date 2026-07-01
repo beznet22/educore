@@ -80,6 +80,60 @@ impl UniquenessChecker for TestUniqueness {
     fn student_email_exists(&self, _school: educore_core::ids::SchoolId, email: &str) -> bool {
         self.emails.lock().unwrap().contains(email)
     }
+    fn roll_no_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _class_id: educore_academic::ClassId,
+        _section_id: educore_academic::SectionId,
+        _academic_year_id: educore_academic::AcademicYearId,
+        _roll_no: &str,
+    ) -> bool {
+        false
+    }
+    fn class_name_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _name: &str,
+    ) -> bool {
+        false
+    }
+    fn section_name_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _name: &str,
+    ) -> bool {
+        false
+    }
+    fn subject_code_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _code: &str,
+    ) -> bool {
+        false
+    }
+    fn academic_year_overlaps(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _range: educore_academic::AcademicYearRange,
+        _exclude_id: Option<educore_academic::AcademicYearId>,
+    ) -> bool {
+        false
+    }
+    fn optional_subject_assigned_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _student_id: educore_academic::StudentId,
+        _academic_year_id: educore_academic::AcademicYearId,
+    ) -> bool {
+        false
+    }
+    fn primary_guardian_link_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _student_id: educore_academic::StudentId,
+    ) -> bool {
+        false
+    }
 }
 
 /// A fresh `TenantContext` for a `SchoolAdmin` acting on a freshly-minted school.
@@ -535,7 +589,7 @@ fn promote_student_pass_status_emits_student_promoted() {
         to_roll_no: "12".to_owned(),
         result_status: ResultStatus::Pass,
     };
-    let event: StudentPromoted = promote_student(&student, cmd, &clock, &g).unwrap();
+    let event: StudentPromoted = promote_student(&student, cmd, None, None, &clock, &g).unwrap();
     assert_eq!(
         <StudentPromoted as DomainEvent>::EVENT_TYPE,
         "academic.student.promoted"
@@ -584,7 +638,7 @@ fn promote_student_manual_status_emits_event() {
         to_roll_no: "01".to_owned(),
         result_status: ResultStatus::Manual,
     };
-    let event: StudentPromoted = promote_student(&student, cmd, &clock, &g).unwrap();
+    let event: StudentPromoted = promote_student(&student, cmd, None, None, &clock, &g).unwrap();
     assert_eq!(event.result_status, ResultStatus::Manual);
     assert_eq!(
         <StudentPromoted as DomainEvent>::EVENT_TYPE,
@@ -651,7 +705,7 @@ fn create_class_happy_path_emits_class_created() {
         class_name: "Grade 1".to_owned(),
         pass_mark: 35.0,
     };
-    let (_, event): (Class, ClassCreated) = create_class(cmd, &clock, &g).unwrap();
+    let (_, event): (Class, ClassCreated) = create_class(cmd, &clock, &g, &NoOpUniquenessChecker).unwrap();
     assert_eq!(
         <ClassCreated as DomainEvent>::EVENT_TYPE,
         "academic.class.created"
@@ -669,7 +723,7 @@ fn create_class_empty_name_returns_validation_error() {
         class_name: String::new(),
         pass_mark: 35.0,
     };
-    let err = create_class(cmd, &clock, &g).expect_err("empty class_name must fail");
+    let err = create_class(cmd, &clock, &g, &NoOpUniquenessChecker).expect_err("empty class_name must fail");
     assert!(matches!(err, DomainError::Validation(_)), "got {err:?}");
 }
 
@@ -689,6 +743,7 @@ fn update_class_happy_path_emits_class_updated() {
         },
         &clock,
         &g,
+        &NoOpUniquenessChecker,
     )
     .unwrap();
     let mut class = class;
@@ -698,7 +753,7 @@ fn update_class_happy_path_emits_class_updated() {
         class_name: Some("Grade 1 (renamed)".to_owned()),
         pass_mark: Some(40.0),
     };
-    let event: ClassUpdated = update_class(&mut class, cmd, &clock, &g).unwrap();
+    let event: ClassUpdated = update_class(&mut class, cmd, &clock, &g, &NoOpUniquenessChecker).unwrap();
     assert_eq!(
         <ClassUpdated as DomainEvent>::EVENT_TYPE,
         "academic.class.updated"
@@ -722,6 +777,7 @@ fn delete_class_happy_path_emits_class_deleted() {
         },
         &clock,
         &g,
+        &NoOpUniquenessChecker,
     )
     .unwrap();
     let cmd = DeleteClassCommand {
@@ -750,7 +806,7 @@ fn create_section_happy_path_emits_section_created() {
         section_id: section_id(&g, school),
         section_name: "A".to_owned(),
     };
-    let (_, event): (Section, SectionCreated) = create_section(cmd, &clock, &g).unwrap();
+    let (_, event): (Section, SectionCreated) = create_section(cmd, &clock, &g, &NoOpUniquenessChecker).unwrap();
     assert_eq!(
         <SectionCreated as DomainEvent>::EVENT_TYPE,
         "academic.section.created"
@@ -774,7 +830,7 @@ fn create_subject_happy_path_emits_subject_created() {
         subject_type: SubjectType::Theory,
         pass_mark: 35.0,
     };
-    let (_, event): (Subject, SubjectCreated) = create_subject(cmd, &clock, &g).unwrap();
+    let (_, event): (Subject, SubjectCreated) = create_subject(cmd, &clock, &g, &NoOpUniquenessChecker).unwrap();
     assert_eq!(
         <SubjectCreated as DomainEvent>::EVENT_TYPE,
         "academic.subject.created"
@@ -797,6 +853,7 @@ fn update_subject_happy_path_emits_subject_updated() {
         },
         &clock,
         &g,
+        &NoOpUniquenessChecker,
     )
     .unwrap();
     let mut subject = subject;
@@ -830,6 +887,7 @@ fn delete_subject_happy_path_emits_subject_deleted() {
         },
         &clock,
         &g,
+        &NoOpUniquenessChecker,
     )
     .unwrap();
     let cmd = DeleteSubjectCommand {
@@ -863,7 +921,7 @@ fn create_academic_year_happy_path_emits_academic_year_created() {
         copy_with_academic_year: None,
     };
     let (_, event): (AcademicYear, AcademicYearCreated) =
-        create_academic_year(cmd, &clock, &g).unwrap();
+        create_academic_year(cmd, &clock, &g, &NoOpUniquenessChecker).unwrap();
     assert_eq!(
         <AcademicYearCreated as DomainEvent>::EVENT_TYPE,
         "academic.academic_year.created"
@@ -886,16 +944,16 @@ fn set_current_academic_year_happy_path_emits_event() {
         is_current: false,
         copy_with_academic_year: None,
     };
-    let (mut year, _) = create_academic_year(cmd, &clock, &g).unwrap();
+    let (mut year, _) = create_academic_year(cmd, &clock, &g, &NoOpUniquenessChecker).unwrap();
     let set_cmd = SetCurrentAcademicYearCommand {
         tenant,
         academic_year_id: year.id,
     };
     let event: CurrentAcademicYearSet =
-        set_current_academic_year(&mut year, set_cmd, &clock, &g).unwrap();
+        set_current_academic_year(&mut year, None, set_cmd, &clock, &g).unwrap();
     assert_eq!(
         <CurrentAcademicYearSet as DomainEvent>::EVENT_TYPE,
-        "academic.current_academic_year.set"
+        "academic.academic_year.current_set"
     );
 }
 
@@ -915,7 +973,7 @@ fn close_academic_year_happy_path_emits_academic_year_closed() {
         is_current: true,
         copy_with_academic_year: None,
     };
-    let (mut year, _) = create_academic_year(cmd, &clock, &g).unwrap();
+    let (mut year, _) = create_academic_year(cmd, &clock, &g, &NoOpUniquenessChecker).unwrap();
     let close_cmd = CloseAcademicYearCommand {
         tenant,
         academic_year_id: year.id,
@@ -925,4 +983,22 @@ fn close_academic_year_happy_path_emits_academic_year_closed() {
         <AcademicYearClosed as DomainEvent>::EVENT_TYPE,
         "academic.academic_year.closed"
     );
+}
+
+// =============================================================================
+// No-op UniquenessChecker for tests
+// =============================================================================
+
+struct NoOpUniquenessChecker;
+
+impl educore_academic::commands::UniquenessChecker for NoOpUniquenessChecker {
+    fn student_admission_no_exists(&self, _school: educore_core::ids::SchoolId, _admission_no: &str) -> bool { false }
+    fn student_email_exists(&self, _school: educore_core::ids::SchoolId, _email: &str) -> bool { false }
+    fn roll_no_exists(&self, _school: educore_core::ids::SchoolId, _class_id: educore_academic::ClassId, _section_id: educore_academic::SectionId, _academic_year_id: educore_academic::AcademicYearId, _roll_no: &str) -> bool { false }
+    fn class_name_exists(&self, _school: educore_core::ids::SchoolId, _name: &str) -> bool { false }
+    fn section_name_exists(&self, _school: educore_core::ids::SchoolId, _name: &str) -> bool { false }
+    fn subject_code_exists(&self, _school: educore_core::ids::SchoolId, _code: &str) -> bool { false }
+    fn academic_year_overlaps(&self, _school: educore_core::ids::SchoolId, _range: educore_academic::AcademicYearRange, _exclude_id: Option<educore_academic::AcademicYearId>) -> bool { false }
+    fn optional_subject_assigned_exists(&self, _school: educore_core::ids::SchoolId, _student_id: educore_academic::StudentId, _academic_year_id: educore_academic::AcademicYearId) -> bool { false }
+    fn primary_guardian_link_exists(&self, _school: educore_core::ids::SchoolId, _student_id: educore_academic::StudentId) -> bool { false }
 }

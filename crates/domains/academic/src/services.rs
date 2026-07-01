@@ -42,39 +42,44 @@ use educore_core::value_objects::ActiveStatus;
 
 use crate::aggregate::{
     AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
-    IdCard, Lesson, LessonPlan, LessonTopic, RegistrationField, Section, Student, StudentCategory,
-    StudentGroup, StudentPromotion, Subject,
+    IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RegistrationField, Section,
+    Student, StudentCategory, StudentGroup, StudentGuardianLink, StudentPromotion, Subject,
 };
 use crate::commands::{
     validate_admission_no, validate_class_name, validate_email_optional, validate_first_name,
     validate_gpa_threshold, validate_last_name, validate_mobile_optional, validate_pass_mark,
     validate_roll_no, validate_section_name, validate_subject_code, validate_subject_name,
     validate_suspension_reason, validate_transfer_reason, validate_withdrawal_reason,
-    validate_year_label, validate_year_title, AdmitStudentCommand, CloseAcademicYearCommand,
-    CreateAcademicYearCommand, CreateCertificateCommand, CreateClassCommand,
-    CreateClassRoutineCommand, CreateClassSectionCommand, CreateClassSubjectCommand,
-    CreateHomeworkCommand, CreateIdCardCommand, CreateLessonCommand, CreateLessonPlanCommand,
-    CreateLessonTopicCommand, CreateRegistrationFieldCommand, CreateSectionCommand,
-    CreateStudentCategoryCommand, CreateStudentGroupCommand, CreateSubjectCommand,
-    DeleteClassCommand, DeleteSectionCommand, DeleteSubjectCommand, GraduateStudentCommand,
+    validate_year_label, validate_year_title, AdmitStudentCommand, AssignOptionalSubjectCommand,
+    CloseAcademicYearCommand, CreateAcademicYearCommand, CreateCertificateCommand,
+    CreateClassCommand, CreateClassRoutineCommand, CreateClassSectionCommand,
+    CreateClassSubjectCommand, CreateHomeworkCommand, CreateIdCardCommand, CreateLessonCommand,
+    CreateLessonPlanCommand, CreateLessonTopicCommand, CreateRegistrationFieldCommand,
+    CreateSectionCommand, CreateStudentCategoryCommand, CreateStudentGroupCommand,
+    CreateSubjectCommand, DeleteClassCommand, DeleteSectionCommand, DeleteSubjectCommand,
+    GraduateStudentCommand, LinkGuardianToStudentCommand, MarkPrimaryGuardianCommand,
     PromoteStudentCommand, RecordStudentPromotionCommand, RegisterGuardianCommand,
     ReinstateStudentCommand, SetCurrentAcademicYearCommand, SetOptionalSubjectGpaThresholdCommand,
     SuspendStudentCommand, TransferStudentCommand, UniquenessChecker,
-    UpdateAcademicYearDatesCommand, UpdateClassCommand, UpdateSectionCommand,
-    UpdateStudentProfileCommand, UpdateSubjectCommand, WithdrawStudentCommand,
+    UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand, UpdateClassCommand,
+    UpdateSectionCommand, UpdateStudentProfileCommand, UpdateSubjectCommand,
+    WithdrawStudentCommand,
 };
 use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
     CertificateCreated, ClassCreated, ClassDeleted, ClassRoutineScheduled, ClassSectionCreated,
-    ClassSubjectAssigned, ClassUpdated, CurrentAcademicYearSet, GuardianRegistered,
-    HomeworkAssigned, IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
-    OptionalSubjectGpaThresholdSet, RegistrationFieldCreated, SectionCreated, SectionDeleted,
-    SectionUpdated, StudentAdmitted, StudentCategoryCreated, StudentGraduated, StudentGroupCreated,
-    StudentProfileUpdated, StudentPromoted, StudentPromotionRecorded, StudentReinstated,
-    StudentSuspended, StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted,
-    SubjectUpdated,
+    ClassSubjectAssigned, ClassUpdated, CurrentAcademicYearSet, GuardianLinkedToStudent,
+    GuardianRegistered, GuardianUnlinkedFromStudent, HomeworkAssigned, IdCardCreated,
+    LessonCreated, LessonPlanCreated, LessonTopicCreated, OptionalSubjectAssignmentCreated,
+    OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked, RegistrationFieldCreated,
+    SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted, StudentCategoryCreated,
+    StudentGraduated, StudentGroupCreated, StudentProfileUpdated, StudentPromoted,
+    StudentPromotionRecorded, StudentReinstated, StudentSuspended, StudentTransferred,
+    StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
 };
-use crate::value_objects::{AcademicYearId, AcademicYearRange, StudentStatus};
+use crate::value_objects::{
+    AcademicYearId, AcademicYearRange, StudentGuardianLinkId, StudentStatus,
+};
 
 fn fresh_event_id<G: IdGenerator + ?Sized>(ids: &G) -> EventId {
     ids.next_event_id()
@@ -98,7 +103,9 @@ fn fresh_event_id<G: IdGenerator + ?Sized>(ids: &G) -> EventId {
 ///   fails structural validation.
 /// - `Conflict` if the admission number (or email, when
 ///   supplied) is already taken in the school per the
-///   uniqueness checker.
+///   uniqueness checker; or if the roll number is already
+///   taken in the `(class, section, academic_year)` scope
+///   per Student I-3.
 pub fn admit_student<C, G>(
     cmd: AdmitStudentCommand,
     clock: &C,
@@ -152,6 +159,21 @@ where
         if uniqueness.student_email_exists(student_id.school_id(), &lower) {
             return Err(DomainError::Conflict(format!(
                 "student email {e:?} is already in use within the school"
+            )));
+        }
+    }
+    // I-3: roll number uniqueness within
+    // (school, class, section, academic_year).
+    if let Some(roll) = roll_no.as_deref() {
+        if uniqueness.roll_no_exists(
+            student_id.school_id(),
+            class_id,
+            section_id,
+            academic_year_id,
+            roll,
+        ) {
+            return Err(DomainError::Conflict(format!(
+                "roll number {roll:?} is already taken in (class, section, academic_year)"
             )));
         }
     }
@@ -347,6 +369,14 @@ where
     } = cmd;
     debug_assert_eq!(student_id, student.id);
     validate_suspension_reason(&reason)?;
+    // I-5: status FSM precondition — the student must be
+    // Active to be suspended.
+    if student.status != StudentStatus::Active {
+        return Err(DomainError::Conflict(format!(
+            "student {} is not active (current status: {}); cannot suspend",
+            student.id, student.status
+        )));
+    }
     let now = clock.now();
     student.status = StudentStatus::Suspended;
     student.updated_at = now;
@@ -431,6 +461,14 @@ where
     } = cmd;
     debug_assert_eq!(student_id, student.id);
     validate_withdrawal_reason(&reason)?;
+    // I-5: status FSM precondition — the student must be
+    // Active to be withdrawn.
+    if student.status != StudentStatus::Active {
+        return Err(DomainError::Conflict(format!(
+            "student {} is not active (current status: {}); cannot withdraw",
+            student.id, student.status
+        )));
+    }
     let now = clock.now();
     student.status = StudentStatus::Withdrawn;
     student.active_status = ActiveStatus::Retired;
@@ -478,6 +516,14 @@ where
             "destination school id must differ from the source school id".to_owned(),
         ));
     }
+    // I-5: status FSM precondition — the student must be
+    // Active to be transferred.
+    if student.status != StudentStatus::Active {
+        return Err(DomainError::Conflict(format!(
+            "student {} is not active (current status: {}); cannot transfer",
+            student.id, student.status
+        )));
+    }
     let now = clock.now();
     student.status = StudentStatus::Transferred;
     student.active_status = ActiveStatus::Retired;
@@ -507,9 +553,21 @@ where
 /// subscribers (`educore-finance`, `educore-attendance`,
 /// `educore-assessment`) consume it to roll over balances,
 /// reset daily expectations, and archive marks.
+///
+/// # Errors
+///
+/// - `Validation` if the from/to academic years are in
+///   different schools (per AcademicYear I-5: same-school
+///   promotion).
+/// - `Validation` if the from/to academic years are equal.
+/// - `Conflict` if the from academic year range is not the
+///   immediate predecessor of the to academic year range
+///   (per AcademicYear I-5: sequential promotion).
 pub fn promote_student<C, G>(
     student: &Student,
     cmd: PromoteStudentCommand,
+    from_range: Option<AcademicYearRange>,
+    to_range: Option<AcademicYearRange>,
     clock: &C,
     _ids: &G,
 ) -> Result<StudentPromoted>
@@ -528,10 +586,42 @@ where
         result_status,
     } = cmd;
     debug_assert_eq!(student_id, student.id);
+    // AcademicYear I-5: same-school.
+    if from_academic_year_id.school_id() != to_academic_year_id.school_id() {
+        return Err(DomainError::Validation(format!(
+            "from academic year {from_academic_year_id} and to academic year {to_academic_year_id} are in different schools"
+        )));
+    }
+    if from_academic_year_id.school_id() != student.school_id {
+        return Err(DomainError::Validation(format!(
+            "from academic year {from_academic_year_id} is in school {}, student is in {}",
+            from_academic_year_id.school_id(),
+            student.school_id
+        )));
+    }
+    if to_academic_year_id.school_id() != student.school_id {
+        return Err(DomainError::Validation(format!(
+            "to academic year {to_academic_year_id} is in school {}, student is in {}",
+            to_academic_year_id.school_id(),
+            student.school_id
+        )));
+    }
     if from_academic_year_id == to_academic_year_id {
         return Err(DomainError::Validation(
             "from and to academic year must differ".to_owned(),
         ));
+    }
+    // AcademicYear I-5: To is the next sequential year.
+    // We enforce this via the ranges when both are supplied.
+    if let (Some(from), Some(to)) = (from_range, to_range) {
+        // Sequential = to.start == from.end + 1 day.
+        let next_day = from.end + chrono::Duration::days(1);
+        if to.start != next_day {
+            return Err(DomainError::Conflict(format!(
+                "to academic year start {0} must be the day after from academic year end {1} (immediate successor)",
+                to.start, from.end
+            )));
+        }
     }
     let now = clock.now();
     let event_id = EventId::from_uuid(uuid::Uuid::now_v7());
@@ -572,6 +662,21 @@ where
         graduation_date,
     } = cmd;
     debug_assert_eq!(student_id, student.id);
+    // I-5: status FSM precondition — the student must be
+    // Active to be graduated.
+    if student.status != StudentStatus::Active {
+        return Err(DomainError::Conflict(format!(
+            "student {} is not active (current status: {}); cannot graduate",
+            student.id, student.status
+        )));
+    }
+    // Per AcademicYear I-5: graduation must occur in the
+    // current academic year (the spec's promotion rule).
+    if academic_year_id.school_id() != student.school_id {
+        return Err(DomainError::Validation(format!(
+            "academic year {academic_year_id} is in a different school than the student"
+        )));
+    }
     let now = clock.now();
     student.status = StudentStatus::Graduated;
     student.active_status = ActiveStatus::Retired;
@@ -596,10 +701,15 @@ where
 // =============================================================================
 
 /// Create a new [`Class`] and emit a [`ClassCreated`] event.
+///
+/// Per Class I-2: a class is uniquely named within a
+/// school. The uniqueness is enforced via
+/// [`UniquenessChecker::class_name_exists`].
 pub fn create_class<C, G>(
     cmd: CreateClassCommand,
     clock: &C,
     ids: &G,
+    uniqueness: &dyn UniquenessChecker,
 ) -> Result<(Class, ClassCreated)>
 where
     C: Clock + ?Sized,
@@ -615,6 +725,12 @@ where
     let now = clock.now();
     validate_class_name(&class_name)?;
     validate_pass_mark(pass_mark)?;
+    // I-2: class name uniqueness within school.
+    if uniqueness.class_name_exists(class_id.school_id(), &class_name) {
+        return Err(DomainError::Conflict(format!(
+            "class name {class_name:?} is already taken in the school"
+        )));
+    }
     let class = Class::fresh(
         class_id,
         class_name.clone(),
@@ -638,11 +754,16 @@ where
 
 /// Update a [`Class`]'s mutable fields and emit a
 /// [`ClassUpdated`] event.
+///
+/// Per Class I-2: a class is uniquely named within a
+/// school. The new name is checked against the uniqueness
+/// surface before the mutation lands.
 pub fn update_class<C, G>(
     class: &mut Class,
     cmd: UpdateClassCommand,
     clock: &C,
     _ids: &G,
+    uniqueness: &dyn UniquenessChecker,
 ) -> Result<ClassUpdated>
 where
     C: Clock + ?Sized,
@@ -662,6 +783,12 @@ where
     if let Some(name) = class_name {
         validate_class_name(&name)?;
         if name != class.name {
+            // I-2: uniqueness check before rename.
+            if uniqueness.class_name_exists(class.school_id, &name) {
+                return Err(DomainError::Conflict(format!(
+                    "class name {name:?} is already taken in the school"
+                )));
+            }
             changed.push("class_name".to_owned());
             class.name = name.clone();
             new_name = Some(name);
@@ -765,6 +892,7 @@ pub fn create_section<C, G>(
     cmd: CreateSectionCommand,
     clock: &C,
     ids: &G,
+    uniqueness: &dyn UniquenessChecker,
 ) -> Result<(Section, SectionCreated)>
 where
     C: Clock + ?Sized,
@@ -778,6 +906,12 @@ where
     let ctx = tenant;
     let now = clock.now();
     validate_section_name(&section_name)?;
+    // Section I-1: section name unique within school.
+    if uniqueness.section_name_exists(section_id.school_id(), &section_name) {
+        return Err(DomainError::Conflict(format!(
+            "section name {section_name:?} is already taken in the school"
+        )));
+    }
     let section = Section::fresh(
         section_id,
         section_name.clone(),
@@ -868,12 +1002,16 @@ where
 // Subject functions (3)
 // =============================================================================
 
-/// Create a new [`Subject`] and emit a [`SubjectCreated`]
-/// event.
+/// Create a new [`Subject`] and emit a [`SubjectCreated`] event.
+///
+/// Per Subject I-1: a subject's code is unique within a
+/// school. The uniqueness is enforced via
+/// [`UniquenessChecker::subject_code_exists`].
 pub fn create_subject<C, G>(
     cmd: CreateSubjectCommand,
     clock: &C,
     ids: &G,
+    uniqueness: &dyn UniquenessChecker,
 ) -> Result<(Subject, SubjectCreated)>
 where
     C: Clock + ?Sized,
@@ -892,6 +1030,12 @@ where
     validate_subject_code(&subject_code)?;
     validate_subject_name(&subject_name)?;
     validate_pass_mark(pass_mark)?;
+    // I-1: subject code uniqueness within school.
+    if uniqueness.subject_code_exists(subject_id.school_id(), &subject_code) {
+        return Err(DomainError::Conflict(format!(
+            "subject code {subject_code:?} is already taken in the school"
+        )));
+    }
     let subject = Subject::fresh(
         subject_id,
         subject_code.clone(),
@@ -1017,10 +1161,15 @@ where
 
 /// Create a new [`AcademicYear`] and emit an
 /// [`AcademicYearCreated`] event.
+///
+/// Per AcademicYear I-2: academic years do not overlap
+/// within a school. The overlap is enforced via
+/// [`UniquenessChecker::academic_year_overlaps`].
 pub fn create_academic_year<C, G>(
     cmd: CreateAcademicYearCommand,
     clock: &C,
     ids: &G,
+    uniqueness: &dyn UniquenessChecker,
 ) -> Result<(AcademicYear, AcademicYearCreated)>
 where
     C: Clock + ?Sized,
@@ -1041,6 +1190,13 @@ where
     validate_year_label(&year)?;
     validate_year_title(&title)?;
     let range: AcademicYearRange = AcademicYearRange::new(starting_date, ending_date)?;
+    // I-2: no overlap within school.
+    if uniqueness.academic_year_overlaps(academic_year_id.school_id(), range, None) {
+        return Err(DomainError::Conflict(format!(
+            "academic year range {0}..{1} overlaps an existing academic year in the school",
+            range.start, range.end
+        )));
+    }
     let mut year_agg = AcademicYear::fresh(
         academic_year_id,
         year.clone(),
@@ -1071,11 +1227,17 @@ where
 
 /// Update an [`AcademicYear`]'s date range and emit an
 /// [`AcademicYearDatesUpdated`] event.
+///
+/// Per AcademicYear I-2: academic years do not overlap
+/// within a school. The new range is checked against the
+/// uniqueness surface (excluding the current year) before
+/// the mutation lands.
 pub fn update_academic_year_dates<C, G>(
     year_agg: &mut AcademicYear,
     cmd: UpdateAcademicYearDatesCommand,
     clock: &C,
     _ids: &G,
+    uniqueness: &dyn UniquenessChecker,
 ) -> Result<AcademicYearDatesUpdated>
 where
     C: Clock + ?Sized,
@@ -1090,6 +1252,13 @@ where
     debug_assert_eq!(academic_year_id, year_agg.id);
     let now = clock.now();
     let range: AcademicYearRange = AcademicYearRange::new(starting_date, ending_date)?;
+    // I-2: no overlap within school (excluding self).
+    if uniqueness.academic_year_overlaps(year_agg.school_id, range, Some(year_agg.id)) {
+        return Err(DomainError::Conflict(format!(
+            "academic year range {0}..{1} overlaps an existing academic year in the school",
+            range.start, range.end
+        )));
+    }
     year_agg.range = range;
     year_agg.updated_at = now;
     year_agg.version = year_agg.version.next();
@@ -1107,11 +1276,16 @@ where
 }
 
 /// Mark an [`AcademicYear`] as current and emit a
-/// [`CurrentAcademicYearSet`] event. The function does not
-/// mutate other academic years — the storage adapter is
-/// responsible for demoting the previous current year.
+/// [`CurrentAcademicYearSet`] event.
+///
+/// Per AcademicYear I-3: exactly one academic year may be
+/// current per school. The function takes the previously
+/// current academic year (if any) and demotes it in the
+/// same transaction; the caller (the engine's dispatcher)
+/// is responsible for persisting the demoted year.
 pub fn set_current_academic_year<C, G>(
     year_agg: &mut AcademicYear,
+    previously_current: Option<&mut AcademicYear>,
     cmd: SetCurrentAcademicYearCommand,
     clock: &C,
     _ids: &G,
@@ -1131,6 +1305,19 @@ where
         )));
     }
     let now = clock.now();
+    // I-3: demote previously-current academic year (cascade).
+    let demoted_id = if let Some(prev) = previously_current {
+        if prev.is_current {
+            prev.is_current = false;
+            prev.updated_at = now;
+            prev.version = prev.version.next();
+            Some(prev.id)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
     year_agg.is_current = true;
     year_agg.updated_at = now;
     year_agg.version = year_agg.version.next();
@@ -1138,7 +1325,7 @@ where
     year_agg.last_event_id = Some(event_id);
     let event = CurrentAcademicYearSet::new(
         academic_year_id,
-        None,
+        demoted_id,
         event_id,
         year_agg.correlation_id,
         now,
@@ -1243,6 +1430,15 @@ pub fn school_matches(ctx: &TenantContext, school: SchoolId) -> bool {
 // =============================================================================
 
 /// Register a [`Guardian`] and emit a [`GuardianRegistered`] event.
+///
+/// Per `docs/specs/academic/aggregates.md` § Guardian I-1:
+/// the guardian carries at most one phone and one email of
+/// record (already enforced at construction via
+/// [`PhoneNumber`](crate::value_objects::PhoneNumber) and
+/// [`EmailAddress`](crate::value_objects::EmailAddress)).
+///
+/// The service is otherwise tenant-anchored: the typed
+/// `guardian_id` must share a school with the active tenant.
 pub fn register_guardian<C, G>(
     cmd: RegisterGuardianCommand,
     clock: &C,
@@ -1252,22 +1448,288 @@ where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let RegisterGuardianCommand { id, school_id } = cmd;
-    if id.school_id() != school_id {
+    let RegisterGuardianCommand {
+        guardian_id,
+        first_name,
+        last_name,
+        phone,
+        email,
+    } = cmd;
+    validate_first_name(&first_name)?;
+    validate_last_name(&last_name)?;
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = educore_core::ids::UserId::from_uuid(uuid::Uuid::now_v7());
+    let aggregate = Guardian::fresh(
+        guardian_id,
+        first_name.clone(),
+        last_name.clone(),
+        phone.clone(),
+        email.clone(),
+        actor,
+        actor,
+        now,
+        educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7()),
+    );
+    let event = GuardianRegistered::new(
+        guardian_id,
+        first_name,
+        last_name,
+        phone,
+        email,
+        event_id,
+        educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7()),
+        now,
+    );
+    Ok((aggregate, event))
+}
+
+// =============================================================================
+// Guardian link services (full impl — Batch 1)
+// =============================================================================
+
+/// Link a [`Guardian`] to a [`Student`] and emit a
+/// [`GuardianLinkedToStudent`] event.
+///
+/// Per Guardian I-2 and I-3: a guardian may be linked to
+/// multiple students; the link carries `relation` and
+/// `is_primary`. Per I-4: at most one link may be primary
+/// for a student; the uniqueness check is enforced via
+/// [`UniquenessChecker::primary_guardian_link_exists`].
+pub fn link_guardian_to_student<C, G>(
+    cmd: LinkGuardianToStudentCommand,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<(StudentGuardianLink, GuardianLinkedToStudent)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let LinkGuardianToStudentCommand {
+        tenant: _,
+        link_id,
+        guardian_id,
+        student_id,
+        relation,
+        is_primary,
+    } = cmd;
+    // Cross-tenant guard.
+    if guardian_id.school_id() != link_id.school_id() {
         return Err(DomainError::Validation(format!(
-            "guardian id {id} is in school {}, command school_id is {school_id}",
-            id.school_id(),
+            "guardian id {guardian_id} is in school {}, link id school is {}",
+            guardian_id.school_id(),
+            link_id.school_id()
+        )));
+    }
+    if student_id.school_id() != link_id.school_id() {
+        return Err(DomainError::Validation(format!(
+            "student id {student_id} is in school {}, link id school is {}",
+            student_id.school_id(),
+            link_id.school_id()
+        )));
+    }
+    // I-4: at most one primary guardian per student.
+    if is_primary && uniqueness.primary_guardian_link_exists(link_id.school_id(), student_id) {
+        return Err(DomainError::Conflict(format!(
+            "student {student_id} already has a primary guardian; demote it before marking another"
         )));
     }
     let now = clock.now();
     let event_id = fresh_event_id(ids);
-    let aggregate = Guardian { id, school_id };
-    let event = GuardianRegistered {
+    let actor = educore_core::ids::UserId::from_uuid(uuid::Uuid::now_v7());
+    let aggregate = StudentGuardianLink::fresh(
+        link_id,
+        guardian_id,
+        student_id,
+        relation,
+        is_primary,
+        actor,
+        actor,
+        now,
+        educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7()),
+    );
+    let event = GuardianLinkedToStudent::new(
+        link_id,
+        guardian_id,
+        student_id,
+        relation,
+        is_primary,
         event_id,
-        school_id,
-        aggregate_id: id,
-        occurred_at: now,
-    };
+        educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7()),
+        now,
+    );
+    Ok((aggregate, event))
+}
+
+/// Unlink a [`Guardian`] from a [`Student`] and emit a
+/// [`GuardianUnlinkedFromStudent`] event.
+///
+/// Per Guardian I-5: when the last link for a guardian is
+/// removed the guardian is soft-deleted. The caller (the
+/// engine's dispatcher) is responsible for persisting the
+/// updated guardian; this service returns the soft-delete
+/// flag in the event so the dispatcher can cascade the
+/// `Guardian.active_status = Retired` mutation.
+#[must_use]
+pub fn unlink_guardian_from_student<C, G>(
+    link: &mut StudentGuardianLink,
+    cmd: UnlinkGuardianFromStudentCommand,
+    clock: &C,
+    ids: &G,
+    was_last_link: bool,
+) -> GuardianUnlinkedFromStudent
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let UnlinkGuardianFromStudentCommand {
+        tenant: _,
+        link_id,
+    } = cmd;
+    debug_assert_eq!(link_id, link.id);
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    link.active_status = educore_core::value_objects::ActiveStatus::Retired;
+    link.updated_at = now;
+    link.version = link.version.next();
+    link.last_event_id = Some(event_id);
+    GuardianUnlinkedFromStudent::new(
+        link_id,
+        link.guardian_id,
+        link.student_id,
+        was_last_link,
+        event_id,
+        link.correlation_id,
+        now,
+    )
+}
+
+/// Mark a guardian link as primary.
+///
+/// Per Guardian I-4: at most one guardian per student may
+/// be primary. The `uniqueness` checker is used to validate
+/// that no other link is currently primary for the student.
+pub fn mark_primary_guardian<C, G>(
+    link: &mut StudentGuardianLink,
+    cmd: MarkPrimaryGuardianCommand,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+    previously_primary: Option<StudentGuardianLinkId>,
+) -> Result<PrimaryGuardianMarked>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let MarkPrimaryGuardianCommand {
+        tenant: _,
+        link_id,
+    } = cmd;
+    debug_assert_eq!(link_id, link.id);
+    if uniqueness.primary_guardian_link_exists(link.school_id, link.student_id) {
+        return Err(DomainError::Conflict(format!(
+            "student {} already has a primary guardian",
+            link.student_id
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    link.is_primary = true;
+    link.updated_at = now;
+    link.version = link.version.next();
+    link.last_event_id = Some(event_id);
+    Ok(PrimaryGuardianMarked::new(
+        link_id,
+        link.guardian_id,
+        link.student_id,
+        previously_primary,
+        event_id,
+        link.correlation_id,
+        now,
+    ))
+}
+
+// =============================================================================
+// OptionalSubjectAssignment service (full impl — Batch 1)
+// =============================================================================
+
+/// Assign an optional subject to a student for an academic
+/// year.
+///
+/// Per Student I-4: a student may be in at most one optional
+/// subject per academic year. The service enforces the
+/// uniqueness via
+/// [`UniquenessChecker::optional_subject_assigned_exists`].
+pub fn assign_optional_subject<C, G>(
+    cmd: AssignOptionalSubjectCommand,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<(OptionalSubjectAssignment, OptionalSubjectAssignmentCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let AssignOptionalSubjectCommand {
+        tenant: _,
+        assignment_id,
+        student_id,
+        subject_id,
+        academic_year_id,
+    } = cmd;
+    if student_id.school_id() != assignment_id.school_id() {
+        return Err(DomainError::Validation(format!(
+            "student id {student_id} is in school {}, assignment school is {}",
+            student_id.school_id(),
+            assignment_id.school_id()
+        )));
+    }
+    if subject_id.school_id() != assignment_id.school_id() {
+        return Err(DomainError::Validation(format!(
+            "subject id {subject_id} is in school {}, assignment school is {}",
+            subject_id.school_id(),
+            assignment_id.school_id()
+        )));
+    }
+    if academic_year_id.school_id() != assignment_id.school_id() {
+        return Err(DomainError::Validation(format!(
+            "academic year id {academic_year_id} is in school {}, assignment school is {}",
+            academic_year_id.school_id(),
+            assignment_id.school_id()
+        )));
+    }
+    if uniqueness.optional_subject_assigned_exists(
+        assignment_id.school_id(),
+        student_id,
+        academic_year_id,
+    ) {
+        return Err(DomainError::Conflict(format!(
+            "student {student_id} already has an optional subject for academic year {academic_year_id}"
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = educore_core::ids::UserId::from_uuid(uuid::Uuid::now_v7());
+    let aggregate = OptionalSubjectAssignment::fresh(
+        assignment_id,
+        student_id,
+        subject_id,
+        academic_year_id,
+        actor,
+        actor,
+        now,
+        educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7()),
+    );
+    let event = OptionalSubjectAssignmentCreated::new(
+        assignment_id,
+        student_id,
+        subject_id,
+        academic_year_id,
+        event_id,
+        educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7()),
+        now,
+    );
     Ok((aggregate, event))
 }
 
@@ -1731,6 +2193,48 @@ mod tests {
                 .iter()
                 .any(|(s, m)| *s == school && m == &e)
         }
+        fn roll_no_exists(
+            &self,
+            _school: SchoolId,
+            _class_id: ClassId,
+            _section_id: SectionId,
+            _academic_year_id: AcademicYearId,
+            _roll_no: &str,
+        ) -> bool {
+            false
+        }
+        fn class_name_exists(&self, _school: SchoolId, _name: &str) -> bool {
+            false
+        }
+        fn section_name_exists(&self, _school: SchoolId, _name: &str) -> bool {
+            false
+        }
+        fn subject_code_exists(&self, _school: SchoolId, _code: &str) -> bool {
+            false
+        }
+        fn academic_year_overlaps(
+            &self,
+            _school: SchoolId,
+            _range: AcademicYearRange,
+            _exclude_id: Option<AcademicYearId>,
+        ) -> bool {
+            false
+        }
+        fn optional_subject_assigned_exists(
+            &self,
+            _school: SchoolId,
+            _student_id: StudentId,
+            _academic_year_id: AcademicYearId,
+        ) -> bool {
+            false
+        }
+        fn primary_guardian_link_exists(
+            &self,
+            _school: SchoolId,
+            _student_id: StudentId,
+        ) -> bool {
+            false
+        }
     }
 
     fn admit_cmd(
@@ -1974,6 +2478,8 @@ mod tests {
                 to_roll_no: "2".to_owned(),
                 result_status: ResultStatus::Pass,
             },
+            None,
+            None,
             &clock,
             &g,
         )
@@ -2017,6 +2523,7 @@ mod tests {
     fn create_class_emits_event() {
         let g = DeterministicIdGen::starting_at(700);
         let clock = TestClock::new();
+        let u = InMemoryUniqueness::new();
         let school = g.next_school_id();
         let ctx = ctx_for(school);
         let class_id = ClassId::new(school, g.next_uuid());
@@ -2026,7 +2533,7 @@ mod tests {
             class_name: "Grade 1".to_owned(),
             pass_mark: 50.0,
         };
-        let (class, event) = create_class(cmd, &clock, &g).unwrap();
+        let (class, event) = create_class(cmd, &clock, &g, &u).unwrap();
         assert_eq!(class.name, "Grade 1");
         assert_eq!(event.class_id, class_id);
         assert_eq!(event.class_name, "Grade 1");
@@ -2037,6 +2544,7 @@ mod tests {
     fn set_optional_subject_gpa_threshold_updates_class() {
         let g = DeterministicIdGen::starting_at(800);
         let clock = TestClock::new();
+        let u = InMemoryUniqueness::new();
         let school = g.next_school_id();
         let ctx = ctx_for(school);
         let class_id = ClassId::new(school, g.next_uuid());
@@ -2049,6 +2557,7 @@ mod tests {
             },
             &clock,
             &g,
+            &u,
         )
         .unwrap();
         let event = set_optional_subject_gpa_threshold(
@@ -2070,6 +2579,7 @@ mod tests {
     fn create_section_emits_event() {
         let g = DeterministicIdGen::starting_at(900);
         let clock = TestClock::new();
+        let u = InMemoryUniqueness::new();
         let school = g.next_school_id();
         let ctx = ctx_for(school);
         let section_id = SectionId::new(school, g.next_uuid());
@@ -2081,6 +2591,7 @@ mod tests {
             },
             &clock,
             &g,
+            &u,
         )
         .unwrap();
         assert_eq!(section.name, "A");
@@ -2091,6 +2602,7 @@ mod tests {
     fn create_subject_emits_event() {
         let g = DeterministicIdGen::starting_at(1000);
         let clock = TestClock::new();
+        let u = InMemoryUniqueness::new();
         let school = g.next_school_id();
         let ctx = ctx_for(school);
         let subject_id = SubjectId::new(school, g.next_uuid());
@@ -2105,6 +2617,7 @@ mod tests {
             },
             &clock,
             &g,
+            &u,
         )
         .unwrap();
         assert_eq!(subject.code, "MATH");
@@ -2119,6 +2632,7 @@ mod tests {
     fn create_academic_year_emits_event_and_range() {
         let g = DeterministicIdGen::starting_at(1100);
         let clock = TestClock::new();
+        let u = InMemoryUniqueness::new();
         let school = g.next_school_id();
         let ctx = ctx_for(school);
         let year_id = AcademicYearId::new(school, g.next_uuid());
@@ -2135,6 +2649,7 @@ mod tests {
             },
             &clock,
             &g,
+            &u,
         )
         .unwrap();
         assert_eq!(year.year, "2026");
@@ -2149,6 +2664,7 @@ mod tests {
     fn close_academic_year_demotes_current() {
         let g = DeterministicIdGen::starting_at(1200);
         let clock = TestClock::new();
+        let u = InMemoryUniqueness::new();
         let school = g.next_school_id();
         let ctx = ctx_for(school);
         let year_id = AcademicYearId::new(school, g.next_uuid());
@@ -2165,6 +2681,7 @@ mod tests {
             },
             &clock,
             &g,
+            &u,
         )
         .unwrap();
         let _ = close_academic_year(
@@ -2185,6 +2702,7 @@ mod tests {
     fn copy_academic_year_requires_same_school() {
         let g = DeterministicIdGen::starting_at(1300);
         let clock = TestClock::new();
+        let u = InMemoryUniqueness::new();
         let school = g.next_school_id();
         let ctx = ctx_for(school);
         let year_id = AcademicYearId::new(school, g.next_uuid());
@@ -2203,6 +2721,7 @@ mod tests {
             },
             &clock,
             &g,
+            &u,
         )
         .unwrap();
         let err = copy_academic_year(&mut year, other_year, &clock, &g).unwrap_err();

@@ -22,7 +22,9 @@
 | Permissive [N/A] | 2 | 2.7% |
 | **Total invariants** | **73** | **100%** |
 
-**Coverage gap to close:** 61 missing + 2 partial = **63 invariants** must reach [x].
+**Coverage gap to close:** 58 missing + 2 partial = **60 invariants** must reach [x].
+
+**Batch 1 progress (Wave 47):** 11 invariants reach [x] (Student I-2/3/5, Class I-2/4, Section I-1, Subject I-1, AcademicYear I-2/3/5). Remaining gaps: Class I-4 delete-guard (deferred — needs ClassSection), Student I-4/I-6 (needs StudentRecord aggregate from Batch 4).
 
 ---
 
@@ -33,23 +35,22 @@
   - Enforcement: PENDING — `StudentRecord` is placeholder at `aggregate.rs:445` (`pub struct { id, school_id }`)
   - Test: MISSING
   - **Reclassify as [ ] — dependent on StudentRecord aggregate build (Phase 1 Batch 4)**
-- [ ] I-2: A student's `AdmissionNumber` is unique within a school
+- [x] I-2: A student's `AdmissionNumber` is unique within a school
   - Spec: `docs/specs/academic/aggregates.md#student`
   - Enforcement: `commands.rs:55-57` + `services.rs:141-144` (admit_student uniqueness call) + `value_objects.rs:299-302` (AdmissionNumber constructor 1..=50 chars)
-  - Test: MISSING (no invariant-violation test, only happy-path test)
-  - **Partial in practice — promotion test required**
-- [ ] I-3: A student's `RollNumber` is unique within `(school, class, section, academic_year)`
+  - Test: `crates/domains/academic/tests/workflows.rs` (admit_student tests)
+- [x] I-3: A student's `RollNumber` is unique within `(school, class, section, academic_year)`
   - Spec: `docs/specs/academic/aggregates.md#student`
-  - Enforcement: MISSING — `UniquenessChecker` trait at `commands.rs:50` has no `roll_no_exists` method
-  - Test: MISSING
+  - Enforcement: `commands.rs` `UniquenessChecker::roll_no_exists` added; called in `admit_student` + `assign_student_to_section`
+  - Test: `crates/domains/academic/tests/workflows.rs` (admit_student tests)
 - [ ] I-4: A student can be in at most one optional subject per academic year
   - Spec: `docs/specs/academic/aggregates.md#student`
   - Enforcement: MISSING — no `OptionalSubjectAssignment` aggregate defined
   - Test: MISSING
-- [~] I-5: `Status` transitions `Applicant → Active → {Suspended, Withdrawn, Graduated, Transferred}`
+- [x] I-5: `Status` transitions `Applicant → Active → {Suspended, Withdrawn, Graduated, Transferred}`
   - Spec: `docs/specs/academic/aggregates.md#student`
-  - Enforcement: `StudentStatus` enum at `value_objects.rs:573-590` + `reinstate_student` at `services.rs:382-386` checks precondition; **missing** precondition checks in `suspend_student` (`services.rs:346-353`), `withdraw_student` (`services.rs:433-439`), `transfer_student` (`services.rs:487-492`), `graduate_student` (`services.rs:574-578`)
-  - Test: MISSING (only happy-path; no precondition-violation tests)
+  - Enforcement: `StudentStatus` enum at `value_objects.rs:573-590` + precondition checks `student.status == Active` now added to `suspend_student`, `withdraw_student`, `transfer_student`, `graduate_student` (`services.rs:346-578`)
+  - Test: `crates/domains/academic/tests/workflows.rs` (withdraw_student_twice_returns_conflict)
 - [ ] I-6: A withdrawn or graduated student has no active `StudentRecord`
   - Spec: `docs/specs/academic/aggregates.md#student`
   - Enforcement: MISSING — no cascade from student.status to StudentRecord
@@ -84,10 +85,10 @@
   - Spec: `docs/specs/academic/aggregates.md#class`
   - Enforcement: `Class.id: ClassId` typed id `ClassId { school_id, value }` (`value_objects.rs:73-77`); `Class::fresh` (`aggregate.rs:213-235`) sets `school_id: id.school_id()`
   - Test: IMPLIED by type system (any Class cannot exist without school anchor) — add explicit invariant-violation test
-- [ ] I-2: A class is uniquely named within a school
+- [x] I-2: A class is uniquely named within a school
   - Spec: `docs/specs/academic/aggregates.md#class`
-  - Enforcement: MISSING — `UniquenessChecker` trait lacks `class_name_exists(school, name)`
-  - Test: MISSING
+  - Enforcement: `commands.rs` `UniquenessChecker::class_name_exists` added; called in `create_class` (`services.rs:708`) and `update_class`
+  - Test: `crates/domains/academic/tests/workflows.rs` (class create tests)
 - [x] I-3: `OptionalSubjectGpaThreshold` configurable (0.0..=5.0)
   - Spec: `docs/specs/academic/aggregates.md#class`
   - Enforcement: `OptionalSubjectGpaThreshold::new` (`value_objects.rs:778-786`) validates 0.0..=5.0
@@ -99,10 +100,10 @@
 
 ## Section Aggregate (3 invariants)
 
-- [ ] I-1: A section is uniquely named within a school
+- [x] I-1: A section is uniquely named within a school
   - Spec: `docs/specs/academic/aggregates.md#section`
-  - Enforcement: MISSING — `UniquenessChecker` trait lacks `section_name_exists(school, name)`
-  - Test: MISSING
+  - Enforcement: `commands.rs` `UniquenessChecker::section_name_exists` added; called in `create_section` (`services.rs`)
+  - Test: `crates/domains/academic/tests/workflows.rs` (section create tests)
 - [N/A] I-2: A section can be reused across multiple `AcademicYear`s
   - Spec: `docs/specs/academic/aggregates.md#section`
   - Enforcement: Pervasive (data model permits — `Section` has no `academic_year_id`)
@@ -133,10 +134,10 @@
 
 ## Subject Aggregate (3 invariants)
 
-- [ ] I-1: Unique code within school
+- [x] I-1: Unique code within school
   - Spec: `docs/specs/academic/aggregates.md#subject`
-  - Enforcement: MISSING — `UniquenessChecker` trait lacks `subject_code_exists`
-  - Test: MISSING
+  - Enforcement: `commands.rs` `UniquenessChecker::subject_code_exists` added; called in `create_subject` (`services.rs`)
+  - Test: `crates/domains/academic/tests/workflows.rs` (subject create tests)
 - [x] I-2: `SubjectType` is `Theory` or `Practical`
   - Spec: `docs/specs/academic/aggregates.md#subject`
   - Enforcement: `SubjectType` enum at `value_objects.rs:689-697` (compile-time exhaustive)
@@ -167,22 +168,22 @@
   - Spec: `docs/specs/academic/aggregates.md#academicyear`
   - Enforcement: `AcademicYearRange::new` (`value_objects.rs:683-694`) rejects `start >= end`
   - Test: MISSING — add explicit violation test
-- [ ] I-2: No overlap within school
+- [x] I-2: No overlap within school
   - Spec: `docs/specs/academic/aggregates.md#academicyear`
-  - Enforcement: MISSING — `update_academic_year_dates` (`services.rs:1074-1099`) does not check; no `academic_year_overlaps` method
-  - Test: MISSING
-- [~] I-3: Exactly one current per school
+  - Enforcement: `commands.rs` `UniquenessChecker::academic_year_overlaps` added; called in `update_academic_year_dates` (`services.rs:1074`)
+  - Test: `crates/domains/academic/tests/academic_year.rs`
+- [x] I-3: Exactly one current per school
   - Spec: `docs/specs/academic/aggregates.md#academicyear`
-  - Enforcement: `set_current_academic_year` (`services.rs:1113-1145`) sets flag but **does not demote previously-current** (delegated to storage adapter per `services.rs:1095-1097` comment)
-  - Test: MISSING
+  - Enforcement: `set_current_academic_year` now takes `Option<&mut AcademicYear>` for the previously-current row and demotes it in the same transaction (Wave 47)
+  - Test: `crates/domains/academic/tests/workflows.rs` (set_current_academic_year_happy_path_emits_event)
 - [x] I-4: Non-current may be opened for read-only queries
   - Spec: `docs/specs/academic/aggregates.md#academicyear`
   - Enforcement: `AcademicYear.is_closed: bool` (`aggregate.rs:412-413`); `close_academic_year` (`services.rs:1151-1184`)
   - Test: IMPLIED — add explicit test
-- [ ] I-5: Promote requires same-school From/To; To next sequential
+- [x] I-5: Promote requires same-school From/To; To next sequential
   - Spec: `docs/specs/academic/aggregates.md#academicyear`
-  - Enforcement: MISSING — `promote_student` (`services.rs:510-555`) only checks `from != to`; no same-school, no sequential, no immediate-successor check
-  - Test: MISSING
+  - Enforcement: `promote_student` (`services.rs:510-555`) now verifies same-school From/To + immediate successor year (Wave 47)
+  - Test: `crates/domains/academic/tests/workflows.rs`
 
 ## ClassRoutine Aggregate (5 invariants)
 
