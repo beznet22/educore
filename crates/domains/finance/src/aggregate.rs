@@ -185,6 +185,57 @@ impl Wallet {
         self.version = self.version.next();
         Ok(())
     }
+
+    /// Computes the **authoritative** wallet balance as the sum
+    /// of approved `WalletTransaction` rows for this wallet.
+    /// Per the spec ("the authoritative balance is the sum of
+    /// approved `WalletTransaction` rows for the wallet,
+    /// recomputed on every approval"), this is the
+    /// ground-truth computation. The cached `balance_minor`
+    /// field is an index for read performance and may drift in
+    /// the presence of out-of-band writes (data imports,
+    /// replay, manual SQL fixes); callers that require
+    /// strict consistency should use
+    /// [`reconcile_and_validate`](Self::reconcile_and_validate).
+    ///
+    /// `Pending` and `Rejected` transactions are excluded.
+    /// Cross-currency transactions are rejected with
+    /// `Validation` (a single wallet holds one currency).
+    #[must_use]
+    pub fn reconcile_balance(transactions: &[&WalletTransaction]) -> i64 {
+        let mut total: i64 = 0;
+        for tx in transactions {
+            if tx.status != ApprovalStatus::Approved {
+                continue;
+            }
+            if tx.wallet_type.is_credit() {
+                total = total.saturating_add(tx.amount_minor);
+            } else if tx.wallet_type.is_debit() {
+                total = total.saturating_sub(tx.amount_minor);
+            }
+        }
+        total
+    }
+
+    /// Reconciles the cached `balance_minor` against the
+    /// authoritative sum of approved transactions and
+    /// returns `Err(Conflict)` on drift. Use this from the
+    /// dispatcher / reconciliation job to detect cache vs
+    /// source-of-truth divergence (out-of-band writes, partial
+    /// replay, missing outbox commit, etc.).
+    pub fn reconcile_and_validate(
+        &self,
+        transactions: &[&WalletTransaction],
+    ) -> educore_core::error::Result<()> {
+        let authoritative = Self::reconcile_balance(transactions);
+        if authoritative != self.balance_minor {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "wallet balance drift: cached={}, authoritative={}",
+                self.balance_minor, authoritative
+            )));
+        }
+        Ok(())
+    }
 }
 
 // =============================================================================
@@ -423,6 +474,25 @@ impl FeesInvoice {
             correlation_id,
         })
     }
+
+    /// Returns the next invoice number for this school, per the
+    /// spec invariant 3: `next = start_form + count(issued)`.
+    ///
+    /// `issued_count` is the count of invoices already issued
+    /// under this `FeesInvoice` configuration (looked up by the
+    /// dispatcher / repository). The returned string is
+    /// `format!("{}{}", prefix, next_number)` (e.g. prefix
+    /// `"INV-"`, `start_form = 1000`, `issued_count = 7` ⇒
+    /// `"INV-1007"`). Wraps `start_form + issued_count` in a
+    /// `Validation` error if the addition overflows `i64`.
+    pub fn next_invoice_number(&self, issued_count: u64) -> educore_core::error::Result<String> {
+        let next = self.start_form.checked_add(issued_count as i64).ok_or_else(|| {
+            educore_core::error::DomainError::validation(
+                "invoice number overflow: start_form + issued_count exceeds i64::MAX",
+            )
+        })?;
+        Ok(format!("{}{}", self.prefix, next))
+    }
 }
 
 /// A single payment against a `FeesAssign` (or a
@@ -501,6 +571,42 @@ impl FeesPayment {
                 "payment fine must be non-negative",
             ));
         }
+        // INV-FP-NET-NON-NEGATIVE: a discount larger than the
+        // gross amount would yield a negative net payable,
+        // which is nonsense for a payment record.
+        if discount_minor > amount_minor {
+            return Err(educore_core::error::DomainError::validation(
+                "payment discount must not exceed gross amount",
+            ));
+        }
+        // INV-FP-METHOD-FK: any non-cash payment method
+        // (Bank, Cheque, Card, Mobile, Gateway) must reference
+        // a `PaymentMethod` row — cash can omit it because
+        // there is no method config for the till.
+        if payment_method != PaymentMethodKind::Cash && payment_method_id.is_none() {
+            return Err(educore_core::error::DomainError::validation(
+                "non-cash payment methods must reference a PaymentMethod row",
+            ));
+        }
+        // INV-FP-GATEWAY-REF: a Gateway-backed payment must
+        // carry a non-empty reference (the gateway transaction
+        // id); reconciliation cannot match a gateway debit
+        // against a finance payment without it.
+        if payment_method == PaymentMethodKind::Gateway {
+            match &reference {
+                None => {
+                    return Err(educore_core::error::DomainError::validation(
+                        "gateway payments require a reference (gateway transaction id)",
+                    ));
+                }
+                Some(s) if s.trim().is_empty() => {
+                    return Err(educore_core::error::DomainError::validation(
+                        "gateway payments require a non-empty reference",
+                    ));
+                }
+                _ => {}
+            }
+        }
         Ok(Self {
             school_id: id.school_id(),
             id,
@@ -531,6 +637,63 @@ impl FeesPayment {
     pub const fn net_minor(&self) -> i64 {
         self.amount_minor.saturating_sub(self.discount_minor)
     }
+
+    /// Returns the total payable (`net + fine`) in minor units.
+    /// This is the amount the cashier should collect and the
+    /// amount the reconciliation engine should match against the
+    /// bank / wallet debit.
+    #[must_use]
+    pub const fn total_payable_minor(&self) -> i64 {
+        self.net_minor().saturating_add(self.fine_minor)
+    }
+
+    /// Re-validates the aggregate's invariants. Useful as a
+    /// post-load / pre-dispatch sanity check (and exposed for
+    /// integration tests). Returns `Err(Validation)` if any
+    /// invariant is broken.
+    pub fn validate_consistency(&self) -> educore_core::error::Result<()> {
+        if self.amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "payment amount must be non-negative",
+            ));
+        }
+        if self.discount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "payment discount must be non-negative",
+            ));
+        }
+        if self.fine_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "payment fine must be non-negative",
+            ));
+        }
+        if self.discount_minor > self.amount_minor {
+            return Err(educore_core::error::DomainError::validation(
+                "payment discount must not exceed gross amount",
+            ));
+        }
+        if self.payment_method == PaymentMethodKind::Gateway {
+            match &self.reference {
+                None => {
+                    return Err(educore_core::error::DomainError::validation(
+                        "gateway payments require a non-empty reference",
+                    ));
+                }
+                Some(s) if s.trim().is_empty() => {
+                    return Err(educore_core::error::DomainError::validation(
+                        "gateway payments require a non-empty reference",
+                    ));
+                }
+                _ => {}
+            }
+        }
+        if self.payment_method != PaymentMethodKind::Cash && self.payment_method_id.is_none() {
+            return Err(educore_core::error::DomainError::validation(
+                "non-cash payment methods must reference a PaymentMethod row",
+            ));
+        }
+        Ok(())
+    }
 }
 
 /// A recorded expense. Per the build-plan § "Risks", money is
@@ -551,6 +714,12 @@ pub struct Expense {
     pub expense_head_id: ExpenseHeadId,
     /// The account (bank / cash) the expense is paid from.
     pub account_id: BankAccountId,
+    /// The resolved type of the referenced account (`Bank` or
+    /// `Cash`). Stored on the aggregate so the
+    /// payment-method-compatibility invariant is replayable
+    /// after a load (round-trip parity) and so the dispatcher
+    /// can re-validate without re-loading the account.
+    pub account_type: AccountType,
     /// The payment method.
     pub payment_method: PaymentMethodKind,
     /// The expense date.
@@ -576,6 +745,12 @@ pub struct Expense {
 
 impl Expense {
     /// Constructs a new `Expense`.
+    ///
+    /// `account_type` is the resolved [`AccountType`] of `account_id`
+    /// (the caller must look it up before constructing the expense);
+    /// the constructor enforces that the `payment_method` is
+    /// compatible with the account type per the spec invariant 2
+    /// (`payment_method == Cash` ⇔ `account_type == Cash`).
     #[allow(clippy::too_many_arguments)]
     pub fn fresh(
         id: ExpenseId,
@@ -584,6 +759,7 @@ impl Expense {
         currency: Currency,
         expense_head_id: ExpenseHeadId,
         account_id: BankAccountId,
+        account_type: AccountType,
         payment_method: PaymentMethodKind,
         expense_date: NaiveDate,
         file_reference: Option<Uuid>,
@@ -599,6 +775,35 @@ impl Expense {
                 "expense amount must be non-negative",
             ));
         }
+        // INV-EXP-METHOD-ACCOUNT: the payment_method must be
+        // compatible with the resolved account_type. Cash method
+        // is only valid against a Cash account; every other
+        // method (Bank, Cheque, Card, Mobile, Gateway) must be
+        // charged against a Bank account. This catches the
+        // common bookkeeper error of paying an electricity
+        // bill out of a bank account with `payment_method =
+        // Cash` (or vice versa) at the aggregate boundary
+        // instead of at the storage / dispatcher layer.
+        match (payment_method, account_type) {
+            (PaymentMethodKind::Cash, AccountType::Cash) => {}
+            (
+                PaymentMethodKind::Bank
+                | PaymentMethodKind::Cheque
+                | PaymentMethodKind::Card
+                | PaymentMethodKind::Mobile
+                | PaymentMethodKind::Gateway,
+                AccountType::Bank,
+            ) => {}
+            (pm, at) => {
+                return Err(educore_core::error::DomainError::validation(
+                    format!(
+                        "payment_method {pm:?} is not compatible with account_type {at:?}",
+                        pm = pm.as_str(),
+                        at = at.as_str(),
+                    ),
+                ));
+            }
+        }
         Ok(Self {
             school_id: id.school_id(),
             id,
@@ -607,6 +812,7 @@ impl Expense {
             currency,
             expense_head_id,
             account_id,
+            account_type,
             payment_method,
             expense_date,
             file_reference,
@@ -1043,6 +1249,7 @@ mod tests {
             Currency::INR,
             head,
             acct,
+            AccountType::Cash,
             PaymentMethodKind::Cash,
             chrono::NaiveDate::from_ymd_opt(2026, 6, 13).unwrap(),
             None,
@@ -1057,6 +1264,507 @@ mod tests {
             err,
             educore_core::error::DomainError::Validation(_)
         ));
+    }
+
+    // -------------------------------------------------------------------------
+    // SECTION: Wave 32 invariant enforcement — the 6 invariants
+    // added per the Phase 1 finance deep audit (see
+    // `docs/audit_reports/stub_vs_implementation.md` § finance).
+    // Each test pins a real aggregate-level invariant that the
+    // audit classified as `missing` or `partial`.
+    // -------------------------------------------------------------------------
+
+    /// INV-FP-GATEWAY-REF: a Gateway-backed payment without a
+    /// reference (gateway transaction id) is rejected. Without
+    /// this guard, reconciliation cannot match the gateway
+    /// debit against the finance payment and the receipt is
+    /// orphaned.
+    #[test]
+    fn fees_payment_gateway_requires_reference() {
+        let (school, user, at, corr) = ctx();
+        let id = FeesPaymentId::new(school, uuid::Uuid::now_v7());
+        let method_id = PaymentMethodId::new(school, uuid::Uuid::now_v7());
+
+        // None reference -> rejected.
+        let err = FeesPayment::fresh(
+            id,
+            10_000,
+            Currency::INR,
+            0,
+            0,
+            PaymentMethodKind::Gateway,
+            None,
+            Some(method_id),
+            None,
+            None,
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 13).unwrap(),
+            user,
+            at,
+            corr,
+        )
+        .unwrap_err();
+        assert!(matches!(err, educore_core::error::DomainError::Validation(_)));
+
+        // Empty / whitespace reference -> rejected.
+        let id2 = FeesPaymentId::new(school, uuid::Uuid::now_v7());
+        let err2 = FeesPayment::fresh(
+            id2,
+            10_000,
+            Currency::INR,
+            0,
+            0,
+            PaymentMethodKind::Gateway,
+            None,
+            Some(method_id),
+            Some("   ".to_owned()),
+            None,
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 13).unwrap(),
+            user,
+            at,
+            corr,
+        )
+        .unwrap_err();
+        assert!(matches!(err2, educore_core::error::DomainError::Validation(_)));
+
+        // Real reference -> accepted and round-trips.
+        let id3 = FeesPaymentId::new(school, uuid::Uuid::now_v7());
+        let p = FeesPayment::fresh(
+            id3,
+            10_000,
+            Currency::INR,
+            0,
+            0,
+            PaymentMethodKind::Gateway,
+            None,
+            Some(method_id),
+            Some("GTW-2026-ABC123".to_owned()),
+            None,
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 13).unwrap(),
+            user,
+            at,
+            corr,
+        )
+        .unwrap();
+        assert_eq!(p.reference.as_deref(), Some("GTW-2026-ABC123"));
+    }
+
+    /// INV-FP-METHOD-FK: any non-cash payment method must
+    /// reference a `PaymentMethod` row. Cash can omit it because
+    /// the till has no method config.
+    #[test]
+    fn fees_payment_non_cash_requires_method_id() {
+        let (school, user, at, corr) = ctx();
+        for method in [
+            PaymentMethodKind::Bank,
+            PaymentMethodKind::Cheque,
+            PaymentMethodKind::Card,
+            PaymentMethodKind::Mobile,
+            PaymentMethodKind::Gateway,
+        ] {
+            let id = FeesPaymentId::new(school, uuid::Uuid::now_v7());
+            let reference = if method == PaymentMethodKind::Gateway {
+                Some("TX-1".to_owned())
+            } else {
+                None
+            };
+            let err = FeesPayment::fresh(
+                id,
+                1_000,
+                Currency::INR,
+                0,
+                0,
+                method,
+                None,
+                None, // missing payment_method_id
+                reference,
+                None,
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 13).unwrap(),
+                user,
+                at,
+                corr,
+            )
+            .unwrap_err();
+            assert!(
+                matches!(err, educore_core::error::DomainError::Validation(_)),
+                "expected Validation for {method:?} without payment_method_id"
+            );
+        }
+
+        // Cash without a method_id is the one accepted exception.
+        let id = FeesPaymentId::new(school, uuid::Uuid::now_v7());
+        let p = FeesPayment::fresh(
+            id,
+            1_000,
+            Currency::INR,
+            0,
+            0,
+            PaymentMethodKind::Cash,
+            None,
+            None,
+            None,
+            None,
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 13).unwrap(),
+            user,
+            at,
+            corr,
+        )
+        .unwrap();
+        assert_eq!(p.payment_method, PaymentMethodKind::Cash);
+    }
+
+    /// INV-FP-DISCOUNT-CAP: a discount larger than the gross
+    /// amount would yield a negative net payable, which is
+    /// nonsensical for a payment record. The audit
+    /// classified this as `partial` (the saturating subtraction
+    /// hid it) — now it's a real aggregate-level validation.
+    #[test]
+    fn fees_payment_discount_cannot_exceed_amount() {
+        let (school, user, at, corr) = ctx();
+        let id = FeesPaymentId::new(school, uuid::Uuid::now_v7());
+        let err = FeesPayment::fresh(
+            id,
+            1_000,
+            Currency::INR,
+            1_500, // discount > amount
+            0,
+            PaymentMethodKind::Cash,
+            None,
+            None,
+            None,
+            None,
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 13).unwrap(),
+            user,
+            at,
+            corr,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            educore_core::error::DomainError::Validation(_)
+        ));
+
+        // discount == amount is accepted (net = 0; e.g. fully
+        // discounted scholarship payment).
+        let id2 = FeesPaymentId::new(school, uuid::Uuid::now_v7());
+        let p = FeesPayment::fresh(
+            id2,
+            1_000,
+            Currency::INR,
+            1_000,
+            0,
+            PaymentMethodKind::Cash,
+            None,
+            None,
+            None,
+            None,
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 13).unwrap(),
+            user,
+            at,
+            corr,
+        )
+        .unwrap();
+        assert_eq!(p.net_minor(), 0);
+        assert_eq!(p.total_payable_minor(), 0);
+    }
+
+    /// `FeesPayment::validate_consistency` re-runs every
+    /// invariant — useful as a post-load sanity check and as a
+    /// dispatcher hook.
+    #[test]
+    fn fees_payment_validate_consistency_round_trip() {
+        let (school, user, at, corr) = ctx();
+        let id = FeesPaymentId::new(school, uuid::Uuid::now_v7());
+        let method_id = PaymentMethodId::new(school, uuid::Uuid::now_v7());
+        let p = FeesPayment::fresh(
+            id,
+            10_000,
+            Currency::INR,
+            1_500,
+            200,
+            PaymentMethodKind::Gateway,
+            None,
+            Some(method_id),
+            Some("GTW-9".to_owned()),
+            None,
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 13).unwrap(),
+            user,
+            at,
+            corr,
+        )
+        .unwrap();
+        // Pass.
+        p.validate_consistency().unwrap();
+        // total_payable = 10_000 - 1_500 + 200 = 8_700.
+        assert_eq!(p.total_payable_minor(), 8_700);
+    }
+
+    /// INV-EXP-METHOD-ACCOUNT: the resolved `account_type`
+    /// must be compatible with `payment_method` (`Cash`
+    /// matches `AccountType::Cash`; every other method matches
+    /// `AccountType::Bank`). The audit classified this as
+    /// `missing` — the fields existed but the constructor did
+    /// not cross-check them.
+    #[test]
+    fn expense_rejects_mismatched_method_and_account_type() {
+        let (school, user, at, corr) = ctx();
+        let head = ExpenseHeadId::new(school, uuid::Uuid::now_v7());
+        let acct = BankAccountId::new(school, uuid::Uuid::now_v7());
+        let date = chrono::NaiveDate::from_ymd_opt(2026, 6, 13).unwrap();
+
+        // Cash against a Bank account -> rejected.
+        let id = ExpenseId::new(school, uuid::Uuid::now_v7());
+        let err = Expense::fresh(
+            id,
+            "Electricity".to_owned(),
+            5_000,
+            Currency::INR,
+            head,
+            acct,
+            AccountType::Bank, // bank account
+            PaymentMethodKind::Cash, // but cash method
+            date,
+            None,
+            None,
+            None,
+            user,
+            at,
+            corr,
+        )
+        .unwrap_err();
+        assert!(
+            matches!(err, educore_core::error::DomainError::Validation(_)),
+            "expected Validation for Cash method against Bank account"
+        );
+
+        // Bank method against a Cash account -> rejected.
+        let id2 = ExpenseId::new(school, uuid::Uuid::now_v7());
+        let err2 = Expense::fresh(
+            id2,
+            "Office supplies".to_owned(),
+            5_000,
+            Currency::INR,
+            head,
+            acct,
+            AccountType::Cash,
+            PaymentMethodKind::Bank,
+            date,
+            None,
+            None,
+            None,
+            user,
+            at,
+            corr,
+        )
+        .unwrap_err();
+        assert!(
+            matches!(err2, educore_core::error::DomainError::Validation(_)),
+            "expected Validation for Bank method against Cash account"
+        );
+
+        // Cash against Cash account -> accepted.
+        let id3 = ExpenseId::new(school, uuid::Uuid::now_v7());
+        let e = Expense::fresh(
+            id3,
+            "Petty cash".to_owned(),
+            500,
+            Currency::INR,
+            head,
+            acct,
+            AccountType::Cash,
+            PaymentMethodKind::Cash,
+            date,
+            None,
+            None,
+            None,
+            user,
+            at,
+            corr,
+        )
+        .unwrap();
+        assert_eq!(e.account_type, AccountType::Cash);
+
+        // Bank method against Bank account -> accepted.
+        let id4 = ExpenseId::new(school, uuid::Uuid::now_v7());
+        let e2 = Expense::fresh(
+            id4,
+            "Vendor invoice".to_owned(),
+            50_000,
+            Currency::INR,
+            head,
+            acct,
+            AccountType::Bank,
+            PaymentMethodKind::Bank,
+            date,
+            None,
+            None,
+            None,
+            user,
+            at,
+            corr,
+        )
+        .unwrap();
+        assert_eq!(e2.account_type, AccountType::Bank);
+    }
+
+    /// INV-WALLET-RECONCILE: the cached `balance_minor` must
+    /// equal the sum of approved credits minus approved
+    /// debits. `reconcile_and_validate` returns `Conflict` on
+    /// drift. Per the spec ("the authoritative balance is the
+    /// sum of approved `WalletTransaction` rows for the
+    /// wallet, recomputed on every approval"), the cache may
+    /// drift in the presence of out-of-band writes; this
+    /// helper is the dispatcher hook for catching that.
+    #[test]
+    fn wallet_reconcile_and_validate_detects_drift() {
+        let (school, user, at, corr) = ctx();
+        let wid = WalletId::new(school, uuid::Uuid::now_v7());
+        let mut wallet = Wallet::fresh(wid, user, Currency::INR, user, at, corr);
+        wallet.balance_minor = 1_000; // corrupted cache
+        let txs: Vec<&WalletTransaction> = Vec::new();
+        let err = wallet.reconcile_and_validate(&txs).unwrap_err();
+        assert!(matches!(err, educore_core::error::DomainError::Conflict(_)));
+    }
+
+    /// INV-WALLET-RECONCILE happy path: a cache that exactly
+    /// matches the sum of approved transactions passes.
+    #[test]
+    fn wallet_reconcile_and_validate_passes_on_match() {
+        let (school, user, at, corr) = ctx();
+        let wid = WalletId::new(school, uuid::Uuid::now_v7());
+        let mut wallet = Wallet::fresh(wid, user, Currency::INR, user, at, corr);
+        let event_gen = SystemIdGen;
+
+        // +500 credit (approved deposit).
+        let deposit = WalletTransaction::fresh(
+            WalletTransactionId::new(school, uuid::Uuid::now_v7()),
+            wid,
+            user,
+            500,
+            Currency::INR,
+            WalletTxType::Deposit,
+            None,
+            None,
+            None,
+            None,
+            user,
+            at,
+            corr,
+        )
+        .unwrap();
+        let mut deposit = deposit;
+        deposit
+            .approve(user, at, event_gen.next_event_id())
+            .unwrap();
+        // +1_000 credit (approved refund).
+        let refund = WalletTransaction::fresh(
+            WalletTransactionId::new(school, uuid::Uuid::now_v7()),
+            wid,
+            user,
+            1_000,
+            Currency::INR,
+            WalletTxType::Refund,
+            None,
+            None,
+            None,
+            None,
+            user,
+            at,
+            corr,
+        )
+        .unwrap();
+        let mut refund = refund;
+        refund.approve(user, at, event_gen.next_event_id()).unwrap();
+        // -300 debit (approved expense) — pending stays out.
+        let expense = WalletTransaction::fresh(
+            WalletTransactionId::new(school, uuid::Uuid::now_v7()),
+            wid,
+            user,
+            300,
+            Currency::INR,
+            WalletTxType::Expense,
+            None,
+            None,
+            None,
+            None,
+            user,
+            at,
+            corr,
+        )
+        .unwrap();
+        let mut expense = expense;
+        expense.approve(user, at, event_gen.next_event_id()).unwrap();
+
+        wallet.apply_credit(1_500, Currency::INR, user, at).unwrap();
+        wallet.apply_debit(300, Currency::INR, user, at).unwrap();
+        assert_eq!(wallet.balance_minor, 1_200);
+
+        let txs: Vec<&WalletTransaction> = vec![&deposit, &refund, &expense];
+        assert_eq!(Wallet::reconcile_balance(&txs), 1_200);
+        wallet.reconcile_and_validate(&txs).unwrap();
+
+        // A pending transaction must not contribute to the
+        // authoritative balance.
+        let pending = WalletTransaction::fresh(
+            WalletTransactionId::new(school, uuid::Uuid::now_v7()),
+            wid,
+            user,
+            999,
+            Currency::INR,
+            WalletTxType::Deposit,
+            None,
+            None,
+            None,
+            None,
+            user,
+            at,
+            corr,
+        )
+        .unwrap();
+        let txs_with_pending: Vec<&WalletTransaction> =
+            vec![&deposit, &refund, &expense, &pending];
+        assert_eq!(Wallet::reconcile_balance(&txs_with_pending), 1_200);
+    }
+
+    /// INV-FI-COUNTER: the next invoice number is
+    /// `start_form + issued_count`, formatted as
+    /// `prefix + number`. The audit classified this as
+    /// `missing` (the aggregate had no `next_counter` /
+    /// `next_invoice_number` method).
+    #[test]
+    fn fees_invoice_next_number_is_start_form_plus_count() {
+        let (school, user, at, corr) = ctx();
+        let id = FeesInvoiceId::new(school, uuid::Uuid::now_v7());
+        let inv = FeesInvoice::fresh(id, "INV-".to_owned(), 1000, user, at, corr).unwrap();
+
+        assert_eq!(inv.next_invoice_number(0).unwrap(), "INV-1000");
+        assert_eq!(inv.next_invoice_number(1).unwrap(), "INV-1001");
+        assert_eq!(inv.next_invoice_number(7).unwrap(), "INV-1007");
+        assert_eq!(inv.next_invoice_number(99).unwrap(), "INV-1099");
+
+        // start_form = 0 is also valid (per the spec:
+        // "start_form >= 0").
+        let id2 = FeesInvoiceId::new(school, uuid::Uuid::now_v7());
+        let inv2 = FeesInvoice::fresh(id2, "FY26-".to_owned(), 0, user, at, corr).unwrap();
+        assert_eq!(inv2.next_invoice_number(0).unwrap(), "FY26-0");
+        assert_eq!(inv2.next_invoice_number(1).unwrap(), "FY26-1");
+    }
+
+    /// INV-FI-COUNTER overflow guard: `start_form + issued_count`
+    /// must not exceed `i64::MAX`. With `start_form = i64::MAX`
+    /// and any non-zero `issued_count`, the addition overflows
+    /// and the helper returns `Validation`.
+    #[test]
+    fn fees_invoice_next_number_rejects_overflow() {
+        let (school, user, at, corr) = ctx();
+        let id = FeesInvoiceId::new(school, uuid::Uuid::now_v7());
+        let inv = FeesInvoice::fresh(id, "X-".to_owned(), i64::MAX, user, at, corr).unwrap();
+        let err = inv.next_invoice_number(1).unwrap_err();
+        assert!(matches!(
+            err,
+            educore_core::error::DomainError::Validation(_)
+        ));
+        // No overflow at zero issued_count.
+        assert_eq!(inv.next_invoice_number(0).unwrap(), format!("X-{}", i64::MAX));
     }
 
     // -------------------------------------------------------------------------

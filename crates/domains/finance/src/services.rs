@@ -538,6 +538,7 @@ where
         cmd.currency,
         cmd.expense_head_id,
         cmd.account_id,
+        cmd.account_type,
         cmd.payment_method,
         cmd.expense_date,
         cmd.file_reference,
@@ -575,6 +576,12 @@ pub struct RecordExpenseCommand {
     pub currency: Currency,
     pub expense_head_id: ExpenseHeadId,
     pub account_id: BankAccountId,
+    /// The resolved [`AccountType`] of the referenced `account_id`
+    /// (the caller must look it up before constructing the
+    /// command). The aggregate enforces that the payment_method
+    /// is compatible with this account type per spec invariant
+    /// 2 (`payment_method == Cash` ⇔ `account_type == Cash`).
+    pub account_type: crate::value_objects::AccountType,
     pub payment_method: crate::value_objects::PaymentMethodKind,
     pub expense_date: NaiveDate,
     pub file_reference: Option<uuid::Uuid>,
