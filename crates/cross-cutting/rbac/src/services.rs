@@ -84,6 +84,23 @@ pub trait CapabilityCheck: Send + Sync {
     /// the `CapabilityAssigned` / `CapabilityRevoked` event
     /// subscribers.
     async fn invalidate_cache(&self, ctx: &TenantContext) -> Result<()>;
+
+    /// Asserts the actor holds `capability`. Returns
+    /// [`DomainError::Forbidden`] (per
+    /// `docs/ports/authentication.md` § "Capability Check") when
+    /// the actor lacks the capability. Default implementation
+    /// delegates to [`Self::has`] and maps the boolean to
+    /// [`DomainError::Forbidden`].
+    async fn require(&self, ctx: &TenantContext, capability: Capability) -> Result<()> {
+        if self.has(ctx, capability).await? {
+            Ok(())
+        } else {
+            Err(educore_core::error::DomainError::Forbidden(format!(
+                "missing capability {}",
+                capability.as_str()
+            )))
+        }
+    }
 }
 
 /// The shape of the in-memory grant table: school → role → capability
