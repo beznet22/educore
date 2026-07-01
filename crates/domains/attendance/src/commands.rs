@@ -41,6 +41,7 @@ use crate::value_objects::{
     ExamAttendanceId, SectionId, StaffAttendanceId, StaffId, StudentAttendanceId, StudentId,
     StudentRecordId, SubjectAttendanceId, SubjectId,
 };
+use educore_rbac::value_objects::Capability;
 
 // =============================================================================
 // Module-level constants (command_type strings for the
@@ -127,6 +128,12 @@ impl MarkStudentAttendanceCommand {
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
     }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceStudentCreate]
+    }
 }
 
 // =============================================================================
@@ -147,6 +154,12 @@ impl UpdateStudentAttendanceCommand {
     #[must_use]
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceStudentUpdate]
     }
 }
 
@@ -175,6 +188,12 @@ impl BulkMarkStudentAttendanceCommand {
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
     }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceBulkMark]
+    }
 }
 
 // =============================================================================
@@ -202,6 +221,12 @@ impl MarkSubjectAttendanceCommand {
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
     }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceSubjectCreate]
+    }
 }
 
 // =============================================================================
@@ -222,6 +247,12 @@ impl UpdateSubjectAttendanceCommand {
     #[must_use]
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceSubjectUpdate]
     }
 }
 
@@ -245,6 +276,12 @@ impl MarkStaffAttendanceCommand {
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
     }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceStaffCreate]
+    }
 }
 
 // =============================================================================
@@ -264,6 +301,12 @@ impl UpdateStaffAttendanceCommand {
     #[must_use]
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceStaffUpdate]
     }
 }
 
@@ -292,6 +335,12 @@ impl MarkExamAttendanceCommand {
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
     }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceExamCreate]
+    }
 }
 
 // =============================================================================
@@ -311,6 +360,12 @@ impl UpdateExamAttendanceCommand {
     #[must_use]
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceExamUpdate]
     }
 }
 
@@ -345,6 +400,12 @@ impl ImportAttendanceCommand {
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
     }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceImportCreate]
+    }
 }
 
 // =============================================================================
@@ -362,6 +423,12 @@ impl ValidateBulkImportCommand {
     #[must_use]
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceImportUpdate]
     }
 }
 
@@ -382,6 +449,12 @@ impl CommitBulkImportCommand {
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
     }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceImportUpdate]
+    }
 }
 
 // =============================================================================
@@ -400,6 +473,12 @@ impl CancelBulkImportCommand {
     #[must_use]
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceImportDelete]
     }
 }
 
@@ -422,6 +501,12 @@ impl RequestAbsenceNotificationCommand {
     #[must_use]
     pub fn school_id(&self) -> SchoolId {
         self.tenant.school_id
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AttendanceNotify]
     }
 }
 
