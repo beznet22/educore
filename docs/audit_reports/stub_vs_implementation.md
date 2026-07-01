@@ -40,7 +40,7 @@
 | communication | 78 | 50 | TBD | TBD |
 | documents | TBD | TBD | TBD | TBD |
 | facilities | TBD | TBD | TBD | TBD |
-| finance | 110 | TBD | TBD | TBD |
+| finance | 165 | 19 | 31 | 124 |
 | hr | TBD | TBD | TBD | TBD |
 | library | TBD | TBD | TBD | TBD |
 | cms | TBD (20 aggregates) | TBD | TBD | TBD |
@@ -59,6 +59,29 @@
 **Drives Phase 2:** All stubs need real implementations per spec.
 All partials need missing invariant/validation/transition coverage.
 All missing invariants from deep audit need enforcement.
+
+## Engine Production Depth ferment — Phase 2 (Finance) outcome
+
+**Updated:** Phase 2 of the `Engine Production Depth` ferment (ferment
+`019f1dd8-9e29-709a-b948-60cd9a4234bd`) made targeted progress on the
+finance domain.
+
+- Baseline (start of ferment): spec audit claimed 110 invariants; spec recount confirms 165.
+- Post-Phase 2: **19 enforced / 31 partial / 124 missing** (174 invariant bullets in checklist, includes cross-aggregate variants).
+- Net change: **0 invariants promoted to [x]** — Phase 2 work focused on checklist creation; placeholder-aggregate builds consistently exceeded sub-agent turn budgets.
+
+**What landed in Phase 2:**
+- Master tracking document: `docs/audit_reports/finance-invariant-checklist.md` (174 bullets across 59 aggregates).
+- Spec recount: 165 invariants (corrects audit's 110 — recount includes all aggregates + cross-aggregate invariants).
+
+**What did NOT land (deferred to focused per-aggregate work):**
+- 124 missing invariants + 31 partial invariants need enforcement.
+- 28 of 47 finance aggregates remain placeholder stubs (`pub struct { id, school_id }`).
+- Pattern from Phase 1 repeated: 5 of last 6 sub-agents on placeholder-aggregate work aborted at turn limit. Each placeholder aggregate needs its own focused sub-batch.
+- Cross-aggregate invariants (BankStatement running balance, FeesAssign payment cap, ChartOfAccount delete guard) require repository access — naturally fit at the CommandDispatcher layer (Phase 6).
+
+**Honest assessment:**
+Finance scope (165 invariants) is 2.3x academic's 72. Even with a focused per-aggregate approach, this is ~50+ steps of work. Realistic timeline for full Phase 2 closure is multiple sessions, not a single ferment.
 
 ## Engine Production Depth ferment — Phase 1 (Academic) outcome
 
