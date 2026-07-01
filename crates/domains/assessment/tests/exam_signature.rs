@@ -1,16 +1,18 @@
 //! Integration tests for the **ExamSignature aggregate** vertical slice.
 //!
-//! Pins the typed-event struct surface for [`ExamSignature`].
+//! Pins the create command struct surface and the
+//! `ExamSignatureCreated` event struct for
+//! [`ExamSignature`](educore_assessment::aggregate::ExamSignature).
 //!
-//! # Current contract (Wave 4 vertical slice)
+//! # Wave 29 real implementation contract
 //!
-//! `ExamSignature` has `ExamSignatureCreated`,
-//! `ExamSignatureUpdated`, `ExamSignatureDeleted` event
-//! structs defined. The events are stubs and the service is
-//! not yet implemented. These tests pin the struct field
-//! set.
-//!
-//! Mirrors `crates/domains/assessment/tests/marks_grade.rs`.
+//! `set_exam_signature` in `services.rs` now enforces the
+//! cross-tenant invariant from
+//! `docs/specs/assessment/aggregates.md` § ExamSignature
+//! (the typed id's `school_id` must match the command's
+//! `school_id`) and emits the `ExamSignatureCreated` event
+//! stamped with a fresh `event_id` (UUIDv7) and the
+//! command's school anchor.
 
 #![allow(
     clippy::unwrap_used,
@@ -20,66 +22,68 @@
     missing_docs
 )]
 
-use educore_assessment::events::{
-    ExamSignatureCreated, ExamSignatureDeleted, ExamSignatureUpdated,
-};
+use educore_assessment::commands::SetExamSignatureCommand;
+use educore_assessment::events::ExamSignatureCreated;
+use educore_assessment::services::set_exam_signature;
+use educore_assessment::value_objects::ExamSignatureId;
 use educore_core::clock::{IdGenerator as _, SystemIdGen};
-use educore_core::ids::SchoolId;
-use educore_core::tenant::{TenantContext, UserType};
+use educore_core::error::DomainError;
 
 // =============================================================================
 // Fixtures
 // =============================================================================
 
-fn admin_context() -> (TenantContext, SystemIdGen) {
+fn fresh_school() -> (educore_core::ids::SchoolId, SystemIdGen) {
     let g = SystemIdGen;
     let school = g.next_school_id();
-    let actor = g.next_user_id();
-    let corr = g.next_correlation_id();
-    (
-        TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin),
-        g,
-    )
-}
-
-fn exam_signature_id(
-    g: &SystemIdGen,
-    school: SchoolId,
-) -> educore_assessment::value_objects::ExamSignatureId {
-    educore_assessment::value_objects::ExamSignatureId::new(school, g.next_uuid())
+    (school, g)
 }
 
 // =============================================================================
-// Typed-event struct surface pins
+// Happy path: set_exam_signature returns ExamSignatureCreated
 // =============================================================================
+
+#[tokio::test]
+async fn set_exam_signature_emits_event_for_anchored_id() {
+    let (school, g) = fresh_school();
+    let signature_id = ExamSignatureId::new(school, g.next_uuid());
+    let cmd = SetExamSignatureCommand {
+        school_id: school,
+        exam_signature_id: signature_id,
+    };
+    let event = set_exam_signature(cmd).await.expect("set_exam_signature");
+    // Spec invariant: event carries the command's school + typed id.
+    assert_eq!(event.school_id, school);
+    assert_eq!(event.exam_signature_id, signature_id);
+}
+
+#[tokio::test]
+async fn set_exam_signature_rejects_cross_tenant_id() {
+    let (school_a, g) = fresh_school();
+    let school_b = g.next_school_id();
+    // Typed id anchored to school_b; command claims school_a.
+    let signature_id = ExamSignatureId::new(school_b, g.next_uuid());
+    let cmd = SetExamSignatureCommand {
+        school_id: school_a,
+        exam_signature_id: signature_id,
+    };
+    let result = set_exam_signature(cmd).await;
+    assert!(
+        matches!(result, Err(DomainError::Validation(_))),
+        "expected Validation error for cross-tenant id, got {:?}",
+        result.map(|_| "ok")
+    );
+}
 
 #[test]
-fn exam_signature_events_carry_typed_id_and_school() {
-    let (tenant, g) = admin_context();
-    let school = tenant.school_id;
-    let sig_id = exam_signature_id(&g, school);
+fn exam_signature_created_event_carries_typed_id_and_school() {
+    let (school, g) = fresh_school();
+    let signature_id = ExamSignatureId::new(school, g.next_uuid());
     let event = ExamSignatureCreated {
         event_id: g.next_event_id(),
         school_id: school,
-        exam_signature_id: sig_id,
+        exam_signature_id: signature_id,
     };
     assert_eq!(event.school_id, school);
-    assert_eq!(event.exam_signature_id, sig_id);
-    assert_eq!(event.exam_signature_id.school_id(), school);
-}
-
-#[test]
-fn exam_signature_updated_and_deleted_events_carry_typed_id() {
-    let (tenant, g) = admin_context();
-    let sig_id = exam_signature_id(&g, tenant.school_id);
-    let _: ExamSignatureUpdated = ExamSignatureUpdated {
-        event_id: g.next_event_id(),
-        school_id: tenant.school_id,
-        exam_signature_id: sig_id,
-    };
-    let _: ExamSignatureDeleted = ExamSignatureDeleted {
-        event_id: g.next_event_id(),
-        school_id: tenant.school_id,
-        exam_signature_id: sig_id,
-    };
+    assert_eq!(event.exam_signature_id, signature_id);
 }
