@@ -106,8 +106,8 @@ impl From<DomainError> for DocumentsError {
             DomainError::Validation(msg) | DomainError::NotFound(msg) => {
                 DocumentsError::Validation(msg)
             }
-            DomainError::NotSupported(msg) => DocumentsError::Validation(msg),
             DomainError::Infrastructure(src) => DocumentsError::Infrastructure(src.to_string()),
+            _ => DocumentsError::Validation(err.to_string()),
         }
     }
 }
