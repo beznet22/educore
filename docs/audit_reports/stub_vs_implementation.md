@@ -35,7 +35,7 @@
 | Domain | Invariants Checked | Enforced | Partial | Missing |
 |---|---|---|---|---|
 | attendance | 27 | TBD | TBD | TBD |
-| academic | 73 | 8 | 2 | 61 |
+| academic | 72 | 17 | 0 | 51 |
 | assessment | 95 | TBD | TBD | TBD |
 | communication | 78 | 50 | TBD | TBD |
 | documents | TBD | TBD | TBD | TBD |
@@ -59,6 +59,29 @@
 **Drives Phase 2:** All stubs need real implementations per spec.
 All partials need missing invariant/validation/transition coverage.
 All missing invariants from deep audit need enforcement.
+
+## Engine Production Depth ferment — Phase 1 (Academic) outcome
+
+**Updated:** Phase 1 of the `Engine Production Depth` ferment (ferment
+`019f1dd8-9e29-709a-b948-60cd9a4234bd`) made targeted progress on the
+academic domain.
+
+- Baseline (start of ferment): 8 enforced / 2 partial / 61 missing / 2 permissive (73 invariants counted by audit summary; 72 actually in spec).
+- Post-Phase 1 (Wave 47 `aca-batch1`): **17 enforced / 0 partial / 51 missing / 4 permissive** (72 invariants).
+- Net change: **+9 invariants promoted to [x]**.
+
+**What landed in Wave 47:**
+- UniquenessChecker trait extended with 7 new methods (`roll_no_exists`, `class_name_exists`, `section_name_exists`, `subject_code_exists`, `academic_year_overlaps`, `optional_subject_assigned_exists`, `primary_guardian_link_exists`).
+- Service-level enforcement added to `create_class`, `update_class`, `create_section`, `create_subject`.
+- Status-transition preconditions added to `suspend_student`, `withdraw_student`, `transfer_student`, `graduate_student` (per Student I-5 FSM).
+- `set_current_academic_year` now takes `Option<&mut AcademicYear>` for the previously-current row and demotes it in the same transaction (per AcademicYear I-3).
+- `promote_student` now verifies same-school From/To + immediate successor year (per AcademicYear I-5).
+- 135 tests passing across 20 academic test files.
+
+**What did NOT land (deferred to focused per-aggregate work):**
+- 12 placeholder aggregates remain: `Guardian` (5 invariants), `ClassSection` (4), `ClassSubject` (3), `ClassRoutine` (5), `Homework` (5), `LessonPlan` (4), `Lesson` (3), `LessonTopic` (2), `StudentRecord` (6), `StudentPromotion` (3), `RegistrationField` (3), `Certificate` (3), `IdCard` (2).
+- These were attempted in Waves 48-51 but consistently exceeded single-sub-agent turn budgets (100/89/54 turns). Each placeholder aggregate needs its own focused sub-batch (1 step per aggregate, not bulk wave-dispatch).
+- `docs/audit_reports/academic-invariant-checklist.md` is the master tracking document for the remaining 51 missing invariants.
 
 ---
 
