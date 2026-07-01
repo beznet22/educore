@@ -435,12 +435,33 @@ impl Outbox for StagingOutbox {
         _school_id: educore_core::ids::SchoolId,
         limit: u32,
     ) -> Result<Vec<SerializedEnvelope>> {
-        // Reads always pass through to the inner state; the
-        // staging buffer is invisible to other transactions.
+        // Read-your-writes: merge staged + inner so the same
+        // transaction observes its own pending writes (matches
+        // the SQL adapters and matches `StagingIdempotency::lookup`,
+        // which already merges staged-first). Staged entries
+        // come first to preserve insertion order; inner entries
+        // are appended only if not already represented by a
+        // staged entry with the same event_id. The staging
+        // buffer of *this* transaction is still invisible to
+        // other transactions (each tx has its own staging),
+        // so this does not weaken isolation.
         let limit = usize::try_from(limit)
             .map_err(|_| DomainError::validation("staging outbox pending limit exceeds usize"))?;
-        let outbox = self.inner.outbox.lock();
-        Ok(outbox.iter().take(limit).cloned().collect())
+        let mut combined: Vec<SerializedEnvelope> = Vec::new();
+        {
+            let staging = self.staging.outbox.lock();
+            combined.extend(staging.iter().cloned());
+        }
+        {
+            let outbox = self.inner.outbox.lock();
+            for env in outbox.iter() {
+                if combined.iter().all(|e| e.event_id != env.event_id) {
+                    combined.push(env.clone());
+                }
+            }
+        }
+        combined.truncate(limit);
+        Ok(combined)
     }
 
     async fn mark_published(
@@ -448,6 +469,14 @@ impl Outbox for StagingOutbox {
         _school_id: educore_core::ids::SchoolId,
         ids: &[educore_core::ids::EventId],
     ) -> Result<()> {
+        // Remove from both staged (uncommitted writes from
+        // this transaction) and inner (writes committed by
+        // previous transactions). Mirrors the read-your-writes
+        // semantics of `pending` above.
+        {
+            let mut staging = self.staging.outbox.lock();
+            staging.retain(|e| !ids.contains(&e.event_id));
+        }
         let mut outbox = self.inner.outbox.lock();
         outbox.retain(|e| !ids.contains(&e.event_id));
         Ok(())
