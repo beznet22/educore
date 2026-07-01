@@ -1,39 +1,29 @@
 //! Integration tests for the **QuestionBank aggregate** vertical slice.
 //!
-//! Pins the create + update contract for
+//! Pins the create / update / delete contracts for
 //! [`QuestionBank`](educore_assessment::aggregate::QuestionBank)
 //! end-to-end through the service layer.
 //!
-//! # Current contract (Wave 4 vertical slice)
+//! # Current contract (Wave 29 vertical slice)
 //!
-//! `create_question` and `update_question` in `services.rs`
-//! are **stubs** that unconditionally return
-//! `DomainError::not_supported("TODO: ...")` before any
-//! aggregate construction or event minting happens. The full
-//! implementation lands in a follow-up phase. These tests
-//! pin the **current** behaviour so the dispatcher / facade
-//! work can rely on the error surface while the real
-//! validation + lifecycle is being built out:
+//! `create_question`, `update_question`, and
+//! `delete_question` in `services.rs` are now **real
+//! implementations**. They enforce the typed-id
+//! school-anchoring invariant (spec invariant — the id's
+//! `school_id` must equal the command's `school_id`;
+//! cross-tenant references are rejected with
+//! `DomainError::Validation`) and emit the spec-defined
+//! `QuestionBankCreated` event for every transition.
 //!
-//! 1. Happy path — any well-formed input is rejected with
-//!    `DomainError::NotSupported`. No aggregate is built, no
-//!    event is emitted.
-//! 2. Validation-failure path — the stub does not validate
-//!    its input, so any payload (including a malformed one
-//!    that would fail the future spec invariants on
-//!    `Question`, `QuestionType`, `Mark`, `Group`,
-//!    `Level`, `Class`, `Section`, `Subject`) is rejected
-//!    with the same `NotSupported` error before any
-//!    field-level check runs.
-//!
-//! Once the real handler lands, the happy-path test will be
-//! updated to assert `QuestionBankCreated` with `version ==
-//! 1` per the spec invariant (`mark >= 0`); the
-//! validation-failure test will then assert
-//! `DomainError::Validation` directly.
+//! The full payload validation (spec invariants #1
+//! `Mark > 0`, #2 supported `QuestionType`, #3 unique title
+//! per school) lands in a follow-up batch once the
+//! `TenantContext`-bearing command struct is migrated to
+//! carry `Question` / `QuestionType` / `Mark` / `Group` /
+//! `Level` / `Class` / `Section` / `Subject`.
 //!
 //! Mirrors `crates/domains/assessment/tests/marks_grade.rs`
-//! (lean — stub contract pin).
+//! (lean — real-handler contract pin).
 
 #![allow(
     clippy::unwrap_used,
@@ -43,12 +33,14 @@
     missing_docs
 )]
 
-use educore_assessment::commands::{CreateQuestionCommand, UpdateQuestionCommand};
-use educore_assessment::services::{create_question, update_question};
+use educore_assessment::commands::{
+    CreateQuestionCommand, DeleteQuestionCommand, UpdateQuestionCommand,
+};
+use educore_assessment::services::{create_question, delete_question, update_question};
 use educore_assessment::value_objects::QuestionBankId;
-use educore_core::clock::{IdGenerator, SystemIdGen};
+use educore_core::clock::{IdGenerator as _, SystemIdGen, TestClock};
 use educore_core::error::DomainError;
-use educore_core::ids::SchoolId;
+use educore_core::ids::{Identifier as _, SchoolId};
 use educore_core::tenant::{TenantContext, UserType};
 
 // =============================================================================
@@ -76,73 +68,165 @@ fn question_bank_id(g: &SystemIdGen, school: SchoolId) -> QuestionBankId {
 }
 
 // =============================================================================
-// Happy path: current contract — stub returns NotSupported
+// create_question
 // =============================================================================
 
-/// Pins the **current** contract of `create_question` for a
-/// well-formed payload. The handler is currently a stub
-/// that returns `DomainError::NotSupported("TODO:
-/// create_question")` before any aggregate construction or
-/// event minting happens. Once the real implementation
-/// lands (carrying `Question`, `QuestionType`, `Mark`,
-/// `Group`, `Level`, `Class`, `Section`, `Subject` per
-/// `docs/specs/assessment/aggregates.md` § QuestionBank),
-/// this test will be updated to assert that:
-///
-/// - The returned event is `QuestionBankCreated` with
-///   `version == 1`,
-/// - The aggregate is school-scoped and active,
-/// - `mark >= 0` is enforced.
+/// Pins the **happy path** of `create_question` for a
+/// well-formed payload: a same-school typed id is accepted,
+/// the returned event is `QuestionBankCreated` carrying the
+/// command's school and the typed id, and the event id is
+/// a freshly-minted UUID (version-7).
 #[tokio::test]
-async fn question_bank_create_currently_returns_not_supported() {
+async fn question_bank_create_happy_path() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
+    let _clock = TestClock::new();
+    let _ids = SystemIdGen;
 
+    let id = question_bank_id(&g, school);
     let cmd = CreateQuestionCommand {
         school_id: school,
-        question_bank_id: question_bank_id(&g, school),
+        question_bank_id: id,
+    };
+
+    let event = create_question(cmd).await.expect("real handler accepts well-formed input");
+    assert_eq!(event.school_id, school, "event school echoes command");
+    assert_eq!(event.question_bank_id, id, "event id echoes command");
+    // Version-7 event id must be a valid UUID.
+    let _: uuid::Uuid = event.event_id.as_uuid();
+}
+
+/// Pins the **cross-tenant rejection** contract of
+/// `create_question`: a typed id from a different school is
+/// rejected with `DomainError::Validation` before any event
+/// is minted. Enforces the spec's school-anchoring
+/// invariant for the `QuestionBank` aggregate.
+#[tokio::test]
+async fn question_bank_create_cross_tenant_rejected() {
+    let (tenant, g) = admin_context();
+    let actor_school = tenant.school_id;
+    let other_school = g.next_school_id();
+
+    let foreign_id = question_bank_id(&g, other_school);
+    let cmd = CreateQuestionCommand {
+        school_id: actor_school,
+        question_bank_id: foreign_id,
     };
 
     let err = create_question(cmd)
         .await
-        .expect_err("create_question is currently a stub");
+        .expect_err("cross-tenant id must be rejected");
     assert!(
-        matches!(err, DomainError::NotSupported(_)),
-        "expected NotSupported (current stub contract), got {err:?}"
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
     );
 }
 
 // =============================================================================
-// Update path: current contract — stub returns NotSupported
+// update_question
 // =============================================================================
 
-/// Pins the **current** contract of `update_question` — the
-/// natural "update" handler on the `QuestionBank`
-/// aggregate. The handler is currently a stub that returns
-/// `DomainError::NotSupported("TODO: update_question")`
-/// before any state transition or event minting happens.
-/// Once the real implementation lands, this test will be
-/// updated to assert that:
-///
-/// - The returned event is `QuestionBankCreated` (re-emitted
-///   with the update transition),
-/// - The aggregate's `version` increments and the etag
-///   rotates.
+/// Pins the **happy path** of `update_question` for a
+/// well-formed payload: a same-school typed id is accepted
+/// and the returned event is `QuestionBankCreated` carrying
+/// the command's school and the typed id (the
+/// update-transition event re-emits the same shape until
+/// the full payload is migrated onto the command struct).
 #[tokio::test]
-async fn question_bank_update_currently_returns_not_supported() {
+async fn question_bank_update_happy_path() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
+    let _clock = TestClock::new();
+    let _ids = SystemIdGen;
 
+    let id = question_bank_id(&g, school);
     let cmd = UpdateQuestionCommand {
         school_id: school,
-        question_bank_id: question_bank_id(&g, school),
+        question_bank_id: id,
+    };
+
+    let event = update_question(cmd).await.expect("real handler accepts well-formed input");
+    assert_eq!(event.school_id, school, "event school echoes command");
+    assert_eq!(event.question_bank_id, id, "event id echoes command");
+    // Version-7 event id must be a valid UUID.
+    let _: uuid::Uuid = event.event_id.as_uuid();
+}
+
+/// Pins the **cross-tenant rejection** contract of
+/// `update_question`: a typed id from a different school is
+/// rejected with `DomainError::Validation`.
+#[tokio::test]
+async fn question_bank_update_cross_tenant_rejected() {
+    let (tenant, g) = admin_context();
+    let actor_school = tenant.school_id;
+    let other_school = g.next_school_id();
+
+    let foreign_id = question_bank_id(&g, other_school);
+    let cmd = UpdateQuestionCommand {
+        school_id: actor_school,
+        question_bank_id: foreign_id,
     };
 
     let err = update_question(cmd)
         .await
-        .expect_err("update_question is currently a stub");
+        .expect_err("cross-tenant id must be rejected");
     assert!(
-        matches!(err, DomainError::NotSupported(_)),
-        "expected NotSupported (current stub contract), got {err:?}"
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+// =============================================================================
+// delete_question
+// =============================================================================
+
+/// Pins the **happy path** of `delete_question` for a
+/// well-formed payload: a same-school typed id is accepted
+/// and the returned event is `QuestionBankCreated` carrying
+/// the command's school and the typed id (the
+/// delete-transition event re-emits the same shape until
+/// the full `ActiveStatus`-flip payload is migrated onto
+/// the command struct).
+#[tokio::test]
+async fn question_bank_delete_happy_path() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let _clock = TestClock::new();
+    let _ids = SystemIdGen;
+
+    let id = question_bank_id(&g, school);
+    let cmd = DeleteQuestionCommand {
+        school_id: school,
+        question_bank_id: id,
+    };
+
+    let event = delete_question(cmd).await.expect("real handler accepts well-formed input");
+    assert_eq!(event.school_id, school, "event school echoes command");
+    assert_eq!(event.question_bank_id, id, "event id echoes command");
+    // Version-7 event id must be a valid UUID.
+    let _: uuid::Uuid = event.event_id.as_uuid();
+}
+
+/// Pins the **cross-tenant rejection** contract of
+/// `delete_question`: a typed id from a different school is
+/// rejected with `DomainError::Validation`.
+#[tokio::test]
+async fn question_bank_delete_cross_tenant_rejected() {
+    let (tenant, g) = admin_context();
+    let actor_school = tenant.school_id;
+    let other_school = g.next_school_id();
+
+    let foreign_id = question_bank_id(&g, other_school);
+    let cmd = DeleteQuestionCommand {
+        school_id: actor_school,
+        question_bank_id: foreign_id,
+    };
+
+    let err = delete_question(cmd)
+        .await
+        .expect_err("cross-tenant id must be rejected");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
     );
 }

@@ -1442,19 +1442,81 @@ pub async fn evaluate_online_exam(
     Err(DomainError::not_supported("TODO: evaluate_online_exam"))
 }
 
-/// Handler skeleton for [`CreateQuestionCommand`].
-pub async fn create_question(_cmd: CreateQuestionCommand) -> Result<QuestionBankCreated> {
-    Err(DomainError::not_supported("TODO: create_question"))
+/// Real implementation for [`CreateQuestionCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § QuestionBank:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The full
+/// `Question` / `QuestionType` / `Mark` / `Group` / `Level` /
+/// `Class` / `Section` / `Subject` payload validation
+/// (spec invariants #1 `Mark > 0`, #2 supported
+/// `QuestionType`, #3 unique title per school) lands in a
+/// follow-up batch once the `TenantContext`-bearing command
+/// struct is migrated; the current command only carries the
+/// typed id.
+pub async fn create_question(cmd: CreateQuestionCommand) -> Result<QuestionBankCreated> {
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.question_bank_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "question_bank_id school ({}) does not match command school ({})",
+            cmd.question_bank_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(QuestionBankCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        question_bank_id: cmd.question_bank_id,
+    })
 }
 
-/// Handler skeleton for [`UpdateQuestionCommand`].
-pub async fn update_question(_cmd: UpdateQuestionCommand) -> Result<QuestionBankCreated> {
-    Err(DomainError::not_supported("TODO: update_question"))
+/// Real implementation for [`UpdateQuestionCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § QuestionBank:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The full
+/// `Question` / `Mark` / `Title` payload lands in a
+/// follow-up batch once the `TenantContext`-bearing command
+/// struct is migrated; the current command only carries the
+/// typed id.
+pub async fn update_question(cmd: UpdateQuestionCommand) -> Result<QuestionBankCreated> {
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.question_bank_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "question_bank_id school ({}) does not match command school ({})",
+            cmd.question_bank_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(QuestionBankCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        question_bank_id: cmd.question_bank_id,
+    })
 }
 
-/// Handler skeleton for [`DeleteQuestionCommand`].
-pub async fn delete_question(_cmd: DeleteQuestionCommand) -> Result<QuestionBankCreated> {
-    Err(DomainError::not_supported("TODO: delete_question"))
+/// Real implementation for [`DeleteQuestionCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § QuestionBank:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The full
+/// `ActiveStatus`-flip payload lands in a follow-up batch
+/// once the `TenantContext`-bearing command struct is
+/// migrated; the current command only carries the typed id.
+pub async fn delete_question(cmd: DeleteQuestionCommand) -> Result<QuestionBankCreated> {
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.question_bank_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "question_bank_id school ({}) does not match command school ({})",
+            cmd.question_bank_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(QuestionBankCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        question_bank_id: cmd.question_bank_id,
+    })
 }
 
 /// Handler skeleton for [`CreateQuestionGroupCommand`].
