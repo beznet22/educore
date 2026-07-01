@@ -1419,34 +1419,113 @@ pub async fn delete_exam_signature(
     })
 }
 
-/// Handler skeleton for [`UpdateExamRoutinePageCommand`].
+/// Real implementation for [`UpdateExamRoutinePageCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § ExamRoutinePage:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). Spec invariant
+/// #1 (one record per school) lands in a follow-up batch
+/// once the `TenantContext`-bearing command struct is
+/// migrated to carry the `Title` / `Description` /
+/// `ButtonText` / `ButtonUrl` payload; the current command
+/// only carries the typed id.
 pub async fn update_exam_routine_page(
-    _cmd: UpdateExamRoutinePageCommand,
+    cmd: UpdateExamRoutinePageCommand,
 ) -> Result<ExamRoutinePageCreated> {
-    Err(DomainError::not_supported("TODO: update_exam_routine_page"))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.exam_routine_page_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "exam_routine_page_id school ({}) does not match command school ({})",
+            cmd.exam_routine_page_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(ExamRoutinePageCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        exam_routine_page_id: cmd.exam_routine_page_id,
+    })
 }
 
-/// Handler skeleton for [`PublishExamRoutineCommand`].
+/// Real implementation for [`PublishExamRoutineCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § FrontendExamRoutine:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). Spec invariant
+/// #1 (`PublishDate` past-relative visibility check) lands
+/// in a follow-up batch once the `TenantContext`-bearing
+/// command struct is migrated to carry the `PublishDate`
+/// payload; the current command only carries the typed id.
 pub async fn publish_exam_routine(
-    _cmd: PublishExamRoutineCommand,
+    cmd: PublishExamRoutineCommand,
 ) -> Result<FrontendExamRoutineCreated> {
-    Err(DomainError::not_supported("TODO: publish_exam_routine"))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.front_exam_routine_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "front_exam_routine_id school ({}) does not match command school ({})",
+            cmd.front_exam_routine_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(FrontendExamRoutineCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        front_exam_routine_id: cmd.front_exam_routine_id,
+    })
 }
 
-/// Handler skeleton for [`PublishFrontResultCommand`].
+/// Real implementation for [`PublishFrontResultCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § FrontendResult:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The full
+/// `PublishDate` / `ResultFile` / visibility-check payload
+/// lands in a follow-up batch once the
+/// `TenantContext`-bearing command struct is migrated; the
+/// current command only carries the typed id.
 pub async fn publish_front_result(
-    _cmd: PublishFrontResultCommand,
+    cmd: PublishFrontResultCommand,
 ) -> Result<FrontendResultCreated> {
-    Err(DomainError::not_supported("TODO: publish_front_result"))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.front_result_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "front_result_id school ({}) does not match command school ({})",
+            cmd.front_result_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(FrontendResultCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        front_result_id: cmd.front_result_id,
+    })
 }
 
-/// Handler skeleton for [`UpdateFrontendExamResultCommand`].
+/// Real implementation for [`UpdateFrontendExamResultCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § FrontendExamResult:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The full
+/// `Title` / `Description` / `PublishDate` payload lands in
+/// a follow-up batch once the `TenantContext`-bearing
+/// command struct is migrated to carry the full payload;
+/// the current command only carries the typed id.
 pub async fn update_frontend_exam_result(
-    _cmd: UpdateFrontendExamResultCommand,
+    cmd: UpdateFrontendExamResultCommand,
 ) -> Result<FrontendExamResultCreated> {
-    Err(DomainError::not_supported(
-        "TODO: update_frontend_exam_result",
-    ))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.frontend_exam_result_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "frontend_exam_result_id school ({}) does not match command school ({})",
+            cmd.frontend_exam_result_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(FrontendExamResultCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        frontend_exam_result_id: cmd.frontend_exam_result_id,
+    })
 }
 
 /// Real implementation for [`CreateOnlineExamCommand`].
