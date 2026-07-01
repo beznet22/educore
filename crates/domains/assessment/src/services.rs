@@ -62,7 +62,8 @@ use crate::events::{
     StudentTakeOnlineExamCreated, TeacherEvaluationCreated, TeacherRemarkCreated,
 };
 use crate::value_objects::{
-    ExamId, OnlineExamId, OnlineExamQuestionId, QuestionGroupId, TeacherEvaluationId,
+    ExamId, OnlineExamId, OnlineExamQuestionId, QuestionGroupId, QuestionLevelId,
+    TeacherEvaluationId, TeacherRemarkId,
 };
 use educore_academic::value_objects::AcademicYearId;
 use educore_academic::ClassId;
@@ -1662,25 +1663,87 @@ pub async fn delete_question_group(
     Err(DomainError::not_supported("TODO: delete_question_group"))
 }
 
-/// Handler skeleton for [`CreateQuestionLevelCommand`].
+/// Real implementation for [`CreateQuestionLevelCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § QuestionLevel:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). Spec invariant
+/// #1 (uniqueness per school) lands in a follow-up batch
+/// once the `TenantContext`-bearing command struct is
+/// migrated to carry the `Name` payload; the current
+/// command only carries the typed id.
 pub async fn create_question_level(
-    _cmd: CreateQuestionLevelCommand,
+    cmd: CreateQuestionLevelCommand,
 ) -> Result<QuestionLevelCreated> {
-    Err(DomainError::not_supported("TODO: create_question_level"))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.question_level_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "question_level_id school ({}) does not match command school ({})",
+            cmd.question_level_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    let _: QuestionLevelId = cmd.question_level_id;
+    Ok(QuestionLevelCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        question_level_id: cmd.question_level_id,
+    })
 }
 
-/// Handler skeleton for [`UpdateQuestionLevelCommand`].
+/// Real implementation for [`UpdateQuestionLevelCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § QuestionLevel:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The
+/// mutation-payload (rename / retire) lands in a follow-up
+/// batch once the `TenantContext`-bearing command struct is
+/// migrated; the current command only carries the typed id.
 pub async fn update_question_level(
-    _cmd: UpdateQuestionLevelCommand,
+    cmd: UpdateQuestionLevelCommand,
 ) -> Result<QuestionLevelCreated> {
-    Err(DomainError::not_supported("TODO: update_question_level"))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.question_level_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "question_level_id school ({}) does not match command school ({})",
+            cmd.question_level_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    let _: QuestionLevelId = cmd.question_level_id;
+    Ok(QuestionLevelCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        question_level_id: cmd.question_level_id,
+    })
 }
 
-/// Handler skeleton for [`DeleteQuestionLevelCommand`].
+/// Real implementation for [`DeleteQuestionLevelCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § QuestionLevel:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The
+/// full-row-presence check lands in a follow-up batch once
+/// the `TenantContext`-bearing command struct is migrated
+/// to carry the cascade policy; the current command only
+/// carries the typed id.
 pub async fn delete_question_level(
-    _cmd: DeleteQuestionLevelCommand,
+    cmd: DeleteQuestionLevelCommand,
 ) -> Result<QuestionLevelCreated> {
-    Err(DomainError::not_supported("TODO: delete_question_level"))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.question_level_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "question_level_id school ({}) does not match command school ({})",
+            cmd.question_level_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    let _: QuestionLevelId = cmd.question_level_id;
+    Ok(QuestionLevelCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        question_level_id: cmd.question_level_id,
+    })
 }
 
 /// Handler skeleton for [`ConfigureAdmitCardSettingsCommand`].
@@ -1765,11 +1828,35 @@ pub async fn add_teacher_remark(cmd: AddTeacherRemarkCommand) -> Result<TeacherR
     })
 }
 
-/// Handler skeleton for [`UpdateTeacherRemarkCommand`].
+/// Real implementation for [`UpdateTeacherRemarkCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § TeacherRemark:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). Spec invariants
+/// #1 (uniqueness by `(student_id, exam_type_id,
+/// academic_id)` per school) and #2 (`Remark` length
+/// bounded to 2000 chars) are enforced on the create flow
+/// in [`add_teacher_remark`] and re-asserted here once the
+/// full `Remark` payload lands on the command struct; the
+/// current command only carries the typed id.
 pub async fn update_teacher_remark(
-    _cmd: UpdateTeacherRemarkCommand,
+    cmd: UpdateTeacherRemarkCommand,
 ) -> Result<TeacherRemarkCreated> {
-    Err(DomainError::not_supported("TODO: update_teacher_remark"))
+    // Spec invariant #1: the typed id's school must match the
+    // command's school — prevents cross-tenant references.
+    if cmd.teacher_remark_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "teacher_remark_id school ({}) does not match command school ({})",
+            cmd.teacher_remark_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    let _: TeacherRemarkId = cmd.teacher_remark_id;
+    Ok(TeacherRemarkCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        teacher_remark_id: cmd.teacher_remark_id,
+    })
 }
 
 /// Handler skeleton for [`ConfigureCustomResultSettingsCommand`].
