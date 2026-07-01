@@ -34,6 +34,7 @@ use crate::value_objects::{
     LibraryMemberId, LibraryMemberNoteId, MemberId, MemberUdId, RackNumber, ReturnDate, RoleId,
     StockAdjustmentReason, StockCopies, SubjectId,
 };
+use educore_rbac::value_objects::Capability;
 
 #[allow(dead_code)]
 fn event_id_to_uuid(e: educore_core::ids::EventId) -> uuid::Uuid {
@@ -122,6 +123,12 @@ pub struct CreateBookCategoryCommand {
 impl CreateBookCategoryCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_CATEGORY_CREATE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Update a book category.
@@ -138,6 +145,12 @@ pub struct UpdateBookCategoryCommand {
 impl UpdateBookCategoryCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_CATEGORY_UPDATE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Delete a book category.
@@ -152,6 +165,12 @@ pub struct DeleteBookCategoryCommand {
 impl DeleteBookCategoryCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_CATEGORY_DELETE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 // =============================================================================
@@ -196,6 +215,12 @@ pub struct AddBookCommand {
 impl AddBookCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_ADD_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Update a book's bibliographic metadata.
@@ -226,6 +251,12 @@ pub struct UpdateBookCommand {
 impl UpdateBookCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_UPDATE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Delete a book.
@@ -240,6 +271,12 @@ pub struct DeleteBookCommand {
 impl DeleteBookCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_DELETE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Adjust a book's stock count.
@@ -258,6 +295,12 @@ pub struct AdjustBookQuantityCommand {
 impl AdjustBookQuantityCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_ADJUST_QUANTITY_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 // =============================================================================
@@ -282,6 +325,12 @@ pub struct RegisterLibraryMemberCommand {
 impl RegisterLibraryMemberCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_MEMBER_REGISTER_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Update a library member.
@@ -300,6 +349,12 @@ pub struct UpdateLibraryMemberCommand {
 impl UpdateLibraryMemberCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_MEMBER_UPDATE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Deactivate a library member.
@@ -316,6 +371,12 @@ pub struct DeactivateLibraryMemberCommand {
 impl DeactivateLibraryMemberCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_MEMBER_DEACTIVATE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Reactivate a library member.
@@ -330,6 +391,12 @@ pub struct ReactivateLibraryMemberCommand {
 impl ReactivateLibraryMemberCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_MEMBER_REACTIVATE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Delete a library member.
@@ -344,6 +411,12 @@ pub struct DeleteLibraryMemberCommand {
 impl DeleteLibraryMemberCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_MEMBER_DELETE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 // =============================================================================
@@ -374,6 +447,12 @@ pub struct IssueBookCommand {
 impl IssueBookCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_ISSUE_ISSUE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Return a book that was issued.
@@ -392,6 +471,12 @@ pub struct ReturnBookCommand {
 impl ReturnBookCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_ISSUE_RETURN_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Renew a book issue.
@@ -408,6 +493,12 @@ pub struct RenewBookCommand {
 impl RenewBookCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_ISSUE_RENEW_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Mark a book issue as lost.
@@ -424,6 +515,12 @@ pub struct MarkBookLostCommand {
 impl MarkBookLostCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_ISSUE_MARK_LOST_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 // =============================================================================
@@ -455,6 +552,12 @@ pub struct RecordBookReturnCommand {
 impl RecordBookReturnCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_RETURN_RECORD_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 // =============================================================================
@@ -485,6 +588,12 @@ pub struct CalculateFineCommand {
 impl CalculateFineCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_FINE_CALCULATE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Waive a fine.
@@ -501,6 +610,12 @@ pub struct WaiveBookIssueFineCommand {
 impl WaiveBookIssueFineCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_FINE_WAIVE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 // =============================================================================
@@ -525,6 +640,12 @@ pub struct SearchBooksCommand {
 impl SearchBooksCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_SEARCH_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryRead]
+    }
 }
 
 /// List overdue book issues as of a given date.
@@ -541,6 +662,12 @@ pub struct ListOverdueIssuesCommand {
 impl ListOverdueIssuesCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_ISSUE_LIST_OVERDUE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryRead]
+    }
 }
 
 /// List book issues for a member.
@@ -555,6 +682,12 @@ pub struct ListMemberIssuesCommand {
 impl ListMemberIssuesCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = LIBRARY_BOOK_ISSUE_LIST_FOR_MEMBER_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryRead]
+    }
 }
 
 // Suppress unused-import warnings for items that are part of
@@ -592,6 +725,14 @@ pub struct CreateBookAcquisitionCommand {
     pub school_id: SchoolId,
 }
 
+impl CreateBookAcquisitionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
+}
+
 /// Append a new entry to a book's versioned cataloguing history.
 /// A new entry is appended on every `AddBook` / `UpdateBook`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -600,6 +741,14 @@ pub struct AppendBookCatalogEntryCommand {
     pub id: BookCatalogEntryId,
     /// The owning school (derived from `id.school_id()`).
     pub school_id: SchoolId,
+}
+
+impl AppendBookCatalogEntryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
 
 /// Add a free-text administrative note about a member (overdue
@@ -612,6 +761,14 @@ pub struct CreateLibraryMemberNoteCommand {
     pub school_id: SchoolId,
 }
 
+impl CreateLibraryMemberNoteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
+}
+
 /// Delete a library member note (admin correction).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteLibraryMemberNoteCommand {
@@ -619,4 +776,12 @@ pub struct DeleteLibraryMemberNoteCommand {
     pub id: LibraryMemberNoteId,
     /// The owning school (derived from `id.school_id()`).
     pub school_id: SchoolId,
+}
+
+impl DeleteLibraryMemberNoteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::LibraryConfigure]
+    }
 }
