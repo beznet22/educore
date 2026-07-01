@@ -22,6 +22,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use educore_core::ids::SchoolId;
+use educore_rbac::value_objects::Capability;
 use educore_core::tenant::TenantContext;
 
 use crate::value_objects::{
@@ -182,6 +183,14 @@ pub struct UpdateStudentProfileCommand {
     pub custom_fields: Option<std::collections::BTreeMap<String, String>>,
 }
 
+
+impl UpdateStudentProfileCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
 /// Command: suspend a student.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SuspendStudentCommand {
@@ -197,6 +206,14 @@ pub struct SuspendStudentCommand {
     pub expected_return: Option<NaiveDate>,
 }
 
+
+impl SuspendStudentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
 /// Command: reinstate a suspended student.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReinstateStudentCommand {
@@ -210,6 +227,14 @@ pub struct ReinstateStudentCommand {
     pub note: Option<String>,
 }
 
+
+impl ReinstateStudentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
 /// Command: withdraw a student.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WithdrawStudentCommand {
@@ -225,6 +250,14 @@ pub struct WithdrawStudentCommand {
     pub note: Option<String>,
 }
 
+
+impl WithdrawStudentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
 /// Command: transfer a student to another school.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransferStudentCommand {
@@ -240,6 +273,14 @@ pub struct TransferStudentCommand {
     pub effective_from: NaiveDate,
 }
 
+
+impl TransferStudentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
 /// Command: promote a student to the next academic year.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PromoteStudentCommand {
@@ -261,6 +302,14 @@ pub struct PromoteStudentCommand {
     pub result_status: ResultStatus,
 }
 
+
+impl PromoteStudentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
 /// Command: graduate a student.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GraduateStudentCommand {
@@ -274,6 +323,14 @@ pub struct GraduateStudentCommand {
     pub graduation_date: NaiveDate,
 }
 
+
+impl GraduateStudentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
 // =============================================================================
 // Class commands (4)
 // =============================================================================
@@ -291,6 +348,14 @@ pub struct CreateClassCommand {
     pub pass_mark: f32,
 }
 
+
+impl CreateClassCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassCreate]
+    }
+}
 /// Command: update a class's mutable fields.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateClassCommand {
@@ -304,6 +369,14 @@ pub struct UpdateClassCommand {
     pub pass_mark: Option<f32>,
 }
 
+
+impl UpdateClassCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassUpdate]
+    }
+}
 /// Command: set a class's optional-subject GPA threshold.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetOptionalSubjectGpaThresholdCommand {
@@ -315,6 +388,14 @@ pub struct SetOptionalSubjectGpaThresholdCommand {
     pub threshold: f32,
 }
 
+
+impl SetOptionalSubjectGpaThresholdCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassUpdate]
+    }
+}
 /// Command: delete a class (soft-delete; existing references remain).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteClassCommand {
@@ -324,6 +405,14 @@ pub struct DeleteClassCommand {
     pub class_id: ClassId,
 }
 
+
+impl DeleteClassCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassDelete]
+    }
+}
 // =============================================================================
 // Section commands (3)
 // =============================================================================
@@ -339,6 +428,14 @@ pub struct CreateSectionCommand {
     pub section_name: String,
 }
 
+
+impl CreateSectionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassCreate]
+    }
+}
 /// Command: update a section's mutable fields.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateSectionCommand {
@@ -350,6 +447,14 @@ pub struct UpdateSectionCommand {
     pub section_name: Option<String>,
 }
 
+
+impl UpdateSectionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassUpdate]
+    }
+}
 /// Command: delete a section (soft-delete; existing references remain).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteSectionCommand {
@@ -359,6 +464,14 @@ pub struct DeleteSectionCommand {
     pub section_id: SectionId,
 }
 
+
+impl DeleteSectionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassDelete]
+    }
+}
 // =============================================================================
 // Subject commands (3)
 // =============================================================================
@@ -380,6 +493,14 @@ pub struct CreateSubjectCommand {
     pub pass_mark: f32,
 }
 
+
+impl CreateSubjectCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassCreate]
+    }
+}
 /// Command: update a subject's mutable fields.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateSubjectCommand {
@@ -395,6 +516,14 @@ pub struct UpdateSubjectCommand {
     pub pass_mark: Option<f32>,
 }
 
+
+impl UpdateSubjectCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassUpdate]
+    }
+}
 /// Command: delete a subject.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteSubjectCommand {
@@ -404,6 +533,14 @@ pub struct DeleteSubjectCommand {
     pub subject_id: SubjectId,
 }
 
+
+impl DeleteSubjectCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassDelete]
+    }
+}
 // =============================================================================
 // AcademicYear commands (5)
 // =============================================================================
@@ -450,6 +587,14 @@ pub struct UpdateAcademicYearDatesCommand {
     pub ending_date: NaiveDate,
 }
 
+
+impl UpdateAcademicYearDatesCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicAcademicYear]
+    }
+}
 /// Command: set a new current academic year.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SetCurrentAcademicYearCommand {
@@ -459,6 +604,14 @@ pub struct SetCurrentAcademicYearCommand {
     pub academic_year_id: AcademicYearId,
 }
 
+
+impl SetCurrentAcademicYearCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicAcademicYear]
+    }
+}
 /// Command: close an academic year (make it read-only).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CloseAcademicYearCommand {
@@ -468,6 +621,14 @@ pub struct CloseAcademicYearCommand {
     pub academic_year_id: AcademicYearId,
 }
 
+
+impl CloseAcademicYearCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicAcademicYear]
+    }
+}
 // =============================================================================
 // Placeholder commands for the remaining 14 academic aggregates.
 //
@@ -857,6 +1018,14 @@ pub struct AssignStudentToSectionCommand {
     pub section_id: SectionId,
 }
 
+
+impl AssignStudentToSectionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
 /// Command: change a student's category.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChangeStudentCategoryCommand {
@@ -870,6 +1039,14 @@ pub struct ChangeStudentCategoryCommand {
     pub effective_from: NaiveDate,
 }
 
+
+impl ChangeStudentCategoryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
 /// Command: assign an optional subject to a student.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AssignOptionalSubjectCommand {
@@ -883,6 +1060,14 @@ pub struct AssignOptionalSubjectCommand {
     pub academic_year_id: AcademicYearId,
 }
 
+
+impl AssignOptionalSubjectCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
 /// Command: upload a student document.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UploadStudentDocumentCommand {
@@ -892,6 +1077,14 @@ pub struct UploadStudentDocumentCommand {
     pub student_id: StudentId,
 }
 
+
+impl UploadStudentDocumentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentDocumentUpload]
+    }
+}
 /// Command: assign a class teacher to a class section.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AssignClassTeacherCommand {
@@ -901,6 +1094,14 @@ pub struct AssignClassTeacherCommand {
     pub class_section_id: ClassSectionId,
 }
 
+
+impl AssignClassTeacherCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassSubject]
+    }
+}
 /// Command: assign a subject teacher to a class section.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AssignSubjectTeacherCommand {
@@ -912,6 +1113,14 @@ pub struct AssignSubjectTeacherCommand {
     pub subject_id: SubjectId,
 }
 
+
+impl AssignSubjectTeacherCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassSubject]
+    }
+}
 /// Command: assign a classroom to a class section.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AssignClassRoomCommand {
@@ -921,6 +1130,14 @@ pub struct AssignClassRoomCommand {
     pub class_section_id: ClassSectionId,
 }
 
+
+impl AssignClassRoomCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassSubject]
+    }
+}
 /// Command: assign a subject to a class.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AssignSubjectToClassCommand {
@@ -932,6 +1149,14 @@ pub struct AssignSubjectToClassCommand {
     pub subject_id: SubjectId,
 }
 
+
+impl AssignSubjectToClassCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassSubject]
+    }
+}
 /// Command: submit homework for a student.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SubmitHomeworkCommand {
@@ -943,6 +1168,14 @@ pub struct SubmitHomeworkCommand {
     pub student_id: StudentId,
 }
 
+
+impl SubmitHomeworkCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentHomeworkSubmit]
+    }
+}
 /// Command: evaluate a student's homework submission.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EvaluateHomeworkCommand {
@@ -954,6 +1187,14 @@ pub struct EvaluateHomeworkCommand {
     pub student_id: StudentId,
 }
 
+
+impl EvaluateHomeworkCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentHomeworkEvaluate]
+    }
+}
 /// Command: add a student to a student group.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AddStudentToGroupCommand {
@@ -965,6 +1206,14 @@ pub struct AddStudentToGroupCommand {
     pub student_id: StudentId,
 }
 
+
+impl AddStudentToGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
 /// Command: register a new admission query (inquiry).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RegisterAdmissionQueryCommand {
@@ -976,6 +1225,14 @@ pub struct RegisterAdmissionQueryCommand {
     pub date: NaiveDate,
 }
 
+
+impl RegisterAdmissionQueryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
