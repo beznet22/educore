@@ -107,7 +107,8 @@ pub mod prelude {
     };
     pub use crate::services::{
         approve_leave, create_department, create_designation, create_leave_type, hire_staff,
-        request_leave, run_payroll, InMemoryPayrollPolicy, LeaveAccrualService, PayrollPolicy,
+        request_leave, run_payroll, InMemoryPayrollPolicy, LeaveAccrualChecker,
+        LeaveAccrualService, PayrollPolicy, PayrollUniquenessChecker,
         ReferenceDataUniquenessChecker, StaffUniquenessChecker,
     };
     pub use crate::value_objects::{

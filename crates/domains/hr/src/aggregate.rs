@@ -32,6 +32,7 @@ use uuid::Uuid;
 
 use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
 use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
+use educore_core::error::{DomainError, Result};
 
 use educore_rbac::ids::RoleId;
 
@@ -394,6 +395,11 @@ pub struct LeaveDefine {
 }
 
 impl LeaveDefine {
+    /// Constructs a fresh [`LeaveDefine`] aggregate.
+    ///
+    /// **Invariant (LeaveDefine#3):** `days <= total_days`.
+    /// The constructor asserts this; a violation yields
+    /// [`DomainError::validation`] before any state is built.
     #[allow(clippy::too_many_arguments)]
     pub fn fresh(
         id: LeaveDefineId,
@@ -406,8 +412,13 @@ impl LeaveDefine {
         created_by: UserId,
         created_at: Timestamp,
         correlation_id: CorrelationId,
-    ) -> Self {
-        Self {
+    ) -> Result<Self> {
+        if days > total_days {
+            return Err(DomainError::validation(format!(
+                "leave define days ({days}) must be <= total_days ({total_days})"
+            )));
+        }
+        Ok(Self {
             school_id: id.school_id(),
             id,
             role_id,
@@ -426,7 +437,7 @@ impl LeaveDefine {
             active_status: ActiveStatus::Active,
             last_event_id: None,
             correlation_id,
-        }
+        })
     }
 }
 
