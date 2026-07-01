@@ -18,8 +18,11 @@
 //! lands in a follow-up batch once the TenantContext-bearing
 //! command struct is migrated.
 //!
-//! `publish_online_exam` remains a stub
-//! (`DomainError::not_supported`) pending its own batch.
+//! `publish_online_exam` is now a **real implementation**
+//! (Wave 29 batch 6) that enforces the typed-id
+//! school-anchoring invariant and emits the
+//! `OnlineExamCreated` event stamped with a fresh
+//! `event_id` (UUIDv7) and the command's school anchor.
 
 #![allow(
     clippy::unwrap_used,
@@ -34,6 +37,7 @@ use educore_assessment::services::{create_online_exam, publish_online_exam};
 use educore_assessment::value_objects::OnlineExamId;
 use educore_core::clock::{IdGenerator, SystemIdGen};
 use educore_core::error::DomainError;
+use educore_core::ids::Identifier as _;
 use educore_core::tenant::{TenantContext, UserType};
 
 // =============================================================================
@@ -99,36 +103,54 @@ async fn create_online_exam_rejects_cross_tenant_id() {
 }
 
 // =============================================================================
-// Update path: current contract — stub returns NotSupported
+// Update path: real implementation
 // =============================================================================
 
-/// Pins the **current** contract of `publish_online_exam` —
-/// the natural "update" / state-transition handler on the
-/// `OnlineExam` aggregate. The handler is currently a stub
-/// that returns `DomainError::NotSupported("TODO:
-/// publish_online_exam")` before any state transition or
-/// event minting happens. Once the real implementation
-/// lands, this test will be updated to assert that:
-///
-/// - The returned event is `OnlineExamCreated` (re-emitted
-///   with the publish transition; see events.rs contract),
-/// - The aggregate's `IsTaken` flag flips to `true` and
-///   `version` increments.
+/// Pins the **happy path** of `publish_online_exam` (the
+/// natural "update" / state-transition handler on the
+/// `OnlineExam` aggregate). A same-school typed id is
+/// accepted and the returned event is `OnlineExamCreated`
+/// carrying the command's school and the typed id.
 #[tokio::test]
-async fn online_exam_publish_currently_returns_not_supported() {
+async fn online_exam_publish_happy_path() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
 
+    let id = online_exam_id(&g, school);
     let cmd = educore_assessment::commands::PublishOnlineExamCommand {
         school_id: school,
-        online_exam_id: online_exam_id(&g, school),
+        online_exam_id: id,
+    };
+
+    let event = publish_online_exam(cmd)
+        .await
+        .expect("real handler accepts well-formed input");
+    assert_eq!(event.school_id, school, "event school echoes command");
+    assert_eq!(event.online_exam_id, id, "event id echoes command");
+    // Version-7 event id must be a valid UUID.
+    let _: uuid::Uuid = event.event_id.as_uuid();
+}
+
+/// Pins the **cross-tenant rejection** contract of
+/// `publish_online_exam`: a typed id from a different
+/// school is rejected with `DomainError::Validation`.
+#[tokio::test]
+async fn online_exam_publish_cross_tenant_rejected() {
+    let (tenant, g) = admin_context();
+    let actor_school = tenant.school_id;
+    let other_school = g.next_school_id();
+
+    let foreign_id = online_exam_id(&g, other_school);
+    let cmd = educore_assessment::commands::PublishOnlineExamCommand {
+        school_id: actor_school,
+        online_exam_id: foreign_id,
     };
 
     let err = publish_online_exam(cmd)
         .await
-        .expect_err("publish_online_exam is currently a stub");
+        .expect_err("cross-tenant id must be rejected");
     assert!(
-        matches!(err, DomainError::NotSupported(_)),
-        "expected NotSupported (current stub contract), got {err:?}"
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
     );
 }
