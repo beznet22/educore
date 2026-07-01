@@ -16,6 +16,7 @@
 
 use educore_academic::{AcademicYearId, ClassId, SectionId};
 use educore_core::tenant::TenantContext;
+use educore_rbac::value_objects::Capability;
 use educore_core::value_objects::Timestamp;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -599,6 +600,14 @@ pub struct UpdateNewsCommand {
     pub news_id: crate::value_objects::NewsId,
 }
 
+
+impl UpdateNewsCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNewsUpdate]
+    }
+}
 /// Command: publish a [`News`](crate::aggregate::News).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PublishNewsCommand {
@@ -608,6 +617,14 @@ pub struct PublishNewsCommand {
     pub news_id: crate::value_objects::NewsId,
 }
 
+
+impl PublishNewsCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNewsPublish]
+    }
+}
 /// Command: unpublish a [`News`](crate::aggregate::News).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UnpublishNewsCommand {
@@ -617,6 +634,14 @@ pub struct UnpublishNewsCommand {
     pub news_id: crate::value_objects::NewsId,
 }
 
+
+impl UnpublishNewsCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNewsUnpublish]
+    }
+}
 /// Command: delete a [`News`](crate::aggregate::News).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteNewsCommand {
@@ -626,6 +651,14 @@ pub struct DeleteNewsCommand {
     pub news_id: crate::value_objects::NewsId,
 }
 
+
+impl DeleteNewsCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNewsDelete]
+    }
+}
 /// Command: comment on a [`News`](crate::aggregate::News).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CommentOnNewsCommand {
@@ -635,6 +668,14 @@ pub struct CommentOnNewsCommand {
     pub news_id: crate::value_objects::NewsId,
 }
 
+
+impl CommentOnNewsCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageRead]
+    }
+}
 /// Command: moderate a [`NewsComment`](crate::aggregate::NewsComment).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ModerateNewsCommentCommand {
@@ -644,6 +685,14 @@ pub struct ModerateNewsCommentCommand {
     pub comment_id: crate::value_objects::NewsCommentId,
 }
 
+
+impl ModerateNewsCommentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNewsCommentModerate]
+    }
+}
 /// Command: delete a [`NewsComment`](crate::aggregate::NewsComment).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteNewsCommentCommand {
@@ -653,6 +702,14 @@ pub struct DeleteNewsCommentCommand {
     pub comment_id: crate::value_objects::NewsCommentId,
 }
 
+
+impl DeleteNewsCommentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNewsCommentDelete]
+    }
+}
 /// Command: create a [`NoticeBoard`](crate::aggregate::NoticeBoard).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreateNoticeBoardCommand {
@@ -660,6 +717,14 @@ pub struct CreateNoticeBoardCommand {
     pub tenant: TenantContext,
 }
 
+
+impl CreateNoticeBoardCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNoticeBoardCreate]
+    }
+}
 /// Command: publish a [`NoticeBoard`](crate::aggregate::NoticeBoard).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PublishNoticeBoardCommand {
@@ -669,6 +734,14 @@ pub struct PublishNoticeBoardCommand {
     pub notice_board_id: crate::value_objects::NoticeBoardId,
 }
 
+
+impl PublishNoticeBoardCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNoticeBoardPublish]
+    }
+}
 /// Command: update a [`NoticeBoard`](crate::aggregate::NoticeBoard).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateNoticeBoardCommand {
@@ -678,6 +751,14 @@ pub struct UpdateNoticeBoardCommand {
     pub notice_board_id: crate::value_objects::NoticeBoardId,
 }
 
+
+impl UpdateNoticeBoardCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNoticeBoardUpdate]
+    }
+}
 /// Command: unpublish a [`NoticeBoard`](crate::aggregate::NoticeBoard).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UnpublishNoticeBoardCommand {
@@ -687,6 +768,14 @@ pub struct UnpublishNoticeBoardCommand {
     pub notice_board_id: crate::value_objects::NoticeBoardId,
 }
 
+
+impl UnpublishNoticeBoardCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNoticeBoardUnpublish]
+    }
+}
 /// Command: delete a [`NoticeBoard`](crate::aggregate::NoticeBoard).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteNoticeBoardCommand {
@@ -696,6 +785,14 @@ pub struct DeleteNoticeBoardCommand {
     pub notice_board_id: crate::value_objects::NoticeBoardId,
 }
 
+
+impl DeleteNoticeBoardCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNoticeBoardDelete]
+    }
+}
 /// Command: update a [`Testimonial`](crate::aggregate::Testimonial).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateTestimonialCommand {
@@ -705,6 +802,14 @@ pub struct UpdateTestimonialCommand {
     pub testimonial_id: crate::value_objects::TestimonialId,
 }
 
+
+impl UpdateTestimonialCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsTestimonialUpdate]
+    }
+}
 /// Command: delete a [`Testimonial`](crate::aggregate::Testimonial).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteTestimonialCommand {
@@ -714,6 +819,14 @@ pub struct DeleteTestimonialCommand {
     pub testimonial_id: crate::value_objects::TestimonialId,
 }
 
+
+impl DeleteTestimonialCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsTestimonialDelete]
+    }
+}
 /// Command: update a [`HomeSlider`](crate::aggregate::HomeSlider).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateHomeSliderCommand {
@@ -723,6 +836,14 @@ pub struct UpdateHomeSliderCommand {
     pub home_slider_id: crate::value_objects::HomeSliderId,
 }
 
+
+impl UpdateHomeSliderCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsHomeSliderUpdate]
+    }
+}
 /// Command: delete a [`HomeSlider`](crate::aggregate::HomeSlider).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteHomeSliderCommand {
@@ -732,6 +853,14 @@ pub struct DeleteHomeSliderCommand {
     pub home_slider_id: crate::value_objects::HomeSliderId,
 }
 
+
+impl DeleteHomeSliderCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsHomeSliderDelete]
+    }
+}
 /// Command: update a [`Content`](crate::aggregate::Content).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateContentCommand {
@@ -741,6 +870,14 @@ pub struct UpdateContentCommand {
     pub content_id: crate::value_objects::ContentId,
 }
 
+
+impl UpdateContentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsContentUpdate]
+    }
+}
 /// Command: delete a [`Content`](crate::aggregate::Content).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteContentCommand {
@@ -750,6 +887,14 @@ pub struct DeleteContentCommand {
     pub content_id: crate::value_objects::ContentId,
 }
 
+
+impl DeleteContentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsContentDelete]
+    }
+}
 /// Command: dispatch a [`ContentShareList`](crate::aggregate::ContentShareList).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DispatchContentShareListCommand {
@@ -759,6 +904,14 @@ pub struct DispatchContentShareListCommand {
     pub share_list_id: crate::value_objects::ContentShareListId,
 }
 
+
+impl DispatchContentShareListCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageRead]
+    }
+}
 /// Command: cancel a [`ContentShareList`](crate::aggregate::ContentShareList).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CancelContentShareListCommand {
@@ -768,6 +921,14 @@ pub struct CancelContentShareListCommand {
     pub share_list_id: crate::value_objects::ContentShareListId,
 }
 
+
+impl CancelContentShareListCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsContentShareListCancel]
+    }
+}
 /// Command: delete a [`ContentShareList`](crate::aggregate::ContentShareList).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteContentShareListCommand {
@@ -777,6 +938,14 @@ pub struct DeleteContentShareListCommand {
     pub share_list_id: crate::value_objects::ContentShareListId,
 }
 
+
+impl DeleteContentShareListCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsContentShareListDelete]
+    }
+}
 /// Command: create a [`TeacherUploadContent`](crate::aggregate::TeacherUploadContent).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreateTeacherUploadContentCommand {
@@ -784,6 +953,14 @@ pub struct CreateTeacherUploadContentCommand {
     pub tenant: TenantContext,
 }
 
+
+impl CreateTeacherUploadContentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsContentCreate]
+    }
+}
 /// Command: update a [`TeacherUploadContent`](crate::aggregate::TeacherUploadContent).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateTeacherUploadContentCommand {
@@ -793,6 +970,14 @@ pub struct UpdateTeacherUploadContentCommand {
     pub teacher_upload_content_id: crate::value_objects::TeacherUploadContentId,
 }
 
+
+impl UpdateTeacherUploadContentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsContentUpdate]
+    }
+}
 /// Command: delete a [`TeacherUploadContent`](crate::aggregate::TeacherUploadContent).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteTeacherUploadContentCommand {
@@ -802,6 +987,14 @@ pub struct DeleteTeacherUploadContentCommand {
     pub teacher_upload_content_id: crate::value_objects::TeacherUploadContentId,
 }
 
+
+impl DeleteTeacherUploadContentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsContentDelete]
+    }
+}
 /// Command: create a [`UploadContent`](crate::aggregate::UploadContent).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreateUploadContentCommand {
@@ -809,6 +1002,14 @@ pub struct CreateUploadContentCommand {
     pub tenant: TenantContext,
 }
 
+
+impl CreateUploadContentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsContentCreate]
+    }
+}
 /// Command: update a [`UploadContent`](crate::aggregate::UploadContent).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateUploadContentCommand {
@@ -818,6 +1019,14 @@ pub struct UpdateUploadContentCommand {
     pub upload_content_id: crate::value_objects::UploadContentId,
 }
 
+
+impl UpdateUploadContentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsContentUpdate]
+    }
+}
 /// Command: delete a [`UploadContent`](crate::aggregate::UploadContent).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteUploadContentCommand {
@@ -827,6 +1036,14 @@ pub struct DeleteUploadContentCommand {
     pub upload_content_id: crate::value_objects::UploadContentId,
 }
 
+
+impl DeleteUploadContentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsContentDelete]
+    }
+}
 /// Command: create an [`AboutPage`](crate::aggregate::AboutPage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreateAboutPageCommand {
@@ -834,6 +1051,14 @@ pub struct CreateAboutPageCommand {
     pub tenant: TenantContext,
 }
 
+
+impl CreateAboutPageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageCreate]
+    }
+}
 /// Command: update an [`AboutPage`](crate::aggregate::AboutPage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateAboutPageCommand {
@@ -843,6 +1068,14 @@ pub struct UpdateAboutPageCommand {
     pub about_page_id: crate::value_objects::AboutPageId,
 }
 
+
+impl UpdateAboutPageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageUpdate]
+    }
+}
 /// Command: delete an [`AboutPage`](crate::aggregate::AboutPage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteAboutPageCommand {
@@ -852,6 +1085,14 @@ pub struct DeleteAboutPageCommand {
     pub about_page_id: crate::value_objects::AboutPageId,
 }
 
+
+impl DeleteAboutPageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageDelete]
+    }
+}
 /// Command: create a [`ContactPage`](crate::aggregate::ContactPage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreateContactPageCommand {
@@ -859,6 +1100,14 @@ pub struct CreateContactPageCommand {
     pub tenant: TenantContext,
 }
 
+
+impl CreateContactPageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageCreate]
+    }
+}
 /// Command: update a [`ContactPage`](crate::aggregate::ContactPage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateContactPageCommand {
@@ -868,6 +1117,14 @@ pub struct UpdateContactPageCommand {
     pub contact_page_id: crate::value_objects::ContactPageId,
 }
 
+
+impl UpdateContactPageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageUpdate]
+    }
+}
 /// Command: delete a [`ContactPage`](crate::aggregate::ContactPage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteContactPageCommand {
@@ -877,6 +1134,14 @@ pub struct DeleteContactPageCommand {
     pub contact_page_id: crate::value_objects::ContactPageId,
 }
 
+
+impl DeleteContactPageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageDelete]
+    }
+}
 /// Command: create a [`CoursePage`](crate::aggregate::CoursePage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreateCoursePageCommand {
@@ -884,6 +1149,14 @@ pub struct CreateCoursePageCommand {
     pub tenant: TenantContext,
 }
 
+
+impl CreateCoursePageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageCreate]
+    }
+}
 /// Command: update a [`CoursePage`](crate::aggregate::CoursePage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateCoursePageCommand {
@@ -893,6 +1166,14 @@ pub struct UpdateCoursePageCommand {
     pub course_page_id: crate::value_objects::CoursePageId,
 }
 
+
+impl UpdateCoursePageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageUpdate]
+    }
+}
 /// Command: delete a [`CoursePage`](crate::aggregate::CoursePage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteCoursePageCommand {
@@ -902,6 +1183,14 @@ pub struct DeleteCoursePageCommand {
     pub course_page_id: crate::value_objects::CoursePageId,
 }
 
+
+impl DeleteCoursePageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageDelete]
+    }
+}
 /// Command: create a [`FrontendPage`](crate::aggregate::FrontendPage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreateFrontendPageCommand {
@@ -909,6 +1198,14 @@ pub struct CreateFrontendPageCommand {
     pub tenant: TenantContext,
 }
 
+
+impl CreateFrontendPageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageCreate]
+    }
+}
 /// Command: update a [`FrontendPage`](crate::aggregate::FrontendPage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateFrontendPageCommand {
@@ -918,6 +1215,14 @@ pub struct UpdateFrontendPageCommand {
     pub frontend_page_id: crate::value_objects::FrontendPageId,
 }
 
+
+impl UpdateFrontendPageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageUpdate]
+    }
+}
 /// Command: delete a [`FrontendPage`](crate::aggregate::FrontendPage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteFrontendPageCommand {
@@ -927,6 +1232,14 @@ pub struct DeleteFrontendPageCommand {
     pub frontend_page_id: crate::value_objects::FrontendPageId,
 }
 
+
+impl DeleteFrontendPageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsPageDelete]
+    }
+}
 /// Command: create a [`NewsPage`](crate::aggregate::NewsPage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreateNewsPageCommand {
@@ -934,6 +1247,14 @@ pub struct CreateNewsPageCommand {
     pub tenant: TenantContext,
 }
 
+
+impl CreateNewsPageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNewsPageCreate]
+    }
+}
 /// Command: update a [`NewsPage`](crate::aggregate::NewsPage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateNewsPageCommand {
@@ -943,6 +1264,14 @@ pub struct UpdateNewsPageCommand {
     pub news_page_id: crate::value_objects::NewsPageId,
 }
 
+
+impl UpdateNewsPageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNewsPageUpdate]
+    }
+}
 /// Command: delete a [`NewsPage`](crate::aggregate::NewsPage).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteNewsPageCommand {
@@ -952,6 +1281,14 @@ pub struct DeleteNewsPageCommand {
     pub news_page_id: crate::value_objects::NewsPageId,
 }
 
+
+impl DeleteNewsPageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNewsPageDelete]
+    }
+}
 /// Command: create a [`NewsCategory`](crate::aggregate::NewsCategory).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreateNewsCategoryCommand {
@@ -959,6 +1296,14 @@ pub struct CreateNewsCategoryCommand {
     pub tenant: TenantContext,
 }
 
+
+impl CreateNewsCategoryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNewsCategoryCreate]
+    }
+}
 /// Command: update a [`NewsCategory`](crate::aggregate::NewsCategory).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateNewsCategoryCommand {
@@ -968,6 +1313,14 @@ pub struct UpdateNewsCategoryCommand {
     pub news_category_id: crate::value_objects::NewsCategoryId,
 }
 
+
+impl UpdateNewsCategoryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNewsCategoryUpdate]
+    }
+}
 /// Command: delete a [`NewsCategory`](crate::aggregate::NewsCategory).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteNewsCategoryCommand {
@@ -977,6 +1330,14 @@ pub struct DeleteNewsCategoryCommand {
     pub news_category_id: crate::value_objects::NewsCategoryId,
 }
 
+
+impl DeleteNewsCategoryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsNewsCategoryDelete]
+    }
+}
 /// Command: create a [`ContentType`](crate::aggregate::ContentType).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreateContentTypeCommand {
@@ -984,6 +1345,14 @@ pub struct CreateContentTypeCommand {
     pub tenant: TenantContext,
 }
 
+
+impl CreateContentTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsContentTypeCreate]
+    }
+}
 /// Command: update a [`ContentType`](crate::aggregate::ContentType).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateContentTypeCommand {
@@ -993,6 +1362,14 @@ pub struct UpdateContentTypeCommand {
     pub content_type_id: crate::value_objects::ContentTypeId,
 }
 
+
+impl UpdateContentTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsContentTypeUpdate]
+    }
+}
 /// Command: delete a [`ContentType`](crate::aggregate::ContentType).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteContentTypeCommand {
@@ -1002,6 +1379,14 @@ pub struct DeleteContentTypeCommand {
     pub content_type_id: crate::value_objects::ContentTypeId,
 }
 
+
+impl DeleteContentTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsContentTypeDelete]
+    }
+}
 /// Command: create a [`SpeechSlider`](crate::aggregate::SpeechSlider).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreateSpeechSliderCommand {
@@ -1009,6 +1394,14 @@ pub struct CreateSpeechSliderCommand {
     pub tenant: TenantContext,
 }
 
+
+impl CreateSpeechSliderCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsSpeechSliderCreate]
+    }
+}
 /// Command: update a [`SpeechSlider`](crate::aggregate::SpeechSlider).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateSpeechSliderCommand {
@@ -1018,6 +1411,14 @@ pub struct UpdateSpeechSliderCommand {
     pub speech_slider_id: crate::value_objects::SpeechSliderId,
 }
 
+
+impl UpdateSpeechSliderCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CmsSpeechSliderUpdate]
+    }
+}
 /// Command: delete a [`SpeechSlider`](crate::aggregate::SpeechSlider).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteSpeechSliderCommand {
