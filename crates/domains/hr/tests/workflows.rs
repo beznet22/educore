@@ -34,10 +34,48 @@ impl StaffUniquenessChecker for StubUniqueness {
     fn email_exists(&self, _: educore_core::ids::SchoolId, _: &str) -> bool {
         false
     }
+    fn mobile_exists(&self, _: educore_core::ids::SchoolId, _: &str) -> bool {
+        false
+    }
     fn staff_no_exists(&self, _: educore_core::ids::SchoolId, _: u32) -> bool {
         false
     }
     fn employee_id_exists(&self, _: educore_core::ids::SchoolId, _: &str) -> bool {
+        false
+    }
+}
+
+/// Stub leave-accrual checker (no LeaveDefine configured =>
+/// no entitlement check, no approved-request history).
+struct StubLeaveAccrual;
+impl LeaveAccrualChecker for StubLeaveAccrual {
+    fn leave_define_for(
+        &self,
+        _: educore_core::ids::SchoolId,
+        _: StaffId,
+        _: LeaveTypeId,
+    ) -> Option<LeaveDefine> {
+        None
+    }
+    fn approved_requests_for(
+        &self,
+        _: educore_core::ids::SchoolId,
+        _: StaffId,
+    ) -> Vec<LeaveRequest> {
+        Vec::new()
+    }
+}
+
+/// Stub payroll-uniqueness checker (no prior payroll => ok).
+struct StubPayrollUniqueness;
+impl PayrollUniquenessChecker for StubPayrollUniqueness {
+    fn payroll_exists(
+        &self,
+        _: educore_core::ids::SchoolId,
+        _: StaffId,
+        _: u8,
+        _: u16,
+    ) -> bool {
         false
     }
 }
@@ -113,7 +151,7 @@ fn request_leave_happy_path() {
         note: None,
         file_reference: None,
     };
-    let (lr, event) = request_leave(cmd, &clock, &ids).unwrap();
+    let (lr, event) = request_leave(cmd, &clock, &ids, &StubLeaveAccrual).unwrap();
     assert_eq!(lr.school_id, school);
     assert_eq!(lr.approve_status, LeaveStatus::Pending);
     assert_eq!(event.staff_id, lr.staff_id);
@@ -146,7 +184,7 @@ fn generate_payroll_happy_path() {
         bank_id: Some(g.next_uuid()),
         note: None,
     };
-    let (payroll, event) = run_payroll(cmd, &clock, &ids, &policy).unwrap();
+    let (payroll, event) = run_payroll(cmd, &clock, &ids, &policy, &StubPayrollUniqueness).unwrap();
     assert_eq!(payroll.school_id, school);
     assert_eq!(payroll.payroll_status, PayrollStatus::Generated);
     assert_eq!(payroll.basic_salary, 50_000.0);

@@ -144,7 +144,7 @@ async fn hr_integration_sqlite_hire_approve_payroll() {
         note: None,
         file_reference: None,
     };
-    let (mut lr, _leave_req_event) = request_leave(req_cmd, &clock, &ids).expect("request_leave");
+    let (mut lr, _leave_req_event) = request_leave(req_cmd, &clock, &ids, &StubLeaveAccrual).expect("request_leave");
     assert!(lr.is_pending());
 
     // Approve leave (use a different actor to avoid self-approval rejection).
@@ -171,7 +171,7 @@ async fn hr_integration_sqlite_hire_approve_payroll() {
     };
     let policy = InMemoryPayrollPolicy::default();
     let (payroll, payroll_event) =
-        run_payroll(payroll_cmd, &clock, &ids, &policy).expect("run_payroll");
+        run_payroll(payroll_cmd, &clock, &ids, &policy, &StubPayrollUniqueness).expect("run_payroll");
     assert_eq!(payroll.tax, 10_000.0);
     assert_eq!(payroll.net_salary, 90_000.0);
     assert_eq!(payroll_event.net_salary, 90_000.0);
@@ -370,6 +370,9 @@ impl StaffUniquenessChecker for StubUniqueness {
     fn email_exists(&self, _: SchoolId, _: &str) -> bool {
         false
     }
+    fn mobile_exists(&self, _: SchoolId, _: &str) -> bool {
+        false
+    }
     fn staff_no_exists(&self, _: SchoolId, _: u32) -> bool {
         false
     }
@@ -387,6 +390,28 @@ impl ReferenceDataUniquenessChecker for StubRefUniqueness {
         false
     }
     fn leave_type_name_exists(&self, _: SchoolId, _: &str) -> bool {
+        false
+    }
+}
+
+struct StubLeaveAccrual;
+impl LeaveAccrualChecker for StubLeaveAccrual {
+    fn leave_define_for(
+        &self,
+        _: SchoolId,
+        _: StaffId,
+        _: LeaveTypeId,
+    ) -> Option<LeaveDefine> {
+        None
+    }
+    fn approved_requests_for(&self, _: SchoolId, _: StaffId) -> Vec<LeaveRequest> {
+        Vec::new()
+    }
+}
+
+struct StubPayrollUniqueness;
+impl PayrollUniquenessChecker for StubPayrollUniqueness {
+    fn payroll_exists(&self, _: SchoolId, _: StaffId, _: u8, _: u16) -> bool {
         false
     }
 }

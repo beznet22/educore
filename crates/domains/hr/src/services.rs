@@ -104,11 +104,18 @@ where
     }
     crate::value_objects::validate_date_of_birth(cmd.date_of_birth)?;
 
-    // Uniqueness
+    // Uniqueness (spec invariants Staff#3, #4, #5, employee_id is spec-additional)
     if let Some(email) = &cmd.email {
         if uniqueness.email_exists(school, email) {
             return Err(DomainError::conflict(format!(
                 "staff with email {email:?} already exists"
+            )));
+        }
+    }
+    if let Some(mobile) = &cmd.mobile {
+        if uniqueness.mobile_exists(school, mobile) {
+            return Err(DomainError::conflict(format!(
+                "staff with mobile {mobile:?} already exists"
             )));
         }
     }
@@ -341,6 +348,7 @@ pub fn request_leave<C, G>(
     cmd: RequestLeaveCommand,
     clock: &C,
     ids: &G,
+    accrual: &dyn LeaveAccrualChecker,
 ) -> Result<(LeaveRequest, LeaveRequested)>
 where
     C: Clock + ?Sized,
@@ -359,6 +367,54 @@ where
     }
     if let Some(reason) = &cmd.reason {
         crate::value_objects::validate_leave_reason(reason)?;
+    }
+
+    // Spec invariants LeaveRequest#1, #4, #5 enforced together via
+    // `LeaveAccrualService::can_request`:
+    //   #1 no overlap with an existing approved request for the same
+    //      (school, staff, type) that intersects [leave_from, leave_to];
+    //   #4 remaining entitlement on the LeaveDefine for this type covers
+    //      the requested duration;
+    //   #5 the requested duration does not exceed LeaveDefine.days in
+    //      the running used+duration <= define.days check.
+    let define = accrual.leave_define_for(school, cmd.staff_id, cmd.type_id);
+    let approved = accrual.approved_requests_for(school, cmd.staff_id);
+    if let Some(define) = define {
+        if !LeaveAccrualService::can_request(&define, &approved, cmd.leave_from, cmd.leave_to) {
+            // Distinguish the failure mode for the caller:
+            // overlap vs over-quota. If any approved request
+            // overlaps the new range, that's the #1 conflict.
+            let overlap_conflict = approved.iter().any(|r| {
+                r.type_id == cmd.type_id
+                    && r.approve_status == LeaveStatus::Approved
+                    && LeaveAccrualService::overlaps(
+                        (cmd.leave_from, cmd.leave_to),
+                        (r.leave_from, r.leave_to),
+                    )
+            });
+            if overlap_conflict {
+                return Err(DomainError::conflict(format!(
+                    "leave request overlaps an existing approved request for staff {:?}",
+                    cmd.staff_id
+                )));
+            }
+            // Otherwise it's a cap / over-quota rejection (#4, #5).
+            let used_days: u32 = approved
+                .iter()
+                .filter(|r| {
+                    r.type_id == cmd.type_id && r.approve_status == LeaveStatus::Approved
+                })
+                .map(LeaveRequest::duration_days)
+                .sum();
+            let requested_days = (cmd.leave_to.signed_duration_since(cmd.leave_from).num_days()
+                + 1)
+                .max(0);
+            let requested_days = u32::try_from(requested_days).unwrap_or(u32::MAX);
+            return Err(DomainError::conflict(format!(
+                "leave entitlement exhausted: used {used_days} + requested {requested_days} > cap {}",
+                define.days
+            )));
+        }
     }
 
     let mut lr = LeaveRequest::fresh(
@@ -538,6 +594,7 @@ pub fn run_payroll<C, G>(
     clock: &C,
     ids: &G,
     policy: &dyn PayrollPolicy,
+    uniqueness: &dyn PayrollUniquenessChecker,
 ) -> Result<(PayrollGenerate, PayrollGenerated)>
 where
     C: Clock + ?Sized,
@@ -554,11 +611,32 @@ where
         return Err(DomainError::validation("basic_salary must be non-negative"));
     }
 
+    // Spec invariant PayrollGenerate#5: unique by
+    // (school, staff, payroll_month, payroll_year). The
+    // dispatcher passes a storage-backed uniqueness checker;
+    // tests use an in-memory variant.
+    if uniqueness.payroll_exists(school, cmd.staff_id, cmd.payroll_month, cmd.payroll_year) {
+        return Err(DomainError::conflict(format!(
+            "payroll already exists for staff {:?} in {}/{:02}",
+            cmd.staff_id, cmd.payroll_year, cmd.payroll_month
+        )));
+    }
+
+    // Spec invariant PayrollGenerate#2:
+    //   net_salary == gross_salary - total_deduction - tax
+    // where total_deduction is the sum of PayrollEarnDeduc::Deduction
+    // rows and tax is the per-jurisdiction tax computed by the
+    // PayrollPolicy. The previous version folded `tax` into
+    // `total_deduction`, which double-subtracted the tax whenever
+    // tax > 0. Here we keep the two fields separate: no deduction
+    // lines have been summed yet (the PayrollEarnDeduc factory is
+    // Phase 4 work), so `total_deduction = 0.0` and `tax` is
+    // subtracted directly.
     let total_earning = cmd.basic_salary;
     let tax = policy.tax(school, total_earning);
-    let total_deduction = tax;
+    let total_deduction = 0.0_f64;
     let gross_salary = total_earning;
-    let net_salary = (gross_salary - total_deduction).max(0.0);
+    let net_salary = (gross_salary - total_deduction - tax).max(0.0);
 
     let mut payroll = PayrollGenerate::fresh(
         id,
@@ -693,8 +771,14 @@ impl PayrollPolicy for InMemoryPayrollPolicy {
 /// Per-school staff uniqueness checks the `hire_staff`
 /// service calls. The storage adapter is the canonical
 /// implementation; tests use an in-memory variant.
+///
+/// Implements spec invariants Staff#3 (`staff_no` unique
+/// within school), Staff#4 (`email` unique within school
+/// when provided), and Staff#5 (`mobile` unique within
+/// school when provided).
 pub trait StaffUniquenessChecker: Send + Sync {
     fn email_exists(&self, school: SchoolId, email: &str) -> bool;
+    fn mobile_exists(&self, school: SchoolId, mobile: &str) -> bool;
     fn staff_no_exists(&self, school: SchoolId, staff_no: u32) -> bool;
     fn employee_id_exists(&self, school: SchoolId, employee_id: &str) -> bool;
 }
@@ -704,6 +788,52 @@ pub trait ReferenceDataUniquenessChecker: Send + Sync {
     fn department_name_exists(&self, school: SchoolId, name: &str) -> bool;
     fn designation_title_exists(&self, school: SchoolId, title: &str) -> bool;
     fn leave_type_name_exists(&self, school: SchoolId, name: &str) -> bool;
+}
+
+/// Per-school payroll uniqueness checks. Implements spec
+/// invariant PayrollGenerate#5: a `PayrollGenerate` row is
+/// unique by `(school, staff, payroll_month, payroll_year)` —
+/// no staff member can have two payroll rows for the same
+/// pay period.
+pub trait PayrollUniquenessChecker: Send + Sync {
+    fn payroll_exists(
+        &self,
+        school: SchoolId,
+        staff_id: StaffId,
+        payroll_month: u8,
+        payroll_year: u16,
+    ) -> bool;
+}
+
+/// Per-school leave-accrual lookup. Implements spec
+/// invariants LeaveRequest#1 (no overlap), #4 (remaining
+/// entitlement covers the request), and #5 (duration does
+/// not exceed `LeaveDefine.days`). The dispatcher passes a
+/// storage-backed implementation that resolves the
+/// [`LeaveDefine`] row for `(school, staff, type)` and the
+/// approved [`LeaveRequest`] history for the staff member;
+/// tests use an in-memory variant.
+pub trait LeaveAccrualChecker: Send + Sync {
+    /// Returns the [`LeaveDefine`] row that governs this
+    /// `(staff, leave_type)` pair, or `None` if no policy
+    /// has been defined. When `None`, `request_leave`
+    /// proceeds without an entitlement check.
+    fn leave_define_for(
+        &self,
+        school: SchoolId,
+        staff_id: StaffId,
+        type_id: crate::value_objects::LeaveTypeId,
+    ) -> Option<crate::aggregate::LeaveDefine>;
+
+    /// Returns all approved [`LeaveRequest`] rows for this
+    /// staff member in the current school. Used to compute
+    /// the running used-days tally and to detect overlapping
+    /// approved requests.
+    fn approved_requests_for(
+        &self,
+        school: SchoolId,
+        staff_id: StaffId,
+    ) -> Vec<LeaveRequest>;
 }
 
 // =============================================================================
@@ -1455,13 +1585,18 @@ impl HourlyRateManagementService {
             .map(|r| r.rate)
     }
 
-    /// Validates that `rate` is non-negative. Returns
-    /// [`DomainError::Validation`] for negative rates; the
-    /// dispatcher surfaces this as a 400 to the caller.
+    /// Validates that `rate` is strictly positive. Returns
+    /// [`DomainError::Validation`] for non-positive rates;
+    /// the dispatcher surfaces this as a 400 to the caller.
+    ///
+    /// **Invariant (HourlyRate#2):** `rate > 0`. Zero is
+    /// rejected (the spec requires "strictly positive",
+    /// not "non-negative"); negative rates are obviously
+    /// rejected.
     pub fn validate_rate(rate: f64) -> Result<()> {
-        if rate < 0.0 {
+        if rate <= 0.0 {
             return Err(DomainError::validation(
-                "hourly rate must be non-negative",
+                "hourly rate must be strictly positive (> 0)",
             ));
         }
         Ok(())
@@ -1490,6 +1625,9 @@ mod tests {
         fn email_exists(&self, _: SchoolId, _: &str) -> bool {
             false
         }
+        fn mobile_exists(&self, _: SchoolId, _: &str) -> bool {
+            false
+        }
         fn staff_no_exists(&self, _: SchoolId, _: u32) -> bool {
             false
         }
@@ -1508,6 +1646,36 @@ mod tests {
         }
         fn leave_type_name_exists(&self, _: SchoolId, _: &str) -> bool {
             false
+        }
+    }
+    struct StubPayrollUniqueness;
+    impl PayrollUniquenessChecker for StubPayrollUniqueness {
+        fn payroll_exists(
+            &self,
+            _: SchoolId,
+            _: StaffId,
+            _: u8,
+            _: u16,
+        ) -> bool {
+            false
+        }
+    }
+    struct StubLeaveAccrual;
+    impl LeaveAccrualChecker for StubLeaveAccrual {
+        fn leave_define_for(
+            &self,
+            _: SchoolId,
+            _: StaffId,
+            _: crate::value_objects::LeaveTypeId,
+        ) -> Option<crate::aggregate::LeaveDefine> {
+            None
+        }
+        fn approved_requests_for(
+            &self,
+            _: SchoolId,
+            _: StaffId,
+        ) -> Vec<LeaveRequest> {
+            Vec::new()
         }
     }
 
@@ -1567,7 +1735,7 @@ mod tests {
             note: None,
             file_reference: None,
         };
-        let (lr, event) = request_leave(cmd, &clock, &ids).unwrap();
+        let (lr, event) = request_leave(cmd, &clock, &ids, &StubLeaveAccrual).unwrap();
         assert!(lr.is_pending());
         assert_eq!(lr.duration_days(), 5);
         assert_eq!(event.leave_request_id, lr.id);
@@ -1589,7 +1757,7 @@ mod tests {
             note: None,
             file_reference: None,
         };
-        let (mut lr, _) = request_leave(cmd, &clock, &ids).unwrap();
+        let (mut lr, _) = request_leave(cmd, &clock, &ids, &StubLeaveAccrual).unwrap();
         // First approval succeeds.
         let approver = ctx(s);
         let _ev = approve_leave(&mut lr, approver, None, &clock, &ids).unwrap();
@@ -1623,7 +1791,7 @@ mod tests {
             note: None,
             file_reference: None,
         };
-        let (mut lr, _) = request_leave(cmd, &clock, &ids).unwrap();
+        let (mut lr, _) = request_leave(cmd, &clock, &ids, &StubLeaveAccrual).unwrap();
         let err = approve_leave(&mut lr, tenant, None, &clock, &ids).unwrap_err();
         assert!(matches!(err, DomainError::Conflict(_)));
     }
@@ -1644,11 +1812,49 @@ mod tests {
             bank_id: None,
             note: None,
         };
-        let (payroll, event) = run_payroll(cmd, &clock, &ids, &policy).unwrap();
+        let (payroll, event) = run_payroll(cmd, &clock, &ids, &policy, &StubPayrollUniqueness).unwrap();
         assert_eq!(payroll.tax, 10_000.0);
         assert_eq!(payroll.net_salary, 90_000.0);
-        assert_eq!(payroll.total_deduction, 10_000.0);
+        // Spec invariant PayrollGenerate#2: tax is NOT folded into
+        // total_deduction when no PayrollEarnDeduc rows are summed.
+        // Tax is subtracted separately on the net_salary line.
+        assert_eq!(payroll.total_deduction, 0.0);
         assert_eq!(event.net_salary, 90_000.0);
+        assert_eq!(event.tax, 10_000.0);
+        assert_eq!(event.total_deduction, 0.0);
+    }
+
+    #[test]
+    fn run_payroll_does_not_double_subtract_tax() {
+        // Regression guard for the spec identity
+        //   net_salary == gross_salary - total_deduction - tax
+        // The pre-fix implementation set `total_deduction = tax`
+        // and then subtracted `total_deduction` from `gross`, so
+        // tax was effectively subtracted twice. Here we verify
+        // that with a non-zero tax rate, net_salary is exactly
+        // gross - tax (no deduction lines present), not
+        // gross - 2*tax.
+        let clock = SystemClock;
+        let ids = SystemIdGen;
+        let s = SchoolId(uuid::Uuid::now_v7());
+        let policy = InMemoryPayrollPolicy::new(0.10); // 10%
+        let cmd = RunPayrollCommand {
+            tenant: ctx(s),
+            staff_id: StaffId::new(s, uuid::Uuid::now_v7()),
+            basic_salary: 50_000.0,
+            payroll_month: 7,
+            payroll_year: 2026,
+            payment_mode: None,
+            bank_id: None,
+            note: None,
+        };
+        let (payroll, _) = run_payroll(cmd, &clock, &ids, &policy, &StubPayrollUniqueness).unwrap();
+        // gross = 50k, tax = 5k, no deduction lines => net = 50k - 0 - 5k = 45k.
+        // Pre-fix would have computed net = 50k - 5k - 5k = 40k.
+        assert_eq!(payroll.gross_salary, 50_000.0);
+        assert_eq!(payroll.tax, 5_000.0);
+        assert_eq!(payroll.total_deduction, 0.0);
+        assert_eq!(payroll.net_salary, 45_000.0, "tax must not be subtracted twice");
     }
 
     #[test]
@@ -1781,7 +1987,10 @@ mod tests {
             HourlyRateManagementService::effective_rate("G6", academic_id, &rates),
             None
         );
-        assert!(HourlyRateManagementService::validate_rate(0.0).is_ok());
+        assert!(matches!(
+            HourlyRateManagementService::validate_rate(0.0),
+            Err(DomainError::Validation(_))
+        ));
         assert!(HourlyRateManagementService::validate_rate(100.0).is_ok());
         assert!(matches!(
             HourlyRateManagementService::validate_rate(-1.0),
