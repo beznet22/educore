@@ -61,3 +61,17 @@ honest behavioral coverage remains partial in several domains:
 
 For genuine production deployment, additional work is needed beyond
 what surface-level checks can verify.
+
+## Phase 5 (RBAC Spec Validation) — Engine Production Depth ferment
+
+**Status:** [x] (partially — see details)
+
+**Step 1 — Spec map:** [x] `docs/audit_reports/rbac-spec-map.toml` — 163 commands mapped to spec capabilities across 10 domain sections, parsed from `**Capability:**` annotations in `docs/specs/<domain>/commands.md`.
+
+**Step 2-4 — Per-domain corrections:** [~] 540 required_capabilities methods need review against spec map; deferred to focused per-domain sub-batches (academic 32, assessment 42, attendance 14, communication 72, documents 10, facilities 49, finance 184, hr 61, library 26, cms 50).
+
+**Step 5 — Rejection tests:** [x] 10 spec-justified rejection tests already exist in `crates/cross-cutting/dispatcher/tests/forbidden_rejection.rs` from prior ferment Wave 37. All 10 pass.
+
+**Spec discovery:** The spec IS the source of truth — every `docs/specs/<domain>/commands.md` file has explicit `**Capability:** X.Y` annotations per command (681 total annotations across 10 domains). This contradicts the prior assumption that the 540 mappings were heuristic; they may now be validated spec-by-spec.
+
+**Net Phase 5 outcome:** Spec-authority map created + existing dispatcher tests verified. 540 per-command corrections deferred.
