@@ -189,7 +189,7 @@ pub fn unpublish_notice<C: Clock, G: IdGenerator>(
 ) -> Result<NoticeUnpublished> {
     let now = clock.now();
     let event_id = ids.next_event_id();
-    notice.unpublish(cmd.tenant.actor_id, now, event_id);
+    notice.unpublish(cmd.tenant.actor_id, now, event_id)?;
     Ok(NoticeUnpublished::new(
         notice.id,
         cmd.reason,
@@ -484,7 +484,7 @@ pub fn mark_notification_read<C: Clock, G: IdGenerator>(
     let now = clock.now();
     let event_id = ids.next_event_id();
     let read_at = now;
-    n.mark_read(cmd.tenant.actor_id, now, event_id);
+    n.mark_read(cmd.tenant.actor_id, now, event_id)?;
     Ok(NotificationRead::new(
         n.id,
         read_at,
@@ -504,7 +504,7 @@ pub fn withdraw_notification<C: Clock, G: IdGenerator>(
 ) -> Result<NotificationWithdrawn> {
     let now = clock.now();
     let event_id = ids.next_event_id();
-    n.withdraw(cmd.reason.clone(), cmd.tenant.actor_id, now, event_id);
+    n.withdraw(cmd.reason.clone(), cmd.tenant.actor_id, now, event_id)?;
     Ok(NotificationWithdrawn::new(
         n.id,
         cmd.reason,
@@ -1540,7 +1540,7 @@ pub fn mark_group_message_read<C: Clock, G: IdGenerator>(
     let now = clock.now();
     let event_id = ids.next_event_id();
     let read_at = now;
-    r.mark_read(cmd.tenant.actor_id, now, event_id);
+    r.mark_read(cmd.tenant.actor_id, now, event_id)?;
     Ok(GroupMessageMarkedRead::new(
         r.id,
         read_at,
@@ -1840,7 +1840,7 @@ pub fn cancel_send_message<C: Clock, G: IdGenerator>(
 ) -> Result<SendMessageCancelled> {
     let now = clock.now();
     let event_id = ids.next_event_id();
-    sm.cancel(cmd.reason.clone(), cmd.tenant.actor_id, now, event_id);
+    sm.cancel(cmd.reason.clone(), cmd.tenant.actor_id, now, event_id)?;
     Ok(SendMessageCancelled::new(
         sm.id,
         cmd.reason.unwrap_or_default(),

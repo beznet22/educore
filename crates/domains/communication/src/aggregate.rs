@@ -24,6 +24,7 @@ use serde::{Deserialize, Serialize};
 
 use educore_academic::{ClassId, SectionId, StudentId, SubjectId};
 use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
+use educore_core::error::DomainError;
 use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 use educore_hr::value_objects::StaffId;
 
@@ -144,21 +145,66 @@ impl Notice {
     }
 
     /// Unpublishes the notice. Sets status to `Unpublished`.
-    pub fn unpublish(&mut self, actor: UserId, at: Timestamp, event_id: EventId) {
+    ///
+    /// Spec invariant (`docs/specs/communication/aggregates.md` §
+    /// Notice, item 3): "A notice may be unpublished only by the
+    /// same actor who created it, or by an actor with
+    /// `Notice.Unpublish` capability." The capability check is the
+    /// dispatcher's responsibility (per ADR-018 + the
+    /// `RbacPort::require` contract in
+    /// `docs/ports/authentication.md`); this aggregate enforces
+    /// the creator-only constraint at the domain layer.
+    ///
+    /// Returns `DomainError::Forbidden` when the actor is not the
+    /// original creator. The dispatcher can pre-authorize the
+    /// capability check and then forward the same actor through
+    /// this method; the invariant is belt-and-braces.
+    pub fn unpublish(
+        &mut self,
+        actor: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> Result<(), DomainError> {
+        if actor != self.created_by {
+            return Err(crate::errors::CommunicationError::forbidden(
+                "notice.unpublish: actor is not the original creator",
+            ));
+        }
         self.status = NoticeStatus::Unpublished;
         self.updated_at = at;
         self.updated_by = actor;
         self.version = self.version.next();
         self.last_event_id = Some(event_id);
+        Ok(())
     }
 
     /// Soft-deletes the notice. Retires the active status.
-    pub fn mark_deleted(&mut self, actor: UserId, at: Timestamp, event_id: EventId) {
+    ///
+    /// Spec invariant (`docs/specs/communication/aggregates.md` §
+    /// Notice, item 4): "A notice cannot be deleted after it has
+    /// been delivered to at least one recipient. The audit trail
+    /// remains." Deletion is rejected once the notice reaches the
+    /// `Published` state; the audit row remains in either branch.
+    ///
+    /// Returns `DomainError::Conflict` when the notice has
+    /// already been published.
+    pub fn mark_deleted(
+        &mut self,
+        actor: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> Result<(), DomainError> {
+        if matches!(self.status, NoticeStatus::Published) {
+            return Err(crate::errors::CommunicationError::notice_has_recipients(
+                "notice.delete: cannot delete a published notice",
+            ));
+        }
         self.active_status = ActiveStatus::Retired;
         self.updated_at = at;
         self.updated_by = actor;
         self.version = self.version.next();
         self.last_event_id = Some(event_id);
+        Ok(())
     }
 
     /// Updates the mutable notice fields. Returns the list of
@@ -518,17 +564,58 @@ impl Notification {
     }
 
     /// Marks the notification as read.
-    pub fn mark_read(&mut self, by: UserId, at: Timestamp, event_id: EventId) {
+    ///
+    /// Spec invariant (`docs/specs/communication/aggregates.md` §
+    /// Notification, items 2 & 3): the notification is
+    /// post-delivery-immutable and cannot be read once it has
+    /// been withdrawn. This aggregate enforces the
+    /// withdrawn-terminal rule; the dispatcher is responsible for
+    /// the broader delivered-immutability rule (no further field
+    /// changes after `delivered_at` is set).
+    ///
+    /// Returns `DomainError::Conflict` when the notification has
+    /// already been withdrawn.
+    pub fn mark_read(
+        &mut self,
+        by: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> Result<(), DomainError> {
+        if self.withdrawn_at.is_some() {
+            return Err(crate::errors::CommunicationError::conflict(
+                "notification.mark_read: notification has been withdrawn",
+            ));
+        }
         self.status = NotificationStatus::Read;
         self.read_at = Some(at);
         self.updated_at = at;
         self.updated_by = by;
         self.version = self.version.next();
         self.last_event_id = Some(event_id);
+        Ok(())
     }
 
     /// Withdraws the notification. Records the reason.
-    pub fn withdraw(&mut self, reason: String, actor: UserId, at: Timestamp, event_id: EventId) {
+    ///
+    /// Spec invariant (`docs/specs/communication/aggregates.md` §
+    /// Notification, item 2): the notification is post-delivery-
+    /// immutable. Withdrawal is therefore rejected after
+    /// `delivered_at` is set — the recipient has already seen it.
+    ///
+    /// Returns `DomainError::Conflict` when the notification has
+    /// already been delivered.
+    pub fn withdraw(
+        &mut self,
+        reason: String,
+        actor: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> Result<(), DomainError> {
+        if self.delivered_at.is_some() {
+            return Err(crate::errors::CommunicationError::conflict(
+                "notification.withdraw: notification has been delivered",
+            ));
+        }
         self.status = NotificationStatus::Withdrawn;
         self.withdrawn_at = Some(at);
         self.withdrawn_reason = Some(reason);
@@ -536,6 +623,7 @@ impl Notification {
         self.updated_by = actor;
         self.version = self.version.next();
         self.last_event_id = Some(event_id);
+        Ok(())
     }
 }
 
@@ -1734,12 +1822,33 @@ impl ChatGroupMessageRecipient {
     }
 
     /// Marks the recipient as having read the message.
-    pub fn mark_read(&mut self, actor: UserId, at: Timestamp, event_id: EventId) {
+    ///
+    /// Spec invariant (`docs/specs/communication/aggregates.md` §
+    /// ChatGroupMessageRecipient, item 2): "`read_at` may
+    /// transition from null to a timestamp; never back." Once
+    /// `deleted_at` is set, the recipient row has been retired and
+    /// a subsequent `mark_read` would resurrect read-state on a
+    /// deleted row — rejected with `DomainError::Conflict`.
+    ///
+    /// Returns `DomainError::Conflict` when the row has already
+    /// been soft-deleted.
+    pub fn mark_read(
+        &mut self,
+        actor: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> Result<(), DomainError> {
+        if self.deleted_at.is_some() {
+            return Err(crate::errors::CommunicationError::conflict(
+                "chat_group_message_recipient.mark_read: row has been deleted",
+            ));
+        }
         self.read_at = Some(at);
         self.updated_at = at;
         self.updated_by = actor;
         self.version = self.version.next();
         self.last_event_id = Some(event_id);
+        Ok(())
     }
 }
 
@@ -2222,19 +2331,34 @@ impl SendMessage {
     }
 
     /// Cancels the message. Records the optional reason.
+    ///
+    /// Spec invariant (`docs/specs/communication/aggregates.md` §
+    /// SendMessage, item 3): "The job is immutable after the first
+    /// dispatch." Once `dispatched_at` is set, cancellation is
+    /// rejected — the audience has already received the broadcast
+    /// and a `Cancelled` event would mislead consumers.
+    ///
+    /// Returns `DomainError::Conflict` when the job has already
+    /// been dispatched.
     pub fn cancel(
         &mut self,
         reason: Option<String>,
         actor: UserId,
         at: Timestamp,
         event_id: EventId,
-    ) {
+    ) -> Result<(), DomainError> {
+        if matches!(self.status, SendMessageStatus::Dispatched) {
+            return Err(crate::errors::CommunicationError::conflict(
+                "send_message.cancel: cannot cancel a dispatched message",
+            ));
+        }
         self.status = SendMessageStatus::Cancelled;
         self.cancelled_reason = reason;
         self.updated_at = at;
         self.updated_by = actor;
         self.version = self.version.next();
         self.last_event_id = Some(event_id);
+        Ok(())
     }
 }
 
