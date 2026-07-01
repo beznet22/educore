@@ -324,6 +324,16 @@ impl Book {
         self.last_event_id = Some(event_id);
     }
 
+    /// Marks the book as deleted (retired). Bumps the version.
+    /// Mirrors [`BookCategory::delete`].
+    pub fn delete(&mut self, actor: UserId, at: Timestamp, event_id: EventId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+    }
+
     /// Computes the available copies given a sum of open-issue
     /// quantities. Returns 0 if the open-issue sum exceeds
     /// `quantity` (which is a data-integrity violation).

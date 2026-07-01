@@ -711,54 +711,223 @@ where
 
 /// Handler skeleton: delete a [`BookCategory`].
 pub fn delete_book_category<C, G>(
-    _cmd: DeleteBookCategoryCommand,
-    _clock: &C,
-    _ids: &G,
-) -> Result<(BookCategory, BookCategoryDeleted)>
+    cmd: DeleteBookCategoryCommand,
+    clock: &C,
+    ids: &G,
+    category: &mut BookCategory,
+) -> Result<BookCategoryDeleted>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    let now = clock.now();
+    let actor = cmd.tenant.actor_id;
+    let event_id = ids.next_event_id();
+
+    // Validate id matches the aggregate.
+    if cmd.book_category_id != category.id {
+        return Err(DomainError::Validation(
+            "DELETE_BOOK_CATEGORY: command id does not match aggregate id".to_owned(),
+        ));
+    }
+
+    // Validate tenant matches.
+    if cmd.tenant.school_id != category.school_id {
+        return Err(DomainError::TenantViolation(
+            "DELETE_BOOK_CATEGORY: tenant school does not match aggregate".to_owned(),
+        ));
+    }
+
+    // Refuse to delete a category that has already been
+    // retired (idempotency guard; a second delete is a
+    // conflict, not a no-op).
+    if !category.active_status.is_active() {
+        return Err(DomainError::conflict(
+            "DELETE_BOOK_CATEGORY: category is already retired",
+        ));
+    }
+
+    // Mutate.
+    category.delete(actor, now, event_id);
+
+    // Emit event.
+    let event = BookCategoryDeleted::new(category.id, event_id, cmd.tenant.correlation_id, now);
+
+    Ok(event)
 }
 
 /// Handler skeleton: update a [`Book`].
 pub fn update_book<C, G>(
-    _cmd: UpdateBookCommand,
-    _clock: &C,
-    _ids: &G,
-) -> Result<(Book, BookUpdated)>
+    cmd: UpdateBookCommand,
+    clock: &C,
+    ids: &G,
+    book: &mut Book,
+) -> Result<BookUpdated>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    let now = clock.now();
+    let actor = cmd.tenant.actor_id;
+    let event_id = ids.next_event_id();
+
+    // Validate id matches the aggregate.
+    if cmd.book_id != book.id {
+        return Err(DomainError::Validation(
+            "UPDATE_BOOK: command id does not match aggregate id".to_owned(),
+        ));
+    }
+
+    // Validate tenant matches.
+    if cmd.tenant.school_id != book.school_id {
+        return Err(DomainError::TenantViolation(
+            "UPDATE_BOOK: tenant school does not match aggregate".to_owned(),
+        ));
+    }
+
+    // Refuse updates to retired books (matches the
+    // `add_book` invariant: the book must be active to be
+    // catalogued).
+    if !book.active_status.is_active() {
+        return Err(DomainError::conflict(
+            "UPDATE_BOOK: book is not in an active catalogued status",
+        ));
+    }
+
+    // Mutate (each Option is applied only when Some; the
+    // aggregate returns the list of fields that actually
+    // moved).
+    let changes_static = book.update(
+        cmd.book_title,
+        cmd.author_name.map(Some),
+        cmd.publisher_name.map(Some),
+        cmd.rack_number.map(Some),
+        cmd.book_price.map(Some),
+        cmd.details.map(Some),
+        cmd.book_category_id,
+        cmd.book_subject_id.map(Some),
+        actor,
+        now,
+        event_id,
+    );
+
+    // Emit event.
+    let event = BookUpdated::new(
+        book.id,
+        changes_static.iter().map(|s| (*s).to_owned()).collect(),
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok(event)
 }
 
 /// Handler skeleton: delete a [`Book`].
 pub fn delete_book<C, G>(
-    _cmd: DeleteBookCommand,
-    _clock: &C,
-    _ids: &G,
-) -> Result<(Book, BookDeleted)>
+    cmd: DeleteBookCommand,
+    clock: &C,
+    ids: &G,
+    book: &mut Book,
+) -> Result<BookDeleted>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    let now = clock.now();
+    let actor = cmd.tenant.actor_id;
+    let event_id = ids.next_event_id();
+
+    // Validate id matches the aggregate.
+    if cmd.book_id != book.id {
+        return Err(DomainError::Validation(
+            "DELETE_BOOK: command id does not match aggregate id".to_owned(),
+        ));
+    }
+
+    // Validate tenant matches.
+    if cmd.tenant.school_id != book.school_id {
+        return Err(DomainError::TenantViolation(
+            "DELETE_BOOK: tenant school does not match aggregate".to_owned(),
+        ));
+    }
+
+    // Refuse to delete a book that has already been
+    // retired (idempotency guard).
+    if !book.active_status.is_active() {
+        return Err(DomainError::conflict(
+            "DELETE_BOOK: book is already retired",
+        ));
+    }
+
+    // Mutate.
+    book.delete(actor, now, event_id);
+
+    // Emit event.
+    let event = BookDeleted::new(book.id, event_id, cmd.tenant.correlation_id, now);
+
+    Ok(event)
 }
 
 /// Handler skeleton: adjust the stock count of a [`Book`].
 pub fn adjust_book_quantity<C, G>(
-    _cmd: AdjustBookQuantityCommand,
-    _clock: &C,
-    _ids: &G,
-) -> Result<(Book, BookQuantityAdjusted)>
+    cmd: AdjustBookQuantityCommand,
+    clock: &C,
+    ids: &G,
+    book: &mut Book,
+) -> Result<BookQuantityAdjusted>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    let now = clock.now();
+    let actor = cmd.tenant.actor_id;
+    let event_id = ids.next_event_id();
+    let from_quantity = book.quantity;
+
+    // Validate id matches the aggregate.
+    if cmd.book_id != book.id {
+        return Err(DomainError::Validation(
+            "ADJUST_BOOK_QUANTITY: command id does not match aggregate id".to_owned(),
+        ));
+    }
+
+    // Validate tenant matches.
+    if cmd.tenant.school_id != book.school_id {
+        return Err(DomainError::TenantViolation(
+            "ADJUST_BOOK_QUANTITY: tenant school does not match aggregate".to_owned(),
+        ));
+    }
+
+    // Refuse to adjust a retired book.
+    if !book.active_status.is_active() {
+        return Err(DomainError::conflict(
+            "ADJUST_BOOK_QUANTITY: book is not active",
+        ));
+    }
+
+    // Refuse no-op adjustments.
+    if cmd.new_quantity == book.quantity {
+        return Err(DomainError::Validation(
+            "ADJUST_BOOK_QUANTITY: new_quantity equals current quantity".to_owned(),
+        ));
+    }
+
+    // Mutate.
+    book.adjust_quantity(cmd.new_quantity, actor, now, event_id);
+
+    // Emit event.
+    let event = BookQuantityAdjusted::new(
+        book.id,
+        from_quantity,
+        cmd.new_quantity,
+        cmd.reason,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok(event)
 }
 
 /// Handler skeleton: update a [`LibraryMember`].
