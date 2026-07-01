@@ -584,7 +584,7 @@ fn chat_group_message_recipient_record_then_mark_read() {
     );
     assert!(rcp.read_at.is_none());
 
-    rcp.mark_read(actor, clock.now(), g.next_event_id());
+    rcp.mark_read(actor, clock.now(), g.next_event_id()).expect("fresh recipient row can be marked read");
     assert!(rcp.read_at.is_some());
 
     let event: GroupMessageMarkedRead = GroupMessageMarkedRead::new(
