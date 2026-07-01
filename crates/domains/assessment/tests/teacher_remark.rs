@@ -4,19 +4,20 @@
 //! [`TeacherRemark`](educore_assessment::aggregate::TeacherRemark)
 //! end-to-end through the service layer.
 //!
-//! # Wave 29 real implementation contract
+//! # Wave 29 batch 7 contract
 //!
-//! `add_teacher_remark` in `services.rs` now enforces the
-//! cross-tenant invariant from
+//! `add_teacher_remark` and `update_teacher_remark` in
+//! `services.rs` are now **real implementations**. They
+//! enforce the typed-id school-anchoring invariant from
 //! `docs/specs/assessment/aggregates.md` § TeacherRemark
-//! (the typed id's `school_id` must match the command's
-//! `school_id`) and emits the `TeacherRemarkCreated` event
-//! stamped with a fresh `event_id` (UUIDv7) and the
-//! command's school anchor.
-//!
-//! `update_teacher_remark` remains a stub pending the full
-//! Remark/TeacherId/StudentId/ExamTypeId/AcademicId payload
-//! migration to TenantContext-bearing commands.
+//! (the id's `school_id` must equal the command's
+//! `school_id`; cross-tenant references are rejected with
+//! `DomainError::Validation`) and emit the spec-defined
+//! `TeacherRemarkCreated` event for every transition. The
+//! full Remark/TeacherId/StudentId/ExamTypeId/AcademicId
+//! payload validation (and the uniqueness + 2000-char
+//! invariants #1 and #2) lands in a follow-up batch once
+//! the `TenantContext`-bearing command struct is migrated.
 
 #![allow(
     clippy::unwrap_used,
@@ -32,7 +33,7 @@ use educore_assessment::services::{add_teacher_remark, update_teacher_remark};
 use educore_assessment::value_objects::TeacherRemarkId;
 use educore_core::clock::{IdGenerator as _, SystemIdGen};
 use educore_core::error::DomainError;
-use educore_core::ids::SchoolId;
+use educore_core::ids::{Identifier as _, SchoolId};
 use educore_core::tenant::{TenantContext, UserType};
 
 // =============================================================================
@@ -107,19 +108,18 @@ async fn add_teacher_remark_rejects_cross_tenant_id() {
 }
 
 // =============================================================================
-// 2. Update path: current contract — stub returns NotSupported
+// 2. Update path: real implementation emits TeacherRemarkCreated
 // =============================================================================
 
-/// Pins the **current** contract of `update_teacher_remark`
-/// for a well-formed payload. The handler is currently a
-/// stub that returns
-/// `DomainError::not_supported("TODO: update_teacher_remark")`
-/// before any aggregate mutation or event minting happens.
-/// Once the real implementation lands, this test will be
-/// updated to assert that the returned event is
-/// `TeacherRemarkUpdated` (or the spec-mandated name).
+/// Pins the **happy path** of `update_teacher_remark` for
+/// a well-formed payload: a same-school typed id is
+/// accepted and the returned event is `TeacherRemarkCreated`
+/// carrying the command's school and the typed id (the
+/// update-transition event re-emits the same shape until
+/// the full `Remark` payload is migrated onto the command
+/// struct).
 #[tokio::test]
-async fn teacher_remark_update_currently_returns_not_supported() {
+async fn update_teacher_remark_happy_path() {
     let (_tenant, g) = admin_context();
     let school = _tenant.school_id;
 
@@ -128,12 +128,40 @@ async fn teacher_remark_update_currently_returns_not_supported() {
         teacher_remark_id: teacher_remark_id(&g, school),
     };
 
+    let event = update_teacher_remark(cmd)
+        .await
+        .expect("real handler accepts well-formed input");
+    assert_eq!(event.school_id, school, "event school echoes command");
+    assert_eq!(
+        event.teacher_remark_id.school_id(),
+        school,
+        "event id echoes command"
+    );
+    // Version-7 event id must be a valid UUID.
+    let _: uuid::Uuid = event.event_id.as_uuid();
+}
+
+/// Pins the **cross-tenant rejection** contract of
+/// `update_teacher_remark`: a typed id from a different
+/// school is rejected with `DomainError::Validation`.
+#[tokio::test]
+async fn update_teacher_remark_cross_tenant_rejected() {
+    let (_tenant, g) = admin_context();
+    let actor_school = _tenant.school_id;
+    let other_school = g.next_school_id();
+
+    let foreign_id = teacher_remark_id(&g, other_school);
+    let cmd = UpdateTeacherRemarkCommand {
+        school_id: actor_school,
+        teacher_remark_id: foreign_id,
+    };
+
     let err = update_teacher_remark(cmd)
         .await
-        .expect_err("update_teacher_remark is currently a stub");
+        .expect_err("cross-tenant id must be rejected");
     assert!(
-        matches!(err, DomainError::NotSupported(_)),
-        "expected NotSupported (current stub contract), got {err:?}"
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
     );
 }
 
