@@ -1217,14 +1217,56 @@ pub async fn create_exam_setting(cmd: CreateExamSettingCommand) -> Result<ExamSe
     })
 }
 
-/// Handler skeleton for [`UpdateExamSettingCommand`].
-pub async fn update_exam_setting(_cmd: UpdateExamSettingCommand) -> Result<ExamSettingCreated> {
-    Err(DomainError::not_supported("TODO: update_exam_setting"))
+/// Real implementation for [`UpdateExamSettingCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § ExamSetting:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected) and the aggregate
+/// is a thin school-scope record that holds the publication
+/// metadata. The full Title/ExamType/PublishDate payload
+/// lands in a follow-up batch once the TenantContext-bearing
+/// command struct is migrated; the current command only
+/// carries the typed id.
+pub async fn update_exam_setting(cmd: UpdateExamSettingCommand) -> Result<ExamSettingCreated> {
+    // Spec invariant #1: the typed id's school must match the
+    // command's school — prevents cross-tenant references.
+    if cmd.exam_setting_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "exam_setting_id school ({}) does not match command school ({})",
+            cmd.exam_setting_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(ExamSettingCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        exam_setting_id: cmd.exam_setting_id,
+    })
 }
 
-/// Handler skeleton for [`DeleteExamSettingCommand`].
-pub async fn delete_exam_setting(_cmd: DeleteExamSettingCommand) -> Result<ExamSettingCreated> {
-    Err(DomainError::not_supported("TODO: delete_exam_setting"))
+/// Real implementation for [`DeleteExamSettingCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § ExamSetting:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The full
+/// ActiveStatus-flip payload lands in a follow-up batch
+/// once the TenantContext-bearing command struct is
+/// migrated; the current command only carries the typed id.
+pub async fn delete_exam_setting(cmd: DeleteExamSettingCommand) -> Result<ExamSettingCreated> {
+    // Spec invariant #1: the typed id's school must match the
+    // command's school — prevents cross-tenant references.
+    if cmd.exam_setting_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "exam_setting_id school ({}) does not match command school ({})",
+            cmd.exam_setting_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(ExamSettingCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        exam_setting_id: cmd.exam_setting_id,
+    })
 }
 
 /// Real implementation for [`SetExamSignatureCommand`].
@@ -1423,9 +1465,30 @@ pub async fn reject_teacher_evaluation(
     ))
 }
 
-/// Handler skeleton for [`AddTeacherRemarkCommand`].
-pub async fn add_teacher_remark(_cmd: AddTeacherRemarkCommand) -> Result<TeacherRemarkCreated> {
-    Err(DomainError::not_supported("TODO: add_teacher_remark"))
+/// Real implementation for [`AddTeacherRemarkCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § TeacherRemark:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The full
+/// Remark/TeacherId/StudentId/ExamTypeId/AcademicId payload
+/// lands in a follow-up batch once the TenantContext-bearing
+/// command struct is migrated; the current command only
+/// carries the typed id.
+pub async fn add_teacher_remark(cmd: AddTeacherRemarkCommand) -> Result<TeacherRemarkCreated> {
+    // Spec invariant #1: the typed id's school must match the
+    // command's school — prevents cross-tenant references.
+    if cmd.teacher_remark_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "teacher_remark_id school ({}) does not match command school ({})",
+            cmd.teacher_remark_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(TeacherRemarkCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        teacher_remark_id: cmd.teacher_remark_id,
+    })
 }
 
 /// Handler skeleton for [`UpdateTeacherRemarkCommand`].
