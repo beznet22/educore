@@ -29,6 +29,7 @@ use serde::{Deserialize, Serialize};
 
 use educore_academic::value_objects::PassMark;
 use educore_core::error::Result;
+use educore_rbac::value_objects::Capability;
 use educore_core::ids::SchoolId;
 use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
@@ -715,6 +716,14 @@ pub struct CreateMarksGradeCommand {
     pub marks_grade_id: MarksGradeId,
 }
 
+
+impl CreateMarksGradeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `update_marks_grade` command.
 #[derive(Debug, Clone)]
 pub struct UpdateMarksGradeCommand {
@@ -722,6 +731,14 @@ pub struct UpdateMarksGradeCommand {
     pub marks_grade_id: MarksGradeId,
 }
 
+
+impl UpdateMarksGradeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `delete_marks_grade` command.
 #[derive(Debug, Clone)]
 pub struct DeleteMarksGradeCommand {
@@ -729,6 +746,14 @@ pub struct DeleteMarksGradeCommand {
     pub marks_grade_id: MarksGradeId,
 }
 
+
+impl DeleteMarksGradeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 // --- ExamSetting cluster ----------------------------------------------------
 
 /// The `create_exam_setting` command.
@@ -738,6 +763,14 @@ pub struct CreateExamSettingCommand {
     pub exam_setting_id: ExamSettingId,
 }
 
+
+impl CreateExamSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamCreate]
+    }
+}
 /// The `update_exam_setting` command.
 #[derive(Debug, Clone)]
 pub struct UpdateExamSettingCommand {
@@ -745,6 +778,14 @@ pub struct UpdateExamSettingCommand {
     pub exam_setting_id: ExamSettingId,
 }
 
+
+impl UpdateExamSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamUpdate]
+    }
+}
 /// The `delete_exam_setting` command.
 #[derive(Debug, Clone)]
 pub struct DeleteExamSettingCommand {
@@ -752,6 +793,14 @@ pub struct DeleteExamSettingCommand {
     pub exam_setting_id: ExamSettingId,
 }
 
+
+impl DeleteExamSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamDelete]
+    }
+}
 /// The `set_exam_signature` command.
 #[derive(Debug, Clone)]
 pub struct SetExamSignatureCommand {
@@ -759,6 +808,14 @@ pub struct SetExamSignatureCommand {
     pub exam_signature_id: ExamSignatureId,
 }
 
+
+impl SetExamSignatureCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `update_exam_signature` command.
 ///
 /// Per `docs/specs/assessment/aggregates.md` § ExamSignature,
@@ -772,6 +829,14 @@ pub struct UpdateExamSignatureCommand {
     pub exam_signature_id: ExamSignatureId,
 }
 
+
+impl UpdateExamSignatureCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamUpdate]
+    }
+}
 /// The `delete_exam_signature` command.
 ///
 /// Per `docs/specs/assessment/aggregates.md` § ExamSignature
@@ -788,6 +853,14 @@ pub struct DeleteExamSignatureCommand {
     pub exam_signature_id: ExamSignatureId,
 }
 
+
+impl DeleteExamSignatureCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamDelete]
+    }
+}
 // --- ExamRoutinePage cluster ------------------------------------------------
 
 /// The `update_exam_routine_page` command.
@@ -797,6 +870,14 @@ pub struct UpdateExamRoutinePageCommand {
     pub exam_routine_page_id: ExamRoutinePageId,
 }
 
+
+impl UpdateExamRoutinePageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamUpdate]
+    }
+}
 /// The `publish_exam_routine` command.
 #[derive(Debug, Clone)]
 pub struct PublishExamRoutineCommand {
@@ -804,6 +885,14 @@ pub struct PublishExamRoutineCommand {
     pub front_exam_routine_id: FrontExamRoutineId,
 }
 
+
+impl PublishExamRoutineCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `publish_front_result` command.
 #[derive(Debug, Clone)]
 pub struct PublishFrontResultCommand {
@@ -811,6 +900,14 @@ pub struct PublishFrontResultCommand {
     pub front_result_id: FrontResultId,
 }
 
+
+impl PublishFrontResultCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `update_frontend_exam_result` command.
 #[derive(Debug, Clone)]
 pub struct UpdateFrontendExamResultCommand {
@@ -818,6 +915,14 @@ pub struct UpdateFrontendExamResultCommand {
     pub frontend_exam_result_id: FrontendExamResultId,
 }
 
+
+impl UpdateFrontendExamResultCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamUpdate]
+    }
+}
 // --- OnlineExam cluster -----------------------------------------------------
 
 /// The `create_online_exam` command.
@@ -827,6 +932,14 @@ pub struct CreateOnlineExamCommand {
     pub online_exam_id: OnlineExamId,
 }
 
+
+impl CreateOnlineExamCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentOnlineExamCreate]
+    }
+}
 /// The `publish_online_exam` command.
 #[derive(Debug, Clone)]
 pub struct PublishOnlineExamCommand {
@@ -834,6 +947,14 @@ pub struct PublishOnlineExamCommand {
     pub online_exam_id: OnlineExamId,
 }
 
+
+impl PublishOnlineExamCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `start_online_exam` command.
 #[derive(Debug, Clone)]
 pub struct StartOnlineExamCommand {
@@ -841,6 +962,14 @@ pub struct StartOnlineExamCommand {
     pub online_exam_id: OnlineExamId,
 }
 
+
+impl StartOnlineExamCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `submit_online_exam_answer` command.
 #[derive(Debug, Clone)]
 pub struct SubmitOnlineExamAnswerCommand {
@@ -848,6 +977,14 @@ pub struct SubmitOnlineExamAnswerCommand {
     pub online_exam_id: OnlineExamId,
 }
 
+
+impl SubmitOnlineExamAnswerCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `evaluate_online_exam` command.
 #[derive(Debug, Clone)]
 pub struct EvaluateOnlineExamCommand {
@@ -855,6 +992,14 @@ pub struct EvaluateOnlineExamCommand {
     pub online_exam_id: OnlineExamId,
 }
 
+
+impl EvaluateOnlineExamCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 // --- QuestionBank cluster ---------------------------------------------------
 
 /// The `create_question` command.
@@ -864,6 +1009,14 @@ pub struct CreateQuestionCommand {
     pub question_bank_id: QuestionBankId,
 }
 
+
+impl CreateQuestionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `update_question` command.
 #[derive(Debug, Clone)]
 pub struct UpdateQuestionCommand {
@@ -871,6 +1024,14 @@ pub struct UpdateQuestionCommand {
     pub question_bank_id: QuestionBankId,
 }
 
+
+impl UpdateQuestionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `delete_question` command.
 #[derive(Debug, Clone)]
 pub struct DeleteQuestionCommand {
@@ -878,6 +1039,14 @@ pub struct DeleteQuestionCommand {
     pub question_bank_id: QuestionBankId,
 }
 
+
+impl DeleteQuestionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 // --- QuestionGroup cluster --------------------------------------------------
 
 /// The `create_question_group` command.
@@ -887,6 +1056,14 @@ pub struct CreateQuestionGroupCommand {
     pub question_group_id: QuestionGroupId,
 }
 
+
+impl CreateQuestionGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `update_question_group` command.
 #[derive(Debug, Clone)]
 pub struct UpdateQuestionGroupCommand {
@@ -894,6 +1071,14 @@ pub struct UpdateQuestionGroupCommand {
     pub question_group_id: QuestionGroupId,
 }
 
+
+impl UpdateQuestionGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `delete_question_group` command.
 #[derive(Debug, Clone)]
 pub struct DeleteQuestionGroupCommand {
@@ -901,6 +1086,14 @@ pub struct DeleteQuestionGroupCommand {
     pub question_group_id: QuestionGroupId,
 }
 
+
+impl DeleteQuestionGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 // --- QuestionLevel cluster --------------------------------------------------
 
 /// The `create_question_level` command.
@@ -910,6 +1103,14 @@ pub struct CreateQuestionLevelCommand {
     pub question_level_id: QuestionLevelId,
 }
 
+
+impl CreateQuestionLevelCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `update_question_level` command.
 #[derive(Debug, Clone)]
 pub struct UpdateQuestionLevelCommand {
@@ -917,6 +1118,14 @@ pub struct UpdateQuestionLevelCommand {
     pub question_level_id: QuestionLevelId,
 }
 
+
+impl UpdateQuestionLevelCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `delete_question_level` command.
 #[derive(Debug, Clone)]
 pub struct DeleteQuestionLevelCommand {
@@ -924,6 +1133,14 @@ pub struct DeleteQuestionLevelCommand {
     pub question_level_id: QuestionLevelId,
 }
 
+
+impl DeleteQuestionLevelCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 // --- AdmitCardSetting cluster -----------------------------------------------
 
 /// The `configure_admit_card_settings` command.
@@ -933,6 +1150,14 @@ pub struct ConfigureAdmitCardSettingsCommand {
     pub admit_card_setting_id: AdmitCardSettingId,
 }
 
+
+impl ConfigureAdmitCardSettingsCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 // --- TeacherEvaluation cluster ----------------------------------------------
 
 /// The `mark_teacher_evaluation` command.
@@ -942,6 +1167,14 @@ pub struct MarkTeacherEvaluationCommand {
     pub teacher_evaluation_id: TeacherEvaluationId,
 }
 
+
+impl MarkTeacherEvaluationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `approve_teacher_evaluation` command.
 #[derive(Debug, Clone)]
 pub struct ApproveTeacherEvaluationCommand {
@@ -949,6 +1182,14 @@ pub struct ApproveTeacherEvaluationCommand {
     pub teacher_evaluation_id: TeacherEvaluationId,
 }
 
+
+impl ApproveTeacherEvaluationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `reject_teacher_evaluation` command.
 #[derive(Debug, Clone)]
 pub struct RejectTeacherEvaluationCommand {
@@ -956,6 +1197,14 @@ pub struct RejectTeacherEvaluationCommand {
     pub teacher_evaluation_id: TeacherEvaluationId,
 }
 
+
+impl RejectTeacherEvaluationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 // --- TeacherRemark cluster --------------------------------------------------
 
 /// The `add_teacher_remark` command.
@@ -965,6 +1214,14 @@ pub struct AddTeacherRemarkCommand {
     pub teacher_remark_id: TeacherRemarkId,
 }
 
+
+impl AddTeacherRemarkCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `update_teacher_remark` command.
 #[derive(Debug, Clone)]
 pub struct UpdateTeacherRemarkCommand {
@@ -972,6 +1229,14 @@ pub struct UpdateTeacherRemarkCommand {
     pub teacher_remark_id: TeacherRemarkId,
 }
 
+
+impl UpdateTeacherRemarkCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 // --- CustomResultSetting cluster --------------------------------------------
 
 /// The `configure_custom_result_settings` command.
@@ -981,6 +1246,14 @@ pub struct ConfigureCustomResultSettingsCommand {
     pub custom_result_setting_id: CustomResultSettingId,
 }
 
+
+impl ConfigureCustomResultSettingsCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 // --- ExamStepSkip cluster ---------------------------------------------------
 
 /// The `mark_exam_step_skip` command.
@@ -990,6 +1263,14 @@ pub struct MarkExamStepSkipCommand {
     pub exam_step_skip_id: ExamStepSkipId,
 }
 
+
+impl MarkExamStepSkipCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 // --- ExamAttendance cluster -------------------------------------------------
 
 /// The `mark_exam_attendance` command.
@@ -999,6 +1280,14 @@ pub struct MarkExamAttendanceCommand {
     pub exam_attendance_id: ExamAttendanceId,
 }
 
+
+impl MarkExamAttendanceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `update_exam_attendance` command.
 #[derive(Debug, Clone)]
 pub struct UpdateExamAttendanceCommand {
@@ -1006,6 +1295,14 @@ pub struct UpdateExamAttendanceCommand {
     pub exam_attendance_id: ExamAttendanceId,
 }
 
+
+impl UpdateExamAttendanceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamUpdate]
+    }
+}
 // =============================================================================
 // Cluster D final 20%: spec commands previously missing
 // (`CreateExamType`, `UpdateExamType`, `DeleteExamType`,
@@ -1025,6 +1322,14 @@ pub struct CreateExamTypeCommand {
     pub exam_type_id: ExamTypeId,
 }
 
+
+impl CreateExamTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamCreate]
+    }
+}
 /// The `update_exam_type` command.
 #[derive(Debug, Clone)]
 pub struct UpdateExamTypeCommand {
@@ -1032,6 +1337,14 @@ pub struct UpdateExamTypeCommand {
     pub exam_type_id: ExamTypeId,
 }
 
+
+impl UpdateExamTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamUpdate]
+    }
+}
 /// The `delete_exam_type` command.
 #[derive(Debug, Clone)]
 pub struct DeleteExamTypeCommand {
@@ -1039,6 +1352,14 @@ pub struct DeleteExamTypeCommand {
     pub exam_type_id: ExamTypeId,
 }
 
+
+impl DeleteExamTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamDelete]
+    }
+}
 /// The `configure_seat_plan_settings` command. Upserts the
 /// per-(school, academic-year) `SeatPlanSetting`.
 #[derive(Debug, Clone)]
@@ -1047,6 +1368,14 @@ pub struct ConfigureSeatPlanSettingsCommand {
     pub academic_year_id: AcademicYearId,
 }
 
+
+impl ConfigureSeatPlanSettingsCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `configure_teacher_evaluation` command. Upserts the
 /// per-school `TeacherEvaluationSetting`.
 #[derive(Debug, Clone)]
@@ -1054,6 +1383,14 @@ pub struct ConfigureTeacherEvaluationCommand {
     pub school_id: SchoolId,
 }
 
+
+impl ConfigureTeacherEvaluationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AssessmentExamRead]
+    }
+}
 /// The `request_absence_notification` command. Emits the
 /// `ExamAbsenceNotificationRequested` trigger event that the
 /// communication domain subscribes to.
