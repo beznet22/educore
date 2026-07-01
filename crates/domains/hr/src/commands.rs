@@ -12,6 +12,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use educore_core::ids::{SchoolId, UserId};
+use educore_rbac::value_objects::Capability;
 use educore_core::tenant::TenantContext;
 use educore_rbac::ids::RoleId;
 
@@ -93,6 +94,14 @@ pub struct SuspendStaffCommand {
     pub expected_return: Option<NaiveDate>,
 }
 
+
+impl SuspendStaffCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffSuspend]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChangeStaffDepartmentCommand {
     pub tenant: TenantContext,
@@ -101,6 +110,14 @@ pub struct ChangeStaffDepartmentCommand {
     pub effective_from: NaiveDate,
 }
 
+
+impl ChangeStaffDepartmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChangeStaffDesignationCommand {
     pub tenant: TenantContext,
@@ -109,6 +126,14 @@ pub struct ChangeStaffDesignationCommand {
     pub effective_from: NaiveDate,
 }
 
+
+impl ChangeStaffDesignationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChangeStaffRoleCommand {
     pub tenant: TenantContext,
@@ -117,6 +142,14 @@ pub struct ChangeStaffRoleCommand {
     pub effective_from: NaiveDate,
 }
 
+
+impl ChangeStaffRoleCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteStaffCommand {
     pub tenant: TenantContext,
@@ -124,6 +157,14 @@ pub struct DeleteStaffCommand {
     pub reason: String,
 }
 
+
+impl DeleteStaffCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffDelete]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RejectLeaveCommand {
     pub tenant: TenantContext,
@@ -132,6 +173,14 @@ pub struct RejectLeaveCommand {
     pub reason: String,
 }
 
+
+impl RejectLeaveCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrLeaveReject]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CancelLeaveCommand {
     pub tenant: TenantContext,
@@ -140,6 +189,14 @@ pub struct CancelLeaveCommand {
     pub reason: String,
 }
 
+
+impl CancelLeaveCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrLeaveCancel]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MarkStaffAttendanceCommand {
     pub tenant: TenantContext,
@@ -152,6 +209,14 @@ pub struct MarkStaffAttendanceCommand {
     pub source: crate::value_objects::AttendanceSource,
 }
 
+
+impl MarkStaffAttendanceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApprovePayrollCommand {
     pub tenant: TenantContext,
@@ -159,6 +224,14 @@ pub struct ApprovePayrollCommand {
     pub note: Option<String>,
 }
 
+
+impl ApprovePayrollCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrPayrollApprove]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MarkPayrollPaidCommand {
     pub tenant: TenantContext,
@@ -167,6 +240,14 @@ pub struct MarkPayrollPaidCommand {
     pub paid_at: NaiveDate,
 }
 
+
+impl MarkPayrollPaidCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrPayrollMarkPaid]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AssignClassTeacherCommand {
     pub tenant: TenantContext,
@@ -176,12 +257,28 @@ pub struct AssignClassTeacherCommand {
     pub academic_id: educore_academic::AcademicYearId,
 }
 
+
+impl AssignClassTeacherCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteAssignClassTeacherCommand {
     pub tenant: TenantContext,
     pub assign_class_teacher_id: AssignClassTeacherId,
 }
 
+
+impl DeleteAssignClassTeacherCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetHourlyRateCommand {
     pub tenant: TenantContext,
@@ -190,6 +287,14 @@ pub struct SetHourlyRateCommand {
     pub academic_id: educore_academic::AcademicYearId,
 }
 
+
+impl SetHourlyRateCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrHourlyRateSet]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateSalaryTemplateCommand {
     pub tenant: TenantContext,
@@ -204,6 +309,14 @@ pub struct CreateSalaryTemplateCommand {
     pub academic_id: educore_academic::AcademicYearId,
 }
 
+
+impl CreateSalaryTemplateCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrSalaryTemplateCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateStaffRegistrationFieldCommand {
     pub tenant: TenantContext,
@@ -216,6 +329,14 @@ pub struct CreateStaffRegistrationFieldCommand {
     pub academic_id: educore_academic::AcademicYearId,
 }
 
+
+impl CreateStaffRegistrationFieldCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateDepartmentCommand {
     pub tenant: TenantContext,
@@ -223,6 +344,14 @@ pub struct CreateDepartmentCommand {
     pub description: Option<String>,
 }
 
+
+impl CreateDepartmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrDepartmentCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateDesignationCommand {
     pub tenant: TenantContext,
@@ -230,6 +359,14 @@ pub struct CreateDesignationCommand {
     pub description: Option<String>,
 }
 
+
+impl CreateDesignationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrDesignationCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateLeaveTypeCommand {
     pub tenant: TenantContext,
@@ -237,6 +374,14 @@ pub struct CreateLeaveTypeCommand {
     pub total_days: u32,
 }
 
+
+impl CreateLeaveTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrLeaveTypeCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApproveLeaveCommand {
     pub tenant: TenantContext,
@@ -244,6 +389,14 @@ pub struct ApproveLeaveCommand {
     pub note: Option<String>,
 }
 
+
+impl ApproveLeaveCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrLeaveApprove]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DefineLeavePolicyCommand {
     pub tenant: TenantContext,
@@ -255,6 +408,14 @@ pub struct DefineLeavePolicyCommand {
     pub academic_id: educore_academic::AcademicYearId,
 }
 
+
+impl DefineLeavePolicyCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ImportStaffBulkCommand {
     pub tenant: TenantContext,
@@ -263,6 +424,14 @@ pub struct ImportStaffBulkCommand {
     pub rows: Vec<crate::commands::StaffImportRow>,
 }
 
+
+impl ImportStaffBulkCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StaffImportRow {
     pub staff_no: String,
@@ -297,6 +466,14 @@ pub struct CreateStaffBankDetailCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreateStaffBankDetailCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffCreate]
+    }
+}
 /// Add a postal address (permanent / current / emergency) to a staff profile.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateStaffAddressCommand {
@@ -304,6 +481,14 @@ pub struct CreateStaffAddressCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreateStaffAddressCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffCreate]
+    }
+}
 /// Attach a social-profile link (LinkedIn, GitHub, etc.) to a staff profile.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateStaffSocialLinkCommand {
@@ -311,6 +496,14 @@ pub struct CreateStaffSocialLinkCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreateStaffSocialLinkCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffCreate]
+    }
+}
 /// Register an uploaded document (CV, ID copy) attached to a staff profile.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateStaffDocumentCommand {
@@ -318,6 +511,14 @@ pub struct CreateStaffDocumentCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreateStaffDocumentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 /// Marker command for the projection recomputed from the staff event log.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RefreshStaffTimelineCommand {
@@ -325,6 +526,14 @@ pub struct RefreshStaffTimelineCommand {
     pub school_id: SchoolId,
 }
 
+
+impl RefreshStaffTimelineCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 /// Set a per-staff custom-field value.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetStaffCustomFieldCommand {
@@ -332,6 +541,14 @@ pub struct SetStaffCustomFieldCommand {
     pub school_id: SchoolId,
 }
 
+
+impl SetStaffCustomFieldCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 /// Marker command for the leave-balance snapshot (recomputed from events).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RefreshStaffLeaveBalanceCommand {
@@ -339,6 +556,14 @@ pub struct RefreshStaffLeaveBalanceCommand {
     pub school_id: SchoolId,
 }
 
+
+impl RefreshStaffLeaveBalanceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrLeaveRead]
+    }
+}
 /// Record an approval / rejection event on a leave request.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordLeaveRequestApprovalCommand {
@@ -346,6 +571,14 @@ pub struct RecordLeaveRequestApprovalCommand {
     pub school_id: SchoolId,
 }
 
+
+impl RecordLeaveRequestApprovalCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrLeaveRequest]
+    }
+}
 /// Link a payroll run to an external payment record.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreatePayrollPaymentLinkCommand {
@@ -353,6 +586,14 @@ pub struct CreatePayrollPaymentLinkCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreatePayrollPaymentLinkCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrPayrollPaymentRead]
+    }
+}
 /// Marker command for the resolved foreign-key mapping of a bulk import.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordStaffImportResolutionCommand {
@@ -360,6 +601,14 @@ pub struct RecordStaffImportResolutionCommand {
     pub school_id: SchoolId,
 }
 
+
+impl RecordStaffImportResolutionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffImportBulk]
+    }
+}
 /// Snapshot a staff member's payroll row when a payroll run reaches Paid.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordStaffPayrollHistoryCommand {
@@ -367,6 +616,14 @@ pub struct RecordStaffPayrollHistoryCommand {
     pub school_id: SchoolId,
 }
 
+
+impl RecordStaffPayrollHistoryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrPayrollMarkPaid]
+    }
+}
 /// Snapshot a staff member's leave row when a leave request reaches a
 /// terminal state.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -375,6 +632,14 @@ pub struct RecordStaffLeaveHistoryCommand {
     pub school_id: SchoolId,
 }
 
+
+impl RecordStaffLeaveHistoryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrLeaveRead]
+    }
+}
 /// Attach additional sections / subjects to a class-teacher assignment.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateAssignClassTeacherScopeCommand {
@@ -382,6 +647,14 @@ pub struct CreateAssignClassTeacherScopeCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreateAssignClassTeacherScopeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 /// Promote a staff member to head of a department (a department may
 /// have multiple historical heads).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -390,6 +663,14 @@ pub struct AssignDepartmentHeadCommand {
     pub school_id: SchoolId,
 }
 
+
+impl AssignDepartmentHeadCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrDepartmentRead]
+    }
+}
 /// Attach a salary grade to a designation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateDesignationGradeCommand {
@@ -397,6 +678,14 @@ pub struct CreateDesignationGradeCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreateDesignationGradeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrDesignationCreate]
+    }
+}
 /// Override the hourly rate for a single staff member.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetHourlyRateOverrideCommand {
@@ -404,6 +693,14 @@ pub struct SetHourlyRateOverrideCommand {
     pub school_id: SchoolId,
 }
 
+
+impl SetHourlyRateOverrideCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrHourlyRateSet]
+    }
+}
 /// Adjust a leave entitlement (carry-forward, special grant, manual correction).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateLeaveDefineAdjustmentCommand {
@@ -411,6 +708,14 @@ pub struct CreateLeaveDefineAdjustmentCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreateLeaveDefineAdjustmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrLeaveDefineCreate]
+    }
+}
 /// Attach a file (medical certificate, travel ticket) to a leave request.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateLeaveRequestAttachmentCommand {
@@ -418,6 +723,14 @@ pub struct CreateLeaveRequestAttachmentCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreateLeaveRequestAttachmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrLeaveRequest]
+    }
+}
 /// Record a raw biometric / RFID punch before it is folded into an
 /// attendance day row.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -426,6 +739,14 @@ pub struct RecordStaffAttendancePunchCommand {
     pub school_id: SchoolId,
 }
 
+
+impl RecordStaffAttendancePunchCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 /// Marker command for the append-only audit trail of payroll-run
 /// state transitions.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -434,6 +755,14 @@ pub struct RecordPayrollGenerateAuditCommand {
     pub school_id: SchoolId,
 }
 
+
+impl RecordPayrollGenerateAuditCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrPayrollGenerate]
+    }
+}
 /// Assign a role to a staff member (a staff member may hold several
 /// roles over time).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -442,6 +771,14 @@ pub struct AssignStaffRoleCommand {
     pub school_id: SchoolId,
 }
 
+
+impl AssignStaffRoleCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 /// Upload (or replace) a staff profile photo.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateStaffProfilePhotoCommand {
@@ -449,6 +786,14 @@ pub struct CreateStaffProfilePhotoCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreateStaffProfilePhotoCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffCreate]
+    }
+}
 /// Register (or update) a staff member's driving license metadata.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateStaffDrivingLicenseCommand {
@@ -456,6 +801,14 @@ pub struct CreateStaffDrivingLicenseCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreateStaffDrivingLicenseCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffCreate]
+    }
+}
 /// Add a select-option row to a staff-registration field.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateStaffRegistrationFieldOptionCommand {
@@ -463,6 +816,14 @@ pub struct CreateStaffRegistrationFieldOptionCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreateStaffRegistrationFieldOptionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffCreate]
+    }
+}
 /// Start a bulk staff-import job (file hash + status); per-row
 /// rows live in [`StaffImportBulkTemporary`].
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -471,6 +832,14 @@ pub struct CreateBulkImportJobCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreateBulkImportJobCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 /// Start a bulk staff-attendance import job; per-row rows live in
 /// [`StaffAttendanceImport`].
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -479,6 +848,14 @@ pub struct CreateStaffAttendanceImportBatchCommand {
     pub school_id: SchoolId,
 }
 
+
+impl CreateStaffAttendanceImportBatchCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 // =============================================================================
 // Cluster D: minimal command stubs for the 15 commands still
 // declared in docs/specs/hr/commands.md but not yet given a
@@ -537,6 +914,14 @@ pub struct RegisterStaffCommand {
     pub notes: Option<String>,
 }
 
+
+impl RegisterStaffCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffCreate]
+    }
+}
 /// Update mutable fields on an existing staff profile.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateStaffCommand {
@@ -568,6 +953,14 @@ pub struct UpdateStaffCommand {
     pub notes: Option<String>,
 }
 
+
+impl UpdateStaffCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffUpdate]
+    }
+}
 /// Reassign the staff (or class/section) on an existing
 /// `AssignClassTeacher` row.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -579,6 +972,14 @@ pub struct UpdateAssignClassTeacherCommand {
     pub section_id: Option<educore_academic::SectionId>,
 }
 
+
+impl UpdateAssignClassTeacherCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 /// Bulk-import staff attendance rows from an external source.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ImportStaffAttendanceCommand {
@@ -587,6 +988,14 @@ pub struct ImportStaffAttendanceCommand {
     pub rows: Vec<crate::entities::StaffAttendanceImportRow>,
 }
 
+
+impl ImportStaffAttendanceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 /// Promote a pending staff-attendance import into committed
 /// `StaffAttendance` rows.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -595,6 +1004,14 @@ pub struct PromoteStaffAttendanceCommand {
     pub import_id: StaffAttendanceImportId,
 }
 
+
+impl PromoteStaffAttendanceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 /// Reject a pending staff-attendance import.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RejectStaffAttendanceCommand {
@@ -603,6 +1020,14 @@ pub struct RejectStaffAttendanceCommand {
     pub reason: String,
 }
 
+
+impl RejectStaffAttendanceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 /// Generate the payroll rows for a staff member for one
 /// pay-period.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -618,6 +1043,14 @@ pub struct GeneratePayrollCommand {
     pub payment_mode: Option<String>,
 }
 
+
+impl GeneratePayrollCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrPayrollGenerate]
+    }
+}
 /// Patch the headline amounts on a generated payroll row.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdatePayrollAmountsCommand {
@@ -630,6 +1063,14 @@ pub struct UpdatePayrollAmountsCommand {
     pub note: Option<String>,
 }
 
+
+impl UpdatePayrollAmountsCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrPayrollUpdate]
+    }
+}
 /// Add a single earning line to an existing payroll row.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AddPayrollEarningCommand {
@@ -639,6 +1080,14 @@ pub struct AddPayrollEarningCommand {
     pub amount: f64,
 }
 
+
+impl AddPayrollEarningCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrPayrollEarningAdd]
+    }
+}
 /// Add a single deduction line to an existing payroll row.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AddPayrollDeductionCommand {
@@ -648,6 +1097,14 @@ pub struct AddPayrollDeductionCommand {
     pub amount: f64,
 }
 
+
+impl AddPayrollDeductionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrPayrollDeductionAdd]
+    }
+}
 /// Add an unpaid-leave deduction to a payroll row.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AddLeaveDeductionInfoCommand {
@@ -660,6 +1117,14 @@ pub struct AddLeaveDeductionInfoCommand {
     pub pay_year: u16,
 }
 
+
+impl AddLeaveDeductionInfoCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrLeaveRead]
+    }
+}
 /// Promote a temporary bulk-import row to a real staff record.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PromoteStaffImportCommand {
@@ -671,6 +1136,14 @@ pub struct PromoteStaffImportCommand {
     pub resolved_designation_id: Option<DesignationId>,
 }
 
+
+impl PromoteStaffImportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffImportBulk]
+    }
+}
 /// Reject a temporary bulk-import row.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RejectStaffImportCommand {
@@ -679,6 +1152,14 @@ pub struct RejectStaffImportCommand {
     pub reason: String,
 }
 
+
+impl RejectStaffImportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffImportBulk]
+    }
+}
 /// Assign a staff member as the teacher for a class-section
 /// subject.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -691,6 +1172,14 @@ pub struct AssignSubjectTeacherCommand {
     pub academic_id: educore_academic::AcademicYearId,
 }
 
+
+impl AssignSubjectTeacherCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrStaffRead]
+    }
+}
 // =============================================================================
 // Lint-satisfying stubs for commands whose canonical struct
 // lives in services.rs.
