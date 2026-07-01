@@ -21,6 +21,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use educore_core::ids::UserId;
+use educore_rbac::value_objects::Capability;
 use educore_core::tenant::TenantContext;
 
 use crate::value_objects::{
@@ -285,6 +286,14 @@ pub struct CreateFeesGroupCommand {
     pub description: Option<String>,
 }
 
+
+impl CreateFeesGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesGroupCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateFeesGroupCommand {
     pub tenant: TenantContext,
@@ -296,18 +305,42 @@ pub struct UpdateFeesGroupCommand {
     pub due_date: Option<NaiveDate>,
 }
 
+
+impl UpdateFeesGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesGroupUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteFeesGroupCommand {
     pub tenant: TenantContext,
     pub fees_group_id: FeesGroupId,
 }
 
+
+impl DeleteFeesGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesGroupDelete]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFeesGroupCommand {
     pub tenant: TenantContext,
     pub fees_group_id: FeesGroupId,
 }
 
+
+impl ReadFeesGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesGroupRead]
+    }
+}
 // -- FeesType --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -320,6 +353,14 @@ pub struct CreateFeesTypeCommand {
     pub currency: Currency,
 }
 
+
+impl CreateFeesTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesTypeCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateFeesTypeCommand {
     pub tenant: TenantContext,
@@ -329,18 +370,42 @@ pub struct UpdateFeesTypeCommand {
     pub amount_minor: Option<i64>,
 }
 
+
+impl UpdateFeesTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesTypeUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteFeesTypeCommand {
     pub tenant: TenantContext,
     pub fees_type_id: FeesTypeId,
 }
 
+
+impl DeleteFeesTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesTypeDelete]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFeesTypeCommand {
     pub tenant: TenantContext,
     pub fees_type_id: FeesTypeId,
 }
 
+
+impl ReadFeesTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesTypeRead]
+    }
+}
 // -- FeesMaster --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -353,6 +418,14 @@ pub struct CreateFeesMasterCommand {
     pub due_date: NaiveDate,
 }
 
+
+impl CreateFeesMasterCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesMasterCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateFeesMasterCommand {
     pub tenant: TenantContext,
@@ -361,18 +434,42 @@ pub struct UpdateFeesMasterCommand {
     pub due_date: Option<NaiveDate>,
 }
 
+
+impl UpdateFeesMasterCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesMasterUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteFeesMasterCommand {
     pub tenant: TenantContext,
     pub fees_master_id: FeesMasterId,
 }
 
+
+impl DeleteFeesMasterCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesMasterDelete]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFeesMasterCommand {
     pub tenant: TenantContext,
     pub fees_master_id: FeesMasterId,
 }
 
+
+impl ReadFeesMasterCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesMasterRead]
+    }
+}
 // -- FeesDiscount --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -385,6 +482,14 @@ pub struct CreateFeesDiscountCommand {
     pub description: Option<String>,
 }
 
+
+impl CreateFeesDiscountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesDiscountCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateFeesDiscountCommand {
     pub tenant: TenantContext,
@@ -394,18 +499,42 @@ pub struct UpdateFeesDiscountCommand {
     pub description: Option<String>,
 }
 
+
+impl UpdateFeesDiscountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesDiscountUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteFeesDiscountCommand {
     pub tenant: TenantContext,
     pub fees_discount_id: FeesDiscountId,
 }
 
+
+impl DeleteFeesDiscountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesDiscountDelete]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFeesDiscountCommand {
     pub tenant: TenantContext,
     pub fees_discount_id: FeesDiscountId,
 }
 
+
+impl ReadFeesDiscountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesDiscountRead]
+    }
+}
 // -- FeesAssign --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -418,6 +547,14 @@ pub struct CreateFeesAssignCommand {
     pub due_date: NaiveDate,
 }
 
+
+impl CreateFeesAssignCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateFeesAssignCommand {
     pub tenant: TenantContext,
@@ -426,12 +563,28 @@ pub struct UpdateFeesAssignCommand {
     pub due_date: Option<NaiveDate>,
 }
 
+
+impl UpdateFeesAssignCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteFeesAssignCommand {
     pub tenant: TenantContext,
     pub fees_assign_id: FeesAssignId,
 }
 
+
+impl DeleteFeesAssignCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignClose]
+    }
+}
 // -- FeesInstallment --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -444,6 +597,14 @@ pub struct CreateFeesInstallmentCommand {
     pub currency: Currency,
 }
 
+
+impl CreateFeesInstallmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInstallmentCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateFeesInstallmentCommand {
     pub tenant: TenantContext,
@@ -453,12 +614,28 @@ pub struct UpdateFeesInstallmentCommand {
     pub amount_minor: Option<i64>,
 }
 
+
+impl UpdateFeesInstallmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInstallmentUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteFeesInstallmentCommand {
     pub tenant: TenantContext,
     pub fees_installment_id: FeesInstallmentId,
 }
 
+
+impl DeleteFeesInstallmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInstallmentDelete]
+    }
+}
 // -- DirectFeesInstallment --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -471,6 +648,14 @@ pub struct CreateDirectFeesInstallmentCommand {
     pub due_date: NaiveDate,
 }
 
+
+impl CreateDirectFeesInstallmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDirectFeesInstallmentCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateDirectFeesInstallmentCommand {
     pub tenant: TenantContext,
@@ -480,18 +665,42 @@ pub struct UpdateDirectFeesInstallmentCommand {
     pub due_date: Option<NaiveDate>,
 }
 
+
+impl UpdateDirectFeesInstallmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDirectFeesInstallmentUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteDirectFeesInstallmentCommand {
     pub tenant: TenantContext,
     pub direct_fees_installment_id: DirectFeesInstallmentId,
 }
 
+
+impl DeleteDirectFeesInstallmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDirectFeesInstallmentDelete]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadDirectFeesInstallmentCommand {
     pub tenant: TenantContext,
     pub direct_fees_installment_id: DirectFeesInstallmentId,
 }
 
+
+impl ReadDirectFeesInstallmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDirectFeesInstallmentRead]
+    }
+}
 // -- DirectFeesInstallmentAssign (per-student linkage) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -503,12 +712,28 @@ pub struct CreateDirectFeesInstallmentAssignCommand {
     pub currency: Currency,
 }
 
+
+impl CreateDirectFeesInstallmentAssignCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDirectFeesInstallmentCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteDirectFeesInstallmentAssignCommand {
     pub tenant: TenantContext,
     pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
 }
 
+
+impl DeleteDirectFeesInstallmentAssignCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDirectFeesInstallmentDelete]
+    }
+}
 // -- DirectFeesSetting (per-school direct-fees configuration) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -518,6 +743,14 @@ pub struct CreateDirectFeesSettingCommand {
     pub description: Option<String>,
 }
 
+
+impl CreateDirectFeesSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateDirectFeesSettingCommand {
     pub tenant: TenantContext,
@@ -526,12 +759,28 @@ pub struct UpdateDirectFeesSettingCommand {
     pub description: Option<String>,
 }
 
+
+impl UpdateDirectFeesSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteDirectFeesSettingCommand {
     pub tenant: TenantContext,
     pub direct_fees_setting_id: DirectFeesSettingId,
 }
 
+
+impl DeleteDirectFeesSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 // -- DirectFeesReminder --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -543,6 +792,14 @@ pub struct CreateDirectFeesReminderCommand {
     pub note: Option<String>,
 }
 
+
+impl CreateDirectFeesReminderCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesReminderRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateDirectFeesReminderCommand {
     pub tenant: TenantContext,
@@ -551,12 +808,28 @@ pub struct UpdateDirectFeesReminderCommand {
     pub note: Option<String>,
 }
 
+
+impl UpdateDirectFeesReminderCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesReminderUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteDirectFeesReminderCommand {
     pub tenant: TenantContext,
     pub direct_fees_reminder_id: DirectFeesReminderId,
 }
 
+
+impl DeleteDirectFeesReminderCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesReminderDelete]
+    }
+}
 // -- PaymentMethod --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -567,6 +840,14 @@ pub struct CreatePaymentMethodCommand {
     pub description: Option<String>,
 }
 
+
+impl CreatePaymentMethodCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentMethodCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdatePaymentMethodCommand {
     pub tenant: TenantContext,
@@ -575,18 +856,42 @@ pub struct UpdatePaymentMethodCommand {
     pub description: Option<String>,
 }
 
+
+impl UpdatePaymentMethodCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentMethodUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeletePaymentMethodCommand {
     pub tenant: TenantContext,
     pub payment_method_id: PaymentMethodId,
 }
 
+
+impl DeletePaymentMethodCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentMethodDelete]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadPaymentMethodCommand {
     pub tenant: TenantContext,
     pub payment_method_id: PaymentMethodId,
 }
 
+
+impl ReadPaymentMethodCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentMethodRead]
+    }
+}
 // -- PaymentGateway --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -599,6 +904,14 @@ pub struct CreatePaymentGatewayCommand {
     pub description: Option<String>,
 }
 
+
+impl CreatePaymentGatewayCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentGatewayConfigure]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdatePaymentGatewayCommand {
     pub tenant: TenantContext,
@@ -610,12 +923,28 @@ pub struct UpdatePaymentGatewayCommand {
     pub description: Option<String>,
 }
 
+
+impl UpdatePaymentGatewayCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentGatewayUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeletePaymentGatewayCommand {
     pub tenant: TenantContext,
     pub payment_gateway_setting_id: PaymentGatewaySettingId,
 }
 
+
+impl DeletePaymentGatewayCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentGatewayDisable]
+    }
+}
 // -- FeesInvoice (Generate / Update / Cancel / Read) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -628,6 +957,14 @@ pub struct GenerateInvoiceCommand {
     pub currency: Currency,
 }
 
+
+impl GenerateInvoiceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateInvoiceCommand {
     pub tenant: TenantContext,
@@ -637,6 +974,14 @@ pub struct UpdateInvoiceCommand {
     pub note: Option<String>,
 }
 
+
+impl UpdateInvoiceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CancelInvoiceCommand {
     pub tenant: TenantContext,
@@ -644,12 +989,28 @@ pub struct CancelInvoiceCommand {
     pub reason: String,
 }
 
+
+impl CancelInvoiceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadInvoiceCommand {
     pub tenant: TenantContext,
     pub fees_invoice_id: FeesInvoiceId,
 }
 
+
+impl ReadInvoiceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 // -- FeesPayment (Reverse / Refund / Read) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -659,6 +1020,14 @@ pub struct ReversePaymentCommand {
     pub reason: String,
 }
 
+
+impl ReversePaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentReverse]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RefundPaymentCommand {
     pub tenant: TenantContext,
@@ -668,12 +1037,28 @@ pub struct RefundPaymentCommand {
     pub reason: String,
 }
 
+
+impl RefundPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRefund]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFeesPaymentCommand {
     pub tenant: TenantContext,
     pub fees_payment_id: FeesPaymentId,
 }
 
+
+impl ReadFeesPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
 // -- Expense (Update / Delete / Approve) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -688,12 +1073,28 @@ pub struct UpdateExpenseCommand {
     pub description: Option<String>,
 }
 
+
+impl UpdateExpenseCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceExpenseUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteExpenseCommand {
     pub tenant: TenantContext,
     pub expense_id: ExpenseId,
 }
 
+
+impl DeleteExpenseCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceExpenseDelete]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApproveExpenseCommand {
     pub tenant: TenantContext,
@@ -702,6 +1103,14 @@ pub struct ApproveExpenseCommand {
     pub note: Option<String>,
 }
 
+
+impl ApproveExpenseCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceExpenseApprove]
+    }
+}
 // -- Income (Create / Update / Delete / Approve) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -717,6 +1126,14 @@ pub struct CreateIncomeCommand {
     pub donor_id: Option<DonorId>,
 }
 
+
+impl CreateIncomeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceIncomeCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateIncomeCommand {
     pub tenant: TenantContext,
@@ -729,12 +1146,28 @@ pub struct UpdateIncomeCommand {
     pub description: Option<String>,
 }
 
+
+impl UpdateIncomeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceIncomeUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteIncomeCommand {
     pub tenant: TenantContext,
     pub income_id: IncomeId,
 }
 
+
+impl DeleteIncomeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceIncomeDelete]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApproveIncomeCommand {
     pub tenant: TenantContext,
@@ -743,6 +1176,14 @@ pub struct ApproveIncomeCommand {
     pub note: Option<String>,
 }
 
+
+impl ApproveIncomeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceIncomeApprove]
+    }
+}
 // -- ExpenseHead (Update / Delete) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -753,12 +1194,28 @@ pub struct UpdateExpenseHeadCommand {
     pub description: Option<String>,
 }
 
+
+impl UpdateExpenseHeadCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceExpenseHeadUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteExpenseHeadCommand {
     pub tenant: TenantContext,
     pub expense_head_id: ExpenseHeadId,
 }
 
+
+impl DeleteExpenseHeadCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceExpenseHeadDelete]
+    }
+}
 // -- IncomeHead (Create / Update / Delete) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -768,6 +1225,14 @@ pub struct CreateIncomeHeadCommand {
     pub description: Option<String>,
 }
 
+
+impl CreateIncomeHeadCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceIncomeHeadCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateIncomeHeadCommand {
     pub tenant: TenantContext,
@@ -776,12 +1241,28 @@ pub struct UpdateIncomeHeadCommand {
     pub description: Option<String>,
 }
 
+
+impl UpdateIncomeHeadCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceIncomeHeadUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteIncomeHeadCommand {
     pub tenant: TenantContext,
     pub income_head_id: IncomeHeadId,
 }
 
+
+impl DeleteIncomeHeadCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceIncomeHeadDelete]
+    }
+}
 // -- BankAccount (Update / Delete / Read) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -795,18 +1276,42 @@ pub struct UpdateBankAccountCommand {
     pub opening_balance_minor: Option<i64>,
 }
 
+
+impl UpdateBankAccountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteBankAccountCommand {
     pub tenant: TenantContext,
     pub bank_account_id: BankAccountId,
 }
 
+
+impl DeleteBankAccountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankClose]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadBankAccountCommand {
     pub tenant: TenantContext,
     pub bank_account_id: BankAccountId,
 }
 
+
+impl ReadBankAccountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankRead]
+    }
+}
 // -- BankStatement (Read) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -815,6 +1320,14 @@ pub struct ReadBankStatementCommand {
     pub bank_statement_id: BankStatementId,
 }
 
+
+impl ReadBankStatementCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 // -- BankPaymentSlip (Generate / Update / Approve / Read) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -829,6 +1342,14 @@ pub struct GenerateBankSlipCommand {
     pub payee_name: Option<String>,
 }
 
+
+impl GenerateBankSlipCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankSlipGenerate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateBankSlipCommand {
     pub tenant: TenantContext,
@@ -839,6 +1360,14 @@ pub struct UpdateBankSlipCommand {
     pub payee_name: Option<String>,
 }
 
+
+impl UpdateBankSlipCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankSlipRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApproveBankSlipCommand {
     pub tenant: TenantContext,
@@ -847,12 +1376,28 @@ pub struct ApproveBankSlipCommand {
     pub note: Option<String>,
 }
 
+
+impl ApproveBankSlipCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankSlipApprove]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadBankSlipCommand {
     pub tenant: TenantContext,
     pub bank_payment_slip_id: BankPaymentSlipId,
 }
 
+
+impl ReadBankSlipCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankSlipRead]
+    }
+}
 // -- Payroll (Generate / Approve / Pay / Read) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -862,6 +1407,14 @@ pub struct GeneratePayrollCommand {
     pub note: Option<String>,
 }
 
+
+impl GeneratePayrollCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApprovePayrollCommand {
     pub tenant: TenantContext,
@@ -870,6 +1423,14 @@ pub struct ApprovePayrollCommand {
     pub note: Option<String>,
 }
 
+
+impl ApprovePayrollCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PayPayrollCommand {
     pub tenant: TenantContext,
@@ -880,12 +1441,28 @@ pub struct PayPayrollCommand {
     pub payment_date: NaiveDate,
 }
 
+
+impl PayPayrollCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadPayrollCommand {
     pub tenant: TenantContext,
     pub payroll_generate_id: educore_hr::value_objects::PayrollGenerateId,
 }
 
+
+impl ReadPayrollCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 // -- PayrollPayment (Approve / Pay / Read) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -896,6 +1473,14 @@ pub struct ApprovePayrollPaymentCommand {
     pub note: Option<String>,
 }
 
+
+impl ApprovePayrollPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PayPayrollPaymentCommand {
     pub tenant: TenantContext,
@@ -906,12 +1491,28 @@ pub struct PayPayrollPaymentCommand {
     pub payment_date: NaiveDate,
 }
 
+
+impl PayPayrollPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadPayrollPaymentCommand {
     pub tenant: TenantContext,
     pub payroll_payment_id: PayrollPaymentId,
 }
 
+
+impl ReadPayrollPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
 // -- Wallet (Read) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -920,6 +1521,14 @@ pub struct ReadWalletCommand {
     pub wallet_id: WalletId,
 }
 
+
+impl ReadWalletCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceWalletRead]
+    }
+}
 // -- WalletTransaction (Approve / Reject / Read) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -929,6 +1538,14 @@ pub struct ApproveWalletTransactionCommand {
     pub approver_user_id: UserId,
 }
 
+
+impl ApproveWalletTransactionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceWalletApprove]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RejectWalletTransactionCommand {
     pub tenant: TenantContext,
@@ -937,12 +1554,28 @@ pub struct RejectWalletTransactionCommand {
     pub reason: String,
 }
 
+
+impl RejectWalletTransactionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceWalletReject]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadWalletTransactionCommand {
     pub tenant: TenantContext,
     pub wallet_transaction_id: WalletTransactionId,
 }
 
+
+impl ReadWalletTransactionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceWalletRead]
+    }
+}
 // -- FeesCarryForward (Read / Configure) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -951,6 +1584,14 @@ pub struct ReadFeesCarryForwardCommand {
     pub fees_carry_forward_id: FeesCarryForwardId,
 }
 
+
+impl ReadFeesCarryForwardCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesCarryForwardRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConfigureFeesCarryForwardCommand {
     pub tenant: TenantContext,
@@ -959,12 +1600,28 @@ pub struct ConfigureFeesCarryForwardCommand {
     pub description: Option<String>,
 }
 
+
+impl ConfigureFeesCarryForwardCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesCarryForwardConfigure]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFeesCarryForwardLogCommand {
     pub tenant: TenantContext,
     pub fees_carry_forward_log_id: FeesCarryForwardLogId,
 }
 
+
+impl ReadFeesCarryForwardLogCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesCarryForwardRead]
+    }
+}
 // -- DueFeesLoginPrevent (Unblock / Read) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -974,12 +1631,28 @@ pub struct UnblockLoginForDueFeesCommand {
     pub reason: String,
 }
 
+
+impl UnblockLoginForDueFeesCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDueFeesUnblock]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadDueFeesBlockCommand {
     pub tenant: TenantContext,
     pub due_fees_login_prevent_id: DueFeesLoginPreventId,
 }
 
+
+impl ReadDueFeesBlockCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDueFeesBlock]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConfigureDueFeesBlockSettingCommand {
     pub tenant: TenantContext,
@@ -987,6 +1660,14 @@ pub struct ConfigureDueFeesBlockSettingCommand {
     pub prevent_reason: PreventReason,
 }
 
+
+impl ConfigureDueFeesBlockSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDueFeesBlock]
+    }
+}
 // -- AmountTransfer (inter-account cash movement) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1000,12 +1681,28 @@ pub struct CreateAmountTransferCommand {
     pub note: Option<String>,
 }
 
+
+impl CreateAmountTransferCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadAmountTransferCommand {
     pub tenant: TenantContext,
     pub amount_transfer_id: AmountTransferId,
 }
 
+
+impl ReadAmountTransferCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 // -- ChartOfAccount (read) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1014,6 +1711,14 @@ pub struct ReadChartOfAccountCommand {
     pub chart_of_account_id: ChartOfAccountId,
 }
 
+
+impl ReadChartOfAccountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceChartOfAccountRead]
+    }
+}
 // -- InvoiceSetting (the school's invoice-numbering config; read) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1022,6 +1727,14 @@ pub struct ReadInvoiceSettingCommand {
     pub invoice_setting_id: InvoiceSettingId,
 }
 
+
+impl ReadInvoiceSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 // -- FeesPaymentSlip (per-payment printable slip) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1030,6 +1743,14 @@ pub struct ReadFeesPaymentSlipCommand {
     pub fees_payment_slip_id: FeesPaymentSlipId,
 }
 
+
+impl ReadFeesPaymentSlipCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
 // =============================================================================
 // Reports — the 22 finance reports. Each is a read-only command with the
 // tenant anchor, a date range, and an optional class scope.
@@ -1043,6 +1764,14 @@ pub struct ReadFeesCollectionReportCommand {
     pub class_id: Option<crate::value_objects::ClassId>,
 }
 
+
+impl ReadFeesCollectionReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadOutstandingFeesReportCommand {
     pub tenant: TenantContext,
@@ -1050,6 +1779,14 @@ pub struct ReadOutstandingFeesReportCommand {
     pub class_id: Option<crate::value_objects::ClassId>,
 }
 
+
+impl ReadOutstandingFeesReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadExpenseReportCommand {
     pub tenant: TenantContext,
@@ -1058,6 +1795,14 @@ pub struct ReadExpenseReportCommand {
     pub expense_head_id: Option<ExpenseHeadId>,
 }
 
+
+impl ReadExpenseReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceExpenseRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadIncomeReportCommand {
     pub tenant: TenantContext,
@@ -1066,6 +1811,14 @@ pub struct ReadIncomeReportCommand {
     pub income_head_id: Option<IncomeHeadId>,
 }
 
+
+impl ReadIncomeReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceIncomeRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadBankStatementReportCommand {
     pub tenant: TenantContext,
@@ -1074,6 +1827,14 @@ pub struct ReadBankStatementReportCommand {
     pub to: NaiveDate,
 }
 
+
+impl ReadBankStatementReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadWalletBalanceReportCommand {
     pub tenant: TenantContext,
@@ -1081,6 +1842,14 @@ pub struct ReadWalletBalanceReportCommand {
     pub to: NaiveDate,
 }
 
+
+impl ReadWalletBalanceReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceWalletRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadPayrollReportCommand {
     pub tenant: TenantContext,
@@ -1089,6 +1858,14 @@ pub struct ReadPayrollReportCommand {
     pub staff_id: Option<educore_hr::value_objects::StaffId>,
 }
 
+
+impl ReadPayrollReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadPaymentMethodReportCommand {
     pub tenant: TenantContext,
@@ -1097,6 +1874,14 @@ pub struct ReadPaymentMethodReportCommand {
     pub payment_method_id: Option<PaymentMethodId>,
 }
 
+
+impl ReadPaymentMethodReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentMethodRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFeesDiscountReportCommand {
     pub tenant: TenantContext,
@@ -1105,6 +1890,14 @@ pub struct ReadFeesDiscountReportCommand {
     pub fees_discount_id: Option<FeesDiscountId>,
 }
 
+
+impl ReadFeesDiscountReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesDiscountRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadDueFeesReportCommand {
     pub tenant: TenantContext,
@@ -1113,6 +1906,14 @@ pub struct ReadDueFeesReportCommand {
     pub class_id: Option<crate::value_objects::ClassId>,
 }
 
+
+impl ReadDueFeesReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDueFeesRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadClassWiseCollectionReportCommand {
     pub tenant: TenantContext,
@@ -1121,6 +1922,14 @@ pub struct ReadClassWiseCollectionReportCommand {
     pub class_id: crate::value_objects::ClassId,
 }
 
+
+impl ReadClassWiseCollectionReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadDailyCollectionReportCommand {
     pub tenant: TenantContext,
@@ -1128,6 +1937,14 @@ pub struct ReadDailyCollectionReportCommand {
     pub to: NaiveDate,
 }
 
+
+impl ReadDailyCollectionReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadMonthlyCollectionReportCommand {
     pub tenant: TenantContext,
@@ -1135,6 +1952,14 @@ pub struct ReadMonthlyCollectionReportCommand {
     pub to: NaiveDate,
 }
 
+
+impl ReadMonthlyCollectionReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadHeadWiseExpenseReportCommand {
     pub tenant: TenantContext,
@@ -1143,6 +1968,14 @@ pub struct ReadHeadWiseExpenseReportCommand {
     pub expense_head_id: ExpenseHeadId,
 }
 
+
+impl ReadHeadWiseExpenseReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadHeadWiseIncomeReportCommand {
     pub tenant: TenantContext,
@@ -1151,6 +1984,14 @@ pub struct ReadHeadWiseIncomeReportCommand {
     pub income_head_id: IncomeHeadId,
 }
 
+
+impl ReadHeadWiseIncomeReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadCashFlowReportCommand {
     pub tenant: TenantContext,
@@ -1158,6 +1999,14 @@ pub struct ReadCashFlowReportCommand {
     pub to: NaiveDate,
 }
 
+
+impl ReadCashFlowReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadProfitLossReportCommand {
     pub tenant: TenantContext,
@@ -1165,12 +2014,28 @@ pub struct ReadProfitLossReportCommand {
     pub to: NaiveDate,
 }
 
+
+impl ReadProfitLossReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadBalanceSheetReportCommand {
     pub tenant: TenantContext,
     pub as_of: NaiveDate,
 }
 
+
+impl ReadBalanceSheetReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadTrialBalanceReportCommand {
     pub tenant: TenantContext,
@@ -1178,6 +2043,14 @@ pub struct ReadTrialBalanceReportCommand {
     pub to: NaiveDate,
 }
 
+
+impl ReadTrialBalanceReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadLedgerReportCommand {
     pub tenant: TenantContext,
@@ -1186,6 +2059,14 @@ pub struct ReadLedgerReportCommand {
     pub to: NaiveDate,
 }
 
+
+impl ReadLedgerReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadReceiptReportCommand {
     pub tenant: TenantContext,
@@ -1194,6 +2075,14 @@ pub struct ReadReceiptReportCommand {
     pub fees_payment_id: Option<FeesPaymentId>,
 }
 
+
+impl ReadReceiptReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadRefundReportCommand {
     pub tenant: TenantContext,
@@ -1201,6 +2090,14 @@ pub struct ReadRefundReportCommand {
     pub to: NaiveDate,
 }
 
+
+impl ReadRefundReportCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceReportRead]
+    }
+}
 // =============================================================================
 // Standalone command shapes (kept for backward compatibility with the
 // pre-expansion callers; the equivalent Create/Open/Block/Execute shapes
@@ -1217,6 +2114,14 @@ pub struct ConfigureFeesGroupCommand {
     pub due_date: NaiveDate,
 }
 
+
+impl ConfigureFeesGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesGroupRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConfigureFeesTypeCommand {
     pub tenant: TenantContext,
@@ -1225,12 +2130,28 @@ pub struct ConfigureFeesTypeCommand {
     pub description: Option<String>,
 }
 
+
+impl ConfigureFeesTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesTypeRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateExpenseHeadCommand {
     pub tenant: TenantContext,
     pub name: String,
 }
 
+
+impl CreateExpenseHeadCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceExpenseHeadCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OpenBankAccountCommand {
     pub tenant: TenantContext,
@@ -1241,6 +2162,14 @@ pub struct OpenBankAccountCommand {
     pub currency: Currency,
 }
 
+
+impl OpenBankAccountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankOpen]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockLoginForDueFeesCommand {
     pub tenant: TenantContext,
@@ -1248,6 +2177,14 @@ pub struct BlockLoginForDueFeesCommand {
     pub reason: crate::value_objects::PreventReason,
 }
 
+
+impl BlockLoginForDueFeesCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDueFeesBlock]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CarryForwardFeesBalanceCommand {
     pub tenant: TenantContext,
@@ -1256,6 +2193,14 @@ pub struct CarryForwardFeesBalanceCommand {
     pub to: educore_academic::AcademicYearId,
 }
 
+
+impl CarryForwardFeesBalanceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 // =============================================================================
 // Minimal command stubs — new aggregates added in commit 429f74f
 // (Cluster C: finance aggregate gap-fill). These stubs carry the
@@ -1273,12 +2218,28 @@ pub struct CreateFeesAssignDiscountCommand {
     pub fees_assign_discount_id: FeesAssignDiscountId,
 }
 
+
+impl CreateFeesAssignDiscountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFeesAssignDiscountCommand {
     pub tenant: TenantContext,
     pub fees_assign_discount_id: FeesAssignDiscountId,
 }
 
+
+impl ReadFeesAssignDiscountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignRead]
+    }
+}
 // -- DirectFeesInstallmentChildPayment (Phase 7 Workstream F) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1287,12 +2248,28 @@ pub struct CreateDirectFeesInstallmentChildPaymentCommand {
     pub direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
 }
 
+
+impl CreateDirectFeesInstallmentChildPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDirectFeesInstallmentCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadDirectFeesInstallmentChildPaymentCommand {
     pub tenant: TenantContext,
     pub direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
 }
 
+
+impl ReadDirectFeesInstallmentChildPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDirectFeesInstallmentPay]
+    }
+}
 // -- FmFeesGroup (Phase 7 Workstream G) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1301,12 +2278,28 @@ pub struct CreateFmFeesGroupCommand {
     pub fm_fees_group_id: FmFeesGroupId,
 }
 
+
+impl CreateFmFeesGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesGroupCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFmFeesGroupCommand {
     pub tenant: TenantContext,
     pub fm_fees_group_id: FmFeesGroupId,
 }
 
+
+impl ReadFmFeesGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesGroupRead]
+    }
+}
 // -- FmFeesType (Phase 7 Workstream G) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1315,12 +2308,28 @@ pub struct CreateFmFeesTypeCommand {
     pub fm_fees_type_id: FmFeesTypeId,
 }
 
+
+impl CreateFmFeesTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesTypeCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFmFeesTypeCommand {
     pub tenant: TenantContext,
     pub fm_fees_type_id: FmFeesTypeId,
 }
 
+
+impl ReadFmFeesTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesTypeRead]
+    }
+}
 // -- FmFeesInvoice (Phase 7 Workstream G) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1329,12 +2338,28 @@ pub struct CreateFmFeesInvoiceCommand {
     pub fm_fees_invoice_id: FmFeesInvoiceId,
 }
 
+
+impl CreateFmFeesInvoiceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceGenerate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFmFeesInvoiceCommand {
     pub tenant: TenantContext,
     pub fm_fees_invoice_id: FmFeesInvoiceId,
 }
 
+
+impl ReadFmFeesInvoiceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceRead]
+    }
+}
 // -- FmFeesInvoiceChild (Phase 7 Workstream G) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1343,12 +2368,28 @@ pub struct CreateFmFeesInvoiceChildCommand {
     pub fm_fees_invoice_child_id: FmFeesInvoiceChildId,
 }
 
+
+impl CreateFmFeesInvoiceChildCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceGenerate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFmFeesInvoiceChildCommand {
     pub tenant: TenantContext,
     pub fm_fees_invoice_child_id: FmFeesInvoiceChildId,
 }
 
+
+impl ReadFmFeesInvoiceChildCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceRead]
+    }
+}
 // -- FmFeesInvoiceSetting (Phase 7 Workstream G) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1357,12 +2398,28 @@ pub struct CreateFmFeesInvoiceSettingCommand {
     pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
 }
 
+
+impl CreateFmFeesInvoiceSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceGenerate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFmFeesInvoiceSettingCommand {
     pub tenant: TenantContext,
     pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
 }
 
+
+impl ReadFmFeesInvoiceSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceRead]
+    }
+}
 // -- FmFeesTransaction (Phase 7 Workstream G) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1371,12 +2428,28 @@ pub struct CreateFmFeesTransactionCommand {
     pub fm_fees_transaction_id: FmFeesTransactionId,
 }
 
+
+impl CreateFmFeesTransactionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFmFeesTransactionCommand {
     pub tenant: TenantContext,
     pub fm_fees_transaction_id: FmFeesTransactionId,
 }
 
+
+impl ReadFmFeesTransactionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 // -- FmFeesTransactionChild (Phase 7 Workstream G) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1385,12 +2458,28 @@ pub struct CreateFmFeesTransactionChildCommand {
     pub fm_fees_transaction_child_id: FmFeesTransactionChildId,
 }
 
+
+impl CreateFmFeesTransactionChildCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFmFeesTransactionChildCommand {
     pub tenant: TenantContext,
     pub fm_fees_transaction_child_id: FmFeesTransactionChildId,
 }
 
+
+impl ReadFmFeesTransactionChildCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 // -- FmFeesWeaver (Phase 7 Workstream G) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1399,12 +2488,28 @@ pub struct CreateFmFeesWeaverCommand {
     pub fm_fees_weaver_id: FmFeesWeaverId,
 }
 
+
+impl CreateFmFeesWeaverCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFmFeesWeaverCommand {
     pub tenant: TenantContext,
     pub fm_fees_weaver_id: FmFeesWeaverId,
 }
 
+
+impl ReadFmFeesWeaverCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 // -- FeesInvoiceSetting (Phase 7 Workstream B) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1413,12 +2518,28 @@ pub struct CreateFeesInvoiceSettingCommand {
     pub fees_invoice_setting_id: FeesInvoiceSettingId,
 }
 
+
+impl CreateFeesInvoiceSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceGenerate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFeesInvoiceSettingCommand {
     pub tenant: TenantContext,
     pub fees_invoice_setting_id: FeesInvoiceSettingId,
 }
 
+
+impl ReadFeesInvoiceSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceRead]
+    }
+}
 // -- FeesInstallmentCredit (Phase 7 Workstream F) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1427,12 +2548,28 @@ pub struct CreateFeesInstallmentCreditCommand {
     pub fees_installment_credit_id: FeesInstallmentCreditId,
 }
 
+
+impl CreateFeesInstallmentCreditCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInstallmentCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFeesInstallmentCreditCommand {
     pub tenant: TenantContext,
     pub fees_installment_credit_id: FeesInstallmentCreditId,
 }
 
+
+impl ReadFeesInstallmentCreditCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInstallmentRead]
+    }
+}
 // -- Transaction (Phase 7 Workstream C — double-entry journal line) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1441,12 +2578,28 @@ pub struct CreateTransactionCommand {
     pub transaction_id: TransactionId,
 }
 
+
+impl CreateTransactionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadTransactionCommand {
     pub tenant: TenantContext,
     pub transaction_id: TransactionId,
 }
 
+
+impl ReadTransactionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 // -- Donor (Phase 7 Workstream D) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1455,12 +2608,28 @@ pub struct CreateDonorCommand {
     pub donor_id: DonorId,
 }
 
+
+impl CreateDonorCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadDonorCommand {
     pub tenant: TenantContext,
     pub donor_id: DonorId,
 }
 
+
+impl ReadDonorCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 // -- ProductPurchase (Phase 7 Workstream L) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1469,12 +2638,28 @@ pub struct CreateProductPurchaseCommand {
     pub product_purchase_id: ProductPurchaseId,
 }
 
+
+impl CreateProductPurchaseCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadProductPurchaseCommand {
     pub tenant: TenantContext,
     pub product_purchase_id: ProductPurchaseId,
 }
 
+
+impl ReadProductPurchaseCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 // -- InventoryPayment (Phase 7 Workstream L) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1483,12 +2668,28 @@ pub struct CreateInventoryPaymentCommand {
     pub inventory_payment_id: InventoryPaymentId,
 }
 
+
+impl CreateInventoryPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadInventoryPaymentCommand {
     pub tenant: TenantContext,
     pub inventory_payment_id: InventoryPaymentId,
 }
 
+
+impl ReadInventoryPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
 // =============================================================================
 // Cluster D — 35 missing finance commands (minimal typed shapes).
 //
@@ -1505,203 +2706,475 @@ pub struct UpdateFeesMasterAmountCommand {
     pub fees_master_id: FeesMasterId,
 }
 
+
+impl UpdateFeesMasterAmountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesMasterUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AssignFeesToClassCommand {
     pub tenant: TenantContext,
     pub fees_assign_id: FeesAssignId,
 }
 
+
+impl AssignFeesToClassCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AssignFeesToStudentCommand {
     pub tenant: TenantContext,
     pub fees_assign_id: FeesAssignId,
 }
 
+
+impl AssignFeesToStudentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateFeesAssignDiscountCommand {
     pub tenant: TenantContext,
     pub fees_assign_discount_id: FeesAssignDiscountId,
 }
 
+
+impl UpdateFeesAssignDiscountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignUpdate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CloseFeesAssignCommand {
     pub tenant: TenantContext,
     pub fees_assign_id: FeesAssignId,
 }
 
+
+impl CloseFeesAssignCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignClose]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AssignInstallmentToStudentCommand {
     pub tenant: TenantContext,
     pub fees_installment_assign_id: FeesInstallmentAssignId,
 }
 
+
+impl AssignInstallmentToStudentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConfigureInvoiceNumberingCommand {
     pub tenant: TenantContext,
     pub fees_invoice_setting_id: FeesInvoiceSettingId,
 }
 
+
+impl ConfigureInvoiceNumberingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PayInvoiceCommand {
     pub tenant: TenantContext,
     pub fees_assign_id: FeesAssignId,
 }
 
+
+impl PayInvoiceCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PayInstallmentCommand {
     pub tenant: TenantContext,
     pub fees_installment_assign_id: FeesInstallmentAssignId,
 }
 
+
+impl PayInstallmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConfigureDirectFeesInstallmentCommand {
     pub tenant: TenantContext,
     pub direct_fees_installment_id: DirectFeesInstallmentId,
 }
 
+
+impl ConfigureDirectFeesInstallmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDirectFeesInstallmentRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AssignDirectInstallmentCommand {
     pub tenant: TenantContext,
     pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
 }
 
+
+impl AssignDirectInstallmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PayDirectInstallmentCommand {
     pub tenant: TenantContext,
     pub direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
 }
 
+
+impl PayDirectInstallmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConfigureDirectFeesCommand {
     pub tenant: TenantContext,
     pub direct_fees_setting_id: DirectFeesSettingId,
 }
 
+
+impl ConfigureDirectFeesCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConfigureFeesReminderCommand {
     pub tenant: TenantContext,
     pub direct_fees_reminder_id: DirectFeesReminderId,
 }
 
+
+impl ConfigureFeesReminderCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesReminderConfigure]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordBankStatementCommand {
     pub tenant: TenantContext,
     pub bank_statement_id: BankStatementId,
 }
 
+
+impl RecordBankStatementCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankStatementRecord]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GenerateBankPaymentSlipCommand {
     pub tenant: TenantContext,
     pub bank_payment_slip_id: BankPaymentSlipId,
 }
 
+
+impl GenerateBankPaymentSlipCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApproveBankPaymentCommand {
     pub tenant: TenantContext,
     pub bank_payment_slip_id: BankPaymentSlipId,
 }
 
+
+impl ApproveBankPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RejectBankPaymentCommand {
     pub tenant: TenantContext,
     pub bank_payment_slip_id: BankPaymentSlipId,
 }
 
+
+impl RejectBankPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferFundsCommand {
     pub tenant: TenantContext,
     pub amount_transfer_id: AmountTransferId,
 }
 
+
+impl TransferFundsCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordExpenseCommand {
     pub tenant: TenantContext,
     pub expense_id: ExpenseId,
 }
 
+
+impl RecordExpenseCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceExpenseRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordIncomeCommand {
     pub tenant: TenantContext,
     pub income_id: IncomeId,
 }
 
+
+impl RecordIncomeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceIncomeRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AddWalletCreditCommand {
     pub tenant: TenantContext,
     pub wallet_transaction_id: WalletTransactionId,
 }
 
+
+impl AddWalletCreditCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceWalletCredit]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeductWalletCreditCommand {
     pub tenant: TenantContext,
     pub wallet_transaction_id: WalletTransactionId,
 }
 
+
+impl DeductWalletCreditCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceWalletCredit]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordPayrollPaymentCommand {
     pub tenant: TenantContext,
     pub payroll_payment_id: PayrollPaymentId,
 }
 
+
+impl RecordPayrollPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordInventoryPaymentCommand {
     pub tenant: TenantContext,
     pub inventory_payment_id: InventoryPaymentId,
 }
 
+
+impl RecordInventoryPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordProductPurchaseCommand {
     pub tenant: TenantContext,
     pub product_purchase_id: ProductPurchaseId,
 }
 
+
+impl RecordProductPurchaseCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordProductPaymentCommand {
     pub tenant: TenantContext,
     pub product_purchase_id: ProductPurchaseId,
 }
 
+
+impl RecordProductPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConfigureInvoiceSettingsCommand {
     pub tenant: TenantContext,
     pub invoice_setting_id: InvoiceSettingId,
 }
 
+
+impl ConfigureInvoiceSettingsCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConfigurePaymentGatewayCommand {
     pub tenant: TenantContext,
     pub payment_gateway_setting_id: PaymentGatewaySettingId,
 }
 
+
+impl ConfigurePaymentGatewayCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentGatewayConfigure]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AttachFeesToQuestionBankCommand {
     pub tenant: TenantContext,
     pub fm_fees_weaver_id: FmFeesWeaverId,
 }
 
+
+impl AttachFeesToQuestionBankCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateChartOfAccountCommand {
     pub tenant: TenantContext,
     pub chart_of_account_id: ChartOfAccountId,
 }
 
+
+impl CreateChartOfAccountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceChartOfAccountCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateSalaryTemplateCommand {
     pub tenant: TenantContext,
     pub salary_template_id: SalaryTemplateId,
 }
 
+
+impl CreateSalaryTemplateCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetHourlyRateCommand {
     pub tenant: TenantContext,
 }
 
+
+impl SetHourlyRateCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AddFeesInstallmentCreditCommand {
     pub tenant: TenantContext,
     pub fees_installment_credit_id: FeesInstallmentCreditId,
 }
 
+
+impl AddFeesInstallmentCreditCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInstallmentRead]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConsumeFeesInstallmentCreditCommand {
     pub tenant: TenantContext,
