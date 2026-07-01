@@ -1,0 +1,33 @@
+[package]
+name = "educore-loadtest"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Load test harness for the Educore engine. Targets 100 schools × 10k students at scale and measures command throughput + latency. NOT shipped to library consumers."
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "educore-loadtest"
+path = "src/main.rs"
+
+[dependencies]
+educore-core = { workspace = true }
+educore-storage = { workspace = true }
+educore-events = { workspace = true }
+educore-testkit = { workspace = true }
+educore-sdk = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+chrono = { workspace = true }
+uuid = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+
+[dev-dependencies]
+# Smoke test runs the harness against a 1-school / 5-row configuration
+# to verify the wiring end-to-end without the full Phase 17 load.
