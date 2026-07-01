@@ -134,6 +134,15 @@ pub mod prelude {
         DispatchStats, Subscriber, SubscriberFailure, SubscriberRegistry, SubscriptionFilter,
     };
     pub use crate::sync::{SyncPaused, SyncResumed, SyncStarted, SyncStopped};
+    // The CommandDispatcher re-export lives in the dispatcher
+    // module (not the prelude) because pulling it into the
+    // prelude would force every consumer of `educore_events::*`
+    // to also depend on `educore-storage`. Consumers that
+    // need the dispatcher can either `use
+    // educore_events::dispatcher::CommandDispatcher` (the
+    // re-export path) or `use
+    // educore_dispatcher::dispatcher::CommandDispatcher`
+    // (the canonical crate path).
 }
 
 #[cfg(test)]

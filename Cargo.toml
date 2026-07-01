@@ -54,6 +54,7 @@ educore-storage = { path = "crates/infra/storage" }
 educore-platform = { path = "crates/cross-cutting/platform" }
 educore-rbac = { path = "crates/cross-cutting/rbac" }
 educore-events = { path = "crates/cross-cutting/events" }
+educore-dispatcher = { path = "crates/cross-cutting/dispatcher" }
 educore-events-domain = { path = "crates/cross-cutting/events-domain" }
 educore-settings = { path = "crates/cross-cutting/settings" }
 educore-operations = { path = "crates/cross-cutting/operations" }
