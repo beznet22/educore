@@ -16,6 +16,7 @@ use crate::aggregate::{NewFormDownload, UpdateFormDownload};
 use crate::value_objects::{
     FileReference, FormDescription, FormDownloadId, FormTitle, PublishDate, ShowPublic, Url,
 };
+use educore_rbac::value_objects::Capability;
 
 // =============================================================================
 // Command type constants (one per command shape; matches the wire form
@@ -55,6 +56,12 @@ pub struct UploadFormCommand {
 impl UploadFormCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = DOCUMENTS_FORM_DOWNLOAD_UPLOAD_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::DocumentsFolderCreate]
+    }
 
     /// Converts the wire-level command into the
     /// aggregate-local [`NewFormDownload`] input expected by
@@ -111,6 +118,12 @@ impl UpdateFormCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = DOCUMENTS_FORM_DOWNLOAD_UPDATE_COMMAND_TYPE;
 
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::DocumentsFolderUpdate]
+    }
+
     /// Converts the wire-level command into the
     /// aggregate-local [`UpdateFormDownload`] input expected by
     /// [`FormDownload::update`](crate::aggregate::FormDownload::update).
@@ -146,6 +159,12 @@ pub struct DeleteFormCommand {
 impl DeleteFormCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = DOCUMENTS_FORM_DOWNLOAD_DELETE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::DocumentsFolderDelete]
+    }
 }
 
 // === Form commands section end ===
@@ -210,6 +229,12 @@ pub struct DispatchPostalCommand {
 impl DispatchPostalCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = DOCUMENTS_POSTAL_DISPATCH_DISPATCH_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::DocumentsFolderCreate]
+    }
 
     /// Converts the wire-level command into the aggregate-local
     /// [`NewPostalDispatch`] input expected by
@@ -278,6 +303,12 @@ impl UpdatePostalDispatchCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = DOCUMENTS_POSTAL_DISPATCH_UPDATE_COMMAND_TYPE;
 
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::DocumentsFolderUpdate]
+    }
+
     /// Converts the wire-level command into the aggregate-local
     /// [`UpdatePostalDispatch`] input expected by
     /// [`PostalDispatch::update`](crate::aggregate::PostalDispatch::update).
@@ -318,6 +349,12 @@ pub struct DeletePostalDispatchCommand {
 impl DeletePostalDispatchCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = DOCUMENTS_POSTAL_DISPATCH_DELETE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::DocumentsFolderDelete]
+    }
 }
 
 // === PostalDispatch commands section end ===
@@ -382,6 +419,12 @@ pub struct ReceivePostalCommand {
 impl ReceivePostalCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = DOCUMENTS_POSTAL_RECEIVE_RECEIVE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::DocumentsFolderCreate]
+    }
 
     /// Converts the wire-level command into the aggregate-local
     /// [`NewPostalReceive`] input expected by
@@ -450,6 +493,12 @@ impl UpdatePostalReceiveCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = DOCUMENTS_POSTAL_RECEIVE_UPDATE_COMMAND_TYPE;
 
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::DocumentsFolderUpdate]
+    }
+
     /// Converts the wire-level command into the aggregate-local
     /// [`UpdatePostalReceive`] input expected by
     /// [`PostalReceive::update`](crate::aggregate::PostalReceive::update).
@@ -490,6 +539,12 @@ pub struct DeletePostalReceiveCommand {
 impl DeletePostalReceiveCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = DOCUMENTS_POSTAL_RECEIVE_DELETE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::DocumentsFolderDelete]
+    }
 }
 
 /// Look up dispatch and receive records sharing a
@@ -514,6 +569,12 @@ pub struct TrackPostalCommand {
 impl TrackPostalCommand {
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = DOCUMENTS_POSTAL_TRACK_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::DocumentsFolderRead]
+    }
 }
 
 // === PostalReceive commands section end ===
