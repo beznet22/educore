@@ -26,6 +26,7 @@ use serde::{Deserialize, Serialize};
 
 use educore_academic::{ClassId, SectionId, SubjectId};
 use educore_core::ids::UserId;
+use educore_rbac::value_objects::Capability;
 use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
 use educore_hr::value_objects::StaffId;
@@ -292,6 +293,11 @@ pub struct CreateNoticeCommand {
 }
 
 impl CreateNoticeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_NOTICE_CREATE_COMMAND_TYPE;
 }
@@ -314,6 +320,11 @@ pub struct UpdateNoticeCommand {
 }
 
 impl UpdateNoticeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_NOTICE_UPDATE_COMMAND_TYPE;
 }
@@ -330,6 +341,11 @@ pub struct PublishNoticeCommand {
 }
 
 impl PublishNoticeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_NOTICE_PUBLISH_COMMAND_TYPE;
 }
@@ -346,6 +362,11 @@ pub struct UnpublishNoticeCommand {
 }
 
 impl UnpublishNoticeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_NOTICE_UNPUBLISH_COMMAND_TYPE;
 }
@@ -360,6 +381,11 @@ pub struct DeleteNoticeCommand {
 }
 
 impl DeleteNoticeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageDelete]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_NOTICE_DELETE_COMMAND_TYPE;
 }
@@ -390,6 +416,11 @@ pub struct RegisterComplaintCommand {
 }
 
 impl RegisterComplaintCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationComplaint]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_COMPLAINT_REGISTER_COMMAND_TYPE;
 }
@@ -406,6 +437,11 @@ pub struct AssignComplaintCommand {
 }
 
 impl AssignComplaintCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationComplaint]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_COMPLAINT_ASSIGN_COMMAND_TYPE;
 }
@@ -424,6 +460,11 @@ pub struct UpdateComplaintStatusCommand {
 }
 
 impl UpdateComplaintStatusCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationComplaint]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_COMPLAINT_UPDATE_STATUS_COMMAND_TYPE;
 }
@@ -442,6 +483,11 @@ pub struct ResolveComplaintCommand {
 }
 
 impl ResolveComplaintCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationComplaint]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_COMPLAINT_RESOLVE_COMMAND_TYPE;
 }
@@ -458,6 +504,11 @@ pub struct AddComplaintNoteCommand {
 }
 
 impl AddComplaintNoteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationComplaint]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_COMPLAINT_ADD_NOTE_COMMAND_TYPE;
 }
@@ -478,6 +529,11 @@ pub struct CreateComplaintTypeCommand {
 }
 
 impl CreateComplaintTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_COMPLAINT_TYPE_CREATE_COMMAND_TYPE;
 }
@@ -496,6 +552,11 @@ pub struct UpdateComplaintTypeCommand {
 }
 
 impl UpdateComplaintTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_COMPLAINT_TYPE_UPDATE_COMMAND_TYPE;
 }
@@ -510,6 +571,11 @@ pub struct DeleteComplaintTypeCommand {
 }
 
 impl DeleteComplaintTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageDelete]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_COMPLAINT_TYPE_DELETE_COMMAND_TYPE;
 }
@@ -538,6 +604,11 @@ pub struct SendNotificationCommand {
 }
 
 impl SendNotificationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_NOTIFICATION_SEND_COMMAND_TYPE;
 }
@@ -552,6 +623,11 @@ pub struct MarkNotificationReadCommand {
 }
 
 impl MarkNotificationReadCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageRead]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_NOTIFICATION_READ_COMMAND_TYPE;
 }
@@ -568,6 +644,11 @@ pub struct WithdrawNotificationCommand {
 }
 
 impl WithdrawNotificationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageDelete]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_NOTIFICATION_WITHDRAW_COMMAND_TYPE;
 }
@@ -596,6 +677,11 @@ pub struct LogEmailSentCommand {
 }
 
 impl LogEmailSentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_EMAIL_LOG_LOG_COMMAND_TYPE;
 }
@@ -624,6 +710,11 @@ pub struct LogSmsSentCommand {
 }
 
 impl LogSmsSentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SMS_LOG_LOG_COMMAND_TYPE;
 }
@@ -652,6 +743,11 @@ pub struct CreateSmsTemplateCommand {
 }
 
 impl CreateSmsTemplateCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SMS_TEMPLATE_CREATE_COMMAND_TYPE;
 }
@@ -672,6 +768,11 @@ pub struct UpdateSmsTemplateCommand {
 }
 
 impl UpdateSmsTemplateCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SMS_TEMPLATE_UPDATE_COMMAND_TYPE;
 }
@@ -686,6 +787,11 @@ pub struct EnableSmsTemplateCommand {
 }
 
 impl EnableSmsTemplateCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SMS_TEMPLATE_ENABLE_COMMAND_TYPE;
 }
@@ -700,6 +806,11 @@ pub struct DisableSmsTemplateCommand {
 }
 
 impl DisableSmsTemplateCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SMS_TEMPLATE_DISABLE_COMMAND_TYPE;
 }
@@ -714,6 +825,11 @@ pub struct DeleteSmsTemplateCommand {
 }
 
 impl DeleteSmsTemplateCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageDelete]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SMS_TEMPLATE_DELETE_COMMAND_TYPE;
 }
@@ -748,6 +864,11 @@ pub struct ConfigureEmailSettingCommand {
 }
 
 impl ConfigureEmailSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_EMAIL_SETTING_CONFIGURE_COMMAND_TYPE;
 }
@@ -762,6 +883,11 @@ pub struct ActivateEmailSettingCommand {
 }
 
 impl ActivateEmailSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_EMAIL_SETTING_ACTIVATE_COMMAND_TYPE;
 }
@@ -776,6 +902,11 @@ pub struct DeleteEmailSettingCommand {
 }
 
 impl DeleteEmailSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageDelete]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_EMAIL_SETTING_DELETE_COMMAND_TYPE;
 }
@@ -796,6 +927,11 @@ pub struct ConfigureSmsGatewayCommand {
 }
 
 impl ConfigureSmsGatewayCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SMS_GATEWAY_CONFIGURE_COMMAND_TYPE;
 }
@@ -810,6 +946,11 @@ pub struct ActivateSmsGatewayCommand {
 }
 
 impl ActivateSmsGatewayCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SMS_GATEWAY_ACTIVATE_COMMAND_TYPE;
 }
@@ -824,6 +965,11 @@ pub struct DeleteSmsGatewayCommand {
 }
 
 impl DeleteSmsGatewayCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageDelete]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SMS_GATEWAY_DELETE_COMMAND_TYPE;
 }
@@ -856,6 +1002,11 @@ pub struct CreateCustomSmsSettingCommand {
 }
 
 impl CreateCustomSmsSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CUSTOM_SMS_SETTING_CREATE_COMMAND_TYPE;
 }
@@ -880,6 +1031,11 @@ pub struct UpdateCustomSmsSettingCommand {
 }
 
 impl UpdateCustomSmsSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CUSTOM_SMS_SETTING_UPDATE_COMMAND_TYPE;
 }
@@ -894,6 +1050,11 @@ pub struct DeleteCustomSmsSettingCommand {
 }
 
 impl DeleteCustomSmsSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageDelete]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CUSTOM_SMS_SETTING_DELETE_COMMAND_TYPE;
 }
@@ -922,6 +1083,11 @@ pub struct CreateNotificationSettingCommand {
 }
 
 impl CreateNotificationSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_NOTIFICATION_SETTING_CREATE_COMMAND_TYPE;
 }
@@ -946,6 +1112,11 @@ pub struct UpdateNotificationSettingCommand {
 }
 
 impl UpdateNotificationSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_NOTIFICATION_SETTING_UPDATE_COMMAND_TYPE;
 }
@@ -960,6 +1131,11 @@ pub struct DeleteNotificationSettingCommand {
 }
 
 impl DeleteNotificationSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageDelete]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_NOTIFICATION_SETTING_DELETE_COMMAND_TYPE;
 }
@@ -980,6 +1156,11 @@ pub struct ConfigureAbsentNotificationCommand {
 }
 
 impl ConfigureAbsentNotificationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_ABSENT_NOTIFICATION_CONFIGURE_COMMAND_TYPE;
 }
@@ -994,6 +1175,11 @@ pub struct EnableAbsentNotificationCommand {
 }
 
 impl EnableAbsentNotificationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_ABSENT_NOTIFICATION_ENABLE_COMMAND_TYPE;
 }
@@ -1008,6 +1194,11 @@ pub struct DisableAbsentNotificationCommand {
 }
 
 impl DisableAbsentNotificationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_ABSENT_NOTIFICATION_DISABLE_COMMAND_TYPE;
 }
@@ -1022,6 +1213,11 @@ pub struct DeleteAbsentNotificationCommand {
 }
 
 impl DeleteAbsentNotificationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageDelete]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_ABSENT_NOTIFICATION_DELETE_COMMAND_TYPE;
 }
@@ -1042,6 +1238,11 @@ pub struct OpenChatConversationCommand {
 }
 
 impl OpenChatConversationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_CONVERSATION_OPEN_COMMAND_TYPE;
 }
@@ -1056,6 +1257,11 @@ pub struct CloseChatConversationCommand {
 }
 
 impl CloseChatConversationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_CONVERSATION_CLOSE_COMMAND_TYPE;
 }
@@ -1084,6 +1290,11 @@ pub struct SendChatMessageCommand {
 }
 
 impl SendChatMessageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_MESSAGE_SEND_COMMAND_TYPE;
 }
@@ -1098,6 +1309,11 @@ pub struct MarkChatMessageSeenCommand {
 }
 
 impl MarkChatMessageSeenCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageRead]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_MESSAGE_SEEN_COMMAND_TYPE;
 }
@@ -1112,6 +1328,11 @@ pub struct DeleteChatMessageCommand {
 }
 
 impl DeleteChatMessageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageDelete]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_MESSAGE_DELETE_COMMAND_TYPE;
 }
@@ -1148,6 +1369,11 @@ pub struct CreateChatGroupCommand {
 }
 
 impl CreateChatGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_GROUP_CREATE_COMMAND_TYPE;
 }
@@ -1168,6 +1394,11 @@ pub struct UpdateChatGroupCommand {
 }
 
 impl UpdateChatGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_GROUP_UPDATE_COMMAND_TYPE;
 }
@@ -1184,6 +1415,11 @@ pub struct SetChatGroupReadOnlyCommand {
 }
 
 impl SetChatGroupReadOnlyCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageRead]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_GROUP_READ_ONLY_SET_COMMAND_TYPE;
 }
@@ -1198,6 +1434,11 @@ pub struct DeleteChatGroupCommand {
 }
 
 impl DeleteChatGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageDelete]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_GROUP_DELETE_COMMAND_TYPE;
 }
@@ -1220,6 +1461,11 @@ pub struct AddUserToChatGroupCommand {
 }
 
 impl AddUserToChatGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_GROUP_USER_ADD_COMMAND_TYPE;
 }
@@ -1238,6 +1484,11 @@ pub struct SetChatGroupUserRoleCommand {
 }
 
 impl SetChatGroupUserRoleCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_GROUP_USER_SET_ROLE_COMMAND_TYPE;
 }
@@ -1254,6 +1505,11 @@ pub struct RemoveUserFromChatGroupCommand {
 }
 
 impl RemoveUserFromChatGroupCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_GROUP_USER_REMOVE_COMMAND_TYPE;
 }
@@ -1276,6 +1532,11 @@ pub struct RecordGroupMessageRecipientCommand {
 }
 
 impl RecordGroupMessageRecipientCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str =
         COMMUNICATION_CHAT_GROUP_MESSAGE_RECIPIENT_RECORD_COMMAND_TYPE;
@@ -1291,6 +1552,11 @@ pub struct MarkGroupMessageReadCommand {
 }
 
 impl MarkGroupMessageReadCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str =
         COMMUNICATION_CHAT_GROUP_MESSAGE_RECIPIENT_MARK_READ_COMMAND_TYPE;
@@ -1312,6 +1578,11 @@ pub struct RemoveGroupMessageForUserCommand {
 }
 
 impl RemoveGroupMessageForUserCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str =
         COMMUNICATION_CHAT_GROUP_MESSAGE_REMOVE_REMOVE_COMMAND_TYPE;
@@ -1331,6 +1602,11 @@ pub struct BlockUserCommand {
 }
 
 impl BlockUserCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_BLOCK_USER_BLOCK_COMMAND_TYPE;
 }
@@ -1345,6 +1621,11 @@ pub struct UnblockUserCommand {
 }
 
 impl UnblockUserCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_BLOCK_USER_UNBLOCK_COMMAND_TYPE;
 }
@@ -1369,6 +1650,11 @@ pub struct SendChatInvitationCommand {
 }
 
 impl SendChatInvitationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_INVITATION_SEND_COMMAND_TYPE;
 }
@@ -1383,6 +1669,11 @@ pub struct AcceptChatInvitationCommand {
 }
 
 impl AcceptChatInvitationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_INVITATION_ACCEPT_COMMAND_TYPE;
 }
@@ -1397,6 +1688,11 @@ pub struct RejectChatInvitationCommand {
 }
 
 impl RejectChatInvitationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_INVITATION_REJECT_COMMAND_TYPE;
 }
@@ -1417,6 +1713,11 @@ pub struct ClassifyChatInvitationCommand {
 }
 
 impl ClassifyChatInvitationCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_INVITATION_TYPE_CLASSIFY_COMMAND_TYPE;
 }
@@ -1435,6 +1736,11 @@ pub struct SetChatStatusCommand {
 }
 
 impl SetChatStatusCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CHAT_STATUS_SET_COMMAND_TYPE;
 }
@@ -1461,6 +1767,11 @@ pub struct CreateSendMessageCommand {
 }
 
 impl CreateSendMessageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SEND_MESSAGE_CREATE_COMMAND_TYPE;
 }
@@ -1475,6 +1786,11 @@ pub struct DispatchSendMessageCommand {
 }
 
 impl DispatchSendMessageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SEND_MESSAGE_DISPATCH_COMMAND_TYPE;
 }
@@ -1491,6 +1807,11 @@ pub struct CancelSendMessageCommand {
 }
 
 impl CancelSendMessageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageDelete]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SEND_MESSAGE_CANCEL_COMMAND_TYPE;
 }
@@ -1517,6 +1838,11 @@ pub struct ReceiveContactMessageCommand {
 }
 
 impl ReceiveContactMessageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CONTACT_MESSAGE_RECEIVE_COMMAND_TYPE;
 }
@@ -1531,6 +1857,11 @@ pub struct MarkContactMessageViewedCommand {
 }
 
 impl MarkContactMessageViewedCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageRead]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CONTACT_MESSAGE_VIEW_COMMAND_TYPE;
 }
@@ -1549,6 +1880,11 @@ pub struct ReplyToContactMessageCommand {
 }
 
 impl ReplyToContactMessageCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_CONTACT_MESSAGE_REPLY_COMMAND_TYPE;
 }
@@ -1573,6 +1909,11 @@ pub struct CreateSpeechSliderCommand {
 }
 
 impl CreateSpeechSliderCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SPEECH_SLIDER_CREATE_COMMAND_TYPE;
 }
@@ -1595,6 +1936,11 @@ pub struct UpdateSpeechSliderCommand {
 }
 
 impl UpdateSpeechSliderCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SPEECH_SLIDER_UPDATE_COMMAND_TYPE;
 }
@@ -1609,6 +1955,11 @@ pub struct DeleteSpeechSliderCommand {
 }
 
 impl DeleteSpeechSliderCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageDelete]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_SPEECH_SLIDER_DELETE_COMMAND_TYPE;
 }
@@ -1639,6 +1990,11 @@ pub struct LogPhoneCallCommand {
 }
 
 impl LogPhoneCallCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageCreate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str = COMMUNICATION_PHONE_CALL_LOG_LOG_COMMAND_TYPE;
 }
@@ -1655,6 +2011,11 @@ pub struct UpdatePhoneCallFollowUpCommand {
 }
 
 impl UpdatePhoneCallFollowUpCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::CommunicationMessageUpdate]
+    }
     /// The wire-form command type.
     pub const COMMAND_TYPE: &'static str =
         COMMUNICATION_PHONE_CALL_LOG_UPDATE_FOLLOW_UP_COMMAND_TYPE;
