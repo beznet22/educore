@@ -456,6 +456,20 @@ fn payment_lifecycle_net_amount_holds_across_payment_methods() {
         PaymentMethodKind::Mobile,
         PaymentMethodKind::Gateway,
     ] {
+        // INV-FP-METHOD-FK + INV-FP-GATEWAY-REF: non-cash
+        // methods must carry a `payment_method_id`; gateway
+        // must additionally carry a `reference` (the gateway
+        // transaction id). Cash is the one accepted exception.
+        let method_id = if method == PaymentMethodKind::Cash {
+            None
+        } else {
+            Some(PaymentMethodId::new(school, g.next_uuid()))
+        };
+        let reference = if method == PaymentMethodKind::Gateway {
+            Some(format!("GTW-{}", g.next_uuid()))
+        } else {
+            None
+        };
         let cmd = fin_services::RecordPaymentCommand {
             tenant: TenantContext::for_user(
                 school,
@@ -469,8 +483,8 @@ fn payment_lifecycle_net_amount_holds_across_payment_methods() {
             fine_minor: 0,
             payment_method: method,
             bank_id: None,
-            payment_method_id: None,
-            reference: None,
+            payment_method_id: method_id,
+            reference,
             note: None,
             payment_date: date(2026, 6, 13),
         };
