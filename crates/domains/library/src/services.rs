@@ -1145,57 +1145,204 @@ where
     Ok(event)
 }
 
-/// Handler skeleton: renew a [`BookIssue`].
+/// Renews a [`BookIssue`]. Transitions the issue to
+/// `Renewed`, bumps the version, and emits a [`BookRenewed`]
+/// event. Mirrors the `return_book` mutation pattern: the
+/// dispatcher loads the issue, calls this factory, and
+/// persists the new aggregate + outbox / audit rows in a
+/// single transaction.
 pub fn renew_book<C, G>(
-    _cmd: RenewBookCommand,
-    _clock: &C,
-    _ids: &G,
+    cmd: RenewBookCommand,
+    clock: &C,
+    ids: &G,
+    book_issue: &mut BookIssue,
 ) -> Result<(BookIssue, BookRenewed)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    if cmd.book_issue_id != book_issue.id {
+        return Err(DomainError::validation(
+            "RENEW_BOOK: command id does not match aggregate id",
+        ));
+    }
+    if cmd.tenant.school_id != book_issue.school_id {
+        return Err(DomainError::tenant_violation(
+            "RENEW_BOOK: tenant school does not match aggregate",
+        ));
+    }
+    BookRenewalEligibility::check(book_issue, cmd.new_due_date)?;
+
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let from_due_date = book_issue.due_date;
+    let book_id = book_issue.book_id;
+    let member_id = book_issue.library_member_id;
+
+    book_issue.renew(cmd.new_due_date, cmd.tenant.actor_id, now, event_id);
+
+    let event = BookRenewed::new(
+        book_issue.id,
+        book_id,
+        member_id,
+        from_due_date,
+        cmd.new_due_date,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((book_issue.clone(), event))
 }
 
-/// Handler skeleton: mark a [`BookIssue`] as lost.
+/// Marks a [`BookIssue`] as lost. Terminal state. Refuses to
+/// mark an already-returned issue as lost (idempotency guard)
+/// and refuses to mark a lost issue as lost twice.
 pub fn mark_book_lost<C, G>(
-    _cmd: MarkBookLostCommand,
-    _clock: &C,
-    _ids: &G,
+    cmd: MarkBookLostCommand,
+    clock: &C,
+    ids: &G,
+    book_issue: &mut BookIssue,
 ) -> Result<(BookIssue, BookMarkedLost)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    if cmd.book_issue_id != book_issue.id {
+        return Err(DomainError::validation(
+            "MARK_BOOK_LOST: command id does not match aggregate id",
+        ));
+    }
+    if cmd.tenant.school_id != book_issue.school_id {
+        return Err(DomainError::tenant_violation(
+            "MARK_BOOK_LOST: tenant school does not match aggregate",
+        ));
+    }
+    if !book_issue.is_open() {
+        return Err(DomainError::conflict(
+            "MARK_BOOK_LOST: book issue is not in an open status",
+        ));
+    }
+
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let book_id = book_issue.book_id;
+    let member_id = book_issue.library_member_id;
+    let quantity = book_issue.quantity;
+
+    book_issue.mark_lost(cmd.tenant.actor_id, now, event_id);
+
+    let event = BookMarkedLost::new(
+        book_issue.id,
+        book_id,
+        member_id,
+        quantity,
+        cmd.note.clone(),
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((book_issue.clone(), event))
 }
 
-/// Handler skeleton: record a [`BookReturn`] row for an
-/// existing [`BookIssue`].
+/// Records a [`BookReturn`] aggregate row for an existing
+/// [`BookIssue`]. Pure factory: the command carries every
+/// field needed to construct the return row, so no aggregate
+/// is loaded. The dispatcher is responsible for also
+/// transitioning the source `BookIssue` to `Returned`
+/// (typically via `return_book`) in the same transaction.
 pub fn record_book_return<C, G>(
-    _cmd: RecordBookReturnCommand,
-    _clock: &C,
-    _ids: &G,
+    cmd: RecordBookReturnCommand,
+    clock: &C,
+    ids: &G,
 ) -> Result<(BookReturn, BookReturnRecorded)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let return_id = cmd.book_return_id;
+    let book_id = cmd.book_id;
+    let member_id = cmd.library_member_id;
+
+    let mut book_return = BookReturn::fresh(
+        return_id,
+        cmd.book_issue_id,
+        book_id,
+        member_id,
+        cmd.quantity,
+        cmd.return_date,
+        cmd.note.clone(),
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    );
+    book_return.last_event_id = Some(event_id);
+
+    let event = BookReturnRecorded::new(
+        return_id,
+        cmd.book_issue_id,
+        book_id,
+        member_id,
+        cmd.return_date,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((book_return, event))
 }
 
-/// Handler skeleton: waive an existing [`Fine`].
+/// Waives an existing [`Fine`]. Refuses to waive a fine that
+/// has already been waived (idempotency guard).
 pub fn waive_book_issue_fine<C, G>(
-    _cmd: WaiveBookIssueFineCommand,
-    _clock: &C,
-    _ids: &G,
+    cmd: WaiveBookIssueFineCommand,
+    clock: &C,
+    ids: &G,
+    fine: &mut Fine,
 ) -> Result<(Fine, FineWaived)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    if cmd.fine_id != fine.id {
+        return Err(DomainError::validation(
+            "WAIVE_BOOK_ISSUE_FINE: command id does not match aggregate id",
+        ));
+    }
+    if cmd.tenant.school_id != fine.school_id {
+        return Err(DomainError::tenant_violation(
+            "WAIVE_BOOK_ISSUE_FINE: tenant school does not match aggregate",
+        ));
+    }
+    if fine.waived {
+        return Err(DomainError::conflict(
+            "WAIVE_BOOK_ISSUE_FINE: fine is already waived",
+        ));
+    }
+
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let book_issue_id = fine.book_issue_id;
+    let member_id = fine.library_member_id;
+    let actor = cmd.tenant.actor_id;
+
+    fine.waive(actor, cmd.reason.clone(), now, event_id);
+
+    let event = FineWaived::new(
+        cmd.fine_id,
+        book_issue_id,
+        member_id,
+        actor,
+        cmd.reason,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((fine.clone(), event))
 }
 
 /// Handler skeleton: search the book catalog.
