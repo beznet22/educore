@@ -1,0 +1,505 @@
+# RBAC Spec-to-Capability Map
+# Generated: Engine Production Depth Phase 5, Step 1
+# Source: docs/specs/<domain>/commands.md (**Capability:** annotations)
+
+
+# === academic ===
+[[academic_commands]]
+command = "AdmitStudent"
+capability = "Student.Admit"
+
+command = "UpdateStudentProfile"
+capability = "Student.Update"
+
+command = "AssignStudentToSection"
+capability = "Student.AssignSection"
+
+command = "ChangeStudentCategory"
+capability = "Student.Update"
+
+command = "AssignOptionalSubject"
+capability = "Student.Update"
+
+command = "UploadStudentDocument"
+capability = "Student.Document.Upload"
+
+command = "SuspendStudent"
+capability = "Student.Suspend"
+
+command = "ReinstateStudent"
+capability = "Student.Reinstate"
+
+command = "WithdrawStudent"
+capability = "Student.Withdraw"
+
+command = "TransferStudent"
+capability = "Student.Transfer"
+
+command = "PromoteStudent"
+capability = "Student.Promote"
+
+command = "GraduateStudent"
+capability = "Student.Graduate"
+
+command = "CreateClassSection"
+capability = "Subject.Update"
+
+# === assessment ===
+[[assessment_commands]]
+command = "CreateExamType"
+capability = "ExamType.Create"
+
+command = "UpdateExamType"
+capability = "ExamType.Update"
+
+command = "DeleteExamType"
+capability = "ExamType.Delete"
+
+command = "CreateExam"
+capability = "Exam.Create"
+
+command = "UpdateExam"
+capability = "Exam.Update"
+
+command = "DeleteExam"
+capability = "Exam.Delete"
+
+command = "ScheduleExam"
+capability = "Exam.Schedule"
+
+command = "UpdateExamSchedule"
+capability = "Exam.Schedule"
+
+command = "CancelExamSchedule"
+capability = "Exam.Schedule"
+
+command = "InitializeMarksRegister"
+capability = "Marks.Initialize"
+
+command = "EnterMarks"
+capability = "Marks.Enter"
+
+command = "SubmitMarks"
+capability = "Marks.Submit"
+
+command = "PublishResult"
+capability = "Result.Publish"
+
+command = "RepublishResult"
+capability = "Result.Publish"
+
+command = "GenerateReportCard"
+capability = "ReportCard.Generate"
+
+command = "CreateOnlineExam"
+capability = "OnlineExam.Create"
+
+command = "PublishOnlineExam"
+capability = "OnlineExam.Publish"
+
+command = "StartOnlineExam"
+capability = "OnlineExam.Start"
+
+command = "SubmitOnlineExamAnswer"
+capability = "OnlineExam.Answer"
+
+command = "EvaluateOnlineExam"
+capability = "OnlineExam.Evaluate"
+
+command = "GenerateSeatPlan"
+capability = "SeatPlan.Generate"
+
+command = "GenerateAdmitCard"
+capability = "AdmitCard.Generate"
+
+command = "SetExamSignature"
+capability = "ExamSignature.Set"
+
+command = "ConfigureCustomResultSettings"
+capability = "Result.Configure"
+
+command = "MarkTeacherEvaluation"
+capability = "TeacherEvaluation.Mark"
+
+command = "AddTeacherRemark"
+capability = "TeacherRemark.Add"
+
+command = "UpdateTeacherRemark"
+capability = "TeacherRemark.Update"
+
+command = "ApproveTeacherEvaluation"
+capability = "TeacherEvaluation.Approve"
+
+command = "RejectTeacherEvaluation"
+capability = "ExamAttendance.Mark"
+
+command = "ConfigureAdmitCardSettings"
+capability = "AdmitCard.Configure"
+
+command = "ConfigureSeatPlanSettings"
+capability = "SeatPlan.Configure"
+
+command = "ConfigureTeacherEvaluation"
+capability = "ExamRoutinePage.Update"
+
+command = "MarkExamStepSkip"
+capability = "AdmitCard.Regenerate"
+
+command = "ScheduleSubjectEntry"
+capability = "ScheduleSubjectEntry"
+
+command = "SeatPlanAllocation"
+capability = "AdmitCard.Regenerate"
+
+command = "ScheduleSubjectEntry"
+capability = "ScheduleSubjectEntry"
+
+command = "SeatPlanAllocation"
+capability = "SeatPlan.Update"
+
+# === attendance ===
+[[attendance_commands]]
+command = "MarkStudentAttendance"
+capability = "Attendance.Mark"
+
+command = "UpdateStudentAttendance"
+capability = "Attendance.Update"
+
+command = "MarkSubjectAttendance"
+capability = "Attendance.Mark"
+
+command = "MarkStaffAttendance"
+capability = "Attendance.Mark"
+
+command = "MarkExamAttendance"
+command = "BulkMarkStudentAttendance"
+capability = "Attendance.BulkMark"
+
+command = "ImportAttendance"
+capability = "Attendance.Import"
+
+command = "ValidateBulkImport"
+capability = "Attendance.Import"
+
+command = "CommitBulkImport"
+capability = "Attendance.Import"
+
+command = "CancelBulkImport"
+capability = "Attendance.Import"
+
+command = "SendAbsenceNotification"
+capability = "Attendance.Notify"
+
+command = "MarkClassAttendance"
+command = "ImportRow"
+capability = "SubjectAttendance.Update"
+
+command = "ImportRow"
+capability = "SubjectAttendance.Update"
+
+# === communication ===
+[[communication_commands]]
+command = "CreateNotice"
+capability = "Notice.Create"
+
+command = "UpdateNotice"
+capability = "Notice.Update"
+
+command = "PublishNotice"
+capability = "Notice.Publish"
+
+command = "UnpublishNotice"
+capability = "Notice.Unpublish"
+
+command = "DeleteNotice"
+capability = "Notice.Delete"
+
+command = "RegisterComplaint"
+capability = "Complaint.Create"
+
+command = "AssignComplaint"
+capability = "Complaint.Assign"
+
+command = "UpdateComplaintStatus"
+capability = "Complaint.Update"
+
+command = "ResolveComplaint"
+capability = "Complaint.Resolve"
+
+command = "AddComplaintNote"
+capability = "Complaint.Note"
+
+command = "SendNotification"
+capability = "Notification.Send"
+
+command = "MarkNotificationRead"
+capability = "Notification.Read"
+
+command = "WithdrawNotification"
+capability = "Notification.Withdraw"
+
+command = "LogEmailSent"
+capability = "EmailLog.Create"
+
+command = "LogSmsSent"
+capability = "SmsLog.Create"
+
+command = "CreateSmsTemplate"
+capability = "Template.Create"
+
+command = "ConfigureEmailSetting"
+capability = "EmailSetting.Configure"
+
+command = "ActivateEmailSetting"
+capability = "EmailSetting.Activate"
+
+command = "ConfigureSmsGateway"
+capability = "SmsGateway.Configure"
+
+command = "ActivateSmsGateway"
+capability = "SmsGateway.Activate"
+
+command = "CreateNotificationSetting"
+capability = "NotificationSetting.Create"
+
+command = "ConfigureAbsentNotification"
+capability = "AbsentNotification.Configure"
+
+command = "SendChatMessage"
+capability = "Chat.Send"
+
+command = "MarkChatMessageSeen"
+capability = "Chat.Read"
+
+command = "CreateChatGroup"
+capability = "ChatGroup.Create"
+
+command = "SendChatInvitation"
+capability = "Chat.Invite"
+
+command = "SetChatStatus"
+capability = "Chat.SetStatus"
+
+command = "CreateSendMessage"
+capability = "SendMessage.Create"
+
+command = "DispatchSendMessage"
+capability = "SendMessage.Dispatch"
+
+command = "CancelSendMessage"
+capability = "SendMessage.Cancel"
+
+command = "ReceiveContactMessage"
+capability = "ContactMessage.Create (system or public-port)."
+
+command = "ReplyToContactMessage"
+capability = "ContactMessage.Reply"
+
+command = "CreateSpeechSlider"
+capability = "SpeechSlider.Create"
+
+command = "LogPhoneCall"
+capability = "PhoneCallLog.Create"
+
+command = "UpdatePhoneCallFollowUp"
+capability = "PhoneCallLog.Update"
+
+command = "CreateCustomSmsSetting"
+capability = "CustomSmsSetting.Update"
+
+# === documents ===
+[[documents_commands]]
+command = "UploadForm"
+capability = "Form.Upload"
+
+command = "UpdateForm"
+capability = "Form.Update"
+
+command = "DeleteForm"
+capability = "Form.Delete"
+
+command = "DispatchPostal"
+capability = "Postal.Dispatch"
+
+command = "UpdatePostalDispatch"
+capability = "Postal.Update"
+
+command = "DeletePostalDispatch"
+capability = "Postal.Delete"
+
+command = "ReceivePostal"
+capability = "Postal.Receive"
+
+command = "UpdatePostalReceive"
+capability = "Postal.Update"
+
+command = "DeletePostalReceive"
+capability = "Postal.Delete"
+
+command = "TrackPostal"
+capability = "Postal.Read"
+
+# === facilities ===
+[[facilities_commands]]
+command = "Transport"
+capability = "Route.Delete"
+
+command = "Dormitory"
+capability = "Room.Create"
+
+command = "Inventory"
+capability = "Inventory.Sell"
+
+command = "Suppliers"
+capability = "Supplier.Delete"
+
+# === finance ===
+[[finance_commands]]
+command = "FeesGroup"
+capability = "FeesGroup.Create"
+
+command = "FeesType"
+capability = "FeesType.Create"
+
+command = "FeesMaster"
+capability = "FeesMaster.Update"
+
+command = "FeesAssign"
+capability = "FeesAssign.Close"
+
+command = "FeesDiscount"
+capability = "FeesDiscount.Create"
+
+command = "FeesInstallment"
+capability = "FeesInstallment.Assign"
+
+command = "FeesInvoice"
+capability = "Invoice.Configure"
+
+command = "Payment"
+capability = "DueFees.Unblock"
+
+command = "Bank"
+capability = "Income.Create"
+
+command = "Wallet"
+capability = "Wallet.Debit"
+
+command = "Payroll"
+capability = "Product.Payment"
+
+command = "Settings"
+capability = "PaymentMethod.Update"
+
+# === hr ===
+[[hr_commands]]
+command = "Staff"
+capability = "Staff.Delete"
+
+command = "Department"
+command = "Designation"
+command = "AssignClassTeacher"
+capability = "AssignClassTeacher.Create"
+
+command = "Leave"
+capability = "Leave.Cancel"
+
+command = "Attendance"
+capability = "Attendance.Staff.Import.Reject"
+
+command = "Payroll"
+capability = "Staff.ImportBulk.Reject"
+
+command = "AssignSubjectTeacher"
+capability = "StaffCustomField.Set"
+
+command = "StaffImportRow"
+capability = "StaffCustomField.Set"
+
+command = "StaffImportRow"
+capability = "StaffImportRow"
+
+# === library ===
+[[library_commands]]
+command = "Catalog"
+capability = "Book.AdjustQuantity"
+
+command = "Members"
+capability = "WaiveBookIssueFine"
+
+# === cms ===
+[[cms_commands]]
+command = "CreatePage"
+capability = "Page.Create"
+
+command = "UpdatePage"
+capability = "Page.Update"
+
+command = "PublishPage"
+capability = "Page.Publish"
+
+command = "ArchivePage"
+capability = "Page.Archive"
+
+command = "DeletePage"
+capability = "Page.Delete"
+
+command = "CreateNews"
+capability = "News.Create"
+
+command = "UpdateNews"
+capability = "News.Update"
+
+command = "PublishNews"
+capability = "News.Publish"
+
+command = "UnpublishNews"
+capability = "News.Unpublish"
+
+command = "DeleteNews"
+capability = "News.Delete"
+
+command = "CommentOnNews"
+capability = "NewsComment.Create"
+
+command = "ModerateNewsComment"
+capability = "NewsComment.Moderate"
+
+command = "DeleteNewsComment"
+capability = "NewsComment.Delete"
+
+command = "CreateNoticeBoard"
+capability = "NoticeBoard.Create"
+
+command = "PublishNoticeBoard"
+capability = "NoticeBoard.Publish"
+
+command = "CreateTestimonial"
+capability = "Testimonial.Create"
+
+command = "CreateHomeSlider"
+capability = "HomeSlider.Create"
+
+command = "UpdateHomeSlider"
+capability = "HomeSlider.Update"
+
+command = "DeleteHomeSlider"
+capability = "HomeSlider.Delete"
+
+command = "ConfigureHomePage"
+capability = "HomePageSetting.Configure"
+
+command = "CreateContent"
+capability = "Content.Create"
+
+command = "CreateContentShareList"
+capability = "ContentShareList.Create"
+
+command = "DispatchContentShareList"
+capability = "ContentShareList.Dispatch"
+
+command = "CreateTeacherUploadContent"
+capability = "TeacherUploadContent.Create"
+
+command = "CreateUploadContent"
+capability = "UploadContent.Create"
