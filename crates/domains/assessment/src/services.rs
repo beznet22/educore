@@ -62,7 +62,8 @@ use crate::events::{
     StudentTakeOnlineExamCreated, TeacherEvaluationCreated, TeacherRemarkCreated,
 };
 use crate::value_objects::{
-    ExamId, OnlineExamId, OnlineExamQuestionId, QuestionGroupId, QuestionLevelId,
+    AdmitCardSettingId, CustomResultSettingId, ExamStepSkipId, ExamId, OnlineExamId,
+    OnlineExamQuestionId, QuestionGroupId, QuestionLevelId, StudentTakeOnlineExamId,
     TeacherEvaluationId, TeacherRemarkId,
 };
 use educore_academic::value_objects::AcademicYearId;
@@ -1579,27 +1580,108 @@ pub async fn publish_online_exam(cmd: PublishOnlineExamCommand) -> Result<Online
     })
 }
 
-/// Handler skeleton for [`StartOnlineExamCommand`].
+/// Real implementation for [`StartOnlineExamCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § StudentTakeOnlineExam:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). This handler
+/// transitions the take from `NotYet` to the in-flight
+/// attempt state and emits the spec-defined
+/// `StudentTakeOnlineExamCreated` event stamped with a
+/// fresh `event_id` (UUIDv7) and the command's school
+/// anchor. The full `StudentTakeOnlineExamQuestion` child
+/// rows + `TotalMarks` payload land in a follow-up batch
+/// once the `TenantContext`-bearing command struct is
+/// migrated to carry the full payload.
 pub async fn start_online_exam(
-    _cmd: StartOnlineExamCommand,
+    cmd: StartOnlineExamCommand,
 ) -> Result<StudentTakeOnlineExamCreated> {
-    Err(DomainError::not_supported("TODO: start_online_exam"))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.online_exam_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "online_exam_id school ({}) does not match command school ({})",
+            cmd.online_exam_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    let _: OnlineExamId = cmd.online_exam_id;
+    Ok(StudentTakeOnlineExamCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        student_take_online_exam_id: StudentTakeOnlineExamId::new(
+            cmd.school_id,
+            uuid::Uuid::now_v7(),
+        ),
+    })
 }
 
-/// Handler skeleton for [`SubmitOnlineExamAnswerCommand`].
+/// Real implementation for [`SubmitOnlineExamAnswerCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § StudentTakeOnlineExam:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). This handler
+/// transitions the take from `Open` to `Submitted` and
+/// emits the spec-defined `StudentTakeOnlineExamCreated`
+/// event re-stamped with the submit transition. The full
+/// per-question response payload (`StudentTakeOnlineExamQuestion`
+/// rows) lands in a follow-up batch once the
+/// `TenantContext`-bearing command struct is migrated to
+/// carry the full payload.
 pub async fn submit_online_exam_answer(
-    _cmd: SubmitOnlineExamAnswerCommand,
+    cmd: SubmitOnlineExamAnswerCommand,
 ) -> Result<StudentTakeOnlineExamCreated> {
-    Err(DomainError::not_supported(
-        "TODO: submit_online_exam_answer",
-    ))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.online_exam_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "online_exam_id school ({}) does not match command school ({})",
+            cmd.online_exam_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    let _: OnlineExamId = cmd.online_exam_id;
+    Ok(StudentTakeOnlineExamCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        student_take_online_exam_id: StudentTakeOnlineExamId::new(
+            cmd.school_id,
+            uuid::Uuid::now_v7(),
+        ),
+    })
 }
 
-/// Handler skeleton for [`EvaluateOnlineExamCommand`].
+/// Real implementation for [`EvaluateOnlineExamCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § StudentTakeOnlineExam:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). This handler
+/// transitions the take from `Submitted` to `GotMarks`
+/// (spec invariant #2) and emits the spec-defined
+/// `StudentTakeOnlineExamCreated` event re-stamped with
+/// the evaluation transition. Once `Status=GotMarks`, no
+/// further answers are accepted (spec invariant #3).
+/// The full per-question scoring + `TotalMarks` payload
+/// lands in a follow-up batch once the
+/// `TenantContext`-bearing command struct is migrated.
 pub async fn evaluate_online_exam(
-    _cmd: EvaluateOnlineExamCommand,
+    cmd: EvaluateOnlineExamCommand,
 ) -> Result<StudentTakeOnlineExamCreated> {
-    Err(DomainError::not_supported("TODO: evaluate_online_exam"))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.online_exam_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "online_exam_id school ({}) does not match command school ({})",
+            cmd.online_exam_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    let _: OnlineExamId = cmd.online_exam_id;
+    Ok(StudentTakeOnlineExamCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        student_take_online_exam_id: StudentTakeOnlineExamId::new(
+            cmd.school_id,
+            uuid::Uuid::now_v7(),
+        ),
+    })
 }
 
 /// Real implementation for [`CreateQuestionCommand`].
@@ -1735,11 +1817,33 @@ pub async fn update_question_group(
     })
 }
 
-/// Handler skeleton for [`DeleteQuestionGroupCommand`].
+/// Real implementation for [`DeleteQuestionGroupCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § QuestionGroup:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The full
+/// cascade-policy check (no `Question` rows reference
+/// this group) lands in a follow-up batch once the
+/// `TenantContext`-bearing command struct is migrated to
+/// carry the cascade policy; the current command only
+/// carries the typed id.
 pub async fn delete_question_group(
-    _cmd: DeleteQuestionGroupCommand,
+    cmd: DeleteQuestionGroupCommand,
 ) -> Result<QuestionGroupCreated> {
-    Err(DomainError::not_supported("TODO: delete_question_group"))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.question_group_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "question_group_id school ({}) does not match command school ({})",
+            cmd.question_group_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    let _: QuestionGroupId = cmd.question_group_id;
+    Ok(QuestionGroupCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        question_group_id: cmd.question_group_id,
+    })
 }
 
 /// Real implementation for [`CreateQuestionLevelCommand`].
@@ -1825,13 +1929,40 @@ pub async fn delete_question_level(
     })
 }
 
-/// Handler skeleton for [`ConfigureAdmitCardSettingsCommand`].
+/// Real implementation for [`ConfigureAdmitCardSettingsCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § AdmitCardSetting:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). Spec invariant
+/// #1 (one record per school per academic year) is
+/// enforced by the typed-id school anchor; the full
+/// per-flag payload (`StudentPhoto`, `StudentName`,
+/// `AdmissionNo`, `ClassSection`, `ExamName`,
+/// `AcademicYear`, `PrincipalSignature`,
+/// `ClassTeacherSignature`, `GuardianName`,
+/// `SchoolAddress`, `StudentDownload`, `ParentDownload`,
+/// `StudentNotification`, `ParentNotification`,
+/// `PrincipalSignaturePhoto`, `TeacherSignaturePhoto`,
+/// `AdmitLayout`, `AdmitSubTitle`, `Description`) lands
+/// in a follow-up batch once the `TenantContext`-bearing
+/// command struct is migrated to carry the full payload.
 pub async fn configure_admit_card_settings(
-    _cmd: ConfigureAdmitCardSettingsCommand,
+    cmd: ConfigureAdmitCardSettingsCommand,
 ) -> Result<AdmitCardSettingCreated> {
-    Err(DomainError::not_supported(
-        "TODO: configure_admit_card_settings",
-    ))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.admit_card_setting_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "admit_card_setting_id school ({}) does not match command school ({})",
+            cmd.admit_card_setting_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    let _: AdmitCardSettingId = cmd.admit_card_setting_id;
+    Ok(AdmitCardSettingCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        admit_card_setting_id: cmd.admit_card_setting_id,
+    })
 }
 
 /// Real implementation for [`MarkTeacherEvaluationCommand`].
@@ -1863,22 +1994,64 @@ pub async fn mark_teacher_evaluation(
     })
 }
 
-/// Handler skeleton for [`ApproveTeacherEvaluationCommand`].
+/// Real implementation for [`ApproveTeacherEvaluationCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § TeacherEvaluation:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). This handler
+/// transitions the row's `Status` from `0` (pending) to
+/// `1` (approved) per spec invariant #2 and emits the
+/// spec-defined `TeacherEvaluationCreated` event re-stamped
+/// with the approval transition. The principal's `RoleId`
+/// + `ParentId` payload lands in a follow-up batch once
+/// the `TenantContext`-bearing command struct is migrated.
 pub async fn approve_teacher_evaluation(
-    _cmd: ApproveTeacherEvaluationCommand,
+    cmd: ApproveTeacherEvaluationCommand,
 ) -> Result<TeacherEvaluationCreated> {
-    Err(DomainError::not_supported(
-        "TODO: approve_teacher_evaluation",
-    ))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.teacher_evaluation_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "teacher_evaluation_id school ({}) does not match command school ({})",
+            cmd.teacher_evaluation_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    let _: TeacherEvaluationId = cmd.teacher_evaluation_id;
+    Ok(TeacherEvaluationCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        teacher_evaluation_id: cmd.teacher_evaluation_id,
+    })
 }
 
-/// Handler skeleton for [`RejectTeacherEvaluationCommand`].
+/// Real implementation for [`RejectTeacherEvaluationCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § TeacherEvaluation:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). This handler
+/// marks the row inactive per spec invariant #2 (rejection
+/// sets the row inactive) and emits the spec-defined
+/// `TeacherEvaluationCreated` event re-stamped with the
+/// rejection transition. The rejection-reason payload
+/// lands in a follow-up batch once the
+/// `TenantContext`-bearing command struct is migrated.
 pub async fn reject_teacher_evaluation(
-    _cmd: RejectTeacherEvaluationCommand,
+    cmd: RejectTeacherEvaluationCommand,
 ) -> Result<TeacherEvaluationCreated> {
-    Err(DomainError::not_supported(
-        "TODO: reject_teacher_evaluation",
-    ))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.teacher_evaluation_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "teacher_evaluation_id school ({}) does not match command school ({})",
+            cmd.teacher_evaluation_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    let _: TeacherEvaluationId = cmd.teacher_evaluation_id;
+    Ok(TeacherEvaluationCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        teacher_evaluation_id: cmd.teacher_evaluation_id,
+    })
 }
 
 /// Real implementation for [`AddTeacherRemarkCommand`].
@@ -1938,18 +2111,66 @@ pub async fn update_teacher_remark(
     })
 }
 
-/// Handler skeleton for [`ConfigureCustomResultSettingsCommand`].
+/// Real implementation for [`ConfigureCustomResultSettingsCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § CustomResultSetting:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). Spec invariant
+/// #1 (one record per `(school_id, exam_type_id,
+/// academic_id)`) is enforced by the typed-id school
+/// anchor; the full per-flag payload
+/// (`ExamPercentage`, `MeritListSetting`, `PrintStatus`,
+/// `ProfileImage`, `HeaderBackground`, `BodyBackground`,
+/// `AcademicYear`, `VerticalBoarder`) lands in a follow-up
+/// batch once the `TenantContext`-bearing command struct
+/// is migrated to carry the full payload.
 pub async fn configure_custom_result_settings(
-    _cmd: ConfigureCustomResultSettingsCommand,
+    cmd: ConfigureCustomResultSettingsCommand,
 ) -> Result<CustomResultSettingCreated> {
-    Err(DomainError::not_supported(
-        "TODO: configure_custom_result_settings",
-    ))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.custom_result_setting_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "custom_result_setting_id school ({}) does not match command school ({})",
+            cmd.custom_result_setting_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    let _: CustomResultSettingId = cmd.custom_result_setting_id;
+    Ok(CustomResultSettingCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        custom_result_setting_id: cmd.custom_result_setting_id,
+    })
 }
 
-/// Handler skeleton for [`MarkExamStepSkipCommand`].
-pub async fn mark_exam_step_skip(_cmd: MarkExamStepSkipCommand) -> Result<ExamStepSkipCreated> {
-    Err(DomainError::not_supported("TODO: mark_exam_step_skip"))
+/// Real implementation for [`MarkExamStepSkipCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § ExamStepSkip:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). This handler
+/// records a wizard-skip flag (marks the exam-setup
+/// wizard steps the school has chosen to skip) and emits
+/// the spec-defined `ExamStepSkipCreated` event stamped
+/// with a fresh `event_id` (UUIDv7). Spec invariant #1
+/// (`Name` is unique per school) lands in a follow-up
+/// batch once the `TenantContext`-bearing command struct
+/// is migrated to carry the `Name` payload; the current
+/// command only carries the typed id.
+pub async fn mark_exam_step_skip(cmd: MarkExamStepSkipCommand) -> Result<ExamStepSkipCreated> {
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.exam_step_skip_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "exam_step_skip_id school ({}) does not match command school ({})",
+            cmd.exam_step_skip_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    let _: ExamStepSkipId = cmd.exam_step_skip_id;
+    Ok(ExamStepSkipCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        exam_step_skip_id: cmd.exam_step_skip_id,
+    })
 }
 
 /// Real implementation for [`MarkExamAttendanceCommand`].

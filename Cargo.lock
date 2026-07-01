@@ -1861,6 +1861,7 @@ dependencies = [
  "educore-sync",
  "educore-sync-inprocess",
  "educore-testkit",
+ "serde",
  "serde_json",
  "tokio",
  "tracing",
@@ -1879,6 +1880,7 @@ dependencies = [
  "educore-platform",
  "educore-rbac",
  "educore-settings",
+ "futures",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -1936,6 +1938,7 @@ dependencies = [
  "educore-core",
  "educore-events",
  "educore-storage",
+ "regex",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -1957,9 +1960,12 @@ dependencies = [
  "educore-operations",
  "educore-platform",
  "educore-rbac",
+ "futures",
+ "hmac 0.12.1",
  "jsonwebtoken",
  "rand 0.8.6",
  "serde",
+ "sha2 0.10.9",
  "tokio",
  "tracing",
  "uuid",
@@ -2168,6 +2174,7 @@ dependencies = [
  "hmac 0.12.1",
  "sha2 0.10.9",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -2233,6 +2240,8 @@ dependencies = [
  "sha2 0.10.9",
  "thiserror 1.0.69",
  "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -2274,6 +2283,8 @@ dependencies = [
  "serde",
  "thiserror 1.0.69",
  "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -2418,6 +2429,7 @@ dependencies = [
  "futures",
  "serde",
  "serde_json",
+ "thiserror 1.0.69",
  "uuid",
 ]
 
