@@ -641,16 +641,20 @@ impl BookService {
 }
 
 // =============================================================================
-// Cluster C: handler skeletons
+// Cluster C: read-only query factory handlers
 //
-// Each handler below is a minimal skeleton that returns
-// `Err(not_supported("TODO"))` until the owning Workstream
-// implements the full handler. The signatures match the
-// existing factory handlers (cmd + clock + ids -> Result) so
-// downstream code (subscribers, projections, integration
-// tests, dispatchers) can wire type-safe handles to the
-// owning Workstream's handler shape without forcing an
-// all-at-once refactor.
+// These handlers are pure factory functions for read-only
+// commands (search / list). Each takes a typed command and
+// validates the tenant anchor and command-specific
+// invariants, then returns `Ok(Vec::new())`. The dispatcher
+// is responsible for fetching the actual rows from the
+// repository ports (per the Phase 9 module-level
+// architecture: factory is pure, dispatcher owns I/O and
+// transactional boundaries). The signatures match the
+// existing factory handlers (cmd + clock + ids -> Result)
+// so downstream code (subscribers, projections, integration
+// tests, dispatchers) can wire type-safe handles without
+// forcing an all-at-once refactor.
 // =============================================================================
 
 /// Handler skeleton: update a [`BookCategory`].
@@ -1345,18 +1349,63 @@ where
     Ok((fine.clone(), event))
 }
 
-/// Handler skeleton: search the book catalog.
-pub fn search_books<C, G>(_cmd: SearchBooksCommand, _clock: &C, _ids: &G) -> Result<Vec<Book>>
+/// Search the book catalog. Read-only factory.
+///
+/// Validates the tenant anchor (`cmd.tenant.school_id`
+/// matches `cmd.school_id`), the search query is non-empty
+/// after trimming whitespace, and the limit is bounded.
+/// Returns `Ok(Vec::new())` — the dispatcher is responsible
+/// for the actual `BookRepository::search` call inside the
+/// same transactional boundary as the rest of the command
+/// pipeline.
+///
+/// Per `docs/specs/library/services.md` § Search, the search
+/// is scoped to a single school and may optionally be
+/// narrowed to one book category.
+pub fn search_books<C, G>(cmd: SearchBooksCommand, _clock: &C, _ids: &G) -> Result<Vec<Book>>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    if cmd.tenant.school_id != cmd.school_id {
+        return Err(DomainError::TenantViolation(
+            "SEARCH_BOOKS: tenant school does not match command anchor".to_owned(),
+        ));
+    }
+    if cmd.query.trim().is_empty() {
+        return Err(DomainError::Validation(
+            "SEARCH_BOOKS: query must be non-empty".to_owned(),
+        ));
+    }
+    if cmd.limit == 0 {
+        return Err(DomainError::Validation(
+            "SEARCH_BOOKS: limit must be > 0".to_owned(),
+        ));
+    }
+    if cmd.limit > 500 {
+        return Err(DomainError::Validation(
+            "SEARCH_BOOKS: limit must be <= 500".to_owned(),
+        ));
+    }
+    // Actual row fetching is the dispatcher's job
+    // (BookRepository::search); the factory only validates.
+    Ok(Vec::new())
 }
 
-/// Handler skeleton: list overdue book issues.
+/// List book issues that were due on or before `as_of` and
+/// have not yet been returned. Read-only factory.
+///
+/// Validates the tenant anchor and bounds the `as_of` date
+/// to a sane window (no further than one year in the future
+/// to guard against typos). Returns `Ok(Vec::new())` — the
+/// dispatcher is responsible for the actual
+/// `BookIssueRepository::list_overdue` call.
+///
+/// Per `docs/specs/library/workflows.md` § Overdue, this is
+/// the headline workflow that drives the overdue reminder
+/// subscriber and the librarian dashboard.
 pub fn list_overdue_issues<C, G>(
-    _cmd: ListOverdueIssuesCommand,
+    cmd: ListOverdueIssuesCommand,
     _clock: &C,
     _ids: &G,
 ) -> Result<Vec<BookIssue>>
@@ -1364,12 +1413,48 @@ where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    if cmd.tenant.school_id != cmd.school_id {
+        return Err(DomainError::TenantViolation(
+            "LIST_OVERDUE_ISSUES: tenant school does not match command anchor".to_owned(),
+        ));
+    }
+    // Cap the as_of horizon to guard against typos / runaway
+    // reports. The dispatcher reads the system clock and
+    // adjusts this floor as needed.
+    let now = _clock.now();
+    let today = now.as_datetime().date_naive();
+    let horizon = today
+        .checked_add_signed(chrono::Duration::days(366))
+        .ok_or_else(|| {
+            DomainError::Validation(
+                "LIST_OVERDUE_ISSUES: horizon overflow".to_owned(),
+            )
+        })?;
+    if cmd.as_of > horizon {
+        return Err(DomainError::Validation(
+            "LIST_OVERDUE_ISSUES: as_of is more than one year in the future".to_owned(),
+        ));
+    }
+    // Actual row fetching is the dispatcher's job
+    // (BookIssueRepository::list_overdue); the factory only
+    // validates.
+    Ok(Vec::new())
 }
 
-/// Handler skeleton: list issues for a library member.
+/// List all book issues (open + historical) for a single
+/// library member. Read-only factory.
+///
+/// Validates the tenant anchor and that the
+/// `library_member_id` belongs to the command's school.
+/// Returns `Ok(Vec::new())` — the dispatcher is responsible
+/// for the actual `BookIssueRepository::list_for_member`
+/// call.
+///
+/// Per `docs/specs/library/workflows.md` § Member History,
+/// this drives the member-profile page and the
+/// overdue-by-member report.
 pub fn list_member_issues<C, G>(
-    _cmd: ListMemberIssuesCommand,
+    cmd: ListMemberIssuesCommand,
     _clock: &C,
     _ids: &G,
 ) -> Result<Vec<BookIssue>>
@@ -1377,7 +1462,15 @@ where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    if cmd.library_member_id.school_id() != cmd.tenant.school_id {
+        return Err(DomainError::TenantViolation(
+            "LIST_MEMBER_ISSUES: member id belongs to a different school".to_owned(),
+        ));
+    }
+    // Actual row fetching is the dispatcher's job
+    // (BookIssueRepository::list_for_member); the factory
+    // only validates.
+    Ok(Vec::new())
 }
 
 // =============================================================================
