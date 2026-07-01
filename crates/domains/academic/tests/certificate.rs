@@ -1,7 +1,7 @@
 //! Integration tests for the **Certificate aggregate** vertical slice.
 //!
 //! Pins the create contract for
-//! [`Certificate`](educore_academic::aggregate::Certificate)
+//! [`Certificate`](educore_academic::Certificate)
 //! end-to-end through the service layer:
 //!
 //! 1. `create_certificate` validates that the typed id's
@@ -45,7 +45,7 @@
     missing_docs
 )]
 
-use educore_academic::aggregate::Certificate;
+use educore_academic::Certificate;
 use educore_academic::commands::CreateCertificateCommand;
 use educore_academic::events::CertificateCreated;
 use educore_academic::services::create_certificate;

@@ -109,6 +109,21 @@ academic_typed_id! {
 }
 
 academic_typed_id! {
+    /// A typed id for a `StudentGuardianLink` row (the linkage
+    /// between a guardian and a student). See
+    /// `docs/specs/academic/aggregates.md` § Guardian § I-2.
+    pub struct StudentGuardianLinkId;
+}
+
+academic_typed_id! {
+    /// A typed id for an `OptionalSubjectAssignment` row (the
+    /// assignment of an optional subject to a student for a
+    /// specific academic year). See
+    /// `docs/specs/academic/aggregates.md` § Student § I-4.
+    pub struct OptionalSubjectAssignmentId;
+}
+
+academic_typed_id! {
     /// A typed id for a [`Class`](crate::aggregate::Class) row.
     pub struct ClassId;
 }
@@ -549,6 +564,168 @@ impl fmt::Display for ClassName {
 impl AsRef<str> for ClassName {
     fn as_ref(&self) -> &str {
         self.as_str()
+    }
+}
+
+/// A validated contact phone number in E.164 format.
+///
+/// Accepts a leading `+` followed by 4..=15 ASCII digits
+/// (the ITU-T E.164 recommendation). The country code is
+/// not validated against a registry — the engine treats the
+/// digit count as sufficient.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct PhoneNumber(String);
+
+impl PhoneNumber {
+    /// Constructs a `PhoneNumber` from an E.164 string. Empty
+    /// input is rejected.
+    pub fn new(s: impl Into<String>) -> Result<Self> {
+        let s: String = s.into();
+        if s.is_empty() {
+            return Err(DomainError::validation(
+                "phone number must not be empty",
+            ));
+        }
+        if !s.starts_with('+') {
+            return Err(DomainError::validation(format!(
+                "phone number must start with '+': {s:?}"
+            )));
+        }
+        let digits = &s[1..];
+        if digits.len() < 4 || digits.len() > 15 {
+            return Err(DomainError::validation(format!(
+                "phone number digit count {} outside 4..=15",
+                digits.len()
+            )));
+        }
+        if !digits.chars().all(|c| c.is_ascii_digit()) {
+            return Err(DomainError::validation(format!(
+                "phone number contains non-digit characters: {s:?}"
+            )));
+        }
+        Ok(Self(s))
+    }
+
+    /// Returns the inner string.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for PhoneNumber {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl AsRef<str> for PhoneNumber {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+/// A validated email address. Local-part + `@` + domain
+/// (1..=253 chars). The engine does not perform DNS
+/// resolution; structural validation only.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct EmailAddress(String);
+
+impl EmailAddress {
+    /// Maximum length of an email address per RFC 5321.
+    pub const MAX_LEN: usize = 254;
+
+    /// Constructs an `EmailAddress`. Requires a single `@`
+    /// separating a non-empty local-part and a non-empty
+    /// domain.
+    pub fn new(s: impl Into<String>) -> Result<Self> {
+        let s: String = s.into();
+        if s.is_empty() {
+            return Err(DomainError::validation("email must not be empty"));
+        }
+        if s.chars().count() > Self::MAX_LEN {
+            return Err(DomainError::validation(format!(
+                "email must be at most {} chars, got {}",
+                Self::MAX_LEN,
+                s.chars().count()
+            )));
+        }
+        let at_count = s.chars().filter(|c| *c == '@').count();
+        if at_count != 1 {
+            return Err(DomainError::validation(format!(
+                "email must contain exactly one '@', got {at_count}: {s:?}"
+            )));
+        }
+        let parts: Vec<&str> = s.split('@').collect();
+        let local = parts[0];
+        let domain = parts[1];
+        if local.is_empty() {
+            return Err(DomainError::validation(format!(
+                "email local-part must not be empty: {s:?}"
+            )));
+        }
+        if domain.is_empty() || !domain.contains('.') {
+            return Err(DomainError::validation(format!(
+                "email domain must be non-empty and contain a dot: {s:?}"
+            )));
+        }
+        Ok(Self(s.to_lowercase()))
+    }
+
+    /// Returns the inner string (lower-cased).
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for EmailAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl AsRef<str> for EmailAddress {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+/// The relationship between a [`Guardian`](crate::aggregate::Guardian)
+/// and a [`Student`](crate::aggregate::Student) in a
+/// [`StudentGuardianLink`](crate::aggregate::StudentGuardianLink).
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Relation {
+    /// The student's father.
+    Father,
+    /// The student's mother.
+    Mother,
+    /// A legal or designated guardian (not parent).
+    #[default]
+    Guardian,
+    /// Any other relationship (e.g. grandparent, sponsor,
+    /// host family).
+    Other,
+}
+
+impl Relation {
+    /// Returns the canonical snake_case wire string.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Father => "father",
+            Self::Mother => "mother",
+            Self::Guardian => "guardian",
+            Self::Other => "other",
+        }
+    }
+}
+
+impl fmt::Display for Relation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_str().fmt(f)
     }
 }
 
@@ -1193,6 +1370,46 @@ mod tests {
         assert!(OptionalSubjectGpaThreshold::new(3.5).is_ok());
         assert!(OptionalSubjectGpaThreshold::new(-0.1).is_err());
         assert!(OptionalSubjectGpaThreshold::new(5.1).is_err());
+    }
+
+    #[test]
+    fn phone_number_validates() {
+        assert!(PhoneNumber::new("").is_err());
+        assert!(PhoneNumber::new("+14155552671").is_ok());
+        assert!(PhoneNumber::new("14155552671").is_err()); // missing +
+        assert!(PhoneNumber::new("+abc").is_err()); // non-digit
+        assert!(PhoneNumber::new("+12").is_err()); // too few digits
+        assert!(PhoneNumber::new("+12345678901234567").is_err()); // too many
+    }
+
+    #[test]
+    fn email_address_validates() {
+        assert!(EmailAddress::new("").is_err());
+        assert!(EmailAddress::new("ada@example.com").is_ok());
+        assert!(EmailAddress::new("no-at-sign").is_err());
+        assert!(EmailAddress::new("@example.com").is_err()); // empty local
+        assert!(EmailAddress::new("user@").is_err()); // empty domain
+        assert!(EmailAddress::new("user@nodot").is_err()); // domain without dot
+        assert!(EmailAddress::new("two@@signs.com").is_err()); // double @
+    }
+
+    #[test]
+    fn email_address_is_lowercased() {
+        let e = EmailAddress::new("Ada@Example.COM").unwrap();
+        assert_eq!(e.as_str(), "ada@example.com");
+    }
+
+    #[test]
+    fn relation_enum_has_four_variants() {
+        let variants = [
+            Relation::Father,
+            Relation::Mother,
+            Relation::Guardian,
+            Relation::Other,
+        ];
+        for v in variants {
+            assert!(!v.as_str().is_empty());
+        }
     }
 
     #[test]

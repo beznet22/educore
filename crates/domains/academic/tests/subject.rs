@@ -1,7 +1,7 @@
 //! Integration tests for the **Subject aggregate** vertical slice.
 //!
 //! Pins the create + update contract for
-//! [`Subject`](educore_academic::aggregate::Subject) end-to-end
+//! [`Subject`](educore_academic::Subject) end-to-end
 //! through the service layer:
 //!
 //! 1. `create_subject` validates the input, constructs the
@@ -105,7 +105,7 @@ fn subject_create_then_update_mutates_aggregate_and_emits_events() {
         subject_type: SubjectType::Theory,
         pass_mark: 35.0,
     };
-    let (mut agg, created_event) = create_subject(create_cmd, &clock, &ids).expect("create");
+    let (mut agg, created_event) = create_subject(create_cmd, &clock, &ids, &NoOpUniquenessChecker).expect("create");
 
     // Aggregate fields are populated from the command.
     assert_eq!(agg.school_id, school);
@@ -232,7 +232,7 @@ fn subject_update_with_same_name_returns_no_op_event_and_preserves_version() {
         subject_type: SubjectType::Theory,
         pass_mark: 35.0,
     };
-    let (mut agg, created_event) = create_subject(create_cmd, &clock, &ids).expect("create");
+    let (mut agg, created_event) = create_subject(create_cmd, &clock, &ids, &NoOpUniquenessChecker).expect("create");
     let initial_version = agg.version.get();
     let initial_updated_at = agg.updated_at;
     let initial_updated_by = agg.updated_by;
@@ -294,4 +294,22 @@ fn subject_update_with_same_name_returns_no_op_event_and_preserves_version() {
         initial_version + 1,
         "version sequence must be 1 (create) -> 1 (no-op) -> 2 (real update)"
     );
+}
+
+// =============================================================================
+// No-op UniquenessChecker for tests
+// =============================================================================
+
+struct NoOpUniquenessChecker;
+
+impl educore_academic::commands::UniquenessChecker for NoOpUniquenessChecker {
+    fn student_admission_no_exists(&self, _school: educore_core::ids::SchoolId, _admission_no: &str) -> bool { false }
+    fn student_email_exists(&self, _school: educore_core::ids::SchoolId, _email: &str) -> bool { false }
+    fn roll_no_exists(&self, _school: educore_core::ids::SchoolId, _class_id: educore_academic::ClassId, _section_id: educore_academic::SectionId, _academic_year_id: educore_academic::AcademicYearId, _roll_no: &str) -> bool { false }
+    fn class_name_exists(&self, _school: educore_core::ids::SchoolId, _name: &str) -> bool { false }
+    fn section_name_exists(&self, _school: educore_core::ids::SchoolId, _name: &str) -> bool { false }
+    fn subject_code_exists(&self, _school: educore_core::ids::SchoolId, _code: &str) -> bool { false }
+    fn academic_year_overlaps(&self, _school: educore_core::ids::SchoolId, _range: educore_academic::AcademicYearRange, _exclude_id: Option<educore_academic::AcademicYearId>) -> bool { false }
+    fn optional_subject_assigned_exists(&self, _school: educore_core::ids::SchoolId, _student_id: educore_academic::StudentId, _academic_year_id: educore_academic::AcademicYearId) -> bool { false }
+    fn primary_guardian_link_exists(&self, _school: educore_core::ids::SchoolId, _student_id: educore_academic::StudentId) -> bool { false }
 }

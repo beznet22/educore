@@ -1,7 +1,7 @@
 //! Integration tests for the **StudentCategory aggregate** vertical slice.
 //!
 //! Pins the create contract for
-//! [`StudentCategory`](educore_academic::aggregate::StudentCategory)
+//! [`StudentCategory`](educore_academic::StudentCategory)
 //! end-to-end through the service layer:
 //!
 //! 1. `create_student_category` validates the input (the

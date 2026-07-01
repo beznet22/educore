@@ -1,7 +1,7 @@
 //! Integration tests for the **StudentPromotion aggregate** vertical slice.
 //!
 //! Pins the create contract for
-//! [`StudentPromotion`](educore_academic::aggregate::StudentPromotion)
+//! [`StudentPromotion`](educore_academic::StudentPromotion)
 //! end-to-end through the service layer:
 //!
 //! 1. `record_student_promotion` validates the input (the

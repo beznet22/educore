@@ -1,7 +1,7 @@
 //! Integration tests for the **RegistrationField aggregate** vertical slice.
 //!
 //! Pins the create contract for
-//! [`RegistrationField`](educore_academic::aggregate::RegistrationField)
+//! [`RegistrationField`](educore_academic::RegistrationField)
 //! end-to-end through the service layer:
 //!
 //! 1. `create_registration_field` validates that the typed
@@ -45,7 +45,7 @@
     missing_docs
 )]
 
-use educore_academic::aggregate::RegistrationField;
+use educore_academic::RegistrationField;
 use educore_academic::commands::CreateRegistrationFieldCommand;
 use educore_academic::events::RegistrationFieldCreated;
 use educore_academic::services::create_registration_field;

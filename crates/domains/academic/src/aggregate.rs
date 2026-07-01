@@ -29,9 +29,10 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
 use crate::value_objects::{
     AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoutineId, ClassSectionId,
-    ClassSubjectId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
-    OptionalSubjectGpaThreshold, PassMark, RegistrationFieldId, SectionId, StudentCategoryId,
-    StudentGroupId, StudentId, StudentPromotionId, StudentRecordId, SubjectId, SubjectType,
+    ClassSubjectId, EmailAddress, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId,
+    LessonTopicId, OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold, PassMark,
+    PhoneNumber, RegistrationFieldId, Relation, SectionId, StudentCategoryId, StudentGroupId,
+    StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId, SubjectId, SubjectType,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -531,11 +532,295 @@ macro_rules! academic_aggregate_stub {
     };
 }
 
-academic_aggregate_stub! {
-    /// A parent, legal guardian, or authorized contact for a
-    /// [`Student`]. See
-    /// `docs/specs/academic/aggregates.md` § Guardian.
-    pub struct Guardian { id: GuardianId }
+// =============================================================================
+// Guardian (Cluster D, Batch 1: full impl)
+// =============================================================================
+
+/// A parent, legal guardian, or authorized contact for a
+/// [`Student`].
+///
+/// Per `docs/specs/academic/aggregates.md` § Guardian:
+///
+/// - I-1: At most one phone and one email of record.
+/// - I-2: A guardian may be linked to multiple students.
+/// - I-5: A guardian is soft-deleted when all their student
+///   links are removed.
+///
+/// The aggregate's contact fields are
+/// [`PhoneNumber`]/[`EmailAddress`] (validated at construction).
+/// The first/last name are stored as `String` to match the
+/// engine's permissive-on-strings profile field pattern
+/// (the value object pattern is reserved for ids and
+/// validated inputs).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Guardian {
+    /// The guardian's typed id.
+    pub id: GuardianId,
+    /// The owning school (tenant anchor; also embedded in the
+    /// typed id).
+    pub school_id: SchoolId,
+    /// The guardian's first name.
+    pub first_name: String,
+    /// The guardian's last name.
+    pub last_name: String,
+    /// The guardian's phone number of record (optional). Per
+    /// I-1, at most one phone is carried per guardian.
+    pub phone: Option<PhoneNumber>,
+    /// The guardian's email of record (optional). Per I-1,
+    /// at most one email is carried per guardian.
+    pub email: Option<EmailAddress>,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// Creation time.
+    pub created_at: Timestamp,
+    /// Last-mutation time.
+    pub updated_at: Timestamp,
+    /// Created by.
+    pub created_by: UserId,
+    /// Last mutated by.
+    pub updated_by: UserId,
+    /// Soft-delete flag. Per I-5, the guardian is set to
+    /// `Retired` when the last student link is removed.
+    pub active_status: ActiveStatus,
+    /// Last event id.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+impl Guardian {
+    /// The default etag for a freshly minted guardian.
+    pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
+
+    /// Returns a `Guardian` in its just-minted state.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn fresh(
+        id: GuardianId,
+        first_name: String,
+        last_name: String,
+        phone: Option<PhoneNumber>,
+        email: Option<EmailAddress>,
+        created_by: UserId,
+        updated_by: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        let etag = fresh_etag();
+        Self {
+            id,
+            school_id: id.school_id(),
+            first_name,
+            last_name,
+            phone,
+            email,
+            version: Version::initial(),
+            etag,
+            created_at: now,
+            updated_at: now,
+            created_by,
+            updated_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        }
+    }
+
+    /// Returns the guardian's computed full name.
+    #[must_use]
+    pub fn full_name(&self) -> String {
+        format!("{} {}", self.first_name, self.last_name)
+    }
+}
+
+// =============================================================================
+// StudentGuardianLink (Cluster D, Batch 1: full impl)
+// =============================================================================
+
+/// The linkage between a [`Guardian`] and a [`Student`],
+/// carrying the [`Relation`] and the `IsPrimary` flag.
+///
+/// Per `docs/specs/academic/aggregates.md` § Guardian:
+///
+/// - I-2: Multi-student linkage (a guardian may be linked to
+///   multiple students).
+/// - I-3: A link carries `Relation` + `IsPrimary`.
+/// - I-4: At most one `IsPrimary` per student.
+/// - I-5: When the last link is removed, the guardian is
+///   soft-deleted (the link is deleted; the guardian's
+///   `active_status` is flipped to `Retired` by the
+///   service).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StudentGuardianLink {
+    /// The link's typed id.
+    pub id: StudentGuardianLinkId,
+    /// The owning school (tenant anchor).
+    pub school_id: SchoolId,
+    /// The guardian being linked.
+    pub guardian_id: GuardianId,
+    /// The student being linked.
+    pub student_id: StudentId,
+    /// The relationship.
+    pub relation: Relation,
+    /// Whether this guardian is the primary contact for the
+    /// student (used for communication routing).
+    pub is_primary: bool,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// Creation time.
+    pub created_at: Timestamp,
+    /// Last-mutation time.
+    pub updated_at: Timestamp,
+    /// Created by.
+    pub created_by: UserId,
+    /// Last mutated by.
+    pub updated_by: UserId,
+    /// Soft-delete flag. Links are hard-deleted when the
+    /// relationship is severed (the link itself is the unit
+    /// of work; the guardian is soft-deleted only when the
+    /// last link is removed per I-5).
+    pub active_status: ActiveStatus,
+    /// Last event id.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+impl StudentGuardianLink {
+    /// The default etag for a freshly minted link.
+    pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
+
+    /// Returns a `StudentGuardianLink` in its just-minted state.
+    #[must_use]
+    pub fn fresh(
+        id: StudentGuardianLinkId,
+        guardian_id: GuardianId,
+        student_id: StudentId,
+        relation: Relation,
+        is_primary: bool,
+        created_by: UserId,
+        updated_by: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        let etag = fresh_etag();
+        // Enforce I-2 invariant at the type-system level:
+        // the link must belong to the same school as both
+        // the guardian and the student. The engine rejects
+        // cross-tenant ids at the service boundary; we
+        // assert here as a last-line defense for in-process
+        // callers.
+        debug_assert_eq!(guardian_id.school_id(), student_id.school_id());
+        debug_assert_eq!(guardian_id.school_id(), id.school_id());
+        Self {
+            id,
+            school_id: id.school_id(),
+            guardian_id,
+            student_id,
+            relation,
+            is_primary,
+            version: Version::initial(),
+            etag,
+            created_at: now,
+            updated_at: now,
+            created_by,
+            updated_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        }
+    }
+}
+
+// =============================================================================
+// OptionalSubjectAssignment (Cluster D, Batch 1: full impl)
+// =============================================================================
+
+/// The assignment of an optional subject to a student for a
+/// specific academic year.
+///
+/// Per `docs/specs/academic/aggregates.md` § Student § I-4:
+/// a student can be in at most one optional subject per
+/// academic year. The aggregate is its own root so the
+/// storage adapter can enforce the constraint via a unique
+/// index on `(school_id, student_id, academic_year_id)`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OptionalSubjectAssignment {
+    /// The assignment's typed id.
+    pub id: OptionalSubjectAssignmentId,
+    /// The owning school (tenant anchor).
+    pub school_id: SchoolId,
+    /// The student receiving the optional subject.
+    pub student_id: StudentId,
+    /// The optional subject being assigned.
+    pub subject_id: SubjectId,
+    /// The academic year the assignment applies to.
+    pub academic_year_id: AcademicYearId,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// Creation time.
+    pub created_at: Timestamp,
+    /// Last-mutation time.
+    pub updated_at: Timestamp,
+    /// Created by.
+    pub created_by: UserId,
+    /// Last mutated by.
+    pub updated_by: UserId,
+    /// Soft-delete flag.
+    pub active_status: ActiveStatus,
+    /// Last event id.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+impl OptionalSubjectAssignment {
+    /// The default etag for a freshly minted assignment.
+    pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
+
+    /// Returns an `OptionalSubjectAssignment` in its
+    /// just-minted state.
+    #[must_use]
+    pub fn fresh(
+        id: OptionalSubjectAssignmentId,
+        student_id: StudentId,
+        subject_id: SubjectId,
+        academic_year_id: AcademicYearId,
+        created_by: UserId,
+        updated_by: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> Self {
+        let etag = fresh_etag();
+        // Cross-tenant guard: all three ids must share a
+        // school. The service layer enforces the same
+        // invariant before calling `fresh`.
+        debug_assert_eq!(student_id.school_id(), id.school_id());
+        debug_assert_eq!(subject_id.school_id(), id.school_id());
+        debug_assert_eq!(academic_year_id.school_id(), id.school_id());
+        Self {
+            id,
+            school_id: id.school_id(),
+            student_id,
+            subject_id,
+            academic_year_id,
+            version: Version::initial(),
+            etag,
+            created_at: now,
+            updated_at: now,
+            created_by,
+            updated_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        }
+    }
 }
 academic_aggregate_stub! {
     /// The pairing of a class and a section in a specific
@@ -756,6 +1041,73 @@ mod tests {
         Etag::new(Section::FRESH_ETAG).expect("FRESH_ETAG must be a valid etag");
         Etag::new(Subject::FRESH_ETAG).expect("FRESH_ETAG must be a valid etag");
         Etag::new(AcademicYear::FRESH_ETAG).expect("FRESH_ETAG must be a valid etag");
+    }
+
+    #[test]
+    fn guardian_fresh_round_trip() {
+        let id = GuardianId::new(school(), uuid::Uuid::now_v7());
+        let g = Guardian::fresh(
+            id,
+            "Jane".to_owned(),
+            "Doe".to_owned(),
+            crate::value_objects::PhoneNumber::new("+14155552671").ok(),
+            crate::value_objects::EmailAddress::new("jane@example.com").ok(),
+            user(),
+            user(),
+            now(),
+            CorrelationId::from_uuid(uuid::Uuid::now_v7()),
+        );
+        assert_eq!(g.school_id, id.school_id());
+        assert_eq!(g.full_name(), "Jane Doe");
+        assert!(g.active_status.is_active());
+        assert_eq!(g.version, Version::initial());
+    }
+
+    #[test]
+    fn student_guardian_link_fresh_round_trip() {
+        let s = school();
+        let gid = GuardianId::new(s, uuid::Uuid::now_v7());
+        let sid = StudentId::new(s, uuid::Uuid::now_v7());
+        let lid = StudentGuardianLinkId::new(s, uuid::Uuid::now_v7());
+        let l = StudentGuardianLink::fresh(
+            lid,
+            gid,
+            sid,
+            crate::value_objects::Relation::Father,
+            true,
+            user(),
+            user(),
+            now(),
+            CorrelationId::from_uuid(uuid::Uuid::now_v7()),
+        );
+        assert_eq!(l.school_id, s);
+        assert_eq!(l.guardian_id, gid);
+        assert_eq!(l.student_id, sid);
+        assert!(l.is_primary);
+        assert_eq!(l.relation, crate::value_objects::Relation::Father);
+    }
+
+    #[test]
+    fn optional_subject_assignment_fresh_round_trip() {
+        let s = school();
+        let sid = StudentId::new(s, uuid::Uuid::now_v7());
+        let subj = SubjectId::new(s, uuid::Uuid::now_v7());
+        let yid = AcademicYearId::new(s, uuid::Uuid::now_v7());
+        let aid = OptionalSubjectAssignmentId::new(s, uuid::Uuid::now_v7());
+        let a = OptionalSubjectAssignment::fresh(
+            aid,
+            sid,
+            subj,
+            yid,
+            user(),
+            user(),
+            now(),
+            CorrelationId::from_uuid(uuid::Uuid::now_v7()),
+        );
+        assert_eq!(a.school_id, s);
+        assert_eq!(a.student_id, sid);
+        assert_eq!(a.subject_id, subj);
+        assert_eq!(a.academic_year_id, yid);
     }
 }
 

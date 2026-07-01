@@ -1,7 +1,7 @@
 //! Integration tests for the **IdCard aggregate** vertical slice.
 //!
 //! Pins the create contract for
-//! [`IdCard`](educore_academic::aggregate::IdCard) end-to-end
+//! [`IdCard`](educore_academic::IdCard) end-to-end
 //! through the service layer:
 //!
 //! 1. `create_id_card` validates that the typed id's
@@ -43,7 +43,7 @@
     missing_docs
 )]
 
-use educore_academic::aggregate::IdCard;
+use educore_academic::IdCard;
 use educore_academic::commands::CreateIdCardCommand;
 use educore_academic::events::IdCardCreated;
 use educore_academic::services::create_id_card;

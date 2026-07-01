@@ -27,8 +27,9 @@ use educore_core::tenant::TenantContext;
 
 use crate::value_objects::{
     AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoutineId, ClassSectionId,
-    ClassSubjectId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
-    RegistrationFieldId, ResultStatus, SectionId, StudentCategoryId, StudentGroupId, StudentId,
+    ClassSubjectId, EmailAddress, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId,
+    LessonTopicId, OptionalSubjectAssignmentId, PhoneNumber, RegistrationFieldId, Relation,
+    ResultStatus, SectionId, StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId,
     StudentPromotionId, SubjectId,
 };
 
@@ -38,7 +39,10 @@ use crate::value_objects::{
 
 /// A read-only uniqueness check the academic services use to
 /// enforce per-school uniqueness constraints on
-/// `Student.admission_no` and `Student.email` (when supplied).
+/// `Student.admission_no`, `Student.email`, class name,
+/// section name, subject code, roll number within
+/// `(school, class, section, year)`, and academic-year
+/// overlap.
 ///
 /// The check is **pure** (no I/O): the production caller wires
 /// it to a thin adapter over the storage port that returns
@@ -57,6 +61,52 @@ pub trait UniquenessChecker: Send + Sync {
     /// case-insensitive; the caller is responsible for
     /// lowercasing before the call.
     fn student_email_exists(&self, school: SchoolId, email: &str) -> bool;
+    /// Returns `true` if a roll number is already taken in
+    /// the school for the given `(class, section,
+    /// academic_year)`. Per Student I-3.
+    fn roll_no_exists(
+        &self,
+        school: SchoolId,
+        class_id: ClassId,
+        section_id: SectionId,
+        academic_year_id: AcademicYearId,
+        roll_no: &str,
+    ) -> bool;
+    /// Returns `true` if a class with the given name
+    /// already exists in the school. Per Class I-2.
+    fn class_name_exists(&self, school: SchoolId, name: &str) -> bool;
+    /// Returns `true` if a section with the given name
+    /// already exists in the school. Per Section I-1.
+    fn section_name_exists(&self, school: SchoolId, name: &str) -> bool;
+    /// Returns `true` if a subject with the given code
+    /// already exists in the school. Per Subject I-1.
+    fn subject_code_exists(&self, school: SchoolId, code: &str) -> bool;
+    /// Returns `true` if any academic year in the school
+    /// has a date range that overlaps the given range. Per
+    /// AcademicYear I-2.
+    fn academic_year_overlaps(
+        &self,
+        school: SchoolId,
+        range: AcademicYearRange,
+        exclude_id: Option<AcademicYearId>,
+    ) -> bool;
+    /// Returns `true` if the student already has an optional
+    /// subject assigned for the given academic year. Per
+    /// Student I-4.
+    fn optional_subject_assigned_exists(
+        &self,
+        school: SchoolId,
+        student_id: StudentId,
+        academic_year_id: AcademicYearId,
+    ) -> bool;
+    /// Returns `true` if a primary `StudentGuardianLink`
+    /// already exists for the given student. Per Guardian
+    /// I-4.
+    fn primary_guardian_link_exists(
+        &self,
+        school: SchoolId,
+        student_id: StudentId,
+    ) -> bool;
 }
 
 // =============================================================================
@@ -665,10 +715,104 @@ macro_rules! academic_command_stub {
     };
 }
 
-academic_command_stub! {
-    /// Command stub: register a guardian. See
-    /// `docs/specs/academic/aggregates.md` § Guardian.
-    pub struct RegisterGuardianCommand { id: GuardianId }
+// =============================================================================
+// Guardian commands (full impl — Batch 1)
+// =============================================================================
+
+/// Command: register a new guardian.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RegisterGuardianCommand {
+    /// The guardian's typed id.
+    pub guardian_id: GuardianId,
+    /// The guardian's first name (1..=200 chars).
+    pub first_name: String,
+    /// The guardian's last name (1..=200 chars).
+    pub last_name: String,
+    /// Optional phone number of record (validated). Per I-1.
+    pub phone: Option<PhoneNumber>,
+    /// Optional email of record (validated). Per I-1.
+    pub email: Option<EmailAddress>,
+}
+
+
+impl RegisterGuardianCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
+
+/// Command: link a guardian to a student.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LinkGuardianToStudentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The link's typed id.
+    pub link_id: StudentGuardianLinkId,
+    /// The guardian being linked.
+    pub guardian_id: GuardianId,
+    /// The student being linked.
+    pub student_id: StudentId,
+    /// The relationship.
+    pub relation: Relation,
+    /// Whether this guardian is the primary contact for the
+    /// student. Per Guardian I-4, at most one guardian per
+    /// student may be marked primary.
+    pub is_primary: bool,
+}
+
+
+impl LinkGuardianToStudentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
+
+/// Command: unlink a guardian from a student.
+///
+/// Per Guardian I-5, when the last link is removed the
+/// guardian is soft-deleted (`active_status = Retired`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UnlinkGuardianFromStudentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The link's typed id.
+    pub link_id: StudentGuardianLinkId,
+}
+
+
+impl UnlinkGuardianFromStudentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
+
+/// Command: mark a guardian link as primary.
+///
+/// Per Guardian I-4, at most one guardian per student may
+/// be marked primary. The implementation demotes any
+/// previously-primary link for the same student in the
+/// same transaction.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MarkPrimaryGuardianCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The link's typed id.
+    pub link_id: StudentGuardianLinkId,
+}
+
+
+impl MarkPrimaryGuardianCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
 }
 academic_command_stub! {
     /// Command stub: create a class-section pairing. See
@@ -1048,10 +1192,16 @@ impl ChangeStudentCategoryCommand {
     }
 }
 /// Command: assign an optional subject to a student.
+///
+/// Per Student I-4, a student may have at most one optional
+/// subject per academic year. The service enforces the
+/// uniqueness via `UniquenessChecker::optional_subject_assigned_exists`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AssignOptionalSubjectCommand {
     /// The active tenant.
     pub tenant: TenantContext,
+    /// The new assignment's typed id.
+    pub assignment_id: OptionalSubjectAssignmentId,
     /// The student receiving the optional subject.
     pub student_id: StudentId,
     /// The optional subject being assigned.

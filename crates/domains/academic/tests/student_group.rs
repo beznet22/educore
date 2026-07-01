@@ -1,7 +1,7 @@
 //! Integration tests for the **StudentGroup aggregate** vertical slice.
 //!
 //! Pins the create contract for
-//! [`StudentGroup`](educore_academic::aggregate::StudentGroup)
+//! [`StudentGroup`](educore_academic::StudentGroup)
 //! end-to-end through the service layer:
 //!
 //! 1. `create_student_group` validates that the typed id's
@@ -45,7 +45,7 @@
     missing_docs
 )]
 
-use educore_academic::aggregate::StudentGroup;
+use educore_academic::StudentGroup;
 use educore_academic::commands::CreateStudentGroupCommand;
 use educore_academic::events::StudentGroupCreated;
 use educore_academic::services::create_student_group;

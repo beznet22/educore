@@ -42,8 +42,9 @@ use educore_events::domain_event::DomainEvent;
 use crate::entities::StudentDocumentId;
 use crate::value_objects::{
     AcademicYearId, CertificateId, ClassId, ClassRoutineId, ClassSectionId, ClassSubjectId,
-    GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId, RegistrationFieldId,
-    ResultStatus, SectionId, StudentCategoryId, StudentGroupId, StudentId, StudentPromotionId,
+    GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
+    OptionalSubjectAssignmentId, RegistrationFieldId, Relation, ResultStatus, SectionId,
+    StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId, StudentPromotionId,
     StudentStatus, SubjectId, SubjectType,
 };
 
@@ -1531,13 +1532,354 @@ macro_rules! academic_event_stub {
     };
 }
 
-academic_event_stub! {
-    /// Event stub: a guardian was registered. See
-    /// `docs/specs/academic/aggregates.md` § Guardian.
-    pub struct GuardianRegistered {
-        aggregate_id: GuardianId,
-        event_type: "academic.guardian.registered",
-        aggregate_type: "guardian",
+// =============================================================================
+// Guardian events (full impl — Batch 1)
+// =============================================================================
+
+/// A guardian was registered.
+///
+/// Per `docs/specs/academic/aggregates.md` § Guardian, the
+/// event carries the typed id, the contact details
+/// (validated), and the audit metadata. Per I-1, the
+/// `phone` and `email` fields are `Option<…>` and at most
+/// one of each is carried per guardian.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GuardianRegistered {
+    /// The guardian's typed id.
+    pub guardian_id: GuardianId,
+    /// The guardian's first name.
+    pub first_name: String,
+    /// The guardian's last name.
+    pub last_name: String,
+    /// The guardian's phone of record (validated).
+    pub phone: Option<crate::value_objects::PhoneNumber>,
+    /// The guardian's email of record (validated).
+    pub email: Option<crate::value_objects::EmailAddress>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl GuardianRegistered {
+    /// Mints a fresh `GuardianRegistered`.
+    #[must_use]
+    pub const fn new(
+        guardian_id: GuardianId,
+        first_name: String,
+        last_name: String,
+        phone: Option<crate::value_objects::PhoneNumber>,
+        email: Option<crate::value_objects::EmailAddress>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            guardian_id,
+            first_name,
+            last_name,
+            phone,
+            email,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for GuardianRegistered {
+    const EVENT_TYPE: &'static str = "academic.guardian.registered";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "guardian";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.guardian_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.guardian_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A guardian was linked to a student.
+///
+/// Per `docs/specs/academic/aggregates.md` § Guardian § I-2
+/// and § I-3.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GuardianLinkedToStudent {
+    /// The link's typed id.
+    pub link_id: StudentGuardianLinkId,
+    /// The guardian being linked.
+    pub guardian_id: GuardianId,
+    /// The student being linked.
+    pub student_id: StudentId,
+    /// The relationship.
+    pub relation: crate::value_objects::Relation,
+    /// Whether this link is primary for the student.
+    pub is_primary: bool,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl GuardianLinkedToStudent {
+    /// Mints a fresh `GuardianLinkedToStudent`.
+    #[must_use]
+    pub const fn new(
+        link_id: StudentGuardianLinkId,
+        guardian_id: GuardianId,
+        student_id: StudentId,
+        relation: crate::value_objects::Relation,
+        is_primary: bool,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            link_id,
+            guardian_id,
+            student_id,
+            relation,
+            is_primary,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for GuardianLinkedToStudent {
+    const EVENT_TYPE: &'static str = "academic.guardian.linked_to_student";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_guardian_link";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.link_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.link_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A guardian was unlinked from a student.
+///
+/// Per `docs/specs/academic/aggregates.md` § Guardian § I-5,
+/// when the last link for a guardian is removed the
+/// guardian is soft-deleted (the service emits an
+/// additional `GuardianSoftDeleted` companion event when
+/// `active_status` flips to `Retired`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GuardianUnlinkedFromStudent {
+    /// The link's typed id.
+    pub link_id: StudentGuardianLinkId,
+    /// The guardian that was linked.
+    pub guardian_id: GuardianId,
+    /// The student that was linked.
+    pub student_id: StudentId,
+    /// Whether the guardian was retired by this unlink
+    /// (true when this was the last link for the guardian).
+    pub guardian_retired: bool,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl GuardianUnlinkedFromStudent {
+    /// Mints a fresh `GuardianUnlinkedFromStudent`.
+    #[must_use]
+    pub const fn new(
+        link_id: StudentGuardianLinkId,
+        guardian_id: GuardianId,
+        student_id: StudentId,
+        guardian_retired: bool,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            link_id,
+            guardian_id,
+            student_id,
+            guardian_retired,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for GuardianUnlinkedFromStudent {
+    const EVENT_TYPE: &'static str = "academic.guardian.unlinked_from_student";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_guardian_link";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.link_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.link_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A guardian link was marked as primary.
+///
+/// Per `docs/specs/academic/aggregates.md` § Guardian § I-4,
+/// at most one guardian per student may be primary. The
+/// event records the new primary link; downstream consumers
+/// can derive the demoted link from the link that is no
+/// longer primary for the same student.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PrimaryGuardianMarked {
+    /// The link's typed id.
+    pub link_id: StudentGuardianLinkId,
+    /// The guardian being marked primary.
+    pub guardian_id: GuardianId,
+    /// The student whose primary is being set.
+    pub student_id: StudentId,
+    /// The link (if any) that was previously primary for
+    /// the same student. None if no prior primary existed.
+    pub demoted_from: Option<StudentGuardianLinkId>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl PrimaryGuardianMarked {
+    /// Mints a fresh `PrimaryGuardianMarked`.
+    #[must_use]
+    pub const fn new(
+        link_id: StudentGuardianLinkId,
+        guardian_id: GuardianId,
+        student_id: StudentId,
+        demoted_from: Option<StudentGuardianLinkId>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            link_id,
+            guardian_id,
+            student_id,
+            demoted_from,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for PrimaryGuardianMarked {
+    const EVENT_TYPE: &'static str = "academic.guardian.primary_marked";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_guardian_link";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.link_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.link_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// An optional subject was assigned to a student for an academic year.
+///
+/// Per `docs/specs/academic/aggregates.md` § Student § I-4.
+/// This is the **new** event variant emitted by the
+/// `OptionalSubjectAssignment` aggregate (the older
+/// `OptionalSubjectAssigned` event from the Student
+/// aggregate remains for backward compatibility).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OptionalSubjectAssignmentCreated {
+    /// The assignment's typed id.
+    pub assignment_id: OptionalSubjectAssignmentId,
+    /// The student receiving the optional subject.
+    pub student_id: StudentId,
+    /// The optional subject's typed id.
+    pub subject_id: SubjectId,
+    /// The academic year the assignment applies to.
+    pub academic_year_id: AcademicYearId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl OptionalSubjectAssignmentCreated {
+    /// Mints a fresh `OptionalSubjectAssignmentCreated`.
+    #[must_use]
+    pub const fn new(
+        assignment_id: OptionalSubjectAssignmentId,
+        student_id: StudentId,
+        subject_id: SubjectId,
+        academic_year_id: AcademicYearId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            assignment_id,
+            student_id,
+            subject_id,
+            academic_year_id,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for OptionalSubjectAssignmentCreated {
+    const EVENT_TYPE: &'static str = "academic.optional_subject_assignment.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "optional_subject_assignment";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.assignment_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.assignment_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
     }
 }
 academic_event_stub! {

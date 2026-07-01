@@ -9,7 +9,7 @@
 //! Integration tests for the **StudentRecord aggregate** vertical slice.
 //!
 //! Pins the typed-id contract for
-//! [`StudentRecord`](educore_academic::aggregate::StudentRecord)
+//! [`StudentRecord`](educore_academic::StudentRecord)
 //! end-to-end:
 //!
 //! 1. The `StudentRecordId` typed id carries a `SchoolId` and
