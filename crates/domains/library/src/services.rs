@@ -932,54 +932,217 @@ where
 
 /// Handler skeleton: update a [`LibraryMember`].
 pub fn update_library_member<C, G>(
-    _cmd: UpdateLibraryMemberCommand,
-    _clock: &C,
-    _ids: &G,
-) -> Result<(LibraryMember, LibraryMemberUpdated)>
+    cmd: UpdateLibraryMemberCommand,
+    clock: &C,
+    ids: &G,
+    member: &mut LibraryMember,
+) -> Result<LibraryMemberUpdated>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    let now = clock.now();
+    let actor = cmd.tenant.actor_id;
+    let event_id = ids.next_event_id();
+
+    // Validate id matches the aggregate.
+    if cmd.library_member_id != member.id {
+        return Err(DomainError::Validation(
+            "UPDATE_LIBRARY_MEMBER: command id does not match aggregate id".to_owned(),
+        ));
+    }
+
+    // Validate tenant matches.
+    if cmd.tenant.school_id != member.school_id {
+        return Err(DomainError::TenantViolation(
+            "UPDATE_LIBRARY_MEMBER: tenant school does not match aggregate".to_owned(),
+        ));
+    }
+
+    // Refuse updates to retired members (mirrors the
+    // `update_book` invariant).
+    if !member.active_status.is_active() {
+        return Err(DomainError::conflict(
+            "UPDATE_LIBRARY_MEMBER: member is not in an active status",
+        ));
+    }
+
+    // No-op detection: if no fields supplied, refuse.
+    if cmd.member_ud_id.is_none() && cmd.note.is_none() {
+        return Err(DomainError::Validation(
+            "UPDATE_LIBRARY_MEMBER: no fields supplied to update".to_owned(),
+        ));
+    }
+
+    // Capture the note in the change list (the aggregate
+    // has no `note` field today, but the event carries it
+    // so downstream subscribers can record free-text notes).
+    let mut changes_static = member.update(cmd.member_ud_id, actor, now, event_id);
+    if cmd.note.is_some() {
+        changes_static.push("note");
+    }
+
+    // Emit event.
+    let event = LibraryMemberUpdated::new(
+        member.id,
+        changes_static.iter().map(|s| (*s).to_owned()).collect(),
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok(event)
 }
 
 /// Handler skeleton: deactivate a [`LibraryMember`].
 pub fn deactivate_library_member<C, G>(
-    _cmd: DeactivateLibraryMemberCommand,
-    _clock: &C,
-    _ids: &G,
-) -> Result<(LibraryMember, LibraryMemberDeactivated)>
+    cmd: DeactivateLibraryMemberCommand,
+    clock: &C,
+    ids: &G,
+    member: &mut LibraryMember,
+) -> Result<LibraryMemberDeactivated>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    let now = clock.now();
+    let actor = cmd.tenant.actor_id;
+    let event_id = ids.next_event_id();
+
+    // Validate id matches the aggregate.
+    if cmd.library_member_id != member.id {
+        return Err(DomainError::Validation(
+            "DEACTIVATE_LIBRARY_MEMBER: command id does not match aggregate id".to_owned(),
+        ));
+    }
+
+    // Validate tenant matches.
+    if cmd.tenant.school_id != member.school_id {
+        return Err(DomainError::TenantViolation(
+            "DEACTIVATE_LIBRARY_MEMBER: tenant school does not match aggregate".to_owned(),
+        ));
+    }
+
+    // Idempotency guard: refusing to deactivate an already
+    // inactive member prevents accidental state churn.
+    if member.status == MemberStatus::Inactive {
+        return Err(DomainError::conflict(
+            "DEACTIVATE_LIBRARY_MEMBER: member is already inactive",
+        ));
+    }
+
+    // Reason must be non-empty (audit-log invariant).
+    if cmd.reason.trim().is_empty() {
+        return Err(DomainError::Validation(
+            "DEACTIVATE_LIBRARY_MEMBER: reason must not be empty".to_owned(),
+        ));
+    }
+
+    // Mutate.
+    member.deactivate(actor, now, event_id);
+
+    // Emit event.
+    let event = LibraryMemberDeactivated::new(
+        member.id,
+        cmd.reason,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok(event)
 }
 
 /// Handler skeleton: reactivate a [`LibraryMember`].
 pub fn reactivate_library_member<C, G>(
-    _cmd: ReactivateLibraryMemberCommand,
-    _clock: &C,
-    _ids: &G,
-) -> Result<(LibraryMember, LibraryMemberReactivated)>
+    cmd: ReactivateLibraryMemberCommand,
+    clock: &C,
+    ids: &G,
+    member: &mut LibraryMember,
+) -> Result<LibraryMemberReactivated>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    let now = clock.now();
+    let actor = cmd.tenant.actor_id;
+    let event_id = ids.next_event_id();
+
+    // Validate id matches the aggregate.
+    if cmd.library_member_id != member.id {
+        return Err(DomainError::Validation(
+            "REACTIVATE_LIBRARY_MEMBER: command id does not match aggregate id".to_owned(),
+        ));
+    }
+
+    // Validate tenant matches.
+    if cmd.tenant.school_id != member.school_id {
+        return Err(DomainError::TenantViolation(
+            "REACTIVATE_LIBRARY_MEMBER: tenant school does not match aggregate".to_owned(),
+        ));
+    }
+
+    // Idempotency guard: refusing to reactivate an already
+    // active member prevents accidental state churn.
+    if member.status == MemberStatus::Active {
+        return Err(DomainError::conflict(
+            "REACTIVATE_LIBRARY_MEMBER: member is already active",
+        ));
+    }
+
+    // Mutate.
+    member.reactivate(actor, now, event_id);
+
+    // Emit event.
+    let event = LibraryMemberReactivated::new(member.id, event_id, cmd.tenant.correlation_id, now);
+
+    Ok(event)
 }
 
 /// Handler skeleton: delete a [`LibraryMember`].
 pub fn delete_library_member<C, G>(
-    _cmd: DeleteLibraryMemberCommand,
-    _clock: &C,
-    _ids: &G,
-) -> Result<(LibraryMember, LibraryMemberDeleted)>
+    cmd: DeleteLibraryMemberCommand,
+    clock: &C,
+    ids: &G,
+    member: &mut LibraryMember,
+) -> Result<LibraryMemberDeleted>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    Err(DomainError::not_supported("TODO"))
+    let now = clock.now();
+    let actor = cmd.tenant.actor_id;
+    let event_id = ids.next_event_id();
+
+    // Validate id matches the aggregate.
+    if cmd.library_member_id != member.id {
+        return Err(DomainError::Validation(
+            "DELETE_LIBRARY_MEMBER: command id does not match aggregate id".to_owned(),
+        ));
+    }
+
+    // Validate tenant matches.
+    if cmd.tenant.school_id != member.school_id {
+        return Err(DomainError::TenantViolation(
+            "DELETE_LIBRARY_MEMBER: tenant school does not match aggregate".to_owned(),
+        ));
+    }
+
+    // Idempotency guard: a second delete on a retired
+    // member is a conflict, not a no-op.
+    if !member.active_status.is_active() {
+        return Err(DomainError::conflict(
+            "DELETE_LIBRARY_MEMBER: member is already retired",
+        ));
+    }
+
+    // Mutate.
+    member.delete(actor, now, event_id);
+
+    // Emit event.
+    let event = LibraryMemberDeleted::new(member.id, event_id, cmd.tenant.correlation_id, now);
+
+    Ok(event)
 }
 
 /// Handler skeleton: renew a [`BookIssue`].
