@@ -91,6 +91,38 @@ impl PageService {
         !existing.iter().any(|s| s == slug)
     }
 
+    /// Wave 32 invariant P4: at most one [`Page`] per school may
+    /// have `home_page = true`. Pass the count of existing
+    /// home pages in the school; returns [`CmsError::Conflict`]
+    /// when the caller is trying to create a second home page.
+    ///
+    /// The factory functions (`create_page_service`,
+    /// `update_page_service`) call this with a count returned
+    /// by the page repository.
+    pub fn check_home_page_uniqueness(
+        existing_home_page_count: usize,
+        new_is_home_page: bool,
+    ) -> crate::errors::Result<()> {
+        if new_is_home_page && existing_home_page_count > 0 {
+            return Err(CmsError::Conflict(format!(
+                "school already has {existing_home_page_count} home page(s); \
+                 at most one Page per school may have home_page = true",
+            )));
+        }
+        Ok(())
+    }
+
+    /// Wave 32 invariant FP3: a [`FrontendPage`](crate::aggregate::FrontendPage)
+    /// slug must be unique within the school when set. Mirrors
+    /// [`Self::validate_slug`] but is named for the frontend-page
+    /// context.
+    pub fn validate_frontend_page_slug_unique(
+        slug: &crate::value_objects::Slug,
+        existing: &[crate::value_objects::Slug],
+    ) -> bool {
+        Self::validate_slug(slug, existing)
+    }
+
     /// Returns `true` if the page is the school's home page.
     #[must_use]
     pub fn is_home_page(page: &Page) -> bool {
@@ -413,6 +445,24 @@ impl NewsService {
         news.is_comment.is_true()
     }
 
+    /// Wave 32 invariant NC2: a [`NewsCategory`](crate::aggregate::NewsCategory)
+    /// `category_name` must be unique within the school. The
+    /// factory function calls this with the list of existing
+    /// category names returned by the repository; returns
+    /// [`CmsError::Conflict`] on a duplicate.
+    pub fn validate_category_name_unique(
+        category_name: &crate::value_objects::CategoryName,
+        existing: &[crate::value_objects::CategoryName],
+    ) -> crate::errors::Result<()> {
+        if existing.iter().any(|n| n == category_name) {
+            return Err(CmsError::Conflict(format!(
+                "news category name '{}' already exists in this school",
+                category_name.as_str()
+            )));
+        }
+        Ok(())
+    }
+
     /// Returns `true` if the comment is approved.
     #[must_use]
     pub fn is_approved(comment: &crate::aggregate::NewsComment) -> bool {
@@ -664,6 +714,25 @@ impl ContentService {
     #[must_use]
     pub fn is_within_share_window(list: &ContentShareList, date: NaiveDate) -> bool {
         list.is_within_share_window(date)
+    }
+
+    /// Wave 32 invariant CT3: a
+    /// [`ContentType`](crate::aggregate::ContentType)
+    /// `type_name` must be unique within the school. The
+    /// factory function calls this with the list of existing
+    /// type names returned by the repository; returns
+    /// [`CmsError::Conflict`] on a duplicate.
+    pub fn validate_content_type_name_unique(
+        type_name: &crate::value_objects::ContentTypeName,
+        existing: &[crate::value_objects::ContentTypeName],
+    ) -> crate::errors::Result<()> {
+        if existing.iter().any(|n| n == type_name) {
+            return Err(CmsError::Conflict(format!(
+                "content type name '{}' already exists in this school",
+                type_name.as_str()
+            )));
+        }
+        Ok(())
     }
 
     /// Returns the next status for the given action.
