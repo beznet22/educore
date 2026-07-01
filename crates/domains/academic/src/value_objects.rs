@@ -142,6 +142,20 @@ academic_typed_id! {
 }
 
 academic_typed_id! {
+    /// A typed id for a `ClassRoom` reference (a physical or
+    /// virtual room assigned to a [`ClassSection`](crate::aggregate::ClassSection)).
+    ///
+    /// Per `docs/specs/academic/aggregates.md` § ClassSection § I-3,
+    /// a class-section has one or more class rooms assigned.
+    /// The `ClassRoom` aggregate itself lives in the facilities
+    /// domain; this typed id exists in the academic crate so
+    /// the [`ClassSection`](crate::aggregate::ClassSection) can
+    /// reference rooms cross-domain via a stable id. The
+    /// academic layer treats the id as opaque metadata.
+    pub struct ClassRoomId;
+}
+
+academic_typed_id! {
     /// A typed id for a [`Subject`](crate::aggregate::Subject) row.
     pub struct SubjectId;
 }
@@ -1234,6 +1248,44 @@ impl fmt::Display for SubjectType {
     }
 }
 
+/// The scope of a [`ClassSubject`](crate::aggregate::ClassSubject)
+/// assignment.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSubject § I-1,
+/// a subject may be assigned to a class (applies to every
+/// section) or to a specific class-section (applies to one
+/// section of a class). The scope is encoded as a closed
+/// enum so the constructor can enforce the
+/// `(class_id, class_section_id, scope)` triple
+/// consistency at compile time.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum ClassSubjectScope {
+    /// The subject applies to the class as a whole (every
+    /// section of the class in the academic year).
+    #[default]
+    ClassOnly,
+    /// The subject applies to a specific class-section of
+    /// the class.
+    ClassSection,
+}
+
+impl ClassSubjectScope {
+    /// Returns the canonical snake_case wire string.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::ClassOnly => "class_only",
+            Self::ClassSection => "class_section",
+        }
+    }
+}
+
+impl fmt::Display for ClassSubjectScope {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_str().fmt(f)
+    }
+}
+
 /// A student's promotion result.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ResultStatus {
@@ -1491,6 +1543,15 @@ mod tests {
         for r in [ResultStatus::Pass, ResultStatus::Fail, ResultStatus::Manual] {
             assert!(!r.as_str().is_empty());
         }
+    }
+
+    #[test]
+    fn class_subject_scope_round_trip() {
+        for s in [ClassSubjectScope::ClassOnly, ClassSubjectScope::ClassSection] {
+            assert!(!s.as_str().is_empty());
+        }
+        assert_eq!(ClassSubjectScope::ClassOnly.as_str(), "class_only");
+        assert_eq!(ClassSubjectScope::ClassSection.as_str(), "class_section");
     }
 
     #[test]
