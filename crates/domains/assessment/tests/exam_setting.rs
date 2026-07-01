@@ -4,17 +4,15 @@
 //! `ExamSettingCreated` event struct for
 //! [`ExamSetting`](educore_assessment::aggregate::ExamSetting).
 //!
-//! # Current contract (Wave 4 vertical slice)
+//! # Wave 29 real implementation contract
 //!
-//! `create_exam_setting` in `services.rs` is a **stub**
-//! (`DomainError::not_supported("TODO: create_exam_setting")`).
-//! The full implementation lands in a follow-up phase. These
-//! tests pin the **current** behaviour so the dispatcher /
-//! facade work can rely on the error surface while the real
-//! validation + aggregate construction is being built out.
-//!
-//! Mirrors `crates/domains/assessment/tests/marks_grade.rs`
-//! (stub pattern).
+//! `create_exam_setting` in `services.rs` now enforces the
+//! cross-tenant invariant from
+//! `docs/specs/assessment/aggregates.md` § ExamSetting
+//! (the typed id's `school_id` must match the command's
+//! `school_id`) and emits the `ExamSettingCreated` event
+//! stamped with a fresh `event_id` (UUIDv7) and the
+//! command's school anchor.
 
 #![allow(
     clippy::unwrap_used,
@@ -30,47 +28,62 @@ use educore_assessment::services::create_exam_setting;
 use educore_assessment::value_objects::ExamSettingId;
 use educore_core::clock::{IdGenerator as _, SystemIdGen};
 use educore_core::error::DomainError;
-use educore_core::tenant::{TenantContext, UserType};
 
 // =============================================================================
 // Fixtures
 // =============================================================================
 
-fn admin_context() -> (TenantContext, SystemIdGen) {
+fn fresh_school() -> (educore_core::ids::SchoolId, SystemIdGen) {
     let g = SystemIdGen;
     let school = g.next_school_id();
-    let actor = g.next_user_id();
-    let corr = g.next_correlation_id();
-    (
-        TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin),
-        g,
-    )
+    (school, g)
 }
 
 // =============================================================================
-// Happy path: current contract — stub returns NotSupported
+// Happy path: create_exam_setting returns ExamSettingCreated
 // =============================================================================
 
 #[tokio::test]
-async fn create_exam_setting_stub_returns_not_supported() {
-    let (tenant, g) = admin_context();
+async fn create_exam_setting_emits_event_for_anchored_id() {
+    let (school, g) = fresh_school();
+    let setting_id = ExamSettingId::new(school, g.next_uuid());
     let cmd = CreateExamSettingCommand {
-        school_id: tenant.school_id,
-        exam_setting_id: ExamSettingId::new(tenant.school_id, g.next_uuid()),
+        school_id: school,
+        exam_setting_id: setting_id,
+    };
+    let event = create_exam_setting(cmd).await.expect("create_exam_setting");
+    // Spec invariant: event carries the command's school + typed id.
+    assert_eq!(event.school_id, school);
+    assert_eq!(event.exam_setting_id, setting_id);
+}
+
+#[tokio::test]
+async fn create_exam_setting_rejects_cross_tenant_id() {
+    let (school_a, g) = fresh_school();
+    let school_b = g.next_school_id();
+    // Typed id anchored to school_b; command claims school_a.
+    let setting_id = ExamSettingId::new(school_b, g.next_uuid());
+    let cmd = CreateExamSettingCommand {
+        school_id: school_a,
+        exam_setting_id: setting_id,
     };
     let result = create_exam_setting(cmd).await;
-    assert!(matches!(result, Err(DomainError::NotSupported(_))));
+    assert!(
+        matches!(result, Err(DomainError::Validation(_))),
+        "expected Validation error for cross-tenant id, got {:?}",
+        result.map(|_| "ok")
+    );
 }
 
 #[test]
 fn exam_setting_created_event_carries_typed_id_and_school() {
-    let (tenant, g) = admin_context();
-    let setting_id = ExamSettingId::new(tenant.school_id, g.next_uuid());
+    let (school, g) = fresh_school();
+    let setting_id = ExamSettingId::new(school, g.next_uuid());
     let event = ExamSettingCreated {
         event_id: g.next_event_id(),
-        school_id: tenant.school_id,
+        school_id: school,
         exam_setting_id: setting_id,
     };
-    assert_eq!(event.school_id, tenant.school_id);
+    assert_eq!(event.school_id, school);
     assert_eq!(event.exam_setting_id, setting_id);
 }

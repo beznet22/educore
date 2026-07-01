@@ -4,36 +4,22 @@
 //! [`OnlineExam`](educore_assessment::aggregate::OnlineExam)
 //! end-to-end through the service layer.
 //!
-//! # Current contract (Wave 4 vertical slice)
+//! # Wave 29 real implementation contract
 //!
-//! `create_online_exam` and `publish_online_exam` in
-//! `services.rs` are **stubs** that unconditionally return
-//! `DomainError::not_supported("TODO: ...")` before any
-//! aggregate construction or event minting happens. The full
-//! implementation lands in a follow-up phase. These tests
-//! pin the **current** behaviour so the dispatcher / facade
-//! work can rely on the error surface while the real
-//! validation + lifecycle is being built out:
+//! `create_online_exam` in `services.rs` now enforces the
+//! cross-tenant invariant from
+//! `docs/specs/assessment/aggregates.md` § OnlineExam
+//! (the typed id's `school_id` must match the command's
+//! `school_id`) and emits the `OnlineExamCreated` event
+//! stamped with a fresh `event_id` (UUIDv7) and the
+//! command's school anchor. The full
+//! `Status`/`IsTaken`/`IsClosed`/`IsWaiting`/`IsRunning`/
+//! `AutoMark`/`StartTime`/`EndTime`/`EndDateTime` payload
+//! lands in a follow-up batch once the TenantContext-bearing
+//! command struct is migrated.
 //!
-//! 1. Happy path — any well-formed input is rejected with
-//!    `DomainError::NotSupported`. No aggregate is built, no
-//!    event is emitted.
-//! 2. Validation-failure path — the stub does not validate
-//!    its input, so any payload (including one that would
-//!    fail the future spec invariants on
-//!    `Status`/`IsTaken`/`IsClosed`/`IsWaiting`/`IsRunning`/
-//!    `AutoMark`/`StartTime`/`EndTime`/`EndDateTime`) is
-//!    rejected with the same `NotSupported` error before
-//!    any field-level check runs.
-//!
-//! Once the real handler lands, the happy-path test will be
-//! updated to assert `OnlineExamCreated` with `version == 1`
-//! per the spec invariant
-//! (`start < end <= end_date_time`); the validation-failure
-//! test will then assert `DomainError::Validation` directly.
-//!
-//! Mirrors `crates/domains/assessment/tests/marks_grade.rs`
-//! (lean — stub contract pin).
+//! `publish_online_exam` remains a stub
+//! (`DomainError::not_supported`) pending its own batch.
 
 #![allow(
     clippy::unwrap_used,
@@ -75,26 +61,11 @@ fn online_exam_id(g: &SystemIdGen, school: educore_core::ids::SchoolId) -> Onlin
 }
 
 // =============================================================================
-// Happy path: current contract — stub returns NotSupported
+// Happy path: create_online_exam returns OnlineExamCreated
 // =============================================================================
 
-/// Pins the **current** contract of `create_online_exam` for
-/// a well-formed payload. The handler is currently a stub
-/// that returns `DomainError::NotSupported("TODO:
-/// create_online_exam")` before any aggregate construction
-/// or event minting happens. Once the real implementation
-/// lands (carrying `Status`, `IsTaken`, `IsClosed`,
-/// `IsWaiting`, `IsRunning`, `AutoMark`, `StartTime`,
-/// `EndTime`, `EndDateTime` per
-/// `docs/specs/assessment/aggregates.md` § OnlineExam), this
-/// test will be updated to assert that:
-///
-/// - The returned event is `OnlineExamCreated` with
-///   `version == 1`,
-/// - The aggregate is school-scoped and active,
-/// - `start < end <= end_date_time` is enforced.
 #[tokio::test]
-async fn online_exam_create_currently_returns_not_supported() {
+async fn create_online_exam_emits_event_for_anchored_id() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
 
@@ -103,12 +74,27 @@ async fn online_exam_create_currently_returns_not_supported() {
         online_exam_id: online_exam_id(&g, school),
     };
 
-    let err = create_online_exam(cmd)
-        .await
-        .expect_err("create_online_exam is currently a stub");
+    let event = create_online_exam(cmd).await.expect("create_online_exam");
+    // Spec invariant: event carries the command's school + typed id.
+    assert_eq!(event.school_id, school);
+    assert_eq!(event.online_exam_id.school_id(), school);
+}
+
+#[tokio::test]
+async fn create_online_exam_rejects_cross_tenant_id() {
+    let (tenant, g) = admin_context();
+    let school_a = tenant.school_id;
+    let school_b = g.next_school_id();
+    // Typed id anchored to school_b; command claims school_a.
+    let cmd = CreateOnlineExamCommand {
+        school_id: school_a,
+        online_exam_id: online_exam_id(&g, school_b),
+    };
+    let result = create_online_exam(cmd).await;
     assert!(
-        matches!(err, DomainError::NotSupported(_)),
-        "expected NotSupported (current stub contract), got {err:?}"
+        matches!(result, Err(DomainError::Validation(_))),
+        "expected Validation error for cross-tenant id, got {:?}",
+        result.map(|_| "ok")
     );
 }
 

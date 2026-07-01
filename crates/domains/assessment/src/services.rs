@@ -1190,9 +1190,31 @@ pub async fn delete_marks_grade(_cmd: DeleteMarksGradeCommand) -> Result<MarksGr
     Err(DomainError::not_supported("TODO: delete_marks_grade"))
 }
 
-/// Handler skeleton for [`CreateExamSettingCommand`].
-pub async fn create_exam_setting(_cmd: CreateExamSettingCommand) -> Result<ExamSettingCreated> {
-    Err(DomainError::not_supported("TODO: create_exam_setting"))
+/// Real implementation for [`CreateExamSettingCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § ExamSetting:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected) and the aggregate
+/// is a thin school-scope record that holds the publication
+/// metadata. The full Title/ExamType/PublishDate payload
+/// lands in a follow-up batch once the TenantContext-bearing
+/// command struct is migrated; the current command only
+/// carries the typed id.
+pub async fn create_exam_setting(cmd: CreateExamSettingCommand) -> Result<ExamSettingCreated> {
+    // Spec invariant #1: the typed id's school must match the
+    // command's school — prevents cross-tenant references.
+    if cmd.exam_setting_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "exam_setting_id school ({}) does not match command school ({})",
+            cmd.exam_setting_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(ExamSettingCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        exam_setting_id: cmd.exam_setting_id,
+    })
 }
 
 /// Handler skeleton for [`UpdateExamSettingCommand`].
@@ -1205,9 +1227,27 @@ pub async fn delete_exam_setting(_cmd: DeleteExamSettingCommand) -> Result<ExamS
     Err(DomainError::not_supported("TODO: delete_exam_setting"))
 }
 
-/// Handler skeleton for [`SetExamSignatureCommand`].
-pub async fn set_exam_signature(_cmd: SetExamSignatureCommand) -> Result<ExamSignatureCreated> {
-    Err(DomainError::not_supported("TODO: set_exam_signature"))
+/// Real implementation for [`SetExamSignatureCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § ExamSignature:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The full
+/// Title/Signature-file payload lands in a follow-up batch
+/// once the TenantContext-bearing command struct is migrated.
+pub async fn set_exam_signature(cmd: SetExamSignatureCommand) -> Result<ExamSignatureCreated> {
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.exam_signature_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "exam_signature_id school ({}) does not match command school ({})",
+            cmd.exam_signature_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(ExamSignatureCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        exam_signature_id: cmd.exam_signature_id,
+    })
 }
 
 /// Handler skeleton for [`UpdateExamRoutinePageCommand`].
@@ -1240,9 +1280,28 @@ pub async fn update_frontend_exam_result(
     ))
 }
 
-/// Handler skeleton for [`CreateOnlineExamCommand`].
-pub async fn create_online_exam(_cmd: CreateOnlineExamCommand) -> Result<OnlineExamCreated> {
-    Err(DomainError::not_supported("TODO: create_online_exam"))
+/// Real implementation for [`CreateOnlineExamCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § OnlineExam:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The full
+/// (class, section, subject, academic_year) payload lands
+/// in a follow-up batch once the TenantContext-bearing
+/// command struct is migrated.
+pub async fn create_online_exam(cmd: CreateOnlineExamCommand) -> Result<OnlineExamCreated> {
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.online_exam_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "online_exam_id school ({}) does not match command school ({})",
+            cmd.online_exam_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(OnlineExamCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        online_exam_id: cmd.online_exam_id,
+    })
 }
 
 /// Handler skeleton for [`PublishOnlineExamCommand`].
