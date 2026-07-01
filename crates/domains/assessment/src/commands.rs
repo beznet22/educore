@@ -759,6 +759,35 @@ pub struct SetExamSignatureCommand {
     pub exam_signature_id: ExamSignatureId,
 }
 
+/// The `update_exam_signature` command.
+///
+/// Per `docs/specs/assessment/aggregates.md` § ExamSignature,
+/// this carries the typed id anchored to the command's
+/// school; the full `Title` / `Signature` file payload
+/// lands in a follow-up batch once the
+/// `TenantContext`-bearing command struct is migrated.
+#[derive(Debug, Clone)]
+pub struct UpdateExamSignatureCommand {
+    pub school_id: SchoolId,
+    pub exam_signature_id: ExamSignatureId,
+}
+
+/// The `delete_exam_signature` command.
+///
+/// Per `docs/specs/assessment/aggregates.md` § ExamSignature
+/// invariant #2 ("a signature is inactive when removed;
+/// existing reports still reference the original file"), the
+/// delete is a soft-delete that flips `ActiveStatus` to
+/// inactive. The full inactive-flag payload lands in a
+/// follow-up batch once the `TenantContext`-bearing command
+/// struct is migrated; the current command only carries the
+/// typed id.
+#[derive(Debug, Clone)]
+pub struct DeleteExamSignatureCommand {
+    pub school_id: SchoolId,
+    pub exam_signature_id: ExamSignatureId,
+}
+
 // --- ExamRoutinePage cluster ------------------------------------------------
 
 /// The `update_exam_routine_page` command.

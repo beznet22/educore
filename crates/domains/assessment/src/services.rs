@@ -41,15 +41,17 @@ use crate::commands::{
     ScheduleExamCommand, SetExamSignatureCommand, StartOnlineExamCommand, SubmitMarksCommand,
     SubmitOnlineExamAnswerCommand, UpdateExamAttendanceCommand, UpdateExamCommand,
     UpdateExamRoutinePageCommand, UpdateExamScheduleCommand, UpdateExamSettingCommand,
-    UpdateFrontendExamResultCommand, UpdateMarksGradeCommand, UpdateQuestionCommand,
-    UpdateQuestionGroupCommand, UpdateQuestionLevelCommand, UpdateResultRemarksCommand,
-    UpdateSeatPlanCommand, UpdateTeacherRemarkCommand,
+    UpdateExamSignatureCommand, UpdateFrontendExamResultCommand, UpdateMarksGradeCommand,
+    UpdateQuestionCommand, UpdateQuestionGroupCommand, UpdateQuestionLevelCommand,
+    UpdateResultRemarksCommand, UpdateSeatPlanCommand, UpdateTeacherRemarkCommand,
+    DeleteExamSignatureCommand,
 };
 use crate::events::{
     AdmitCardCancelled, AdmitCardGenerated, AdmitCardRegenerated, AdmitCardSettingCreated,
     CustomResultSettingCreated, ExamAttendanceCreated, ExamCreated, ExamDeleted,
     ExamRoutinePageCreated, ExamScheduleCancelled, ExamScheduleUpdated, ExamScheduled,
-    ExamSettingCreated, ExamSignatureCreated, ExamStepSkipCreated, ExamUpdated,
+    ExamSettingCreated, ExamSignatureCreated, ExamSignatureDeleted, ExamSignatureUpdated,
+    ExamStepSkipCreated, ExamUpdated,
     FrontendExamResultCreated, FrontendExamRoutineCreated, FrontendResultCreated, MarksEntered,
     MarksGradeCreated, MarksGradeDeleted, MarksGradeUpdated, MarksRegisterCancelled,
     MarksRegisterCreated, MarksSubmitted,
@@ -1360,6 +1362,60 @@ pub async fn set_exam_signature(cmd: SetExamSignatureCommand) -> Result<ExamSign
     })
 }
 
+/// Real implementation for [`UpdateExamSignatureCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § ExamSignature:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). Spec invariant #1
+/// (title uniqueness per school) and the full
+/// Title/Signature-file payload land in a follow-up batch
+/// once the TenantContext-bearing command struct is
+/// migrated; the current command only carries the typed id.
+pub async fn update_exam_signature(
+    cmd: UpdateExamSignatureCommand,
+) -> Result<ExamSignatureUpdated> {
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.exam_signature_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "exam_signature_id school ({}) does not match command school ({})",
+            cmd.exam_signature_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(ExamSignatureUpdated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        exam_signature_id: cmd.exam_signature_id,
+    })
+}
+
+/// Real implementation for [`DeleteExamSignatureCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § ExamSignature
+/// invariant #2: a signature is inactive when removed
+/// (existing reports still reference the original file).
+/// The full inactive-flag payload and the published-report
+/// reference check land in a follow-up batch once the
+/// TenantContext-bearing command struct is migrated; the
+/// current command only carries the typed id.
+pub async fn delete_exam_signature(
+    cmd: DeleteExamSignatureCommand,
+) -> Result<ExamSignatureDeleted> {
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.exam_signature_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "exam_signature_id school ({}) does not match command school ({})",
+            cmd.exam_signature_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(ExamSignatureDeleted {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        exam_signature_id: cmd.exam_signature_id,
+    })
+}
+
 /// Handler skeleton for [`UpdateExamRoutinePageCommand`].
 pub async fn update_exam_routine_page(
     _cmd: UpdateExamRoutinePageCommand,
@@ -1642,18 +1698,62 @@ pub async fn mark_exam_step_skip(_cmd: MarkExamStepSkipCommand) -> Result<ExamSt
     Err(DomainError::not_supported("TODO: mark_exam_step_skip"))
 }
 
-/// Handler skeleton for [`MarkExamAttendanceCommand`].
+/// Real implementation for [`MarkExamAttendanceCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § ExamAttendance:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). Spec invariant
+/// #1 (uniqueness by `(exam_id, subject_id, class_id,
+/// section_id, academic_id)`) and the per-student
+/// present/absent child rows (ExamAttendanceChild with
+/// `AttendanceType` P/A) land in a follow-up batch once
+/// the `TenantContext`-bearing command struct is migrated
+/// to carry the full payload; the current command only
+/// carries the typed id.
 pub async fn mark_exam_attendance(
-    _cmd: MarkExamAttendanceCommand,
+    cmd: MarkExamAttendanceCommand,
 ) -> Result<ExamAttendanceCreated> {
-    Err(DomainError::not_supported("TODO: mark_exam_attendance"))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.exam_attendance_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "exam_attendance_id school ({}) does not match command school ({})",
+            cmd.exam_attendance_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(ExamAttendanceCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        exam_attendance_id: cmd.exam_attendance_id,
+    })
 }
 
-/// Handler skeleton for [`UpdateExamAttendanceCommand`].
+/// Real implementation for [`UpdateExamAttendanceCommand`].
+///
+/// Per `docs/specs/assessment/aggregates.md` § ExamAttendance:
+/// the typed id is anchored to the command's school
+/// (cross-tenant references are rejected). The per-student
+/// attendance-type mutation (flipping P/A on existing
+/// ExamAttendanceChild rows) lands in a follow-up batch
+/// once the `TenantContext`-bearing command struct is
+/// migrated to carry the full payload; the current command
+/// only carries the typed id.
 pub async fn update_exam_attendance(
-    _cmd: UpdateExamAttendanceCommand,
+    cmd: UpdateExamAttendanceCommand,
 ) -> Result<ExamAttendanceCreated> {
-    Err(DomainError::not_supported("TODO: update_exam_attendance"))
+    // Spec invariant: typed id must belong to the command's school.
+    if cmd.exam_attendance_id.school_id() != cmd.school_id {
+        return Err(DomainError::validation(format!(
+            "exam_attendance_id school ({}) does not match command school ({})",
+            cmd.exam_attendance_id.school_id(),
+            cmd.school_id,
+        )));
+    }
+    Ok(ExamAttendanceCreated {
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        school_id: cmd.school_id,
+        exam_attendance_id: cmd.exam_attendance_id,
+    })
 }
 
 // =============================================================================
