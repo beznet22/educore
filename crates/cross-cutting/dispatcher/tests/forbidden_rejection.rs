@@ -34,7 +34,7 @@ use std::future::Future;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use educore_core::clock::{Clock, IdGenerator, SystemClock, SystemIdGen};
 use educore_core::error::{DomainError, Result};

@@ -112,7 +112,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument, warn};
 
 use educore_core::clock::{Clock, IdGenerator};
@@ -657,9 +657,9 @@ mod tests {
     use educore_core::clock::SystemIdGen;
     use educore_core::ids::{CorrelationId, EventId, UserId};
     use educore_core::tenant::UserType;
-    use educore_storage::idempotency::IdempotencyCompositeKey;
+    use educore_storage::idempotency::{Idempotency, IdempotencyCompositeKey};
     use educore_storage::outbox::{Outbox, SerializedEnvelope};
-    use crate::transaction::{TenantTransaction, Transaction};
+    use educore_storage::transaction::{TenantTransaction, Transaction};
 
     use educore_events::envelope::EventEnvelope;
     use educore_events::event_bus::{
@@ -713,7 +713,7 @@ mod tests {
     }
 
     /// A minimal domain event the test command emits.
-    #[derive(Debug, Clone, Serialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     struct TestEvent {
         event_id: EventId,
         aggregate_id: uuid::Uuid,
@@ -767,8 +767,8 @@ mod tests {
         async fn publish(&self, envelope: EventEnvelope) -> Result<PublishReceipt> {
             let receipt = PublishReceipt {
                 event_id: envelope.event_id,
-                topic: None,
-                published_at: envelope.occurred_at,
+                topic: "default".to_owned(),
+                accepted_at: envelope.occurred_at,
             };
             lock_unpoisoned(&self.published).push(envelope);
             Ok(receipt)
@@ -858,7 +858,7 @@ mod tests {
     }
 
     #[async_trait]
-    impl crate::audit::AuditLog for InMemoryAuditLog {
+    impl educore_storage::audit::AuditLog for InMemoryAuditLog {
         async fn append(&self, entry: AuditLogEntry) -> Result<()> {
             lock_unpoisoned(&self.rows).push(entry);
             Ok(())
@@ -893,7 +893,7 @@ mod tests {
     }
 
     #[async_trait]
-    impl crate::idempotency::Idempotency for InMemoryIdempotency {
+    impl educore_storage::idempotency::Idempotency for InMemoryIdempotency {
         async fn lookup(
             &self,
             key: IdempotencyCompositeKey,
@@ -957,13 +957,13 @@ mod tests {
         fn outbox(&self) -> &dyn Outbox {
             &*self.outbox
         }
-        fn audit_log(&self) -> &dyn crate::audit::AuditLog {
+        fn audit_log(&self) -> &dyn educore_storage::audit::AuditLog {
             &*self.audit_log
         }
-        fn idempotency(&self) -> &dyn crate::idempotency::Idempotency {
+        fn idempotency(&self) -> &dyn educore_storage::idempotency::Idempotency {
             &*self.idempotency
         }
-        fn event_log(&self) -> &dyn crate::event_log::EventLog {
+        fn event_log(&self) -> &dyn educore_storage::event_log::EventLog {
             &self.event_log
         }
     }
@@ -1008,8 +1008,8 @@ mod tests {
                 event_log: StubEventLog,
             }))
         }
-        async fn migrate(&self) -> Result<crate::change_stream::MigrationReport> {
-            Ok(crate::change_stream::MigrationReport::default())
+        async fn migrate(&self) -> Result<educore_storage::change_stream::MigrationReport> {
+            Ok(educore_storage::change_stream::MigrationReport { version: 0, statements_executed: 0, duration: std::time::Duration::from_secs(0), already_at_version: true })
         }
         async fn ping(&self) -> Result<()> {
             Ok(())
@@ -1026,15 +1026,21 @@ mod tests {
     struct StubEventLog;
 
     #[async_trait]
-    impl crate::event_log::EventLog for StubEventLog {
-        async fn append(&self, _entry: crate::event_log::EventLogEntry) -> Result<()> {
+    impl educore_storage::event_log::EventLog for StubEventLog {
+        async fn append(&self, _entry: educore_storage::event_log::EventLogEntry) -> Result<()> {
             Ok(())
         }
-        async fn query(
+        async fn read(
             &self,
-            _filter: crate::event_log::EventLogFilter,
-        ) -> Result<Vec<crate::event_log::EventLogEntry>> {
+            _filter: educore_storage::event_log::EventLogFilter,
+        ) -> Result<Vec<educore_storage::event_log::EventLogEntry>> {
             Ok(Vec::new())
+        }
+        async fn count(
+            &self,
+            _filter: educore_storage::event_log::EventLogFilter,
+        ) -> Result<u64> {
+            Ok(0)
         }
     }
 
@@ -1269,7 +1275,10 @@ mod tests {
             outcome_version: 1,
             recorded_at: ts(1_700_000_000),
             affected_aggregate_ids: vec![g.next_uuid()],
-            ..IdempotencyRecord::default()
+            aggregate_version: 1,
+            duration_ms: 100,
+            emitted_event_ids: vec![],
+            etag: Some("test-etag".to_owned()),
         };
         idempotency
             .record(pre_existing)
