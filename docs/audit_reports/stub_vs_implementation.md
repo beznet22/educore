@@ -41,7 +41,7 @@
 | documents | TBD | TBD | TBD | TBD |
 | facilities | TBD | TBD | TBD | TBD |
 | finance | 165 | 19 | 31 | 124 |
-| hr | TBD | TBD | TBD | TBD |
+| hr | 107 | TBD | TBD | TBD |
 | library | TBD | TBD | TBD | TBD |
 | cms | TBD (20 aggregates) | TBD | TBD | TBD |
 
@@ -59,6 +59,29 @@
 **Drives Phase 2:** All stubs need real implementations per spec.
 All partials need missing invariant/validation/transition coverage.
 All missing invariants from deep audit need enforcement.
+
+## Engine Production Depth ferment — Phase 3 (HR) outcome
+
+**Updated:** Phase 3 of the `Engine Production Depth` ferment (ferment
+`019f1dd8-9e29-709a-b948-60cd9a4234bd`) made targeted progress on the
+HR domain.
+
+- Spec recount: 107 invariants across 42 aggregates (function-level audit claimed 49).
+- Post-Phase 3: **0 invariants promoted to [x]** — Phase 3 work focused on checklist creation only.
+- Master tracking doc: `docs/audit_reports/hr-invariant-checklist.md` (111 bullets across 42 aggregates).
+
+**What did NOT land (deferred to focused per-aggregate work):**
+- Staff aggregate (8 invariants alone — tenant anchor, ID/email/phone uniqueness, status FSM, payroll-block-on-resign)
+- PayrollGenerate (6 invariants — gross/net composition, status FSM)
+- LeaveRequest (5 invariants — date ordering, balance check, state machine, overlap prevention)
+- 30+ 2-invariant placeholder aggregates (Department, Designation, SalaryTemplate, LeaveDefine, etc.)
+
+**Pattern:** Phase 3 followed the same template as Phases 1-2:
+- Step 1 (checklist creation): succeeded
+- Steps 2-4 (placeholder-aggregate implementation): deferred after repeated sub-agent aborts
+- Step 5 (audit doc update): succeeded
+
+The Engine Production Depth ferment has now closed 3 phases with the same pattern: master tracking docs produced + implementation work deferred to focused per-aggregate sub-batches.
 
 ## Engine Production Depth ferment — Phase 2 (Finance) outcome
 
