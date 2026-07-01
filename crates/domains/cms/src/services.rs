@@ -55,24 +55,6 @@ fn snapshot<T: serde::Serialize>(value: &T) -> Bytes {
     Bytes::from(serde_json::to_vec(value).unwrap_or_default())
 }
 
-/// Authorize a single capability. Returns
-/// [`CmsError::Forbidden`] when the actor does not hold the
-/// capability.
-async fn require_capability(
-    cap: &dyn CapabilityCheck,
-    tenant: &educore_core::tenant::TenantContext,
-    capability: Capability,
-) -> Result<()> {
-    if cap.has(tenant, capability).await? {
-        Ok(())
-    } else {
-        Err(CmsError::Forbidden(format!(
-            "missing capability {}",
-            capability.as_str()
-        )))
-    }
-}
-
 // =============================================================================
 // Section A: PageService + create_page_service
 // =============================================================================
@@ -163,13 +145,13 @@ pub async fn create_page_service<R, B>(
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
-    cap: &dyn CapabilityCheck,
+    rbac: &dyn CapabilityCheck,
 ) -> Result<Page>
 where
     R: PageRepository + 'static,
     B: EventBus + 'static,
 {
-    require_capability(cap, &cmd.tenant, Capability::CmsPageCreate).await?;
+    rbac.require(&cmd.tenant, Capability::CmsPageCreate).await?;
     let tenant = cmd.tenant.clone();
     let id = crate::value_objects::PageId::new(tenant.school_id, uuid::Uuid::now_v7());
     let new = cmd.into_new_page(id);
@@ -207,13 +189,13 @@ pub async fn update_page_service<R, B>(
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
-    cap: &dyn CapabilityCheck,
+    rbac: &dyn CapabilityCheck,
 ) -> Result<Page>
 where
     R: PageRepository + 'static,
     B: EventBus + 'static,
 {
-    require_capability(cap, &cmd.tenant, Capability::CmsPageUpdate).await?;
+    rbac.require(&cmd.tenant, Capability::CmsPageUpdate).await?;
     let mut page = repo
         .get(cmd.page_id)
         .await
@@ -276,13 +258,13 @@ pub async fn publish_page_service<R, B>(
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
-    cap: &dyn CapabilityCheck,
+    rbac: &dyn CapabilityCheck,
 ) -> Result<Page>
 where
     R: PageRepository + 'static,
     B: EventBus + 'static,
 {
-    require_capability(cap, &cmd.tenant, Capability::CmsPagePublish).await?;
+    rbac.require(&cmd.tenant, Capability::CmsPagePublish).await?;
     let mut page = repo
         .get(cmd.page_id)
         .await
@@ -329,13 +311,13 @@ pub async fn archive_page_service<R, B>(
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
-    cap: &dyn CapabilityCheck,
+    rbac: &dyn CapabilityCheck,
 ) -> Result<Page>
 where
     R: PageRepository + 'static,
     B: EventBus + 'static,
 {
-    require_capability(cap, &cmd.tenant, Capability::CmsPageArchive).await?;
+    rbac.require(&cmd.tenant, Capability::CmsPageArchive).await?;
     let mut page = repo
         .get(cmd.page_id)
         .await
@@ -382,13 +364,13 @@ pub async fn delete_page_service<R, B>(
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
-    cap: &dyn CapabilityCheck,
+    rbac: &dyn CapabilityCheck,
 ) -> Result<()>
 where
     R: PageRepository + 'static,
     B: EventBus + 'static,
 {
-    require_capability(cap, &cmd.tenant, Capability::CmsPageDelete).await?;
+    rbac.require(&cmd.tenant, Capability::CmsPageDelete).await?;
     let mut page = repo
         .get(cmd.page_id)
         .await
@@ -496,13 +478,13 @@ pub async fn create_news_service<R, B>(
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
-    cap: &dyn CapabilityCheck,
+    rbac: &dyn CapabilityCheck,
 ) -> Result<News>
 where
     R: NewsRepository + 'static,
     B: EventBus + 'static,
 {
-    require_capability(cap, &cmd.tenant, Capability::CmsNewsCreate).await?;
+    rbac.require(&cmd.tenant, Capability::CmsNewsCreate).await?;
     let tenant = cmd.tenant.clone();
     let id = crate::value_objects::NewsId::new(tenant.school_id, uuid::Uuid::now_v7());
     let new = cmd.into_new_news(id);
@@ -586,13 +568,13 @@ pub async fn create_testimonial_service<R, B>(
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
-    cap: &dyn CapabilityCheck,
+    rbac: &dyn CapabilityCheck,
 ) -> Result<Testimonial>
 where
     R: TestimonialRepository + 'static,
     B: EventBus + 'static,
 {
-    require_capability(cap, &cmd.tenant, Capability::CmsTestimonialCreate).await?;
+    rbac.require(&cmd.tenant, Capability::CmsTestimonialCreate).await?;
     let tenant = cmd.tenant.clone();
     let id = crate::value_objects::TestimonialId::new(tenant.school_id, uuid::Uuid::now_v7());
     let new = cmd.into_new_testimonial(id);
@@ -650,13 +632,13 @@ pub async fn create_home_slider_service<R, B>(
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
-    cap: &dyn CapabilityCheck,
+    rbac: &dyn CapabilityCheck,
 ) -> Result<HomeSlider>
 where
     R: HomeSliderRepository + 'static,
     B: EventBus + 'static,
 {
-    require_capability(cap, &cmd.tenant, Capability::CmsHomeSliderCreate).await?;
+    rbac.require(&cmd.tenant, Capability::CmsHomeSliderCreate).await?;
     let tenant = cmd.tenant.clone();
     let id = crate::value_objects::HomeSliderId::new(tenant.school_id, uuid::Uuid::now_v7());
     let new = cmd.into_new_home_slider(id);
@@ -769,13 +751,13 @@ pub async fn content_service<R, B>(
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
-    cap: &dyn CapabilityCheck,
+    rbac: &dyn CapabilityCheck,
 ) -> Result<Content>
 where
     R: ContentRepository + 'static,
     B: EventBus + 'static,
 {
-    require_capability(cap, &cmd.tenant, Capability::CmsContentCreate).await?;
+    rbac.require(&cmd.tenant, Capability::CmsContentCreate).await?;
     let tenant = cmd.tenant.clone();
     let id = crate::value_objects::ContentId::new(tenant.school_id, uuid::Uuid::now_v7());
     let new = cmd.into_new_content(id);
@@ -859,13 +841,13 @@ pub async fn content_share_list_service<R, B>(
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
-    cap: &dyn CapabilityCheck,
+    rbac: &dyn CapabilityCheck,
 ) -> Result<ContentShareList>
 where
     R: ContentShareListRepository + 'static,
     B: EventBus + 'static,
 {
-    require_capability(cap, &cmd.tenant, Capability::CmsContentShareListCreate).await?;
+    rbac.require(&cmd.tenant, Capability::CmsContentShareListCreate).await?;
     let tenant = cmd.tenant.clone();
     let id = crate::value_objects::ContentShareListId::new(tenant.school_id, uuid::Uuid::now_v7());
     let new = cmd.into_new_content_share_list(id);
@@ -911,13 +893,13 @@ pub async fn configure_home_page_service<R, B>(
     repo: Arc<R>,
     bus: Arc<B>,
     audit: Arc<AuditWriter>,
-    cap: &dyn CapabilityCheck,
+    rbac: &dyn CapabilityCheck,
 ) -> Result<HomePageSetting>
 where
     R: HomePageSettingRepository + 'static,
     B: EventBus + 'static,
 {
-    require_capability(cap, &cmd.tenant, Capability::CmsHomePageSettingConfigure).await?;
+    rbac.require(&cmd.tenant, Capability::CmsHomePageSettingConfigure).await?;
     let tenant = cmd.tenant.clone();
     // Create-or-update semantics: if a setting exists for the
     // school, return it as-is (Phase 12 ships type-only definitions
