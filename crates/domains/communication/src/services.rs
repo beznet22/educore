@@ -209,7 +209,7 @@ pub fn delete_notice<C: Clock, G: IdGenerator>(
 ) -> Result<NoticeDeleted> {
     let now = clock.now();
     let event_id = ids.next_event_id();
-    notice.mark_deleted(cmd.tenant.actor_id, now, event_id);
+    let _ = notice.mark_deleted(cmd.tenant.actor_id, now, event_id);
     Ok(NoticeDeleted::new(
         notice.id,
         event_id,

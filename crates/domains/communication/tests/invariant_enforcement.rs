@@ -28,6 +28,8 @@
 )]
 
 use educore_communication::prelude::*;
+use educore_core::tenant::UserType;
+use educore_core::value_objects::ActiveStatus;
 use educore_core::clock::{IdGenerator as _, SystemClock, SystemIdGen, TestClock};
 use educore_core::error::DomainError;
 use educore_core::ids::CorrelationId;
@@ -290,14 +292,14 @@ fn send_message_cancel_rejects_dispatched() {
 
     let mut sm = SendMessage::fresh(
         SendMessageId::new(school, g.next_uuid()),
-        NoticeTitle::new("Bulk").expect("title"),
-        NoticeBody::new("Body").expect("body"),
+        "Bulk".to_owned(),
+        "Body".to_owned(),
         date(2026, 9, 1),
         Some(date(2026, 9, 1)),
         AudienceDescriptor::Users(vec![actor]),
         actor,
         clock.now(),
-        CorrelationId::from(g.next_uuid()),
+        g.next_correlation_id(),
     );
 
     let _ = sm.dispatch(actor, clock.now(), g.next_event_id());
@@ -322,14 +324,14 @@ fn send_message_cancel_allows_draft() {
 
     let mut sm = SendMessage::fresh(
         SendMessageId::new(school, g.next_uuid()),
-        NoticeTitle::new("Bulk").expect("title"),
-        NoticeBody::new("Body").expect("body"),
+        "Bulk".to_owned(),
+        "Body".to_owned(),
         date(2026, 9, 1),
         Some(date(2026, 9, 1)),
         AudienceDescriptor::Users(vec![actor]),
         actor,
         clock.now(),
-        CorrelationId::from(g.next_uuid()),
+        g.next_correlation_id(),
     );
 
     sm.cancel(None, actor, clock.now(), g.next_event_id())

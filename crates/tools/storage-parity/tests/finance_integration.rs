@@ -163,6 +163,7 @@ async fn finance_integration_sqlite_vertical_slice() {
         file_reference: None,
         description: Some("test expense".to_owned()),
         payroll_payment_id: None,
+        account_type: educore_finance::value_objects::AccountType::Bank,
     };
     let (expense, expense_event) =
         record_expense(expense_cmd, &clock, &ids).expect("record_expense");

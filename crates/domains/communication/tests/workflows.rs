@@ -345,7 +345,7 @@ fn message_lifecycle_unpublish_transitions_to_unpublished() {
     notice.publish(actor, clock.now(), g.next_event_id());
     assert!(matches!(notice.status, NoticeStatus::Published));
 
-    notice.unpublish(actor, clock.now(), g.next_event_id());
+    let _ = notice.unpublish(actor, clock.now(), g.next_event_id());
 
     let event: NoticeUnpublished = NoticeUnpublished::new(
         notice.id,
@@ -382,7 +382,7 @@ fn message_lifecycle_soft_delete_emits_notice_deleted() {
     let mut notice = new_draft_notice(&g, school, actor, "Old notice", "Will be deleted.");
     assert!(notice.active_status.is_active());
 
-    notice.mark_deleted(actor, clock.now(), g.next_event_id());
+    let _ = notice.mark_deleted(actor, clock.now(), g.next_event_id());
 
     let event: NoticeDeleted =
         NoticeDeleted::new(notice.id, g.next_event_id(), correlation, clock.now());
@@ -597,7 +597,7 @@ fn conversation_lifecycle_soft_delete_message_emits_chat_message_deleted() {
     let mut message = new_chat_message(&g, school, conv.id, user_a, user_b, "Will be deleted.");
     assert!(message.active_status.is_active());
 
-    message.mark_deleted(user_a, clock.now(), g.next_event_id());
+    let _ = message.mark_deleted(user_a, clock.now(), g.next_event_id());
 
     let event: ChatMessageDeleted = ChatMessageDeleted::new(
         message.id,
@@ -701,7 +701,7 @@ fn notification_dispatch_read_emits_notification_read() {
     assert!(notif.read_at.is_none());
 
     let read_at = clock.now();
-    notif.mark_read(recipient, read_at, g.next_event_id());
+    let _ = notif.mark_read(recipient, read_at, g.next_event_id());
 
     let event: NotificationRead = NotificationRead::new(
         notif.id,
@@ -746,7 +746,7 @@ fn notification_dispatch_withdraw_emits_notification_withdrawn() {
     assert!(matches!(notif.status, NotificationStatus::Pending));
 
     let withdrawn_at = clock.now();
-    notif.withdraw(
+    let _ = notif.withdraw(
         "Sent in error — child is present.".to_owned(),
         actor,
         withdrawn_at,
