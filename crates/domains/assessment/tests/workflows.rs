@@ -941,3 +941,285 @@ fn school_matches_returns_false_for_different_school() {
     let other = g.next_school_id();
     assert!(!school_matches(&tenant, other));
 }
+
+// =============================================================================
+// 8. Online Exam Lifecycle Workflow
+//    (`workflows.md` § "Online Exam Lifecycle")
+//
+// Spec steps 4..8 map to the five factory methods on
+// [`OnlineExamLifecycleService`]:
+//   step 4 (StartOnlineExam)              -> start_exam
+//   step 5 (SubmitOnlineExamAnswer)       -> submit_responses (per question)
+//   step 6 (EvaluateOnlineExam)           -> grade_responses
+//   step 7 (EvaluateOnlineExam, close=true) -> finalize_results
+//   step 8 (archive)                      -> archive_attempt
+//
+// Steps 1..3 (CreateOnlineExam, AddOnlineExamQuestion,
+// PublishOnlineExam) are not modelled by the lifecycle
+// service yet -- they are aggregate-creation steps that the
+// dispatcher will drive from the underlying commands
+// (Wave 31 / Phase 4 Workstream D scope excludes them).
+// =============================================================================
+
+use educore_assessment::events::{
+    OnlineExamAnswered, OnlineExamClosed, OnlineExamDeleted, OnlineExamEvaluated, OnlineExamStarted,
+};
+use educore_assessment::services::OnlineExamLifecycleService;
+use educore_assessment::value_objects::{OnlineExamId, OnlineExamQuestionId};
+
+fn online_exam_id(g: &SystemIdGen, school: SchoolId) -> OnlineExamId {
+    OnlineExamId::new(school, g.next_uuid())
+}
+
+fn online_exam_question_id(g: &SystemIdGen, school: SchoolId) -> OnlineExamQuestionId {
+    OnlineExamQuestionId::new(school, g.next_uuid())
+}
+
+/// Full happy path: spec steps 4..8 (start -> submit (3
+/// questions) -> grade -> finalize -> archive) emits five
+/// typed events, each carrying the tenant, exam and
+/// student identifiers and a monotonic event id.
+#[test]
+fn online_exam_lifecycle_full_happy_path_emits_all_five_events() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = DeterministicIdGen::starting_at(1);
+
+    let exam = online_exam_id(&g, school);
+    let student = student_id(&g, school);
+
+    // Workflow step 4: StartOnlineExam -> OnlineExamStarted.
+    let started: OnlineExamStarted =
+        OnlineExamLifecycleService::start_exam(&tenant, exam, student, &clock, &ids)
+            .expect("start_exam");
+    assert_eq!(started.school_id, school);
+    assert_eq!(started.online_exam_id, exam);
+    assert_eq!(started.student_id, student);
+
+    // Workflow step 5: SubmitOnlineExamAnswer (one event
+    // per question). Three questions -> three
+    // `OnlineExamAnswered` events.
+    let q1 = online_exam_question_id(&g, school);
+    let q2 = online_exam_question_id(&g, school);
+    let q3 = online_exam_question_id(&g, school);
+
+    let a1: OnlineExamAnswered =
+        OnlineExamLifecycleService::submit_responses(&tenant, exam, student, q1, &clock, &ids)
+            .expect("submit 1");
+    let a2: OnlineExamAnswered =
+        OnlineExamLifecycleService::submit_responses(&tenant, exam, student, q2, &clock, &ids)
+            .expect("submit 2");
+    let a3: OnlineExamAnswered =
+        OnlineExamLifecycleService::submit_responses(&tenant, exam, student, q3, &clock, &ids)
+            .expect("submit 3");
+
+    for answered in [&a1, &a2, &a3] {
+        assert_eq!(answered.school_id, school);
+        assert_eq!(answered.online_exam_id, exam);
+        assert_eq!(answered.student_id, student);
+    }
+    assert_eq!(a1.question_id, q1);
+    assert_eq!(a2.question_id, q2);
+    assert_eq!(a3.question_id, q3);
+
+    // Workflow step 6: EvaluateOnlineExam -> OnlineExamEvaluated.
+    let evaluated: OnlineExamEvaluated =
+        OnlineExamLifecycleService::grade_responses(&tenant, exam, student, &clock, &ids)
+            .expect("grade_responses");
+    assert_eq!(evaluated.school_id, school);
+    assert_eq!(evaluated.online_exam_id, exam);
+    assert_eq!(evaluated.student_id, student);
+
+    // Workflow step 7: EvaluateOnlineExam with close_exam=true -> OnlineExamClosed.
+    let closed: OnlineExamClosed =
+        OnlineExamLifecycleService::finalize_results(&tenant, exam, &clock, &ids)
+            .expect("finalize_results");
+    assert_eq!(closed.school_id, school);
+    assert_eq!(closed.online_exam_id, exam);
+
+    // Workflow step 8: archive the attempt -> OnlineExamDeleted
+    // (archive reuses the deleted-event shape per
+    // `docs/specs/assessment/workflows.md` § "Online Exam
+    // Lifecycle" and the service-level doc comment).
+    let archived: OnlineExamDeleted =
+        OnlineExamLifecycleService::archive_attempt(&tenant, exam, &clock, &ids)
+            .expect("archive_attempt");
+    assert_eq!(archived.school_id, school);
+    assert_eq!(archived.online_exam_id, exam);
+
+    // All eight emitted event ids are distinct (1 start,
+    // 3 answers, 1 grade, 1 close, 1 archive = 7 events).
+    let emitted_ids = [
+        started.event_id,
+        a1.event_id,
+        a2.event_id,
+        a3.event_id,
+        evaluated.event_id,
+        closed.event_id,
+        archived.event_id,
+    ];
+    let unique: HashSet<_> = emitted_ids.iter().collect();
+    assert_eq!(
+        unique.len(),
+        emitted_ids.len(),
+        "all emitted event ids must be distinct"
+    );
+}
+
+/// Cross-tenant rejection: every step rejects a tenant
+/// whose school_id does not match the online exam's school
+/// anchor (per the engine's `school_matches` invariant).
+/// No event is emitted on the failure path.
+#[test]
+fn online_exam_lifecycle_rejects_cross_school_tenant_at_every_step() {
+    let (_tenant_a, g) = admin_context();
+    let school_a = _tenant_a.school_id;
+    let (tenant_b, _) = admin_context();
+    let school_b = tenant_b.school_id;
+    assert_ne!(school_a, school_b, "fixtures must use distinct schools");
+
+    let clock = TestClock::new();
+    let ids = DeterministicIdGen::starting_at(1);
+
+    let exam_for_a = online_exam_id(&g, school_a);
+    let student_for_a = student_id(&g, school_a);
+    let question_for_a = online_exam_question_id(&g, school_a);
+
+    let err = OnlineExamLifecycleService::start_exam(
+        &tenant_b,
+        exam_for_a,
+        student_for_a,
+        &clock,
+        &ids,
+    )
+    .unwrap_err();
+    assert!(matches!(err, DomainError::Conflict(_)), "got {err:?}");
+
+    let err = OnlineExamLifecycleService::submit_responses(
+        &tenant_b,
+        exam_for_a,
+        student_for_a,
+        question_for_a,
+        &clock,
+        &ids,
+    )
+    .unwrap_err();
+    assert!(matches!(err, DomainError::Conflict(_)), "got {err:?}");
+
+    let err = OnlineExamLifecycleService::grade_responses(
+        &tenant_b,
+        exam_for_a,
+        student_for_a,
+        &clock,
+        &ids,
+    )
+    .unwrap_err();
+    assert!(matches!(err, DomainError::Conflict(_)), "got {err:?}");
+
+    let err =
+        OnlineExamLifecycleService::finalize_results(&tenant_b, exam_for_a, &clock, &ids)
+            .unwrap_err();
+    assert!(matches!(err, DomainError::Conflict(_)), "got {err:?}");
+
+    let err =
+        OnlineExamLifecycleService::archive_attempt(&tenant_b, exam_for_a, &clock, &ids)
+            .unwrap_err();
+    assert!(matches!(err, DomainError::Conflict(_)), "got {err:?}");
+}
+
+/// One `OnlineExamAnswered` event per submitted question.
+/// Each event carries the matching question id (per spec
+/// step 5 "Students submit answers (SubmitOnlineExamAnswer)
+/// per question").
+#[test]
+fn online_exam_lifecycle_submit_emits_one_event_per_question() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = DeterministicIdGen::starting_at(1);
+
+    let exam = online_exam_id(&g, school);
+    let student = student_id(&g, school);
+
+    // Workflow step 4: open the exam.
+    let _started: OnlineExamStarted =
+        OnlineExamLifecycleService::start_exam(&tenant, exam, student, &clock, &ids)
+            .expect("start_exam");
+
+    // Five distinct questions.
+    let questions = [
+        online_exam_question_id(&g, school),
+        online_exam_question_id(&g, school),
+        online_exam_question_id(&g, school),
+        online_exam_question_id(&g, school),
+        online_exam_question_id(&g, school),
+    ];
+    let question_ids: HashSet<_> = questions.iter().collect();
+    assert_eq!(question_ids.len(), questions.len(), "questions must be unique");
+
+    let answered: Vec<OnlineExamAnswered> = questions
+        .iter()
+        .map(|q| {
+            OnlineExamLifecycleService::submit_responses(
+                &tenant,
+                exam,
+                student,
+                *q,
+                &clock,
+                &ids,
+            )
+            .expect("submit_responses")
+        })
+        .collect();
+
+    // Each answered event's question_id matches the one
+    // submitted; all answered events share the exam and
+    // student ids; all event ids are distinct.
+    let event_ids: HashSet<_> = answered.iter().map(|a| a.event_id).collect();
+    assert_eq!(event_ids.len(), answered.len(), "event ids must be distinct");
+    for (event, q) in answered.iter().zip(questions.iter()) {
+        assert_eq!(event.question_id, *q);
+        assert_eq!(event.online_exam_id, exam);
+        assert_eq!(event.student_id, student);
+        assert_eq!(event.school_id, school);
+    }
+}
+
+/// Event ids are monotonic across the full lifecycle:
+/// start < submit1 < submit2 < grade < finalize < archive.
+/// The deterministic id generator emits increasing ids,
+/// so the assertion guards against accidental reuse and
+/// against re-ordering inside the service layer.
+#[test]
+fn online_exam_lifecycle_event_ids_are_monotonic() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = DeterministicIdGen::starting_at(1);
+
+    let exam = online_exam_id(&g, school);
+    let student = student_id(&g, school);
+
+    let started = OnlineExamLifecycleService::start_exam(&tenant, exam, student, &clock, &ids)
+        .expect("start_exam");
+    let q1 = online_exam_question_id(&g, school);
+    let a1 = OnlineExamLifecycleService::submit_responses(&tenant, exam, student, q1, &clock, &ids)
+        .expect("submit");
+    let q2 = online_exam_question_id(&g, school);
+    let a2 = OnlineExamLifecycleService::submit_responses(&tenant, exam, student, q2, &clock, &ids)
+        .expect("submit");
+    let evaluated =
+        OnlineExamLifecycleService::grade_responses(&tenant, exam, student, &clock, &ids)
+            .expect("grade");
+    let closed =
+        OnlineExamLifecycleService::finalize_results(&tenant, exam, &clock, &ids).expect("close");
+    let archived =
+        OnlineExamLifecycleService::archive_attempt(&tenant, exam, &clock, &ids).expect("archive");
+
+    assert!(started.event_id < a1.event_id);
+    assert!(a1.event_id < a2.event_id);
+    assert!(a2.event_id < evaluated.event_id);
+    assert!(evaluated.event_id < closed.event_id);
+    assert!(closed.event_id < archived.event_id);
+}
