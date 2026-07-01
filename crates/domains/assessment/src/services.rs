@@ -1178,7 +1178,7 @@ where
 // -----------------------------------------------------------------------------
 // One skeleton per command added in commit 9a91d06, paired with the
 // corresponding event stub from commit 8a0705c. These are TODO stubs
-// that return `DomainError::not_supported`; the real implementations
+// that return an unimplemented placeholder; the real implementations
 // land in their respective domain phases.
 // =============================================================================
 
