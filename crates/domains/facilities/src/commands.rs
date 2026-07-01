@@ -21,6 +21,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use educore_core::ids::{EventId, Identifier, SchoolId, UserId};
+use educore_rbac::value_objects::Capability;
 use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
 
@@ -178,6 +179,14 @@ pub struct CreateVehicleCommand {
     pub note: Option<Note>,
 }
 
+
+impl CreateVehicleCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesVehicleCreate]
+    }
+}
 /// Command: update a vehicle.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateVehicleCommand {
@@ -189,6 +198,14 @@ pub struct UpdateVehicleCommand {
     pub note: Option<Note>,
 }
 
+
+impl UpdateVehicleCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesVehicleUpdate]
+    }
+}
 /// Command: assign a driver to a vehicle.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AssignDriverToVehicleCommand {
@@ -197,6 +214,14 @@ pub struct AssignDriverToVehicleCommand {
     pub driver_id: StaffId,
 }
 
+
+impl AssignDriverToVehicleCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: deactivate a vehicle.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeactivateVehicleCommand {
@@ -206,6 +231,14 @@ pub struct DeactivateVehicleCommand {
     pub reason: String,
 }
 
+
+impl DeactivateVehicleCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesVehicleDeactivate]
+    }
+}
 /// Command: delete a vehicle.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteVehicleCommand {
@@ -213,6 +246,14 @@ pub struct DeleteVehicleCommand {
     pub vehicle_id: crate::value_objects::VehicleId,
 }
 
+
+impl DeleteVehicleCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesVehicleDelete]
+    }
+}
 /// Command: create a new route.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateRouteCommand {
@@ -225,6 +266,14 @@ pub struct CreateRouteCommand {
     pub note: Option<Note>,
 }
 
+
+impl CreateRouteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRouteCreate]
+    }
+}
 /// Command: update a route.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateRouteCommand {
@@ -235,6 +284,14 @@ pub struct UpdateRouteCommand {
     pub distance: Option<crate::value_objects::Distance>,
 }
 
+
+impl UpdateRouteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRouteUpdate]
+    }
+}
 /// Command: add a stop to a route.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AddStopToRouteCommand {
@@ -246,6 +303,14 @@ pub struct AddStopToRouteCommand {
     pub fare_override: Option<Fare>,
 }
 
+
+impl AddStopToRouteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: update a stop on a route.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateStopOnRouteCommand {
@@ -257,6 +322,14 @@ pub struct UpdateStopOnRouteCommand {
     pub fare_override: Option<Fare>,
 }
 
+
+impl UpdateStopOnRouteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: remove a stop from a route.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RemoveStopFromRouteCommand {
@@ -265,6 +338,14 @@ pub struct RemoveStopFromRouteCommand {
     pub stop_order: u32,
 }
 
+
+impl RemoveStopFromRouteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: delete a route.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteRouteCommand {
@@ -272,6 +353,14 @@ pub struct DeleteRouteCommand {
     pub route_id: crate::value_objects::RouteId,
 }
 
+
+impl DeleteRouteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRouteDelete]
+    }
+}
 /// Command: assign a vehicle to a route in an academic year.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AssignVehicleToRouteCommand {
@@ -281,6 +370,14 @@ pub struct AssignVehicleToRouteCommand {
     pub academic_year_id: AcademicYearId,
 }
 
+
+impl AssignVehicleToRouteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: unassign a vehicle from a route.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UnassignVehicleFromRouteCommand {
@@ -288,6 +385,14 @@ pub struct UnassignVehicleFromRouteCommand {
     pub assign_vehicle_id: crate::value_objects::AssignVehicleId,
 }
 
+
+impl UnassignVehicleFromRouteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: assign a student to a vehicle-route pair.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AssignStudentToRouteCommand {
@@ -298,6 +403,14 @@ pub struct AssignStudentToRouteCommand {
     pub drop_stop_order: Option<u32>,
 }
 
+
+impl AssignStudentToRouteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: unassign a student from a vehicle-route pair.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UnassignStudentFromRouteCommand {
@@ -306,6 +419,14 @@ pub struct UnassignStudentFromRouteCommand {
     pub student_id: crate::value_objects::StudentId,
 }
 
+
+impl UnassignStudentFromRouteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 // =============================================================================
 // Dormitory + Room command shapes
 // =============================================================================
@@ -318,6 +439,14 @@ pub struct CreateRoomTypeCommand {
     pub description: Option<Description>,
 }
 
+
+impl CreateRoomTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomTypeCreate]
+    }
+}
 /// Command: update a room type.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateRoomTypeCommand {
@@ -327,6 +456,14 @@ pub struct UpdateRoomTypeCommand {
     pub description: Option<Description>,
 }
 
+
+impl UpdateRoomTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomTypeUpdate]
+    }
+}
 /// Command: delete a room type.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteRoomTypeCommand {
@@ -334,6 +471,14 @@ pub struct DeleteRoomTypeCommand {
     pub room_type_id: RoomTypeId,
 }
 
+
+impl DeleteRoomTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomTypeDelete]
+    }
+}
 /// Command: create a dormitory.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateDormitoryCommand {
@@ -346,6 +491,14 @@ pub struct CreateDormitoryCommand {
     pub description: Option<Description>,
 }
 
+
+impl CreateDormitoryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesDormitoryCreate]
+    }
+}
 /// Command: update a dormitory.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateDormitoryCommand {
@@ -357,6 +510,14 @@ pub struct UpdateDormitoryCommand {
     pub description: Option<Description>,
 }
 
+
+impl UpdateDormitoryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesDormitoryUpdate]
+    }
+}
 /// Command: delete a dormitory.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteDormitoryCommand {
@@ -364,6 +525,14 @@ pub struct DeleteDormitoryCommand {
     pub dormitory_id: crate::value_objects::DormitoryId,
 }
 
+
+impl DeleteDormitoryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesDormitoryDelete]
+    }
+}
 /// Command: create a room.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateRoomCommand {
@@ -376,6 +545,14 @@ pub struct CreateRoomCommand {
     pub description: Option<Description>,
 }
 
+
+impl CreateRoomCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomCreate]
+    }
+}
 /// Command: update a room.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateRoomCommand {
@@ -387,6 +564,14 @@ pub struct UpdateRoomCommand {
     pub description: Option<Description>,
 }
 
+
+impl UpdateRoomCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomUpdate]
+    }
+}
 /// Command: delete a room.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteRoomCommand {
@@ -394,6 +579,14 @@ pub struct DeleteRoomCommand {
     pub room_id: crate::value_objects::RoomId,
 }
 
+
+impl DeleteRoomCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomDelete]
+    }
+}
 /// Command: assign a student to a room bed.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AssignStudentToRoomCommand {
@@ -403,6 +596,14 @@ pub struct AssignStudentToRoomCommand {
     pub bed_number: BedNumber,
 }
 
+
+impl AssignStudentToRoomCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomAssignStudent]
+    }
+}
 /// Command: unassign a student from a room.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UnassignStudentFromRoomCommand {
@@ -411,6 +612,14 @@ pub struct UnassignStudentFromRoomCommand {
     pub student_id: crate::value_objects::StudentId,
 }
 
+
+impl UnassignStudentFromRoomCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomUnassignStudent]
+    }
+}
 // =============================================================================
 // Inventory catalog command shapes
 // =============================================================================
@@ -422,6 +631,14 @@ pub struct CreateItemCategoryCommand {
     pub category_name: CategoryName,
 }
 
+
+impl CreateItemCategoryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesItemCategoryCreate]
+    }
+}
 /// Command: update an item category.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateItemCategoryCommand {
@@ -430,6 +647,14 @@ pub struct UpdateItemCategoryCommand {
     pub category_name: Option<CategoryName>,
 }
 
+
+impl UpdateItemCategoryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesItemCategoryUpdate]
+    }
+}
 /// Command: delete an item category.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteItemCategoryCommand {
@@ -437,6 +662,14 @@ pub struct DeleteItemCategoryCommand {
     pub item_category_id: crate::value_objects::ItemCategoryId,
 }
 
+
+impl DeleteItemCategoryCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesItemCategoryDelete]
+    }
+}
 /// Command: create an item.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateItemCommand {
@@ -448,6 +681,14 @@ pub struct CreateItemCommand {
     pub description: Option<Description>,
 }
 
+
+impl CreateItemCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesItemCategoryCreate]
+    }
+}
 /// Command: update an item.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateItemCommand {
@@ -458,6 +699,14 @@ pub struct UpdateItemCommand {
     pub description: Option<Description>,
 }
 
+
+impl UpdateItemCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesItemCategoryUpdate]
+    }
+}
 /// Command: delete an item.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteItemCommand {
@@ -465,6 +714,14 @@ pub struct DeleteItemCommand {
     pub item_id: ItemId,
 }
 
+
+impl DeleteItemCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesItemCategoryDelete]
+    }
+}
 /// Command: create an item store.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateItemStoreCommand {
@@ -474,6 +731,14 @@ pub struct CreateItemStoreCommand {
     pub description: Option<Description>,
 }
 
+
+impl CreateItemStoreCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesItemCategoryCreate]
+    }
+}
 /// Command: update an item store.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateItemStoreCommand {
@@ -484,6 +749,14 @@ pub struct UpdateItemStoreCommand {
     pub description: Option<Description>,
 }
 
+
+impl UpdateItemStoreCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesItemCategoryUpdate]
+    }
+}
 /// Command: delete an item store.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteItemStoreCommand {
@@ -491,6 +764,14 @@ pub struct DeleteItemStoreCommand {
     pub item_store_id: ItemStoreId,
 }
 
+
+impl DeleteItemStoreCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesItemCategoryDelete]
+    }
+}
 // =============================================================================
 // Inventory movement command shapes
 // =============================================================================
@@ -511,6 +792,14 @@ pub struct ReceiveItemCommand {
     pub description: Option<Description>,
 }
 
+
+impl ReceiveItemCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: update a receive (add/edit/remove lines; update paid).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateItemReceiveCommand {
@@ -523,6 +812,14 @@ pub struct UpdateItemReceiveCommand {
     pub paid_status: Option<PaidStatus>,
 }
 
+
+impl UpdateItemReceiveCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesItemCategoryUpdate]
+    }
+}
 /// Command: cancel a receive (reverses stock and emits a
 /// finance-side reversal).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -532,6 +829,14 @@ pub struct CancelItemReceiveCommand {
     pub reason: String,
 }
 
+
+impl CancelItemReceiveCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: issue goods (post a GIN).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct IssueItemCommand {
@@ -547,6 +852,14 @@ pub struct IssueItemCommand {
     pub note: Option<Note>,
 }
 
+
+impl IssueItemCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: update an issue's status.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateIssueStatusCommand {
@@ -555,6 +868,14 @@ pub struct UpdateIssueStatusCommand {
     pub new_status: IssueStatus,
 }
 
+
+impl UpdateIssueStatusCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: return an issued item (partial or full).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReturnIssuedItemCommand {
@@ -563,6 +884,14 @@ pub struct ReturnIssuedItemCommand {
     pub returned_quantity: ItemQuantity,
 }
 
+
+impl ReturnIssuedItemCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: sell goods.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SellItemCommand {
@@ -578,6 +907,14 @@ pub struct SellItemCommand {
     pub description: Option<Description>,
 }
 
+
+impl SellItemCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: update a sale.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateItemSellCommand {
@@ -590,6 +927,14 @@ pub struct UpdateItemSellCommand {
     pub paid_status: Option<PaidStatus>,
 }
 
+
+impl UpdateItemSellCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesItemCategoryUpdate]
+    }
+}
 /// Command: cancel a sale (reverses stock).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CancelItemSellCommand {
@@ -598,6 +943,14 @@ pub struct CancelItemSellCommand {
     pub reason: String,
 }
 
+
+impl CancelItemSellCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: refund a sale (partial or full).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RefundItemSellCommand {
@@ -606,6 +959,14 @@ pub struct RefundItemSellCommand {
     pub amount: i64,
 }
 
+
+impl RefundItemSellCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 // =============================================================================
 // Supplier command shapes
 // =============================================================================
@@ -623,6 +984,14 @@ pub struct CreateSupplierCommand {
     pub description: Option<Description>,
 }
 
+
+impl CreateSupplierCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: update a supplier.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateSupplierCommand {
@@ -637,6 +1006,14 @@ pub struct UpdateSupplierCommand {
     pub description: Option<Description>,
 }
 
+
+impl UpdateSupplierCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: deactivate a supplier.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeactivateSupplierCommand {
@@ -646,6 +1023,14 @@ pub struct DeactivateSupplierCommand {
     pub reason: String,
 }
 
+
+impl DeactivateSupplierCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 /// Command: delete a supplier.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeleteSupplierCommand {
@@ -653,6 +1038,14 @@ pub struct DeleteSupplierCommand {
     pub supplier_id: SupplierId,
 }
 
+
+impl DeleteSupplierCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FacilitiesRoomRead]
+    }
+}
 // =============================================================================
 // Test
 // =============================================================================
