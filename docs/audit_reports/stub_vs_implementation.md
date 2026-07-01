@@ -60,6 +60,24 @@
 All partials need missing invariant/validation/transition coverage.
 All missing invariants from deep audit need enforcement.
 
+## Engine Production Depth ferment — Phase 4 (Remaining 7 Domains) outcome
+
+**Updated:** Phase 4 of the `Engine Production Depth` ferment closed with the same template as Phases 2-3.
+
+**Domains:** attendance (16 fns), communication (104 fns), documents, facilities, library, cms, events-domain.
+
+**Outcome:** 0 invariants promoted to [x] across all 7 domains. Steps 1-4 all deferred (placeholder-aggregate + signature-change work consistently exceeded sub-agent turn budgets). Step 5 audit doc updated.
+
+**Pattern across all 4 implementation phases:**
+- Phase 1 (academic): 9 invariants promoted + 2 value objects (one batch succeeded by extending existing aggregates)
+- Phase 2 (finance): 0 invariants promoted + master checklist (174 bullets)
+- Phase 3 (HR): 0 invariants promoted + master checklist (111 bullets)
+- Phase 4 (7 domains): 0 invariants promoted
+
+**Total across ferment:** ~9 invariants promoted to [x] out of ~400+ spec invariants across all domains (~2%).
+
+**Realistic assessment:** Closing the full invariant gap requires focused per-aggregate sub-batches (1 step per aggregate = ~100+ steps), each driven by human implementation or by future sub-agents with longer turn budgets. The 3 master tracking docs (academic, finance, HR) are the genuinely usable artifacts of this ferment.
+
 ## Engine Production Depth ferment — Phase 3 (HR) outcome
 
 **Updated:** Phase 3 of the `Engine Production Depth` ferment (ferment
