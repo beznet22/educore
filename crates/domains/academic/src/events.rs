@@ -1815,6 +1815,131 @@ impl DomainEvent for PrimaryGuardianMarked {
     }
 }
 
+/// A guardian's mutable contact fields were updated.
+///
+/// Per `docs/specs/academic/aggregates.md` § Guardian § I-1,
+/// the phone and email fields are `Option<…>` and at most
+/// one of each is carried per guardian. The event payload
+/// preserves the new (post-mutation) values; consumers that
+/// need the diff compare against the prior aggregate state.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GuardianContactUpdated {
+    /// The guardian's typed id.
+    pub guardian_id: GuardianId,
+    /// The new phone of record (validated; `None` if cleared).
+    pub phone: Option<crate::value_objects::PhoneNumber>,
+    /// The new email of record (validated; `None` if cleared).
+    pub email: Option<crate::value_objects::EmailAddress>,
+    /// The names of the fields that actually changed.
+    pub changed_fields: Vec<String>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl GuardianContactUpdated {
+    /// Mints a fresh `GuardianContactUpdated`.
+    #[must_use]
+    pub const fn new(
+        guardian_id: GuardianId,
+        phone: Option<crate::value_objects::PhoneNumber>,
+        email: Option<crate::value_objects::EmailAddress>,
+        changed_fields: Vec<String>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            guardian_id,
+            phone,
+            email,
+            changed_fields,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for GuardianContactUpdated {
+    const EVENT_TYPE: &'static str = "academic.guardian.contact_updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "guardian";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.guardian_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.guardian_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A guardian was soft-deleted (`active_status = Retired`).
+///
+/// Per `docs/specs/academic/aggregates.md` § Guardian § I-5,
+/// the engine emits this companion event when the last
+/// student link is removed (the `unlink_guardian_from_student`
+/// service signals the transition via
+/// `guardian_retired: true` on the unlink event; the
+/// `retire_guardian` service emits this event directly).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GuardianRetired {
+    /// The guardian's typed id.
+    pub guardian_id: GuardianId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl GuardianRetired {
+    /// Mints a fresh `GuardianRetired`.
+    #[must_use]
+    pub const fn new(
+        guardian_id: GuardianId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            guardian_id,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for GuardianRetired {
+    const EVENT_TYPE: &'static str = "academic.guardian.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "guardian";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.guardian_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.guardian_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 /// An optional subject was assigned to a student for an academic year.
 ///
 /// Per `docs/specs/academic/aggregates.md` § Student § I-4.

@@ -814,6 +814,61 @@ impl MarkPrimaryGuardianCommand {
         vec![Capability::AcademicStudentUpdate]
     }
 }
+
+/// Command: update a guardian's mutable contact fields
+/// (phone, email). Per Guardian I-1 the guardian carries
+/// at most one phone and one email of record; the
+/// `Option<Option<…>>` shape distinguishes "do not change"
+/// (outer `None`) from "clear the field" (outer `Some(None)`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateGuardianContactCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The guardian's typed id.
+    pub guardian_id: GuardianId,
+    /// Optional new phone. Outer `None` means "do not change";
+    /// outer `Some(None)` means "clear the phone"; outer
+    /// `Some(Some(p))` means "set the phone to `p`". The
+    /// validator on `PhoneNumber::new` enforces the E.164
+    /// format before the service accepts the value.
+    pub phone: Option<Option<PhoneNumber>>,
+    /// Optional new email. Same outer/inner convention as
+    /// `phone`.
+    pub email: Option<Option<EmailAddress>>,
+}
+
+
+impl UpdateGuardianContactCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
+
+/// Command: retire (soft-delete) a guardian explicitly.
+///
+/// Per Guardian I-5 a guardian is auto-retired when the
+/// last student link is removed, but the dispatcher may
+/// also retire an orphaned guardian on demand (e.g. when
+/// the school decides the contact is no longer valid).
+/// This command is the manual escape hatch for that flow.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RetireGuardianCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The guardian's typed id.
+    pub guardian_id: GuardianId,
+}
+
+
+impl RetireGuardianCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentUpdate]
+    }
+}
 academic_command_stub! {
     /// Command stub: create a class-section pairing. See
     /// `docs/specs/academic/aggregates.md` § ClassSection.
