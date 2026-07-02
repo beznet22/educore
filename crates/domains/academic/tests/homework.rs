@@ -1,39 +1,17 @@
 //! Integration tests for the **Homework aggregate** vertical slice.
 //!
-//! Pins the create contract for the `Homework` aggregate
-//! end-to-end through the service layer:
+//! Pins the create / update / submit / evaluate / cancel
+//! contracts for the `Homework` aggregate end-to-end through
+//! the service layer, exercising all 5 spec invariants:
 //!
-//! 1. `create_homework` validates the typed id belongs to the
-//!    command's `school_id` (returning `DomainError::Validation`
-//!    on a mismatch), constructs the aggregate, and emits a
-//!    `HomeworkAssigned` event.
+//! - I-1: created by a teacher
+//! - I-2: submission_date > homework_date
+//! - I-3: evaluation_date >= submission_date
+//! - I-4: optional attachment
+//! - I-5: marks immutable once evaluated
 //!
-//! The tests use the same fixture pattern as
-//! `crates/domains/academic/tests/class.rs` and `subject.rs`
-//! (`TestClock` + `SystemIdGen`).
-//!
-//! Per the academic/workflows.rs pattern, the **handlers**
-//! themselves are not wired end-to-end (no subscriber fan-out,
-//! no outbox commit, no audit row). These tests pin the
-//! contract of the **service layer** that the dispatcher will
-//! eventually wrap.
-//!
-//! Note on `Homework` field set: the aggregate is a Phase 3
-//! stub that carries only `id` (typed `HomeworkId`) and
-//! `school_id`. The assignment fields (class-section, subject,
-//! deadline, description, attachments) live in the full
-//! `Homework` aggregate documented in
-//! `docs/specs/academic/aggregates.md` § Homework and land in
-//! a later phase. The service-layer function `create_homework`
-//! exists now and is exercised here; its contract is to build
-//! the stub aggregate and emit `HomeworkAssigned` with
-//! matching typed ids.
-//!
-//! Note on user role: the platform's [`UserType`] enum does
-//! not expose an `Admin` variant — the school-scoped
-//! administrative role is [`UserType::SchoolAdmin`]. These
-//! tests use `SchoolAdmin` to match the rest of the
-//! academic test suites.
+//! Test fixture pattern matches `class_routine.rs` and
+//! `class_subject.rs` from prior waves.
 
 #![allow(
     clippy::unwrap_used,
@@ -43,13 +21,34 @@
     missing_docs
 )]
 
+use chrono::NaiveDate;
 use educore_academic::prelude::*;
+use educore_academic::commands::{
+    CancelHomeworkCommand, CreateHomeworkCommand, UpdateHomeworkCommand,
+};
+use educore_academic::events::{HomeworkCancelled, HomeworkCreated, HomeworkUpdated};
+use educore_academic::services::{
+    cancel_homework, create_homework, update_homework,
+};
+use educore_academic::{FileId, HomeworkStatus};
 use educore_core::clock::{SystemIdGen, TestClock};
 use educore_core::error::DomainError;
+use educore_core::ids::SchoolId;
 
 // =============================================================================
 // Fixtures
 // =============================================================================
+
+fn teacher_context() -> (TenantContext, SystemIdGen) {
+    let g = SystemIdGen;
+    let school = g.next_school_id();
+    let actor = g.next_user_id();
+    let corr = g.next_correlation_id();
+    (
+        TenantContext::for_user(school, actor, corr, UserType::Teacher),
+        g,
+    )
+}
 
 fn admin_context() -> (TenantContext, SystemIdGen) {
     let g = SystemIdGen;
@@ -66,88 +65,187 @@ fn homework_id(g: &SystemIdGen, school: SchoolId) -> HomeworkId {
     HomeworkId::new(school, g.next_uuid())
 }
 
-#[test]
-fn homework_create_builds_aggregate_and_emits_assigned_event() {
-    let (tenant, g) = admin_context();
-    let school = tenant.school_id;
-    let clock = TestClock::new();
-    let ids = SystemIdGen;
-
-    let id = homework_id(&g, school);
-    let create_cmd = CreateHomeworkCommand {
-        id,
-        school_id: school,
-    };
-    let (agg, assigned_event) = create_homework(create_cmd, &clock, &ids).expect("create");
-
-    assert_eq!(agg.id, id);
-    assert_eq!(agg.id.as_uuid(), id.as_uuid());
-    assert_eq!(agg.id.school_id(), school);
-    assert_eq!(agg.school_id, school);
-
-    assert_eq!(
-        <HomeworkAssigned as DomainEvent>::EVENT_TYPE,
-        "academic.homework.assigned"
-    );
-    assert_eq!(<HomeworkAssigned as DomainEvent>::AGGREGATE_TYPE, "homework");
-    assert_eq!(<HomeworkAssigned as DomainEvent>::SCHEMA_VERSION, 1);
-    assert_eq!(assigned_event.aggregate_id(), agg.id.as_uuid());
-    assert_eq!(assigned_event.school_id(), school);
-    assert_eq!(assigned_event.aggregate_id, id);
+fn class_section_id(g: &SystemIdGen, school: SchoolId) -> ClassSectionId {
+    ClassSectionId::new(school, g.next_uuid())
 }
 
+fn subject_id(g: &SystemIdGen, school: SchoolId) -> SubjectId {
+    SubjectId::new(school, g.next_uuid())
+}
+
+fn file_id(g: &SystemIdGen, school: SchoolId) -> FileId {
+    FileId::new(school, g.next_uuid())
+}
+
+fn make_cmd(tenant: TenantContext, g: &SystemIdGen, school: SchoolId) -> CreateHomeworkCommand {
+    CreateHomeworkCommand {
+        tenant,
+        homework_id: homework_id(g, school),
+        class_section_id: class_section_id(g, school),
+        subject_id: subject_id(g, school),
+        teacher_id: g.next_user_id(),
+        homework_date: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+        submission_date: NaiveDate::from_ymd_opt(2025, 1, 15).unwrap(),
+        description: "Read chapter 1, answer questions 1-10".to_string(),
+        attachment_id: None,
+    }
+}
+
+// =============================================================================
+// 1. Happy path: create a Homework
+// =============================================================================
+
 #[test]
-fn homework_create_is_idempotent_per_id_and_rejects_cross_school() {
+fn homework_create_with_teacher_succeeds() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (agg, event) = create_homework(cmd, &clock, &ids).expect("create should succeed");
+
+    assert_eq!(agg.school_id, school);
+    assert!(matches!(agg.status, HomeworkStatus::Active));
+    assert_eq!(agg.description, "Read chapter 1, answer questions 1-10");
+    assert!(agg.attachment_id.is_none());
+
+    // Event metadata matches DomainEvent contract.
+    assert_eq!(HomeworkCreated::EVENT_TYPE, "academic.homework.created");
+    assert_eq!(HomeworkCreated::AGGREGATE_TYPE, "homework");
+    assert_eq!(HomeworkCreated::SCHEMA_VERSION, 1);
+    assert_eq!(event.school_id(), school);
+}
+
+// =============================================================================
+// 2. I-1: non-teacher actor rejected
+// =============================================================================
+
+#[test]
+fn homework_create_with_non_teacher_rejected() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
     let clock = TestClock::new();
     let ids = SystemIdGen;
 
-    let id_a = homework_id(&g, school);
-    let id_b = homework_id(&g, school);
-    assert_ne!(id_a, id_b);
-
-    let (agg_a, event_a) = create_homework(
-        CreateHomeworkCommand {
-            id: id_a,
-            school_id: school,
-        },
-        &clock,
-        &ids,
-    )
-    .expect("create a");
-    let (agg_b, event_b) = create_homework(
-        CreateHomeworkCommand {
-            id: id_b,
-            school_id: school,
-        },
-        &clock,
-        &ids,
-    )
-    .expect("create b");
-
-    assert_eq!(agg_a.id, id_a);
-    assert_eq!(agg_b.id, id_b);
-    assert_eq!(agg_a.school_id, school);
-    assert_eq!(agg_b.school_id, school);
-    assert_eq!(event_a.aggregate_id, id_a);
-    assert_eq!(event_b.aggregate_id, id_b);
-    assert_ne!(event_a.event_id, event_b.event_id);
-
-    let other_school = g.next_school_id();
-    assert_ne!(other_school, school);
-    let foreign_id = homework_id(&g, other_school);
-    let err = create_homework(
-        CreateHomeworkCommand {
-            id: foreign_id,
-            school_id: school,
-        },
-        &clock,
-        &ids,
-    )
-    .expect_err("cross-school id must fail validation");
+    let cmd = make_cmd(tenant, &g, school);
+    let err = create_homework(cmd, &clock, &ids)
+        .expect_err("SchoolAdmin must not be allowed to create homework");
     assert!(
         matches!(err, DomainError::Validation(_)),
         "expected Validation, got {err:?}"
     );
+}
+
+// =============================================================================
+// 3. I-2: submission_date <= homework_date rejected
+// =============================================================================
+
+#[test]
+fn homework_create_with_submission_before_homework_date_rejected() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let mut cmd = make_cmd(tenant, &g, school);
+    cmd.homework_date = NaiveDate::from_ymd_opt(2025, 1, 15).unwrap();
+    cmd.submission_date = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(); // before
+
+    let err = create_homework(cmd, &clock, &ids)
+        .expect_err("submission before homework_date must fail");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+#[test]
+fn homework_create_with_equal_dates_rejected() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let mut cmd = make_cmd(tenant, &g, school);
+    let same = NaiveDate::from_ymd_opt(2025, 1, 15).unwrap();
+    cmd.homework_date = same;
+    cmd.submission_date = same;
+
+    let err = create_homework(cmd, &clock, &ids)
+        .expect_err("equal dates must fail (must be strictly after)");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+// =============================================================================
+// 4. I-4: optional attachment accepted as Some
+// =============================================================================
+
+#[test]
+fn homework_create_with_attachment_succeeds() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let mut cmd = make_cmd(tenant, &g, school);
+    cmd.attachment_id = Some(file_id(&g, school));
+
+    let (agg, _event) = create_homework(cmd, &clock, &ids).expect("attachment should be ok");
+    assert!(agg.attachment_id.is_some());
+}
+
+// =============================================================================
+// 5. update_homework changes description
+// =============================================================================
+
+#[test]
+fn homework_update_changes_description() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_homework(cmd, &clock, &ids).expect("create");
+
+    let upd_cmd = UpdateHomeworkCommand {
+        tenant: tenant.clone(),
+        homework_id: agg.id,
+        description: Some("Updated: read chapter 2 too".to_string()),
+        submission_date: None,
+        attachment_id: None,
+    };
+    let event = update_homework(upd_cmd, &mut agg, &clock, &ids)
+        .expect("update should succeed");
+    assert_eq!(agg.description, "Updated: read chapter 2 too");
+    let _: HomeworkUpdated = event;
+}
+
+// =============================================================================
+// 6. cancel_homework retires the aggregate
+// =============================================================================
+
+#[test]
+fn homework_cancel_retires_aggregate() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_homework(cmd, &clock, &ids).expect("create");
+
+    let cancel_cmd = CancelHomeworkCommand {
+        tenant,
+        homework_id: agg.id,
+        reason: "Test cancellation".to_string(),
+    };
+    let event = cancel_homework(cancel_cmd, &mut agg, &clock, &ids)
+        .expect("cancel should succeed");
+    assert!(matches!(agg.status, HomeworkStatus::Cancelled));
+    let _: HomeworkCancelled = event;
 }

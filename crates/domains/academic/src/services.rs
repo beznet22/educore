@@ -37,7 +37,7 @@
 use educore_core::clock::{Clock, IdGenerator};
 use educore_core::error::{DomainError, Result};
 use educore_core::ids::{EventId, Identifier, SchoolId, UserId};
-use educore_core::tenant::TenantContext;
+use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::ActiveStatus;
 
 use crate::aggregate::{
@@ -65,8 +65,9 @@ use crate::commands::{
     SetOptionalSubjectGpaThresholdCommand, SuspendStudentCommand, SwapClassRoutinePeriodsCommand,
     TransferStudentCommand, UnassignSubjectCommand, UniquenessChecker,
     UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand, UpdateClassCommand,
-    UpdateGuardianContactCommand, UpdateSectionCommand, UpdateStudentProfileCommand,
-    UpdateSubjectCommand, UpdateClassRoutinePeriodCommand, WithdrawStudentCommand,
+    UpdateGuardianContactCommand, UpdateHomeworkCommand, UpdateSectionCommand,
+    UpdateStudentProfileCommand, UpdateSubjectCommand, UpdateClassRoutinePeriodCommand,
+    CancelHomeworkCommand, WithdrawStudentCommand,
 };
 use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
@@ -74,7 +75,8 @@ use crate::events::{
     ClassRoutinePeriodUpdated, ClassRoutinePeriodsSwapped, ClassRoutineScheduled,
     ClassSectionCreated, ClassSectionDeleted, ClassTeacherAssigned, SubjectAssignedToClass,
     ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated, GuardianLinkedToStudent,
-    GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent, HomeworkAssigned,
+    GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent, HomeworkCancelled,
+    HomeworkCreated, HomeworkUpdated,
     IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
     OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
     RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
@@ -84,7 +86,8 @@ use crate::events::{
     SubjectTeacherAssigned, SubjectUnassigned, TeacherReassigned,
 };
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, ClassRoomId, StudentGuardianLinkId, StudentStatus,
+    AcademicYearId, AcademicYearRange, ClassRoomId, HomeworkMark, HomeworkStatus,
+    StudentGuardianLinkId, StudentStatus,
 };
 
 fn fresh_event_id<G: IdGenerator + ?Sized>(ids: &G) -> EventId {
@@ -2594,33 +2597,159 @@ where
     Ok(event)
 }
 
-/// Issue a [`Homework`] assignment and emit a [`HomeworkAssigned`] event.
+/// Issue a [`Homework`] assignment and emit a [`HomeworkCreated`] event.
+///
+/// Per `docs/specs/academic/aggregates.md` § Homework:
+/// - **I-1**: `tenant.user_type` must be `UserType::Teacher`.
+/// - **I-2**: enforced by [`Homework::fresh`].
+/// - **I-4**: optional `attachment_id` is stored as `Option<FileId>`.
 pub fn create_homework<C, G>(
     cmd: CreateHomeworkCommand,
     clock: &C,
     ids: &G,
-) -> Result<(Homework, HomeworkAssigned)>
+) -> Result<(Homework, HomeworkCreated)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let CreateHomeworkCommand { id, school_id } = cmd;
-    if id.school_id() != school_id {
+    // I-1: tenant.user_type must be Teacher.
+    if !matches!(cmd.tenant.user_type, UserType::Teacher) {
         return Err(DomainError::Validation(format!(
-            "homework id {id} is in school {}, command school_id is {school_id}",
-            id.school_id(),
+            "CreateHomework requires UserType::Teacher, got {:?}",
+            cmd.tenant.user_type
         )));
     }
+
     let now = clock.now();
     let event_id = fresh_event_id(ids);
-    let aggregate = Homework { id, school_id };
-    let event = HomeworkAssigned {
+    let actor = cmd.tenant.actor_id;
+
+    let aggregate = Homework::fresh(
+        cmd.homework_id,
+        cmd.class_section_id,
+        cmd.subject_id,
+        cmd.teacher_id,
+        cmd.homework_date,
+        cmd.submission_date,
+        cmd.description,
+        cmd.attachment_id,
+        actor,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+
+    let event = HomeworkCreated {
+        homework_id: aggregate.id,
+        class_section_id: aggregate.class_section_id,
+        subject_id: aggregate.subject_id,
+        teacher_id: aggregate.teacher_id,
+        homework_date: aggregate.homework_date,
+        submission_date: aggregate.submission_date,
+        description: aggregate.description.clone(),
+        attachment_id: aggregate.attachment_id,
+        status: aggregate.status,
         event_id,
-        school_id,
-        aggregate_id: id,
+        correlation_id: aggregate.correlation_id,
         occurred_at: now,
     };
     Ok((aggregate, event))
+}
+
+/// Update a [`Homework`] assignment and emit a [`HomeworkUpdated`] event.
+///
+/// Per **I-5**, updates are rejected if any marks have already
+/// been recorded (marks are immutable once evaluated per
+/// student). The triple-Option attachment field encodes
+/// `None` = leave unchanged, `Some(None)` = clear, `Some(Some(_))` = set.
+pub fn update_homework<C, G>(
+    cmd: UpdateHomeworkCommand,
+    homework: &mut Homework,
+    clock: &C,
+    ids: &G,
+) -> Result<HomeworkUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    if !homework.marks.is_empty() {
+        return Err(DomainError::Conflict(format!(
+            "homework {} has {} marks recorded; updates are forbidden (I-5 immutability)",
+            homework.id,
+            homework.marks.len()
+        )));
+    }
+
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+
+    if let Some(d) = cmd.submission_date {
+        homework.submission_date = d;
+    }
+    if let Some(desc) = cmd.description {
+        homework.description = desc;
+    }
+    if let Some(att) = cmd.attachment_id {
+        homework.attachment_id = att;
+    }
+
+    homework.updated_by = actor;
+    homework.updated_at = now;
+    homework.version = homework.version.next();
+
+    Ok(HomeworkUpdated {
+        homework_id: homework.id,
+        changed_fields: vec!["submission_date".to_string(), "description".to_string(), "attachment_id".to_string()],
+        submission_date: Some(homework.submission_date),
+        description: Some(homework.description.clone()),
+        attachment_id: Some(homework.attachment_id),
+        event_id,
+        correlation_id: homework.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Cancel a [`Homework`] assignment and emit a [`HomeworkCancelled`] event.
+pub fn cancel_homework<C, G>(
+    cmd: CancelHomeworkCommand,
+    homework: &mut Homework,
+    clock: &C,
+    ids: &G,
+) -> Result<HomeworkCancelled>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    if cmd.reason.trim().is_empty() {
+        return Err(DomainError::Validation(
+            "CancelHomeworkCommand::reason must not be empty".to_string(),
+        ));
+    }
+    if cmd.reason.chars().count() > 500 {
+        return Err(DomainError::Validation(
+            "CancelHomeworkCommand::reason must be 1..=500 chars".to_string(),
+        ));
+    }
+
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+
+    homework.status = HomeworkStatus::Cancelled;
+    homework.active_status = ActiveStatus::Retired;
+    homework.updated_by = actor;
+    homework.updated_at = now;
+    homework.version = homework.version.next();
+
+    Ok(HomeworkCancelled {
+        homework_id: homework.id,
+        reason: cmd.reason,
+        status: homework.status,
+        event_id,
+        correlation_id: homework.correlation_id,
+        occurred_at: now,
+    })
 }
 
 /// Draft a [`LessonPlan`] and emit a [`LessonPlanCreated`] event.

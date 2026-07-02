@@ -27,8 +27,8 @@ use educore_core::tenant::TenantContext;
 
 use crate::value_objects::{
     AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoomId, ClassRoutineId,
-    ClassSectionId, ClassSubjectId, DayOfWeek, EmailAddress, GuardianId, HomeworkId, IdCardId,
-    LessonId, LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId, PhoneNumber,
+    ClassSectionId, ClassSubjectId, DayOfWeek, EmailAddress, FileId, GuardianId, HomeworkId,
+    IdCardId, LessonId, LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId, PhoneNumber,
     RegistrationFieldId, Relation, ResultStatus, SectionId, StudentCategoryId, StudentGroupId,
     StudentGuardianLinkId, StudentId, StudentPromotionId, SubjectId, ClassPeriod, ClassTimeId,
 };
@@ -1104,10 +1104,130 @@ impl DeleteClassRoutineCommand {
     }
 }
 
-academic_command_stub! {
-    /// Command stub: create a homework assignment. See
-    /// `docs/specs/academic/aggregates.md` § Homework.
-    pub struct CreateHomeworkCommand { id: HomeworkId }
+// =============================================================================
+// Homework commands (Wave 52: full impl)
+// =============================================================================
+
+/// Command: create a [`Homework`](crate::aggregate::Homework)
+/// assignment.
+///
+/// Per `docs/specs/academic/aggregates.md` § Homework:
+/// - **I-1**: created by a teacher (`tenant.user_type` must
+///   be `UserType::Teacher`, enforced by `create_homework`).
+/// - **I-2**: `submission_date` must be strictly after
+///   `homework_date` (enforced by
+///   [`crate::aggregate::Homework::fresh`]).
+/// - **I-4**: `attachment_id` is `Option<FileId>` (`None`
+///   means no attachment).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateHomeworkCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The homework's typed id.
+    pub homework_id: HomeworkId,
+    /// The class-section the homework is assigned to.
+    pub class_section_id: ClassSectionId,
+    /// The subject of the assignment.
+    pub subject_id: SubjectId,
+    /// The teacher creating the homework (per I-1).
+    pub teacher_id: UserId,
+    /// The date the homework is assigned.
+    pub homework_date: NaiveDate,
+    /// The submission deadline (per I-2, strictly after
+    /// `homework_date`).
+    pub submission_date: NaiveDate,
+    /// The homework description (1..=2000 chars).
+    pub description: String,
+    /// The optional file attachment (per I-4). `None`
+    /// means "no attachment".
+    pub attachment_id: Option<FileId>,
+}
+
+impl CreateHomeworkCommand {
+    /// Returns the school id (taken from the typed id).
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.homework_id.school_id()
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicHomeworkCreate]
+    }
+}
+
+/// Command: update a [`Homework`](crate::aggregate::Homework)'s
+/// mutable fields (description, submission_date,
+/// attachment_id).
+///
+/// Per `docs/specs/academic/aggregates.md` § Homework § I-5,
+/// this command is rejected once marks have been recorded
+/// (status == `Evaluated`). Per I-2, the new
+/// `submission_date` (when supplied) must be strictly after
+/// `homework_date`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateHomeworkCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The homework's typed id.
+    pub homework_id: HomeworkId,
+    /// Optional new submission deadline. `None` means "do
+    /// not change".
+    pub submission_date: Option<NaiveDate>,
+    /// Optional new description. `None` means "do not
+    /// change".
+    pub description: Option<String>,
+    /// Optional new attachment. Outer `None` means "do not
+    /// change"; outer `Some(None)` means "clear the
+    /// attachment"; outer `Some(Some(fid))` means "set the
+    /// attachment".
+    pub attachment_id: Option<Option<FileId>>,
+}
+
+impl UpdateHomeworkCommand {
+    /// Returns the school id (taken from the typed id).
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.homework_id.school_id()
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicHomeworkUpdate]
+    }
+}
+
+/// Command: cancel (soft-delete) a
+/// [`Homework`](crate::aggregate::Homework).
+///
+/// Per `docs/specs/academic/aggregates.md` § Homework, the
+/// cancel flow is unconditional for any non-cancelled
+/// homework: the service retires the aggregate regardless of
+/// marks or submission state.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CancelHomeworkCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The homework's typed id.
+    pub homework_id: HomeworkId,
+    /// The reason for cancellation (1..=500 chars).
+    pub reason: String,
+}
+
+impl CancelHomeworkCommand {
+    /// Returns the school id (taken from the typed id).
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.homework_id.school_id()
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicHomeworkCancel]
+    }
 }
 academic_command_stub! {
     /// Command stub: create a lesson plan. See
@@ -1707,6 +1827,11 @@ impl UnassignSubjectCommand {
 )]
 pub type CreateClassSubjectCommand = AssignSubjectToClassCommand;
 /// Command: submit homework for a student.
+///
+/// Per `docs/specs/academic/commands.md` § SubmitHomework,
+/// the student (or a parent on their behalf) submits the
+/// work; the service records the submission and emits the
+/// `HomeworkSubmitted` event.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SubmitHomeworkCommand {
     /// The active tenant.
@@ -1715,6 +1840,11 @@ pub struct SubmitHomeworkCommand {
     pub homework_id: HomeworkId,
     /// The student submitting the homework.
     pub student_id: StudentId,
+    /// Optional student-supplied description / notes.
+    pub description: Option<String>,
+    /// Optional submitted file (the homework's worked
+    /// solution upload).
+    pub file: Option<FileId>,
 }
 
 
@@ -1726,6 +1856,13 @@ impl SubmitHomeworkCommand {
     }
 }
 /// Command: evaluate a student's homework submission.
+///
+/// Per `docs/specs/academic/commands.md` § EvaluateHomework,
+/// the teacher records the marks for the student. Per
+/// `docs/specs/academic/aggregates.md` § Homework § I-5, the
+/// marks are immutable per student once recorded. Per I-3,
+/// the `evaluation_date` (the mint-time of this command) must
+/// be `>= submission_date`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EvaluateHomeworkCommand {
     /// The active tenant.
@@ -1734,6 +1871,10 @@ pub struct EvaluateHomeworkCommand {
     pub homework_id: HomeworkId,
     /// The student whose submission is being evaluated.
     pub student_id: StudentId,
+    /// The awarded marks (0..=100).
+    pub marks: u8,
+    /// Optional teacher comments.
+    pub teacher_comments: Option<String>,
 }
 
 

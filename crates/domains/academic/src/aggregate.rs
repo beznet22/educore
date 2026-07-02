@@ -32,7 +32,7 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 use crate::value_objects::{
     AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassPeriod, ClassRoutineId,
     ClassRoomId, ClassSectionId, ClassSubjectId, ClassSubjectScope, DayOfWeek, EmailAddress,
-    GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
+    FileId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
     OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold, PassMark, PhoneNumber,
     RegistrationFieldId, Relation, SectionId, StudentCategoryId, StudentGroupId,
     StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId, SubjectId, SubjectType,
@@ -1517,11 +1517,342 @@ impl ClassRoutine {
         self.last_event_id = Some(event_id);
     }
 }
-academic_aggregate_stub! {
-    /// An assignment given to students in a class-section, for a
-    /// subject, with a submission deadline. See
-    /// `docs/specs/academic/aggregates.md` § Homework.
-    pub struct Homework { id: HomeworkId }
+// =============================================================================
+// Homework (Cluster D, Batch 2: full impl — Wave 52)
+// =============================================================================
+
+/// An assignment given to students in a class-section, for a
+/// subject, with a submission deadline.
+///
+/// Per `docs/specs/academic/aggregates.md` § Homework:
+///
+/// - **I-1**: created by a teacher (the `teacher_id` is the
+///   `UserId` of the actor; the service also enforces that
+///   `tenant.user_type == UserType::Teacher`).
+/// - **I-2**: `submission_date > homework_date` (enforced by
+///   [`Self::fresh`]).
+/// - **I-3**: evaluation date `>= submission_date` (enforced
+///   by `evaluate_homework` in the service layer).
+/// - **I-4**: optional file attachment (`attachment_id:
+///   Option<FileId>`).
+/// - **I-5**: marks immutable once evaluated (enforced by
+///   [`Self::evaluate`] recording `evaluated_at` and by
+///   [`Self::update`] rejecting mutation after evaluation).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Homework {
+    /// The homework's typed id.
+    pub id: HomeworkId,
+    /// The owning school (tenant anchor; also embedded in
+    /// the typed id).
+    pub school_id: SchoolId,
+    /// The class-section the homework is assigned to.
+    pub class_section_id: ClassSectionId,
+    /// The subject of the assignment.
+    pub subject_id: SubjectId,
+    /// The teacher who created the homework (per I-1).
+    pub teacher_id: UserId,
+    /// The date the homework was assigned.
+    pub homework_date: chrono::NaiveDate,
+    /// The submission deadline (per I-2, strictly after
+    /// `homework_date`).
+    pub submission_date: chrono::NaiveDate,
+    /// The homework description (1..=2000 chars, validated
+    /// by the service).
+    pub description: String,
+    /// The optional file attachment (per I-4). `None` means
+    /// no attachment.
+    pub attachment_id: Option<FileId>,
+    /// The homework's current lifecycle status.
+    pub status: crate::value_objects::HomeworkStatus,
+    /// The per-student marks. Per I-5, the marks are
+    /// immutable per student once recorded.
+    pub marks: std::collections::HashMap<StudentId, crate::value_objects::HomeworkMark>,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// Creation time.
+    pub created_at: Timestamp,
+    /// Last-mutation time.
+    pub updated_at: Timestamp,
+    /// Created by.
+    pub created_by: UserId,
+    /// Last mutated by.
+    pub updated_by: UserId,
+    /// Soft-delete flag.
+    pub active_status: ActiveStatus,
+    /// Last event id.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+impl Homework {
+    /// The default etag for a freshly minted homework.
+    pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
+
+    /// Returns a `Homework` in its just-minted state.
+    ///
+    /// Per `docs/specs/academic/aggregates.md` § Homework:
+    ///
+    /// - **I-2**: rejects if `submission_date <= homework_date`.
+    /// - **I-4**: the optional attachment is stored as
+    ///   `Option<FileId>`; `None` means "no attachment" with
+    ///   no validation.
+    /// - **Tenant-anchor**: every referenced id must share
+    ///   the same school as the typed homework id.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: HomeworkId,
+        class_section_id: ClassSectionId,
+        subject_id: SubjectId,
+        teacher_id: UserId,
+        homework_date: chrono::NaiveDate,
+        submission_date: chrono::NaiveDate,
+        description: String,
+        attachment_id: Option<FileId>,
+        created_by: UserId,
+        updated_by: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        use educore_core::error::DomainError;
+        // Tenant-anchor invariant: every referenced id must
+        // share the same school as the typed homework id.
+        if class_section_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation(format!(
+                "class_section_id {class_section_id} is in school {}, homework id school is {}",
+                class_section_id.school_id(),
+                id.school_id()
+            )));
+        }
+        if subject_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation(format!(
+                "subject_id {subject_id} is in school {}, homework id school is {}",
+                subject_id.school_id(),
+                id.school_id()
+            )));
+        }
+        // I-2: submission date must be strictly after
+        // homework date.
+        if submission_date <= homework_date {
+            return Err(DomainError::Validation(format!(
+                "homework submission_date {submission_date} must be strictly after \
+                 homework_date {homework_date}"
+            )));
+        }
+        let etag = fresh_etag();
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            class_section_id,
+            subject_id,
+            teacher_id,
+            homework_date,
+            submission_date,
+            description,
+            attachment_id,
+            status: crate::value_objects::HomeworkStatus::Active,
+            marks: std::collections::HashMap::new(),
+            version: Version::initial(),
+            etag,
+            created_at: now,
+            updated_at: now,
+            created_by,
+            updated_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Update mutable fields (description, submission_date,
+    /// attachment_id).
+    ///
+    /// Per I-5, returns `DomainError::Validation` if any
+    /// marks have been recorded (status == `Evaluated`).
+    /// Per I-2, the new `submission_date` (when supplied)
+    /// must be strictly after `homework_date`.
+    ///
+    /// Bumps `updated_at`, `updated_by`, `version`, and
+    /// `last_event_id`.
+    pub fn update(
+        &mut self,
+        new_submission_date: Option<chrono::NaiveDate>,
+        new_description: Option<String>,
+        new_attachment_id: Option<Option<FileId>>,
+        updated_by: UserId,
+        now: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<Vec<String>> {
+        use educore_core::error::DomainError;
+        // I-5: marks are immutable once evaluated; the
+        // service layer rejects mutation after evaluation.
+        if self.status == crate::value_objects::HomeworkStatus::Evaluated && !self.marks.is_empty() {
+            return Err(DomainError::Validation(format!(
+                "homework {id} cannot be updated after marks have been recorded (spec I-5)",
+                id = self.id
+            )));
+        }
+        if self.status == crate::value_objects::HomeworkStatus::Cancelled {
+            return Err(DomainError::Validation(format!(
+                "homework {id} is cancelled and cannot be updated",
+                id = self.id
+            )));
+        }
+        let mut changed_fields = Vec::new();
+        if let Some(new_date) = new_submission_date {
+            if new_date <= self.homework_date {
+                return Err(DomainError::Validation(format!(
+                    "homework submission_date {new_date} must be strictly after \
+                     homework_date {}",
+                    self.homework_date
+                )));
+            }
+            if new_date != self.submission_date {
+                self.submission_date = new_date;
+                changed_fields.push("submission_date".to_owned());
+            }
+        }
+        if let Some(new_desc) = new_description {
+            if new_desc != self.description {
+                self.description = new_desc;
+                changed_fields.push("description".to_owned());
+            }
+        }
+        if let Some(new_attach) = new_attachment_id {
+            if new_attach != self.attachment_id {
+                self.attachment_id = new_attach;
+                changed_fields.push("attachment_id".to_owned());
+            }
+        }
+        if changed_fields.is_empty() {
+            // No-op update: still bump version for audit
+            // consistency? No — preserve version when no
+            // change is detected (downstream may detect
+            // this and skip the event emission).
+            return Ok(changed_fields);
+        }
+        self.updated_at = now;
+        self.updated_by = updated_by;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        Ok(changed_fields)
+    }
+
+    /// Record a student submission. Transitions the
+    /// aggregate's `status` to `Submitted` if this is the
+    /// first submission; subsequent submissions do not
+    /// change the status.
+    ///
+    /// The submitter is the student; the service enforces
+    /// that `tenant.user_type == UserType::Student` (or
+    /// `Parent` on behalf of the student).
+    pub fn submit(
+        &mut self,
+        student_id: StudentId,
+        updated_by: UserId,
+        now: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        use educore_core::error::DomainError;
+        if self.status == crate::value_objects::HomeworkStatus::Cancelled {
+            return Err(DomainError::Validation(format!(
+                "homework {} is cancelled and cannot accept submissions",
+                self.id
+            )));
+        }
+        if student_id.school_id() != self.school_id {
+            return Err(DomainError::Validation(format!(
+                "student_id {student_id} is in school {}, homework is in {}",
+                student_id.school_id(),
+                self.school_id
+            )));
+        }
+        // First submission transitions to `Submitted`.
+        if self.status == crate::value_objects::HomeworkStatus::Active {
+            self.status = crate::value_objects::HomeworkStatus::Submitted;
+        }
+        self.updated_at = now;
+        self.updated_by = updated_by;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        Ok(())
+    }
+
+    /// Record marks for a single student. Per I-5, marks
+    /// are immutable per student — calling `evaluate`
+    /// twice for the same `student_id` is a no-op error
+    /// (the second call is rejected). Transitions the
+    /// aggregate's `status` to `Evaluated` on the first
+    /// mark recorded.
+    ///
+    /// Per I-3, the service layer enforces that
+    /// `evaluation_date >= submission_date`.
+    pub fn evaluate(
+        &mut self,
+        mark: crate::value_objects::HomeworkMark,
+        evaluator_id: UserId,
+        now: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        use educore_core::error::DomainError;
+        if self.status == crate::value_objects::HomeworkStatus::Cancelled {
+            return Err(DomainError::Validation(format!(
+                "homework {} is cancelled and cannot be evaluated",
+                self.id
+            )));
+        }
+        // I-5: marks are immutable per student. If the
+        // student already has a recorded mark, reject.
+        if self.marks.contains_key(&mark.student_id) {
+            return Err(DomainError::Validation(format!(
+                "homework {} already has marks recorded for student {} (spec I-5)",
+                self.id,
+                mark.student_id
+            )));
+        }
+        if mark.student_id.school_id() != self.school_id {
+            return Err(DomainError::Validation(format!(
+                "student_id {} is in school {}, homework is in {}",
+                mark.student_id,
+                mark.student_id.school_id(),
+                self.school_id
+            )));
+        }
+        self.marks.insert(mark.student_id, mark);
+        self.status = crate::value_objects::HomeworkStatus::Evaluated;
+        self.updated_at = now;
+        self.updated_by = evaluator_id;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        Ok(())
+    }
+
+    /// Soft-cancel the homework (the `CancelHomework`
+    /// command). Sets `active_status = Retired` and
+    /// `status = Cancelled`; bumps the audit footer.
+    pub fn cancel(
+        &mut self,
+        updated_by: UserId,
+        now: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        use educore_core::error::DomainError;
+        if self.status == crate::value_objects::HomeworkStatus::Cancelled {
+            return Err(DomainError::Validation(format!(
+                "homework {} is already cancelled",
+                self.id
+            )));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.status = crate::value_objects::HomeworkStatus::Cancelled;
+        self.updated_at = now;
+        self.updated_by = updated_by;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        Ok(())
+    }
 }
 academic_aggregate_stub! {
     /// A teacher's plan for a specific lesson topic on a specific

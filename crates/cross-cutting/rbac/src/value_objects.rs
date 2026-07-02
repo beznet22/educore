@@ -1551,6 +1551,15 @@ pub enum Capability {
     /// Capability for `Academic.Class.Routine.Delete`.
     /// Required to dispatch `DeleteClassRoutineCommand`.
     AcademicClassRoutineDelete,
+    /// Capability for `Academic.Homework.Create`.
+    /// Required to dispatch `CreateHomeworkCommand`.
+    AcademicHomeworkCreate,
+    /// Capability for `Academic.Homework.Update`.
+    /// Required to dispatch `UpdateHomeworkCommand`.
+    AcademicHomeworkUpdate,
+    /// Capability for `Academic.Homework.Cancel`.
+    /// Required to dispatch `CancelHomeworkCommand`.
+    AcademicHomeworkCancel,
     /// Capability for `Academic.Homework`.
     AcademicHomework,
     /// Capability for `Academic.Lesson`.
@@ -2284,6 +2293,9 @@ impl Capability {
             | Self::AcademicClassRoutineCreate => CapabilityDomain::Academic,
             | Self::AcademicClassRoutineUpdate => CapabilityDomain::Academic,
             | Self::AcademicClassRoutineDelete => CapabilityDomain::Academic,
+            | Self::AcademicHomeworkCreate => CapabilityDomain::Academic,
+            | Self::AcademicHomeworkUpdate => CapabilityDomain::Academic,
+            | Self::AcademicHomeworkCancel => CapabilityDomain::Academic,
             | Self::AcademicHomework => CapabilityDomain::Academic,
             | Self::AcademicLesson => CapabilityDomain::Academic,
             | Self::AcademicStudentCategory => CapabilityDomain::Academic,
@@ -2973,7 +2985,7 @@ impl Capability {
             Self::AcademicClassSection | Self::AcademicClassSubject | Self::AcademicClassRoutine
             | Self::AcademicClassRoutineCreate | Self::AcademicClassRoutineUpdate | Self::AcademicClassRoutineDelete => "Class",
             Self::AcademicAcademicYear => "Academic",
-            Self::AcademicHomework => "Homework",
+            Self::AcademicHomework | Self::AcademicHomeworkCreate | Self::AcademicHomeworkUpdate | Self::AcademicHomeworkCancel => "Homework",
             Self::AcademicLesson => "Lesson",
             Self::AcademicCertificate => "Certificate",
             Self::AcademicIdCard => "Id",
@@ -3680,6 +3692,9 @@ impl Capability {
             Self::AcademicClassRoutineUpdate => "Update",
             Self::AcademicClassRoutineDelete => "Delete",
             Self::AcademicHomework => "Homework",
+            Self::AcademicHomeworkCreate => "Create",
+            Self::AcademicHomeworkUpdate => "Update",
+            Self::AcademicHomeworkCancel => "Cancel",
             Self::AcademicLesson => "Lesson",
             Self::AcademicStudentCategory => "Category",
             Self::AcademicStudentGroup => "Group",
@@ -4390,6 +4405,9 @@ impl Capability {
             Self::AcademicClassRoutineUpdate => "Academic.Class.Routine.Update",
             Self::AcademicClassRoutineDelete => "Academic.Class.Routine.Delete",
             Self::AcademicHomework => "Academic.Homework",
+            Self::AcademicHomeworkCreate => "Academic.Homework.Create",
+            Self::AcademicHomeworkUpdate => "Academic.Homework.Update",
+            Self::AcademicHomeworkCancel => "Academic.Homework.Cancel",
             Self::AcademicLesson => "Academic.Lesson",
             Self::AcademicStudentCategory => "Academic.Student.Category",
             Self::AcademicStudentGroup => "Academic.Student.Group",
@@ -5760,6 +5778,9 @@ impl Capability {
             "Academic.Class.Routine.Create" => Some(Self::AcademicClassRoutineCreate),
             "Academic.Class.Routine.Update" => Some(Self::AcademicClassRoutineUpdate),
             "Academic.Class.Routine.Delete" => Some(Self::AcademicClassRoutineDelete),
+            "Academic.Homework.Create" => Some(Self::AcademicHomeworkCreate),
+            "Academic.Homework.Update" => Some(Self::AcademicHomeworkUpdate),
+            "Academic.Homework.Cancel" => Some(Self::AcademicHomeworkCancel),
             _ => None,
         }
     }
