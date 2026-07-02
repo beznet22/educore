@@ -36,6 +36,8 @@
 
 **Wave 52 (Homework):** 5 invariants reach [x] (Homework I-1/2/3/4/5). Total enforced now 28.
 
+**Wave 53 (LessonPlan):** 4 invariants reach [x] (LessonPlan I-1/2/3/4). Total enforced now 32.
+
 ---
 
 ## Student Aggregate (6 invariants)
@@ -243,22 +245,22 @@
 
 ## LessonPlan Aggregate (4 invariants)
 
-- [ ] I-1: Anchored to Lesson + topic + class-section + subject + date
+- [x] I-1: Anchored to Lesson + topic + class-section + subject + date
   - Spec: `docs/specs/academic/aggregates.md#lessonplan`
-  - Enforcement: MISSING — placeholder at `aggregate.rs:351-354`
-  - Test: MISSING
-- [ ] I-2: Sub-topics
+  - Enforcement: `RealLessonPlan::fresh` checks tenant-anchor — lesson_id, topic_id, class_section_id, subject_id must all share school with lesson_plan_id, else `DomainError::Validation`.
+  - Test: `tests/lesson_plan.rs::lesson_plan_create_with_cross_school_typed_id_rejected` (passes), `::lesson_plan_create_with_full_anchors_succeeds` (passes).
+- [x] I-2: Sub-topics
   - Spec: `docs/specs/academic/aggregates.md#lessonplan`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-3: `CompletedStatus` (Pending/InProgress/Completed/Skipped)
+  - Enforcement: `RealLessonPlan.sub_topics: Vec<SubTopic>` (zero allowed); `add_sub_topic` service appends new sub-topics.
+  - Test: `tests/lesson_plan.rs::lesson_plan_with_no_sub_topics_succeeds` (passes), `::lesson_plan_add_sub_topic_appends` (passes).
+- [x] I-3: `CompletedStatus` (Pending/InProgress/Completed/Skipped)
   - Spec: `docs/specs/academic/aggregates.md#lessonplan`
-  - Enforcement: MISSING — no `CompletedStatus` enum defined
-  - Test: MISSING
-- [ ] I-4: Multiple teachers share templates; one teacher per occurrence
+  - Enforcement: `CompletedStatus` enum with `can_transition_to` enforcing transition table (Pending→InProgress→Completed, Pending/InProgress→Skipped). `mark_lesson_plan_completed` service rejects invalid transitions with `DomainError::Conflict`.
+  - Test: `tests/lesson_plan.rs::lesson_plan_mark_completed_transitions_status` (passes), `::lesson_plan_mark_completed_from_completed_rejected` (passes).
+- [x] I-4: Multiple teachers share templates; one teacher per occurrence
   - Spec: `docs/specs/academic/aggregates.md#lessonplan`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
+  - Enforcement: `RealLessonPlan::update` rejects any change to `teacher_id` with `DomainError::Conflict` (reassignment requires a separate command).
+  - Test: `tests/lesson_plan.rs::lesson_plan_update_teacher_id_rejected` (passes), `::lesson_plan_update_with_same_teacher_succeeds` (passes).
 
 ## Lesson Aggregate (3 invariants)
 

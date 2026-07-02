@@ -3213,6 +3213,161 @@ academic_event_stub! {
         aggregate_type: "lesson_plan",
     }
 }
+
+// =============================================================================
+// LessonPlan events (Wave 53: full impl)
+// =============================================================================
+
+/// Event: a [`LessonPlan`](crate::aggregate::LessonPlan) was drafted.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealLessonPlanCreated {
+    /// The lesson-plan's typed id.
+    pub lesson_plan_id: LessonPlanId,
+    /// The lesson anchor.
+    pub lesson_id: LessonId,
+    /// The topic anchor.
+    pub topic_id: LessonTopicId,
+    /// The class-section anchor.
+    pub class_section_id: ClassSectionId,
+    /// The subject anchor.
+    pub subject_id: SubjectId,
+    /// The teacher who owns this lesson plan.
+    pub teacher_id: UserId,
+    /// The scheduled date.
+    pub scheduled_date: NaiveDate,
+    /// The teaching method.
+    pub teaching_method: String,
+    /// The lesson objectives.
+    pub objectives: String,
+    /// The teaching materials.
+    pub materials: Vec<String>,
+    /// The initial CompletedStatus (Pending on creation).
+    pub status: crate::value_objects::CompletedStatus,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for RealLessonPlanCreated {
+    const EVENT_TYPE: &'static str = "academic.lesson_plan.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "lesson_plan";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.lesson_plan_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.lesson_plan_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`LessonPlan`](crate::aggregate::LessonPlan) was updated.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LessonPlanUpdated {
+    /// The lesson-plan's typed id.
+    pub lesson_plan_id: LessonPlanId,
+    /// The fields that changed.
+    pub changed_fields: Vec<String>,
+    /// Optional new scheduled date.
+    pub scheduled_date: Option<NaiveDate>,
+    /// Optional new teaching method.
+    pub teaching_method: Option<String>,
+    /// Optional new objectives.
+    pub objectives: Option<String>,
+    /// Optional new materials.
+    pub materials: Option<Vec<String>>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for LessonPlanUpdated {
+    const EVENT_TYPE: &'static str = "academic.lesson_plan.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "lesson_plan";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.lesson_plan_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.lesson_plan_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`LessonPlan`](crate::aggregate::LessonPlan) was marked Completed/Skipped.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LessonPlanCompleted {
+    /// The lesson-plan's typed id.
+    pub lesson_plan_id: LessonPlanId,
+    /// The final status (Completed or Skipped).
+    pub final_status: crate::value_objects::CompletedStatus,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for LessonPlanCompleted {
+    const EVENT_TYPE: &'static str = "academic.lesson_plan.completed";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "lesson_plan";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.lesson_plan_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.lesson_plan_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a sub-topic was added to a [`LessonPlan`](crate::aggregate::LessonPlan).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SubTopicAdded {
+    /// The lesson-plan's typed id.
+    pub lesson_plan_id: LessonPlanId,
+    /// The new sub-topic title.
+    pub title: String,
+    /// The new sub-topic description.
+    pub description: String,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for SubTopicAdded {
+    const EVENT_TYPE: &'static str = "academic.lesson_plan.sub_topic_added";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "lesson_plan";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.lesson_plan_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.lesson_plan_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`LessonPlan`](crate::aggregate::LessonPlan) was soft-deleted.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LessonPlanDeleted {
+    /// The lesson-plan's typed id.
+    pub lesson_plan_id: LessonPlanId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for LessonPlanDeleted {
+    const EVENT_TYPE: &'static str = "academic.lesson_plan.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "lesson_plan";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.lesson_plan_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.lesson_plan_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
 academic_event_stub! {
     /// Event stub: a lesson was created. See
     /// `docs/specs/academic/aggregates.md` § Lesson.
