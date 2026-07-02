@@ -28,11 +28,12 @@ use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
 use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoutineId, ClassSectionId,
-    ClassSubjectId, EmailAddress, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId,
-    LessonTopicId, OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold, PassMark,
-    PhoneNumber, RegistrationFieldId, Relation, SectionId, StudentCategoryId, StudentGroupId,
-    StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId, SubjectId, SubjectType,
+    AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoutineId, ClassRoomId,
+    ClassSectionId, ClassSubjectId, EmailAddress, GuardianId, HomeworkId, IdCardId, LessonId,
+    LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold,
+    PassMark, PhoneNumber, RegistrationFieldId, Relation, SectionId, StudentCategoryId,
+    StudentGroupId, StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId,
+    SubjectId, SubjectType,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -826,7 +827,185 @@ academic_aggregate_stub! {
     /// The pairing of a class and a section in a specific
     /// academic year that students are enrolled into. See
     /// `docs/specs/academic/aggregates.md` § ClassSection.
-    pub struct ClassSection { id: ClassSectionId }
+    pub struct _ClassSectionStub { id: ClassSectionId }
+}
+
+// =============================================================================
+// ClassSection (Cluster D, Batch 2: full impl)
+// =============================================================================
+
+/// A pairing of a class and a section in a specific academic
+/// year that students are enrolled into and that class
+/// routines are scheduled against.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection:
+///
+/// - I-1: Unique per `(class, section, academic_year)`.
+///   Enforced by the service via
+///   `UniquenessChecker::class_section_exists`.
+/// - I-3: A `ClassSection` has one or more `ClassRoomId`s
+///   assigned. Enforced by `ClassSection::fresh` rejecting
+///   empty `class_rooms`.
+/// - I-4: A `ClassSection` cannot be deleted while
+///   `StudentRecord`s reference it. Enforced by the service
+///   via `UniquenessChecker::class_section_has_student_records`.
+///
+/// I-2 (multiple class / subject teachers) is permissive
+/// and does not require a constraint in the aggregate
+/// (the aggregate tracks teacher ids via separate events;
+/// any number of teacher ids is data-permitted).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClassSection {
+    /// The class-section's typed id.
+    pub id: ClassSectionId,
+    /// The owning school (tenant anchor; also embedded in
+    /// the typed id).
+    pub school_id: SchoolId,
+    /// The class this section is a division of.
+    pub class_id: ClassId,
+    /// The section within the class.
+    pub section_id: SectionId,
+    /// The academic year this pairing applies to.
+    pub academic_year_id: AcademicYearId,
+    /// The class rooms assigned to this section. Per I-3,
+    /// must contain at least one entry.
+    pub class_rooms: Vec<ClassRoomId>,
+    /// Whether the section is currently active (true) or
+    /// soft-deleted / retired (false). Set to `false` by
+    /// `ClassSection::retire`.
+    pub is_active: bool,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// Creation time.
+    pub created_at: Timestamp,
+    /// Last-mutation time.
+    pub updated_at: Timestamp,
+    /// Created by.
+    pub created_by: UserId,
+    /// Last mutated by.
+    pub updated_by: UserId,
+    /// Soft-delete flag. Set to `Retired` when
+    /// `delete_class_section` succeeds (only permitted when
+    /// no `StudentRecord`s reference this class-section).
+    pub active_status: ActiveStatus,
+    /// Last event id (for the outbox / audit bridge).
+    pub last_event_id: Option<EventId>,
+    /// Correlation id of the request that originated this
+    /// aggregate.
+    pub correlation_id: CorrelationId,
+}
+
+impl ClassSection {
+    /// The default etag for a freshly minted class-section.
+    pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
+
+    /// Returns a `ClassSection` in its just-minted state.
+    ///
+    /// # Errors
+    ///
+    /// Returns `DomainError::Validation` if `class_rooms` is
+    /// empty (I-3) or if the typed id's school does not match
+    /// `class_id.school_id()`, `section_id.school_id()`, or
+    /// `academic_year_id.school_id()`.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn fresh(
+        id: ClassSectionId,
+        class_id: ClassId,
+        section_id: SectionId,
+        academic_year_id: AcademicYearId,
+        class_rooms: Vec<ClassRoomId>,
+        created_by: UserId,
+        updated_by: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> std::result::Result<Self, educore_core::error::DomainError> {
+        use educore_core::error::DomainError;
+        // Tenant-anchor invariant: every referenced id must
+        // share the same school as the typed class-section id.
+        if class_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation(format!(
+                "class_id {class_id} is in school {}, class_section id school is {}",
+                class_id.school_id(),
+                id.school_id()
+            )));
+        }
+        if section_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation(format!(
+                "section_id {section_id} is in school {}, class_section id school is {}",
+                section_id.school_id(),
+                id.school_id()
+            )));
+        }
+        if academic_year_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation(format!(
+                "academic_year_id {academic_year_id} is in school {}, class_section id school is {}",
+                academic_year_id.school_id(),
+                id.school_id()
+            )));
+        }
+        // I-3: one or more class rooms.
+        if class_rooms.is_empty() {
+            return Err(DomainError::Validation(
+                "class_rooms must contain at least one ClassRoomId (spec I-3)".to_owned(),
+            ));
+        }
+        let etag = fresh_etag();
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            class_id,
+            section_id,
+            academic_year_id,
+            class_rooms,
+            is_active: true,
+            version: Version::initial(),
+            etag,
+            created_at: now,
+            updated_at: now,
+            created_by,
+            updated_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Append a class room to the section's `class_rooms`
+    /// list. Caller is responsible for uniqueness / business
+    /// rule checks (the service layer enforces them).
+    ///
+    /// Bumps `updated_at`, `updated_by`, `version`, and
+    /// `last_event_id`.
+    pub fn add_class_room(
+        &mut self,
+        class_room: ClassRoomId,
+        updated_by: UserId,
+        now: Timestamp,
+        event_id: EventId,
+    ) {
+        self.class_rooms.push(class_room);
+        self.updated_at = now;
+        self.updated_by = updated_by;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+    }
+
+    /// Soft-delete the class-section. Sets
+    /// `active_status = Retired` and `is_active = false`,
+    /// bumps the audit footer. The service is responsible
+    /// for verifying that no `StudentRecord`s reference
+    /// this class-section (I-4) before calling this method.
+    pub fn retire(&mut self, updated_by: UserId, now: Timestamp, event_id: EventId) {
+        self.active_status = ActiveStatus::Retired;
+        self.is_active = false;
+        self.updated_at = now;
+        self.updated_by = updated_by;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+    }
 }
 academic_aggregate_stub! {
     /// The assignment of a subject to a class, with a teacher,

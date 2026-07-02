@@ -284,6 +284,22 @@ impl UniquenessChecker for TestUniqueness {
             .unwrap()
             .contains(&(school, student_id))
     }
+    fn class_section_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _class_id: educore_academic::ClassId,
+        _section_id: educore_academic::SectionId,
+        _academic_year_id: educore_academic::AcademicYearId,
+    ) -> bool {
+        false
+    }
+    fn class_section_has_student_records(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _class_section_id: educore_academic::ClassSectionId,
+    ) -> bool {
+        false
+    }
 }
 
 // =============================================================================

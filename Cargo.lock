@@ -2056,6 +2056,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "educore-dispatcher"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "chrono",
+ "educore-core",
+ "educore-events",
+ "educore-storage",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "educore-documents"
 version = "0.1.0"
 dependencies = [
@@ -2266,6 +2284,24 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "educore-loadtest"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "clap",
+ "educore-core",
+ "educore-events",
+ "educore-sdk",
+ "educore-storage",
+ "educore-testkit",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
  "uuid",
 ]
 

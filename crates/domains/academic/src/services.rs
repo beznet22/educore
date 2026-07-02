@@ -50,35 +50,39 @@ use crate::commands::{
     validate_gpa_threshold, validate_last_name, validate_mobile_optional, validate_pass_mark,
     validate_roll_no, validate_section_name, validate_subject_code, validate_subject_name,
     validate_suspension_reason, validate_transfer_reason, validate_withdrawal_reason,
-    validate_year_label, validate_year_title, AdmitStudentCommand, AssignOptionalSubjectCommand,
+    validate_year_label, validate_year_title, AdmitStudentCommand, AssignClassRoomCommand,
+    AssignClassTeacherCommand, AssignOptionalSubjectCommand, AssignSubjectTeacherCommand,
     CloseAcademicYearCommand, CreateAcademicYearCommand, CreateCertificateCommand,
     CreateClassCommand, CreateClassRoutineCommand, CreateClassSectionCommand,
     CreateClassSubjectCommand, CreateHomeworkCommand, CreateIdCardCommand, CreateLessonCommand,
     CreateLessonPlanCommand, CreateLessonTopicCommand, CreateRegistrationFieldCommand,
     CreateSectionCommand, CreateStudentCategoryCommand, CreateStudentGroupCommand,
-    CreateSubjectCommand, DeleteClassCommand, DeleteSectionCommand, DeleteSubjectCommand,
-    GraduateStudentCommand, LinkGuardianToStudentCommand, MarkPrimaryGuardianCommand,
-    PromoteStudentCommand, RecordStudentPromotionCommand, RegisterGuardianCommand,
-    ReinstateStudentCommand, RetireGuardianCommand, SetCurrentAcademicYearCommand,
-    SetOptionalSubjectGpaThresholdCommand, SuspendStudentCommand, TransferStudentCommand,
-    UniquenessChecker, UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand,
-    UpdateClassCommand, UpdateGuardianContactCommand, UpdateSectionCommand,
-    UpdateStudentProfileCommand, UpdateSubjectCommand, WithdrawStudentCommand,
+    CreateSubjectCommand, DeleteClassCommand, DeleteClassSectionCommand, DeleteSectionCommand,
+    DeleteSubjectCommand, GraduateStudentCommand, LinkGuardianToStudentCommand,
+    MarkPrimaryGuardianCommand, PromoteStudentCommand, RecordStudentPromotionCommand,
+    RegisterGuardianCommand, ReinstateStudentCommand, RetireGuardianCommand,
+    SetCurrentAcademicYearCommand, SetOptionalSubjectGpaThresholdCommand, SuspendStudentCommand,
+    TransferStudentCommand, UniquenessChecker, UnlinkGuardianFromStudentCommand,
+    UpdateAcademicYearDatesCommand, UpdateClassCommand, UpdateGuardianContactCommand,
+    UpdateSectionCommand, UpdateStudentProfileCommand, UpdateSubjectCommand,
+    WithdrawStudentCommand,
 };
 use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
-    CertificateCreated, ClassCreated, ClassDeleted, ClassRoutineScheduled, ClassSectionCreated,
-    ClassSubjectAssigned, ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated,
-    GuardianLinkedToStudent, GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent,
-    HomeworkAssigned, IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
+    CertificateCreated, ClassCreated, ClassDeleted, ClassRoomAssigned, ClassRoutineScheduled,
+    ClassSectionCreated, ClassSectionDeleted, ClassSubjectAssigned, ClassTeacherAssigned,
+    ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated, GuardianLinkedToStudent,
+    GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent, HomeworkAssigned,
+    IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
     OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
     RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
     StudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
     StudentPromoted, StudentPromotionRecorded, StudentReinstated, StudentSuspended,
     StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
+    SubjectTeacherAssigned,
 };
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, StudentGuardianLinkId, StudentStatus,
+    AcademicYearId, AcademicYearRange, ClassRoomId, StudentGuardianLinkId, StudentStatus,
 };
 
 fn fresh_event_id<G: IdGenerator + ?Sized>(ids: &G) -> EventId {
@@ -1857,32 +1861,299 @@ where
 }
 
 /// Create a [`ClassSection`] pairing and emit a [`ClassSectionCreated`] event.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection:
+///
+/// - I-1: rejects when `(class, section, academic_year)`
+///   already exists in the school (checked via
+///   [`UniquenessChecker::class_section_exists`]).
+/// - I-3: rejects when `class_rooms` is empty (delegated
+///   to [`ClassSection::fresh`]).
+///
+/// The cross-tenant guard on `class_section_id.school_id() ==
+/// class_id.school_id()` etc. is enforced inside
+/// [`ClassSection::fresh`].
+#[allow(clippy::too_many_arguments)]
 pub fn create_class_section<C, G>(
     cmd: CreateClassSectionCommand,
     clock: &C,
     ids: &G,
+    uniqueness: &dyn UniquenessChecker,
 ) -> Result<(ClassSection, ClassSectionCreated)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let CreateClassSectionCommand { id, school_id } = cmd;
-    if id.school_id() != school_id {
+    let CreateClassSectionCommand {
+        tenant: _,
+        class_section_id,
+        class_id,
+        section_id,
+        academic_year_id,
+        class_rooms,
+    } = cmd;
+    // Tenant-anchor guard: typed class-section id's school
+    // must match the referenced class / section /
+    // academic_year ids' schools.
+    let school_id = class_section_id.school_id();
+    if class_id.school_id() != school_id
+        || section_id.school_id() != school_id
+        || academic_year_id.school_id() != school_id
+    {
         return Err(DomainError::Validation(format!(
-            "class section id {id} is in school {}, command school_id is {school_id}",
-            id.school_id(),
+            "class_section_id {class_section_id} school {school_id} does not match \
+             class_id {class_id} (school {}), section_id {section_id} (school {}), or \
+             academic_year_id {academic_year_id} (school {})",
+            class_id.school_id(),
+            section_id.school_id(),
+            academic_year_id.school_id(),
+        )));
+    }
+    // I-1: unique per (class, section, academic_year).
+    if uniqueness.class_section_exists(school_id, class_id, section_id, academic_year_id) {
+        return Err(DomainError::Conflict(format!(
+            "class_section for class {class_id} / section {section_id} / \
+             academic_year {academic_year_id} already exists in school {school_id}"
         )));
     }
     let now = clock.now();
     let event_id = fresh_event_id(ids);
-    let aggregate = ClassSection { id, school_id };
-    let event = ClassSectionCreated {
+    let correlation_id = educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let actor = educore_core::ids::UserId::from_uuid(uuid::Uuid::now_v7());
+    let aggregate = ClassSection::fresh(
+        class_section_id,
+        class_id,
+        section_id,
+        academic_year_id,
+        class_rooms.clone(),
+        actor,
+        actor,
+        now,
+        correlation_id,
+    )?;
+    let event = ClassSectionCreated::new(
+        class_section_id,
+        class_id,
+        section_id,
+        academic_year_id,
+        class_rooms,
         event_id,
-        school_id,
-        aggregate_id: id,
-        occurred_at: now,
-    };
+        correlation_id,
+        now,
+    );
     Ok((aggregate, event))
+}
+
+/// Assign a class teacher to a [`ClassSection`] and emit a
+/// [`ClassTeacherAssigned`] event.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection §
+/// I-2 (permissive), multiple class teachers per section
+/// are allowed; this service is idempotent at the service
+/// layer in the sense that it does not check whether the
+/// teacher is already assigned — the aggregate keeps the
+/// full history of teacher assignments in the event log.
+///
+/// Returns the mutated aggregate plus the typed event.
+#[allow(clippy::too_many_arguments)]
+pub fn assign_class_teacher<C, G>(
+    cmd: AssignClassTeacherCommand,
+    clock: &C,
+    ids: &G,
+    class_section: &mut ClassSection,
+) -> Result<ClassTeacherAssigned>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let AssignClassTeacherCommand {
+        tenant: _,
+        class_section_id,
+        teacher_id,
+    } = cmd;
+    // Tenant-anchor guard.
+    if class_section_id != class_section.id {
+        return Err(DomainError::Validation(format!(
+            "command class_section_id {class_section_id} does not match aggregate id {}",
+            class_section.id
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let correlation_id = educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let actor = teacher_id;
+    class_section.updated_at = now;
+    class_section.updated_by = actor;
+    class_section.version = class_section.version.next();
+    class_section.last_event_id = Some(event_id);
+    let event = ClassTeacherAssigned::new(
+        class_section_id,
+        teacher_id,
+        event_id,
+        correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+/// Assign a subject teacher to a [`ClassSection`] and emit a
+/// [`SubjectTeacherAssigned`] event.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection §
+/// I-2 (permissive), multiple subject teachers per section
+/// are allowed; this service is idempotent at the service
+/// layer in the sense that it does not check whether the
+/// teacher is already assigned for the subject — the
+/// aggregate keeps the full history in the event log.
+#[allow(clippy::too_many_arguments)]
+pub fn assign_subject_teacher<C, G>(
+    cmd: AssignSubjectTeacherCommand,
+    clock: &C,
+    ids: &G,
+    class_section: &mut ClassSection,
+) -> Result<SubjectTeacherAssigned>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let AssignSubjectTeacherCommand {
+        tenant: _,
+        class_section_id,
+        subject_id,
+        teacher_id,
+    } = cmd;
+    if class_section_id != class_section.id {
+        return Err(DomainError::Validation(format!(
+            "command class_section_id {class_section_id} does not match aggregate id {}",
+            class_section.id
+        )));
+    }
+    if subject_id.school_id() != class_section.school_id {
+        return Err(DomainError::Validation(format!(
+            "subject_id {subject_id} school {} does not match class_section school {}",
+            subject_id.school_id(),
+            class_section.school_id,
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let correlation_id = educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let actor = teacher_id;
+    class_section.updated_at = now;
+    class_section.updated_by = actor;
+    class_section.version = class_section.version.next();
+    class_section.last_event_id = Some(event_id);
+    let event = SubjectTeacherAssigned::new(
+        class_section_id,
+        subject_id,
+        teacher_id,
+        event_id,
+        correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+/// Assign an additional [`ClassRoomId`] to a [`ClassSection`]
+/// and emit a [`ClassRoomAssigned`] event.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection §
+/// I-3, the aggregate's `class_rooms` list is appended to
+/// (never reduced). The aggregate enforces the non-empty
+/// invariant on creation; subsequent appends are
+/// unconstrained (per the spec, a class-section may have
+/// any number of class rooms, including repeated ids).
+#[allow(clippy::too_many_arguments)]
+pub fn assign_class_room<C, G>(
+    cmd: AssignClassRoomCommand,
+    clock: &C,
+    ids: &G,
+    class_section: &mut ClassSection,
+) -> Result<ClassRoomAssigned>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let AssignClassRoomCommand {
+        tenant: _,
+        class_section_id,
+        class_room_id,
+    } = cmd;
+    if class_section_id != class_section.id {
+        return Err(DomainError::Validation(format!(
+            "command class_section_id {class_section_id} does not match aggregate id {}",
+            class_section.id
+        )));
+    }
+    if class_room_id.school_id() != class_section.school_id {
+        return Err(DomainError::Validation(format!(
+            "class_room_id {class_room_id} school {} does not match class_section school {}",
+            class_room_id.school_id(),
+            class_section.school_id,
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let correlation_id = educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let actor = educore_core::ids::UserId::from_uuid(uuid::Uuid::now_v7());
+    class_section.add_class_room(class_room_id, actor, now, event_id);
+    let class_rooms = class_section.class_rooms.clone();
+    let event = ClassRoomAssigned::new(
+        class_section_id,
+        class_room_id,
+        class_rooms,
+        event_id,
+        correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+/// Delete (soft-retire) a [`ClassSection`] and emit a
+/// [`ClassSectionDeleted`] event.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection §
+/// I-4, deletion is rejected while any `StudentRecord`
+/// references the class-section. The service checks this
+/// via
+/// [`UniquenessChecker::class_section_has_student_records`]
+/// and refuses to retire the aggregate when true.
+#[allow(clippy::too_many_arguments)]
+pub fn delete_class_section<C, G>(
+    cmd: DeleteClassSectionCommand,
+    clock: &C,
+    ids: &G,
+    class_section: &mut ClassSection,
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<ClassSectionDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let DeleteClassSectionCommand {
+        tenant: _,
+        class_section_id,
+    } = cmd;
+    if class_section_id != class_section.id {
+        return Err(DomainError::Validation(format!(
+            "command class_section_id {class_section_id} does not match aggregate id {}",
+            class_section.id
+        )));
+    }
+    // I-4: cannot delete while StudentRecords reference it.
+    if uniqueness.class_section_has_student_records(class_section.school_id, class_section_id) {
+        return Err(DomainError::Conflict(format!(
+            "class_section {class_section_id} cannot be deleted: StudentRecords still \
+             reference it"
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let correlation_id = educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let actor = educore_core::ids::UserId::from_uuid(uuid::Uuid::now_v7());
+    class_section.retire(actor, now, event_id);
+    let event = ClassSectionDeleted::new(class_section_id, event_id, correlation_id, now);
+    Ok(event)
 }
 
 /// Assign a subject to a class via [`ClassSubject`] and emit a
@@ -2276,6 +2547,8 @@ mod tests {
     struct InMemoryUniqueness {
         admission_nos: Mutex<Vec<(SchoolId, String)>>,
         emails: Mutex<Vec<(SchoolId, String)>>,
+        class_sections: Mutex<Vec<(SchoolId, ClassId, SectionId, AcademicYearId)>>,
+        student_records: Mutex<Vec<(SchoolId, crate::value_objects::ClassSectionId)>>,
     }
 
     impl InMemoryUniqueness {
@@ -2283,6 +2556,8 @@ mod tests {
             Self {
                 admission_nos: Mutex::new(Vec::new()),
                 emails: Mutex::new(Vec::new()),
+                class_sections: Mutex::new(Vec::new()),
+                student_records: Mutex::new(Vec::new()),
             }
         }
         fn record_admission(&self, school: SchoolId, admission_no: &str) {
@@ -2297,6 +2572,30 @@ mod tests {
                 .lock()
                 .unwrap()
                 .push((school, email.to_lowercase()));
+        }
+        #[allow(dead_code)]
+        fn record_class_section(
+            &self,
+            school: SchoolId,
+            class_id: ClassId,
+            section_id: SectionId,
+            academic_year_id: AcademicYearId,
+        ) {
+            self.class_sections
+                .lock()
+                .unwrap()
+                .push((school, class_id, section_id, academic_year_id));
+        }
+        #[allow(dead_code)]
+        fn record_student_record(
+            &self,
+            school: SchoolId,
+            class_section_id: crate::value_objects::ClassSectionId,
+        ) {
+            self.student_records
+                .lock()
+                .unwrap()
+                .push((school, class_section_id));
         }
     }
 
@@ -2357,6 +2656,35 @@ mod tests {
             _student_id: StudentId,
         ) -> bool {
             false
+        }
+        fn class_section_exists(
+            &self,
+            school: SchoolId,
+            class_id: ClassId,
+            section_id: SectionId,
+            academic_year_id: AcademicYearId,
+        ) -> bool {
+            self.class_sections
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|(s, c, sec, y)| {
+                    *s == school
+                        && *c == class_id
+                        && *sec == section_id
+                        && *y == academic_year_id
+                })
+        }
+        fn class_section_has_student_records(
+            &self,
+            school: SchoolId,
+            class_section_id: crate::value_objects::ClassSectionId,
+        ) -> bool {
+            self.student_records
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|(s, c)| *s == school && *c == class_section_id)
         }
     }
 

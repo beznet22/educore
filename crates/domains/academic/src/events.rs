@@ -41,8 +41,8 @@ use educore_events::domain_event::DomainEvent;
 
 use crate::entities::StudentDocumentId;
 use crate::value_objects::{
-    AcademicYearId, CertificateId, ClassId, ClassRoutineId, ClassSectionId, ClassSubjectId,
-    GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
+    AcademicYearId, CertificateId, ClassId, ClassRoomId, ClassRoutineId, ClassSectionId,
+    ClassSubjectId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
     OptionalSubjectAssignmentId, RegistrationFieldId, Relation, ResultStatus, SectionId,
     StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId, StudentPromotionId,
     StudentStatus, SubjectId, SubjectType,
@@ -2007,13 +2007,328 @@ impl DomainEvent for OptionalSubjectAssignmentCreated {
         self.occurred_at
     }
 }
-academic_event_stub! {
-    /// Event stub: a class-section pairing was created. See
-    /// `docs/specs/academic/aggregates.md` § ClassSection.
-    pub struct ClassSectionCreated {
-        aggregate_id: ClassSectionId,
-        event_type: "academic.class_section.created",
-        aggregate_type: "class_section",
+// =============================================================================
+// ClassSection events (full impl — Batch 2)
+// =============================================================================
+
+/// A [`ClassSection`](crate::aggregate::ClassSection) pairing
+/// of a class, a section, and an academic year was created.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection,
+/// the event carries the typed id plus the three
+/// dimension ids (`class_id`, `section_id`,
+/// `academic_year_id`), the initial `class_rooms` list,
+/// and the audit metadata. Per I-3, `class_rooms` is
+/// non-empty by construction.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClassSectionCreated {
+    /// The class-section's typed id.
+    pub class_section_id: ClassSectionId,
+    /// The class this section is a division of.
+    pub class_id: ClassId,
+    /// The section within the class.
+    pub section_id: SectionId,
+    /// The academic year this pairing applies to.
+    pub academic_year_id: AcademicYearId,
+    /// The class rooms assigned to this section. Per I-3,
+    /// at least one entry.
+    pub class_rooms: Vec<ClassRoomId>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered
+    /// the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl ClassSectionCreated {
+    /// Mints a fresh `ClassSectionCreated`.
+    #[must_use]
+    pub const fn new(
+        class_section_id: ClassSectionId,
+        class_id: ClassId,
+        section_id: SectionId,
+        academic_year_id: AcademicYearId,
+        class_rooms: Vec<ClassRoomId>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            class_section_id,
+            class_id,
+            section_id,
+            academic_year_id,
+            class_rooms,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ClassSectionCreated {
+    const EVENT_TYPE: &'static str = "academic.class_section.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "class_section";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.class_section_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.class_section_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A class teacher was assigned to a [`ClassSection`].
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection §
+/// I-2 (permissive), multiple class teachers per section
+/// are allowed; this event records the assignment of one
+/// additional teacher.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClassTeacherAssigned {
+    /// The class-section's typed id.
+    pub class_section_id: ClassSectionId,
+    /// The teacher being assigned.
+    pub teacher_id: educore_core::ids::UserId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered
+    /// the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl ClassTeacherAssigned {
+    /// Mints a fresh `ClassTeacherAssigned`.
+    #[must_use]
+    pub const fn new(
+        class_section_id: ClassSectionId,
+        teacher_id: educore_core::ids::UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            class_section_id,
+            teacher_id,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ClassTeacherAssigned {
+    const EVENT_TYPE: &'static str = "academic.class_section.class_teacher_assigned";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "class_section";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.class_section_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.class_section_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A subject teacher was assigned to a [`ClassSection`] for
+/// a specific subject.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection §
+/// I-2 (permissive), multiple subject teachers per section
+/// are allowed; this event records the assignment of one
+/// additional teacher for the given subject.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SubjectTeacherAssigned {
+    /// The class-section's typed id.
+    pub class_section_id: ClassSectionId,
+    /// The subject the teacher is assigned to.
+    pub subject_id: SubjectId,
+    /// The teacher being assigned.
+    pub teacher_id: educore_core::ids::UserId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered
+    /// the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl SubjectTeacherAssigned {
+    /// Mints a fresh `SubjectTeacherAssigned`.
+    #[must_use]
+    pub const fn new(
+        class_section_id: ClassSectionId,
+        subject_id: SubjectId,
+        teacher_id: educore_core::ids::UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            class_section_id,
+            subject_id,
+            teacher_id,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for SubjectTeacherAssigned {
+    const EVENT_TYPE: &'static str = "academic.class_section.subject_teacher_assigned";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "class_section";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.class_section_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.class_section_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// An additional class room was assigned to a
+/// [`ClassSection`].
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection §
+/// I-3, every class-section has one or more class rooms.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClassRoomAssigned {
+    /// The class-section's typed id.
+    pub class_section_id: ClassSectionId,
+    /// The class room being assigned.
+    pub class_room_id: ClassRoomId,
+    /// The class-section's full `class_rooms` list after
+    /// the append (the union of the prior list and the
+    /// new entry).
+    pub class_rooms: Vec<ClassRoomId>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered
+    /// the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl ClassRoomAssigned {
+    /// Mints a fresh `ClassRoomAssigned`.
+    #[must_use]
+    pub const fn new(
+        class_section_id: ClassSectionId,
+        class_room_id: ClassRoomId,
+        class_rooms: Vec<ClassRoomId>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            class_section_id,
+            class_room_id,
+            class_rooms,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ClassRoomAssigned {
+    const EVENT_TYPE: &'static str = "academic.class_section.class_room_assigned";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "class_section";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.class_section_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.class_section_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A [`ClassSection`] was soft-deleted.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection §
+/// I-4, the service emits this event only after verifying
+/// that no `StudentRecord` references the class-section.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClassSectionDeleted {
+    /// The class-section's typed id.
+    pub class_section_id: ClassSectionId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered
+    /// the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl ClassSectionDeleted {
+    /// Mints a fresh `ClassSectionDeleted`.
+    #[must_use]
+    pub const fn new(
+        class_section_id: ClassSectionId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            class_section_id,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ClassSectionDeleted {
+    const EVENT_TYPE: &'static str = "academic.class_section.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "class_section";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.class_section_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.class_section_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
     }
 }
 academic_event_stub! {

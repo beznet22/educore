@@ -28,6 +28,8 @@
 
 **Wave 48 (Guardian):** 5 invariants reach [x] (Guardian I-1/2/3/4/5). Total enforced now 13.
 
+**Wave 49 (ClassSection):** 3 invariants reach [x] (ClassSection I-1/3/4). Total enforced now 16.
+
 ---
 
 ## Student Aggregate (6 invariants)
@@ -117,22 +119,22 @@
 
 ## ClassSection Aggregate (4 invariants)
 
-- [ ] I-1: Unique per `(class, section, academic_year)`
+- [x] I-1: Unique per `(class, section, academic_year)`
   - Spec: `docs/specs/academic/aggregates.md#classsection`
-  - Enforcement: MISSING — `ClassSection` placeholder at `aggregate.rs:330-333`
-  - Test: MISSING
+  - Enforcement: `UniquenessChecker::class_section_exists` (`commands.rs`); called in `create_class_section` (`services.rs`)
+  - Test: `crates/domains/academic/tests/class_section.rs::class_section_create_duplicate_rejected`
 - [N/A] I-2: Multiple class teachers and subject teachers
   - Spec: `docs/specs/academic/aggregates.md#classsection`
   - Enforcement: Pervasive
   - Test: N/A
-- [ ] I-3: One or more class rooms
+- [x] I-3: One or more class rooms
   - Spec: `docs/specs/academic/aggregates.md#classsection`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-4: Cannot delete while `StudentRecord`s reference it
+  - Enforcement: `ClassSection::fresh` rejects empty `class_rooms` (`aggregate.rs`)
+  - Test: `crates/domains/academic/tests/class_section.rs::class_section_create_with_empty_class_rooms_rejected`
+- [x] I-4: Cannot delete while `StudentRecord`s reference it
   - Spec: `docs/specs/academic/aggregates.md#classsection`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
+  - Enforcement: `UniquenessChecker::class_section_has_student_records` (`commands.rs`); called in `delete_class_section` (`services.rs`)
+  - Test: `crates/domains/academic/tests/class_section.rs::class_section_delete_with_student_records_rejected`
 
 ## Subject Aggregate (3 invariants)
 
