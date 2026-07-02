@@ -1,40 +1,10 @@
 //! Integration tests for the **StudentCategory aggregate** vertical slice.
 //!
-//! Pins the create contract for
-//! [`StudentCategory`](educore_academic::StudentCategory)
-//! end-to-end through the service layer:
+//! Pins the create / update / delete contracts for the
+//! `StudentCategory` aggregate end-to-end through the service
+//! layer, exercising the 1 spec invariant:
 //!
-//! 1. `create_student_category` validates the input (the
-//!    typed id's `school_id()` must match the command's
-//!    `school_id`), constructs the aggregate, and emits a
-//!    [`StudentCategoryCreated`] event.
-//!
-//! The tests use the same fixture pattern as
-//! `crates/domains/academic/tests/class.rs` and
-//! `crates/domains/academic/tests/lesson_topic.rs`
-//! (`TestClock` + `SystemIdGen`).
-//!
-//! Per the academic/workflows.rs pattern, the **handlers**
-//! themselves are not wired end-to-end (no subscriber fan-out,
-//! no outbox commit, no audit row). These tests pin the
-//! contract of the **service layer** that the dispatcher will
-//! eventually wrap.
-//!
-//! Note on `StudentCategory` field set: the aggregate is
-//! currently a stub carrying only `id` and `school_id` (per
-//! `docs/specs/academic/aggregates.md` § StudentCategory);
-//! the typed command shape
-//! ([`CreateStudentCategoryCommand`]) and the typed event
-//! ([`StudentCategoryCreated`]) mirror that. The tests below
-//! pin the real contract: the aggregate's typed id, the
-//! event's `EVENT_TYPE` / `AGGREGATE_TYPE`, and the
-//! `school_id` / `aggregate_id` cross-check.
-//!
-//! Note on user role: the platform's [`UserType`] enum does
-//! not expose an `Admin` variant — the school-scoped
-//! administrative role is [`UserType::SchoolAdmin`]. These
-//! tests use `SchoolAdmin` to match the rest of the
-//! academic + lesson_topic test suites.
+//! - I-1: Category uniquely named within school
 
 #![allow(
     clippy::unwrap_used,
@@ -44,21 +14,21 @@
     missing_docs
 )]
 
-use educore_academic::commands::CreateStudentCategoryCommand;
-use educore_academic::events::StudentCategoryCreated;
+use std::collections::HashSet;
+
+use educore_academic::commands::{DeleteStudentCategoryCommand, RealCreateStudentCategoryCommand, UpdateStudentCategoryCommand};
+use educore_academic::events::{StudentCategoryDeleted, StudentCategoryUpdated, RealStudentCategoryCreated};
 use educore_academic::prelude::*;
-use educore_academic::value_objects::StudentCategoryId;
+use educore_academic::services::{create_student_category_aggregate, delete_student_category, update_student_category};
+use educore_academic::{RealStudentCategory, StudentCategoryId};
 use educore_core::clock::{SystemIdGen, TestClock};
-use educore_events::domain_event::DomainEvent;
+use educore_core::error::DomainError;
+use educore_core::ids::SchoolId;
 
 // =============================================================================
 // Fixtures
 // =============================================================================
 
-/// A fresh `TenantContext` for a `SchoolAdmin` acting on a
-/// freshly-minted school. Returns the context plus the
-/// generator so tests can mint child ids from the same
-/// school.
 fn admin_context() -> (TenantContext, SystemIdGen) {
     let g = SystemIdGen;
     let school = g.next_school_id();
@@ -70,142 +40,182 @@ fn admin_context() -> (TenantContext, SystemIdGen) {
     )
 }
 
-fn student_category_id(
-    g: &SystemIdGen,
-    school: educore_core::ids::SchoolId,
-) -> StudentCategoryId {
+fn student_category_id(g: &SystemIdGen, school: SchoolId) -> StudentCategoryId {
     StudentCategoryId::new(school, g.next_uuid())
 }
 
+fn make_cmd(tenant: TenantContext, g: &SystemIdGen, school: SchoolId) -> RealCreateStudentCategoryCommand {
+    RealCreateStudentCategoryCommand {
+        tenant,
+        student_category_id: student_category_id(g, school),
+        name: "Scholarship".to_string(),
+        description: "Merit-based scholarship".to_string(),
+        discount_percent: Some(50.0),
+    }
+}
+
+#[derive(Default)]
+struct InMemoryUniqueness {
+    category_names: HashSet<(SchoolId, String)>,
+}
+
+impl UniquenessChecker for InMemoryUniqueness {
+    fn student_admission_no_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn student_email_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn roll_no_exists(&self, _: SchoolId, _: ClassId, _: SectionId, _: AcademicYearId, _: &str) -> bool { false }
+    fn class_name_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn section_name_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn subject_code_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn lesson_title_exists(&self, _: SchoolId, _: ClassSectionId, _: SubjectId, _: &str) -> bool { false }
+    fn class_section_exists(&self, _: SchoolId, _: ClassId, _: SectionId, _: AcademicYearId) -> bool { false }
+    fn class_section_has_student_records(&self, _: SchoolId, _: ClassSectionId) -> bool { false }
+    fn academic_year_overlaps(&self, _: SchoolId, _: AcademicYearRange, _: Option<AcademicYearId>) -> bool { false }
+    fn optional_subject_assigned_exists(&self, _: SchoolId, _: StudentId, _: AcademicYearId) -> bool { false }
+    fn primary_guardian_link_exists(&self, _: SchoolId, _: StudentId) -> bool { false }
+    fn student_has_active_record(&self, _: SchoolId, _: StudentId, _: AcademicYearId) -> bool { false }
+    fn teacher_has_conflict(&self, _: SchoolId, _: UserId, _: DayOfWeek, _: u8) -> bool { false }
+    fn room_has_conflict(&self, _: SchoolId, _: ClassRoomId, _: DayOfWeek, _: u8) -> bool { false }
+    fn student_category_name_exists(&self, school: SchoolId, name: &str) -> bool {
+        self.category_names.contains(&(school, name.to_string()))
+    }
+}
+
 // =============================================================================
-// 1. Happy path: create a StudentCategory
+// 1. Happy path
 // =============================================================================
 
-/// End-to-end happy path for the `StudentCategory` aggregate.
-/// Build the create command + the typed
-/// `StudentCategoryCreated` event the service would emit,
-/// asserting that:
-///
-/// 1. The command carries the typed `StudentCategoryId` and
-///    the matching `school_id`.
-/// 2. The event's `EVENT_TYPE`, `AGGREGATE_TYPE`, and
-///    `SCHEMA_VERSION` constants match the academic contract
-///    (`academic.student_category.created` /
-///    `student_category` / `1`).
-/// 3. The event's `aggregate_id`, `school_id`, and
-///    `occurred_at` line up with the command's id, the
-///    tenant's school, and the test clock.
 #[test]
-fn student_category_create_command_event_metadata_match() {
+fn student_category_create_succeeds() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant, &g, school);
+    let (agg, event) = create_student_category_aggregate(cmd, &clock, &ids, &uniqueness)
+        .expect("create should succeed");
+
+    assert_eq!(agg.school_id, school);
+    assert_eq!(agg.name, "Scholarship");
+    assert_eq!(agg.discount_percent, Some(50.0));
+
+    assert_eq!(RealStudentCategoryCreated::EVENT_TYPE, "academic.student_category.created");
+    assert_eq!(RealStudentCategoryCreated::AGGREGATE_TYPE, "student_category");
+    assert_eq!(event.school_id(), school);
+}
+
+// =============================================================================
+// 2. I-1: duplicate name rejected
+// =============================================================================
+
+#[test]
+fn student_category_duplicate_name_rejected() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
     let clock = TestClock::new();
     let ids = SystemIdGen;
 
-    // ---- Build the create command ----
-    let category_id = student_category_id(&g, school);
-    let create_cmd = CreateStudentCategoryCommand {
-        id: category_id,
-        school_id: school,
-    };
-    // The command's typed id and school_id line up.
-    assert_eq!(create_cmd.id, category_id);
-    assert_eq!(create_cmd.id.school_id(), school);
-    assert_eq!(create_cmd.school_id, school);
+    let mut uniqueness = InMemoryUniqueness::default();
+    uniqueness.category_names.insert((school, "Scholarship".to_string()));
 
-    // ---- Build the typed event the service would emit ----
-    let occurred_at = clock.now();
-    let event_id = ids.next_event_id();
-    let created_event = StudentCategoryCreated {
-        event_id,
-        school_id: school,
-        aggregate_id: create_cmd.id,
-        occurred_at,
-    };
-
-    // Event metadata matches the DomainEvent trait's contract.
-    assert_eq!(
-        <StudentCategoryCreated as DomainEvent>::EVENT_TYPE,
-        "academic.student_category.created"
-    );
-    assert_eq!(
-        <StudentCategoryCreated as DomainEvent>::AGGREGATE_TYPE,
-        "student_category"
-    );
-    assert_eq!(<StudentCategoryCreated as DomainEvent>::SCHEMA_VERSION, 1);
-    // Event accessors return the values the service stamped.
-    assert_eq!(created_event.aggregate_id(), create_cmd.id.as_uuid());
-    assert_eq!(created_event.school_id(), school);
-    assert_eq!(created_event.occurred_at(), occurred_at);
-    assert_eq!(created_event.event_id(), event_id);
-    // The event's typed aggregate_id matches the command's id.
-    assert_eq!(created_event.aggregate_id, create_cmd.id);
+    let cmd = make_cmd(tenant, &g, school);
+    let err = create_student_category_aggregate(cmd, &clock, &ids, &uniqueness)
+        .expect_err("duplicate name must fail");
+    assert!(matches!(err, DomainError::Conflict(_)), "got {err:?}");
 }
 
 // =============================================================================
-// 2. Happy path: a second StudentCategory with a different school
+// 3. Empty name rejected
 // =============================================================================
 
-/// A second happy-path scenario for the `StudentCategory`
-/// aggregate: a different school + a different category id,
-/// asserting that the event metadata is keyed off the
-/// command's inputs (not shared across invocations) and that
-/// each `StudentCategoryCreated` event carries a fresh
-/// `event_id` and `occurred_at`.
-///
-/// This pins the contract that the dispatcher relies on:
-///
-/// - Two consecutive creates produce two distinct events.
-/// - The `DomainEvent` trait's `EVENT_TYPE` constant is
-///   stable (every `StudentCategoryCreated` carries the same
-///   string), so subscribers can route by type without
-///   reading the aggregate's id.
 #[test]
-fn student_category_create_emits_independent_events_for_each_command() {
-    let (tenant_a, g_a) = admin_context();
-    let school_a = tenant_a.school_id;
-    let (tenant_b, g_b) = admin_context();
-    let school_b = tenant_b.school_id;
-    // Different schools — distinct tenants.
-    assert_ne!(school_a, school_b);
-
+fn student_category_empty_name_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
     let clock = TestClock::new();
     let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
 
-    // ---- Tenant A's create ----
-    let cmd_a = CreateStudentCategoryCommand {
-        id: student_category_id(&g_a, school_a),
-        school_id: school_a,
-    };
-    let event_a = StudentCategoryCreated {
-        event_id: ids.next_event_id(),
-        school_id: school_a,
-        aggregate_id: cmd_a.id,
-        occurred_at: clock.now(),
-    };
+    let mut cmd = make_cmd(tenant, &g, school);
+    cmd.name = "   ".to_string();
 
-    // ---- Tenant B's create ----
-    let cmd_b = CreateStudentCategoryCommand {
-        id: student_category_id(&g_b, school_b),
-        school_id: school_b,
-    };
-    let event_b = StudentCategoryCreated {
-        event_id: ids.next_event_id(),
-        school_id: school_b,
-        aggregate_id: cmd_b.id,
-        occurred_at: clock.now(),
-    };
+    let err = create_student_category_aggregate(cmd, &clock, &ids, &uniqueness)
+        .expect_err("empty name must fail");
+    assert!(matches!(err, DomainError::Validation(_)), "got {err:?}");
+}
 
-    // The two events are distinct and keyed to their own
-    // school/aggregate.
-    assert_ne!(event_a.event_id(), event_b.event_id());
-    assert_ne!(event_a.aggregate_id(), event_b.aggregate_id());
-    assert_eq!(event_a.school_id(), school_a);
-    assert_eq!(event_b.school_id(), school_b);
-    // The `EVENT_TYPE` constant is stable across both
-    // emissions — subscribers route by it, not by id.
-    assert_eq!(
-        <StudentCategoryCreated as DomainEvent>::EVENT_TYPE,
-        <StudentCategoryCreated as DomainEvent>::EVENT_TYPE
-    );
+// =============================================================================
+// 4. Invalid discount rejected
+// =============================================================================
+
+#[test]
+fn student_category_invalid_discount_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let mut cmd = make_cmd(tenant, &g, school);
+    cmd.discount_percent = Some(150.0); // > 100
+
+    let err = create_student_category_aggregate(cmd, &clock, &ids, &uniqueness)
+        .expect_err("invalid discount must fail");
+    assert!(matches!(err, DomainError::Validation(_)), "got {err:?}");
+}
+
+// =============================================================================
+// 5. Update
+// =============================================================================
+
+#[test]
+fn student_category_update_succeeds() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_student_category_aggregate(cmd, &clock, &ids, &uniqueness)
+        .expect("create");
+
+    let upd = UpdateStudentCategoryCommand {
+        tenant,
+        student_category_id: agg.id,
+        name: Some("Sibling Discount".to_string()),
+        description: None,
+        discount_percent: None,
+    };
+    let event = update_student_category(upd, &mut agg, &clock, &ids)
+        .expect("update");
+    assert_eq!(agg.name, "Sibling Discount");
+    let _: StudentCategoryUpdated = event;
+}
+
+// =============================================================================
+// 6. Delete
+// =============================================================================
+
+#[test]
+fn student_category_delete_retires_aggregate() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_student_category_aggregate(cmd, &clock, &ids, &uniqueness)
+        .expect("create");
+
+    let del = DeleteStudentCategoryCommand {
+        tenant,
+        student_category_id: agg.id,
+    };
+    let event = delete_student_category(del, &mut agg, &clock, &ids)
+        .expect("delete");
+    assert!(matches!(agg.active_status, ActiveStatus::Retired));
+    let _: StudentCategoryDeleted = event;
 }

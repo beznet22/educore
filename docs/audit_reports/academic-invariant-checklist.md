@@ -46,6 +46,8 @@
 
 **Wave 57 (StudentPromotion):** 3 invariants reach [x] (StudentPromotion I-1/2/3). Total enforced now 46.
 
+**Wave 58 (StudentCategory):** 1 invariant reaches [x] (StudentCategory I-1). Total enforced now 47.
+
 ---
 
 ## Student Aggregate (6 invariants)
@@ -399,6 +401,11 @@
   - Test: MISSING
 
 ## StudentCategory Aggregate (1 invariant)
+
+- [x] I-1: Uniquely named within school
+  - Spec: `docs/specs/academic/aggregates.md#studentcategory`
+  - Enforcement: `create_student_category_aggregate` service rejects via `UniquenessChecker::student_category_name_exists(school, name)` with `DomainError::Conflict`.
+  - Test: `tests/student_category.rs::student_category_duplicate_name_rejected` (passes), `::student_category_create_succeeds` (passes).
 
 - [ ] I-1: Unique name within school
   - Spec: `docs/specs/academic/aggregates.md#studentcategory`

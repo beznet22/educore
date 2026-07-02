@@ -1599,6 +1599,15 @@ pub enum Capability {
     AcademicLessonPlanDelete,
     /// Capability for `Academic.Student.Category`.
     AcademicStudentCategory,
+    /// Capability for `Academic.Student.Category.Create`.
+    /// Required to dispatch `CreateStudentCategoryCommand`.
+    AcademicStudentCategoryCreate,
+    /// Capability for `Academic.Student.Category.Update`.
+    /// Required to dispatch `UpdateStudentCategoryCommand`.
+    AcademicStudentCategoryUpdate,
+    /// Capability for `Academic.Student.Category.Delete`.
+    /// Required to dispatch `DeleteStudentCategoryCommand`.
+    AcademicStudentCategoryDelete,
     /// Capability for `Academic.Student.Record.Enroll`.
     /// Required to dispatch `EnrollStudentCommand`.
     AcademicStudentRecordEnroll,
@@ -2355,6 +2364,9 @@ impl Capability {
             | Self::AcademicLessonPlanSubTopic => CapabilityDomain::Academic,
             | Self::AcademicLessonPlanDelete => CapabilityDomain::Academic,
             | Self::AcademicStudentCategory => CapabilityDomain::Academic,
+            | Self::AcademicStudentCategoryCreate => CapabilityDomain::Academic,
+            | Self::AcademicStudentCategoryUpdate => CapabilityDomain::Academic,
+            | Self::AcademicStudentCategoryDelete => CapabilityDomain::Academic,
             | Self::AcademicStudentRecordEnroll => CapabilityDomain::Academic,
             | Self::AcademicStudentRecordSetRoll => CapabilityDomain::Academic,
             | Self::AcademicStudentRecordSetDefault => CapabilityDomain::Academic,
@@ -2409,6 +2421,10 @@ impl Capability {
             | Self::AcademicStudentRead
             | Self::AcademicStudentUpdate
             | Self::AcademicStudentDelete => "Student",
+            Self::AcademicStudentCategory
+            | Self::AcademicStudentCategoryCreate
+            | Self::AcademicStudentCategoryUpdate
+            | Self::AcademicStudentCategoryDelete => "StudentCategory",
             Self::AcademicStudentRecordEnroll
             | Self::AcademicStudentRecordSetRoll
             | Self::AcademicStudentRecordSetDefault
@@ -3774,7 +3790,11 @@ impl Capability {
             Self::AcademicLessonPlanSubTopic => "SubTopic",
             Self::AcademicLessonPlanDelete => "Delete",
             Self::AcademicStudentCategory | Self::AcademicStudentRecordEnroll | Self::AcademicStudentRecordSetRoll | Self::AcademicStudentRecordSetDefault | Self::AcademicStudentRecordGraduate => "StudentRecord",
+            Self::AcademicStudentCategory | Self::AcademicStudentCategoryCreate | Self::AcademicStudentCategoryUpdate | Self::AcademicStudentCategoryDelete => "Category",
             Self::AcademicStudentCategory => "Category",
+            Self::AcademicStudentCategoryCreate => "Create",
+            Self::AcademicStudentCategoryUpdate => "Update",
+            Self::AcademicStudentCategoryDelete => "Delete",
             Self::AcademicStudentRecordEnroll => "Enroll",
             Self::AcademicStudentRecordSetRoll => "SetRoll",
             Self::AcademicStudentRecordSetDefault => "SetDefault",
@@ -4503,6 +4523,9 @@ impl Capability {
             Self::AcademicLessonPlanSubTopic => "Academic.LessonPlan.SubTopic",
             Self::AcademicLessonPlanDelete => "Academic.LessonPlan.Delete",
             Self::AcademicStudentCategory => "Academic.Student.Category",
+            Self::AcademicStudentCategoryCreate => "Academic.Student.Category.Create",
+            Self::AcademicStudentCategoryUpdate => "Academic.Student.Category.Update",
+            Self::AcademicStudentCategoryDelete => "Academic.Student.Category.Delete",
             Self::AcademicStudentRecordEnroll => "Academic.Student.Record.Enroll",
             Self::AcademicStudentRecordSetRoll => "Academic.Student.Record.SetRoll",
             Self::AcademicStudentRecordSetDefault => "Academic.Student.Record.SetDefault",
@@ -5878,6 +5901,9 @@ impl Capability {
             "Academic.Homework.Create" => Some(Self::AcademicHomeworkCreate),
             "Academic.Homework.Update" => Some(Self::AcademicHomeworkUpdate),
             "Academic.Homework.Cancel" => Some(Self::AcademicHomeworkCancel),
+            "Academic.Student.Category.Create" => Some(Self::AcademicStudentCategoryCreate),
+            "Academic.Student.Category.Update" => Some(Self::AcademicStudentCategoryUpdate),
+            "Academic.Student.Category.Delete" => Some(Self::AcademicStudentCategoryDelete),
             "Academic.Student.Record.Enroll" => Some(Self::AcademicStudentRecordEnroll),
             "Academic.Student.Record.SetRoll" => Some(Self::AcademicStudentRecordSetRoll),
             "Academic.Student.Record.SetDefault" => Some(Self::AcademicStudentRecordSetDefault),
