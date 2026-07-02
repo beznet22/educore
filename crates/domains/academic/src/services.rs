@@ -44,7 +44,7 @@ use crate::aggregate::{
     AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
     IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealLesson, RealLessonPlan,
     RealLessonTopic, RegistrationField, Section, Student, StudentCategory, StudentGroup,
-    StudentGuardianLink, StudentPromotion, Subject,
+    StudentGuardianLink, StudentPromotion, StudentRecord, Subject,
 };
 use crate::commands::{
     validate_admission_no, validate_class_name, validate_email_optional, validate_first_name,
@@ -69,9 +69,10 @@ use crate::commands::{
     UpdateGuardianContactCommand, UpdateHomeworkCommand, UpdateLessonPlanCommand, UpdateSectionCommand,
     UpdateStudentProfileCommand, UpdateSubjectCommand, UpdateClassRoutinePeriodCommand,
     AddSubTopicCommand, CancelHomeworkCommand, DeleteLessonCommand, DeleteLessonPlanCommand,
-    DeleteLessonTopicCommand, MarkLessonPlanCompletedCommand, MarkTopicCompletedCommand,
-    RealCreateLessonCommand, RealCreateLessonPlanCommand, RealCreateLessonTopicCommand,
-    UpdateLessonCommand, WithdrawStudentCommand,
+    DeleteLessonTopicCommand, EnrollStudentCommand, MarkGraduateCommand,
+    MarkLessonPlanCompletedCommand, MarkTopicCompletedCommand, RealCreateLessonCommand,
+    RealCreateLessonPlanCommand, RealCreateLessonTopicCommand, SetDefaultRecordCommand,
+    SetRollNumberCommand, UpdateLessonCommand, WithdrawStudentCommand,
 };
 use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
@@ -83,7 +84,8 @@ use crate::events::{
     HomeworkCreated, HomeworkUpdated,
     IdCardCreated, LessonCreated, LessonDeleted, LessonPlanCompleted, LessonPlanCreated,
     LessonPlanDeleted, LessonPlanUpdated, LessonTopicCompleted, LessonTopicCreated, LessonTopicDeleted,
-    RealLessonCreated, RealLessonPlanCreated, RealLessonTopicCreated, SubTopicAdded, LessonUpdated,
+    RealLessonCreated, RealLessonPlanCreated, RealLessonTopicCreated, RollNumberAssigned,
+    StudentMarkedGraduate, StudentRecordEnrolled, SubTopicAdded, DefaultRecordSet, LessonUpdated,
     OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
     RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
     StudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
@@ -93,7 +95,8 @@ use crate::events::{
 };
 use crate::value_objects::{
     AcademicYearId, AcademicYearRange, ClassRoomId, ClassSectionId, CompletedStatus,
-    HomeworkMark, HomeworkStatus, StudentGuardianLinkId, StudentStatus, SubTopic,
+    HomeworkMark, HomeworkStatus, StudentGuardianLinkId, StudentId, StudentRecordId,
+    StudentStatus, SubTopic,
 };
 
 fn fresh_event_id<G: IdGenerator + ?Sized>(ids: &G) -> EventId {
@@ -1575,6 +1578,8 @@ where
         now,
     );
     Ok((aggregate, event))
+
+
 }
 
 /// Unlink a [`Guardian`] from a [`Student`] and emit a
@@ -1869,6 +1874,8 @@ where
         now,
     );
     Ok((aggregate, event))
+
+
 }
 
 /// Create a [`ClassSection`] pairing and emit a [`ClassSectionCreated`] event.
@@ -3518,6 +3525,14 @@ mod tests {
     ) -> bool {
         false
     }
+
+
+
+    fn student_has_active_record(
+        &self, _: SchoolId, _: StudentId, _: AcademicYearId,
+    ) -> bool {
+        false
+    }
 }
 
     fn admit_cmd(
@@ -4062,4 +4077,153 @@ mod tests {
         assert_eq!(event.changed_fields, vec!["first_name".to_owned()]);
         assert_eq!(student.first_name, "Augusta Ada");
     }
+}
+
+// =============================================================================
+// StudentRecord services (Wave 56: full impl)
+// =============================================================================
+
+/// Enroll a student in a (class, section, academic_year).
+///
+/// Per `docs/specs/academic/aggregates.md` § StudentRecord:
+/// - **I-1**: rejects if `uniqueness.student_has_active_record(...)` is `true`.
+pub fn enroll_student<C, G>(
+    cmd: EnrollStudentCommand,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<(StudentRecord, StudentRecordEnrolled)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    // I-1: at most one non-graduate, non-withdrawn record per student per year.
+    if uniqueness.student_has_active_record(
+        cmd.student_record_id.school_id(),
+        cmd.student_id,
+        cmd.academic_year_id,
+    ) {
+        return Err(DomainError::Conflict(format!(
+            "StudentRecord: student {} already has an active record for academic year {}",
+            cmd.student_id, cmd.academic_year_id
+        )));
+    }
+
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+
+    let aggregate = StudentRecord::fresh(
+        cmd.student_record_id,
+        cmd.student_id,
+        cmd.class_id,
+        cmd.section_id,
+        cmd.academic_year_id,
+        cmd.admission_number,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+
+    let event = StudentRecordEnrolled {
+        student_record_id: aggregate.id,
+        student_id: aggregate.student_id,
+        class_id: aggregate.class_id,
+        section_id: aggregate.section_id,
+        academic_year_id: aggregate.academic_year_id,
+        admission_number: aggregate.admission_number.clone(),
+        is_default: aggregate.is_default,
+        event_id,
+        correlation_id: aggregate.correlation_id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Set a roll number on a StudentRecord (I-2 uniqueness enforced by service).
+pub fn set_roll_number<C, G>(
+    cmd: SetRollNumberCommand,
+    record: &mut StudentRecord,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<RollNumberAssigned>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    // I-2: roll number unique within (class, section, academic_year).
+    if uniqueness.roll_no_exists(
+        record.school_id,
+        record.class_id,
+        record.section_id,
+        record.academic_year_id,
+        &cmd.roll_number,
+    ) {
+        return Err(DomainError::Conflict(format!(
+            "RollNumber {} already exists in (class={}, section={}, year={})",
+            cmd.roll_number, record.class_id, record.section_id, record.academic_year_id
+        )));
+    }
+
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    record.set_roll_number(cmd.roll_number.clone(), actor, now);
+
+    Ok(RollNumberAssigned {
+        student_record_id: record.id,
+        roll_number: cmd.roll_number,
+        event_id,
+        correlation_id: record.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Mark a StudentRecord as the student's default (I-3).
+pub fn set_default_record<C, G>(
+    cmd: SetDefaultRecordCommand,
+    record: &mut StudentRecord,
+    clock: &C,
+    ids: &G,
+) -> Result<DefaultRecordSet>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    record.set_default(actor, now);
+
+    Ok(DefaultRecordSet {
+        student_record_id: record.id,
+        event_id,
+        correlation_id: record.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Mark a StudentRecord as graduated (I-5).
+pub fn mark_graduate<C, G>(
+    cmd: MarkGraduateCommand,
+    record: &mut StudentRecord,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentMarkedGraduate>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    record.mark_graduate(actor, now);
+
+    Ok(StudentMarkedGraduate {
+        student_record_id: record.id,
+        event_id,
+        correlation_id: record.correlation_id,
+        occurred_at: now,
+    })
 }

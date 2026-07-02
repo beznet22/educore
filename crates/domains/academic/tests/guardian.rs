@@ -324,6 +324,12 @@ impl UniquenessChecker for TestUniqueness {
     ) -> bool {
         false
     }
+
+    fn student_has_active_record(
+        &self, _: SchoolId, _: StudentId, _: AcademicYearId,
+    ) -> bool {
+        false
+    }
 }
 
 // =============================================================================

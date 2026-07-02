@@ -72,7 +72,7 @@ pub use crate::aggregate::{AcademicYear, Class, RealLesson, RealLessonPlan, Real
 pub use crate::aggregate::{
     Certificate, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework, IdCard, Lesson,
     LessonPlan, OptionalSubjectAssignment, RegistrationField, StudentCategory, StudentGroup,
-    StudentGuardianLink, StudentPromotion,
+    StudentGuardianLink, StudentPromotion, StudentRecord,
 };
 
 // ---- Typed events -----------------------------------------------------------

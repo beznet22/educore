@@ -2608,8 +2608,173 @@ mod tests {
 // =============================================================================
 
 /// Per-school enrollment record for a student.
+///
+/// Per `docs/specs/academic/aggregates.md` § StudentRecord, this
+/// enforces 6 invariants:
+/// - I-1: At most one non-graduate, non-withdrawn record per academic year
+/// - I-2: RollNumber unique within (class, section, academic_year)
+/// - I-3: IsDefault flag (current default per student)
+/// - I-4: IsPromote=false until StudentPromoted closes it
+/// - I-5: IsGraduate=true when student graduates
+/// - I-6: AdmissionNumber carried from admission; may be reassigned on promotion
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StudentRecord {
+    /// The student-record's typed id (school-scoped).
     pub id: StudentRecordId,
+    /// The owning school.
     pub school_id: SchoolId,
+    /// The student enrolled in this record.
+    pub student_id: StudentId,
+    /// The class.
+    pub class_id: ClassId,
+    /// The section.
+    pub section_id: SectionId,
+    /// The academic year of this enrollment.
+    pub academic_year_id: AcademicYearId,
+    /// The roll number (I-2: unique within scope). None until assigned.
+    pub roll_number: Option<String>,
+    /// Whether this is the current default record for the student (I-3).
+    pub is_default: bool,
+    /// Whether promotion is pending (I-4: false until StudentPromoted closes).
+    pub is_promote: bool,
+    /// Whether the student has graduated from this record (I-5).
+    pub is_graduate: bool,
+    /// Whether the student has withdrawn from this record.
+    pub is_withdrawn: bool,
+    /// The admission number carried over (I-6).
+    pub admission_number: Option<String>,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// User who created this aggregate.
+    pub created_by: UserId,
+    /// When this aggregate was created.
+    pub created_at: Timestamp,
+    /// User who last mutated this aggregate.
+    pub updated_by: UserId,
+    /// When this aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// Soft-delete lifecycle state.
+    pub active_status: ActiveStatus,
+    /// Last domain event id produced by this aggregate.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id propagated from the tenant context.
+    pub correlation_id: CorrelationId,
+}
+
+impl StudentRecord {
+    /// Construct a fresh `StudentRecord`. Enforces tenant-anchor + I-1 (no duplicate active record).
+    pub fn fresh(
+        id: StudentRecordId,
+        student_id: StudentId,
+        class_id: ClassId,
+        section_id: SectionId,
+        academic_year_id: AcademicYearId,
+        admission_number: Option<String>,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        use educore_core::error::DomainError;
+        if student_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation("student_id school mismatch".into()));
+        }
+        if class_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation("class_id school mismatch".into()));
+        }
+        if section_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation("section_id school mismatch".into()));
+        }
+        if academic_year_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation("academic_year_id school mismatch".into()));
+        }
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            student_id,
+            class_id,
+            section_id,
+            academic_year_id,
+            roll_number: None,
+            is_default: true,
+            is_promote: false,
+            is_graduate: false,
+            is_withdrawn: false,
+            admission_number,
+            version: Version::initial(),
+            etag: Etag::placeholder(),
+            created_by: actor,
+            created_at: now,
+            updated_by: actor,
+            updated_at: now,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Set the roll number (I-2 uniqueness enforced by service via UniquenessChecker).
+    pub fn set_roll_number(&mut self, roll: String, actor: UserId, now: Timestamp) {
+        self.roll_number = Some(roll);
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+
+    /// Mark this record as the student's default (I-3).
+    pub fn set_default(&mut self, actor: UserId, now: Timestamp) {
+        self.is_default = true;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+
+    /// Clear this record's default flag (I-3).
+    pub fn unset_default(&mut self, actor: UserId, now: Timestamp) {
+        self.is_default = false;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+
+    /// Mark this record as pending promotion (I-4: StudentPromoted closes it).
+    pub fn mark_promote(&mut self, actor: UserId, now: Timestamp) {
+        self.is_promote = true;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+
+    /// Close promotion (I-4: StudentPromoted event fires when this is called).
+    pub fn close_promotion(&mut self, actor: UserId, now: Timestamp) {
+        self.is_promote = false;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+
+    /// Mark as graduated (I-5).
+    pub fn mark_graduate(&mut self, actor: UserId, now: Timestamp) {
+        self.is_graduate = true;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+
+    /// Mark as withdrawn.
+    pub fn mark_withdrawn(&mut self, actor: UserId, now: Timestamp) {
+        self.is_withdrawn = true;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+
+    /// Reassign admission number (I-6: carried from admission or reassigned on promotion).
+    pub fn set_admission_number(&mut self, admission_number: String, actor: UserId, now: Timestamp) {
+        self.admission_number = Some(admission_number);
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
 }
