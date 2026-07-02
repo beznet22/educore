@@ -346,4 +346,10 @@ impl educore_academic::commands::UniquenessChecker for NoOpUniquenessChecker {
     ) -> bool {
         false
     }
+
+    fn lesson_title_exists(
+        &self, _: SchoolId, _: ClassSectionId, _: SubjectId, _: &str,
+    ) -> bool {
+        false
+    }
 }

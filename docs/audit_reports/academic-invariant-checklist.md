@@ -38,6 +38,8 @@
 
 **Wave 53 (LessonPlan):** 4 invariants reach [x] (LessonPlan I-1/2/3/4). Total enforced now 32.
 
+**Wave 54 (Lesson):** 3 invariants reach [x] (Lesson I-1/2/3). Total enforced now 35.
+
 ---
 
 ## Student Aggregate (6 invariants)
@@ -263,6 +265,19 @@
   - Test: `tests/lesson_plan.rs::lesson_plan_update_teacher_id_rejected` (passes), `::lesson_plan_update_with_same_teacher_succeeds` (passes).
 
 ## Lesson Aggregate (3 invariants)
+
+- [x] I-1: Uniquely identified by title within (class_section, subject)
+  - Spec: `docs/specs/academic/aggregates.md#lesson`
+  - Enforcement: `create_lesson` + `update_lesson` query `UniquenessChecker::lesson_title_exists(school, class_section_id, subject_id, title)`; conflict yields `DomainError::Conflict`.
+  - Test: `tests/lesson.rs::lesson_with_duplicate_title_rejected` (passes), `::lesson_update_with_duplicate_title_rejected` (passes).
+- [x] I-2: Zero or more topics
+  - Spec: `docs/specs/academic/aggregates.md#lesson`
+  - Enforcement: `RealLesson.topic_ids: Vec<LessonTopicId>` (zero allowed by type); `add_topic` appends.
+  - Test: `tests/lesson.rs::lesson_with_zero_topics_succeeds` (passes), `::lesson_add_topic_appends` (passes).
+- [x] I-3: Creation user + creation timestamp
+  - Spec: `docs/specs/academic/aggregates.md#lesson`
+  - Enforcement: `RealLesson::fresh` sets `created_by` and `created_at`; both fields required at type level.
+  - Test: `tests/lesson.rs::lesson_create_succeeds` asserts `agg.created_by == agg.updated_by` (passes).
 
 - [ ] I-1: Unique title within `(class-section, subject)`
   - Spec: `docs/specs/academic/aggregates.md#lesson`

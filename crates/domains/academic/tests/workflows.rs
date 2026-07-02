@@ -168,6 +168,12 @@ impl UniquenessChecker for TestUniqueness {
     ) -> bool {
         false
     }
+
+    fn lesson_title_exists(
+        &self, _: SchoolId, _: ClassSectionId, _: SubjectId, _: &str,
+    ) -> bool {
+        false
+    }
 }
 
 /// A fresh `TenantContext` for a `SchoolAdmin` acting on a freshly-minted school.
@@ -1035,4 +1041,6 @@ impl educore_academic::commands::UniquenessChecker for NoOpUniquenessChecker {
     fn academic_year_overlaps(&self, _school: educore_core::ids::SchoolId, _range: educore_academic::AcademicYearRange, _exclude_id: Option<educore_academic::AcademicYearId>) -> bool { false }
     fn optional_subject_assigned_exists(&self, _school: educore_core::ids::SchoolId, _student_id: educore_academic::StudentId, _academic_year_id: educore_academic::AcademicYearId) -> bool { false }
     fn primary_guardian_link_exists(&self, _school: educore_core::ids::SchoolId, _student_id: educore_academic::StudentId) -> bool { false }
-    fn class_section_exists(        &self,        _school: educore_core::ids::SchoolId,        _class_id: educore_academic::ClassId,        _section_id: educore_academic::SectionId,        _academic_year_id: educore_academic::AcademicYearId,    ) -> bool {        false    }    fn class_section_has_student_records(        &self,        _school: educore_core::ids::SchoolId,        _class_section_id: educore_academic::ClassSectionId,    ) -> bool {        false    }    fn teacher_has_conflict(&self, _school: educore_core::ids::SchoolId, _teacher_id: educore_core::ids::UserId, _day: educore_academic::DayOfWeek, _period_number: u8) -> bool { false }    fn room_has_conflict(&self, _school: educore_core::ids::SchoolId, _room_id: educore_academic::ClassRoomId, _day: educore_academic::DayOfWeek, _period_number: u8) -> bool { false }}
+    fn class_section_exists(        &self,        _school: educore_core::ids::SchoolId,        _class_id: educore_academic::ClassId,        _section_id: educore_academic::SectionId,        _academic_year_id: educore_academic::AcademicYearId,    ) -> bool {        false    }    fn class_section_has_student_records(        &self,        _school: educore_core::ids::SchoolId,        _class_section_id: educore_academic::ClassSectionId,    ) -> bool {        false    }    fn teacher_has_conflict(&self, _school: educore_core::ids::SchoolId, _teacher_id: educore_core::ids::UserId, _day: educore_academic::DayOfWeek, _period_number: u8) -> bool { false }    fn room_has_conflict(&self, _school: educore_core::ids::SchoolId, _room_id: educore_academic::ClassRoomId, _day: educore_academic::DayOfWeek, _period_number: u8) -> bool { false }
+    fn lesson_title_exists(&self, _school: educore_core::ids::SchoolId, _class_section_id: educore_academic::ClassSectionId, _subject_id: educore_academic::SubjectId, _title: &str) -> bool { false }
+}

@@ -169,6 +169,12 @@ impl UniquenessChecker for TestUniqueness {
     ) -> bool {
         false
     }
+
+    fn lesson_title_exists(
+        &self, _: SchoolId, _: ClassSectionId, _: SubjectId, _: &str,
+    ) -> bool {
+        false
+    }
 }
 
 // =============================================================================
