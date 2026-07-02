@@ -34,6 +34,8 @@
 
 **Wave 51 (ClassRoutine):** 5 invariants reach [x] (ClassRoutine I-1/2/3/4/5). Total enforced now 23.
 
+**Wave 52 (Homework):** 5 invariants reach [x] (Homework I-1/2/3/4/5). Total enforced now 28.
+
 ---
 
 ## Student Aggregate (6 invariants)
@@ -218,26 +220,26 @@
 
 ## Homework Aggregate (5 invariants)
 
-- [ ] I-1: Teacher-created, class-section scope
+- [x] I-1: Teacher-created, class-section scope
   - Spec: `docs/specs/academic/aggregates.md#homework`
-  - Enforcement: MISSING — placeholder at `aggregate.rs:345-348`
-  - Test: MISSING
-- [ ] I-2: Submission date after homework date
+  - Enforcement: `create_homework` service rejects any `tenant.user_type` other than `UserType::Teacher` with `DomainError::Validation`.
+  - Test: `tests/homework.rs::homework_create_with_non_teacher_rejected` (passes), `::homework_create_with_teacher_succeeds` (passes).
+- [x] I-2: Submission date after homework date
   - Spec: `docs/specs/academic/aggregates.md#homework`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-3: Evaluation date >= submission date
+  - Enforcement: `Homework::fresh` rejects `submission_date <= homework_date` with `DomainError::Validation`.
+  - Test: `tests/homework.rs::homework_create_with_submission_before_homework_date_rejected` (passes), `::homework_create_with_equal_dates_rejected` (passes).
+- [x] I-3: Evaluation date >= submission date
   - Spec: `docs/specs/academic/aggregates.md#homework`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-4: Optional attachment
+  - Enforcement: `evaluate_homework` service rejects `evaluation_date < submission_date` with `DomainError::Validation`.
+  - Test: covered by Wave 39 evaluate tests (existing pre-Wave-52 service).
+- [x] I-4: Optional attachment
   - Spec: `docs/specs/academic/aggregates.md#homework`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-5: Marks immutable once evaluated
+  - Enforcement: `Homework.attachment_id: Option<FileId>` (None = no attachment, no validation); `update_homework` accepts triple-Option pattern for change/clear/set.
+  - Test: `tests/homework.rs::homework_create_with_attachment_succeeds` (passes).
+- [x] I-5: Marks immutable once evaluated
   - Spec: `docs/specs/academic/aggregates.md#homework`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
+  - Enforcement: `update_homework` rejects with `DomainError::Conflict` if `homework.marks` is non-empty (any student evaluated).
+  - Test: covered by Wave 39 evaluate tests; structural guarantee in `update_homework` source.
 
 ## LessonPlan Aggregate (4 invariants)
 

@@ -42,10 +42,10 @@ use educore_events::domain_event::DomainEvent;
 use crate::entities::StudentDocumentId;
 use crate::value_objects::{
     AcademicYearId, CertificateId, ClassId, ClassRoomId, ClassRoutineId, ClassSectionId,
-    ClassSubjectId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
-    OptionalSubjectAssignmentId, RegistrationFieldId, Relation, ResultStatus, SectionId,
-    StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId, StudentPromotionId,
-    StudentStatus, SubjectId, SubjectType,
+    ClassSubjectId, FileId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId,
+    LessonTopicId, OptionalSubjectAssignmentId, RegistrationFieldId, Relation, ResultStatus,
+    SectionId, StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId,
+    StudentPromotionId, StudentStatus, SubjectId, SubjectType,
 };
 
 // =============================================================================
@@ -2822,13 +2822,386 @@ impl DomainEvent for ClassRoutineDeleted {
         self.occurred_at
     }
 }
-academic_event_stub! {
-    /// Event stub: a homework assignment was issued. See
-    /// `docs/specs/academic/aggregates.md` § Homework.
-    pub struct HomeworkAssigned {
-        aggregate_id: HomeworkId,
-        event_type: "academic.homework.assigned",
-        aggregate_type: "homework",
+// =============================================================================
+// Homework events (Wave 52: full impl)
+//
+// Per `docs/specs/academic/events.md` § Homework:
+// - `HomeworkCreated { homework_id, class_id, section_id, subject_id, due_date }`
+// - `HomeworkUpdated { homework_id, changes }`
+// - `HomeworkSubmitted { homework_id, student_id }`
+// - `HomeworkEvaluated { homework_id, student_id, marks }`
+// - `HomeworkCancelled { homework_id, reason }`
+// =============================================================================
+
+/// A homework assignment was issued.
+///
+/// Per `docs/specs/academic/aggregates.md` § Homework, the
+/// event carries the typed id, the dimension ids
+/// (`class_section_id`, `subject_id`), the teacher who
+/// created it (I-1), the homework / submission dates (I-2),
+/// the description, and the optional attachment (I-4).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HomeworkCreated {
+    /// The homework's typed id.
+    pub homework_id: HomeworkId,
+    /// The class-section the homework is assigned to.
+    pub class_section_id: ClassSectionId,
+    /// The subject of the assignment.
+    pub subject_id: SubjectId,
+    /// The teacher who created the homework (per I-1).
+    pub teacher_id: UserId,
+    /// The date the homework was assigned.
+    pub homework_date: NaiveDate,
+    /// The submission deadline (per I-2).
+    pub submission_date: NaiveDate,
+    /// The homework description.
+    pub description: String,
+    /// The optional file attachment (per I-4). `None` means
+    /// no attachment.
+    pub attachment_id: Option<FileId>,
+    /// The homework's initial status (always `Active` on
+    /// creation).
+    pub status: crate::value_objects::HomeworkStatus,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl HomeworkCreated {
+    /// Mints a fresh `HomeworkCreated`.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub const fn new(
+        homework_id: HomeworkId,
+        class_section_id: ClassSectionId,
+        subject_id: SubjectId,
+        teacher_id: UserId,
+        homework_date: NaiveDate,
+        submission_date: NaiveDate,
+        description: String,
+        attachment_id: Option<FileId>,
+        status: crate::value_objects::HomeworkStatus,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            homework_id,
+            class_section_id,
+            subject_id,
+            teacher_id,
+            homework_date,
+            submission_date,
+            description,
+            attachment_id,
+            status,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for HomeworkCreated {
+    const EVENT_TYPE: &'static str = "academic.homework.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "homework";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.homework_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.homework_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A homework's mutable fields were updated.
+///
+/// Per `docs/specs/academic/aggregates.md` § Homework § I-5,
+/// updates are rejected once marks have been recorded;
+/// otherwise, the event records the names of the changed
+/// fields plus the new values.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HomeworkUpdated {
+    /// The homework's typed id.
+    pub homework_id: HomeworkId,
+    /// The names of the fields that actually changed.
+    pub changed_fields: Vec<String>,
+    /// The new submission deadline (if changed).
+    pub submission_date: Option<NaiveDate>,
+    /// The new description (if changed).
+    pub description: Option<String>,
+    /// The new attachment (if changed).
+    pub attachment_id: Option<Option<FileId>>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl HomeworkUpdated {
+    /// Mints a fresh `HomeworkUpdated`.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub const fn new(
+        homework_id: HomeworkId,
+        changed_fields: Vec<String>,
+        submission_date: Option<NaiveDate>,
+        description: Option<String>,
+        attachment_id: Option<Option<FileId>>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            homework_id,
+            changed_fields,
+            submission_date,
+            description,
+            attachment_id,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for HomeworkUpdated {
+    const EVENT_TYPE: &'static str = "academic.homework.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "homework";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.homework_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.homework_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A student submitted the homework.
+///
+/// Per `docs/specs/academic/events.md` § Homework, the event
+/// records the typed id plus the `student_id`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HomeworkSubmitted {
+    /// The homework's typed id.
+    pub homework_id: HomeworkId,
+    /// The student who submitted.
+    pub student_id: StudentId,
+    /// Optional student-supplied description / notes.
+    pub description: Option<String>,
+    /// Optional submitted file (the homework's worked
+    /// solution upload).
+    pub file: Option<FileId>,
+    /// The homework's new status (always `Submitted`).
+    pub status: crate::value_objects::HomeworkStatus,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl HomeworkSubmitted {
+    /// Mints a fresh `HomeworkSubmitted`.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub const fn new(
+        homework_id: HomeworkId,
+        student_id: StudentId,
+        description: Option<String>,
+        file: Option<FileId>,
+        status: crate::value_objects::HomeworkStatus,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            homework_id,
+            student_id,
+            description,
+            file,
+            status,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for HomeworkSubmitted {
+    const EVENT_TYPE: &'static str = "academic.homework.submitted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "homework";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.homework_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.homework_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A teacher evaluated a student's homework submission.
+///
+/// Per `docs/specs/academic/aggregates.md` § Homework § I-5,
+/// marks are immutable per student; this event captures the
+/// per-student marks. Per I-3, the evaluation date
+/// (`occurred_at`) must be `>= submission_date`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HomeworkEvaluated {
+    /// The homework's typed id.
+    pub homework_id: HomeworkId,
+    /// The student whose submission is being evaluated.
+    pub student_id: StudentId,
+    /// The awarded marks (0..=100).
+    pub marks: u8,
+    /// The teacher who recorded the marks.
+    pub evaluator_id: UserId,
+    /// Optional teacher comments.
+    pub teacher_comments: Option<String>,
+    /// The homework's new status (always `Evaluated`).
+    pub status: crate::value_objects::HomeworkStatus,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl HomeworkEvaluated {
+    /// Mints a fresh `HomeworkEvaluated`.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub const fn new(
+        homework_id: HomeworkId,
+        student_id: StudentId,
+        marks: u8,
+        evaluator_id: UserId,
+        teacher_comments: Option<String>,
+        status: crate::value_objects::HomeworkStatus,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            homework_id,
+            student_id,
+            marks,
+            evaluator_id,
+            teacher_comments,
+            status,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for HomeworkEvaluated {
+    const EVENT_TYPE: &'static str = "academic.homework.evaluated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "homework";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.homework_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.homework_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A homework was cancelled (soft-deleted).
+///
+/// Per `docs/specs/academic/aggregates.md` § Homework, the
+/// cancel flow is unconditional; the service retires the
+/// aggregate and emits this event.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HomeworkCancelled {
+    /// The homework's typed id.
+    pub homework_id: HomeworkId,
+    /// The reason for cancellation (1..=500 chars).
+    pub reason: String,
+    /// The homework's new status (always `Cancelled`).
+    pub status: crate::value_objects::HomeworkStatus,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl HomeworkCancelled {
+    /// Mints a fresh `HomeworkCancelled`.
+    #[must_use]
+    pub const fn new(
+        homework_id: HomeworkId,
+        reason: String,
+        status: crate::value_objects::HomeworkStatus,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            homework_id,
+            reason,
+            status,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for HomeworkCancelled {
+    const EVENT_TYPE: &'static str = "academic.homework.cancelled";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "homework";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.homework_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.homework_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
     }
 }
 academic_event_stub! {

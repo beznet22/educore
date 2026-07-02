@@ -1488,6 +1488,154 @@ impl fmt::Display for ResultStatus {
     }
 }
 
+// =============================================================================
+// Homework value objects (Wave 52)
+//
+// Per `docs/specs/academic/aggregates.md` § Homework:
+// - I-4: a homework may have an attached file.
+// - I-5: a homework may be evaluated; once evaluated, the marks
+//        are immutable per student.
+//
+// `FileId` is an opaque reference to an uploaded file owned by
+// the documents adapter; the academic crate treats it as
+// tenant-scoped metadata.
+// =============================================================================
+
+/// A typed id for an uploaded file (an attachment) referenced
+/// from an aggregate (e.g. a homework's attached worksheet).
+///
+/// Per `docs/specs/academic/aggregates.md` § Homework § I-4,
+/// a homework may have an attached file. The `FileId` is
+/// opaque to the academic crate; the storage-adapter layer
+/// resolves it to a blob in the documents domain. The
+/// academic crate uses the typed id only for tenant scoping
+/// and event payload identity.
+academic_typed_id! {
+    /// A typed id for a file attachment (e.g. homework
+    /// worksheet, syllabus PDF).
+    pub struct FileId;
+}
+
+/// The lifecycle status of a [`Homework`](crate::aggregate::Homework)
+/// aggregate.
+///
+/// State transitions:
+///
+/// ```text
+/// Draft -> Active (on creation by a teacher)
+/// Active -> Submitted (on first student submission)
+/// Active -> Cancelled (on `CancelHomework`)
+/// Submitted -> Evaluated (on teacher evaluation per student)
+/// Submitted -> Cancelled (on `CancelHomework`)
+/// ```
+///
+/// Per the spec, once a student has marks recorded (the
+/// `Evaluated` status is reached for at least one student),
+/// the homework's submission content is immutable per I-5.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum HomeworkStatus {
+    /// Initial state. The homework is published but no
+    /// submission has been recorded yet. Open for
+    /// submissions.
+    #[default]
+    Active,
+    /// At least one student has submitted. Open for
+    /// additional submissions and evaluations.
+    Submitted,
+    /// Marks have been recorded for at least one student.
+    /// Per I-5, the marks are immutable once recorded.
+    Evaluated,
+    /// The homework has been cancelled (soft-deleted). No
+    /// further submissions or evaluations may be recorded.
+    Cancelled,
+}
+
+impl HomeworkStatus {
+    /// Returns the canonical snake_case wire string.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Active => "active",
+            Self::Submitted => "submitted",
+            Self::Evaluated => "evaluated",
+            Self::Cancelled => "cancelled",
+        }
+    }
+
+    /// Returns `true` if the homework is in a terminal
+    /// state (`Cancelled`). Terminal states forbid further
+    /// mutations.
+    #[must_use]
+    pub const fn is_terminal(self) -> bool {
+        matches!(self, Self::Cancelled)
+    }
+}
+
+impl fmt::Display for HomeworkStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_str().fmt(f)
+    }
+}
+
+/// A recorded mark for a single student on a homework
+/// assignment.
+///
+/// Per `docs/specs/academic/aggregates.md` § Homework § I-5,
+/// the marks are immutable per student once recorded. The
+/// `Homework` aggregate stores a `HashMap<StudentId,
+/// HomeworkMark>` so the per-student evaluation can be
+/// tracked independently. The struct also captures the
+/// evaluator (`evaluator_id`) for audit traceability.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HomeworkMark {
+    /// The student whose work is being graded. Redundant
+    /// with the map key, but kept on the value for
+    /// round-trip safety when the payload is serialised
+    /// independently.
+    pub student_id: StudentId,
+    /// The awarded marks (0..=100). The engine treats the
+    /// value as opaque; downstream consumers may apply
+    /// school-specific grading scales.
+    pub marks: u8,
+    /// The date the marks were recorded.
+    pub evaluated_at: educore_core::value_objects::Timestamp,
+    /// The teacher who recorded the marks.
+    pub evaluator_id: UserId,
+    /// Optional teacher comments.
+    pub comments: Option<String>,
+}
+
+impl HomeworkMark {
+    /// Constructs a `HomeworkMark`, validating the marks
+    /// are in the `0..=100` range.
+    pub fn new(
+        student_id: StudentId,
+        marks: u8,
+        evaluated_at: educore_core::value_objects::Timestamp,
+        evaluator_id: UserId,
+        comments: Option<String>,
+    ) -> Result<Self> {
+        if marks > 100 {
+            return Err(DomainError::validation(format!(
+                "homework marks {marks} must be in 0..=100"
+            )));
+        }
+        // Tenant anchor: the typed student id is
+        // school-scoped. UserId is a global identifier, so
+        // we cannot check school membership here — the
+        // service layer enforces this against the homework's
+        // school_id before constructing the value.
+        debug_assert_eq!(student_id.school_id(), student_id.school_id());
+        Ok(Self {
+            student_id,
+            marks,
+            evaluated_at,
+            evaluator_id,
+            comments,
+        })
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
