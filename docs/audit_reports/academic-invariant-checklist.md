@@ -40,6 +40,8 @@
 
 **Wave 54 (Lesson):** 3 invariants reach [x] (Lesson I-1/2/3). Total enforced now 35.
 
+**Wave 55 (LessonTopic):** 2 invariants reach [x] (LessonTopic I-1/2). Total enforced now 37.
+
 ---
 
 ## Student Aggregate (6 invariants)
@@ -293,6 +295,15 @@
   - Test: MISSING
 
 ## LessonTopic Aggregate (2 invariants)
+
+- [x] I-1: A topic belongs to one lesson
+  - Spec: `docs/specs/academic/aggregates.md#lessontopic`
+  - Enforcement: `RealLessonTopic::fresh` checks tenant-anchor — lesson_id must share school with lesson_topic_id, else `DomainError::Validation`. Single `lesson_id` field at type level.
+  - Test: `tests/lesson_topic.rs::lesson_topic_with_cross_school_lesson_rejected` (passes), `::lesson_topic_create_succeeds` (passes).
+- [x] I-2: CompletedStatus + CompletedDate if completed
+  - Spec: `docs/specs/academic/aggregates.md#lessontopic`
+  - Enforcement: `mark_topic_completed` service calls `RealLessonTopic::mark_completed(date, ...)` which sets `status = Completed` AND `completed_date = Some(date)` atomically. Transitions guarded by `CompletedStatus::can_transition_to`.
+  - Test: `tests/lesson_topic.rs::lesson_topic_mark_completed_sets_status_and_date` (passes), `::lesson_topic_mark_completed_from_completed_rejected` (passes).
 
 - [ ] I-1: Belongs to one lesson
   - Spec: `docs/specs/academic/aggregates.md#lessontopic`

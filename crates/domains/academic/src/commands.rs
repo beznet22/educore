@@ -1455,6 +1455,69 @@ academic_command_stub! {
     /// `docs/specs/academic/aggregates.md` § LessonTopic.
     pub struct CreateLessonTopicCommand { id: LessonTopicId }
 }
+
+// =============================================================================
+// LessonTopic commands (Wave 55: full impl)
+// =============================================================================
+
+/// Command: create a [`RealLessonTopic`](crate::aggregate::RealLessonTopic).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealCreateLessonTopicCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The lesson-topic's typed id.
+    pub lesson_topic_id: LessonTopicId,
+    /// The lesson this topic belongs to (I-1).
+    pub lesson_id: LessonId,
+    /// The topic title.
+    pub title: String,
+    /// The topic description.
+    pub description: String,
+}
+
+impl RealCreateLessonTopicCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicLessonTopicCreate]
+    }
+}
+
+/// Command: mark a topic as completed (I-2 requires completed_date).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MarkTopicCompletedCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The lesson-topic's typed id.
+    pub lesson_topic_id: LessonTopicId,
+    /// The completion date (I-2).
+    pub completed_date: NaiveDate,
+}
+
+impl MarkTopicCompletedCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicLessonTopicComplete]
+    }
+}
+
+/// Command: soft-delete a [`RealLessonTopic`](crate::aggregate::RealLessonTopic).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeleteLessonTopicCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The lesson-topic's typed id.
+    pub lesson_topic_id: LessonTopicId,
+}
+
+impl DeleteLessonTopicCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicLessonTopicDelete]
+    }
+}
 academic_command_stub! {
     /// Command stub: record a student promotion. See
     /// `docs/specs/academic/aggregates.md` § StudentPromotion.

@@ -2238,6 +2238,121 @@ academic_aggregate_stub! {
     /// See `docs/specs/academic/aggregates.md` § LessonTopic.
     pub struct LessonTopic { id: LessonTopicId }
 }
+
+// ---- Real LessonTopic aggregate (Wave 55) ----------------------------------
+//
+// Per `docs/specs/academic/aggregates.md` § LessonTopic:
+// - I-1: A topic belongs to one lesson
+// - I-2: A topic has CompletedStatus + CompletedDate if completed
+
+/// Real LessonTopic aggregate (Wave 55).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealLessonTopic {
+    /// The lesson-topic's typed id (school-scoped).
+    pub id: LessonTopicId,
+    /// The owning school (tenant anchor).
+    pub school_id: SchoolId,
+    /// The lesson this topic belongs to (I-1).
+    pub lesson_id: LessonId,
+    /// The topic's title.
+    pub title: String,
+    /// Description (1..=2000 chars).
+    pub description: String,
+    /// The completion status (Pending/InProgress/Completed/Skipped).
+    pub status: CompletedStatus,
+    /// The completion date (I-2: required iff status == Completed).
+    pub completed_date: Option<chrono::NaiveDate>,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// User who created this aggregate.
+    pub created_by: UserId,
+    /// When this aggregate was created.
+    pub created_at: Timestamp,
+    /// User who last mutated this aggregate.
+    pub updated_by: UserId,
+    /// When this aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// Soft-delete lifecycle state.
+    pub active_status: ActiveStatus,
+    /// Last domain event id produced by this aggregate.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id propagated from the tenant context.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealLessonTopic {
+    /// Construct a fresh `RealLessonTopic`. Enforces tenant-anchor + title validation.
+    pub fn fresh(
+        id: LessonTopicId,
+        lesson_id: LessonId,
+        title: String,
+        description: String,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        use educore_core::error::DomainError;
+        if lesson_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation("lesson_id school mismatch".into()));
+        }
+        if title.trim().is_empty() {
+            return Err(DomainError::Validation("LessonTopic::title must not be empty".into()));
+        }
+        if title.chars().count() > 200 {
+            return Err(DomainError::Validation("LessonTopic::title must be 1..=200 chars".into()));
+        }
+
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            lesson_id,
+            title,
+            description,
+            status: CompletedStatus::Pending,
+            completed_date: None,
+            version: Version::initial(),
+            etag: Etag::placeholder(),
+            created_by: actor,
+            created_at: now,
+            updated_by: actor,
+            updated_at: now,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Mark topic as completed (I-2: requires completed_date).
+    pub fn mark_completed(
+        &mut self,
+        completed_date: chrono::NaiveDate,
+        actor: UserId,
+        now: Timestamp,
+    ) -> educore_core::error::Result<()> {
+        use educore_core::error::DomainError;
+        if !self.status.can_transition_to(CompletedStatus::Completed) {
+            return Err(DomainError::Conflict(format!(
+                "cannot transition from {:?} to Completed", self.status
+            )));
+        }
+        self.status = CompletedStatus::Completed;
+        self.completed_date = Some(completed_date);
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-delete.
+    pub fn delete(&mut self, actor: UserId, now: Timestamp) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+}
 academic_aggregate_stub! {
     /// A historical record of a promotion event. See
     /// `docs/specs/academic/aggregates.md` § StudentPromotion.
