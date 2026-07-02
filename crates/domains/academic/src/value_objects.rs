@@ -735,6 +735,21 @@ impl Relation {
             Self::Other => "other",
         }
     }
+
+    /// Parses a relation from its canonical snake_case wire
+    /// string. Returns `None` if `s` is not a known variant.
+    /// The check is case-insensitive; the canonical
+    /// lower-case form is accepted.
+    #[must_use]
+    pub fn parse_str(s: &str) -> Option<Self> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "father" => Some(Self::Father),
+            "mother" => Some(Self::Mother),
+            "guardian" => Some(Self::Guardian),
+            "other" => Some(Self::Other),
+            _ => None,
+        }
+    }
 }
 
 impl fmt::Display for Relation {

@@ -43,7 +43,7 @@ use educore_academic::commands::{
 };
 use educore_academic::events::StudentAdmitted;
 use educore_academic::prelude::admit_student;
-use educore_academic::value_objects::{AcademicYearId, ClassId, SectionId, StudentId};
+use educore_academic::value_objects::{AcademicYearId, AcademicYearRange, ClassId, SectionId, StudentId};
 use educore_academic::Student;
 use educore_core::clock::{IdGenerator, SystemClock, SystemIdGen};
 use educore_core::ids::{IdempotencyKey, Identifier, SchoolId};
@@ -93,6 +93,48 @@ impl UniquenessChecker for TestUniqueness {
             .any(|(s, a)| *s == school && a == admission_no)
     }
     fn student_email_exists(&self, _school: SchoolId, _email: &str) -> bool {
+        false
+    }
+    fn roll_no_exists(
+        &self,
+        _school: SchoolId,
+        _class_id: ClassId,
+        _section_id: SectionId,
+        _academic_year_id: AcademicYearId,
+        _roll_no: &str,
+    ) -> bool {
+        false
+    }
+    fn class_name_exists(&self, _school: SchoolId, _name: &str) -> bool {
+        false
+    }
+    fn section_name_exists(&self, _school: SchoolId, _name: &str) -> bool {
+        false
+    }
+    fn subject_code_exists(&self, _school: SchoolId, _code: &str) -> bool {
+        false
+    }
+    fn academic_year_overlaps(
+        &self,
+        _school: SchoolId,
+        _range: AcademicYearRange,
+        _exclude_id: Option<AcademicYearId>,
+    ) -> bool {
+        false
+    }
+    fn optional_subject_assigned_exists(
+        &self,
+        _school: SchoolId,
+        _student_id: StudentId,
+        _academic_year_id: AcademicYearId,
+    ) -> bool {
+        false
+    }
+    fn primary_guardian_link_exists(
+        &self,
+        _school: SchoolId,
+        _student_id: StudentId,
+    ) -> bool {
         false
     }
 }
@@ -471,8 +513,9 @@ fn academic_event_type_round_trip_for_all_aggregates() {
         pass_mark: 50.0,
     };
     let clock = educore_core::clock::TestClock::new();
+    let uniqueness = TestUniqueness::new();
     let (class, event) =
-        educore_academic::prelude::create_class(cmd, &clock, &g).expect("create_class");
+        educore_academic::prelude::create_class(cmd, &clock, &g, &uniqueness).expect("create_class");
     assert_eq!(class.id, class_id);
     assert_eq!(
         <educore_academic::prelude::ClassCreated as DomainEvent>::EVENT_TYPE,
@@ -493,7 +536,7 @@ fn academic_event_type_round_trip_for_all_aggregates() {
         section_name: "A".to_owned(),
     };
     let (section, _event) =
-        educore_academic::prelude::create_section(cmd, &clock, &g).expect("create_section");
+        educore_academic::prelude::create_section(cmd, &clock, &g, &uniqueness).expect("create_section");
     assert_eq!(section.id, section_id);
     assert_eq!(
         <educore_academic::prelude::SectionCreated as DomainEvent>::EVENT_TYPE,

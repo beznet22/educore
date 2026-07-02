@@ -81,14 +81,14 @@ pub use crate::aggregate::{
 pub use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
     CertificateCreated, ClassCreated, ClassDeleted, ClassRoutineScheduled, ClassSectionCreated,
-    ClassSubjectAssigned, ClassUpdated, CurrentAcademicYearSet, GuardianLinkedToStudent,
-    GuardianRegistered, GuardianUnlinkedFromStudent, HomeworkAssigned, IdCardCreated,
-    LessonCreated, LessonPlanCreated, LessonTopicCreated, OptionalSubjectAssignmentCreated,
-    OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked, RegistrationFieldCreated,
-    SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted, StudentCategoryCreated,
-    StudentGraduated, StudentGroupCreated, StudentProfileUpdated, StudentPromoted,
-    StudentPromotionRecorded, StudentReinstated, StudentSuspended, StudentTransferred,
-    StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
+    ClassSubjectAssigned, ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated,
+    GuardianLinkedToStudent, GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent,
+    HomeworkAssigned, IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
+    OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
+    RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
+    StudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
+    StudentPromoted, StudentPromotionRecorded, StudentReinstated, StudentSuspended,
+    StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
 };
 
 // ---- Pure factory functions -------------------------------------------------
@@ -102,11 +102,11 @@ pub use crate::services::{
     create_lesson_plan, create_lesson_topic, create_registration_field, create_section,
     create_student_category, create_student_group, create_subject, delete_class, delete_section,
     delete_subject, graduate_student, link_guardian_to_student, mark_primary_guardian,
-    promote_student, record_student_promotion, register_guardian, reinstate_student,
+    promote_student, record_student_promotion, register_guardian, reinstate_student, retire_guardian,
     school_matches, set_current_academic_year, set_optional_subject_gpa_threshold,
     suspend_student, transfer_student, unlink_guardian_from_student,
-    update_academic_year_dates, update_class, update_section, update_student_profile,
-    update_subject, withdraw_student,
+    update_academic_year_dates, update_class, update_guardian_contact, update_section,
+    update_student_profile, update_subject, withdraw_student,
 };
 
 // ---- Per-aggregate repository port traits -----------------------------------
@@ -179,11 +179,11 @@ pub mod prelude {
         DeleteClassCommand, DeleteSectionCommand, DeleteSubjectCommand, GraduateStudentCommand,
         LinkGuardianToStudentCommand, MarkPrimaryGuardianCommand, PromoteStudentCommand,
         RecordStudentPromotionCommand, RegisterGuardianCommand, ReinstateStudentCommand,
-        SetCurrentAcademicYearCommand, SetOptionalSubjectGpaThresholdCommand,
-        SuspendStudentCommand, TransferStudentCommand, UniquenessChecker,
-        UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand, UpdateClassCommand,
-        UpdateSectionCommand, UpdateStudentProfileCommand, UpdateSubjectCommand,
-        WithdrawStudentCommand,
+        RetireGuardianCommand, SetCurrentAcademicYearCommand,
+        SetOptionalSubjectGpaThresholdCommand, SuspendStudentCommand, TransferStudentCommand,
+        UniquenessChecker, UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand,
+        UpdateClassCommand, UpdateGuardianContactCommand, UpdateSectionCommand,
+        UpdateStudentProfileCommand, UpdateSubjectCommand, WithdrawStudentCommand,
     };
     pub use crate::entities::{DocumentType, StudentDocument, StudentDocumentId};
     pub use crate::errors::AcademicError;
@@ -191,13 +191,14 @@ pub mod prelude {
         AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
         CertificateCreated, ClassCreated, ClassDeleted, ClassRoutineScheduled,
         ClassSectionCreated, ClassSubjectAssigned, ClassUpdated, CurrentAcademicYearSet,
-        GuardianLinkedToStudent, GuardianRegistered, GuardianUnlinkedFromStudent, HomeworkAssigned,
-        IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
-        OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
-        RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
-        StudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
-        StudentPromoted, StudentPromotionRecorded, StudentReinstated, StudentSuspended,
-        StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
+        GuardianContactUpdated, GuardianLinkedToStudent, GuardianRegistered, GuardianRetired,
+        GuardianUnlinkedFromStudent, HomeworkAssigned, IdCardCreated, LessonCreated,
+        LessonPlanCreated, LessonTopicCreated, OptionalSubjectAssignmentCreated,
+        OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked, RegistrationFieldCreated,
+        SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted, StudentCategoryCreated,
+        StudentGraduated, StudentGroupCreated, StudentProfileUpdated, StudentPromoted,
+        StudentPromotionRecorded, StudentReinstated, StudentSuspended, StudentTransferred,
+        StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
     };
     pub use crate::query::{
         AcademicYearQuery, ClassQuery, SectionQuery, StudentQuery, SubjectQuery,
@@ -214,10 +215,11 @@ pub mod prelude {
         create_student_category, create_student_group, create_subject, delete_class, delete_section,
         delete_subject, graduate_student, link_guardian_to_student, mark_primary_guardian,
         promote_student, record_student_promotion, register_guardian, reinstate_student,
-        school_matches, set_current_academic_year, set_optional_subject_gpa_threshold,
-        suspend_student, transfer_student, unlink_guardian_from_student,
-        update_academic_year_dates, update_class, update_section, update_student_profile,
-        update_subject, withdraw_student,
+        retire_guardian, school_matches, set_current_academic_year,
+        set_optional_subject_gpa_threshold, suspend_student, transfer_student,
+        unlink_guardian_from_student, update_academic_year_dates, update_class,
+        update_guardian_contact, update_section, update_student_profile, update_subject,
+        withdraw_student,
     };
     pub use crate::value_objects::{
         AcademicYearId, AcademicYearRange, AcademicYearTitle, Address, AdmissionNumber, BloodGroup,

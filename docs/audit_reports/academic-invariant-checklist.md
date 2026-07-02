@@ -16,15 +16,17 @@
 
 | Status | Count | % |
 |---|---|---|
-| Enforced [x] | 8 | 11.0% |
+| Enforced [x] | 13 | 17.8% |
 | Partial [~] | 2 | 2.7% |
-| Missing [ ] | 61 | 83.6% |
+| Missing [ ] | 56 | 76.7% |
 | Permissive [N/A] | 2 | 2.7% |
 | **Total invariants** | **73** | **100%** |
 
-**Coverage gap to close:** 58 missing + 2 partial = **60 invariants** must reach [x].
+**Coverage gap to close:** 53 missing + 2 partial = **55 invariants** must reach [x].
 
 **Batch 1 progress (Wave 47):** 11 invariants reach [x] (Student I-2/3/5, Class I-2/4, Section I-1, Subject I-1, AcademicYear I-2/3/5). Remaining gaps: Class I-4 delete-guard (deferred — needs ClassSection), Student I-4/I-6 (needs StudentRecord aggregate from Batch 4).
+
+**Wave 48 (Guardian):** 5 invariants reach [x] (Guardian I-1/2/3/4/5). Total enforced now 13.
 
 ---
 
@@ -58,26 +60,26 @@
 
 ## Guardian Aggregate (5 invariants)
 
-- [ ] I-1: At most one phone and one email of record
+- [x] I-1: At most one phone and one email of record
   - Spec: `docs/specs/academic/aggregates.md#guardian`
-  - Enforcement: MISSING — `Guardian` placeholder at `aggregate.rs:325-329` (`pub struct { id, school_id }`)
-  - Test: MISSING
-- [ ] I-2: A guardian may be linked to multiple students
+  - Enforcement: `Guardian` carries `phone: Option<PhoneNumber>` + `email: Option<EmailAddress>` (`aggregate.rs`); value objects reject malformed input at construction (`value_objects.rs::PhoneNumber::new`, `EmailAddress::new`). Compile-time cap (single slot per field) and value-object validation.
+  - Test: `crates/domains/academic/tests/guardian.rs` (`guardian_create_with_two_phones_rejected_by_type_system`, `guardian_phone_format_invalid_rejected`, `guardian_phone_number_rejects_invalid_format`, `guardian_email_rejects_invalid_format`)
+- [x] I-2: A guardian may be linked to multiple students
   - Spec: `docs/specs/academic/aggregates.md#guardian`
-  - Enforcement: MISSING — placeholder; no `StudentGuardianLink` child
-  - Test: MISSING
-- [ ] I-3: A guardian link carries `Relation` (Father/Mother/Guardian/Other) + `IsPrimary`
+  - Enforcement: `StudentGuardianLink` aggregate (`aggregate.rs`) is a per-pair root carrying `guardian_id` + `student_id`; `link_guardian_to_student` (`services.rs`) creates one link per `(guardian, student)` pair, so a guardian can have N links (one per student).
+  - Test: `crates/domains/academic/tests/guardian.rs` (`guardian_can_link_to_multiple_students`, `guardian_link_to_student_creates_student_guardian_link`)
+- [x] I-3: A guardian link carries `Relation` (Father/Mother/Guardian/Other) + `IsPrimary`
   - Spec: `docs/specs/academic/aggregates.md#guardian`
-  - Enforcement: MISSING — no `Relation` enum
-  - Test: MISSING
-- [ ] I-4: At most one `IsPrimary` guardian per student
+  - Enforcement: `Relation` enum at `value_objects.rs` with 4 closed variants + `as_str`/`parse_str` round-trip; `StudentGuardianLink` carries `relation: Relation` + `is_primary: bool` (`aggregate.rs`).
+  - Test: `crates/domains/academic/tests/guardian.rs` (`relation_enum_round_trips_via_parse_str`, `guardian_link_carries_relation_and_is_primary`)
+- [x] I-4: At most one `IsPrimary` guardian per student
   - Spec: `docs/specs/academic/aggregates.md#guardian`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-5: Soft-delete when all student links removed
+  - Enforcement: `UniquenessChecker::primary_guardian_link_exists(school, student_id) -> bool` at `commands.rs`; `link_guardian_to_student` rejects when the new link is `is_primary` and a primary already exists; `mark_primary_guardian` rejects via the same check.
+  - Test: `crates/domains/academic/tests/guardian.rs` (`guardian_mark_primary_when_already_primary_rejected`, `guardian_mark_primary_emits_event_and_sets_flag`)
+- [x] I-5: Soft-delete when all student links removed
   - Spec: `docs/specs/academic/aggregates.md#guardian`
-  - Enforcement: MISSING — placeholder; no link tracking
-  - Test: MISSING
+  - Enforcement: `Guardian.active_status: ActiveStatus` (`aggregate.rs`) plus `retire_guardian` service (`services.rs`) flips the status to `Retired` and emits `GuardianRetired`. `unlink_guardian_from_student` returns a `was_last_link` flag (via `guardian_retired: bool` on the event) so the dispatcher can cascade the retire call.
+  - Test: `crates/domains/academic/tests/guardian.rs` (`guardian_unlink_last_student_soft_deletes`, `guardian_unlink_non_last_keeps_guardian_active`)
 
 ## Class Aggregate (4 invariants)
 

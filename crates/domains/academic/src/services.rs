@@ -59,23 +59,23 @@ use crate::commands::{
     CreateSubjectCommand, DeleteClassCommand, DeleteSectionCommand, DeleteSubjectCommand,
     GraduateStudentCommand, LinkGuardianToStudentCommand, MarkPrimaryGuardianCommand,
     PromoteStudentCommand, RecordStudentPromotionCommand, RegisterGuardianCommand,
-    ReinstateStudentCommand, SetCurrentAcademicYearCommand, SetOptionalSubjectGpaThresholdCommand,
-    SuspendStudentCommand, TransferStudentCommand, UniquenessChecker,
-    UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand, UpdateClassCommand,
-    UpdateSectionCommand, UpdateStudentProfileCommand, UpdateSubjectCommand,
-    WithdrawStudentCommand,
+    ReinstateStudentCommand, RetireGuardianCommand, SetCurrentAcademicYearCommand,
+    SetOptionalSubjectGpaThresholdCommand, SuspendStudentCommand, TransferStudentCommand,
+    UniquenessChecker, UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand,
+    UpdateClassCommand, UpdateGuardianContactCommand, UpdateSectionCommand,
+    UpdateStudentProfileCommand, UpdateSubjectCommand, WithdrawStudentCommand,
 };
 use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
     CertificateCreated, ClassCreated, ClassDeleted, ClassRoutineScheduled, ClassSectionCreated,
-    ClassSubjectAssigned, ClassUpdated, CurrentAcademicYearSet, GuardianLinkedToStudent,
-    GuardianRegistered, GuardianUnlinkedFromStudent, HomeworkAssigned, IdCardCreated,
-    LessonCreated, LessonPlanCreated, LessonTopicCreated, OptionalSubjectAssignmentCreated,
-    OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked, RegistrationFieldCreated,
-    SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted, StudentCategoryCreated,
-    StudentGraduated, StudentGroupCreated, StudentProfileUpdated, StudentPromoted,
-    StudentPromotionRecorded, StudentReinstated, StudentSuspended, StudentTransferred,
-    StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
+    ClassSubjectAssigned, ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated,
+    GuardianLinkedToStudent, GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent,
+    HomeworkAssigned, IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
+    OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
+    RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
+    StudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
+    StudentPromoted, StudentPromotionRecorded, StudentReinstated, StudentSuspended,
+    StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
 };
 use crate::value_objects::{
     AcademicYearId, AcademicYearRange, StudentGuardianLinkId, StudentStatus,
@@ -1646,6 +1646,129 @@ where
         previously_primary,
         event_id,
         link.correlation_id,
+        now,
+    ))
+}
+
+// =============================================================================
+// Guardian contact + retire services (Wave 48 — full impl)
+// =============================================================================
+
+/// Update a [`Guardian`]'s mutable contact fields (phone,
+/// email) and emit a [`GuardianContactUpdated`] event.
+///
+/// Per Guardian I-1: at most one phone and one email of
+/// record are carried. The mutation semantics distinguish:
+///
+/// - Outer `None` (e.g. `phone: None`): "do not change".
+/// - Outer `Some(None)`: "clear the field".
+/// - Outer `Some(Some(p))`: "set the field to `p`".
+///
+/// The `changed_fields` list on the returned event records
+/// the names of the fields that actually moved (so a no-op
+/// patch does not emit an empty `phone`/`email` update).
+///
+/// # Errors
+///
+/// - `Conflict` if the guardian has already been soft-deleted
+///   (`active_status != Active`); the engine rejects mutations
+///   on retired aggregates.
+pub fn update_guardian_contact<C, G>(
+    guardian: &mut Guardian,
+    cmd: UpdateGuardianContactCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<GuardianContactUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let UpdateGuardianContactCommand {
+        tenant: _,
+        guardian_id,
+        phone,
+        email,
+    } = cmd;
+    debug_assert_eq!(guardian_id, guardian.id);
+    if !guardian.active_status.is_active() {
+        return Err(DomainError::Conflict(format!(
+            "guardian {guardian_id} is retired and cannot be mutated"
+        )));
+    }
+    let now = clock.now();
+    let mut changed = Vec::new();
+    if let Some(new_phone) = phone {
+        if new_phone != guardian.phone {
+            changed.push("phone".to_owned());
+            guardian.phone = new_phone;
+        }
+    }
+    if let Some(new_email) = email {
+        if new_email != guardian.email {
+            changed.push("email".to_owned());
+            guardian.email = new_email;
+        }
+    }
+    if !changed.is_empty() {
+        guardian.updated_at = now;
+        guardian.version = guardian.version.next();
+    }
+    let event_id = fresh_event_id(ids);
+    guardian.last_event_id = Some(event_id);
+    Ok(GuardianContactUpdated::new(
+        guardian_id,
+        guardian.phone.clone(),
+        guardian.email.clone(),
+        changed,
+        event_id,
+        guardian.correlation_id,
+        now,
+    ))
+}
+
+/// Soft-delete a [`Guardian`] and emit a [`GuardianRetired`]
+/// event.
+///
+/// Per Guardian I-5 a guardian is auto-retired when the last
+/// student link is removed (the
+/// [`unlink_guardian_from_student`] service signals the
+/// transition to the dispatcher, which then calls this
+/// service to persist the cascade). This service is also the
+/// manual escape hatch when the school decides an orphaned
+/// contact is no longer valid.
+///
+/// The service is idempotent: a no-op call (the guardian is
+/// already retired) returns a `GuardianRetired` event with a
+/// fresh id and the original timestamp, so the call site
+/// stays uniform. The aggregate's `version` and `updated_at`
+/// are only mutated on the first retire.
+pub fn retire_guardian<C, G>(
+    guardian: &mut Guardian,
+    cmd: RetireGuardianCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<GuardianRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let RetireGuardianCommand {
+        tenant: _,
+        guardian_id,
+    } = cmd;
+    debug_assert_eq!(guardian_id, guardian.id);
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    if guardian.active_status.is_active() {
+        guardian.active_status = educore_core::value_objects::ActiveStatus::Retired;
+        guardian.updated_at = now;
+        guardian.version = guardian.version.next();
+        guardian.last_event_id = Some(event_id);
+    }
+    Ok(GuardianRetired::new(
+        guardian_id,
+        event_id,
+        guardian.correlation_id,
         now,
     ))
 }
