@@ -2086,6 +2086,153 @@ academic_aggregate_stub! {
     /// See `docs/specs/academic/aggregates.md` § Lesson.
     pub struct Lesson { id: LessonId }
 }
+
+// ---- Real Lesson aggregate (Wave 54) ---------------------------------------
+//
+// Per `docs/specs/academic/aggregates.md` § Lesson, this
+// enforces 3 invariants:
+// - I-1: Unique by title within (class_section, subject)
+// - I-2: Zero or more topics (Vec<LessonTopicId>)
+// - I-3: Creation user + creation timestamp
+
+/// Real Lesson aggregate (Wave 54).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealLesson {
+    /// The lesson's typed id (school-scoped).
+    pub id: LessonId,
+    /// The owning school (tenant anchor; embedded in id).
+    pub school_id: SchoolId,
+    /// The class-section this lesson belongs to (I-1 scope).
+    pub class_section_id: ClassSectionId,
+    /// The subject this lesson belongs to (I-1 scope).
+    pub subject_id: SubjectId,
+    /// The lesson's title (1..=200 chars, validated by service).
+    pub title: String,
+    /// Description (1..=2000 chars, optional but validated).
+    pub description: String,
+    /// The topics covered by this lesson (I-2: zero or more).
+    pub topic_ids: Vec<LessonTopicId>,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// User who created this aggregate (I-3).
+    pub created_by: UserId,
+    /// When this aggregate was created (I-3).
+    pub created_at: Timestamp,
+    /// User who last mutated this aggregate.
+    pub updated_by: UserId,
+    /// When this aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// Soft-delete lifecycle state.
+    pub active_status: ActiveStatus,
+    /// Last domain event id produced by this aggregate.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id propagated from the tenant context.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealLesson {
+    /// Construct a fresh `RealLesson`. Enforces tenant-anchor + basic validation.
+    pub fn fresh(
+        id: LessonId,
+        class_section_id: ClassSectionId,
+        subject_id: SubjectId,
+        title: String,
+        description: String,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        use educore_core::error::DomainError;
+        if class_section_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation(
+                "class_section_id school mismatch".into(),
+            ));
+        }
+        if subject_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation("subject_id school mismatch".into()));
+        }
+        if title.trim().is_empty() {
+            return Err(DomainError::Validation("Lesson::title must not be empty".into()));
+        }
+        if title.chars().count() > 200 {
+            return Err(DomainError::Validation("Lesson::title must be 1..=200 chars".into()));
+        }
+
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            class_section_id,
+            subject_id,
+            title,
+            description,
+            topic_ids: Vec::new(),
+            version: Version::initial(),
+            etag: Etag::placeholder(),
+            created_by: actor,
+            created_at: now,
+            updated_by: actor,
+            updated_at: now,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Update mutable fields (title/description); topics updated separately.
+    pub fn update(
+        &mut self,
+        title: Option<String>,
+        description: Option<String>,
+        actor: UserId,
+        now: Timestamp,
+    ) -> educore_core::error::Result<()> {
+        use educore_core::error::DomainError;
+        if let Some(t) = title {
+            if t.trim().is_empty() {
+                return Err(DomainError::Validation("Lesson::title must not be empty".into()));
+            }
+            if t.chars().count() > 200 {
+                return Err(DomainError::Validation("Lesson::title must be 1..=200 chars".into()));
+            }
+            self.title = t;
+        }
+        if let Some(d) = description {
+            self.description = d;
+        }
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Append a topic (I-2: zero or more).
+    pub fn add_topic(&mut self, topic_id: LessonTopicId, actor: UserId, now: Timestamp) {
+        if !self.topic_ids.contains(&topic_id) {
+            self.topic_ids.push(topic_id);
+        }
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+
+    /// Remove a topic.
+    pub fn remove_topic(&mut self, topic_id: &LessonTopicId, actor: UserId, now: Timestamp) {
+        self.topic_ids.retain(|t| t != topic_id);
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+
+    /// Soft-delete.
+    pub fn delete(&mut self, actor: UserId, now: Timestamp) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+}
 academic_aggregate_stub! {
     /// A topic within a lesson, trackable through a syllabus.
     /// See `docs/specs/academic/aggregates.md` § LessonTopic.

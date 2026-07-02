@@ -164,6 +164,12 @@ impl UniquenessChecker for InMemoryUniqueness {
     ) -> bool {
         self.room_conflicts.contains(&(school, room_id, day, period_number))
     }
+
+    fn lesson_title_exists(
+        &self, _: SchoolId, _: ClassSectionId, _: SubjectId, _: &str,
+    ) -> bool {
+        false
+    }
 }
 
 // =============================================================================

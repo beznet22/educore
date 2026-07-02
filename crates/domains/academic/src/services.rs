@@ -42,7 +42,7 @@ use educore_core::value_objects::ActiveStatus;
 
 use crate::aggregate::{
     AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
-    IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealLessonPlan,
+    IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealLesson, RealLessonPlan,
     RegistrationField, Section, Student, StudentCategory, StudentGroup, StudentGuardianLink,
     StudentPromotion, Subject,
 };
@@ -68,8 +68,9 @@ use crate::commands::{
     UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand, UpdateClassCommand,
     UpdateGuardianContactCommand, UpdateHomeworkCommand, UpdateLessonPlanCommand, UpdateSectionCommand,
     UpdateStudentProfileCommand, UpdateSubjectCommand, UpdateClassRoutinePeriodCommand,
-    AddSubTopicCommand, CancelHomeworkCommand, DeleteLessonPlanCommand,
-    MarkLessonPlanCompletedCommand, RealCreateLessonPlanCommand, WithdrawStudentCommand,
+    AddSubTopicCommand, CancelHomeworkCommand, DeleteLessonCommand, DeleteLessonPlanCommand,
+    MarkLessonPlanCompletedCommand, RealCreateLessonCommand, RealCreateLessonPlanCommand,
+    UpdateLessonCommand, WithdrawStudentCommand,
 };
 use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
@@ -79,8 +80,9 @@ use crate::events::{
     ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated, GuardianLinkedToStudent,
     GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent, HomeworkCancelled,
     HomeworkCreated, HomeworkUpdated,
-    IdCardCreated, LessonCreated, LessonPlanCompleted, LessonPlanCreated, LessonPlanDeleted,
-    LessonPlanUpdated, LessonTopicCreated, RealLessonPlanCreated, SubTopicAdded,
+    IdCardCreated, LessonCreated, LessonDeleted, LessonPlanCompleted, LessonPlanCreated,
+    LessonPlanDeleted, LessonPlanUpdated, LessonTopicCreated, RealLessonCreated, RealLessonPlanCreated,
+    SubTopicAdded, LessonUpdated,
     OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
     RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
     StudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
@@ -89,8 +91,8 @@ use crate::events::{
     SubjectTeacherAssigned, SubjectUnassigned, TeacherReassigned,
 };
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, ClassRoomId, CompletedStatus, HomeworkMark,
-    HomeworkStatus, StudentGuardianLinkId, StudentStatus, SubTopic,
+    AcademicYearId, AcademicYearRange, ClassRoomId, ClassSectionId, CompletedStatus,
+    HomeworkMark, HomeworkStatus, StudentGuardianLinkId, StudentStatus, SubTopic,
 };
 
 fn fresh_event_id<G: IdGenerator + ?Sized>(ids: &G) -> EventId {
@@ -2927,33 +2929,126 @@ where
     })
 }
 
-/// Create a [`Lesson`] and emit a [`LessonCreated`] event.
+/// Create a [`RealLesson`] and emit a [`RealLessonCreated`] event.
+///
+/// Per `docs/specs/academic/aggregates.md` § Lesson:
+/// - **I-1**: `uniqueness.lesson_title_exists` must return `false`.
 pub fn create_lesson<C, G>(
-    cmd: CreateLessonCommand,
+    cmd: RealCreateLessonCommand,
     clock: &C,
     ids: &G,
-) -> Result<(Lesson, LessonCreated)>
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<(RealLesson, RealLessonCreated)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let CreateLessonCommand { id, school_id } = cmd;
-    if id.school_id() != school_id {
-        return Err(DomainError::Validation(format!(
-            "lesson id {id} is in school {}, command school_id is {school_id}",
-            id.school_id(),
+    // I-1: title uniqueness within (class_section_id, subject_id).
+    if uniqueness.lesson_title_exists(
+        cmd.lesson_id.school_id(),
+        cmd.class_section_id,
+        cmd.subject_id,
+        &cmd.title,
+    ) {
+        return Err(DomainError::Conflict(format!(
+            "Lesson title {:?} already exists in (class_section_id={}, subject_id={})",
+            cmd.title, cmd.class_section_id, cmd.subject_id
         )));
     }
+
     let now = clock.now();
     let event_id = fresh_event_id(ids);
-    let aggregate = Lesson { id, school_id };
-    let event = LessonCreated {
+    let actor = cmd.tenant.actor_id;
+
+    let aggregate = RealLesson::fresh(
+        cmd.lesson_id,
+        cmd.class_section_id,
+        cmd.subject_id,
+        cmd.title,
+        cmd.description,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+
+    let event = RealLessonCreated {
+        lesson_id: aggregate.id,
+        class_section_id: aggregate.class_section_id,
+        subject_id: aggregate.subject_id,
+        title: aggregate.title.clone(),
+        description: aggregate.description.clone(),
+        topic_ids: aggregate.topic_ids.clone(),
         event_id,
-        school_id,
-        aggregate_id: id,
+        correlation_id: aggregate.correlation_id,
         occurred_at: now,
     };
     Ok((aggregate, event))
+}
+
+/// Update a [`RealLesson`] and emit a [`LessonUpdated`] event.
+pub fn update_lesson<C, G>(
+    cmd: UpdateLessonCommand,
+    lesson: &mut RealLesson,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<LessonUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    if let Some(ref t) = cmd.title {
+        if uniqueness.lesson_title_exists(
+            lesson.school_id,
+            lesson.class_section_id,
+            lesson.subject_id,
+            t,
+        ) {
+            return Err(DomainError::Conflict(format!(
+                "Lesson title {:?} already exists in scope", t
+            )));
+        }
+    }
+
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+
+    lesson.update(cmd.title.clone(), cmd.description.clone(), actor, now)?;
+
+    Ok(LessonUpdated {
+        lesson_id: lesson.id,
+        changed_fields: vec!["title".into(), "description".into()],
+        title: Some(lesson.title.clone()),
+        description: Some(lesson.description.clone()),
+        event_id,
+        correlation_id: lesson.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Soft-delete a [`RealLesson`].
+pub fn delete_lesson<C, G>(
+    _cmd: DeleteLessonCommand,
+    lesson: &mut RealLesson,
+    clock: &C,
+    ids: &G,
+) -> Result<LessonDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = _cmd.tenant.actor_id;
+    lesson.delete(actor, now);
+
+    Ok(LessonDeleted {
+        lesson_id: lesson.id,
+        event_id,
+        correlation_id: lesson.correlation_id,
+        occurred_at: now,
+    })
 }
 
 /// Create a [`LessonTopic`] and emit a [`LessonTopicCreated`] event.
@@ -3358,7 +3453,13 @@ mod tests {
         ) -> bool {
             false
         }
+    
+    fn lesson_title_exists(
+        &self, _: SchoolId, _: ClassSectionId, _: SubjectId, _: &str,
+    ) -> bool {
+        false
     }
+}
 
     fn admit_cmd(
         ctx: TenantContext,

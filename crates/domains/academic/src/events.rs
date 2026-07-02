@@ -3377,6 +3377,95 @@ academic_event_stub! {
         aggregate_type: "lesson",
     }
 }
+
+// =============================================================================
+// Lesson events (Wave 54: full impl)
+// =============================================================================
+
+/// Event: a [`RealLesson`](crate::aggregate::RealLesson) was created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealLessonCreated {
+    /// The lesson's typed id.
+    pub lesson_id: LessonId,
+    /// The class-section scope (I-1).
+    pub class_section_id: ClassSectionId,
+    /// The subject scope (I-1).
+    pub subject_id: SubjectId,
+    /// The lesson title.
+    pub title: String,
+    /// The lesson description.
+    pub description: String,
+    /// The initial topics (I-2: empty on creation).
+    pub topic_ids: Vec<LessonTopicId>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for RealLessonCreated {
+    const EVENT_TYPE: &'static str = "academic.lesson.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "lesson";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.lesson_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.lesson_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`RealLesson`](crate::aggregate::RealLesson) was updated.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LessonUpdated {
+    /// The lesson's typed id.
+    pub lesson_id: LessonId,
+    /// The fields that changed.
+    pub changed_fields: Vec<String>,
+    /// Optional new title.
+    pub title: Option<String>,
+    /// Optional new description.
+    pub description: Option<String>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for LessonUpdated {
+    const EVENT_TYPE: &'static str = "academic.lesson.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "lesson";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.lesson_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.lesson_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`RealLesson`](crate::aggregate::RealLesson) was soft-deleted.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LessonDeleted {
+    /// The lesson's typed id.
+    pub lesson_id: LessonId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for LessonDeleted {
+    const EVENT_TYPE: &'static str = "academic.lesson.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "lesson";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.lesson_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.lesson_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
 academic_event_stub! {
     /// Event stub: a lesson topic was created. See
     /// `docs/specs/academic/aggregates.md` § LessonTopic.

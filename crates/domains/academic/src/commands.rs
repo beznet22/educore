@@ -81,6 +81,16 @@ pub trait UniquenessChecker: Send + Sync {
     /// Returns `true` if a subject with the given code
     /// already exists in the school. Per Subject I-1.
     fn subject_code_exists(&self, school: SchoolId, code: &str) -> bool;
+    /// Returns `true` if a lesson with the given title already
+    /// exists within the (class_section_id, subject_id) scope.
+    /// Per Lesson I-1.
+    fn lesson_title_exists(
+        &self,
+        school: SchoolId,
+        class_section_id: ClassSectionId,
+        subject_id: SubjectId,
+        title: &str,
+    ) -> bool;
     /// Returns `true` if any academic year in the school
     /// has a date range that overlaps the given range. Per
     /// AcademicYear I-2.
@@ -1366,6 +1376,79 @@ academic_command_stub! {
     /// Command stub: create a lesson. See
     /// `docs/specs/academic/aggregates.md` § Lesson.
     pub struct CreateLessonCommand { id: LessonId }
+}
+
+// =============================================================================
+// Lesson commands (Wave 54: full impl)
+// =============================================================================
+
+/// Command: create a [`RealLesson`](crate::aggregate::RealLesson).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealCreateLessonCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The lesson's typed id.
+    pub lesson_id: LessonId,
+    /// The class-section scope (I-1).
+    pub class_section_id: ClassSectionId,
+    /// The subject scope (I-1).
+    pub subject_id: SubjectId,
+    /// The lesson title (1..=200 chars; must be unique within
+    /// (class_section_id, subject_id) per I-1).
+    pub title: String,
+    /// The lesson description (1..=2000 chars).
+    pub description: String,
+}
+
+impl RealCreateLessonCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicLessonCreate]
+    }
+    /// Returns the school id (taken from the typed id).
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.lesson_id.school_id()
+    }
+}
+
+/// Command: update an existing [`RealLesson`](crate::aggregate::RealLesson).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateLessonCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The lesson's typed id.
+    pub lesson_id: LessonId,
+    /// Optional new title (must remain unique within scope per I-1).
+    pub title: Option<String>,
+    /// Optional new description.
+    pub description: Option<String>,
+}
+
+impl UpdateLessonCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicLessonUpdate]
+    }
+}
+
+/// Command: soft-delete a [`RealLesson`](crate::aggregate::RealLesson).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeleteLessonCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The lesson's typed id.
+    pub lesson_id: LessonId,
+}
+
+impl DeleteLessonCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicLessonDelete]
+    }
 }
 academic_command_stub! {
     /// Command stub: create a lesson topic. See
