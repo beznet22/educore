@@ -1573,6 +1573,15 @@ pub enum Capability {
     /// Capability for `Academic.Lesson.Delete`.
     /// Required to dispatch `DeleteLessonCommand`.
     AcademicLessonDelete,
+    /// Capability for `Academic.LessonTopic.Create`.
+    /// Required to dispatch `CreateLessonTopicCommand`.
+    AcademicLessonTopicCreate,
+    /// Capability for `Academic.LessonTopic.Complete`.
+    /// Required to dispatch `MarkTopicCompletedCommand`.
+    AcademicLessonTopicComplete,
+    /// Capability for `Academic.LessonTopic.Delete`.
+    /// Required to dispatch `DeleteLessonTopicCommand`.
+    AcademicLessonTopicDelete,
     /// Capability for `Academic.LessonPlan.Create`.
     /// Required to dispatch `CreateLessonPlanCommand`.
     AcademicLessonPlanCreate,
@@ -2325,6 +2334,9 @@ impl Capability {
             | Self::AcademicLessonCreate => CapabilityDomain::Academic,
             | Self::AcademicLessonUpdate => CapabilityDomain::Academic,
             | Self::AcademicLessonDelete => CapabilityDomain::Academic,
+            | Self::AcademicLessonTopicCreate => CapabilityDomain::Academic,
+            | Self::AcademicLessonTopicComplete => CapabilityDomain::Academic,
+            | Self::AcademicLessonTopicDelete => CapabilityDomain::Academic,
             | Self::AcademicLessonPlanCreate => CapabilityDomain::Academic,
             | Self::AcademicLessonPlanUpdate => CapabilityDomain::Academic,
             | Self::AcademicLessonPlanComplete => CapabilityDomain::Academic,
@@ -3019,6 +3031,7 @@ impl Capability {
             Self::AcademicAcademicYear => "Academic",
             Self::AcademicHomework | Self::AcademicHomeworkCreate | Self::AcademicHomeworkUpdate | Self::AcademicHomeworkCancel => "Homework",
             Self::AcademicLesson | Self::AcademicLessonCreate | Self::AcademicLessonUpdate | Self::AcademicLessonDelete => "Lesson",
+            Self::AcademicLessonTopicCreate | Self::AcademicLessonTopicComplete | Self::AcademicLessonTopicDelete => "LessonTopic",
             Self::AcademicLessonPlanCreate | Self::AcademicLessonPlanUpdate | Self::AcademicLessonPlanComplete | Self::AcademicLessonPlanSubTopic | Self::AcademicLessonPlanDelete => "LessonPlan",
             Self::AcademicCertificate => "Certificate",
             Self::AcademicIdCard => "Id",
@@ -3732,6 +3745,9 @@ impl Capability {
             Self::AcademicLessonCreate => "Create",
             Self::AcademicLessonUpdate => "Update",
             Self::AcademicLessonDelete => "Delete",
+            Self::AcademicLessonTopicCreate => "Create",
+            Self::AcademicLessonTopicComplete => "Complete",
+            Self::AcademicLessonTopicDelete => "Delete",
             Self::AcademicLessonPlanCreate => "Create",
             Self::AcademicLessonPlanUpdate => "Update",
             Self::AcademicLessonPlanComplete => "Complete",
@@ -4453,6 +4469,9 @@ impl Capability {
             Self::AcademicLessonCreate => "Academic.Lesson.Create",
             Self::AcademicLessonUpdate => "Academic.Lesson.Update",
             Self::AcademicLessonDelete => "Academic.Lesson.Delete",
+            Self::AcademicLessonTopicCreate => "Academic.LessonTopic.Create",
+            Self::AcademicLessonTopicComplete => "Academic.LessonTopic.Complete",
+            Self::AcademicLessonTopicDelete => "Academic.LessonTopic.Delete",
             Self::AcademicLessonPlanCreate => "Academic.LessonPlan.Create",
             Self::AcademicLessonPlanUpdate => "Academic.LessonPlan.Update",
             Self::AcademicLessonPlanComplete => "Academic.LessonPlan.Complete",
@@ -5833,6 +5852,9 @@ impl Capability {
             "Academic.Lesson.Create" => Some(Self::AcademicLessonCreate),
             "Academic.Lesson.Update" => Some(Self::AcademicLessonUpdate),
             "Academic.Lesson.Delete" => Some(Self::AcademicLessonDelete),
+            "Academic.LessonTopic.Create" => Some(Self::AcademicLessonTopicCreate),
+            "Academic.LessonTopic.Complete" => Some(Self::AcademicLessonTopicComplete),
+            "Academic.LessonTopic.Delete" => Some(Self::AcademicLessonTopicDelete),
             "Academic.LessonPlan.Create" => Some(Self::AcademicLessonPlanCreate),
             "Academic.LessonPlan.Update" => Some(Self::AcademicLessonPlanUpdate),
             "Academic.LessonPlan.Complete" => Some(Self::AcademicLessonPlanComplete),

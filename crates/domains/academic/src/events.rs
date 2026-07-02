@@ -3475,6 +3475,89 @@ academic_event_stub! {
         aggregate_type: "lesson_topic",
     }
 }
+
+// =============================================================================
+// LessonTopic events (Wave 55: full impl)
+// =============================================================================
+
+/// Event: a [`RealLessonTopic`](crate::aggregate::RealLessonTopic) was created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealLessonTopicCreated {
+    /// The lesson-topic's typed id.
+    pub lesson_topic_id: LessonTopicId,
+    /// The lesson anchor (I-1).
+    pub lesson_id: LessonId,
+    /// The topic title.
+    pub title: String,
+    /// The topic description.
+    pub description: String,
+    /// Initial status (always Pending on creation).
+    pub status: crate::value_objects::CompletedStatus,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for RealLessonTopicCreated {
+    const EVENT_TYPE: &'static str = "academic.lesson_topic.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "lesson_topic";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.lesson_topic_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.lesson_topic_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a topic was marked completed (I-2: completed_date is set).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LessonTopicCompleted {
+    /// The lesson-topic's typed id.
+    pub lesson_topic_id: LessonTopicId,
+    /// The completion date.
+    pub completed_date: NaiveDate,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for LessonTopicCompleted {
+    const EVENT_TYPE: &'static str = "academic.lesson_topic.completed";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "lesson_topic";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.lesson_topic_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.lesson_topic_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`RealLessonTopic`](crate::aggregate::RealLessonTopic) was soft-deleted.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LessonTopicDeleted {
+    /// The lesson-topic's typed id.
+    pub lesson_topic_id: LessonTopicId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for LessonTopicDeleted {
+    const EVENT_TYPE: &'static str = "academic.lesson_topic.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "lesson_topic";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.lesson_topic_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.lesson_topic_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
 academic_event_stub! {
     /// Event stub: a student promotion was recorded. See
     /// `docs/specs/academic/aggregates.md` § StudentPromotion.

@@ -43,8 +43,8 @@ use educore_core::value_objects::ActiveStatus;
 use crate::aggregate::{
     AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
     IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealLesson, RealLessonPlan,
-    RegistrationField, Section, Student, StudentCategory, StudentGroup, StudentGuardianLink,
-    StudentPromotion, Subject,
+    RealLessonTopic, RegistrationField, Section, Student, StudentCategory, StudentGroup,
+    StudentGuardianLink, StudentPromotion, Subject,
 };
 use crate::commands::{
     validate_admission_no, validate_class_name, validate_email_optional, validate_first_name,
@@ -69,7 +69,8 @@ use crate::commands::{
     UpdateGuardianContactCommand, UpdateHomeworkCommand, UpdateLessonPlanCommand, UpdateSectionCommand,
     UpdateStudentProfileCommand, UpdateSubjectCommand, UpdateClassRoutinePeriodCommand,
     AddSubTopicCommand, CancelHomeworkCommand, DeleteLessonCommand, DeleteLessonPlanCommand,
-    MarkLessonPlanCompletedCommand, RealCreateLessonCommand, RealCreateLessonPlanCommand,
+    DeleteLessonTopicCommand, MarkLessonPlanCompletedCommand, MarkTopicCompletedCommand,
+    RealCreateLessonCommand, RealCreateLessonPlanCommand, RealCreateLessonTopicCommand,
     UpdateLessonCommand, WithdrawStudentCommand,
 };
 use crate::events::{
@@ -81,8 +82,8 @@ use crate::events::{
     GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent, HomeworkCancelled,
     HomeworkCreated, HomeworkUpdated,
     IdCardCreated, LessonCreated, LessonDeleted, LessonPlanCompleted, LessonPlanCreated,
-    LessonPlanDeleted, LessonPlanUpdated, LessonTopicCreated, RealLessonCreated, RealLessonPlanCreated,
-    SubTopicAdded, LessonUpdated,
+    LessonPlanDeleted, LessonPlanUpdated, LessonTopicCompleted, LessonTopicCreated, LessonTopicDeleted,
+    RealLessonCreated, RealLessonPlanCreated, RealLessonTopicCreated, SubTopicAdded, LessonUpdated,
     OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
     RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
     StudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
@@ -3051,33 +3052,91 @@ where
     })
 }
 
-/// Create a [`LessonTopic`] and emit a [`LessonTopicCreated`] event.
+/// Create a [`RealLessonTopic`] and emit a [`RealLessonTopicCreated`] event.
 pub fn create_lesson_topic<C, G>(
-    cmd: CreateLessonTopicCommand,
+    cmd: RealCreateLessonTopicCommand,
     clock: &C,
     ids: &G,
-) -> Result<(LessonTopic, LessonTopicCreated)>
+) -> Result<(RealLessonTopic, RealLessonTopicCreated)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let CreateLessonTopicCommand { id, school_id } = cmd;
-    if id.school_id() != school_id {
-        return Err(DomainError::Validation(format!(
-            "lesson topic id {id} is in school {}, command school_id is {school_id}",
-            id.school_id(),
-        )));
-    }
     let now = clock.now();
     let event_id = fresh_event_id(ids);
-    let aggregate = LessonTopic { id, school_id };
-    let event = LessonTopicCreated {
+    let actor = cmd.tenant.actor_id;
+
+    let aggregate = RealLessonTopic::fresh(
+        cmd.lesson_topic_id,
+        cmd.lesson_id,
+        cmd.title,
+        cmd.description,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+
+    let event = RealLessonTopicCreated {
+        lesson_topic_id: aggregate.id,
+        lesson_id: aggregate.lesson_id,
+        title: aggregate.title.clone(),
+        description: aggregate.description.clone(),
+        status: aggregate.status,
         event_id,
-        school_id,
-        aggregate_id: id,
+        correlation_id: aggregate.correlation_id,
         occurred_at: now,
     };
     Ok((aggregate, event))
+}
+
+/// Mark a [`RealLessonTopic`] as completed (I-2 requires completed_date).
+pub fn mark_topic_completed<C, G>(
+    cmd: MarkTopicCompletedCommand,
+    topic: &mut RealLessonTopic,
+    clock: &C,
+    ids: &G,
+) -> Result<LessonTopicCompleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+
+    topic.mark_completed(cmd.completed_date, actor, now)?;
+
+    Ok(LessonTopicCompleted {
+        lesson_topic_id: topic.id,
+        completed_date: cmd.completed_date,
+        event_id,
+        correlation_id: topic.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Soft-delete a [`RealLessonTopic`].
+pub fn delete_lesson_topic<C, G>(
+    _cmd: DeleteLessonTopicCommand,
+    topic: &mut RealLessonTopic,
+    clock: &C,
+    ids: &G,
+) -> Result<LessonTopicDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = _cmd.tenant.actor_id;
+    topic.delete(actor, now);
+
+    Ok(LessonTopicDeleted {
+        lesson_topic_id: topic.id,
+        event_id,
+        correlation_id: topic.correlation_id,
+        occurred_at: now,
+    })
 }
 
 /// Record a [`StudentPromotion`] and emit a [`StudentPromotionRecorded`] event.
