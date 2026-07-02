@@ -80,15 +80,17 @@ pub use crate::aggregate::{
 /// The 19 typed events emitted by the academic commands.
 pub use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
-    CertificateCreated, ClassCreated, ClassDeleted, ClassRoutineScheduled, ClassSectionCreated,
-    ClassSubjectAssigned, ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated,
-    GuardianLinkedToStudent, GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent,
-    HomeworkAssigned, IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
+    CertificateCreated, ClassCreated, ClassDeleted, ClassRoomAssigned, ClassRoutineScheduled,
+    ClassSectionCreated, ClassSectionDeleted, ClassSubjectAssigned, ClassTeacherAssigned,
+    ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated, GuardianLinkedToStudent,
+    GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent, HomeworkAssigned,
+    IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
     OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
     RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
     StudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
     StudentPromoted, StudentPromotionRecorded, StudentReinstated, StudentSuspended,
     StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
+    SubjectTeacherAssigned,
 };
 
 // ---- Pure factory functions -------------------------------------------------
@@ -96,11 +98,12 @@ pub use crate::events::{
 /// The 19 pure factory functions that turn a command into
 /// an aggregate plus a typed event.
 pub use crate::services::{
-    admit_student, assign_optional_subject, close_academic_year, copy_academic_year,
-    create_academic_year, create_certificate, create_class, create_class_routine,
-    create_class_section, create_class_subject, create_homework, create_id_card, create_lesson,
-    create_lesson_plan, create_lesson_topic, create_registration_field, create_section,
-    create_student_category, create_student_group, create_subject, delete_class, delete_section,
+    admit_student, assign_class_room, assign_class_teacher, assign_optional_subject,
+    assign_subject_teacher, close_academic_year, copy_academic_year, create_academic_year,
+    create_certificate, create_class, create_class_routine, create_class_section,
+    create_class_subject, create_homework, create_id_card, create_lesson, create_lesson_plan,
+    create_lesson_topic, create_registration_field, create_section, create_student_category,
+    create_student_group, create_subject, delete_class, delete_class_section, delete_section,
     delete_subject, graduate_student, link_guardian_to_student, mark_primary_guardian,
     promote_student, record_student_promotion, register_guardian, reinstate_student, retire_guardian,
     school_matches, set_current_academic_year, set_optional_subject_gpa_threshold,
@@ -139,13 +142,14 @@ pub use crate::commands::UniquenessChecker;
 /// for downstream consumers.
 pub use crate::value_objects::{
     AcademicYearId, AcademicYearRange, AcademicYearTitle, Address, AdmissionNumber, BloodGroup,
-    CertificateId, ClassId, ClassName, ClassRoutineId, ClassSectionId, ClassSubjectId,
-    DateOfBirth, EmailAddress, FullName, Gender, GuardianId, HomeworkId, IdCardId, LessonId,
-    LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold,
-    PassMark, PersonName, PhoneNumber, RegistrationFieldId, Relation, ResultStatus, RollNumber,
-    SectionId, SectionName, StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId,
-    StudentPromotionId, StudentRecordId, StudentStatus, SubjectCode, SubjectId, SubjectType,
-    SuspensionReason, TransferReason, WithdrawalReason,
+    CertificateId, ClassId, ClassName, ClassRoomId, ClassRoutineId, ClassSectionId,
+    ClassSubjectId, DateOfBirth, EmailAddress, FullName, Gender, GuardianId, HomeworkId,
+    IdCardId, LessonId, LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId,
+    OptionalSubjectGpaThreshold, PassMark, PersonName, PhoneNumber, RegistrationFieldId,
+    Relation, ResultStatus, RollNumber, SectionId, SectionName, StudentCategoryId,
+    StudentGroupId, StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId,
+    StudentStatus, SubjectCode, SubjectId, SubjectType, SuspensionReason, TransferReason,
+    WithdrawalReason,
 };
 
 // ---- Re-exports of the engine types most commonly reached for ----------------
@@ -170,13 +174,15 @@ pub mod prelude {
         StudentGuardianLink, StudentPromotion,
     };
     pub use crate::commands::{
-        AdmitStudentCommand, AssignOptionalSubjectCommand, CloseAcademicYearCommand,
+        AdmitStudentCommand, AssignClassRoomCommand, AssignClassTeacherCommand,
+        AssignOptionalSubjectCommand, AssignSubjectTeacherCommand, CloseAcademicYearCommand,
         CreateAcademicYearCommand, CreateCertificateCommand, CreateClassCommand,
         CreateClassRoutineCommand, CreateClassSectionCommand, CreateClassSubjectCommand,
         CreateHomeworkCommand, CreateIdCardCommand, CreateLessonCommand, CreateLessonPlanCommand,
         CreateLessonTopicCommand, CreateRegistrationFieldCommand, CreateSectionCommand,
         CreateStudentCategoryCommand, CreateStudentGroupCommand, CreateSubjectCommand,
-        DeleteClassCommand, DeleteSectionCommand, DeleteSubjectCommand, GraduateStudentCommand,
+        DeleteClassCommand, DeleteClassSectionCommand, DeleteSectionCommand, DeleteSubjectCommand,
+        GraduateStudentCommand,
         LinkGuardianToStudentCommand, MarkPrimaryGuardianCommand, PromoteStudentCommand,
         RecordStudentPromotionCommand, RegisterGuardianCommand, ReinstateStudentCommand,
         RetireGuardianCommand, SetCurrentAcademicYearCommand,
@@ -189,16 +195,17 @@ pub mod prelude {
     pub use crate::errors::AcademicError;
     pub use crate::events::{
         AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
-        CertificateCreated, ClassCreated, ClassDeleted, ClassRoutineScheduled,
-        ClassSectionCreated, ClassSubjectAssigned, ClassUpdated, CurrentAcademicYearSet,
-        GuardianContactUpdated, GuardianLinkedToStudent, GuardianRegistered, GuardianRetired,
-        GuardianUnlinkedFromStudent, HomeworkAssigned, IdCardCreated, LessonCreated,
-        LessonPlanCreated, LessonTopicCreated, OptionalSubjectAssignmentCreated,
-        OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked, RegistrationFieldCreated,
-        SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted, StudentCategoryCreated,
-        StudentGraduated, StudentGroupCreated, StudentProfileUpdated, StudentPromoted,
-        StudentPromotionRecorded, StudentReinstated, StudentSuspended, StudentTransferred,
-        StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
+        CertificateCreated, ClassCreated, ClassDeleted, ClassRoomAssigned, ClassRoutineScheduled,
+        ClassSectionCreated, ClassSectionDeleted, ClassSubjectAssigned, ClassTeacherAssigned,
+        ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated, GuardianLinkedToStudent,
+        GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent, HomeworkAssigned,
+        IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
+        OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
+        RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
+        StudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
+        StudentPromoted, StudentPromotionRecorded, StudentReinstated, StudentSuspended,
+        StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
+        SubjectTeacherAssigned,
     };
     pub use crate::query::{
         AcademicYearQuery, ClassQuery, SectionQuery, StudentQuery, SubjectQuery,
@@ -208,11 +215,12 @@ pub mod prelude {
         SubjectRepository,
     };
     pub use crate::services::{
-        admit_student, assign_optional_subject, close_academic_year, copy_academic_year,
-        create_academic_year, create_certificate, create_class, create_class_routine,
-        create_class_section, create_class_subject, create_homework, create_id_card, create_lesson,
-        create_lesson_plan, create_lesson_topic, create_registration_field, create_section,
-        create_student_category, create_student_group, create_subject, delete_class, delete_section,
+        admit_student, assign_class_room, assign_class_teacher, assign_optional_subject,
+        assign_subject_teacher, close_academic_year, copy_academic_year, create_academic_year,
+        create_certificate, create_class, create_class_routine, create_class_section,
+        create_class_subject, create_homework, create_id_card, create_lesson, create_lesson_plan,
+        create_lesson_topic, create_registration_field, create_section, create_student_category,
+        create_student_group, create_subject, delete_class, delete_class_section, delete_section,
         delete_subject, graduate_student, link_guardian_to_student, mark_primary_guardian,
         promote_student, record_student_promotion, register_guardian, reinstate_student,
         retire_guardian, school_matches, set_current_academic_year,
@@ -223,13 +231,14 @@ pub mod prelude {
     };
     pub use crate::value_objects::{
         AcademicYearId, AcademicYearRange, AcademicYearTitle, Address, AdmissionNumber, BloodGroup,
-        CertificateId, ClassId, ClassName, ClassRoutineId, ClassSectionId, ClassSubjectId,
-        DateOfBirth, EmailAddress, FullName, Gender, GuardianId, HomeworkId, IdCardId, LessonId,
-        LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold,
-        PassMark, PersonName, PhoneNumber, RegistrationFieldId, Relation, ResultStatus, RollNumber,
-        SectionId, SectionName, StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId,
-        StudentPromotionId, StudentRecordId, StudentStatus, SubjectCode, SubjectId, SubjectType,
-        SuspensionReason, TransferReason, WithdrawalReason,
+        CertificateId, ClassId, ClassName, ClassRoomId, ClassRoutineId, ClassSectionId,
+        ClassSubjectId, DateOfBirth, EmailAddress, FullName, Gender, GuardianId, HomeworkId,
+        IdCardId, LessonId, LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId,
+        OptionalSubjectGpaThreshold, PassMark, PersonName, PhoneNumber, RegistrationFieldId,
+        Relation, ResultStatus, RollNumber, SectionId, SectionName, StudentCategoryId,
+        StudentGroupId, StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId,
+        StudentStatus, SubjectCode, SubjectId, SubjectType, SuspensionReason, TransferReason,
+        WithdrawalReason,
     };
 }
 

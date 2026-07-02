@@ -21,16 +21,16 @@
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
-use educore_core::ids::SchoolId;
+use educore_core::ids::{SchoolId, UserId};
 use educore_rbac::value_objects::Capability;
 use educore_core::tenant::TenantContext;
 
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoutineId, ClassSectionId,
-    ClassSubjectId, EmailAddress, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId,
-    LessonTopicId, OptionalSubjectAssignmentId, PhoneNumber, RegistrationFieldId, Relation,
-    ResultStatus, SectionId, StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId,
-    StudentPromotionId, SubjectId,
+    AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoomId, ClassRoutineId,
+    ClassSectionId, ClassSubjectId, EmailAddress, GuardianId, HomeworkId, IdCardId, LessonId,
+    LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId, PhoneNumber, RegistrationFieldId,
+    Relation, ResultStatus, SectionId, StudentCategoryId, StudentGroupId, StudentGuardianLinkId,
+    StudentId, StudentPromotionId, SubjectId,
 };
 
 // =============================================================================
@@ -106,6 +106,25 @@ pub trait UniquenessChecker: Send + Sync {
         &self,
         school: SchoolId,
         student_id: StudentId,
+    ) -> bool;
+    /// Returns `true` if a `ClassSection` already exists
+    /// for the given `(class, section, academic_year)` in
+    /// the school. Per ClassSection I-1.
+    fn class_section_exists(
+        &self,
+        school: SchoolId,
+        class_id: ClassId,
+        section_id: SectionId,
+        academic_year_id: AcademicYearId,
+    ) -> bool;
+    /// Returns `true` if any `StudentRecord` references the
+    /// given `ClassSection`. Per ClassSection I-4
+    /// (cannot delete a class-section while student records
+    /// reference it).
+    fn class_section_has_student_records(
+        &self,
+        school: SchoolId,
+        class_section_id: ClassSectionId,
     ) -> bool;
 }
 
@@ -869,10 +888,38 @@ impl RetireGuardianCommand {
         vec![Capability::AcademicStudentUpdate]
     }
 }
-academic_command_stub! {
-    /// Command stub: create a class-section pairing. See
-    /// `docs/specs/academic/aggregates.md` § ClassSection.
-    pub struct CreateClassSectionCommand { id: ClassSectionId }
+/// Command: create a [`ClassSection`](crate::aggregate::ClassSection)
+/// pairing of a class, a section, and an academic year.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection,
+/// the create flow enforces:
+/// - I-1: the `(class, section, academic_year)` triple
+///   must be unique within the school (checked via
+///   `UniquenessChecker::class_section_exists`).
+/// - I-3: `class_rooms` must contain at least one entry.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateClassSectionCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The class-section's typed id.
+    pub class_section_id: ClassSectionId,
+    /// The class this section is a division of.
+    pub class_id: ClassId,
+    /// The section within the class.
+    pub section_id: SectionId,
+    /// The academic year this pairing applies to.
+    pub academic_year_id: AcademicYearId,
+    /// The class rooms assigned to this section. Must be
+    /// non-empty (I-3).
+    pub class_rooms: Vec<ClassRoomId>,
+}
+
+impl CreateClassSectionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassCreate]
+    }
 }
 academic_command_stub! {
     /// Command stub: assign a subject to a class. See
@@ -1291,12 +1338,18 @@ impl UploadStudentDocumentCommand {
     }
 }
 /// Command: assign a class teacher to a class section.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection §
+/// I-2 (permissive), a class-section may have multiple class
+/// teachers; this command appends a teacher reference.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AssignClassTeacherCommand {
     /// The active tenant.
     pub tenant: TenantContext,
     /// The target class section.
     pub class_section_id: ClassSectionId,
+    /// The teacher being assigned (typed user id).
+    pub teacher_id: UserId,
 }
 
 
@@ -1308,6 +1361,11 @@ impl AssignClassTeacherCommand {
     }
 }
 /// Command: assign a subject teacher to a class section.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection §
+/// I-2 (permissive), a class-section may have multiple
+/// subject teachers; this command appends a teacher
+/// reference for the given subject.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AssignSubjectTeacherCommand {
     /// The active tenant.
@@ -1316,6 +1374,8 @@ pub struct AssignSubjectTeacherCommand {
     pub class_section_id: ClassSectionId,
     /// The subject the teacher is assigned to.
     pub subject_id: SubjectId,
+    /// The teacher being assigned (typed user id).
+    pub teacher_id: UserId,
 }
 
 
@@ -1327,12 +1387,19 @@ impl AssignSubjectTeacherCommand {
     }
 }
 /// Command: assign a classroom to a class section.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection §
+/// I-3 (one or more class rooms), this command appends an
+/// additional `ClassRoomId` to the section's `class_rooms`
+/// list.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AssignClassRoomCommand {
     /// The active tenant.
     pub tenant: TenantContext,
     /// The target class section.
     pub class_section_id: ClassSectionId,
+    /// The class room being assigned.
+    pub class_room_id: ClassRoomId,
 }
 
 
@@ -1341,6 +1408,29 @@ impl AssignClassRoomCommand {
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::AcademicClassSubject]
+    }
+}
+/// Command: delete (soft-retire) a [`ClassSection`](crate::aggregate::ClassSection).
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSection §
+/// I-4, deletion is rejected while any `StudentRecord`
+/// references the class-section. The service checks this
+/// via `UniquenessChecker::class_section_has_student_records`
+/// and refuses to retire the aggregate when true.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteClassSectionCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The class section being deleted.
+    pub class_section_id: ClassSectionId,
+}
+
+
+impl DeleteClassSectionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassDelete]
     }
 }
 /// Command: assign a subject to a class.

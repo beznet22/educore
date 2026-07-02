@@ -289,4 +289,20 @@ impl educore_academic::commands::UniquenessChecker for NoOpUniquenessChecker {
     fn academic_year_overlaps(&self, _school: educore_core::ids::SchoolId, _range: educore_academic::AcademicYearRange, _exclude_id: Option<educore_academic::AcademicYearId>) -> bool { false }
     fn optional_subject_assigned_exists(&self, _school: educore_core::ids::SchoolId, _student_id: educore_academic::StudentId, _academic_year_id: educore_academic::AcademicYearId) -> bool { false }
     fn primary_guardian_link_exists(&self, _school: educore_core::ids::SchoolId, _student_id: educore_academic::StudentId) -> bool { false }
+    fn class_section_exists(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _class_id: educore_academic::ClassId,
+        _section_id: educore_academic::SectionId,
+        _academic_year_id: educore_academic::AcademicYearId,
+    ) -> bool {
+        false
+    }
+    fn class_section_has_student_records(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _class_section_id: educore_academic::ClassSectionId,
+    ) -> bool {
+        false
+    }
 }
