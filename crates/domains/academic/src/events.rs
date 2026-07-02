@@ -3577,6 +3577,39 @@ academic_event_stub! {
         aggregate_type: "student_category",
     }
 }
+
+// =============================================================================
+// StudentCategory events (Wave 58: real StudentCategoryCreated)
+// =============================================================================
+
+/// Event: a [`RealStudentCategory`](crate::aggregate::RealStudentCategory) was created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealStudentCategoryCreated {
+    /// The category's typed id.
+    pub student_category_id: StudentCategoryId,
+    /// The category's name.
+    pub name: String,
+    /// The description.
+    pub description: String,
+    /// The optional fee discount percentage.
+    pub discount_percent: Option<f32>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for RealStudentCategoryCreated {
+    const EVENT_TYPE: &'static str = "academic.student_category.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_category";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.student_category_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.student_category_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
 academic_event_stub! {
     /// Event stub: a student group was created. See
     /// `docs/specs/academic/aggregates.md` § StudentGroup.
@@ -4210,5 +4243,61 @@ impl DomainEvent for StudentMarkedGraduate {
     fn event_id(&self) -> EventId { self.event_id }
     fn aggregate_id(&self) -> Uuid { self.student_record_id.as_uuid() }
     fn school_id(&self) -> SchoolId { self.student_record_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+// =============================================================================
+// StudentCategory events (Wave 58: full impl)
+// =============================================================================
+
+/// Event: a [`RealStudentCategory`](crate::aggregate::RealStudentCategory) was updated.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StudentCategoryUpdated {
+    /// The category's typed id.
+    pub student_category_id: StudentCategoryId,
+    /// Optional new name.
+    pub name: Option<String>,
+    /// Optional new description.
+    pub description: Option<String>,
+    /// Triple-Option for discount.
+    pub discount_percent: Option<Option<f32>>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for StudentCategoryUpdated {
+    const EVENT_TYPE: &'static str = "academic.student_category.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_category";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.student_category_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.student_category_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`RealStudentCategory`](crate::aggregate::RealStudentCategory) was soft-deleted.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StudentCategoryDeleted {
+    /// The category's typed id.
+    pub student_category_id: StudentCategoryId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for StudentCategoryDeleted {
+    const EVENT_TYPE: &'static str = "academic.student_category.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_category";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.student_category_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.student_category_id.school_id() }
     fn occurred_at(&self) -> Timestamp { self.occurred_at }
 }

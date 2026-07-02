@@ -82,6 +82,9 @@ pub trait UniquenessChecker: Send + Sync {
     /// Returns `true` if a subject with the given code
     /// already exists in the school. Per Subject I-1.
     fn subject_code_exists(&self, school: SchoolId, code: &str) -> bool;
+    /// Returns `true` if a StudentCategory with the given name
+    /// already exists in the school. Per StudentCategory I-1.
+    fn student_category_name_exists(&self, school: SchoolId, name: &str) -> bool;
     /// Returns `true` if the student already has a non-graduate,
     /// non-withdrawn `StudentRecord` for the given academic year.
     /// Per StudentRecord I-1.
@@ -1537,6 +1540,73 @@ academic_command_stub! {
     /// Command stub: create a student category. See
     /// `docs/specs/academic/aggregates.md` § StudentCategory.
     pub struct CreateStudentCategoryCommand { id: StudentCategoryId }
+}
+
+// =============================================================================
+// StudentCategory commands (Wave 58: full impl)
+// =============================================================================
+
+/// Command: create a [`RealStudentCategory`](crate::aggregate::RealStudentCategory).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealCreateStudentCategoryCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The category's typed id.
+    pub student_category_id: StudentCategoryId,
+    /// The category's name (1..=200 chars; I-1 unique within school).
+    pub name: String,
+    /// Optional description.
+    pub description: String,
+    /// Optional fee discount percentage (0..=100).
+    pub discount_percent: Option<f32>,
+}
+
+impl RealCreateStudentCategoryCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentCategoryCreate]
+    }
+}
+
+/// Command: update an existing [`RealStudentCategory`](crate::aggregate::RealStudentCategory).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateStudentCategoryCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The category's typed id.
+    pub student_category_id: StudentCategoryId,
+    /// Optional new name.
+    pub name: Option<String>,
+    /// Optional new description.
+    pub description: Option<String>,
+    /// Triple-Option for discount: None = no change, Some(None) = clear, Some(Some(v)) = set.
+    pub discount_percent: Option<Option<f32>>,
+}
+
+impl UpdateStudentCategoryCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentCategoryUpdate]
+    }
+}
+
+/// Command: soft-delete a [`RealStudentCategory`](crate::aggregate::RealStudentCategory).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeleteStudentCategoryCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The category's typed id.
+    pub student_category_id: StudentCategoryId,
+}
+
+impl DeleteStudentCategoryCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentCategoryDelete]
+    }
 }
 academic_command_stub! {
     /// Command stub: create a student group. See

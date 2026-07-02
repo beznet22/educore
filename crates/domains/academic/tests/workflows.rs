@@ -181,6 +181,12 @@ impl UniquenessChecker for TestUniqueness {
         false
     }
 
+
+    fn student_category_name_exists(
+        &self, _: SchoolId, _: &str,
+    ) -> bool {
+        false
+    }
 }
 
 /// A fresh `TenantContext` for a `SchoolAdmin` acting on a freshly-minted school.
@@ -1052,4 +1058,10 @@ impl educore_academic::commands::UniquenessChecker for NoOpUniquenessChecker {
     fn lesson_title_exists(&self, _school: educore_core::ids::SchoolId, _class_section_id: educore_academic::ClassSectionId, _subject_id: educore_academic::SubjectId, _title: &str) -> bool { false }
 
     fn student_has_active_record(&self, _school: educore_core::ids::SchoolId, _student_id: educore_academic::StudentId, _academic_year_id: educore_academic::AcademicYearId) -> bool { false }
+
+    fn student_category_name_exists(
+        &self, _: SchoolId, _: &str,
+    ) -> bool {
+        false
+    }
 }

@@ -43,8 +43,9 @@ use educore_core::value_objects::ActiveStatus;
 use crate::aggregate::{
     AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
     IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealLesson, RealLessonPlan,
-    RealLessonTopic, RealStudentPromotion, RegistrationField, Section, Student, StudentCategory,
-    StudentGroup, StudentGuardianLink, StudentPromotion, StudentRecord, Subject,
+    RealLessonTopic, RealStudentCategory, RealStudentPromotion, RegistrationField, Section,
+    Student, StudentCategory, StudentGroup, StudentGuardianLink, StudentPromotion, StudentRecord,
+    Subject,
 };
 use crate::commands::{
     validate_admission_no, validate_class_name, validate_email_optional, validate_first_name,
@@ -57,7 +58,7 @@ use crate::commands::{
     CreateClassCommand, CreateClassRoutineCommand, CreateClassSectionCommand,
     AssignSubjectToClassCommand, CreateHomeworkCommand, CreateIdCardCommand, CreateLessonCommand,
     CreateLessonPlanCommand, CreateLessonTopicCommand, CreateRegistrationFieldCommand,
-    CreateSectionCommand, CreateStudentCategoryCommand, CreateStudentGroupCommand,
+    CreateSectionCommand, CreateStudentCategoryCommand, CreateStudentGroupCommand, DeleteStudentCategoryCommand, RealCreateStudentCategoryCommand, UpdateStudentCategoryCommand,
     CreateSubjectCommand, DeleteClassCommand, DeleteClassRoutineCommand,
     DeleteClassSectionCommand, DeleteSectionCommand, DeleteSubjectCommand, GraduateStudentCommand,
     LinkGuardianToStudentCommand, MarkPrimaryGuardianCommand, PromoteStudentCommand,
@@ -88,7 +89,7 @@ use crate::events::{
     StudentMarkedGraduate, StudentRecordEnrolled, SubTopicAdded, DefaultRecordSet, LessonUpdated,
     OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
     RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
-    StudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
+    StudentCategoryDeleted, StudentCategoryUpdated, RealStudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
     StudentPromoted, StudentPromotionRecorded, StudentReinstated, StudentSuspended,
     StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
     SubjectTeacherAssigned, SubjectUnassigned, TeacherReassigned,
@@ -1581,6 +1582,7 @@ where
     Ok((aggregate, event))
 
 
+
 }
 
 /// Unlink a [`Guardian`] from a [`Student`] and emit a
@@ -1875,6 +1877,7 @@ where
         now,
     );
     Ok((aggregate, event))
+
 
 
 }
@@ -3176,34 +3179,9 @@ where
     Ok((aggregate, event))
 }
 
-/// Create a [`StudentCategory`] and emit a [`StudentCategoryCreated`] event.
-pub fn create_student_category<C, G>(
-    cmd: CreateStudentCategoryCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<(StudentCategory, StudentCategoryCreated)>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let CreateStudentCategoryCommand { id, school_id } = cmd;
-    if id.school_id() != school_id {
-        return Err(DomainError::Validation(format!(
-            "student category id {id} is in school {}, command school_id is {school_id}",
-            id.school_id(),
-        )));
-    }
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let aggregate = StudentCategory { id, school_id };
-    let event = StudentCategoryCreated {
-        event_id,
-        school_id,
-        aggregate_id: id,
-        occurred_at: now,
-    };
-    Ok((aggregate, event))
-}
+/// Create a [`RealStudentCategory`] and emit a [`RealStudentCategoryCreated`] event.
+/// (Old stub `create_student_category` removed in Wave 58; replaced by
+/// `create_student_category_aggregate` below.)
 
 /// Create a [`StudentGroup`] and emit a [`StudentGroupCreated`] event.
 pub fn create_student_group<C, G>(
@@ -3531,6 +3509,13 @@ mod tests {
 
     fn student_has_active_record(
         &self, _: SchoolId, _: StudentId, _: AcademicYearId,
+    ) -> bool {
+        false
+    }
+
+
+    fn student_category_name_exists(
+        &self, _: SchoolId, _: &str,
     ) -> bool {
         false
     }
@@ -4302,4 +4287,100 @@ where
     );
 
     Ok((aggregate, event))
+}
+
+// =============================================================================
+// StudentCategory services (Wave 58: full impl)
+// =============================================================================
+
+/// Create a [`RealStudentCategory`] and emit a `StudentCategoryCreated` event.
+///
+/// Per `docs/specs/academic/aggregates.md` § StudentCategory:
+/// - **I-1**: rejects if `uniqueness.student_category_name_exists(...)` is `true`.
+pub fn create_student_category_aggregate<C, G>(
+    cmd: RealCreateStudentCategoryCommand,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<(RealStudentCategory, RealStudentCategoryCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    if uniqueness.student_category_name_exists(cmd.student_category_id.school_id(), &cmd.name) {
+        return Err(DomainError::Conflict(format!(
+            "StudentCategory name {:?} already exists in school", cmd.name
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    let aggregate = RealStudentCategory::fresh(
+        cmd.student_category_id,
+        cmd.name,
+        cmd.description,
+        cmd.discount_percent,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    let event = RealStudentCategoryCreated {
+        student_category_id: aggregate.id,
+        name: aggregate.name.clone(),
+        description: aggregate.description.clone(),
+        discount_percent: aggregate.discount_percent,
+        event_id,
+        correlation_id: aggregate.correlation_id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Update a [`RealStudentCategory`] and emit a `StudentCategoryUpdated` event.
+pub fn update_student_category<C, G>(
+    cmd: UpdateStudentCategoryCommand,
+    category: &mut RealStudentCategory,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentCategoryUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    category.update(cmd.name, cmd.description, cmd.discount_percent, actor, now)?;
+    Ok(StudentCategoryUpdated {
+        student_category_id: category.id,
+        name: Some(category.name.clone()),
+        description: Some(category.description.clone()),
+        discount_percent: Some(category.discount_percent),
+        event_id,
+        correlation_id: category.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Soft-delete a [`RealStudentCategory`].
+pub fn delete_student_category<C, G>(
+    _cmd: DeleteStudentCategoryCommand,
+    category: &mut RealStudentCategory,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentCategoryDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = _cmd.tenant.actor_id;
+    category.delete(actor, now);
+    Ok(StudentCategoryDeleted {
+        student_category_id: category.id,
+        event_id,
+        correlation_id: category.correlation_id,
+        occurred_at: now,
+    })
 }

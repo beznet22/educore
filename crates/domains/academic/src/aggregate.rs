@@ -2488,6 +2488,131 @@ academic_aggregate_stub! {
     /// StudentCategory.
     pub struct StudentCategory { id: StudentCategoryId }
 }
+
+// ---- Real StudentCategory aggregate (Wave 58) -------------------------------
+//
+// Per `docs/specs/academic/aggregates.md` § StudentCategory:
+// - I-1: Category uniquely named within school
+
+/// Real StudentCategory aggregate (Wave 58).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealStudentCategory {
+    /// The category's typed id (school-scoped).
+    pub id: StudentCategoryId,
+    /// The owning school.
+    pub school_id: SchoolId,
+    /// The category's name (1..=200 chars; I-1 unique within school).
+    pub name: String,
+    /// Optional description.
+    pub description: String,
+    /// Optional fee discount percentage (0..=100).
+    pub discount_percent: Option<f32>,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// User who created this aggregate.
+    pub created_by: UserId,
+    /// When this aggregate was created.
+    pub created_at: Timestamp,
+    /// User who last mutated this aggregate.
+    pub updated_by: UserId,
+    /// When this aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// Soft-delete lifecycle state.
+    pub active_status: ActiveStatus,
+    /// Last domain event id produced by this aggregate.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id propagated from the tenant context.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealStudentCategory {
+    /// Construct a fresh `RealStudentCategory`. Enforces name validation.
+    pub fn fresh(
+        id: StudentCategoryId,
+        name: String,
+        description: String,
+        discount_percent: Option<f32>,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        use educore_core::error::DomainError;
+        if name.trim().is_empty() {
+            return Err(DomainError::validation("StudentCategory::name must not be empty"));
+        }
+        if name.chars().count() > 200 {
+            return Err(DomainError::validation("StudentCategory::name must be 1..=200 chars"));
+        }
+        if let Some(d) = discount_percent {
+            if !(0.0..=100.0).contains(&d) {
+                return Err(DomainError::validation("StudentCategory::discount_percent must be 0..=100"));
+            }
+        }
+
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            name,
+            description,
+            discount_percent,
+            version: Version::initial(),
+            etag: Etag::placeholder(),
+            created_by: actor,
+            created_at: now,
+            updated_by: actor,
+            updated_at: now,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Update mutable fields (name/description/discount).
+    pub fn update(
+        &mut self,
+        name: Option<String>,
+        description: Option<String>,
+        discount_percent: Option<Option<f32>>,
+        actor: UserId,
+        now: Timestamp,
+    ) -> educore_core::error::Result<()> {
+        use educore_core::error::DomainError;
+        if let Some(n) = name {
+            if n.trim().is_empty() {
+                return Err(DomainError::validation("StudentCategory::name must not be empty"));
+            }
+            if n.chars().count() > 200 {
+                return Err(DomainError::validation("StudentCategory::name must be 1..=200 chars"));
+            }
+            self.name = n;
+        }
+        if let Some(d) = description {
+            self.description = d;
+        }
+        if let Some(dp) = discount_percent {
+            if let Some(v) = dp {
+                if !(0.0..=100.0).contains(&v) {
+                    return Err(DomainError::validation("StudentCategory::discount_percent must be 0..=100"));
+                }
+            }
+            self.discount_percent = dp;
+        }
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-delete.
+    pub fn delete(&mut self, actor: UserId, now: Timestamp) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+}
 academic_aggregate_stub! {
     /// A grouping of students for non-academic purposes such as
     /// clubs or sports teams. See
