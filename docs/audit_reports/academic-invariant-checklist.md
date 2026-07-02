@@ -16,19 +16,21 @@
 
 | Status | Count | % |
 |---|---|---|
-| Enforced [x] | 13 | 17.8% |
+| Enforced [x] | 15 | 20.5% |
 | Partial [~] | 2 | 2.7% |
-| Missing [ ] | 56 | 76.7% |
+| Missing [ ] | 54 | 74.0% |
 | Permissive [N/A] | 2 | 2.7% |
 | **Total invariants** | **73** | **100%** |
 
-**Coverage gap to close:** 53 missing + 2 partial = **55 invariants** must reach [x].
+**Coverage gap to close:** 54 missing + 2 partial = **56 invariants** must reach [x].
 
 **Batch 1 progress (Wave 47):** 11 invariants reach [x] (Student I-2/3/5, Class I-2/4, Section I-1, Subject I-1, AcademicYear I-2/3/5). Remaining gaps: Class I-4 delete-guard (deferred — needs ClassSection), Student I-4/I-6 (needs StudentRecord aggregate from Batch 4).
 
 **Wave 48 (Guardian):** 5 invariants reach [x] (Guardian I-1/2/3/4/5). Total enforced now 13.
 
 **Wave 49 (ClassSection):** 3 invariants reach [x] (ClassSection I-1/3/4). Total enforced now 16.
+
+**Wave 50 (ClassSubject):** 2 invariants reach [x] (ClassSubject I-1/3). Total enforced now 18.
 
 ---
 
@@ -153,18 +155,18 @@
 
 ## ClassSubject Aggregate (3 invariants)
 
-- [ ] I-1: Class or class-section scope
+- [x] I-1: Class or class-section scope
   - Spec: `docs/specs/academic/aggregates.md#classsubject`
-  - Enforcement: MISSING — placeholder at `aggregate.rs:335-338`
-  - Test: MISSING
+  - Enforcement: `ClassSubject` carries `scope: ClassSubjectScope` (`value_objects.rs`) + `class_section_id: Option<ClassSectionId>`. `ClassSubject::fresh` (`aggregate.rs`) cross-field-validates: `ClassOnly` requires `class_section_id == None`; `ClassSection` requires `class_section_id == Some(_)`. Both violations return `DomainError::Validation`.
+  - Test: `crates/domains/academic/tests/class_subject.rs` (`class_subject_assign_with_class_only_and_section_rejected`, `class_subject_assign_with_class_section_and_no_section_rejected`, `class_subject_assign_with_class_only_no_section_succeeds`, `class_subject_assign_with_class_section_requires_section_succeeds`)
 - [N/A] I-2: Same teacher may be assigned to multiple class-subjects
   - Spec: `docs/specs/academic/aggregates.md#classsubject`
   - Enforcement: Pervasive
   - Test: N/A
-- [ ] I-3: `PassMark` override
+- [x] I-3: `PassMark` override
   - Spec: `docs/specs/academic/aggregates.md#classsubject`
-  - Enforcement: MISSING — placeholder; no `pass_mark` field
-  - Test: MISSING
+  - Enforcement: `ClassSubject` carries `pass_mark: Option<PassMark>` (`aggregate.rs`). `ClassSubject::fresh` re-validates via `PassMark::new` (`value_objects.rs`) which rejects values outside `0.0..=100.0`.
+  - Test: `crates/domains/academic/tests/class_subject.rs` (`class_subject_assign_with_pass_mark_in_range_succeeds`, `pass_mark_constructor_rejects_out_of_range`)
 
 ## AcademicYear Aggregate (5 invariants)
 
@@ -394,7 +396,7 @@
 ## Implementation Order (per Phase 1 batches)
 
 - **Batch 1:** Student, Class, Section, Subject, AcademicYear, Guardian (~24 invariants)
-- **Batch 2:** ClassSection, ClassSubject, ClassRoutine, Homework (~14 invariants)
+- **Batch 2:** ClassSection, ClassRoutine, Homework (~12 invariants) — ClassSubject landed in Wave 50 (I-1/3).
 - **Batch 3:** LessonPlan, Lesson, LessonTopic, StudentRecord (~13 invariants)
 - **Batch 4:** StudentPromotion, StudentCategory, StudentGroup, RegistrationField, Certificate, IdCard (~14 invariants)
 

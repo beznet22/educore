@@ -54,15 +54,15 @@ use crate::commands::{
     AssignClassTeacherCommand, AssignOptionalSubjectCommand, AssignSubjectTeacherCommand,
     CloseAcademicYearCommand, CreateAcademicYearCommand, CreateCertificateCommand,
     CreateClassCommand, CreateClassRoutineCommand, CreateClassSectionCommand,
-    CreateClassSubjectCommand, CreateHomeworkCommand, CreateIdCardCommand, CreateLessonCommand,
+    AssignSubjectToClassCommand, CreateHomeworkCommand, CreateIdCardCommand, CreateLessonCommand,
     CreateLessonPlanCommand, CreateLessonTopicCommand, CreateRegistrationFieldCommand,
     CreateSectionCommand, CreateStudentCategoryCommand, CreateStudentGroupCommand,
     CreateSubjectCommand, DeleteClassCommand, DeleteClassSectionCommand, DeleteSectionCommand,
     DeleteSubjectCommand, GraduateStudentCommand, LinkGuardianToStudentCommand,
     MarkPrimaryGuardianCommand, PromoteStudentCommand, RecordStudentPromotionCommand,
-    RegisterGuardianCommand, ReinstateStudentCommand, RetireGuardianCommand,
+    RegisterGuardianCommand, ReinstateStudentCommand, ReassignTeacherCommand, RetireGuardianCommand,
     SetCurrentAcademicYearCommand, SetOptionalSubjectGpaThresholdCommand, SuspendStudentCommand,
-    TransferStudentCommand, UniquenessChecker, UnlinkGuardianFromStudentCommand,
+    TransferStudentCommand, UnassignSubjectCommand, UniquenessChecker, UnlinkGuardianFromStudentCommand,
     UpdateAcademicYearDatesCommand, UpdateClassCommand, UpdateGuardianContactCommand,
     UpdateSectionCommand, UpdateStudentProfileCommand, UpdateSubjectCommand,
     WithdrawStudentCommand,
@@ -70,7 +70,7 @@ use crate::commands::{
 use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
     CertificateCreated, ClassCreated, ClassDeleted, ClassRoomAssigned, ClassRoutineScheduled,
-    ClassSectionCreated, ClassSectionDeleted, ClassSubjectAssigned, ClassTeacherAssigned,
+    ClassSectionCreated, ClassSectionDeleted, ClassTeacherAssigned, SubjectAssignedToClass,
     ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated, GuardianLinkedToStudent,
     GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent, HomeworkAssigned,
     IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
@@ -79,7 +79,7 @@ use crate::events::{
     StudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
     StudentPromoted, StudentPromotionRecorded, StudentReinstated, StudentSuspended,
     StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
-    SubjectTeacherAssigned,
+    SubjectTeacherAssigned, SubjectUnassigned, TeacherReassigned,
 };
 use crate::value_objects::{
     AcademicYearId, AcademicYearRange, ClassRoomId, StudentGuardianLinkId, StudentStatus,
@@ -2156,34 +2156,172 @@ where
     Ok(event)
 }
 
-/// Assign a subject to a class via [`ClassSubject`] and emit a
-/// [`ClassSubjectAssigned`] event.
-pub fn create_class_subject<C, G>(
-    cmd: CreateClassSubjectCommand,
+/// Assign a subject to a class (or class-section) via a
+/// [`ClassSubject`] and emit a [`SubjectAssignedToClass`]
+/// event.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSubject:
+/// - **I-1**: `ClassSubject::fresh` rejects
+///   `ClassOnly`+`Some(section)` and
+///   `ClassSection`+`None`.
+/// - **I-3**: `ClassSubject::fresh` rejects `pass_mark`
+///   values outside `0.0..=100.0`.
+///
+/// The service mints the audit / outbox footer fields and
+/// emits the typed event.
+#[allow(clippy::too_many_arguments)]
+pub fn assign_subject_to_class<C, G>(
+    cmd: AssignSubjectToClassCommand,
     clock: &C,
     ids: &G,
-) -> Result<(ClassSubject, ClassSubjectAssigned)>
+) -> Result<(ClassSubject, SubjectAssignedToClass)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let CreateClassSubjectCommand { id, school_id } = cmd;
-    if id.school_id() != school_id {
+    use crate::aggregate::ClassSubject;
+    let AssignSubjectToClassCommand {
+        tenant: _,
+        class_subject_id,
+        class_id,
+        class_section_id,
+        subject_id,
+        teacher_id,
+        scope,
+        pass_mark,
+    } = cmd;
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let correlation_id = educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let actor = teacher_id;
+    let aggregate = ClassSubject::fresh(
+        class_subject_id,
+        class_id,
+        class_section_id,
+        subject_id,
+        teacher_id,
+        scope,
+        pass_mark,
+        actor,
+        actor,
+        now,
+        correlation_id,
+    )?;
+    let event = SubjectAssignedToClass::new(
+        class_subject_id,
+        class_id,
+        class_section_id,
+        subject_id,
+        teacher_id,
+        scope,
+        pass_mark,
+        event_id,
+        correlation_id,
+        now,
+    );
+    Ok((aggregate, event))
+}
+
+/// Backward-compatible wrapper for
+/// [`assign_subject_to_class`].
+///
+/// The earlier (placeholder-era) name `create_class_subject`
+/// is retained so older call sites compile unchanged. New
+/// callers should prefer [`assign_subject_to_class`].
+#[allow(clippy::too_many_arguments)]
+#[deprecated(
+    since = "0.1.0",
+    note = "renamed to assign_subject_to_class per spec; wrapper retained for backward compat"
+)]
+pub fn create_class_subject<C, G>(
+    cmd: AssignSubjectToClassCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(ClassSubject, SubjectAssignedToClass)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    assign_subject_to_class(cmd, clock, ids)
+}
+
+/// Reassign the teacher on an existing active
+/// [`ClassSubject`] and emit a [`TeacherReassigned`] event.
+///
+/// The service is unconditional (per the spec, I-2 is
+/// permissive and reassignment has no constraint beyond
+/// the target aggregate being `Active`). Returns the
+/// mutated aggregate plus the typed event.
+pub fn reassign_teacher<C, G>(
+    cmd: ReassignTeacherCommand,
+    clock: &C,
+    ids: &G,
+    class_subject: &mut ClassSubject,
+) -> Result<TeacherReassigned>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let ReassignTeacherCommand {
+        tenant: _,
+        class_subject_id,
+        new_teacher_id,
+    } = cmd;
+    if class_subject_id != class_subject.id {
         return Err(DomainError::Validation(format!(
-            "class subject id {id} is in school {}, command school_id is {school_id}",
-            id.school_id(),
+            "command class_subject_id {class_subject_id} does not match aggregate id {}",
+            class_subject.id
         )));
     }
     let now = clock.now();
     let event_id = fresh_event_id(ids);
-    let aggregate = ClassSubject { id, school_id };
-    let event = ClassSubjectAssigned {
+    let correlation_id = educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let previous = class_subject.reassign_teacher(new_teacher_id, new_teacher_id, now, event_id);
+    let event = TeacherReassigned::new(
+        class_subject_id,
+        previous,
+        new_teacher_id,
         event_id,
-        school_id,
-        aggregate_id: id,
-        occurred_at: now,
-    };
-    Ok((aggregate, event))
+        correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+/// Unassign (soft-retire) a [`ClassSubject`] and emit a
+/// [`SubjectUnassigned`] event.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSubject,
+/// unassignment is unconditional: the service retires the
+/// aggregate and emits the typed event regardless of any
+/// cross-references.
+pub fn unassign_subject<C, G>(
+    cmd: UnassignSubjectCommand,
+    clock: &C,
+    ids: &G,
+    class_subject: &mut ClassSubject,
+) -> Result<SubjectUnassigned>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let UnassignSubjectCommand {
+        tenant: _,
+        class_subject_id,
+    } = cmd;
+    if class_subject_id != class_subject.id {
+        return Err(DomainError::Validation(format!(
+            "command class_subject_id {class_subject_id} does not match aggregate id {}",
+            class_subject.id
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let correlation_id = educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let actor = educore_core::ids::UserId::from_uuid(uuid::Uuid::now_v7());
+    class_subject.retire(actor, now, event_id);
+    let event = SubjectUnassigned::new(class_subject_id, event_id, correlation_id, now);
+    Ok(event)
 }
 
 /// Schedule a [`ClassRoutine`] period and emit a [`ClassRoutineScheduled`] event.

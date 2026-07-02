@@ -1,38 +1,19 @@
 //! Integration tests for the **ClassSubject aggregate** vertical slice.
 //!
-//! Pins the create contract for
-//! [`ClassSubject`](educore_academic::ClassSubject)
-//! end-to-end through the service layer:
+//! Pins the ClassSubject invariants from
+//! `docs/specs/academic/aggregates.md` § ClassSubject:
 //!
-//! 1. `create_class_subject` validates that the typed id's
-//!    `school_id` matches the command's `school_id` (the
-//!    tenant-anchor invariant), constructs the placeholder
-//!    aggregate from the typed id, and emits a
-//!    [`ClassSubjectAssigned`] event.
+//! - **I-1**: class-or-class-section scope (closed enum
+//!   `ClassSubjectScope`: `ClassOnly` requires
+//!   `class_section_id == None`; `ClassSection` requires
+//!   `class_section_id == Some(_)`).
+//! - **I-3**: optional `PassMark` override must be in
+//!   `0.0..=100.0` (via `PassMark::new`).
 //!
-//! The tests use the same fixture pattern as
-//! `crates/domains/academic/tests/class.rs`,
-//! `crates/domains/academic/tests/subject.rs`, and
-//! `crates/domains/academic/tests/workflows.rs`
-//! (`TestClock` + `SystemIdGen`).
+//! Plus the create / reassign / unassign happy paths.
 //!
-//! Per the academic/workflows.rs pattern, the **handlers**
-//! themselves are not wired end-to-end (no subscriber
-//! fan-out, no outbox commit, no audit row). These tests
-//! pin the contract of the **service layer** that the
-//! dispatcher will eventually wrap.
-//!
-//! Note on `ClassSubject` field set: the aggregate is a
-//! **placeholder** (id + school_id only) per the
-//! placeholder-aggregate macro in `aggregate.rs`. The
-//! full impl (class_id, subject_id, teacher_id,
-//! academic_year_id, audit footer, update flow) lands in
-//! a later workstream per `docs/build-plan.md`. The tests
-//! below therefore pin the **current** contract: aggregate
-//! carries the typed id + school_id, event carries the
-//! typed id + school_id + occurred_at + event_id, and the
-//! service enforces the `id.school_id() == school_id`
-//! invariant.
+//! The tests use the same fixture pattern as the rest of
+//! the academic test suites (`TestClock` + `SystemIdGen`).
 //!
 //! Note on user role: the platform's [`UserType`] enum does
 //! not expose an `Admin` variant — the school-scoped
@@ -50,6 +31,8 @@
 
 use educore_academic::prelude::*;
 use educore_core::clock::{SystemIdGen, TestClock};
+use educore_core::error::DomainError;
+use educore_core::ids::UserId;
 use educore_events::domain_event::DomainEvent;
 
 // =============================================================================
@@ -75,131 +58,418 @@ fn class_subject_id(g: &SystemIdGen, school: SchoolId) -> ClassSubjectId {
     ClassSubjectId::new(school, g.next_uuid())
 }
 
+fn class_id(g: &SystemIdGen, school: SchoolId) -> ClassId {
+    ClassId::new(school, g.next_uuid())
+}
+
+fn class_section_id(g: &SystemIdGen, school: SchoolId) -> ClassSectionId {
+    ClassSectionId::new(school, g.next_uuid())
+}
+
+fn subject_id(g: &SystemIdGen, school: SchoolId) -> SubjectId {
+    SubjectId::new(school, g.next_uuid())
+}
+
+fn teacher_id(g: &SystemIdGen) -> UserId {
+    g.next_user_id()
+}
+
+fn build_cmd(
+    tenant: TenantContext,
+    cs_id: ClassSubjectId,
+    class: ClassId,
+    class_section: Option<ClassSectionId>,
+    subject: SubjectId,
+    teacher: UserId,
+    scope: ClassSubjectScope,
+    pass_mark: Option<PassMark>,
+) -> AssignSubjectToClassCommand {
+    AssignSubjectToClassCommand {
+        tenant,
+        class_subject_id: cs_id,
+        class_id: class,
+        class_section_id: class_section,
+        subject_id: subject,
+        teacher_id: teacher,
+        scope,
+        pass_mark,
+    }
+}
+
 // =============================================================================
-// 1. Happy path: create a ClassSubject
+// 1. I-1 happy path: ClassOnly scope, no class_section_id
 // =============================================================================
 
-/// End-to-end happy path for the `ClassSubject` aggregate.
-/// Assign a subject to a class under a fresh school,
-/// asserting that:
-///
-/// 1. The create flow produces a `ClassSubject` aggregate
-///    carrying the typed id + the school id derived from
-///    the typed id, plus a `ClassSubjectAssigned` event
-///    with the right `event_type`, `aggregate_type`,
-///    `school_id`, `aggregate_id`, and a non-zero
-///    `occurred_at` timestamp.
-/// 2. The event's `event_id` is set and stable, and the
-///    `DomainEvent` trait's `aggregate_id()` returns the
-///    typed id's local UUID.
-/// 3. Two distinct class-subject pairings on the same
-///    school produce distinct typed ids and distinct
-///    `aggregate_id`s on their emitted events, proving
-///    the service does not accidentally coalesce
-///    assignments.
 #[test]
-fn class_subject_create_builds_aggregate_and_emits_event() {
+fn class_subject_assign_with_class_only_no_section_succeeds() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
     let clock = TestClock::new();
     let ids = SystemIdGen;
 
-    // ---- Create flow ----
-    let csid = class_subject_id(&g, school);
-    let cmd = CreateClassSubjectCommand {
-        id: csid,
-        school_id: school,
-    };
-    let (agg, event) = create_class_subject(cmd, &clock, &ids).expect("create");
+    let cs_id = class_subject_id(&g, school);
+    let class = class_id(&g, school);
+    let subject = subject_id(&g, school);
+    let teacher = teacher_id(&g);
+    let cmd = build_cmd(
+        tenant,
+        cs_id,
+        class,
+        None,
+        subject,
+        teacher,
+        ClassSubjectScope::ClassOnly,
+        None,
+    );
+    let (agg, event) = assign_subject_to_class(cmd, &clock, &ids).expect("assign");
 
-    // Aggregate fields are populated from the typed id.
-    assert_eq!(agg.id, csid);
+    // Aggregate fields are populated.
+    assert_eq!(agg.id, cs_id);
     assert_eq!(agg.school_id, school);
-    assert_eq!(agg.id.school_id(), school);
+    assert_eq!(agg.class_id, class);
+    assert_eq!(agg.class_section_id, None);
+    assert_eq!(agg.subject_id, subject);
+    assert_eq!(agg.teacher_id, teacher);
+    assert_eq!(agg.scope, ClassSubjectScope::ClassOnly);
+    assert_eq!(agg.pass_mark, None);
+    assert!(agg.is_active);
+    assert_eq!(agg.active_status, ActiveStatus::Active);
 
-    // Event metadata matches the DomainEvent trait's
-    // contract.
+    // Event metadata matches the DomainEvent trait contract.
     assert_eq!(
-        <ClassSubjectAssigned as DomainEvent>::EVENT_TYPE,
+        <SubjectAssignedToClass as DomainEvent>::EVENT_TYPE,
         "academic.class_subject.assigned"
     );
     assert_eq!(
-        <ClassSubjectAssigned as DomainEvent>::AGGREGATE_TYPE,
+        <SubjectAssignedToClass as DomainEvent>::AGGREGATE_TYPE,
         "class_subject"
     );
-    assert_eq!(<ClassSubjectAssigned as DomainEvent>::SCHEMA_VERSION, 1);
-    assert_eq!(event.aggregate_id(), agg.id.as_uuid());
+    assert_eq!(<SubjectAssignedToClass as DomainEvent>::SCHEMA_VERSION, 1);
+    assert_eq!(event.aggregate_id(), cs_id.as_uuid());
     assert_eq!(event.school_id(), school);
-    assert_eq!(event.aggregate_id, csid);
-    assert_eq!(event.school_id, school);
-
-    // Sanity check: a second class-subject on the same
-    // school mints a different typed id and emits a
-    // different aggregate_id.
-    let csid2 = class_subject_id(&g, school);
-    assert_ne!(csid, csid2);
-    let cmd2 = CreateClassSubjectCommand {
-        id: csid2,
-        school_id: school,
-    };
-    let (agg2, event2) = create_class_subject(cmd2, &clock, &ids).expect("create second");
-    assert_eq!(agg2.id, csid2);
-    assert_eq!(agg2.school_id, school);
-    assert_eq!(event2.aggregate_id, csid2);
-    assert_ne!(event.aggregate_id, event2.aggregate_id);
+    assert_eq!(event.class_subject_id, cs_id);
+    assert_eq!(event.class_id, class);
+    assert_eq!(event.class_section_id, None);
+    assert_eq!(event.subject_id, subject);
+    assert_eq!(event.teacher_id, teacher);
+    assert_eq!(event.scope, ClassSubjectScope::ClassOnly);
 }
 
 // =============================================================================
-// 2. Validation failure: id.school_id != school_id returns DomainError::Validation
+// 2. I-1 happy path: ClassSection scope, with class_section_id
 // =============================================================================
 
-/// Validation-failure path on the create flow: when the
-/// command's `school_id` does not match the typed id's
-/// `school_id`, `create_class_subject` returns
-/// `DomainError::Validation` (the tenant-anchor invariant
-/// trips before the aggregate or the event are
-/// constructed). This pins the cross-tenant guard that
-/// the placeholder impl already enforces.
-///
-/// Note: this is the second test (not a separate
-/// "happy-path update" test) because the placeholder
-/// `ClassSubject` aggregate has no update flow yet — the
-/// full impl (class_id, subject_id, teacher_id, audit
-/// footer) lands in a later workstream per
-/// `docs/build-plan.md`. The validation test pins the
-/// **single invariant** the placeholder guards today.
 #[test]
-fn class_subject_create_with_cross_school_id_returns_validation_error() {
-    let (_tenant, g) = admin_context();
-    let school = g.next_school_id();
-    let other_school = g.next_school_id();
+fn class_subject_assign_with_class_section_requires_section_succeeds() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
     let clock = TestClock::new();
     let ids = SystemIdGen;
 
-    // Cross-tenant: typed id belongs to `other_school`,
-    // but the command claims `school`. Must fail with
-    // Validation.
-    let csid = ClassSubjectId::new(other_school, g.next_uuid());
-    let cmd = CreateClassSubjectCommand {
-        id: csid,
-        school_id: school,
-    };
-    let err = create_class_subject(cmd, &clock, &ids)
-        .expect_err("cross-school id must fail validation");
+    let cs_id = class_subject_id(&g, school);
+    let class = class_id(&g, school);
+    let section = class_section_id(&g, school);
+    let subject = subject_id(&g, school);
+    let teacher = teacher_id(&g);
+    let cmd = build_cmd(
+        tenant,
+        cs_id,
+        class,
+        Some(section),
+        subject,
+        teacher,
+        ClassSubjectScope::ClassSection,
+        None,
+    );
+    let (agg, event) = assign_subject_to_class(cmd, &clock, &ids).expect("assign");
+    assert_eq!(agg.class_section_id, Some(section));
+    assert_eq!(agg.scope, ClassSubjectScope::ClassSection);
+    assert_eq!(event.class_section_id, Some(section));
+    assert_eq!(event.scope, ClassSubjectScope::ClassSection);
+}
+
+// =============================================================================
+// 3. I-1 violation: ClassOnly + Some(section) is rejected
+// =============================================================================
+
+#[test]
+fn class_subject_assign_with_class_only_and_section_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cs_id = class_subject_id(&g, school);
+    let class = class_id(&g, school);
+    let section = class_section_id(&g, school);
+    let subject = subject_id(&g, school);
+    let teacher = teacher_id(&g);
+    // ClassOnly + Some(section) is a violation.
+    let cmd = build_cmd(
+        tenant,
+        cs_id,
+        class,
+        Some(section),
+        subject,
+        teacher,
+        ClassSubjectScope::ClassOnly,
+        None,
+    );
+    let err = assign_subject_to_class(cmd, &clock, &ids)
+        .expect_err("ClassOnly + Some(section) must be rejected");
     assert!(
         matches!(err, DomainError::Validation(_)),
         "expected Validation, got {err:?}"
     );
+    assert!(
+        err.to_string().contains("ClassOnly"),
+        "error message should mention ClassOnly, got: {err}"
+    );
+}
 
-    // Sanity check: a subsequent call with a matching
-    // `school_id` still succeeds, proving the failure
-    // was tied to the cross-school mismatch (and not to
-    // a corrupt clock, ids, or test setup).
-    let csid2 = ClassSubjectId::new(school, g.next_uuid());
-    let ok_cmd = CreateClassSubjectCommand {
-        id: csid2,
-        school_id: school,
+// =============================================================================
+// 4. I-1 violation: ClassSection + None is rejected
+// =============================================================================
+
+#[test]
+fn class_subject_assign_with_class_section_and_no_section_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cs_id = class_subject_id(&g, school);
+    let class = class_id(&g, school);
+    let subject = subject_id(&g, school);
+    let teacher = teacher_id(&g);
+    // ClassSection + None is a violation.
+    let cmd = build_cmd(
+        tenant,
+        cs_id,
+        class,
+        None,
+        subject,
+        teacher,
+        ClassSubjectScope::ClassSection,
+        None,
+    );
+    let err = assign_subject_to_class(cmd, &clock, &ids)
+        .expect_err("ClassSection + None must be rejected");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+    assert!(
+        err.to_string().contains("ClassSection"),
+        "error message should mention ClassSection, got: {err}"
+    );
+}
+
+// =============================================================================
+// 5. I-3 happy path: PassMark in range succeeds
+// =============================================================================
+
+#[test]
+fn class_subject_assign_with_pass_mark_in_range_succeeds() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cs_id = class_subject_id(&g, school);
+    let class = class_id(&g, school);
+    let subject = subject_id(&g, school);
+    let teacher = teacher_id(&g);
+    let pm = PassMark::new(45.0).expect("valid pass mark");
+    let cmd = build_cmd(
+        tenant,
+        cs_id,
+        class,
+        None,
+        subject,
+        teacher,
+        ClassSubjectScope::ClassOnly,
+        Some(pm),
+    );
+    let (agg, event) = assign_subject_to_class(cmd, &clock, &ids).expect("assign");
+    assert_eq!(agg.pass_mark, Some(pm));
+    assert_eq!(event.pass_mark, Some(pm));
+
+    // Edge values: 0.0 and 100.0 must succeed.
+    for v in [0.0_f32, 100.0_f32] {
+        let cs_id2 = class_subject_id(&g, school);
+        let pm2 = PassMark::new(v).expect("edge pass mark");
+        let cmd2 = build_cmd(
+            TenantContext::for_user(school, teacher, ids.next_correlation_id(), UserType::SchoolAdmin),
+            cs_id2,
+            class,
+            None,
+            subject,
+            teacher,
+            ClassSubjectScope::ClassOnly,
+            Some(pm2),
+        );
+        let (agg2, _) = assign_subject_to_class(cmd2, &clock, &ids).expect("assign edge");
+        assert_eq!(agg2.pass_mark, Some(pm2));
+    }
+}
+
+// =============================================================================
+// 6. I-3 violation: PassMark out of range is rejected at the service boundary
+// =============================================================================
+//
+// Note: `PassMark::new` is the primary value-object guard.
+// Since `AssignSubjectToClassCommand.pass_mark` is an
+// `Option<PassMark>` (not an `Option<f32>`), the only way
+// for an out-of-range value to reach the service is via
+// the aggregate constructor's internal re-validation
+// (which calls `PassMark::new(pm.as_f32())` again to
+// assert the invariant). This test pins that re-check by
+// constructing a `ClassSubject` directly with a manually
+// stitched `PassMark`-bypass.
+//
+// Because we cannot bypass `PassMark::new` from outside
+// the crate, we instead pin the rejection at the
+// `PassMark::new` boundary (the canonical gate).
+#[test]
+fn pass_mark_constructor_rejects_out_of_range() {
+    assert!(PassMark::new(-0.01).is_err());
+    assert!(PassMark::new(100.01).is_err());
+    assert!(PassMark::new(50.0).is_ok());
+    assert!(PassMark::new(0.0).is_ok());
+    assert!(PassMark::new(100.0).is_ok());
+}
+
+// =============================================================================
+// 7. Reassign teacher: updates teacher_id, bumps version
+// =============================================================================
+
+#[test]
+fn class_subject_reassign_teacher_updates_teacher_id() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cs_id = class_subject_id(&g, school);
+    let class = class_id(&g, school);
+    let subject = subject_id(&g, school);
+    let teacher1 = teacher_id(&g);
+    let teacher2 = teacher_id(&g);
+    let cmd = build_cmd(
+        tenant.clone(),
+        cs_id,
+        class,
+        None,
+        subject,
+        teacher1,
+        ClassSubjectScope::ClassOnly,
+        None,
+    );
+    let (mut agg, _ev) = assign_subject_to_class(cmd, &clock, &ids).expect("assign");
+    let initial_version = agg.version;
+    assert_eq!(agg.teacher_id, teacher1);
+
+    // Reassign to teacher2.
+    let reassign_cmd = ReassignTeacherCommand {
+        tenant: tenant.clone(),
+        class_subject_id: cs_id,
+        new_teacher_id: teacher2,
     };
-    let (_agg, _event) =
-        create_class_subject(ok_cmd, &clock, &ids).expect("matching school id must succeed");
+    let event = reassign_teacher(reassign_cmd, &clock, &ids, &mut agg).expect("reassign");
+    assert_eq!(event.previous_teacher_id, teacher1);
+    assert_eq!(event.new_teacher_id, teacher2);
+    assert_eq!(event.class_subject_id, cs_id);
+    assert_eq!(agg.teacher_id, teacher2);
+    assert!(
+        agg.version > initial_version,
+        "version must bump on reassign"
+    );
+    assert_eq!(
+        <TeacherReassigned as DomainEvent>::EVENT_TYPE,
+        "academic.class_subject.teacher_reassigned"
+    );
+}
+
+// =============================================================================
+// 8. Unassign: retires the aggregate, bumps version, emits SubjectUnassigned
+// =============================================================================
+
+#[test]
+fn class_subject_unassign_retires() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cs_id = class_subject_id(&g, school);
+    let class = class_id(&g, school);
+    let subject = subject_id(&g, school);
+    let teacher = teacher_id(&g);
+    let cmd = build_cmd(
+        tenant.clone(),
+        cs_id,
+        class,
+        None,
+        subject,
+        teacher,
+        ClassSubjectScope::ClassOnly,
+        None,
+    );
+    let (mut agg, _ev) = assign_subject_to_class(cmd, &clock, &ids).expect("assign");
+    let initial_version = agg.version;
+    assert_eq!(agg.active_status, ActiveStatus::Active);
+    assert!(agg.is_active);
+
+    // Unassign (retire).
+    let unassign_cmd = UnassignSubjectCommand {
+        tenant: tenant.clone(),
+        class_subject_id: cs_id,
+    };
+    let event = unassign_subject(unassign_cmd, &clock, &ids, &mut agg).expect("unassign");
+    assert_eq!(event.class_subject_id, cs_id);
+    assert_eq!(agg.active_status, ActiveStatus::Retired);
+    assert!(!agg.is_active);
+    assert!(
+        agg.version > initial_version,
+        "version must bump on unassign"
+    );
+    assert_eq!(
+        <SubjectUnassigned as DomainEvent>::EVENT_TYPE,
+        "academic.class_subject.unassigned"
+    );
+}
+
+// =============================================================================
+// 9. Tenant-anchor: cross-school class_id is rejected
+// =============================================================================
+
+#[test]
+fn class_subject_assign_cross_school_class_id_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let other_school = g.next_school_id();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cs_id = class_subject_id(&g, school);
+    let other_class = class_id(&g, other_school);
+    let subject = subject_id(&g, school);
+    let teacher = teacher_id(&g);
+    let cmd = build_cmd(
+        tenant,
+        cs_id,
+        other_class,
+        None,
+        subject,
+        teacher,
+        ClassSubjectScope::ClassOnly,
+        None,
+    );
+    let err = assign_subject_to_class(cmd, &clock, &ids)
+        .expect_err("cross-school class_id must be rejected");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
 }

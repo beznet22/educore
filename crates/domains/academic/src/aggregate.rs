@@ -29,11 +29,11 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
 use crate::value_objects::{
     AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoutineId, ClassRoomId,
-    ClassSectionId, ClassSubjectId, EmailAddress, GuardianId, HomeworkId, IdCardId, LessonId,
-    LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold,
-    PassMark, PhoneNumber, RegistrationFieldId, Relation, SectionId, StudentCategoryId,
-    StudentGroupId, StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId,
-    SubjectId, SubjectType,
+    ClassSectionId, ClassSubjectId, ClassSubjectScope, EmailAddress, GuardianId, HomeworkId,
+    IdCardId, LessonId, LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId,
+    OptionalSubjectGpaThreshold, PassMark, PhoneNumber, RegistrationFieldId, Relation, SectionId,
+    StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId, StudentPromotionId,
+    StudentRecordId, SubjectId, SubjectType,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -1007,11 +1007,236 @@ impl ClassSection {
         self.last_event_id = Some(event_id);
     }
 }
-academic_aggregate_stub! {
-    /// The assignment of a subject to a class, with a teacher,
-    /// in a specific academic year. See
-    /// `docs/specs/academic/aggregates.md` § ClassSubject.
-    pub struct ClassSubject { id: ClassSubjectId }
+// =============================================================================
+// ClassSubject
+// =============================================================================
+
+/// The assignment of a subject to a class (and possibly a
+/// specific section), with a teacher and an optional
+/// `PassMark` override. See
+/// `docs/specs/academic/aggregates.md` § ClassSubject.
+///
+/// Per the spec:
+///
+/// - **I-1** (Class or class-section scope): the
+///   `scope` field is a closed [`ClassSubjectScope`] enum
+///   (`ClassOnly` | `ClassSection`). `ClassOnly` requires
+///   `class_section_id == None`; `ClassSection` requires
+///   `class_section_id == Some(_)`. Enforced by
+///   [`ClassSubject::fresh`].
+/// - **I-2** (Same teacher may be assigned to multiple
+///   class-subjects) is permissive; the data model
+///   permits any number of class-subjects per teacher.
+/// - **I-3** (`PassMark` override): the `pass_mark` field
+///   is an `Option<PassMark>`. When `Some`, the inner
+///   [`PassMark`] value object validates the range
+///   `0.0..=100.0`. Enforced by [`ClassSubject::fresh`]
+///   (which constructs `PassMark` via the value object
+///   constructor that rejects out-of-range values).
+///
+/// I-2 is permissive; no constraint is needed in the
+/// aggregate.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ClassSubject {
+    /// The class-subject's typed id.
+    pub id: ClassSubjectId,
+    /// The owning school (tenant anchor; also embedded in
+    /// the typed id).
+    pub school_id: SchoolId,
+    /// The class this subject is assigned to.
+    pub class_id: ClassId,
+    /// The class-section this subject is assigned to.
+    /// `Some` when `scope == ClassSection`, `None` when
+    /// `scope == ClassOnly`. Enforced by [`Self::fresh`]
+    /// per I-1.
+    pub class_section_id: Option<ClassSectionId>,
+    /// The subject being assigned.
+    pub subject_id: SubjectId,
+    /// The teacher assigned to teach this class-subject.
+    /// Typed as [`UserId`] (no `StaffId` exists in the
+    /// academic crate today; teachers are users).
+    pub teacher_id: UserId,
+    /// The scope of the assignment (`ClassOnly` or
+    /// `ClassSection`). Cross-field validated with
+    /// `class_section_id` per I-1.
+    pub scope: ClassSubjectScope,
+    /// Optional per-class-subject `PassMark` override. When
+    /// `Some`, the inner value must be in `0.0..=100.0`
+    /// per I-3 (enforced by [`PassMark::new`]).
+    pub pass_mark: Option<PassMark>,
+    /// Whether this class-subject is currently active.
+    /// Set to `false` by [`ClassSubject::retire`].
+    pub is_active: bool,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// Creation time.
+    pub created_at: Timestamp,
+    /// Last-mutation time.
+    pub updated_at: Timestamp,
+    /// Created by.
+    pub created_by: UserId,
+    /// Last mutated by.
+    pub updated_by: UserId,
+    /// Soft-delete flag. Set to `Retired` by
+    /// [`ClassSubject::retire`].
+    pub active_status: ActiveStatus,
+    /// Last event id (for the outbox / audit bridge).
+    pub last_event_id: Option<EventId>,
+    /// Correlation id of the request that originated this
+    /// aggregate.
+    pub correlation_id: CorrelationId,
+}
+
+impl ClassSubject {
+    /// The default etag for a freshly minted class-subject.
+    pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
+
+    /// Returns a `ClassSubject` in its just-minted state.
+    ///
+    /// # Errors
+    ///
+    /// Returns `DomainError::Validation` if:
+    /// - `class_id.school_id() != id.school_id()`,
+    ///   `class_section_id.school_id() != id.school_id()`
+    ///   (when `Some`), or
+    ///   `subject_id.school_id() != id.school_id()`
+    ///   (tenant-anchor invariant);
+    /// - `scope == ClassOnly` but `class_section_id` is
+    ///   `Some` (I-1 violation);
+    /// - `scope == ClassSection` but `class_section_id` is
+    ///   `None` (I-1 violation);
+    /// - `pass_mark.is_some_and` the inner value is outside
+    ///   `0.0..=100.0` (I-3 violation, via [`PassMark::new`]).
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: ClassSubjectId,
+        class_id: ClassId,
+        class_section_id: Option<ClassSectionId>,
+        subject_id: SubjectId,
+        teacher_id: UserId,
+        scope: ClassSubjectScope,
+        pass_mark: Option<PassMark>,
+        created_by: UserId,
+        updated_by: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        use educore_core::error::DomainError;
+        // Tenant-anchor invariant: every referenced id must
+        // share the same school as the typed class-subject id.
+        if class_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation(format!(
+                "class_id {class_id} is in school {}, class_subject id school is {}",
+                class_id.school_id(),
+                id.school_id()
+            )));
+        }
+        if subject_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation(format!(
+                "subject_id {subject_id} is in school {}, class_subject id school is {}",
+                subject_id.school_id(),
+                id.school_id()
+            )));
+        }
+        if let Some(cs) = class_section_id {
+            if cs.school_id() != id.school_id() {
+                return Err(DomainError::Validation(format!(
+                    "class_section_id {cs} is in school {}, class_subject id school is {}",
+                    cs.school_id(),
+                    id.school_id()
+                )));
+            }
+        }
+        // I-1: Class or class-section scope cross-field
+        // consistency.
+        match scope {
+            ClassSubjectScope::ClassOnly => {
+                if class_section_id.is_some() {
+                    return Err(DomainError::Validation(format!(
+                        "ClassOnly scope cannot have class_section_id set \
+                         (got class_section_id {class_section_id:?}, class_subject {id})"
+                    )));
+                }
+            }
+            ClassSubjectScope::ClassSection => {
+                if class_section_id.is_none() {
+                    return Err(DomainError::Validation(format!(
+                        "ClassSection scope requires class_section_id to be Some \
+                         (got None for class_subject {id})"
+                    )));
+                }
+            }
+        }
+        // I-3: PassMark override range check. The constructor
+        // already rejects out-of-range values, but we surface
+        // the error here so callers see the precise violation.
+        if let Some(pm_value) = pass_mark {
+            // Reconstruct via `PassMark::new` to assert the
+            // invariant end-to-end (the option could carry a
+            // value constructed via `PassMark::new`, but we
+            // validate again to guarantee any future
+            // caller-construction paths are still checked).
+            let _ = PassMark::new(pm_value.as_f32())?;
+        }
+        let etag = fresh_etag();
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            class_id,
+            class_section_id,
+            subject_id,
+            teacher_id,
+            scope,
+            pass_mark,
+            is_active: true,
+            version: Version::initial(),
+            etag,
+            created_at: now,
+            updated_at: now,
+            created_by,
+            updated_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Replace the current teacher with `new_teacher_id`.
+    /// Bumps `updated_at`, `updated_by`, `version`, and
+    /// `last_event_id`. Returns the previous `teacher_id`
+    /// for the event payload.
+    pub fn reassign_teacher(
+        &mut self,
+        new_teacher_id: UserId,
+        updated_by: UserId,
+        now: Timestamp,
+        event_id: EventId,
+    ) -> UserId {
+        let previous = self.teacher_id;
+        self.teacher_id = new_teacher_id;
+        self.updated_at = now;
+        self.updated_by = updated_by;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        previous
+    }
+
+    /// Soft-delete (retire) the class-subject. Sets
+    /// `active_status = Retired` and `is_active = false`,
+    /// bumps the audit footer. The service layer is
+    /// responsible for any business preconditions (per
+    /// the spec, `unassign_subject` is unconditional —
+    /// any active class-subject may be unassigned).
+    pub fn retire(&mut self, updated_by: UserId, now: Timestamp, event_id: EventId) {
+        self.active_status = ActiveStatus::Retired;
+        self.is_active = false;
+        self.updated_at = now;
+        self.updated_by = updated_by;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+    }
 }
 academic_aggregate_stub! {
     /// The weekly schedule for a class-section-subject

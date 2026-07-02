@@ -35,7 +35,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use educore_core::ids::{CorrelationId, EventId, SchoolId};
+use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
 use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 
@@ -2331,15 +2331,225 @@ impl DomainEvent for ClassSectionDeleted {
         self.occurred_at
     }
 }
-academic_event_stub! {
-    /// Event stub: a subject was assigned to a class. See
-    /// `docs/specs/academic/aggregates.md` § ClassSubject.
-    pub struct ClassSubjectAssigned {
-        aggregate_id: ClassSubjectId,
-        event_type: "academic.class_subject.assigned",
-        aggregate_type: "class_subject",
+// =============================================================================
+// ClassSubject events (full impl — Batch 2)
+// =============================================================================
+
+/// A subject was assigned to a class (or class-section),
+/// with a teacher.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSubject,
+/// the event carries the typed id plus the dimension ids
+/// (`class_id`, `class_section_id`, `subject_id`,
+/// `teacher_id`), the [`ClassSubjectScope`], the optional
+/// `PassMark` override, and the audit metadata.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SubjectAssignedToClass {
+    /// The class-subject's typed id.
+    pub class_subject_id: ClassSubjectId,
+    /// The class this subject is assigned to.
+    pub class_id: ClassId,
+    /// The class-section this subject is assigned to
+    /// (`None` when `scope == ClassOnly`).
+    pub class_section_id: Option<ClassSectionId>,
+    /// The subject being assigned.
+    pub subject_id: SubjectId,
+    /// The teacher being assigned.
+    pub teacher_id: UserId,
+    /// The scope of the assignment.
+    pub scope: crate::value_objects::ClassSubjectScope,
+    /// Optional per-class-subject `PassMark` override.
+    pub pass_mark: Option<crate::value_objects::PassMark>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered
+    /// the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl SubjectAssignedToClass {
+    /// Mints a fresh `SubjectAssignedToClass`.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub const fn new(
+        class_subject_id: ClassSubjectId,
+        class_id: ClassId,
+        class_section_id: Option<ClassSectionId>,
+        subject_id: SubjectId,
+        teacher_id: UserId,
+        scope: crate::value_objects::ClassSubjectScope,
+        pass_mark: Option<crate::value_objects::PassMark>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            class_subject_id,
+            class_id,
+            class_section_id,
+            subject_id,
+            teacher_id,
+            scope,
+            pass_mark,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
     }
 }
+
+impl DomainEvent for SubjectAssignedToClass {
+    const EVENT_TYPE: &'static str = "academic.class_subject.assigned";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "class_subject";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.class_subject_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.class_subject_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A [`ClassSubject`](crate::aggregate::ClassSubject) had its
+/// teacher reassigned to a different user.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSubject §
+/// I-2 (permissive), the same teacher may be assigned to
+/// multiple class-subjects, and a class-subject may be
+/// reassigned to a different teacher without constraint.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TeacherReassigned {
+    /// The class-subject's typed id.
+    pub class_subject_id: ClassSubjectId,
+    /// The previous teacher id.
+    pub previous_teacher_id: UserId,
+    /// The new teacher id.
+    pub new_teacher_id: UserId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered
+    /// the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl TeacherReassigned {
+    /// Mints a fresh `TeacherReassigned`.
+    #[must_use]
+    pub const fn new(
+        class_subject_id: ClassSubjectId,
+        previous_teacher_id: UserId,
+        new_teacher_id: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            class_subject_id,
+            previous_teacher_id,
+            new_teacher_id,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for TeacherReassigned {
+    const EVENT_TYPE: &'static str = "academic.class_subject.teacher_reassigned";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "class_subject";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.class_subject_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.class_subject_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A [`ClassSubject`](crate::aggregate::ClassSubject) was
+/// unassigned (soft-retired).
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSubject,
+/// unassignment is unconditional: the service retires the
+/// aggregate regardless of any cross-references.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SubjectUnassigned {
+    /// The class-subject's typed id.
+    pub class_subject_id: ClassSubjectId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered
+    /// the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl SubjectUnassigned {
+    /// Mints a fresh `SubjectUnassigned`.
+    #[must_use]
+    pub const fn new(
+        class_subject_id: ClassSubjectId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            class_subject_id,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for SubjectUnassigned {
+    const EVENT_TYPE: &'static str = "academic.class_subject.unassigned";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "class_subject";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.class_subject_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.class_subject_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Backward-compatible alias for [`SubjectAssignedToClass`].
+///
+/// The earlier (placeholder-era) name `ClassSubjectAssigned`
+/// is retained so older call sites compile unchanged. New
+/// callers should prefer [`SubjectAssignedToClass`].
+#[deprecated(
+    since = "0.1.0",
+    note = "renamed to SubjectAssignedToClass per spec; alias retained for backward compat"
+)]
+pub type ClassSubjectAssigned = SubjectAssignedToClass;
 academic_event_stub! {
     /// Event stub: a class-routine period was scheduled. See
     /// `docs/specs/academic/aggregates.md` § ClassRoutine.
