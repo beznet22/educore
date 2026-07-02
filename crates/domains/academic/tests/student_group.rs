@@ -1,41 +1,11 @@
 //! Integration tests for the **StudentGroup aggregate** vertical slice.
 //!
-//! Pins the create contract for
-//! [`StudentGroup`](educore_academic::StudentGroup)
-//! end-to-end through the service layer:
+//! Pins the create / update / add-student / remove-student / delete
+//! contracts for the `StudentGroup` aggregate end-to-end through
+//! the service layer, exercising all 2 spec invariants:
 //!
-//! 1. `create_student_group` validates that the typed id's
-//!    school matches the command's `school_id`, constructs
-//!    the aggregate, and emits a [`StudentGroupCreated`]
-//!    event.
-//!
-//! The tests use the same fixture pattern as
-//! `crates/domains/academic/tests/class.rs` and
-//! `crates/domains/academic/tests/subject.rs`
-//! (`TestClock` + `SystemIdGen`).
-//!
-//! Per the academic/workflows.rs pattern, the **handlers**
-//! themselves are not wired end-to-end (no subscriber
-//! fan-out, no outbox commit, no audit row). These tests
-//! pin the contract of the **service layer** that the
-//! dispatcher will eventually wrap.
-//!
-//! Note on `StudentGroup` field set: the aggregate is a
-//! placeholder stub carrying only `id` (typed
-//! `StudentGroupId`) and `school_id`. The full attribute
-//! surface (name, capacity, optional description) lives in
-//! `docs/specs/academic/aggregates.md` § StudentGroup but
-//! has not been wired into the typed command shape yet.
-//! The tests below therefore exercise the real contract
-//! available today: `id` + `school_id` round-trip through
-//! the aggregate and the emitted `StudentGroupCreated`
-//! event.
-//!
-//! Note on user role: the platform's [`UserType`] enum does
-//! not expose an `Admin` variant — the school-scoped
-//! administrative role is [`UserType::SchoolAdmin`]. These
-//! tests use `SchoolAdmin` to match the rest of the
-//! academic + subject test suites.
+//! - I-1: Group uniquely named within school
+//! - I-2: A student can be in many groups
 
 #![allow(
     clippy::unwrap_used,
@@ -45,25 +15,30 @@
     missing_docs
 )]
 
-use educore_academic::StudentGroup;
-use educore_academic::commands::CreateStudentGroupCommand;
-use educore_academic::events::StudentGroupCreated;
-use educore_academic::services::create_student_group;
-use educore_core::clock::{Clock as _, IdGenerator as _, SystemIdGen, TestClock};
-use uuid::Uuid;
+use std::collections::HashSet;
+
+use educore_academic::commands::{
+    AddStudentToGroupCommand, DeleteStudentGroupCommand, RealCreateStudentGroupCommand,
+    RemoveStudentFromGroupCommand, UpdateStudentGroupCommand,
+};
+use educore_academic::events::{
+    RealStudentGroupCreated, StudentAddedToGroup, StudentGroupDeleted, StudentGroupUpdated,
+    StudentRemovedFromGroup,
+};
+use educore_academic::prelude::*;
+use educore_academic::services::{
+    add_student_to_group, create_student_group_aggregate, delete_student_group,
+    remove_student_from_group, update_student_group,
+};
+use educore_academic::{RealStudentGroup, StudentGroupId};
+use educore_core::clock::{SystemIdGen, TestClock};
 use educore_core::error::DomainError;
-use educore_academic::value_objects::StudentGroupId;
-use educore_core::tenant::{TenantContext, UserType};
-use educore_events::domain_event::DomainEvent;
+use educore_core::ids::SchoolId;
 
 // =============================================================================
 // Fixtures
 // =============================================================================
 
-/// A fresh `TenantContext` for a `SchoolAdmin` acting on a
-/// freshly-minted school. Returns the context plus the
-/// generator so tests can mint child ids from the same
-/// school.
 fn admin_context() -> (TenantContext, SystemIdGen) {
     let g = SystemIdGen;
     let school = g.next_school_id();
@@ -75,104 +50,236 @@ fn admin_context() -> (TenantContext, SystemIdGen) {
     )
 }
 
-fn student_group_id(g: &SystemIdGen, school: educore_core::ids::SchoolId) -> StudentGroupId {
+fn student_group_id(g: &SystemIdGen, school: SchoolId) -> StudentGroupId {
     StudentGroupId::new(school, g.next_uuid())
 }
 
-// =============================================================================
-// 1. Happy path: create a StudentGroup
-// =============================================================================
+fn make_cmd(tenant: TenantContext, g: &SystemIdGen, school: SchoolId) -> RealCreateStudentGroupCommand {
+    RealCreateStudentGroupCommand {
+        tenant,
+        student_group_id: student_group_id(g, school),
+        name: "Chess Club".to_string(),
+        description: "After-school chess activities".to_string(),
+    }
+}
 
-/// End-to-end happy path for the `StudentGroup` aggregate.
-/// Mint a fresh school + actor, build a
-/// `CreateStudentGroupCommand`, and assert that:
-///
-/// 1. `create_student_group` returns a `StudentGroup`
-///    aggregate carrying the typed `id` and the
-///    command's `school_id`.
-/// 2. The emitted `StudentGroupCreated` event has the
-///    right `event_type`, `aggregate_type`, and
-///    `schema_version` from the `DomainEvent` trait, plus
-///    a matching `aggregate_id` and `school_id`.
-/// 3. The event's `event_id` is fresh (non-zero) and
-///    `occurred_at` is sourced from the test clock.
-#[test]
-fn student_group_create_builds_aggregate_and_emits_student_group_created_event() {
-    let (tenant, g) = admin_context();
-    let school = tenant.school_id;
-    let clock = TestClock::new();
-    let ids = SystemIdGen;
+#[derive(Default)]
+struct InMemoryUniqueness {
+    group_names: HashSet<(SchoolId, String)>,
+}
 
-    // ---- Create flow ----
-    let create_cmd = CreateStudentGroupCommand {
-        id: student_group_id(&g, school),
-        school_id: school,
-    };
-    let (agg, created_event) = create_student_group(create_cmd, &clock, &ids).expect("create");
-
-    // Aggregate fields are populated from the command.
-    assert_eq!(agg.id.school_id(), school);
-    assert_eq!(agg.school_id, school);
-
-    // Event metadata matches the DomainEvent trait contract.
-    assert_eq!(
-        <StudentGroupCreated as DomainEvent>::EVENT_TYPE,
-        "academic.student_group.created"
-    );
-    assert_eq!(
-        <StudentGroupCreated as DomainEvent>::AGGREGATE_TYPE,
-        "student_group"
-    );
-    assert_eq!(<StudentGroupCreated as DomainEvent>::SCHEMA_VERSION, 1);
-    assert_eq!(created_event.aggregate_id, agg.id);
-    assert_eq!(created_event.school_id, school);
-    // The event's id and timestamp are stamped from the
-    // generator and clock respectively.
-    assert_ne!(created_event.event_id.0, Uuid::nil());
-    assert_eq!(created_event.occurred_at, clock.now());
+impl UniquenessChecker for InMemoryUniqueness {
+    fn student_admission_no_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn student_email_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn roll_no_exists(&self, _: SchoolId, _: ClassId, _: SectionId, _: AcademicYearId, _: &str) -> bool { false }
+    fn class_name_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn section_name_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn subject_code_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn lesson_title_exists(&self, _: SchoolId, _: ClassSectionId, _: SubjectId, _: &str) -> bool { false }
+    fn class_section_exists(&self, _: SchoolId, _: ClassId, _: SectionId, _: AcademicYearId) -> bool { false }
+    fn class_section_has_student_records(&self, _: SchoolId, _: ClassSectionId) -> bool { false }
+    fn academic_year_overlaps(&self, _: SchoolId, _: AcademicYearRange, _: Option<AcademicYearId>) -> bool { false }
+    fn optional_subject_assigned_exists(&self, _: SchoolId, _: StudentId, _: AcademicYearId) -> bool { false }
+    fn primary_guardian_link_exists(&self, _: SchoolId, _: StudentId) -> bool { false }
+    fn student_has_active_record(&self, _: SchoolId, _: StudentId, _: AcademicYearId) -> bool { false }
+    fn teacher_has_conflict(&self, _: SchoolId, _: UserId, _: DayOfWeek, _: u8) -> bool { false }
+    fn room_has_conflict(&self, _: SchoolId, _: ClassRoomId, _: DayOfWeek, _: u8) -> bool { false }
+    fn student_category_name_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn student_group_name_exists(&self, school: SchoolId, name: &str) -> bool {
+        self.group_names.contains(&(school, name.to_string()))
+    }
 }
 
 // =============================================================================
-// 2. Validation failure: school_id mismatch returns DomainError::Validation
+// 1. Happy path
 // =============================================================================
 
-/// Validation-failure path on the create flow: when the
-/// typed id's `school_id()` does not match the command's
-/// `school_id`, `create_student_group` returns
-/// `DomainError::Validation` and emits no event (the
-/// function returns `Err` before the aggregate or the
-/// event are constructed).
 #[test]
-fn student_group_create_with_school_id_mismatch_returns_validation_error() {
-    let (_tenant, g) = admin_context();
-    let school = g.next_school_id();
-    // Build the typed id in `school`, then lie about the
-    // command's school — the validation guard must catch
-    // the mismatch.
-    let other_school = g.next_school_id();
-    let mismatched_cmd = CreateStudentGroupCommand {
-        id: StudentGroupId::new(school, g.next_uuid()),
-        school_id: other_school,
-    };
-    let clock = TestClock::new();
-    let ids = SystemIdGen;
-    let err = create_student_group(mismatched_cmd, &clock, &ids)
-        .expect_err("cross-school id must fail validation");
-    assert!(
-        matches!(err, DomainError::Validation(_)),
-        "expected Validation, got {err:?}"
-    );
-
-    // Sanity check: a subsequent call with matching
-    // id.school_id() and command school_id succeeds,
-    // proving the failure was tied to the cross-school id
-    // (and not to a corrupt clock, ids, or fixture).
+fn student_group_create_succeeds() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let ok_cmd = CreateStudentGroupCommand {
-        id: StudentGroupId::new(school, g.next_uuid()),
-        school_id: school,
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant, &g, school);
+    let (agg, event) = create_student_group_aggregate(cmd, &clock, &ids, &uniqueness)
+        .expect("create should succeed");
+
+    assert_eq!(agg.school_id, school);
+    assert_eq!(agg.name, "Chess Club");
+    assert!(agg.member_ids.is_empty());
+
+    assert_eq!(RealStudentGroupCreated::EVENT_TYPE, "academic.student_group.created");
+    assert_eq!(RealStudentGroupCreated::AGGREGATE_TYPE, "student_group");
+    assert_eq!(event.school_id(), school);
+}
+
+// =============================================================================
+// 2. I-1: duplicate name rejected
+// =============================================================================
+
+#[test]
+fn student_group_duplicate_name_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let mut uniqueness = InMemoryUniqueness::default();
+    uniqueness.group_names.insert((school, "Chess Club".to_string()));
+
+    let cmd = make_cmd(tenant, &g, school);
+    let err = create_student_group_aggregate(cmd, &clock, &ids, &uniqueness)
+        .expect_err("duplicate name must fail");
+    assert!(matches!(err, DomainError::Conflict(_)), "got {err:?}");
+}
+
+// =============================================================================
+// 3. I-2: add student to group
+// =============================================================================
+
+#[test]
+fn student_group_add_student_succeeds() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_student_group_aggregate(cmd, &clock, &ids, &uniqueness)
+        .expect("create");
+
+    let student = g.next_user_id();
+    let add_cmd = AddStudentToGroupCommand {
+        tenant,
+        student_group_id: agg.id,
+        student_id: StudentId::new(school, g.next_uuid()),
     };
-    let (_agg, _event) =
-        create_student_group(ok_cmd, &clock, &ids).expect("matching school id must succeed");
+    let event = add_student_to_group(add_cmd, &mut agg, &clock, &ids).expect("add");
+    assert_eq!(agg.member_ids.len(), 1);
+    let _: StudentAddedToGroup = event;
+}
+
+// =============================================================================
+// 4. I-2: idempotent add (same student twice)
+// =============================================================================
+
+#[test]
+fn student_group_add_same_student_idempotent() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_student_group_aggregate(cmd, &clock, &ids, &uniqueness)
+        .expect("create");
+
+    let student_id = StudentId::new(school, g.next_uuid());
+
+    let add_cmd1 = AddStudentToGroupCommand {
+        tenant: tenant.clone(),
+        student_group_id: agg.id,
+        student_id,
+    };
+    add_student_to_group(add_cmd1, &mut agg, &clock, &ids).expect("first add");
+
+    let add_cmd2 = AddStudentToGroupCommand {
+        tenant,
+        student_group_id: agg.id,
+        student_id,
+    };
+    add_student_to_group(add_cmd2, &mut agg, &clock, &ids).expect("second add (idempotent)");
+    assert_eq!(agg.member_ids.len(), 1);
+}
+
+// =============================================================================
+// 5. I-2: remove student
+// =============================================================================
+
+#[test]
+fn student_group_remove_student_succeeds() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_student_group_aggregate(cmd, &clock, &ids, &uniqueness)
+        .expect("create");
+
+    let student_id = StudentId::new(school, g.next_uuid());
+
+    let add_cmd = AddStudentToGroupCommand {
+        tenant: tenant.clone(),
+        student_group_id: agg.id,
+        student_id,
+    };
+    add_student_to_group(add_cmd, &mut agg, &clock, &ids).expect("add");
+    assert_eq!(agg.member_ids.len(), 1);
+
+    let rm_cmd = RemoveStudentFromGroupCommand {
+        tenant,
+        student_group_id: agg.id,
+        student_id,
+    };
+    let event = remove_student_from_group(rm_cmd, &mut agg, &clock, &ids).expect("remove");
+    assert_eq!(agg.member_ids.len(), 0);
+    let _: StudentRemovedFromGroup = event;
+}
+
+// =============================================================================
+// 6. Update
+// =============================================================================
+
+#[test]
+fn student_group_update_succeeds() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_student_group_aggregate(cmd, &clock, &ids, &uniqueness)
+        .expect("create");
+
+    let upd = UpdateStudentGroupCommand {
+        tenant,
+        student_group_id: agg.id,
+        name: Some("Chess & Board Games".to_string()),
+        description: None,
+    };
+    let event = update_student_group(upd, &mut agg, &clock, &ids).expect("update");
+    assert_eq!(agg.name, "Chess & Board Games");
+    let _: StudentGroupUpdated = event;
+}
+
+// =============================================================================
+// 7. Delete
+// =============================================================================
+
+#[test]
+fn student_group_delete_retires_aggregate() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_student_group_aggregate(cmd, &clock, &ids, &uniqueness)
+        .expect("create");
+
+    let del = DeleteStudentGroupCommand {
+        tenant,
+        student_group_id: agg.id,
+    };
+    let event = delete_student_group(del, &mut agg, &clock, &ids).expect("delete");
+    assert!(matches!(agg.active_status, ActiveStatus::Retired));
+    let _: StudentGroupDeleted = event;
 }

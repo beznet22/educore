@@ -4301,3 +4301,134 @@ impl DomainEvent for StudentCategoryDeleted {
     fn school_id(&self) -> SchoolId { self.student_category_id.school_id() }
     fn occurred_at(&self) -> Timestamp { self.occurred_at }
 }
+
+// =============================================================================
+// StudentGroup events (Wave 59: full impl)
+// =============================================================================
+
+/// Event: a [`RealStudentGroup`](crate::aggregate::RealStudentGroup) was created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealStudentGroupCreated {
+    /// The group's typed id.
+    pub student_group_id: StudentGroupId,
+    /// The group's name.
+    pub name: String,
+    /// The description.
+    pub description: String,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for RealStudentGroupCreated {
+    const EVENT_TYPE: &'static str = "academic.student_group.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_group";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.student_group_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.student_group_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`RealStudentGroup`](crate::aggregate::RealStudentGroup) was updated.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StudentGroupUpdated {
+    /// The group's typed id.
+    pub student_group_id: StudentGroupId,
+    /// Optional new name.
+    pub name: Option<String>,
+    /// Optional new description.
+    pub description: Option<String>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for StudentGroupUpdated {
+    const EVENT_TYPE: &'static str = "academic.student_group.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_group";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.student_group_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.student_group_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a student was added to a group (I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StudentAddedToGroup {
+    /// The group's typed id.
+    pub student_group_id: StudentGroupId,
+    /// The student being added.
+    pub student_id: StudentId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for StudentAddedToGroup {
+    const EVENT_TYPE: &'static str = "academic.student_group.student_added";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_group";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.student_group_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.student_group_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a student was removed from a group (I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StudentRemovedFromGroup {
+    /// The group's typed id.
+    pub student_group_id: StudentGroupId,
+    /// The student being removed.
+    pub student_id: StudentId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for StudentRemovedFromGroup {
+    const EVENT_TYPE: &'static str = "academic.student_group.student_removed";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_group";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.student_group_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.student_group_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`RealStudentGroup`](crate::aggregate::RealStudentGroup) was soft-deleted.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StudentGroupDeleted {
+    /// The group's typed id.
+    pub student_group_id: StudentGroupId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for StudentGroupDeleted {
+    const EVENT_TYPE: &'static str = "academic.student_group.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_group";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.student_group_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.student_group_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}

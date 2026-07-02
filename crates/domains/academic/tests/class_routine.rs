@@ -182,6 +182,12 @@ impl UniquenessChecker for InMemoryUniqueness {
     ) -> bool {
         false
     }
+
+    fn student_group_name_exists(
+        &self, _: SchoolId, _: &str,
+    ) -> bool {
+        false
+    }
 }
 
 // =============================================================================

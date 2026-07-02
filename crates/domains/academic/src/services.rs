@@ -43,7 +43,7 @@ use educore_core::value_objects::ActiveStatus;
 use crate::aggregate::{
     AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
     IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealLesson, RealLessonPlan,
-    RealLessonTopic, RealStudentCategory, RealStudentPromotion, RegistrationField, Section,
+    RealLessonTopic, RealStudentCategory, RealStudentGroup, RealStudentPromotion, RegistrationField, Section,
     Student, StudentCategory, StudentGroup, StudentGuardianLink, StudentPromotion, StudentRecord,
     Subject,
 };
@@ -58,7 +58,7 @@ use crate::commands::{
     CreateClassCommand, CreateClassRoutineCommand, CreateClassSectionCommand,
     AssignSubjectToClassCommand, CreateHomeworkCommand, CreateIdCardCommand, CreateLessonCommand,
     CreateLessonPlanCommand, CreateLessonTopicCommand, CreateRegistrationFieldCommand,
-    CreateSectionCommand, CreateStudentCategoryCommand, CreateStudentGroupCommand, DeleteStudentCategoryCommand, RealCreateStudentCategoryCommand, UpdateStudentCategoryCommand,
+    CreateSectionCommand, CreateStudentCategoryCommand, CreateStudentGroupCommand, DeleteStudentCategoryCommand, DeleteStudentGroupCommand, RealCreateStudentCategoryCommand, UpdateStudentCategoryCommand,
     CreateSubjectCommand, DeleteClassCommand, DeleteClassRoutineCommand,
     DeleteClassSectionCommand, DeleteSectionCommand, DeleteSubjectCommand, GraduateStudentCommand,
     LinkGuardianToStudentCommand, MarkPrimaryGuardianCommand, PromoteStudentCommand,
@@ -69,11 +69,11 @@ use crate::commands::{
     UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand, UpdateClassCommand,
     UpdateGuardianContactCommand, UpdateHomeworkCommand, UpdateLessonPlanCommand, UpdateSectionCommand,
     UpdateStudentProfileCommand, UpdateSubjectCommand, UpdateClassRoutinePeriodCommand,
-    AddSubTopicCommand, CancelHomeworkCommand, DeleteLessonCommand, DeleteLessonPlanCommand,
+    AddSubTopicCommand, AddStudentToGroupCommand, CancelHomeworkCommand, DeleteLessonCommand, DeleteLessonPlanCommand,
     DeleteLessonTopicCommand, EnrollStudentCommand, MarkGraduateCommand,
     MarkLessonPlanCompletedCommand, MarkTopicCompletedCommand, RealCreateLessonCommand,
-    RealCreateLessonPlanCommand, RealCreateLessonTopicCommand, SetDefaultRecordCommand,
-    SetRollNumberCommand, UpdateLessonCommand, WithdrawStudentCommand,
+    RealCreateLessonPlanCommand, RealCreateLessonTopicCommand, RealCreateStudentGroupCommand, RemoveStudentFromGroupCommand, SetDefaultRecordCommand,
+    SetRollNumberCommand, UpdateLessonCommand, UpdateStudentGroupCommand, WithdrawStudentCommand,
 };
 use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
@@ -89,7 +89,7 @@ use crate::events::{
     StudentMarkedGraduate, StudentRecordEnrolled, SubTopicAdded, DefaultRecordSet, LessonUpdated,
     OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
     RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
-    StudentCategoryDeleted, StudentCategoryUpdated, RealStudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
+    StudentAddedToGroup, StudentCategoryDeleted, StudentCategoryUpdated, StudentGroupDeleted, StudentGroupUpdated, StudentRemovedFromGroup, RealStudentCategoryCreated, RealStudentGroupCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
     StudentPromoted, StudentPromotionRecorded, StudentReinstated, StudentSuspended,
     StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
     SubjectTeacherAssigned, SubjectUnassigned, TeacherReassigned,
@@ -1583,6 +1583,7 @@ where
 
 
 
+
 }
 
 /// Unlink a [`Guardian`] from a [`Student`] and emit a
@@ -1877,6 +1878,7 @@ where
         now,
     );
     Ok((aggregate, event))
+
 
 
 
@@ -3519,6 +3521,13 @@ mod tests {
     ) -> bool {
         false
     }
+
+
+    fn student_group_name_exists(
+        &self, _: SchoolId, _: &str,
+    ) -> bool {
+        false
+    }
 }
 
     fn admit_cmd(
@@ -4381,6 +4390,147 @@ where
         student_category_id: category.id,
         event_id,
         correlation_id: category.correlation_id,
+        occurred_at: now,
+    })
+}
+
+// =============================================================================
+// StudentGroup services (Wave 59: full impl)
+// =============================================================================
+
+/// Create a [`RealStudentGroup`] and emit a `RealStudentGroupCreated` event.
+///
+/// Per `docs/specs/academic/aggregates.md` § StudentGroup:
+/// - **I-1**: rejects if `uniqueness.student_group_name_exists(...)` is `true`.
+pub fn create_student_group_aggregate<C, G>(
+    cmd: RealCreateStudentGroupCommand,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<(RealStudentGroup, RealStudentGroupCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    if uniqueness.student_group_name_exists(cmd.student_group_id.school_id(), &cmd.name) {
+        return Err(DomainError::Conflict(format!(
+            "StudentGroup name {:?} already exists in school", cmd.name
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    let aggregate = RealStudentGroup::fresh(
+        cmd.student_group_id,
+        cmd.name,
+        cmd.description,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    let event = RealStudentGroupCreated {
+        student_group_id: aggregate.id,
+        name: aggregate.name.clone(),
+        description: aggregate.description.clone(),
+        event_id,
+        correlation_id: aggregate.correlation_id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Update a [`RealStudentGroup`] and emit a `StudentGroupUpdated` event.
+pub fn update_student_group<C, G>(
+    cmd: UpdateStudentGroupCommand,
+    group: &mut RealStudentGroup,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentGroupUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    group.update(cmd.name, cmd.description, actor, now)?;
+    Ok(StudentGroupUpdated {
+        student_group_id: group.id,
+        name: Some(group.name.clone()),
+        description: Some(group.description.clone()),
+        event_id,
+        correlation_id: group.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Add a student to a group (I-2: idempotent).
+pub fn add_student_to_group<C, G>(
+    cmd: AddStudentToGroupCommand,
+    group: &mut RealStudentGroup,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentAddedToGroup>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    group.add_student(cmd.student_id, actor, now);
+    Ok(StudentAddedToGroup {
+        student_group_id: group.id,
+        student_id: cmd.student_id,
+        event_id,
+        correlation_id: group.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Remove a student from a group (I-2: idempotent).
+pub fn remove_student_from_group<C, G>(
+    cmd: RemoveStudentFromGroupCommand,
+    group: &mut RealStudentGroup,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentRemovedFromGroup>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    group.remove_student(&cmd.student_id, actor, now);
+    Ok(StudentRemovedFromGroup {
+        student_group_id: group.id,
+        student_id: cmd.student_id,
+        event_id,
+        correlation_id: group.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Soft-delete a [`RealStudentGroup`].
+pub fn delete_student_group<C, G>(
+    _cmd: DeleteStudentGroupCommand,
+    group: &mut RealStudentGroup,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentGroupDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = _cmd.tenant.actor_id;
+    group.delete(actor, now);
+    Ok(StudentGroupDeleted {
+        student_group_id: group.id,
+        event_id,
+        correlation_id: group.correlation_id,
         occurred_at: now,
     })
 }
