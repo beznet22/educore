@@ -36,7 +36,7 @@
 
 use educore_core::clock::{Clock, IdGenerator};
 use educore_core::error::{DomainError, Result};
-use educore_core::ids::{EventId, Identifier, SchoolId};
+use educore_core::ids::{EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 use educore_core::value_objects::ActiveStatus;
 
@@ -57,19 +57,21 @@ use crate::commands::{
     AssignSubjectToClassCommand, CreateHomeworkCommand, CreateIdCardCommand, CreateLessonCommand,
     CreateLessonPlanCommand, CreateLessonTopicCommand, CreateRegistrationFieldCommand,
     CreateSectionCommand, CreateStudentCategoryCommand, CreateStudentGroupCommand,
-    CreateSubjectCommand, DeleteClassCommand, DeleteClassSectionCommand, DeleteSectionCommand,
-    DeleteSubjectCommand, GraduateStudentCommand, LinkGuardianToStudentCommand,
-    MarkPrimaryGuardianCommand, PromoteStudentCommand, RecordStudentPromotionCommand,
-    RegisterGuardianCommand, ReinstateStudentCommand, ReassignTeacherCommand, RetireGuardianCommand,
-    SetCurrentAcademicYearCommand, SetOptionalSubjectGpaThresholdCommand, SuspendStudentCommand,
-    TransferStudentCommand, UnassignSubjectCommand, UniquenessChecker, UnlinkGuardianFromStudentCommand,
-    UpdateAcademicYearDatesCommand, UpdateClassCommand, UpdateGuardianContactCommand,
-    UpdateSectionCommand, UpdateStudentProfileCommand, UpdateSubjectCommand,
-    WithdrawStudentCommand,
+    CreateSubjectCommand, DeleteClassCommand, DeleteClassRoutineCommand,
+    DeleteClassSectionCommand, DeleteSectionCommand, DeleteSubjectCommand, GraduateStudentCommand,
+    LinkGuardianToStudentCommand, MarkPrimaryGuardianCommand, PromoteStudentCommand,
+    RecordStudentPromotionCommand, RegisterGuardianCommand, ReinstateStudentCommand,
+    ReassignTeacherCommand, RetireGuardianCommand, SetCurrentAcademicYearCommand,
+    SetOptionalSubjectGpaThresholdCommand, SuspendStudentCommand, SwapClassRoutinePeriodsCommand,
+    TransferStudentCommand, UnassignSubjectCommand, UniquenessChecker,
+    UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand, UpdateClassCommand,
+    UpdateGuardianContactCommand, UpdateSectionCommand, UpdateStudentProfileCommand,
+    UpdateSubjectCommand, UpdateClassRoutinePeriodCommand, WithdrawStudentCommand,
 };
 use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
-    CertificateCreated, ClassCreated, ClassDeleted, ClassRoomAssigned, ClassRoutineScheduled,
+    CertificateCreated, ClassCreated, ClassDeleted, ClassRoomAssigned, ClassRoutineDeleted,
+    ClassRoutinePeriodUpdated, ClassRoutinePeriodsSwapped, ClassRoutineScheduled,
     ClassSectionCreated, ClassSectionDeleted, ClassTeacherAssigned, SubjectAssignedToClass,
     ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated, GuardianLinkedToStudent,
     GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent, HomeworkAssigned,
@@ -2324,33 +2326,272 @@ where
     Ok(event)
 }
 
-/// Schedule a [`ClassRoutine`] period and emit a [`ClassRoutineScheduled`] event.
+/// Schedule a [`ClassRoutine`] and emit a [`ClassRoutineScheduled`]
+/// event.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassRoutine,
+/// the create flow enforces:
+///
+/// - **I-1**: `periods` covers all 7 distinct days
+///   (Mon-Sun). Delegated to
+///   [`ClassRoutine::fresh`].
+/// - **I-2**: no duplicate `ClassTimeId` within
+///   `periods`. Delegated to
+///   [`ClassRoutine::fresh`].
+/// - **I-3**: every period carries both a `room_id` and
+///   a `teacher_id`. Delegated to
+///   [`ClassRoutine::fresh`].
+/// - **I-4**: teacher no-conflict (checked here via
+///   [`UniquenessChecker::teacher_has_conflict`]).
+/// - **I-5**: room no-conflict (checked here via
+///   [`UniquenessChecker::room_has_conflict`]).
+///
+/// The cross-tenant guard on
+/// `class_routine_id.school_id() == class_section_id.school_id()`
+/// etc. is enforced inside [`ClassRoutine::fresh`].
+#[allow(clippy::too_many_arguments)]
 pub fn create_class_routine<C, G>(
     cmd: CreateClassRoutineCommand,
     clock: &C,
     ids: &G,
+    uniqueness: &dyn UniquenessChecker,
 ) -> Result<(ClassRoutine, ClassRoutineScheduled)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let CreateClassRoutineCommand { id, school_id } = cmd;
-    if id.school_id() != school_id {
+    let CreateClassRoutineCommand {
+        tenant: _,
+        class_routine_id,
+        class_section_id,
+        academic_year_id,
+        periods,
+    } = cmd;
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let correlation_id = educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let actor = educore_core::ids::UserId::from_uuid(uuid::Uuid::now_v7());
+    let aggregate = ClassRoutine::fresh(
+        class_routine_id,
+        class_section_id,
+        academic_year_id,
+        periods,
+        actor,
+        actor,
+        now,
+        correlation_id,
+    )?;
+    // I-4: teacher no-conflict, I-5: room no-conflict.
+    for p in &aggregate.periods {
+        if uniqueness.teacher_has_conflict(
+            aggregate.school_id,
+            p.teacher_id,
+            p.day,
+            p.period_number,
+        ) {
+            return Err(DomainError::Conflict(format!(
+                "teacher conflict: teacher {:?} is already scheduled on {:?} period {}",
+                p.teacher_id, p.day, p.period_number
+            )));
+        }
+        if uniqueness.room_has_conflict(
+            aggregate.school_id,
+            p.room_id,
+            p.day,
+            p.period_number,
+        ) {
+            return Err(DomainError::Conflict(format!(
+                "room conflict: room {:?} is already booked on {:?} period {}",
+                p.room_id, p.day, p.period_number
+            )));
+        }
+    }
+    let event = ClassRoutineScheduled::new(
+        class_routine_id,
+        class_section_id,
+        academic_year_id,
+        aggregate.periods.clone(),
+        event_id,
+        correlation_id,
+        now,
+    );
+    Ok((aggregate, event))
+}
+
+/// Replace the periods of an existing active
+/// [`ClassRoutine`] and emit a [`ClassRoutinePeriodUpdated`]
+/// event.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassRoutine,
+/// the update flow enforces:
+///
+/// - **I-1**: `new_periods` covers all 7 distinct days.
+/// - **I-2**: no duplicate `ClassTimeId` within
+///   `new_periods`.
+/// - **I-3**: every new period carries both a `room_id`
+///   and a `teacher_id`.
+/// - **I-4** / **I-5**: teacher / room no-conflict.
+#[allow(clippy::too_many_arguments)]
+pub fn update_class_routine_period<C, G>(
+    cmd: UpdateClassRoutinePeriodCommand,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+    class_routine: &mut ClassRoutine,
+) -> Result<ClassRoutinePeriodUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let UpdateClassRoutinePeriodCommand {
+        tenant: _,
+        class_routine_id,
+        new_periods,
+    } = cmd;
+    if class_routine_id != class_routine.id {
         return Err(DomainError::Validation(format!(
-            "class routine id {id} is in school {}, command school_id is {school_id}",
-            id.school_id(),
+            "command class_routine_id {class_routine_id} does not match aggregate id {}",
+            class_routine.id
         )));
     }
     let now = clock.now();
     let event_id = fresh_event_id(ids);
-    let aggregate = ClassRoutine { id, school_id };
-    let event = ClassRoutineScheduled {
+    let correlation_id = educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let actor = educore_core::ids::UserId::from_uuid(uuid::Uuid::now_v7());
+    let previous_periods = class_routine.replace_periods(
+        new_periods,
+        actor,
+        now,
         event_id,
-        school_id,
-        aggregate_id: id,
-        occurred_at: now,
-    };
-    Ok((aggregate, event))
+    )?;
+    // I-4 / I-5: teacher / room no-conflict on the
+    // updated schedule.
+    for p in &class_routine.periods {
+        if uniqueness.teacher_has_conflict(
+            class_routine.school_id,
+            p.teacher_id,
+            p.day,
+            p.period_number,
+        ) {
+            return Err(DomainError::Conflict(format!(
+                "teacher conflict on update: teacher {:?} is already scheduled on {:?} period {}",
+                p.teacher_id, p.day, p.period_number
+            )));
+        }
+        if uniqueness.room_has_conflict(
+            class_routine.school_id,
+            p.room_id,
+            p.day,
+            p.period_number,
+        ) {
+            return Err(DomainError::Conflict(format!(
+                "room conflict on update: room {:?} is already booked on {:?} period {}",
+                p.room_id, p.day, p.period_number
+            )));
+        }
+    }
+    let event = ClassRoutinePeriodUpdated::new(
+        class_routine_id,
+        previous_periods,
+        class_routine.periods.clone(),
+        event_id,
+        correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+/// Swap two periods of an existing active [`ClassRoutine`]
+/// by index and emit a [`ClassRoutinePeriodsSwapped`]
+/// event.
+///
+/// The service is unconditional at the aggregate level
+/// (any two valid indices may be swapped). The service
+/// does not re-run the I-1 / I-2 / I-3 invariants because
+/// a swap preserves the set of periods (only their
+/// positions change), so the invariants are preserved
+/// by construction.
+#[allow(clippy::too_many_arguments)]
+pub fn swap_class_routine_periods<C, G>(
+    cmd: SwapClassRoutinePeriodsCommand,
+    clock: &C,
+    ids: &G,
+    class_routine: &mut ClassRoutine,
+) -> Result<ClassRoutinePeriodsSwapped>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let SwapClassRoutinePeriodsCommand {
+        tenant: _,
+        class_routine_id,
+        period_a_idx,
+        period_b_idx,
+    } = cmd;
+    if class_routine_id != class_routine.id {
+        return Err(DomainError::Validation(format!(
+            "command class_routine_id {class_routine_id} does not match aggregate id {}",
+            class_routine.id
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let correlation_id = educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let actor = educore_core::ids::UserId::from_uuid(uuid::Uuid::now_v7());
+    let (prev_a, prev_b) = class_routine.swap_periods(
+        period_a_idx,
+        period_b_idx,
+        actor,
+        now,
+        event_id,
+    )?;
+    let event = ClassRoutinePeriodsSwapped::new(
+        class_routine_id,
+        period_a_idx,
+        period_b_idx,
+        prev_a,
+        prev_b,
+        event_id,
+        correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+/// Soft-delete (retire) a [`ClassRoutine`] and emit a
+/// [`ClassRoutineDeleted`] event.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassRoutine,
+/// the delete flow is unconditional: any active
+/// `ClassRoutine` may be deleted; the service retires
+/// the aggregate and emits the typed event.
+pub fn delete_class_routine<C, G>(
+    cmd: DeleteClassRoutineCommand,
+    clock: &C,
+    ids: &G,
+    class_routine: &mut ClassRoutine,
+) -> Result<ClassRoutineDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let DeleteClassRoutineCommand {
+        tenant: _,
+        class_routine_id,
+    } = cmd;
+    if class_routine_id != class_routine.id {
+        return Err(DomainError::Validation(format!(
+            "command class_routine_id {class_routine_id} does not match aggregate id {}",
+            class_routine.id
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let correlation_id = educore_core::ids::CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let actor = educore_core::ids::UserId::from_uuid(uuid::Uuid::now_v7());
+    class_routine.retire(actor, now, event_id);
+    let event = ClassRoutineDeleted::new(class_routine_id, event_id, correlation_id, now);
+    Ok(event)
 }
 
 /// Issue a [`Homework`] assignment and emit a [`HomeworkAssigned`] event.
@@ -2823,6 +3064,24 @@ mod tests {
                 .unwrap()
                 .iter()
                 .any(|(s, c)| *s == school && *c == class_section_id)
+        }
+        fn teacher_has_conflict(
+            &self,
+            _school: SchoolId,
+            _teacher_id: educore_core::ids::UserId,
+            _day: crate::value_objects::DayOfWeek,
+            _period_number: u8,
+        ) -> bool {
+            false
+        }
+        fn room_has_conflict(
+            &self,
+            _school: SchoolId,
+            _room_id: crate::value_objects::ClassRoomId,
+            _day: crate::value_objects::DayOfWeek,
+            _period_number: u8,
+        ) -> bool {
+            false
         }
     }
 

@@ -151,6 +151,24 @@ impl UniquenessChecker for TestUniqueness {
             .iter()
             .any(|(s, c)| *s == school && *c == class_section_id)
     }
+    fn teacher_has_conflict(
+        &self,
+        _school: SchoolId,
+        _teacher_id: UserId,
+        _day: DayOfWeek,
+        _period_number: u8,
+    ) -> bool {
+        false
+    }
+    fn room_has_conflict(
+        &self,
+        _school: SchoolId,
+        _room_id: ClassRoomId,
+        _day: DayOfWeek,
+        _period_number: u8,
+    ) -> bool {
+        false
+    }
 }
 
 // =============================================================================

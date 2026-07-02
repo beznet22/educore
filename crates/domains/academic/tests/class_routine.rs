@@ -1,39 +1,19 @@
 //! Integration tests for the **ClassRoutine aggregate** vertical slice.
 //!
-//! Pins the create contract for the `ClassRoutine` aggregate
-//! end-to-end through the service layer:
+//! Pins the create / update / swap / delete contracts for
+//! the `ClassRoutine` aggregate end-to-end through the service
+//! layer, exercising all 5 spec invariants:
 //!
-//! 1. `create_class_routine` validates the typed id belongs to the
-//!    command's `school_id` (returning `DomainError::Validation`
-//!    on a mismatch), constructs the aggregate, and emits a
-//!    `ClassRoutineScheduled` event.
+//! - I-1: full week (7 distinct days)
+//! - I-2: no duplicate ClassTimeId
+//! - I-3: room + teacher per period (structural)
+//! - I-4: teacher no-conflict (cross-aggregate)
+//! - I-5: room no-conflict (cross-aggregate)
 //!
 //! The tests use the same fixture pattern as
-//! `crates/domains/academic/tests/class.rs` and `subject.rs`
-//! (`TestClock` + `SystemIdGen`).
-//!
-//! Per the academic/workflows.rs pattern, the **handlers**
-//! themselves are not wired end-to-end (no subscriber fan-out,
-//! no outbox commit, no audit row). These tests pin the
-//! contract of the **service layer** that the dispatcher will
-//! eventually wrap.
-//!
-//! Note on `ClassRoutine` field set: the aggregate is a Phase 3
-//! stub that carries only `id` (typed `ClassRoutineId`) and
-//! `school_id`. The weekly-schedule fields (day, period,
-//! section, subject, teacher, room) live in the full
-//! `ClassRoutine` aggregate documented in
-//! `docs/specs/academic/aggregates.md` § ClassRoutine and land
-//! in a later phase. The service-layer function
-//! `create_class_routine` exists now and is exercised here;
-//! its contract is to build the stub aggregate and emit
-//! `ClassRoutineScheduled` with matching typed ids.
-//!
-//! Note on user role: the platform's [`UserType`] enum does
-//! not expose an `Admin` variant — the school-scoped
-//! administrative role is [`UserType::SchoolAdmin`]. These
-//! tests use `SchoolAdmin` to match the rest of the
-//! academic test suites.
+//! `crates/domains/academic/tests/class_section.rs` and
+//! `class_subject.rs` (`TestClock` + `SystemIdGen` +
+//! `InMemoryUniqueness`).
 
 #![allow(
     clippy::unwrap_used,
@@ -43,18 +23,30 @@
     missing_docs
 )]
 
+use std::collections::HashSet;
+
 use educore_academic::prelude::*;
+use educore_academic::ClassPeriod;
+use educore_academic::commands::{
+    CreateClassRoutineCommand, DeleteClassRoutineCommand, SwapClassRoutinePeriodsCommand,
+    UpdateClassRoutinePeriodCommand,
+};
+use educore_academic::events::{
+    ClassRoutineDeleted, ClassRoutinePeriodsSwapped, ClassRoutinePeriodUpdated,
+    ClassRoutineScheduled,
+};
+use educore_academic::services::{
+    create_class_routine, delete_class_routine, swap_class_routine_periods,
+    update_class_routine_period,
+};
 use educore_core::clock::{SystemIdGen, TestClock};
 use educore_core::error::DomainError;
+use educore_core::ids::SchoolId;
 
 // =============================================================================
 // Fixtures
 // =============================================================================
 
-/// A fresh `TenantContext` for a `SchoolAdmin` acting on a
-/// freshly-minted school. Returns the context plus the
-/// generator so tests can mint child ids from the same
-/// school.
 fn admin_context() -> (TenantContext, SystemIdGen) {
     let g = SystemIdGen;
     let school = g.next_school_id();
@@ -70,132 +62,426 @@ fn class_routine_id(g: &SystemIdGen, school: SchoolId) -> ClassRoutineId {
     ClassRoutineId::new(school, g.next_uuid())
 }
 
-// =============================================================================
-// 1. Happy path: create a ClassRoutine
-// =============================================================================
+fn class_section_id(g: &SystemIdGen, school: SchoolId) -> ClassSectionId {
+    ClassSectionId::new(school, g.next_uuid())
+}
 
-/// End-to-end happy path for the `ClassRoutine` aggregate.
-/// Schedule a routine for the freshly-minted school,
-/// asserting that:
-///
-/// 1. The create flow produces a `ClassRoutine` aggregate
-///    carrying the typed `id` and `school_id` from the
-///    command, plus a `ClassRoutineScheduled` event with the
-///    right `event_type`, `aggregate_type`, and `school_id`.
-/// 2. The event's typed `aggregate_id` matches the
-///    aggregate's `id`, the school's `SchoolId` is propagated
-///    onto both the aggregate and the event, and a distinct
-///    `event_id` is minted per call.
-#[test]
-fn class_routine_create_builds_aggregate_and_emits_scheduled_event() {
-    let (tenant, g) = admin_context();
-    let school = tenant.school_id;
-    let clock = TestClock::new();
-    let ids = SystemIdGen;
+fn academic_year_id(g: &SystemIdGen, school: SchoolId) -> AcademicYearId {
+    AcademicYearId::new(school, g.next_uuid())
+}
 
-    // ---- Create flow ----
-    let id = class_routine_id(&g, school);
-    let create_cmd = CreateClassRoutineCommand {
-        id,
-        school_id: school,
-    };
-    let (agg, scheduled_event) =
-        create_class_routine(create_cmd, &clock, &ids).expect("create");
+fn class_time_id(g: &SystemIdGen, school: SchoolId) -> ClassTimeId {
+    ClassTimeId::new(school, g.next_uuid())
+}
 
-    // Aggregate fields are populated from the command.
-    assert_eq!(agg.id, id);
-    assert_eq!(agg.id.as_uuid(), id.as_uuid());
-    assert_eq!(agg.id.school_id(), school);
-    assert_eq!(agg.school_id, school);
+fn class_room_id(g: &SystemIdGen, school: SchoolId) -> ClassRoomId {
+    ClassRoomId::new(school, g.next_uuid())
+}
 
-    // Event metadata matches the DomainEvent trait's contract.
-    assert_eq!(
-        <ClassRoutineScheduled as DomainEvent>::EVENT_TYPE,
-        "academic.class_routine.scheduled"
-    );
-    assert_eq!(
-        <ClassRoutineScheduled as DomainEvent>::AGGREGATE_TYPE,
-        "class_routine"
-    );
-    assert_eq!(<ClassRoutineScheduled as DomainEvent>::SCHEMA_VERSION, 1);
-    assert_eq!(scheduled_event.aggregate_id(), agg.id.as_uuid());
-    assert_eq!(scheduled_event.school_id(), school);
-    assert_eq!(scheduled_event.aggregate_id, id);
+fn user_id(g: &SystemIdGen) -> UserId {
+    g.next_user_id()
+}
+
+/// Build a full-week Vec<ClassPeriod> covering Mon..Sun.
+fn full_week_periods(g: &SystemIdGen, school: SchoolId) -> Vec<ClassPeriod> {
+    let days = [
+        DayOfWeek::Monday,
+        DayOfWeek::Tuesday,
+        DayOfWeek::Wednesday,
+        DayOfWeek::Thursday,
+        DayOfWeek::Friday,
+        DayOfWeek::Saturday,
+        DayOfWeek::Sunday,
+    ];
+    days.iter()
+        .enumerate()
+        .map(|(i, day)| ClassPeriod {
+            class_time_id: class_time_id(g, school),
+            day: *day,
+            period_number: (i + 1) as u8,
+            room_id: class_room_id(g, school),
+            teacher_id: user_id(g),
+        })
+        .collect()
+}
+
+/// Minimal in-memory UniquenessChecker for testing.
+#[derive(Default)]
+struct InMemoryUniqueness {
+    teacher_conflicts: HashSet<(SchoolId, UserId, DayOfWeek, u8)>,
+    room_conflicts: HashSet<(SchoolId, ClassRoomId, DayOfWeek, u8)>,
+}
+
+impl UniquenessChecker for InMemoryUniqueness {
+    fn student_admission_no_exists(&self, _: SchoolId, _: &str) -> bool {
+        false
+    }
+    fn student_email_exists(&self, _: SchoolId, _: &str) -> bool {
+        false
+    }
+    fn roll_no_exists(
+        &self, _: SchoolId, _: ClassId, _: SectionId, _: AcademicYearId, _: &str,
+    ) -> bool {
+        false
+    }
+    fn class_name_exists(&self, _: SchoolId, _: &str) -> bool {
+        false
+    }
+    fn section_name_exists(&self, _: SchoolId, _: &str) -> bool {
+        false
+    }
+    fn subject_code_exists(&self, _: SchoolId, _: &str) -> bool {
+        false
+    }
+    fn class_section_exists(
+        &self, _: SchoolId, _: ClassId, _: SectionId, _: AcademicYearId,
+    ) -> bool {
+        false
+    }
+    fn class_section_has_student_records(&self, _: SchoolId, _: ClassSectionId) -> bool {
+        false
+    }
+    fn academic_year_overlaps(
+        &self, _: SchoolId, _: AcademicYearRange, _: Option<AcademicYearId>,
+    ) -> bool {
+        false
+    }
+    fn optional_subject_assigned_exists(
+        &self, _: SchoolId, _: StudentId, _: AcademicYearId,
+    ) -> bool {
+        false
+    }
+    fn primary_guardian_link_exists(&self, _: SchoolId, _: StudentId) -> bool {
+        false
+    }
+    fn teacher_has_conflict(
+        &self, school: SchoolId, teacher_id: UserId, day: DayOfWeek, period_number: u8,
+    ) -> bool {
+        self.teacher_conflicts.contains(&(school, teacher_id, day, period_number))
+    }
+    fn room_has_conflict(
+        &self, school: SchoolId, room_id: ClassRoomId, day: DayOfWeek, period_number: u8,
+    ) -> bool {
+        self.room_conflicts.contains(&(school, room_id, day, period_number))
+    }
 }
 
 // =============================================================================
-// 2. Multi-tenant happy path: scheduling a second routine
+// 1. Happy path: create a ClassRoutine covering a full week
 // =============================================================================
 
-/// Second happy path: confirm the create flow is repeatable
-/// for the same school without leaking state between
-/// invocations. Two routines minted against the same school
-/// produce two independent aggregates + two independent
-/// `ClassRoutineScheduled` events with distinct typed ids
-/// and distinct `event_id`s.
-///
-/// Also pins the cross-school guard: a `ClassRoutineId`
-/// minted for school A combined with a `school_id` of
-/// school B on the command must fail with
-/// `DomainError::Validation` (the id's `school_id()` must
-/// match the command's `school_id`). The success path on the
-/// same school proves the validation is keyed on the
-/// mismatch, not on the typed id itself.
 #[test]
-fn class_routine_create_is_idempotent_per_id_and_rejects_cross_school() {
+fn class_routine_create_full_week_succeeds() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
     let clock = TestClock::new();
     let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
 
-    // Two routines for the same school.
-    let id_a = class_routine_id(&g, school);
-    let id_b = class_routine_id(&g, school);
-    assert_ne!(id_a, id_b, "fresh uuids must differ");
+    let cmd = CreateClassRoutineCommand {
+        tenant,
+        class_routine_id: class_routine_id(&g, school),
+        class_section_id: class_section_id(&g, school),
+        academic_year_id: academic_year_id(&g, school),
+        periods: full_week_periods(&g, school),
+    };
 
-    let (agg_a, event_a) = create_class_routine(
-        CreateClassRoutineCommand {
-            id: id_a,
-            school_id: school,
-        },
-        &clock,
-        &ids,
-    )
-    .expect("create a");
-    let (agg_b, event_b) = create_class_routine(
-        CreateClassRoutineCommand {
-            id: id_b,
-            school_id: school,
-        },
-        &clock,
-        &ids,
-    )
-    .expect("create b");
+    let (agg, event) = create_class_routine(cmd, &clock, &ids, &uniqueness)
+        .expect("full-week routine should succeed");
 
-    assert_eq!(agg_a.id, id_a);
-    assert_eq!(agg_b.id, id_b);
-    assert_eq!(agg_a.school_id, school);
-    assert_eq!(agg_b.school_id, school);
-    assert_eq!(event_a.aggregate_id, id_a);
-    assert_eq!(event_b.aggregate_id, id_b);
-    assert_ne!(event_a.event_id, event_b.event_id);
+    assert_eq!(agg.school_id, school);
+    assert_eq!(agg.periods.len(), 7);
+    assert!(agg.is_active);
 
-    // Cross-school guard: a routine id minted for a
-    // different school must be rejected.
-    let other_school = g.next_school_id();
-    assert_ne!(other_school, school);
-    let foreign_id = class_routine_id(&g, other_school);
-    let err = create_class_routine(
-        CreateClassRoutineCommand {
-            id: foreign_id,
-            school_id: school,
-        },
-        &clock,
-        &ids,
-    )
-    .expect_err("cross-school id must fail validation");
+    // Event metadata matches DomainEvent contract.
+    assert_eq!(ClassRoutineScheduled::EVENT_TYPE, "academic.class_routine.scheduled");
+    assert_eq!(ClassRoutineScheduled::AGGREGATE_TYPE, "class_routine");
+    assert_eq!(ClassRoutineScheduled::SCHEMA_VERSION, 1);
+    assert_eq!(event.school_id(), school);
+}
+
+// =============================================================================
+// 2. I-1: full week — 6 distinct days rejected
+// =============================================================================
+
+#[test]
+fn class_routine_with_six_days_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let mut periods = full_week_periods(&g, school);
+    periods.retain(|p| p.day != DayOfWeek::Sunday);
+
+    let cmd = CreateClassRoutineCommand {
+        tenant,
+        class_routine_id: class_routine_id(&g, school),
+        class_section_id: class_section_id(&g, school),
+        academic_year_id: academic_year_id(&g, school),
+        periods,
+    };
+
+    let err = create_class_routine(cmd, &clock, &ids, &uniqueness)
+        .expect_err("6-day routine must fail");
     assert!(
         matches!(err, DomainError::Validation(_)),
         "expected Validation, got {err:?}"
     );
+}
+
+// =============================================================================
+// 3. I-2: duplicate ClassTimeId rejected
+// =============================================================================
+
+#[test]
+fn class_routine_with_duplicate_class_time_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let mut periods = full_week_periods(&g, school);
+    let monday_id = periods[0].class_time_id;
+    periods[6].class_time_id = monday_id;
+
+    let cmd = CreateClassRoutineCommand {
+        tenant,
+        class_routine_id: class_routine_id(&g, school),
+        class_section_id: class_section_id(&g, school),
+        academic_year_id: academic_year_id(&g, school),
+        periods,
+    };
+
+    let err = create_class_routine(cmd, &clock, &ids, &uniqueness)
+        .expect_err("duplicate class_time_id must fail");
+    assert!(
+        matches!(err, DomainError::Conflict(_)),
+        "expected Conflict, got {err:?}"
+    );
+}
+
+// =============================================================================
+// 4. I-3: period_number=0 rejected
+// =============================================================================
+
+#[test]
+fn class_routine_with_invalid_period_number_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let mut periods = full_week_periods(&g, school);
+    periods[0].period_number = 0;
+
+    let cmd = CreateClassRoutineCommand {
+        tenant,
+        class_routine_id: class_routine_id(&g, school),
+        class_section_id: class_section_id(&g, school),
+        academic_year_id: academic_year_id(&g, school),
+        periods,
+    };
+
+    let err = create_class_routine(cmd, &clock, &ids, &uniqueness)
+        .expect_err("period_number=0 must fail");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+// =============================================================================
+// 5. I-4: teacher conflict rejected
+// =============================================================================
+
+#[test]
+fn class_routine_with_teacher_conflict_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let periods = full_week_periods(&g, school);
+    let teacher = periods[0].teacher_id;
+    let mut uniqueness = uniqueness;
+    uniqueness
+        .teacher_conflicts
+        .insert((school, teacher, DayOfWeek::Monday, 1));
+
+    let cmd = CreateClassRoutineCommand {
+        tenant,
+        class_routine_id: class_routine_id(&g, school),
+        class_section_id: class_section_id(&g, school),
+        academic_year_id: academic_year_id(&g, school),
+        periods,
+    };
+
+    let err = create_class_routine(cmd, &clock, &ids, &uniqueness)
+        .expect_err("teacher conflict must fail");
+    assert!(
+        matches!(err, DomainError::Conflict(_)),
+        "expected Conflict, got {err:?}"
+    );
+}
+
+// =============================================================================
+// 6. I-5: room conflict rejected
+// =============================================================================
+
+#[test]
+fn class_routine_with_room_conflict_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let periods = full_week_periods(&g, school);
+    let room = periods[1].room_id;
+    let mut uniqueness = uniqueness;
+    uniqueness
+        .room_conflicts
+        .insert((school, room, DayOfWeek::Tuesday, 2));
+
+    let cmd = CreateClassRoutineCommand {
+        tenant,
+        class_routine_id: class_routine_id(&g, school),
+        class_section_id: class_section_id(&g, school),
+        academic_year_id: academic_year_id(&g, school),
+        periods,
+    };
+
+    let err = create_class_routine(cmd, &clock, &ids, &uniqueness)
+        .expect_err("room conflict must fail");
+    assert!(
+        matches!(err, DomainError::Conflict(_)),
+        "expected Conflict, got {err:?}"
+    );
+}
+
+// =============================================================================
+// 7. update_class_routine_period: re-runs invariants on new payload
+// =============================================================================
+
+#[test]
+fn update_class_routine_period_rechecks_full_week() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = CreateClassRoutineCommand {
+        tenant: tenant.clone(),
+        class_routine_id: class_routine_id(&g, school),
+        class_section_id: class_section_id(&g, school),
+        academic_year_id: academic_year_id(&g, school),
+        periods: full_week_periods(&g, school),
+    };
+    let (mut agg, _event) = create_class_routine(cmd, &clock, &ids, &uniqueness)
+        .expect("create");
+
+    // Replace with a 6-day payload — must fail.
+    let mut new_periods = full_week_periods(&g, school);
+    new_periods.retain(|p| p.day != DayOfWeek::Sunday);
+
+    let upd_cmd = UpdateClassRoutinePeriodCommand {
+        tenant: tenant.clone(),
+        class_routine_id: agg.id,
+        new_periods,
+    };
+    let err = update_class_routine_period(upd_cmd, &clock, &ids, &uniqueness, &mut agg)
+        .expect_err("update with 6 days must fail");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+
+    // Valid full-week update succeeds.
+    let valid_periods = full_week_periods(&g, school);
+    let upd_cmd = UpdateClassRoutinePeriodCommand {
+        tenant,
+        class_routine_id: agg.id,
+        new_periods: valid_periods,
+    };
+    let event = update_class_routine_period(upd_cmd, &clock, &ids, &uniqueness, &mut agg)
+        .expect("valid update");
+    assert_eq!(agg.periods.len(), 7);
+    let _ = event; // confirmed type by matches!
+}
+
+// =============================================================================
+// 8. swap_class_routine_periods: swaps two periods
+// =============================================================================
+
+#[test]
+fn swap_class_routine_periods_swaps_two_periods() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = CreateClassRoutineCommand {
+        tenant: tenant.clone(),
+        class_routine_id: class_routine_id(&g, school),
+        class_section_id: class_section_id(&g, school),
+        academic_year_id: academic_year_id(&g, school),
+        periods: full_week_periods(&g, school),
+    };
+    let (mut agg, _event) = create_class_routine(cmd, &clock, &ids, &uniqueness)
+        .expect("create");
+
+    let teacher_mon = agg.periods[0].teacher_id;
+    let teacher_tue = agg.periods[1].teacher_id;
+
+    let swap_cmd = SwapClassRoutinePeriodsCommand {
+        tenant,
+        class_routine_id: agg.id,
+        period_a_idx: 0,
+        period_b_idx: 1,
+    };
+    let event = swap_class_routine_periods(swap_cmd, &clock, &ids, &mut agg)
+        .expect("swap");
+    assert_eq!(agg.periods[0].teacher_id, teacher_tue);
+    assert_eq!(agg.periods[1].teacher_id, teacher_mon);
+    let _: ClassRoutinePeriodsSwapped = event;
+}
+
+// =============================================================================
+// 9. delete_class_routine: retires the aggregate
+// =============================================================================
+
+#[test]
+fn delete_class_routine_retires_aggregate() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = CreateClassRoutineCommand {
+        tenant,
+        class_routine_id: class_routine_id(&g, school),
+        class_section_id: class_section_id(&g, school),
+        academic_year_id: academic_year_id(&g, school),
+        periods: full_week_periods(&g, school),
+    };
+    let (mut agg, _event) = create_class_routine(cmd, &clock, &ids, &uniqueness)
+        .expect("create");
+    assert!(agg.is_active);
+
+    let del_cmd = DeleteClassRoutineCommand {
+        tenant: TenantContext::system(agg.school_id, g.next_correlation_id()),
+        class_routine_id: agg.id,
+    };
+    let event = delete_class_routine(del_cmd, &clock, &ids, &mut agg)
+        .expect("delete");
+    assert!(!agg.is_active);
+    let _: ClassRoutineDeleted = event;
 }

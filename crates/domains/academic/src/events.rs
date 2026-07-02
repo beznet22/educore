@@ -2550,13 +2550,276 @@ impl DomainEvent for SubjectUnassigned {
     note = "renamed to SubjectAssignedToClass per spec; alias retained for backward compat"
 )]
 pub type ClassSubjectAssigned = SubjectAssignedToClass;
-academic_event_stub! {
-    /// Event stub: a class-routine period was scheduled. See
-    /// `docs/specs/academic/aggregates.md` § ClassRoutine.
-    pub struct ClassRoutineScheduled {
-        aggregate_id: ClassRoutineId,
-        event_type: "academic.class_routine.scheduled",
-        aggregate_type: "class_routine",
+
+// =============================================================================
+// ClassRoutine events (Wave 51: full impl)
+// =============================================================================
+
+/// A [`ClassRoutine`](crate::aggregate::ClassRoutine) was
+/// scheduled.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassRoutine,
+/// the event carries the typed id plus the dimension ids
+/// (`class_section_id`, `academic_year_id`), the
+/// full-week period schedule, and the audit metadata.
+/// The create flow enforces I-1 / I-2 / I-3 / I-4 / I-5
+/// (see [`crate::aggregate::ClassRoutine::fresh`] and
+/// `crate::services::create_class_routine`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ClassRoutineScheduled {
+    /// The class-routine's typed id.
+    pub class_routine_id: ClassRoutineId,
+    /// The class-section this routine is scheduled for.
+    pub class_section_id: ClassSectionId,
+    /// The academic year this routine applies to.
+    pub academic_year_id: AcademicYearId,
+    /// The full-week period schedule. Per I-1, covers
+    /// all 7 distinct days. Per I-2, no duplicate
+    /// `ClassTimeId`.
+    pub periods: Vec<crate::value_objects::ClassPeriod>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered
+    /// the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl ClassRoutineScheduled {
+    /// Mints a fresh `ClassRoutineScheduled`.
+    #[must_use]
+    pub const fn new(
+        class_routine_id: ClassRoutineId,
+        class_section_id: ClassSectionId,
+        academic_year_id: AcademicYearId,
+        periods: Vec<crate::value_objects::ClassPeriod>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            class_routine_id,
+            class_section_id,
+            academic_year_id,
+            periods,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ClassRoutineScheduled {
+    const EVENT_TYPE: &'static str = "academic.class_routine.scheduled";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "class_routine";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.class_routine_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.class_routine_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A [`ClassRoutine`](crate::aggregate::ClassRoutine) had
+/// its period set replaced.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassRoutine,
+/// the update flow enforces I-1 / I-2 / I-3 on the new
+/// period set (see
+/// [`crate::aggregate::ClassRoutine::replace_periods`]).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ClassRoutinePeriodUpdated {
+    /// The class-routine's typed id.
+    pub class_routine_id: ClassRoutineId,
+    /// The previous period set (before the update).
+    pub previous_periods: Vec<crate::value_objects::ClassPeriod>,
+    /// The replacement period set (after the update).
+    pub new_periods: Vec<crate::value_objects::ClassPeriod>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered
+    /// the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl ClassRoutinePeriodUpdated {
+    /// Mints a fresh `ClassRoutinePeriodUpdated`.
+    #[must_use]
+    pub const fn new(
+        class_routine_id: ClassRoutineId,
+        previous_periods: Vec<crate::value_objects::ClassPeriod>,
+        new_periods: Vec<crate::value_objects::ClassPeriod>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            class_routine_id,
+            previous_periods,
+            new_periods,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ClassRoutinePeriodUpdated {
+    const EVENT_TYPE: &'static str = "academic.class_routine.period_updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "class_routine";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.class_routine_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.class_routine_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A [`ClassRoutine`](crate::aggregate::ClassRoutine) had
+/// two of its periods swapped by index.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassRoutine,
+/// the swap exchanges the full [`ClassPeriod`]
+/// payloads (including `room_id`, `teacher_id`, `day`,
+/// `period_number`, `class_time_id`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ClassRoutinePeriodsSwapped {
+    /// The class-routine's typed id.
+    pub class_routine_id: ClassRoutineId,
+    /// The index of the first period swapped.
+    pub period_a_idx: usize,
+    /// The index of the second period swapped.
+    pub period_b_idx: usize,
+    /// The previous period at index `period_a_idx`.
+    pub previous_period_a: crate::value_objects::ClassPeriod,
+    /// The previous period at index `period_b_idx`.
+    pub previous_period_b: crate::value_objects::ClassPeriod,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered
+    /// the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl ClassRoutinePeriodsSwapped {
+    /// Mints a fresh `ClassRoutinePeriodsSwapped`.
+    #[must_use]
+    pub const fn new(
+        class_routine_id: ClassRoutineId,
+        period_a_idx: usize,
+        period_b_idx: usize,
+        previous_period_a: crate::value_objects::ClassPeriod,
+        previous_period_b: crate::value_objects::ClassPeriod,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            class_routine_id,
+            period_a_idx,
+            period_b_idx,
+            previous_period_a,
+            previous_period_b,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ClassRoutinePeriodsSwapped {
+    const EVENT_TYPE: &'static str = "academic.class_routine.periods_swapped";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "class_routine";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.class_routine_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.class_routine_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// A [`ClassRoutine`](crate::aggregate::ClassRoutine) was
+/// soft-deleted (retired).
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassRoutine,
+/// the delete flow is unconditional: any active
+/// `ClassRoutine` may be deleted.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClassRoutineDeleted {
+    /// The class-routine's typed id.
+    pub class_routine_id: ClassRoutineId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered
+    /// the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl ClassRoutineDeleted {
+    /// Mints a fresh `ClassRoutineDeleted`.
+    #[must_use]
+    pub const fn new(
+        class_routine_id: ClassRoutineId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            class_routine_id,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ClassRoutineDeleted {
+    const EVENT_TYPE: &'static str = "academic.class_routine.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "class_routine";
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.class_routine_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.class_routine_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
     }
 }
 academic_event_stub! {

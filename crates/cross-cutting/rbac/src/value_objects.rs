@@ -1541,6 +1541,16 @@ pub enum Capability {
     AcademicAcademicYear,
     /// Capability for `Academic.Class.Routine`.
     AcademicClassRoutine,
+    /// Capability for `Academic.Class.Routine.Create`.
+    /// Required to dispatch `CreateClassRoutineCommand`.
+    AcademicClassRoutineCreate,
+    /// Capability for `Academic.Class.Routine.Update`.
+    /// Required to dispatch `UpdateClassRoutinePeriodCommand`
+    /// and `SwapClassRoutinePeriodsCommand`.
+    AcademicClassRoutineUpdate,
+    /// Capability for `Academic.Class.Routine.Delete`.
+    /// Required to dispatch `DeleteClassRoutineCommand`.
+    AcademicClassRoutineDelete,
     /// Capability for `Academic.Homework`.
     AcademicHomework,
     /// Capability for `Academic.Lesson`.
@@ -2271,6 +2281,9 @@ impl Capability {
             | Self::AcademicClassSubject => CapabilityDomain::Academic,
             | Self::AcademicAcademicYear => CapabilityDomain::Academic,
             | Self::AcademicClassRoutine => CapabilityDomain::Academic,
+            | Self::AcademicClassRoutineCreate => CapabilityDomain::Academic,
+            | Self::AcademicClassRoutineUpdate => CapabilityDomain::Academic,
+            | Self::AcademicClassRoutineDelete => CapabilityDomain::Academic,
             | Self::AcademicHomework => CapabilityDomain::Academic,
             | Self::AcademicLesson => CapabilityDomain::Academic,
             | Self::AcademicStudentCategory => CapabilityDomain::Academic,
@@ -2957,7 +2970,8 @@ impl Capability {
             Self::AcademicStudentDocumentUpload | Self::AcademicStudentDocumentDownload | Self::AcademicStudentHomeworkSubmit | Self::AcademicStudentHomeworkEvaluate | Self::AcademicStudentCategory | Self::AcademicStudentGroup => "Student",
             Self::AcademicGuardian => "Guardian",
             Self::AcademicSection => "Section",
-            Self::AcademicClassSection | Self::AcademicClassSubject | Self::AcademicClassRoutine => "Class",
+            Self::AcademicClassSection | Self::AcademicClassSubject | Self::AcademicClassRoutine
+            | Self::AcademicClassRoutineCreate | Self::AcademicClassRoutineUpdate | Self::AcademicClassRoutineDelete => "Class",
             Self::AcademicAcademicYear => "Academic",
             Self::AcademicHomework => "Homework",
             Self::AcademicLesson => "Lesson",
@@ -3662,6 +3676,9 @@ impl Capability {
             Self::AcademicClassSubject => "Subject",
             Self::AcademicAcademicYear => "Year",
             Self::AcademicClassRoutine => "Routine",
+            Self::AcademicClassRoutineCreate => "Create",
+            Self::AcademicClassRoutineUpdate => "Update",
+            Self::AcademicClassRoutineDelete => "Delete",
             Self::AcademicHomework => "Homework",
             Self::AcademicLesson => "Lesson",
             Self::AcademicStudentCategory => "Category",
@@ -4369,6 +4386,9 @@ impl Capability {
             Self::AcademicClassSubject => "Academic.Class.Subject",
             Self::AcademicAcademicYear => "Academic.Academic.Year",
             Self::AcademicClassRoutine => "Academic.Class.Routine",
+            Self::AcademicClassRoutineCreate => "Academic.Class.Routine.Create",
+            Self::AcademicClassRoutineUpdate => "Academic.Class.Routine.Update",
+            Self::AcademicClassRoutineDelete => "Academic.Class.Routine.Delete",
             Self::AcademicHomework => "Academic.Homework",
             Self::AcademicLesson => "Academic.Lesson",
             Self::AcademicStudentCategory => "Academic.Student.Category",
@@ -5737,6 +5757,9 @@ impl Capability {
             "PollingIn" => Some(Self::PollingIn),
             "Lms.RosterSync" => Some(Self::LmsRosterSync),
             "Video.Schedule" => Some(Self::VideoSchedule),
+            "Academic.Class.Routine.Create" => Some(Self::AcademicClassRoutineCreate),
+            "Academic.Class.Routine.Update" => Some(Self::AcademicClassRoutineUpdate),
+            "Academic.Class.Routine.Delete" => Some(Self::AcademicClassRoutineDelete),
             _ => None,
         }
     }

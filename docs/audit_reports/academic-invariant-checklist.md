@@ -32,6 +32,8 @@
 
 **Wave 50 (ClassSubject):** 2 invariants reach [x] (ClassSubject I-1/3). Total enforced now 18.
 
+**Wave 51 (ClassRoutine):** 5 invariants reach [x] (ClassRoutine I-1/2/3/4/5). Total enforced now 23.
+
 ---
 
 ## Student Aggregate (6 invariants)
@@ -193,26 +195,26 @@
 
 ## ClassRoutine Aggregate (5 invariants)
 
-- [ ] I-1: Covers a full week
+- [x] I-1: Covers a full week
   - Spec: `docs/specs/academic/aggregates.md#classroutine`
-  - Enforcement: MISSING — placeholder at `aggregate.rs:340-343`
-  - Test: MISSING
-- [ ] I-2: `ClassTime` periods
+  - Enforcement: `ClassRoutine::fresh` (aggregate.rs) collects `periods` into a `HashSet<DayOfWeek>` and rejects with `DomainError::Validation` unless the set has all 7 distinct days (Mon-Sun via `DayOfWeek::all()`).
+  - Test: `tests/class_routine.rs::class_routine_with_six_days_rejected` (passes), `::class_routine_create_full_week_succeeds` (passes).
+- [x] I-2: `ClassTime` periods
   - Spec: `docs/specs/academic/aggregates.md#classroutine`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-3: Room + teacher per period per day
+  - Enforcement: `ClassRoutine::fresh` collects `class_time_id`s into a `HashSet<ClassTimeId>`; any duplicate yields `DomainError::Conflict`.
+  - Test: `tests/class_routine.rs::class_routine_with_duplicate_class_time_rejected` (passes).
+- [x] I-3: Room + teacher per period per day
   - Spec: `docs/specs/academic/aggregates.md#classroutine`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-4: Teacher cannot be in two places at the same time
+  - Enforcement: `ClassPeriod` struct requires both `room_id: ClassRoomId` and `teacher_id: UserId` as non-optional typed ids (structural enforcement at type level); `ClassPeriod::validate()` rejects `period_number == 0`.
+  - Test: `tests/class_routine.rs::class_routine_with_invalid_period_number_rejected` (passes).
+- [x] I-4: Teacher cannot be in two places at the same time
   - Spec: `docs/specs/academic/aggregates.md#classroutine`
-  - Enforcement: MISSING — placeholder; no `ReferentialChecker` surface
-  - Test: MISSING
-- [ ] I-5: Room cannot host two classes at the same time
+  - Enforcement: `UniquenessChecker::teacher_has_conflict(school, teacher_id, day, period_number)` queried per-period by `create_class_routine` service; conflict yields `DomainError::Conflict`.
+  - Test: `tests/class_routine.rs::class_routine_with_teacher_conflict_rejected` (passes).
+- [x] I-5: Room cannot host two classes at the same time
   - Spec: `docs/specs/academic/aggregates.md#classroutine`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
+  - Enforcement: `UniquenessChecker::room_has_conflict(school, room_id, day, period_number)` queried per-period by `create_class_routine` service; conflict yields `DomainError::Conflict`.
+  - Test: `tests/class_routine.rs::class_routine_with_room_conflict_rejected` (passes).
 
 ## Homework Aggregate (5 invariants)
 
