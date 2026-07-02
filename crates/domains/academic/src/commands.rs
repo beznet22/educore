@@ -921,11 +921,7 @@ impl CreateClassSectionCommand {
         vec![Capability::AcademicClassCreate]
     }
 }
-academic_command_stub! {
-    /// Command stub: assign a subject to a class. See
-    /// `docs/specs/academic/aggregates.md` § ClassSubject.
-    pub struct CreateClassSubjectCommand { id: ClassSubjectId }
-}
+/// Command: submit homework for a student.
 academic_command_stub! {
     /// Command stub: create a class routine period. See
     /// `docs/specs/academic/aggregates.md` § ClassRoutine.
@@ -1433,17 +1429,39 @@ impl DeleteClassSectionCommand {
         vec![Capability::AcademicClassDelete]
     }
 }
-/// Command: assign a subject to a class.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// Command: assign a subject to a class (or class-section),
+/// with a teacher.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSubject:
+/// - **I-1**: `scope == ClassOnly` requires
+///   `class_section_id == None`; `scope == ClassSection`
+///   requires `class_section_id == Some(_)`. Enforced by
+///   [`ClassSubject::fresh`](crate::aggregate::ClassSubject::fresh).
+/// - **I-3**: `pass_mark`, when `Some`, must be in
+///   `0.0..=100.0`. Enforced by
+///   [`ClassSubject::fresh`](crate::aggregate::ClassSubject::fresh)
+///   via [`PassMark::new`](crate::value_objects::PassMark::new).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AssignSubjectToClassCommand {
     /// The active tenant.
     pub tenant: TenantContext,
-    /// The target class.
+    /// The new class-subject's typed id.
+    pub class_subject_id: ClassSubjectId,
+    /// The class this subject is assigned to.
     pub class_id: ClassId,
+    /// The class-section this subject is assigned to.
+    /// `Some` when `scope == ClassSection`, `None` when
+    /// `scope == ClassOnly`.
+    pub class_section_id: Option<ClassSectionId>,
     /// The subject being assigned.
     pub subject_id: SubjectId,
+    /// The teacher being assigned (typed user id).
+    pub teacher_id: UserId,
+    /// The scope of the assignment.
+    pub scope: crate::value_objects::ClassSubjectScope,
+    /// Optional per-class-subject `PassMark` override.
+    pub pass_mark: Option<crate::value_objects::PassMark>,
 }
-
 
 impl AssignSubjectToClassCommand {
     /// The capabilities required to dispatch this command.
@@ -1452,6 +1470,65 @@ impl AssignSubjectToClassCommand {
         vec![Capability::AcademicClassSubject]
     }
 }
+
+/// Command: reassign a different teacher to an existing
+/// active [`ClassSubject`](crate::aggregate::ClassSubject).
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSubject,
+/// the reassignment is unconditional (I-2 is permissive:
+/// a teacher may be assigned to multiple class-subjects).
+/// The service enforces that the target aggregate is
+/// `Active` before applying.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReassignTeacherCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The target class-subject.
+    pub class_subject_id: ClassSubjectId,
+    /// The new teacher id.
+    pub new_teacher_id: UserId,
+}
+
+impl ReassignTeacherCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassSubject]
+    }
+}
+
+/// Command: unassign (soft-retire) a
+/// [`ClassSubject`](crate::aggregate::ClassSubject).
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassSubject,
+/// unassignment is unconditional: any active class-subject
+/// may be retired by the service.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UnassignSubjectCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The class-subject being unassigned.
+    pub class_subject_id: ClassSubjectId,
+}
+
+impl UnassignSubjectCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassSubject]
+    }
+}
+
+/// Backward-compatible alias for [`AssignSubjectToClassCommand`].
+///
+/// The earlier (placeholder-era) name `CreateClassSubjectCommand`
+/// is retained so older call sites compile unchanged. New
+/// callers should prefer [`AssignSubjectToClassCommand`].
+#[deprecated(
+    since = "0.1.0",
+    note = "renamed to AssignSubjectToClassCommand per spec; alias retained for backward compat"
+)]
+pub type CreateClassSubjectCommand = AssignSubjectToClassCommand;
 /// Command: submit homework for a student.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SubmitHomeworkCommand {
