@@ -27,10 +27,10 @@ use educore_core::tenant::TenantContext;
 
 use crate::value_objects::{
     AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoomId, ClassRoutineId,
-    ClassSectionId, ClassSubjectId, EmailAddress, GuardianId, HomeworkId, IdCardId, LessonId,
-    LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId, PhoneNumber, RegistrationFieldId,
-    Relation, ResultStatus, SectionId, StudentCategoryId, StudentGroupId, StudentGuardianLinkId,
-    StudentId, StudentPromotionId, SubjectId,
+    ClassSectionId, ClassSubjectId, DayOfWeek, EmailAddress, GuardianId, HomeworkId, IdCardId,
+    LessonId, LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId, PhoneNumber,
+    RegistrationFieldId, Relation, ResultStatus, SectionId, StudentCategoryId, StudentGroupId,
+    StudentGuardianLinkId, StudentId, StudentPromotionId, SubjectId, ClassPeriod, ClassTimeId,
 };
 
 // =============================================================================
@@ -125,6 +125,29 @@ pub trait UniquenessChecker: Send + Sync {
         &self,
         school: SchoolId,
         class_section_id: ClassSectionId,
+    ) -> bool;
+    /// Returns `true` if the teacher (`UserId`) already has
+    /// another period scheduled in the school at the same
+    /// `(day, period_number)` slot. Per ClassRoutine I-4
+    /// (a teacher cannot be in two places at the same
+    /// time).
+    fn teacher_has_conflict(
+        &self,
+        school: SchoolId,
+        teacher_id: UserId,
+        day: DayOfWeek,
+        period_number: u8,
+    ) -> bool;
+    /// Returns `true` if the room (`ClassRoomId`) already
+    /// hosts another period in the school at the same
+    /// `(day, period_number)` slot. Per ClassRoutine I-5
+    /// (a room cannot host two classes at the same time).
+    fn room_has_conflict(
+        &self,
+        school: SchoolId,
+        room_id: ClassRoomId,
+        day: DayOfWeek,
+        period_number: u8,
     ) -> bool;
 }
 
@@ -921,12 +944,166 @@ impl CreateClassSectionCommand {
         vec![Capability::AcademicClassCreate]
     }
 }
-/// Command: submit homework for a student.
-academic_command_stub! {
-    /// Command stub: create a class routine period. See
-    /// `docs/specs/academic/aggregates.md` § ClassRoutine.
-    pub struct CreateClassRoutineCommand { id: ClassRoutineId }
+// =============================================================================
+// ClassRoutine commands (Wave 51: full impl)
+// =============================================================================
+
+/// Command: create a [`ClassRoutine`](crate::aggregate::ClassRoutine)
+/// for the given `class_section_id` and `academic_year_id`,
+/// with the provided full-week period schedule.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassRoutine,
+/// the create flow enforces:
+///
+/// - **I-1**: `periods` covers all 7 distinct days
+///   (Mon-Sun). Enforced by
+///   [`crate::aggregate::ClassRoutine::fresh`].
+/// - **I-2**: no duplicate `ClassTimeId` within
+///   `periods`. Enforced by
+///   [`crate::aggregate::ClassRoutine::fresh`].
+/// - **I-3**: every period carries both a `room_id` and
+///   a `teacher_id` (compile-time enforced; the
+///   `ClassPeriod` struct has no `None` slots for those
+///   fields).
+/// - **I-4**: teacher cannot be in two places at the
+///   same time. Enforced via
+///   `UniquenessChecker::teacher_has_conflict`.
+/// - **I-5**: room cannot host two classes at the same
+///   time. Enforced via
+///   `UniquenessChecker::room_has_conflict`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateClassRoutineCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The class-routine's typed id.
+    pub class_routine_id: ClassRoutineId,
+    /// The class-section this routine is scheduled for.
+    pub class_section_id: ClassSectionId,
+    /// The academic year this routine applies to.
+    pub academic_year_id: AcademicYearId,
+    /// The full-week period schedule. Per I-1, must
+    /// contain at least 7 periods covering all 7
+    /// distinct days. Per I-2, no two periods may share a
+    /// `class_time_id`.
+    pub periods: Vec<ClassPeriod>,
 }
+
+impl CreateClassRoutineCommand {
+    /// Returns the school id (taken from the typed id).
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.class_routine_id.school_id()
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassRoutineCreate]
+    }
+}
+
+/// Command: replace the periods of an existing
+/// [`ClassRoutine`](crate::aggregate::ClassRoutine).
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassRoutine,
+/// the update flow enforces:
+///
+/// - **I-1**: `new_periods` covers all 7 distinct days.
+/// - **I-2**: no duplicate `ClassTimeId` within
+///   `new_periods`.
+/// - **I-3**: every period carries both a `room_id` and
+///   a `teacher_id`.
+/// - **I-4** / **I-5**: teacher / room no-conflict.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateClassRoutinePeriodCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The class-routine's typed id.
+    pub class_routine_id: ClassRoutineId,
+    /// The replacement period schedule. Per I-1, must
+    /// cover all 7 distinct days. Per I-2, no two
+    /// periods may share a `class_time_id`.
+    pub new_periods: Vec<ClassPeriod>,
+}
+
+impl UpdateClassRoutinePeriodCommand {
+    /// Returns the school id (taken from the typed id).
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.class_routine_id.school_id()
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassRoutineUpdate]
+    }
+}
+
+/// Command: swap two periods in an existing
+/// [`ClassRoutine`](crate::aggregate::ClassRoutine) by
+/// index. The indices must refer to valid positions in
+/// the current `periods` vector (the service validates
+/// the bounds).
+///
+/// The swap exchanges the entire [`ClassPeriod`]
+/// payloads (including `room_id`, `teacher_id`, `day`,
+/// `period_number`, `class_time_id`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SwapClassRoutinePeriodsCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The class-routine's typed id.
+    pub class_routine_id: ClassRoutineId,
+    /// The index of the first period to swap.
+    pub period_a_idx: usize,
+    /// The index of the second period to swap.
+    pub period_b_idx: usize,
+}
+
+impl SwapClassRoutinePeriodsCommand {
+    /// Returns the school id (taken from the typed id).
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.class_routine_id.school_id()
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassRoutineUpdate]
+    }
+}
+
+/// Command: soft-delete (retire) an existing
+/// [`ClassRoutine`](crate::aggregate::ClassRoutine).
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassRoutine,
+/// the delete flow is unconditional: any active
+/// `ClassRoutine` may be deleted; the service retires
+/// the aggregate and emits the typed event.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeleteClassRoutineCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The class-routine's typed id.
+    pub class_routine_id: ClassRoutineId,
+}
+
+impl DeleteClassRoutineCommand {
+    /// Returns the school id (taken from the typed id).
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.class_routine_id.school_id()
+    }
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicClassRoutineDelete]
+    }
+}
+
 academic_command_stub! {
     /// Command stub: create a homework assignment. See
     /// `docs/specs/academic/aggregates.md` § Homework.

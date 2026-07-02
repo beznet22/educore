@@ -24,16 +24,18 @@
 
 use serde::{Deserialize, Serialize};
 
+use std::collections::HashSet;
+
 use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
 use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoutineId, ClassRoomId,
-    ClassSectionId, ClassSubjectId, ClassSubjectScope, EmailAddress, GuardianId, HomeworkId,
-    IdCardId, LessonId, LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId,
-    OptionalSubjectGpaThreshold, PassMark, PhoneNumber, RegistrationFieldId, Relation, SectionId,
-    StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId, StudentPromotionId,
-    StudentRecordId, SubjectId, SubjectType,
+    AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassPeriod, ClassRoutineId,
+    ClassRoomId, ClassSectionId, ClassSubjectId, ClassSubjectScope, DayOfWeek, EmailAddress,
+    GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
+    OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold, PassMark, PhoneNumber,
+    RegistrationFieldId, Relation, SectionId, StudentCategoryId, StudentGroupId,
+    StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId, SubjectId, SubjectType,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -1238,11 +1240,282 @@ impl ClassSubject {
         self.last_event_id = Some(event_id);
     }
 }
-academic_aggregate_stub! {
-    /// The weekly schedule for a class-section-subject
-    /// combination. See `docs/specs/academic/aggregates.md` §
-    /// ClassRoutine.
-    pub struct ClassRoutine { id: ClassRoutineId }
+// =============================================================================
+// ClassRoutine (Cluster D, Batch 2: full impl — Wave 51)
+// =============================================================================
+
+/// The weekly schedule for a [`ClassSection`].
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassRoutine:
+///
+/// - **I-1**: a routine covers a full week (7 distinct
+///   days Mon-Sun). Enforced by [`Self::fresh`] and
+///   [`Self::replace_periods`].
+/// - **I-2**: periods are identified by `ClassTimeId`;
+///   no two periods in the same routine may share a
+///   `class_time_id`. Enforced by [`Self::fresh`] and
+///   [`Self::replace_periods`].
+/// - **I-3**: every period carries both a `room_id`
+///   and a `teacher_id` (compile-time enforced; the
+///   `ClassPeriod` struct has no `None` slots).
+/// - **I-4** / **I-5**: teacher / room no-conflict are
+///   enforced at the **service boundary** via
+///   [`crate::commands::UniquenessChecker::teacher_has_conflict`]
+///   and [`crate::commands::UniquenessChecker::room_has_conflict`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ClassRoutine {
+    /// The class-routine's typed id.
+    pub id: ClassRoutineId,
+    /// The owning school (tenant anchor; also embedded in
+    /// the typed id).
+    pub school_id: SchoolId,
+    /// The class-section this routine is scheduled for.
+    pub class_section_id: ClassSectionId,
+    /// The academic year this routine applies to.
+    pub academic_year_id: AcademicYearId,
+    /// The full-week period schedule. Per I-1, must
+    /// cover all 7 distinct days; per I-2, no two periods
+    /// may share a `class_time_id`.
+    pub periods: Vec<ClassPeriod>,
+    /// Whether this routine is currently active. Set to
+    /// `false` by [`Self::retire`].
+    pub is_active: bool,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// Creation time.
+    pub created_at: Timestamp,
+    /// Last-mutation time.
+    pub updated_at: Timestamp,
+    /// Created by.
+    pub created_by: UserId,
+    /// Last mutated by.
+    pub updated_by: UserId,
+    /// Soft-delete flag. Set to `Retired` by
+    /// [`Self::retire`].
+    pub active_status: ActiveStatus,
+    /// Last event id (for the outbox / audit bridge).
+    pub last_event_id: Option<EventId>,
+    /// Correlation id of the request that originated this
+    /// aggregate.
+    pub correlation_id: CorrelationId,
+}
+
+impl ClassRoutine {
+    /// The default etag for a freshly minted class-routine.
+    pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
+
+    /// Returns a `ClassRoutine` in its just-minted state.
+    ///
+    /// Per `docs/specs/academic/aggregates.md` § ClassRoutine:
+    ///
+    /// - **I-1**: rejects if `periods` does not cover all 7
+    ///   distinct days (Mon-Sun).
+    /// - **I-2**: rejects if two periods share the same
+    ///   `class_time_id`.
+    /// - **I-3**: every period must validate via
+    ///   [`ClassPeriod::validate`] (per-period
+    ///   structural check: `period_number >= 1`).
+    ///
+    /// The I-4 (teacher no-conflict) and I-5 (room
+    /// no-conflict) invariants are **not** enforced here —
+    /// they are checked at the service boundary via
+    /// [`crate::commands::UniquenessChecker`], since the
+    /// conflict check requires storage-layer state
+    /// (existing routines in the same school).
+    ///
+    /// # Errors
+    ///
+    /// - `DomainError::Validation` if any period has
+    ///   `period_number == 0` (per-period I-3 structural
+    ///   check), or if the period set does not cover all 7
+    ///   distinct days (I-1).
+    /// - `DomainError::Conflict` if two periods share the
+    ///   same `class_time_id` (I-2).
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: ClassRoutineId,
+        class_section_id: ClassSectionId,
+        academic_year_id: AcademicYearId,
+        periods: Vec<ClassPeriod>,
+        created_by: UserId,
+        updated_by: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        use educore_core::error::DomainError;
+        // Tenant-anchor invariant: every referenced id must
+        // share the same school as the typed class-routine
+        // id.
+        if class_section_id.school_id() != id.school_id() {
+            return Err(DomainError::validation(format!(
+                "class_section_id {class_section_id} is in school {}, \
+                 class_routine id school is {}",
+                class_section_id.school_id(),
+                id.school_id()
+            )));
+        }
+        if academic_year_id.school_id() != id.school_id() {
+            return Err(DomainError::validation(format!(
+                "academic_year_id {academic_year_id} is in school {}, \
+                 class_routine id school is {}",
+                academic_year_id.school_id(),
+                id.school_id()
+            )));
+        }
+        // I-3 (per-period structural): each period must
+        // pass `ClassPeriod::validate`.
+        for (idx, p) in periods.iter().enumerate() {
+            p.validate().map_err(|e| {
+                DomainError::validation(format!("period #{idx}: {e}"))
+            })?;
+        }
+        // I-1: full week — 7 distinct days.
+        let mut days: HashSet<DayOfWeek> = HashSet::with_capacity(7);
+        for p in &periods {
+            days.insert(p.day);
+        }
+        if days.len() != 7 {
+            return Err(DomainError::validation(format!(
+                "ClassRoutine must cover all 7 days, got {} distinct days",
+                days.len()
+            )));
+        }
+        // I-2: no duplicate ClassTimeId.
+        let mut class_times: HashSet<crate::value_objects::ClassTimeId> =
+            HashSet::with_capacity(periods.len());
+        for p in &periods {
+            if !class_times.insert(p.class_time_id) {
+                return Err(DomainError::conflict(format!(
+                    "duplicate class_time_id: {:?}",
+                    p.class_time_id
+                )));
+            }
+        }
+        let etag = fresh_etag();
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            class_section_id,
+            academic_year_id,
+            periods,
+            is_active: true,
+            version: Version::initial(),
+            etag,
+            created_at: now,
+            updated_at: now,
+            created_by,
+            updated_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Replace the current period set with `new_periods`.
+    ///
+    /// Per `docs/specs/academic/aggregates.md` § ClassRoutine,
+    /// the same I-1 / I-2 / I-3 invariants enforced by
+    /// [`Self::fresh`] are re-checked. Bumps
+    /// `updated_at`, `updated_by`, `version`, and
+    /// `last_event_id`. Returns the previous period set
+    /// for the event payload.
+    ///
+    /// # Errors
+    ///
+    /// - `DomainError::Validation` if any period has
+    ///   `period_number == 0` (I-3 per-period), or if the
+    ///   new period set does not cover all 7 distinct days
+    ///   (I-1).
+    /// - `DomainError::Conflict` if two new periods share
+    ///   the same `class_time_id` (I-2).
+    pub fn replace_periods(
+        &mut self,
+        new_periods: Vec<ClassPeriod>,
+        updated_by: UserId,
+        now: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<Vec<ClassPeriod>> {
+        use educore_core::error::DomainError;
+        for (idx, p) in new_periods.iter().enumerate() {
+            p.validate().map_err(|e| {
+                DomainError::validation(format!("period #{idx}: {e}"))
+            })?;
+        }
+        let mut days: HashSet<DayOfWeek> = HashSet::with_capacity(7);
+        for p in &new_periods {
+            days.insert(p.day);
+        }
+        if days.len() != 7 {
+            return Err(DomainError::validation(format!(
+                "ClassRoutine must cover all 7 days, got {} distinct days",
+                days.len()
+            )));
+        }
+        let mut class_times: HashSet<crate::value_objects::ClassTimeId> =
+            HashSet::with_capacity(new_periods.len());
+        for p in &new_periods {
+            if !class_times.insert(p.class_time_id) {
+                return Err(DomainError::conflict(format!(
+                    "duplicate class_time_id: {:?}",
+                    p.class_time_id
+                )));
+            }
+        }
+        let previous = std::mem::replace(&mut self.periods, new_periods);
+        self.updated_at = now;
+        self.updated_by = updated_by;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        Ok(previous)
+    }
+
+    /// Swap two periods by index in the current `periods`
+    /// vector. Returns the previous `(a, b)` pair for the
+    /// event payload.
+    ///
+    /// # Errors
+    ///
+    /// - `DomainError::Validation` if either index is
+    ///   out of bounds.
+    pub fn swap_periods(
+        &mut self,
+        period_a_idx: usize,
+        period_b_idx: usize,
+        updated_by: UserId,
+        now: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<(ClassPeriod, ClassPeriod)> {
+        use educore_core::error::DomainError;
+        if period_a_idx >= self.periods.len() || period_b_idx >= self.periods.len() {
+            return Err(DomainError::validation(format!(
+                "swap indices out of bounds: a={period_a_idx}, b={period_b_idx}, len={}",
+                self.periods.len()
+            )));
+        }
+        let (a, b) = (period_a_idx, period_b_idx);
+        let prev_a = self.periods[a].clone();
+        let prev_b = self.periods[b].clone();
+        self.periods.swap(a, b);
+        self.updated_at = now;
+        self.updated_by = updated_by;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        Ok((prev_a, prev_b))
+    }
+
+    /// Soft-delete (retire) the class-routine. Sets
+    /// `active_status = Retired` and `is_active = false`,
+    /// bumps the audit footer.
+    pub fn retire(&mut self, updated_by: UserId, now: Timestamp, event_id: EventId) {
+        self.active_status = ActiveStatus::Retired;
+        self.is_active = false;
+        self.updated_at = now;
+        self.updated_by = updated_by;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+    }
 }
 academic_aggregate_stub! {
     /// An assignment given to students in a class-section, for a

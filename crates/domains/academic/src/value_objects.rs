@@ -36,7 +36,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use educore_core::error::{DomainError, Result};
-use educore_core::ids::SchoolId;
+use educore_core::ids::{SchoolId, UserId};
 
 // =============================================================================
 // Macro: typed academic id
@@ -153,6 +153,19 @@ academic_typed_id! {
     /// reference rooms cross-domain via a stable id. The
     /// academic layer treats the id as opaque metadata.
     pub struct ClassRoomId;
+}
+
+academic_typed_id! {
+    /// A typed id for a `ClassTime` slot (a period in the school
+    /// timetable — e.g. "Period 1, Monday 08:00–08:45").
+    ///
+    /// Per `docs/specs/academic/aggregates.md` § ClassRoutine § I-2,
+    /// a `ClassRoutine` aggregates `ClassPeriod` records each
+    /// identified by a `ClassTimeId`. The class time catalog itself
+    /// (start/end time, period number) is owned by the platform
+    /// crate; the academic layer treats the id as opaque metadata
+    /// for uniqueness-checking only.
+    pub struct ClassTimeId;
 }
 
 academic_typed_id! {
@@ -755,6 +768,150 @@ impl Relation {
 impl fmt::Display for Relation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.as_str().fmt(f)
+    }
+}
+
+// =============================================================================
+// ClassRoutine value objects (Wave 51)
+//
+// Per `docs/specs/academic/aggregates.md` § ClassRoutine:
+// - I-1: covers a full week (7 distinct days).
+// - I-2: periods identified by `ClassTimeId`, no duplicates.
+// - I-3: room + teacher per period per day.
+// =============================================================================
+
+/// The days of the school week, used by [`ClassPeriod`] to
+/// anchor a period to a specific weekday.
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassRoutine §
+/// I-1, a routine covers all 7 distinct days Monday
+/// through Sunday. `Monday` is the default for the
+/// `Default` derive (the engine uses `Default` only in
+/// test/fixture code paths; production code always
+/// selects the variant explicitly via [`Self::all`] or
+/// the command payload).
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum DayOfWeek {
+    /// Monday.
+    #[default]
+    Monday,
+    /// Tuesday.
+    Tuesday,
+    /// Wednesday.
+    Wednesday,
+    /// Thursday.
+    Thursday,
+    /// Friday.
+    Friday,
+    /// Saturday.
+    Saturday,
+    /// Sunday.
+    Sunday,
+}
+
+impl DayOfWeek {
+    /// Returns the canonical Monday-first array of all 7
+    /// days. Used by [`crate::aggregate::ClassRoutine::fresh`]
+    /// to seed the full-week completeness check.
+    #[must_use]
+    pub const fn all() -> [Self; 7] {
+        [
+            Self::Monday,
+            Self::Tuesday,
+            Self::Wednesday,
+            Self::Thursday,
+            Self::Friday,
+            Self::Saturday,
+            Self::Sunday,
+        ]
+    }
+
+    /// Returns the canonical lowercase wire string for
+    /// this day (e.g. `"monday"`).
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Monday => "monday",
+            Self::Tuesday => "tuesday",
+            Self::Wednesday => "wednesday",
+            Self::Thursday => "thursday",
+            Self::Friday => "friday",
+            Self::Saturday => "saturday",
+            Self::Sunday => "sunday",
+        }
+    }
+}
+
+impl fmt::Display for DayOfWeek {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_str().fmt(f)
+    }
+}
+
+/// A single period slot in a [`ClassRoutine`](crate::aggregate::ClassRoutine).
+///
+/// Per `docs/specs/academic/aggregates.md` § ClassRoutine:
+///
+/// - **I-2** — the period is uniquely identified within
+///   the routine by `class_time_id`. The constructor and
+///   the aggregate enforce no-duplicate `ClassTimeId`
+///   across all `periods`.
+/// - **I-3** — every period carries both a `room_id`
+///   (`ClassRoomId`) and a `teacher_id` (`UserId`).
+///   The `teacher_id` is typed as `UserId` (not
+///   `StaffId`) because the academic crate does not
+///   depend on `educore-hr`.
+/// - **I-1** — every `day` of the 7 days of the week
+///   must appear at least once across the routine's
+///   `periods` (enforced at the aggregate level, not
+///   here, since a single `ClassPeriod` is one slot,
+///   not the full week).
+///
+/// `period_number` is 1-based (the first period of the
+/// day is `1`, not `0`); the [`Self::validate`]
+/// constructor rejects `0`.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ClassPeriod {
+    /// The class-time slot this period occupies (the
+    /// canonical period id; per I-2, no two periods in
+    /// the same routine may share a `class_time_id`).
+    pub class_time_id: ClassTimeId,
+    /// The day of the week this period runs on.
+    pub day: DayOfWeek,
+    /// The 1-based period number within the day. Must be
+    /// `>= 1`.
+    pub period_number: u8,
+    /// The physical / virtual room assigned to this
+    /// period. Per I-3, required.
+    pub room_id: ClassRoomId,
+    /// The teacher (user) assigned to this period. Per
+    /// I-3, required; typed as `UserId` since `StaffId`
+    /// does not exist in the academic crate today.
+    pub teacher_id: UserId,
+}
+
+impl ClassPeriod {
+    /// Validates the per-period structural invariants:
+    ///
+    /// - `period_number >= 1` (1-based).
+    ///
+    /// Returns `DomainError::Validation` on violation.
+    /// The full-week (I-1) and no-duplicate-`ClassTimeId`
+    /// (I-2) checks are aggregate-level invariants and
+    /// live in
+    /// [`crate::aggregate::ClassRoutine::fresh`] /
+    /// [`crate::aggregate::ClassRoutine::replace_periods`].
+    ///
+    /// # Errors
+    ///
+    /// - `Validation` if `period_number == 0`.
+    pub fn validate(&self) -> Result<()> {
+        if self.period_number == 0 {
+            return Err(DomainError::validation(
+                "ClassPeriod::period_number must be >= 1 (1-based)",
+            ));
+        }
+        Ok(())
     }
 }
 

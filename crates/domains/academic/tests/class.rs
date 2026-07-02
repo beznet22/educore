@@ -292,4 +292,22 @@ impl educore_academic::commands::UniquenessChecker for NoOpUniquenessChecker {
     ) -> bool {
         false
     }
+    fn teacher_has_conflict(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _teacher_id: educore_core::ids::UserId,
+        _day: educore_academic::DayOfWeek,
+        _period_number: u8,
+    ) -> bool {
+        false
+    }
+    fn room_has_conflict(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _room_id: educore_academic::ClassRoomId,
+        _day: educore_academic::DayOfWeek,
+        _period_number: u8,
+    ) -> bool {
+        false
+    }
 }
