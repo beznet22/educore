@@ -2358,6 +2358,130 @@ academic_aggregate_stub! {
     /// `docs/specs/academic/aggregates.md` § StudentPromotion.
     pub struct StudentPromotion { id: StudentPromotionId }
 }
+
+// ---- Real StudentPromotion aggregate (Wave 57) ------------------------------
+//
+// Per `docs/specs/academic/aggregates.md` § StudentPromotion:
+// - I-1: References both `From` and `To` `StudentRecord`s
+// - I-2: ResultStatus is Pass, Fail, or Manual
+// - I-3: Immutable once written (no mutator methods; aggregate is constructed via `fresh`)
+
+/// Real StudentPromotion aggregate (Wave 57).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealStudentPromotion {
+    /// The student-promotion's typed id (school-scoped).
+    pub id: StudentPromotionId,
+    /// The owning school.
+    pub school_id: SchoolId,
+    /// The student being promoted.
+    pub student_id: StudentId,
+    /// The source `StudentRecord` (from-year record).
+    pub from_student_record_id: StudentRecordId,
+    /// The target `StudentRecord` (to-year record).
+    pub to_student_record_id: StudentRecordId,
+    /// The source academic year.
+    pub from_academic_year_id: AcademicYearId,
+    /// The target academic year.
+    pub to_academic_year_id: AcademicYearId,
+    /// The source class.
+    pub from_class_id: ClassId,
+    /// The source section.
+    pub from_section_id: SectionId,
+    /// The target class.
+    pub to_class_id: ClassId,
+    /// The target section.
+    pub to_section_id: SectionId,
+    /// The previous roll number.
+    pub from_roll_number: Option<String>,
+    /// The new roll number.
+    pub to_roll_number: String,
+    /// The promotion result (I-2: Pass, Fail, or Manual).
+    pub result_status: crate::value_objects::ResultStatus,
+    /// The promotion date.
+    pub promotion_date: chrono::NaiveDate,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// User who created this aggregate.
+    pub created_by: UserId,
+    /// When this aggregate was created.
+    pub created_at: Timestamp,
+    /// Last domain event id produced by this aggregate.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id propagated from the tenant context.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealStudentPromotion {
+    /// Construct a fresh `RealStudentPromotion`. Enforces I-1 (both records present).
+    /// Per I-3: this is the only constructor; once written, the aggregate is immutable.
+    pub fn fresh(
+        id: StudentPromotionId,
+        student_id: StudentId,
+        from_student_record_id: StudentRecordId,
+        to_student_record_id: StudentRecordId,
+        from_academic_year_id: AcademicYearId,
+        to_academic_year_id: AcademicYearId,
+        from_class_id: ClassId,
+        from_section_id: SectionId,
+        to_class_id: ClassId,
+        to_section_id: SectionId,
+        from_roll_number: Option<String>,
+        to_roll_number: String,
+        result_status: crate::value_objects::ResultStatus,
+        promotion_date: chrono::NaiveDate,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        use educore_core::error::DomainError;
+        // I-1: from and to records must both be present and share school.
+        if from_student_record_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation("from_student_record_id school mismatch".into()));
+        }
+        if to_student_record_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation("to_student_record_id school mismatch".into()));
+        }
+        if from_student_record_id == to_student_record_id {
+            return Err(DomainError::Validation(
+                "StudentPromotion: from and to StudentRecord must differ".into(),
+            ));
+        }
+        if from_academic_year_id == to_academic_year_id {
+            return Err(DomainError::Validation(
+                "StudentPromotion: from and to academic year must differ".into(),
+            ));
+        }
+        if to_roll_number.trim().is_empty() {
+            return Err(DomainError::Validation("StudentPromotion::to_roll_number must not be empty".into()));
+        }
+
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            student_id,
+            from_student_record_id,
+            to_student_record_id,
+            from_academic_year_id,
+            to_academic_year_id,
+            from_class_id,
+            from_section_id,
+            to_class_id,
+            to_section_id,
+            from_roll_number,
+            to_roll_number,
+            result_status,
+            promotion_date,
+            version: Version::initial(),
+            etag: Etag::placeholder(),
+            created_by: actor,
+            created_at: now,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+}
 academic_aggregate_stub! {
     /// A categorization for students, used for fee discounts and
     /// reporting. See `docs/specs/academic/aggregates.md` §

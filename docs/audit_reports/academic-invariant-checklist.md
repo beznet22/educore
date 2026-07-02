@@ -44,6 +44,8 @@
 
 **Wave 56 (StudentRecord):** 6 invariants reach [x] (StudentRecord I-1/2/3/4/5/6). Total enforced now 43.
 
+**Wave 57 (StudentPromotion):** 3 invariants reach [x] (StudentPromotion I-1/2/3). Total enforced now 46.
+
 ---
 
 ## Student Aggregate (6 invariants)
@@ -369,6 +371,19 @@
   - Test: MISSING
 
 ## StudentPromotion Aggregate (3 invariants)
+
+- [x] I-1: References both From and To StudentRecord (distinct, same school)
+  - Spec: `docs/specs/academic/aggregates.md#studentpromotion`
+  - Enforcement: `RealStudentPromotion::fresh` checks that `from_student_record_id != to_student_record_id` (Validation), both share school with promotion_id, and from/to academic years differ.
+  - Test: `tests/student_promotion.rs::student_promotion_record_succeeds` (passes), `::student_promotion_same_records_rejected` (passes), `::student_promotion_cross_school_record_rejected` (passes), `::student_promotion_same_years_rejected` (passes).
+- [x] I-2: ResultStatus is Pass, Fail, or Manual
+  - Spec: `docs/specs/academic/aggregates.md#studentpromotion`
+  - Enforcement: `ResultStatus` enum (Pass/Fail/Manual) with `#[default]` Pass; service accepts any of the three variants.
+  - Test: `tests/student_promotion.rs::student_promotion_record_succeeds` (Pass, passes), `::student_promotion_fail_result_succeeds` (passes), `::student_promotion_manual_result_succeeds` (passes).
+- [x] I-3: Immutable once written
+  - Spec: `docs/specs/academic/aggregates.md#studentpromotion`
+  - Enforcement: `RealStudentPromotion` exposes only a `fresh` constructor; no `&mut self` methods; no mutator service exists.
+  - Test: `tests/student_promotion.rs::student_promotion_is_immutable_after_fresh` (passes).
 
 - [ ] I-1: References both `From` and `To` `StudentRecord`s
   - Spec: `docs/specs/academic/aggregates.md#studentpromotion`

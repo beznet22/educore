@@ -36,15 +36,15 @@
 
 use educore_core::clock::{Clock, IdGenerator};
 use educore_core::error::{DomainError, Result};
-use educore_core::ids::{EventId, Identifier, SchoolId, UserId};
+use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::ActiveStatus;
 
 use crate::aggregate::{
     AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
     IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealLesson, RealLessonPlan,
-    RealLessonTopic, RegistrationField, Section, Student, StudentCategory, StudentGroup,
-    StudentGuardianLink, StudentPromotion, StudentRecord, Subject,
+    RealLessonTopic, RealStudentPromotion, RegistrationField, Section, Student, StudentCategory,
+    StudentGroup, StudentGuardianLink, StudentPromotion, StudentRecord, Subject,
 };
 use crate::commands::{
     validate_admission_no, validate_class_name, validate_email_optional, validate_first_name,
@@ -94,8 +94,9 @@ use crate::events::{
     SubjectTeacherAssigned, SubjectUnassigned, TeacherReassigned,
 };
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, ClassRoomId, ClassSectionId, CompletedStatus,
-    HomeworkMark, HomeworkStatus, StudentGuardianLinkId, StudentId, StudentRecordId,
+    AcademicYearId, AcademicYearRange, ClassId, ClassRoomId, ClassSectionId, CompletedStatus,
+    HomeworkMark, HomeworkStatus, ResultStatus, SectionId, StudentGuardianLinkId, StudentId,
+    StudentPromotionId, StudentRecordId,
     StudentStatus, SubTopic,
 };
 
@@ -4226,4 +4227,79 @@ where
         correlation_id: record.correlation_id,
         occurred_at: now,
     })
+}
+
+// =============================================================================
+// StudentPromotion services (Wave 57: full impl)
+// =============================================================================
+
+/// Record a [`RealStudentPromotion`] and emit a [`StudentPromoted`] event.
+///
+/// Per `docs/specs/academic/aggregates.md` § StudentPromotion:
+/// - **I-1**: from and to `StudentRecord`s are both required and distinct.
+/// - **I-2**: result_status must be Pass, Fail, or Manual (validated via enum).
+/// - **I-3**: aggregate is immutable once written (no mutator service exposed).
+pub fn record_student_promotion_aggregate<C, G>(
+    id: StudentPromotionId,
+    student_id: StudentId,
+    from_student_record_id: StudentRecordId,
+    to_student_record_id: StudentRecordId,
+    from_academic_year_id: AcademicYearId,
+    to_academic_year_id: AcademicYearId,
+    from_class_id: ClassId,
+    from_section_id: SectionId,
+    to_class_id: ClassId,
+    to_section_id: SectionId,
+    from_roll_number: Option<String>,
+    to_roll_number: String,
+    result_status: ResultStatus,
+    promotion_date: chrono::NaiveDate,
+    actor: UserId,
+    clock: &C,
+    _ids: &G,
+) -> Result<(RealStudentPromotion, StudentPromoted)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let correlation_id = CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let event_id = EventId::from_uuid(uuid::Uuid::now_v7());
+
+    let aggregate = RealStudentPromotion::fresh(
+        id,
+        student_id,
+        from_student_record_id,
+        to_student_record_id,
+        from_academic_year_id,
+        to_academic_year_id,
+        from_class_id,
+        from_section_id,
+        to_class_id,
+        to_section_id,
+        from_roll_number.clone(),
+        to_roll_number.clone(),
+        result_status,
+        promotion_date,
+        actor,
+        now,
+        correlation_id,
+    )?;
+
+    let event = StudentPromoted::new(
+        student_id,
+        from_class_id,
+        from_section_id,
+        to_class_id,
+        to_section_id,
+        from_academic_year_id,
+        to_academic_year_id,
+        to_roll_number.clone(),
+        result_status,
+        event_id,
+        correlation_id,
+        now,
+    );
+
+    Ok((aggregate, event))
 }
