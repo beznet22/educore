@@ -38,7 +38,7 @@ use crate::value_objects::{
     LessonTopicId, OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold, PassMark,
     PhoneNumber, RegistrationFieldId, Relation, SectionId, StudentCategoryId, StudentGroupId,
     StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId, SubjectId,
-    SubjectType, SubTopic, AdminSection, FieldName, LabelName, RegistrationFieldType,
+    SubjectType, SubTopic, AdminSection, CertificateLayout, FieldName, LabelName, RegistrationFieldType,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -2878,6 +2878,196 @@ academic_aggregate_stub! {
     /// course completion, etc. See
     /// `docs/specs/academic/aggregates.md` § Certificate.
     pub struct Certificate { id: CertificateId }
+}
+
+// ---- Real Certificate aggregate (Wave 61) -----------------------------------
+//
+// Per `docs/specs/academic/aggregates.md` § Certificate:
+// - I-1: layout (Portrait/Landscape) + body + footer (≤3 labels) + photo flag
+// - I-2: may have an attached file (PDF or image template)
+// - I-3: DefaultFor flag for course certificates
+
+/// Real Certificate aggregate (Wave 61).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealCertificate {
+    /// The certificate's typed id (school-scoped).
+    pub id: CertificateId,
+    /// The owning school.
+    pub school_id: SchoolId,
+    /// The certificate's name.
+    pub name: String,
+    /// Layout (I-1): Portrait or Landscape.
+    pub layout: CertificateLayout,
+    /// Body template (I-1).
+    pub body: String,
+    /// Footer labels (I-1: up to 3).
+    pub footer_labels: Vec<String>,
+    /// Whether the certificate includes a photo (I-1).
+    pub has_photo: bool,
+    /// Optional attached file (I-2): PDF or image template.
+    pub attachment_id: Option<FileId>,
+    /// Whether this certificate is the default for course certificates (I-3).
+    pub default_for_course: bool,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// User who created this aggregate.
+    pub created_by: UserId,
+    /// When this aggregate was created.
+    pub created_at: Timestamp,
+    /// User who last mutated this aggregate.
+    pub updated_by: UserId,
+    /// When this aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// Soft-delete lifecycle state.
+    pub active_status: ActiveStatus,
+    /// Last domain event id produced by this aggregate.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id propagated from the tenant context.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealCertificate {
+    /// Construct a fresh `RealCertificate`. Enforces I-1 (footer ≤3 labels).
+    pub fn fresh(
+        id: CertificateId,
+        name: String,
+        layout: CertificateLayout,
+        body: String,
+        footer_labels: Vec<String>,
+        has_photo: bool,
+        attachment_id: Option<FileId>,
+        default_for_course: bool,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        use educore_core::error::DomainError;
+        if name.trim().is_empty() {
+            return Err(DomainError::validation("Certificate::name must not be empty"));
+        }
+        if name.chars().count() > 200 {
+            return Err(DomainError::validation("Certificate::name must be 1..=200 chars"));
+        }
+        if body.trim().is_empty() {
+            return Err(DomainError::validation("Certificate::body must not be empty"));
+        }
+        // I-1: footer labels ≤3
+        if footer_labels.len() > 3 {
+            return Err(DomainError::validation(
+                "Certificate may have at most 3 footer labels (I-1)"
+            ));
+        }
+        for label in &footer_labels {
+            if label.trim().is_empty() {
+                return Err(DomainError::validation(
+                    "Certificate footer labels must not be empty"
+                ));
+            }
+            if label.chars().count() > 100 {
+                return Err(DomainError::validation(
+                    "Certificate footer label must be 1..=100 chars"
+                ));
+            }
+        }
+
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            name,
+            layout,
+            body,
+            footer_labels,
+            has_photo,
+            attachment_id,
+            default_for_course,
+            version: Version::initial(),
+            etag: Etag::placeholder(),
+            created_by: actor,
+            created_at: now,
+            updated_by: actor,
+            updated_at: now,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Update mutable fields.
+    pub fn update(
+        &mut self,
+        name: Option<String>,
+        layout: Option<CertificateLayout>,
+        body: Option<String>,
+        footer_labels: Option<Vec<String>>,
+        has_photo: Option<bool>,
+        attachment_id: Option<Option<FileId>>,
+        default_for_course: Option<bool>,
+        actor: UserId,
+        now: Timestamp,
+    ) -> educore_core::error::Result<()> {
+        use educore_core::error::DomainError;
+        if let Some(n) = name {
+            if n.trim().is_empty() {
+                return Err(DomainError::validation("Certificate::name must not be empty"));
+            }
+            if n.chars().count() > 200 {
+                return Err(DomainError::validation("Certificate::name must be 1..=200 chars"));
+            }
+            self.name = n;
+        }
+        if let Some(l) = layout {
+            self.layout = l;
+        }
+        if let Some(b) = body {
+            if b.trim().is_empty() {
+                return Err(DomainError::validation("Certificate::body must not be empty"));
+            }
+            self.body = b;
+        }
+        if let Some(labels) = footer_labels {
+            if labels.len() > 3 {
+                return Err(DomainError::validation(
+                    "Certificate may have at most 3 footer labels (I-1)"
+                ));
+            }
+            for label in &labels {
+                if label.trim().is_empty() {
+                    return Err(DomainError::validation(
+                        "Certificate footer labels must not be empty"
+                    ));
+                }
+                if label.chars().count() > 100 {
+                    return Err(DomainError::validation(
+                        "Certificate footer label must be 1..=100 chars"
+                    ));
+                }
+            }
+            self.footer_labels = labels;
+        }
+        if let Some(p) = has_photo {
+            self.has_photo = p;
+        }
+        if let Some(a) = attachment_id {
+            self.attachment_id = a;
+        }
+        if let Some(d) = default_for_course {
+            self.default_for_course = d;
+        }
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-delete.
+    pub fn delete(&mut self, actor: UserId, now: Timestamp) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
 }
 academic_aggregate_stub! {
     /// A configurable student ID card template. See

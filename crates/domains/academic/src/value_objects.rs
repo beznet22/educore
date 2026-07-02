@@ -1845,6 +1845,27 @@ impl RegistrationFieldType {
     }
 }
 
+/// Certificate layout (Portrait or Landscape).
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum CertificateLayout {
+    /// Portrait orientation.
+    #[default]
+    Portrait,
+    /// Landscape orientation.
+    Landscape,
+}
+
+impl CertificateLayout {
+    /// Returns the canonical snake_case wire string.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Portrait => "portrait",
+            Self::Landscape => "landscape",
+        }
+    }
+}
+
+
 
 /// A sub-topic within a [`LessonPlan`](crate::aggregate::LessonPlan).
 ///

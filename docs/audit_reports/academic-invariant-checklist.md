@@ -440,20 +440,18 @@
 
 ## Certificate Aggregate (3 invariants)
 
-- [ ] I-1: Layout (Portrait/Landscape) + body + footer (≤3 labels) + photo flag
+- [x] I-1: Layout (Portrait/Landscape) + body + footer (≤3 labels) + photo flag
   - Spec: `docs/specs/academic/aggregates.md#certificate`
-  - Enforcement: MISSING — placeholder at `aggregate.rs:393-396`
-  - Test: MISSING
-- [ ] I-2: Optional attachment (PDF or image)
+  - Enforcement: `RealCertificate::fresh` enforces footer_labels.len() ≤ 3, non-empty body (1..=200 chars), non-empty name. `RealCertificate.layout: CertificateLayout` enum (Portrait/Landscape). `RealCertificate.has_photo: bool` flag.
+  - Test: `tests/certificate.rs::certificate_create_succeeds` (passes), `::certificate_too_many_footer_labels_rejected` (passes), `::certificate_empty_body_rejected` (passes).
+- [x] I-2: Optional attachment (PDF or image template)
   - Spec: `docs/specs/academic/aggregates.md#certificate`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-3: `DefaultFor` flag
+  - Enforcement: `RealCertificate.attachment_id: Option<FileId>` (None = no attachment allowed). `update` service accepts triple-Option pattern.
+  - Test: `tests/certificate.rs::certificate_without_attachment_succeeds` (passes), `::certificate_create_succeeds` (asserts attachment_id is Some).
+- [x] I-3: DefaultFor flag for course certificates
   - Spec: `docs/specs/academic/aggregates.md#certificate`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-
-## IdCard Aggregate (2 invariants)
+  - Enforcement: `RealCertificate.default_for_course: bool` flag; `update` service mutates the flag.
+  - Test: `tests/certificate.rs::certificate_default_for_course_succeeds` (passes).## IdCard Aggregate (2 invariants)
 
 - [ ] I-1: Boolean display flags
   - Spec: `docs/specs/academic/aggregates.md#idcard`

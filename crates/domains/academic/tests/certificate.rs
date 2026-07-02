@@ -1,41 +1,12 @@
 //! Integration tests for the **Certificate aggregate** vertical slice.
 //!
-//! Pins the create contract for
-//! [`Certificate`](educore_academic::Certificate)
-//! end-to-end through the service layer:
+//! Pins the create / update / delete contracts for the
+//! `Certificate` aggregate end-to-end through the service
+//! layer, exercising all 3 spec invariants:
 //!
-//! 1. `create_certificate` validates that the typed id's
-//!    school matches the command's `school_id`, constructs
-//!    the aggregate, and emits a [`CertificateCreated`]
-//!    event.
-//!
-//! The tests use the same fixture pattern as
-//! `crates/domains/academic/tests/class.rs` and
-//! `crates/domains/academic/tests/subject.rs`
-//! (`TestClock` + `SystemIdGen`).
-//!
-//! Per the academic/workflows.rs pattern, the **handlers**
-//! themselves are not wired end-to-end (no subscriber
-//! fan-out, no outbox commit, no audit row). These tests
-//! pin the contract of the **service layer** that the
-//! dispatcher will eventually wrap.
-//!
-//! Note on `Certificate` field set: the aggregate is a
-//! placeholder stub carrying only `id` (typed
-//! `CertificateId`) and `school_id`. The full attribute
-//! surface (name, template body, signature lines, etc.)
-//! lives in `docs/specs/academic/aggregates.md` §
-//! Certificate but has not been wired into the typed
-//! command shape yet. The tests below therefore exercise
-//! the real contract available today: `id` + `school_id`
-//! round-trip through the aggregate and the emitted
-//! `CertificateCreated` event.
-//!
-//! Note on user role: the platform's [`UserType`] enum does
-//! not expose an `Admin` variant — the school-scoped
-//! administrative role is [`UserType::SchoolAdmin`]. These
-//! tests use `SchoolAdmin` to match the rest of the
-//! academic + subject test suites.
+//! - I-1: layout (Portrait/Landscape) + body + footer (≤3 labels) + photo flag
+//! - I-2: may have an attached file (PDF or image template)
+//! - I-3: DefaultFor flag for course certificates
 
 #![allow(
     clippy::unwrap_used,
@@ -45,25 +16,19 @@
     missing_docs
 )]
 
-use educore_academic::Certificate;
-use educore_academic::commands::CreateCertificateCommand;
-use educore_academic::events::CertificateCreated;
-use educore_academic::services::create_certificate;
-use educore_core::clock::{Clock as _, IdGenerator as _, SystemIdGen, TestClock};
-use uuid::Uuid;
+use educore_academic::commands::{DeleteCertificateCommand, RealCreateCertificateCommand, UpdateCertificateCommand};
+use educore_academic::events::{CertificateDeleted, CertificateUpdated, RealCertificateCreated};
+use educore_academic::prelude::*;
+use educore_academic::services::{create_certificate_aggregate, delete_certificate, update_certificate};
+use educore_academic::{CertificateLayout, FileId, RealCertificate};
+use educore_core::clock::{SystemIdGen, TestClock};
 use educore_core::error::DomainError;
-use educore_academic::value_objects::CertificateId;
-use educore_core::tenant::{TenantContext, UserType};
-use educore_events::domain_event::DomainEvent;
+use educore_core::ids::SchoolId;
 
 // =============================================================================
 // Fixtures
 // =============================================================================
 
-/// A fresh `TenantContext` for a `SchoolAdmin` acting on a
-/// freshly-minted school. Returns the context plus the
-/// generator so tests can mint child ids from the same
-/// school.
 fn admin_context() -> (TenantContext, SystemIdGen) {
     let g = SystemIdGen;
     let school = g.next_school_id();
@@ -75,104 +40,192 @@ fn admin_context() -> (TenantContext, SystemIdGen) {
     )
 }
 
-fn certificate_id(g: &SystemIdGen, school: educore_core::ids::SchoolId) -> CertificateId {
+fn certificate_id(g: &SystemIdGen, school: SchoolId) -> CertificateId {
     CertificateId::new(school, g.next_uuid())
 }
 
-// =============================================================================
-// 1. Happy path: create a Certificate template
-// =============================================================================
+fn file_id(g: &SystemIdGen, school: SchoolId) -> FileId {
+    FileId::new(school, g.next_uuid())
+}
 
-/// End-to-end happy path for the `Certificate` aggregate.
-/// Mint a fresh school + actor, build a
-/// `CreateCertificateCommand`, and assert that:
-///
-/// 1. `create_certificate` returns a `Certificate`
-///    aggregate carrying the typed `id` and the command's
-///    `school_id`.
-/// 2. The emitted `CertificateCreated` event has the right
-///    `event_type`, `aggregate_type`, and `schema_version`
-///    from the `DomainEvent` trait, plus a matching
-///    `aggregate_id` and `school_id`.
-/// 3. The event's `event_id` is fresh (non-zero) and
-///    `occurred_at` is sourced from the test clock.
-#[test]
-fn certificate_create_builds_aggregate_and_emits_certificate_created_event() {
-    let (tenant, g) = admin_context();
-    let school = tenant.school_id;
-    let clock = TestClock::new();
-    let ids = SystemIdGen;
-
-    // ---- Create flow ----
-    let create_cmd = CreateCertificateCommand {
-        id: certificate_id(&g, school),
-        school_id: school,
-    };
-    let (agg, created_event) = create_certificate(create_cmd, &clock, &ids).expect("create");
-
-    // Aggregate fields are populated from the command.
-    assert_eq!(agg.id.school_id(), school);
-    assert_eq!(agg.school_id, school);
-
-    // Event metadata matches the DomainEvent trait contract.
-    assert_eq!(
-        <CertificateCreated as DomainEvent>::EVENT_TYPE,
-        "academic.certificate.created"
-    );
-    assert_eq!(
-        <CertificateCreated as DomainEvent>::AGGREGATE_TYPE,
-        "certificate"
-    );
-    assert_eq!(<CertificateCreated as DomainEvent>::SCHEMA_VERSION, 1);
-    assert_eq!(created_event.aggregate_id, agg.id);
-    assert_eq!(created_event.school_id, school);
-    // The event's id and timestamp are stamped from the
-    // generator and clock respectively.
-    assert_ne!(created_event.event_id.0, Uuid::nil());
-    assert_eq!(created_event.occurred_at, clock.now());
+fn make_cmd(tenant: TenantContext, g: &SystemIdGen, school: SchoolId) -> RealCreateCertificateCommand {
+    RealCreateCertificateCommand {
+        tenant,
+        certificate_id: certificate_id(g, school),
+        name: "Transfer Certificate".to_string(),
+        layout: CertificateLayout::Landscape,
+        body: "This is to certify that...".to_string(),
+        footer_labels: vec!["Principal".to_string(), "Date".to_string()],
+        has_photo: true,
+        attachment_id: Some(file_id(g, school)),
+        default_for_course: false,
+    }
 }
 
 // =============================================================================
-// 2. Validation failure: school_id mismatch returns DomainError::Validation
+// 1. Happy path
 // =============================================================================
 
-/// Validation-failure path on the create flow: when the
-/// typed id's `school_id()` does not match the command's
-/// `school_id`, `create_certificate` returns
-/// `DomainError::Validation` and emits no event (the
-/// function returns `Err` before the aggregate or the
-/// event are constructed).
 #[test]
-fn certificate_create_with_school_id_mismatch_returns_validation_error() {
-    let (_tenant, g) = admin_context();
-    let school = g.next_school_id();
-    // Build the typed id in `school`, then lie about the
-    // command's school — the validation guard must catch
-    // the mismatch.
-    let other_school = g.next_school_id();
-    let mismatched_cmd = CreateCertificateCommand {
-        id: CertificateId::new(school, g.next_uuid()),
-        school_id: other_school,
-    };
-    let clock = TestClock::new();
-    let ids = SystemIdGen;
-    let err = create_certificate(mismatched_cmd, &clock, &ids)
-        .expect_err("cross-school id must fail validation");
-    assert!(
-        matches!(err, DomainError::Validation(_)),
-        "expected Validation, got {err:?}"
-    );
-
-    // Sanity check: a subsequent call with matching
-    // id.school_id() and command school_id succeeds,
-    // proving the failure was tied to the cross-school id
-    // (and not to a corrupt clock, ids, or fixture).
+fn certificate_create_succeeds() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let ok_cmd = CreateCertificateCommand {
-        id: CertificateId::new(school, g.next_uuid()),
-        school_id: school,
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant, &g, school);
+    let (agg, event) = create_certificate_aggregate(cmd, &clock, &ids)
+        .expect("create should succeed");
+
+    // I-1
+    assert_eq!(agg.layout, CertificateLayout::Landscape);
+    assert_eq!(agg.footer_labels.len(), 2);
+    assert!(agg.has_photo);
+    // I-2
+    assert!(agg.attachment_id.is_some());
+    // I-3
+    assert!(!agg.default_for_course);
+
+    assert_eq!(RealCertificateCreated::EVENT_TYPE, "academic.certificate.created");
+    assert_eq!(RealCertificateCreated::AGGREGATE_TYPE, "certificate");
+    assert_eq!(event.school_id(), school);
+}
+
+// =============================================================================
+// 2. I-1: more than 3 footer labels rejected
+// =============================================================================
+
+#[test]
+fn certificate_too_many_footer_labels_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let mut cmd = make_cmd(tenant, &g, school);
+    cmd.footer_labels = vec![
+        "A".to_string(),
+        "B".to_string(),
+        "C".to_string(),
+        "D".to_string(), // 4th
+    ];
+
+    let err = create_certificate_aggregate(cmd, &clock, &ids)
+        .expect_err("4 footer labels must fail");
+    assert!(matches!(err, DomainError::Validation(_)), "got {err:?}");
+}
+
+// =============================================================================
+// 3. I-1: empty body rejected
+// =============================================================================
+
+#[test]
+fn certificate_empty_body_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let mut cmd = make_cmd(tenant, &g, school);
+    cmd.body = "   ".to_string();
+
+    let err = create_certificate_aggregate(cmd, &clock, &ids)
+        .expect_err("empty body must fail");
+    assert!(matches!(err, DomainError::Validation(_)), "got {err:?}");
+}
+
+// =============================================================================
+// 4. I-2: optional attachment (None) accepted
+// =============================================================================
+
+#[test]
+fn certificate_without_attachment_succeeds() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let mut cmd = make_cmd(tenant, &g, school);
+    cmd.attachment_id = None;
+
+    let (agg, _event) = create_certificate_aggregate(cmd, &clock, &ids)
+        .expect("no attachment is fine");
+    assert!(agg.attachment_id.is_none());
+}
+
+// =============================================================================
+// 5. I-3: default_for_course flag
+// =============================================================================
+
+#[test]
+fn certificate_default_for_course_succeeds() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let mut cmd = make_cmd(tenant, &g, school);
+    cmd.default_for_course = true;
+
+    let (agg, _event) = create_certificate_aggregate(cmd, &clock, &ids)
+        .expect("default_for_course=true");
+    assert!(agg.default_for_course);
+}
+
+// =============================================================================
+// 6. Update
+// =============================================================================
+
+#[test]
+fn certificate_update_changes_body() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_certificate_aggregate(cmd, &clock, &ids)
+        .expect("create");
+
+    let upd = UpdateCertificateCommand {
+        tenant,
+        certificate_id: agg.id,
+        name: Some("Course Completion Certificate".to_string()),
+        layout: None,
+        body: Some("Updated body text".to_string()),
+        footer_labels: None,
+        has_photo: None,
+        attachment_id: None,
+        default_for_course: Some(true),
     };
-    let (_agg, _event) =
-        create_certificate(ok_cmd, &clock, &ids).expect("matching school id must succeed");
+    let event = update_certificate(upd, &mut agg, &clock, &ids).expect("update");
+    assert_eq!(agg.name, "Course Completion Certificate");
+    assert_eq!(agg.body, "Updated body text");
+    assert!(agg.default_for_course);
+    let _: CertificateUpdated = event;
+}
+
+// =============================================================================
+// 7. Delete
+// =============================================================================
+
+#[test]
+fn certificate_delete_retires_aggregate() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_certificate_aggregate(cmd, &clock, &ids)
+        .expect("create");
+
+    let del = DeleteCertificateCommand {
+        tenant,
+        certificate_id: agg.id,
+    };
+    let event = delete_certificate(del, &mut agg, &clock, &ids)
+        .expect("delete");
+    assert!(matches!(agg.active_status, ActiveStatus::Retired));
+    let _: CertificateDeleted = event;
 }

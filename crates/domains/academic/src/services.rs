@@ -42,7 +42,7 @@ use educore_core::value_objects::ActiveStatus;
 
 use crate::aggregate::{
     AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
-    IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealLesson, RealLessonPlan,
+    IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealCertificate, RealLesson, RealLessonPlan,
     RealLessonTopic, RealRegistrationField, RealStudentCategory, RealStudentGroup, RealStudentPromotion, RegistrationField, Section,
     Student, StudentCategory, StudentGroup, StudentGuardianLink, StudentPromotion, StudentRecord,
     Subject,
@@ -69,7 +69,7 @@ use crate::commands::{
     UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand, UpdateClassCommand,
     UpdateGuardianContactCommand, UpdateHomeworkCommand, UpdateLessonPlanCommand, UpdateSectionCommand,
     UpdateStudentProfileCommand, UpdateSubjectCommand, UpdateClassRoutinePeriodCommand,
-    AddSubTopicCommand, AddStudentToGroupCommand, CancelHomeworkCommand, DeleteRegistrationFieldCommand, RealCreateRegistrationFieldCommand, UpdateRegistrationFieldCommand, DeleteLessonCommand, DeleteLessonPlanCommand,
+    AddSubTopicCommand, AddStudentToGroupCommand, CancelHomeworkCommand, DeleteCertificateCommand, RealCreateCertificateCommand, UpdateCertificateCommand, DeleteRegistrationFieldCommand, RealCreateRegistrationFieldCommand, UpdateRegistrationFieldCommand, DeleteLessonCommand, DeleteLessonPlanCommand,
     DeleteLessonTopicCommand, EnrollStudentCommand, MarkGraduateCommand,
     MarkLessonPlanCompletedCommand, MarkTopicCompletedCommand, RealCreateLessonCommand,
     RealCreateLessonPlanCommand, RealCreateLessonTopicCommand, RealCreateStudentGroupCommand, RemoveStudentFromGroupCommand, SetDefaultRecordCommand,
@@ -77,7 +77,7 @@ use crate::commands::{
 };
 use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
-    CertificateCreated, ClassCreated, ClassDeleted, ClassRoomAssigned, ClassRoutineDeleted,
+    CertificateCreated, CertificateDeleted, CertificateUpdated, RealCertificateCreated, ClassCreated, ClassDeleted, ClassRoomAssigned, ClassRoutineDeleted,
     ClassRoutinePeriodUpdated, ClassRoutinePeriodsSwapped, ClassRoutineScheduled,
     ClassSectionCreated, ClassSectionDeleted, ClassTeacherAssigned, SubjectAssignedToClass,
     ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated, GuardianLinkedToStudent,
@@ -3216,33 +3216,109 @@ where
 
 /// Create a [`RealRegistrationField`] (Wave 60 replacement).
 
-/// Create a [`Certificate`] template and emit a [`CertificateCreated`] event.
-pub fn create_certificate<C, G>(
-    cmd: CreateCertificateCommand,
+/// Create a [`RealCertificate`] and emit a [`RealCertificateCreated`] event.
+pub fn create_certificate_aggregate<C, G>(
+    cmd: RealCreateCertificateCommand,
     clock: &C,
     ids: &G,
-) -> Result<(Certificate, CertificateCreated)>
+) -> Result<(RealCertificate, RealCertificateCreated)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let CreateCertificateCommand { id, school_id } = cmd;
-    if id.school_id() != school_id {
-        return Err(DomainError::Validation(format!(
-            "certificate id {id} is in school {}, command school_id is {school_id}",
-            id.school_id(),
-        )));
-    }
     let now = clock.now();
     let event_id = fresh_event_id(ids);
-    let aggregate = Certificate { id, school_id };
-    let event = CertificateCreated {
+    let actor = cmd.tenant.actor_id;
+    let aggregate = RealCertificate::fresh(
+        cmd.certificate_id,
+        cmd.name,
+        cmd.layout,
+        cmd.body,
+        cmd.footer_labels,
+        cmd.has_photo,
+        cmd.attachment_id,
+        cmd.default_for_course,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    let event = RealCertificateCreated {
+        certificate_id: aggregate.id,
+        name: aggregate.name.clone(),
+        layout: aggregate.layout,
+        body: aggregate.body.clone(),
+        footer_labels: aggregate.footer_labels.clone(),
+        has_photo: aggregate.has_photo,
+        attachment_id: aggregate.attachment_id,
+        default_for_course: aggregate.default_for_course,
         event_id,
-        school_id,
-        aggregate_id: id,
+        correlation_id: aggregate.correlation_id,
         occurred_at: now,
     };
     Ok((aggregate, event))
+}
+
+/// Update a [`RealCertificate`] and emit a [`CertificateUpdated`] event.
+pub fn update_certificate<C, G>(
+    cmd: UpdateCertificateCommand,
+    certificate: &mut RealCertificate,
+    clock: &C,
+    ids: &G,
+) -> Result<CertificateUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    certificate.update(
+        cmd.name,
+        cmd.layout,
+        cmd.body,
+        cmd.footer_labels,
+        cmd.has_photo,
+        cmd.attachment_id,
+        cmd.default_for_course,
+        actor,
+        now,
+    )?;
+    Ok(CertificateUpdated {
+        certificate_id: certificate.id,
+        name: Some(certificate.name.clone()),
+        layout: Some(certificate.layout),
+        body: Some(certificate.body.clone()),
+        footer_labels: Some(certificate.footer_labels.clone()),
+        has_photo: Some(certificate.has_photo),
+        attachment_id: Some(certificate.attachment_id),
+        default_for_course: Some(certificate.default_for_course),
+        event_id,
+        correlation_id: certificate.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Soft-delete a [`RealCertificate`].
+pub fn delete_certificate<C, G>(
+    _cmd: DeleteCertificateCommand,
+    certificate: &mut RealCertificate,
+    clock: &C,
+    ids: &G,
+) -> Result<CertificateDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = _cmd.tenant.actor_id;
+    certificate.delete(actor, now);
+    Ok(CertificateDeleted {
+        certificate_id: certificate.id,
+        event_id,
+        correlation_id: certificate.correlation_id,
+        occurred_at: now,
+    })
 }
 
 /// Create an [`IdCard`] template and emit an [`IdCardCreated`] event.
