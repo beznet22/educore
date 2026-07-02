@@ -1564,6 +1564,21 @@ pub enum Capability {
     AcademicHomework,
     /// Capability for `Academic.Lesson`.
     AcademicLesson,
+    /// Capability for `Academic.LessonPlan.Create`.
+    /// Required to dispatch `CreateLessonPlanCommand`.
+    AcademicLessonPlanCreate,
+    /// Capability for `Academic.LessonPlan.Update`.
+    /// Required to dispatch `UpdateLessonPlanCommand`.
+    AcademicLessonPlanUpdate,
+    /// Capability for `Academic.LessonPlan.Complete`.
+    /// Required to dispatch `MarkLessonPlanCompletedCommand`.
+    AcademicLessonPlanComplete,
+    /// Capability for `Academic.LessonPlan.SubTopic`.
+    /// Required to dispatch `AddSubTopicCommand`.
+    AcademicLessonPlanSubTopic,
+    /// Capability for `Academic.LessonPlan.Delete`.
+    /// Required to dispatch `DeleteLessonPlanCommand`.
+    AcademicLessonPlanDelete,
     /// Capability for `Academic.Student.Category`.
     AcademicStudentCategory,
     /// Capability for `Academic.Student.Group`.
@@ -2298,6 +2313,11 @@ impl Capability {
             | Self::AcademicHomeworkCancel => CapabilityDomain::Academic,
             | Self::AcademicHomework => CapabilityDomain::Academic,
             | Self::AcademicLesson => CapabilityDomain::Academic,
+            | Self::AcademicLessonPlanCreate => CapabilityDomain::Academic,
+            | Self::AcademicLessonPlanUpdate => CapabilityDomain::Academic,
+            | Self::AcademicLessonPlanComplete => CapabilityDomain::Academic,
+            | Self::AcademicLessonPlanSubTopic => CapabilityDomain::Academic,
+            | Self::AcademicLessonPlanDelete => CapabilityDomain::Academic,
             | Self::AcademicStudentCategory => CapabilityDomain::Academic,
             | Self::AcademicStudentGroup => CapabilityDomain::Academic,
             | Self::AcademicCertificate => CapabilityDomain::Academic,
@@ -2987,6 +3007,7 @@ impl Capability {
             Self::AcademicAcademicYear => "Academic",
             Self::AcademicHomework | Self::AcademicHomeworkCreate | Self::AcademicHomeworkUpdate | Self::AcademicHomeworkCancel => "Homework",
             Self::AcademicLesson => "Lesson",
+            Self::AcademicLessonPlanCreate | Self::AcademicLessonPlanUpdate | Self::AcademicLessonPlanComplete | Self::AcademicLessonPlanSubTopic | Self::AcademicLessonPlanDelete => "LessonPlan",
             Self::AcademicCertificate => "Certificate",
             Self::AcademicIdCard => "Id",
             Self::AcademicAdmissionQuery => "Admission",
@@ -3696,6 +3717,11 @@ impl Capability {
             Self::AcademicHomeworkUpdate => "Update",
             Self::AcademicHomeworkCancel => "Cancel",
             Self::AcademicLesson => "Lesson",
+            Self::AcademicLessonPlanCreate => "Create",
+            Self::AcademicLessonPlanUpdate => "Update",
+            Self::AcademicLessonPlanComplete => "Complete",
+            Self::AcademicLessonPlanSubTopic => "SubTopic",
+            Self::AcademicLessonPlanDelete => "Delete",
             Self::AcademicStudentCategory => "Category",
             Self::AcademicStudentGroup => "Group",
             Self::AcademicCertificate => "Certificate",
@@ -4409,6 +4435,11 @@ impl Capability {
             Self::AcademicHomeworkUpdate => "Academic.Homework.Update",
             Self::AcademicHomeworkCancel => "Academic.Homework.Cancel",
             Self::AcademicLesson => "Academic.Lesson",
+            Self::AcademicLessonPlanCreate => "Academic.LessonPlan.Create",
+            Self::AcademicLessonPlanUpdate => "Academic.LessonPlan.Update",
+            Self::AcademicLessonPlanComplete => "Academic.LessonPlan.Complete",
+            Self::AcademicLessonPlanSubTopic => "Academic.LessonPlan.SubTopic",
+            Self::AcademicLessonPlanDelete => "Academic.LessonPlan.Delete",
             Self::AcademicStudentCategory => "Academic.Student.Category",
             Self::AcademicStudentGroup => "Academic.Student.Group",
             Self::AcademicCertificate => "Academic.Certificate",
@@ -5781,6 +5812,11 @@ impl Capability {
             "Academic.Homework.Create" => Some(Self::AcademicHomeworkCreate),
             "Academic.Homework.Update" => Some(Self::AcademicHomeworkUpdate),
             "Academic.Homework.Cancel" => Some(Self::AcademicHomeworkCancel),
+            "Academic.LessonPlan.Create" => Some(Self::AcademicLessonPlanCreate),
+            "Academic.LessonPlan.Update" => Some(Self::AcademicLessonPlanUpdate),
+            "Academic.LessonPlan.Complete" => Some(Self::AcademicLessonPlanComplete),
+            "Academic.LessonPlan.SubTopic" => Some(Self::AcademicLessonPlanSubTopic),
+            "Academic.LessonPlan.Delete" => Some(Self::AcademicLessonPlanDelete),
             _ => None,
         }
     }

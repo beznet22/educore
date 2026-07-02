@@ -1636,6 +1636,169 @@ impl HomeworkMark {
     }
 }
 
+// =============================================================================
+// LessonPlan value objects (Wave 53)
+//
+// Per `docs/specs/academic/aggregates.md` § LessonPlan:
+// - I-2: A lesson plan may include sub-topics.
+// - I-3: A lesson plan has a `CompletedStatus` (Pending,
+//        InProgress, Completed, Skipped).
+//
+// `CompletedStatus` is a closed enum; transitions are
+// `Pending → InProgress → Completed`, `Pending → Skipped`,
+// and `InProgress → Skipped`. No other transitions are
+// allowed (cannot go from `Completed` back to `Pending`,
+// etc.).
+// =============================================================================
+
+/// The lifecycle completion status of a
+/// [`LessonPlan`](crate::aggregate::LessonPlan).
+///
+/// State transitions:
+///
+/// ```text
+/// Pending → InProgress → Completed
+/// Pending → Skipped
+/// InProgress → Skipped
+/// ```
+///
+/// No other transitions are allowed. `Completed` and
+/// `Skipped` are terminal: a completed or skipped lesson
+/// plan cannot return to a previous state. The transition
+/// table is enforced by [`Self::can_transition_to`] and
+/// surfaced in
+/// [`crate::aggregate::LessonPlan::mark_completed`].
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum CompletedStatus {
+    /// The lesson plan has been drafted but the lesson
+    /// has not yet started.
+    #[default]
+    Pending,
+    /// The lesson is in progress (the teacher is currently
+    /// teaching from this plan).
+    InProgress,
+    /// The lesson has been delivered; all objectives were
+    /// covered. Terminal.
+    Completed,
+    /// The lesson was deliberately not delivered (e.g. a
+    /// school holiday fell on the scheduled date, or the
+    /// teacher chose to skip ahead). Terminal.
+    Skipped,
+}
+
+impl CompletedStatus {
+    /// Returns the canonical snake_case wire string.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Pending => "pending",
+            Self::InProgress => "in_progress",
+            Self::Completed => "completed",
+            Self::Skipped => "skipped",
+        }
+    }
+
+    /// Returns `true` if the status is terminal (`Completed`
+    /// or `Skipped`).
+    #[must_use]
+    pub const fn is_terminal(self) -> bool {
+        matches!(self, Self::Completed | Self::Skipped)
+    }
+
+    /// Returns `true` if the transition from `self` to
+    /// `target` is permitted by the FSM:
+    ///
+    /// - `Pending → {InProgress, Completed, Skipped}` —
+    ///   the teacher may complete the lesson directly from
+    ///   the pending state, or skip it without ever
+    ///   starting.
+    /// - `InProgress → {Completed, Skipped}`.
+    /// - `Completed → *` and `Skipped → *` — rejected
+    ///   (terminal).
+    /// - `* → Pending` — rejected (no roll-back).
+    /// - `* → InProgress` from any non-`Pending` state —
+    ///   rejected.
+    /// - `InProgress → InProgress` and `Completed →
+    ///   Completed` etc. — rejected (no self-transition).
+    #[must_use]
+    pub const fn can_transition_to(self, target: Self) -> bool {
+        match (self, target) {
+            // Pending -> {InProgress, Completed, Skipped}
+            (Self::Pending, Self::InProgress)
+            | (Self::Pending, Self::Completed)
+            | (Self::Pending, Self::Skipped) => true,
+            // InProgress -> {Completed, Skipped}
+            (Self::InProgress, Self::Completed)
+            | (Self::InProgress, Self::Skipped) => true,
+            // Everything else is rejected.
+            _ => false,
+        }
+    }
+}
+
+impl fmt::Display for CompletedStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_str().fmt(f)
+    }
+}
+
+/// A sub-topic within a [`LessonPlan`](crate::aggregate::LessonPlan).
+///
+/// Per `docs/specs/academic/aggregates.md` § LessonPlan § I-2,
+/// a lesson plan may include zero or more sub-topics. Each
+/// sub-topic carries a `title` and an optional `description`.
+/// The struct is a value object (no `id`, no audit footer):
+/// sub-topics are owned by the lesson plan aggregate and
+/// are mutated only via the `AddSubTopic` command.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct SubTopic {
+    /// The sub-topic's title (1..=200 chars, validated by
+    /// [`Self::new`]).
+    pub title: String,
+    /// The sub-topic's description (1..=2000 chars, validated
+    /// by [`Self::new`]). The description is required (a
+    /// sub-topic without a description is not useful for
+    /// teachers).
+    pub description: String,
+}
+
+impl SubTopic {
+    /// Maximum length of a sub-topic title.
+    pub const TITLE_MAX_LEN: usize = 200;
+    /// Maximum length of a sub-topic description.
+    pub const DESCRIPTION_MAX_LEN: usize = 2000;
+
+    /// Constructs a `SubTopic`, validating the length
+    /// constraints on `title` and `description`.
+    pub fn new(title: impl Into<String>, description: impl Into<String>) -> Result<Self> {
+        let title: String = title.into();
+        let description: String = description.into();
+        if title.is_empty() {
+            return Err(DomainError::validation("sub-topic title must not be empty"));
+        }
+        if title.chars().count() > Self::TITLE_MAX_LEN {
+            return Err(DomainError::validation(format!(
+                "sub-topic title must be at most {} chars, got {}",
+                Self::TITLE_MAX_LEN,
+                title.chars().count()
+            )));
+        }
+        if description.is_empty() {
+            return Err(DomainError::validation(
+                "sub-topic description must not be empty",
+            ));
+        }
+        if description.chars().count() > Self::DESCRIPTION_MAX_LEN {
+            return Err(DomainError::validation(format!(
+                "sub-topic description must be at most {} chars, got {}",
+                Self::DESCRIPTION_MAX_LEN,
+                description.chars().count()
+            )));
+        }
+        Ok(Self { title, description })
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,

@@ -1,39 +1,15 @@
 //! Integration tests for the **LessonPlan aggregate** vertical slice.
 //!
-//! Pins the create contract for the `LessonPlan` aggregate
-//! end-to-end through the service layer:
+//! Pins the create / update / complete / sub-topic / delete
+//! contracts for the `LessonPlan` aggregate end-to-end through
+//! the service layer, exercising all 4 spec invariants:
 //!
-//! 1. `create_lesson_plan` validates the typed id belongs to the
-//!    command's `school_id` (returning `DomainError::Validation`
-//!    on a mismatch), constructs the aggregate, and emits a
-//!    `LessonPlanCreated` event.
+//! - I-1: Anchored to Lesson + topic + class-section + subject + date
+//! - I-2: Sub-topics (Vec<SubTopic>, zero allowed)
+//! - I-3: CompletedStatus enum (Pending/InProgress/Completed/Skipped)
+//! - I-4: Single teacher owner (teacher_id immutable after creation)
 //!
-//! The tests use the same fixture pattern as
-//! `crates/domains/academic/tests/class.rs` and `subject.rs`
-//! (`TestClock` + `SystemIdGen`).
-//!
-//! Per the academic/workflows.rs pattern, the **handlers**
-//! themselves are not wired end-to-end (no subscriber fan-out,
-//! no outbox commit, no audit row). These tests pin the
-//! contract of the **service layer** that the dispatcher will
-//! eventually wrap.
-//!
-//! Note on `LessonPlan` field set: the aggregate is a Phase 3
-//! stub that carries only `id` (typed `LessonPlanId`) and
-//! `school_id`. The lesson-plan fields (lesson, topic, date,
-//! objectives, materials, methodology) live in the full
-//! `LessonPlan` aggregate documented in
-//! `docs/specs/academic/aggregates.md` § LessonPlan and land
-//! in a later phase. The service-layer function
-//! `create_lesson_plan` exists now and is exercised here; its
-//! contract is to build the stub aggregate and emit
-//! `LessonPlanCreated` with matching typed ids.
-//!
-//! Note on user role: the platform's [`UserType`] enum does
-//! not expose an `Admin` variant — the school-scoped
-//! administrative role is [`UserType::SchoolAdmin`]. These
-//! tests use `SchoolAdmin` to match the rest of the
-//! academic test suites.
+//! Test fixture pattern matches prior waves.
 
 #![allow(
     clippy::unwrap_used,
@@ -43,21 +19,36 @@
     missing_docs
 )]
 
+use chrono::NaiveDate;
 use educore_academic::prelude::*;
+use educore_academic::commands::{
+    AddSubTopicCommand, DeleteLessonPlanCommand, MarkLessonPlanCompletedCommand,
+    RealCreateLessonPlanCommand, UpdateLessonPlanCommand,
+};
+use educore_academic::events::{
+    LessonPlanCompleted, LessonPlanDeleted, LessonPlanUpdated, RealLessonPlanCreated,
+    SubTopicAdded,
+};
+use educore_academic::services::{
+    add_sub_topic, create_lesson_plan, delete_lesson_plan, mark_lesson_plan_completed,
+    update_lesson_plan,
+};
+use educore_academic::{CompletedStatus, RealLessonPlan};
 use educore_core::clock::{SystemIdGen, TestClock};
 use educore_core::error::DomainError;
+use educore_core::ids::SchoolId;
 
 // =============================================================================
 // Fixtures
 // =============================================================================
 
-fn admin_context() -> (TenantContext, SystemIdGen) {
+fn teacher_context() -> (TenantContext, SystemIdGen) {
     let g = SystemIdGen;
     let school = g.next_school_id();
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
     (
-        TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin),
+        TenantContext::for_user(school, actor, corr, UserType::Teacher),
         g,
     )
 }
@@ -66,92 +57,254 @@ fn lesson_plan_id(g: &SystemIdGen, school: SchoolId) -> LessonPlanId {
     LessonPlanId::new(school, g.next_uuid())
 }
 
-#[test]
-fn lesson_plan_create_builds_aggregate_and_emits_created_event() {
-    let (tenant, g) = admin_context();
-    let school = tenant.school_id;
-    let clock = TestClock::new();
-    let ids = SystemIdGen;
-
-    let id = lesson_plan_id(&g, school);
-    let create_cmd = CreateLessonPlanCommand {
-        id,
-        school_id: school,
-    };
-    let (agg, created_event) =
-        create_lesson_plan(create_cmd, &clock, &ids).expect("create");
-
-    assert_eq!(agg.id, id);
-    assert_eq!(agg.id.as_uuid(), id.as_uuid());
-    assert_eq!(agg.id.school_id(), school);
-    assert_eq!(agg.school_id, school);
-
-    assert_eq!(
-        <LessonPlanCreated as DomainEvent>::EVENT_TYPE,
-        "academic.lesson_plan.created"
-    );
-    assert_eq!(
-        <LessonPlanCreated as DomainEvent>::AGGREGATE_TYPE,
-        "lesson_plan"
-    );
-    assert_eq!(<LessonPlanCreated as DomainEvent>::SCHEMA_VERSION, 1);
-    assert_eq!(created_event.aggregate_id(), agg.id.as_uuid());
-    assert_eq!(created_event.school_id(), school);
-    assert_eq!(created_event.aggregate_id, id);
+fn lesson_id(g: &SystemIdGen, school: SchoolId) -> LessonId {
+    LessonId::new(school, g.next_uuid())
 }
 
+fn topic_id(g: &SystemIdGen, school: SchoolId) -> LessonTopicId {
+    LessonTopicId::new(school, g.next_uuid())
+}
+
+fn class_section_id(g: &SystemIdGen, school: SchoolId) -> ClassSectionId {
+    ClassSectionId::new(school, g.next_uuid())
+}
+
+fn subject_id(g: &SystemIdGen, school: SchoolId) -> SubjectId {
+    SubjectId::new(school, g.next_uuid())
+}
+
+fn make_cmd(tenant: TenantContext, g: &SystemIdGen, school: SchoolId) -> RealCreateLessonPlanCommand {
+    RealCreateLessonPlanCommand {
+        tenant,
+        lesson_plan_id: lesson_plan_id(g, school),
+        lesson_id: lesson_id(g, school),
+        topic_id: topic_id(g, school),
+        class_section_id: class_section_id(g, school),
+        subject_id: subject_id(g, school),
+        teacher_id: g.next_user_id(),
+        scheduled_date: NaiveDate::from_ymd_opt(2025, 3, 1).unwrap(),
+        teaching_method: "Lecture + discussion".to_string(),
+        objectives: "Students understand photosynthesis".to_string(),
+        materials: vec!["Textbook chapter 5".to_string(), "Slides".to_string()],
+    }
+}
+
+// =============================================================================
+// 1. Happy path: create a LessonPlan
+// =============================================================================
+
 #[test]
-fn lesson_plan_create_is_idempotent_per_id_and_rejects_cross_school() {
-    let (tenant, g) = admin_context();
+fn lesson_plan_create_with_full_anchors_succeeds() {
+    let (tenant, g) = teacher_context();
     let school = tenant.school_id;
     let clock = TestClock::new();
     let ids = SystemIdGen;
 
-    let id_a = lesson_plan_id(&g, school);
-    let id_b = lesson_plan_id(&g, school);
-    assert_ne!(id_a, id_b);
+    let cmd = make_cmd(tenant, &g, school);
+    let (agg, event) = create_lesson_plan(cmd, &clock, &ids).expect("create should succeed");
 
-    let (agg_a, event_a) = create_lesson_plan(
-        CreateLessonPlanCommand {
-            id: id_a,
-            school_id: school,
-        },
-        &clock,
-        &ids,
-    )
-    .expect("create a");
-    let (agg_b, event_b) = create_lesson_plan(
-        CreateLessonPlanCommand {
-            id: id_b,
-            school_id: school,
-        },
-        &clock,
-        &ids,
-    )
-    .expect("create b");
+    assert_eq!(agg.school_id, school);
+    assert_eq!(agg.status, CompletedStatus::Pending);
+    assert_eq!(agg.sub_topics.len(), 0);
+    assert_eq!(agg.materials.len(), 2);
 
-    assert_eq!(agg_a.id, id_a);
-    assert_eq!(agg_b.id, id_b);
-    assert_eq!(agg_a.school_id, school);
-    assert_eq!(agg_b.school_id, school);
-    assert_eq!(event_a.aggregate_id, id_a);
-    assert_eq!(event_b.aggregate_id, id_b);
-    assert_ne!(event_a.event_id, event_b.event_id);
+    assert_eq!(RealLessonPlanCreated::EVENT_TYPE, "academic.lesson_plan.created");
+    assert_eq!(RealLessonPlanCreated::AGGREGATE_TYPE, "lesson_plan");
+    assert_eq!(RealLessonPlanCreated::SCHEMA_VERSION, 1);
+    assert_eq!(event.school_id(), school);
+}
 
+// =============================================================================
+// 2. I-1: cross-school typed id rejected
+// =============================================================================
+
+#[test]
+fn lesson_plan_create_with_cross_school_typed_id_rejected() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let mut cmd = make_cmd(tenant, &g, school);
     let other_school = g.next_school_id();
-    assert_ne!(other_school, school);
-    let foreign_id = lesson_plan_id(&g, other_school);
-    let err = create_lesson_plan(
-        CreateLessonPlanCommand {
-            id: foreign_id,
-            school_id: school,
-        },
-        &clock,
-        &ids,
-    )
-    .expect_err("cross-school id must fail validation");
+    cmd.lesson_id = LessonId::new(other_school, g.next_uuid());
+
+    let err = create_lesson_plan(cmd, &clock, &ids)
+        .expect_err("cross-school typed id must fail");
     assert!(
         matches!(err, DomainError::Validation(_)),
         "expected Validation, got {err:?}"
     );
+}
+
+// =============================================================================
+// 3. I-2: sub-topics (zero allowed)
+// =============================================================================
+
+#[test]
+fn lesson_plan_with_no_sub_topics_succeeds() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant, &g, school);
+    let (agg, _event) = create_lesson_plan(cmd, &clock, &ids).expect("create should succeed");
+    assert_eq!(agg.sub_topics.len(), 0);
+}
+
+#[test]
+fn lesson_plan_add_sub_topic_appends() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_lesson_plan(cmd, &clock, &ids).expect("create should succeed");
+
+    let sub_cmd = AddSubTopicCommand {
+        tenant,
+        lesson_plan_id: agg.id,
+        title: "Light reactions".to_string(),
+        description: "The light-dependent reactions of photosynthesis".to_string(),
+    };
+    let event = add_sub_topic(sub_cmd, &mut agg, &clock, &ids).expect("add_sub_topic");
+    assert_eq!(agg.sub_topics.len(), 1);
+    let _: SubTopicAdded = event;
+}
+
+// =============================================================================
+// 4. I-3: CompletedStatus transitions
+// =============================================================================
+
+#[test]
+fn lesson_plan_mark_completed_transitions_status() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_lesson_plan(cmd, &clock, &ids).expect("create should succeed");
+    assert_eq!(agg.status, CompletedStatus::Pending);
+
+    let comp_cmd = MarkLessonPlanCompletedCommand {
+        tenant,
+        lesson_plan_id: agg.id,
+        final_status: CompletedStatus::Completed,
+    };
+    let event = mark_lesson_plan_completed(comp_cmd, &mut agg, &clock, &ids).expect("mark");
+    assert_eq!(agg.status, CompletedStatus::Completed);
+    let _: LessonPlanCompleted = event;
+}
+
+#[test]
+fn lesson_plan_mark_completed_from_completed_rejected() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_lesson_plan(cmd, &clock, &ids).expect("create should succeed");
+
+    // First transition: Pending -> Completed.
+    let comp_cmd = MarkLessonPlanCompletedCommand {
+        tenant: tenant.clone(),
+        lesson_plan_id: agg.id,
+        final_status: CompletedStatus::Completed,
+    };
+    mark_lesson_plan_completed(comp_cmd, &mut agg, &clock, &ids).expect("first mark");
+
+    // Second transition: Completed -> Completed (no transition allowed).
+    let comp_cmd2 = MarkLessonPlanCompletedCommand {
+        tenant,
+        lesson_plan_id: agg.id,
+        final_status: CompletedStatus::Completed,
+    };
+    let err = mark_lesson_plan_completed(comp_cmd2, &mut agg, &clock, &ids)
+        .expect_err("Completed -> Completed must fail");
+    assert!(
+        matches!(err, DomainError::Conflict(_)),
+        "expected Conflict, got {err:?}"
+    );
+}
+
+// =============================================================================
+// 5. I-4: teacher_id immutable
+// =============================================================================
+
+#[test]
+fn lesson_plan_update_teacher_id_rejected() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_lesson_plan(cmd, &clock, &ids).expect("create should succeed");
+
+    let upd_cmd = UpdateLessonPlanCommand {
+        tenant,
+        lesson_plan_id: agg.id,
+        teacher_id: g.next_user_id(), // different teacher
+        scheduled_date: None,
+        teaching_method: None,
+        objectives: None,
+        materials: None,
+    };
+    let err = update_lesson_plan(upd_cmd, &mut agg, &clock, &ids)
+        .expect_err("changing teacher_id must fail");
+    assert!(
+        matches!(err, DomainError::Conflict(_)),
+        "expected Conflict, got {err:?}"
+    );
+}
+
+#[test]
+fn lesson_plan_update_with_same_teacher_succeeds() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_lesson_plan(cmd, &clock, &ids).expect("create should succeed");
+
+    let upd_cmd = UpdateLessonPlanCommand {
+        tenant,
+        lesson_plan_id: agg.id,
+        teacher_id: agg.teacher_id, // same teacher
+        scheduled_date: Some(NaiveDate::from_ymd_opt(2025, 3, 8).unwrap()),
+        teaching_method: None,
+        objectives: None,
+        materials: None,
+    };
+    let event = update_lesson_plan(upd_cmd, &mut agg, &clock, &ids).expect("update should succeed");
+    assert_eq!(agg.scheduled_date, NaiveDate::from_ymd_opt(2025, 3, 8).unwrap());
+    let _: LessonPlanUpdated = event;
+}
+
+// =============================================================================
+// 6. Delete
+// =============================================================================
+
+#[test]
+fn lesson_plan_delete_retires_aggregate() {
+    let (tenant, g) = teacher_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_lesson_plan(cmd, &clock, &ids).expect("create should succeed");
+
+    let del_cmd = DeleteLessonPlanCommand {
+        tenant,
+        lesson_plan_id: agg.id,
+    };
+    let event = delete_lesson_plan(del_cmd, &mut agg, &clock, &ids).expect("delete should succeed");
+    assert!(matches!(agg.active_status, ActiveStatus::Retired));
+    let _: LessonPlanDeleted = event;
 }

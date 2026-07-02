@@ -1234,6 +1234,134 @@ academic_command_stub! {
     /// `docs/specs/academic/aggregates.md` § LessonPlan.
     pub struct CreateLessonPlanCommand { id: LessonPlanId }
 }
+
+// =============================================================================
+// LessonPlan commands (Wave 53: full impl)
+// =============================================================================
+
+/// Command: draft a [`LessonPlan`](crate::aggregate::LessonPlan).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealCreateLessonPlanCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The lesson-plan's typed id.
+    pub lesson_plan_id: LessonPlanId,
+    /// The lesson anchor (I-1).
+    pub lesson_id: LessonId,
+    /// The topic anchor (I-1).
+    pub topic_id: LessonTopicId,
+    /// The class-section anchor (I-1).
+    pub class_section_id: ClassSectionId,
+    /// The subject anchor (I-1).
+    pub subject_id: SubjectId,
+    /// The teacher who owns this lesson plan (I-4).
+    pub teacher_id: UserId,
+    /// The scheduled date (I-1).
+    pub scheduled_date: NaiveDate,
+    /// The teaching method.
+    pub teaching_method: String,
+    /// The lesson objectives.
+    pub objectives: String,
+    /// The teaching materials (Vec<String>; may be empty).
+    pub materials: Vec<String>,
+}
+
+impl RealCreateLessonPlanCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicLessonPlanCreate]
+    }
+    /// Returns the school id (taken from the typed id).
+    #[must_use]
+    pub fn school_id(&self) -> SchoolId {
+        self.lesson_plan_id.school_id()
+    }
+}
+
+/// Command: update an existing [`LessonPlan`](crate::aggregate::LessonPlan).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateLessonPlanCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The lesson-plan's typed id.
+    pub lesson_plan_id: LessonPlanId,
+    /// Teacher id (must match the aggregate's existing teacher_id; I-4 immutability).
+    pub teacher_id: UserId,
+    /// Optional new scheduled date.
+    pub scheduled_date: Option<NaiveDate>,
+    /// Optional new teaching method.
+    pub teaching_method: Option<String>,
+    /// Optional new objectives.
+    pub objectives: Option<String>,
+    /// Optional new materials.
+    pub materials: Option<Vec<String>>,
+}
+
+impl UpdateLessonPlanCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicLessonPlanUpdate]
+    }
+}
+
+/// Command: mark a [`LessonPlan`](crate::aggregate::LessonPlan) Completed or Skipped.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MarkLessonPlanCompletedCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The lesson-plan's typed id.
+    pub lesson_plan_id: LessonPlanId,
+    /// The desired final status (Completed or Skipped).
+    pub final_status: crate::value_objects::CompletedStatus,
+}
+
+impl MarkLessonPlanCompletedCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicLessonPlanComplete]
+    }
+}
+
+/// Command: add a sub-topic to a [`LessonPlan`](crate::aggregate::LessonPlan).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AddSubTopicCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The lesson-plan's typed id.
+    pub lesson_plan_id: LessonPlanId,
+    /// The sub-topic title (1..=200 chars).
+    pub title: String,
+    /// The sub-topic description (1..=2000 chars).
+    pub description: String,
+}
+
+impl AddSubTopicCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicLessonPlanSubTopic]
+    }
+}
+
+/// Command: delete (soft-retire) a [`LessonPlan`](crate::aggregate::LessonPlan).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeleteLessonPlanCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The lesson-plan's typed id.
+    pub lesson_plan_id: LessonPlanId,
+}
+
+impl DeleteLessonPlanCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicLessonPlanDelete]
+    }
+}
 academic_command_stub! {
     /// Command stub: create a lesson. See
     /// `docs/specs/academic/aggregates.md` § Lesson.

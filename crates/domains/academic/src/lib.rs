@@ -64,7 +64,7 @@ pub const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 // ---- Aggregate roots --------------------------------------------------------
 
 /// The 5 prompt-named aggregate roots.
-pub use crate::aggregate::{AcademicYear, Class, Section, Student, Subject};
+pub use crate::aggregate::{AcademicYear, Class, RealLessonPlan, Section, Student, Subject};
 
 /// The 14 placeholder aggregate stubs (Guardian, ClassSection,
 /// ClassSubject, etc.). Exposed at the crate root so integration
@@ -146,12 +146,12 @@ pub use crate::commands::UniquenessChecker;
 pub use crate::value_objects::{
     AcademicYearId, AcademicYearRange, AcademicYearTitle, Address, AdmissionNumber, BloodGroup,
     CertificateId, ClassId, ClassName, ClassPeriod, ClassRoomId, ClassRoutineId, ClassSectionId,
-    ClassSubjectId, ClassSubjectScope, ClassTimeId, DateOfBirth, DayOfWeek, EmailAddress,
+    ClassSubjectId, ClassSubjectScope, ClassTimeId, CompletedStatus, DateOfBirth, DayOfWeek, EmailAddress,
     FileId, FullName, Gender, GuardianId, HomeworkId, HomeworkMark, HomeworkStatus, IdCardId,
     LessonId, LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold,
     PassMark, PersonName, PhoneNumber, RegistrationFieldId, Relation, ResultStatus, RollNumber,
     SectionId, SectionName, StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId,
-    StudentPromotionId, StudentRecordId, StudentStatus, SubjectCode, SubjectId, SubjectType,
+    StudentPromotionId, StudentRecordId, StudentStatus, SubjectCode, SubjectId, SubjectType, SubTopic,
     SuspensionReason, TransferReason, WithdrawalReason,
 };
 
@@ -239,7 +239,7 @@ pub mod prelude {
     pub use crate::value_objects::{
         AcademicYearId, AcademicYearRange, AcademicYearTitle, Address, AdmissionNumber, BloodGroup,
         CertificateId, ClassId, ClassName, ClassPeriod, ClassRoomId, ClassRoutineId,
-        ClassSectionId, ClassSubjectId, ClassSubjectScope, ClassTimeId, DateOfBirth, DayOfWeek,
+        ClassSectionId, ClassSubjectId, ClassSubjectScope, ClassTimeId, CompletedStatus, DateOfBirth, DayOfWeek,
         EmailAddress, FullName, Gender, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId,
         LessonTopicId, OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold, PassMark,
         PersonName, PhoneNumber, RegistrationFieldId, Relation, ResultStatus, RollNumber,

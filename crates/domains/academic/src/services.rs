@@ -42,8 +42,9 @@ use educore_core::value_objects::ActiveStatus;
 
 use crate::aggregate::{
     AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
-    IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RegistrationField, Section,
-    Student, StudentCategory, StudentGroup, StudentGuardianLink, StudentPromotion, Subject,
+    IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealLessonPlan,
+    RegistrationField, Section, Student, StudentCategory, StudentGroup, StudentGuardianLink,
+    StudentPromotion, Subject,
 };
 use crate::commands::{
     validate_admission_no, validate_class_name, validate_email_optional, validate_first_name,
@@ -65,9 +66,10 @@ use crate::commands::{
     SetOptionalSubjectGpaThresholdCommand, SuspendStudentCommand, SwapClassRoutinePeriodsCommand,
     TransferStudentCommand, UnassignSubjectCommand, UniquenessChecker,
     UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand, UpdateClassCommand,
-    UpdateGuardianContactCommand, UpdateHomeworkCommand, UpdateSectionCommand,
+    UpdateGuardianContactCommand, UpdateHomeworkCommand, UpdateLessonPlanCommand, UpdateSectionCommand,
     UpdateStudentProfileCommand, UpdateSubjectCommand, UpdateClassRoutinePeriodCommand,
-    CancelHomeworkCommand, WithdrawStudentCommand,
+    AddSubTopicCommand, CancelHomeworkCommand, DeleteLessonPlanCommand,
+    MarkLessonPlanCompletedCommand, RealCreateLessonPlanCommand, WithdrawStudentCommand,
 };
 use crate::events::{
     AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
@@ -77,7 +79,8 @@ use crate::events::{
     ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated, GuardianLinkedToStudent,
     GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent, HomeworkCancelled,
     HomeworkCreated, HomeworkUpdated,
-    IdCardCreated, LessonCreated, LessonPlanCreated, LessonTopicCreated,
+    IdCardCreated, LessonCreated, LessonPlanCompleted, LessonPlanCreated, LessonPlanDeleted,
+    LessonPlanUpdated, LessonTopicCreated, RealLessonPlanCreated, SubTopicAdded,
     OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
     RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
     StudentCategoryCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
@@ -86,8 +89,8 @@ use crate::events::{
     SubjectTeacherAssigned, SubjectUnassigned, TeacherReassigned,
 };
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, ClassRoomId, HomeworkMark, HomeworkStatus,
-    StudentGuardianLinkId, StudentStatus,
+    AcademicYearId, AcademicYearRange, ClassRoomId, CompletedStatus, HomeworkMark,
+    HomeworkStatus, StudentGuardianLinkId, StudentStatus, SubTopic,
 };
 
 fn fresh_event_id<G: IdGenerator + ?Sized>(ids: &G) -> EventId {
@@ -2754,31 +2757,174 @@ where
 
 /// Draft a [`LessonPlan`] and emit a [`LessonPlanCreated`] event.
 pub fn create_lesson_plan<C, G>(
-    cmd: CreateLessonPlanCommand,
+    cmd: RealCreateLessonPlanCommand,
     clock: &C,
     ids: &G,
-) -> Result<(LessonPlan, LessonPlanCreated)>
+) -> Result<(RealLessonPlan, RealLessonPlanCreated)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let CreateLessonPlanCommand { id, school_id } = cmd;
-    if id.school_id() != school_id {
-        return Err(DomainError::Validation(format!(
-            "lesson plan id {id} is in school {}, command school_id is {school_id}",
-            id.school_id(),
-        )));
-    }
     let now = clock.now();
     let event_id = fresh_event_id(ids);
-    let aggregate = LessonPlan { id, school_id };
-    let event = LessonPlanCreated {
+    let actor = cmd.tenant.actor_id;
+
+    let aggregate = RealLessonPlan::fresh(
+        cmd.lesson_plan_id,
+        cmd.lesson_id,
+        cmd.topic_id,
+        cmd.class_section_id,
+        cmd.subject_id,
+        cmd.teacher_id,
+        cmd.scheduled_date,
+        cmd.teaching_method,
+        cmd.objectives,
+        cmd.materials,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+
+    let event = RealLessonPlanCreated {
+        lesson_plan_id: aggregate.id,
+        lesson_id: aggregate.lesson_id,
+        topic_id: aggregate.topic_id,
+        class_section_id: aggregate.class_section_id,
+        subject_id: aggregate.subject_id,
+        teacher_id: aggregate.teacher_id,
+        scheduled_date: aggregate.scheduled_date,
+        teaching_method: aggregate.teaching_method.clone(),
+        objectives: aggregate.objectives.clone(),
+        materials: aggregate.materials.clone(),
+        status: aggregate.status,
         event_id,
-        school_id,
-        aggregate_id: id,
+        correlation_id: aggregate.correlation_id,
         occurred_at: now,
     };
     Ok((aggregate, event))
+}
+
+/// Update a [`RealLessonPlan`] and emit a [`LessonPlanUpdated`] event.
+pub fn update_lesson_plan<C, G>(
+    cmd: UpdateLessonPlanCommand,
+    lesson_plan: &mut RealLessonPlan,
+    clock: &C,
+    ids: &G,
+) -> Result<LessonPlanUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+
+    lesson_plan.update(
+        cmd.teacher_id,
+        cmd.scheduled_date,
+        cmd.teaching_method,
+        cmd.objectives,
+        cmd.materials,
+        actor,
+        now,
+    )?;
+
+    Ok(LessonPlanUpdated {
+        lesson_plan_id: lesson_plan.id,
+        changed_fields: vec!["scheduled_date".into(), "teaching_method".into(), "objectives".into(), "materials".into()],
+        scheduled_date: Some(lesson_plan.scheduled_date),
+        teaching_method: Some(lesson_plan.teaching_method.clone()),
+        objectives: Some(lesson_plan.objectives.clone()),
+        materials: Some(lesson_plan.materials.clone()),
+        event_id,
+        correlation_id: lesson_plan.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Mark a [`RealLessonPlan`] as Completed or Skipped.
+pub fn mark_lesson_plan_completed<C, G>(
+    cmd: MarkLessonPlanCompletedCommand,
+    lesson_plan: &mut RealLessonPlan,
+    clock: &C,
+    ids: &G,
+) -> Result<LessonPlanCompleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+
+    match cmd.final_status {
+        CompletedStatus::Completed => lesson_plan.mark_completed(actor, now)?,
+        CompletedStatus::Skipped => lesson_plan.mark_skipped(actor, now)?,
+        other => {
+            return Err(DomainError::Validation(format!(
+                "MarkLessonPlanCompletedCommand::final_status must be Completed or Skipped, got {other:?}"
+            )));
+        }
+    }
+
+    Ok(LessonPlanCompleted {
+        lesson_plan_id: lesson_plan.id,
+        final_status: cmd.final_status,
+        event_id,
+        correlation_id: lesson_plan.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Add a sub-topic to a [`RealLessonPlan`].
+pub fn add_sub_topic<C, G>(
+    cmd: AddSubTopicCommand,
+    lesson_plan: &mut RealLessonPlan,
+    clock: &C,
+    ids: &G,
+) -> Result<SubTopicAdded>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    let sub_topic = SubTopic::new(cmd.title.clone(), cmd.description.clone())?;
+    lesson_plan.add_sub_topic(sub_topic, actor, now);
+
+    Ok(SubTopicAdded {
+        lesson_plan_id: lesson_plan.id,
+        title: cmd.title,
+        description: cmd.description,
+        event_id,
+        correlation_id: lesson_plan.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Soft-delete a [`RealLessonPlan`].
+pub fn delete_lesson_plan<C, G>(
+    _cmd: DeleteLessonPlanCommand,
+    lesson_plan: &mut RealLessonPlan,
+    clock: &C,
+    ids: &G,
+) -> Result<LessonPlanDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = _cmd.tenant.actor_id;
+    lesson_plan.delete(actor, now);
+
+    Ok(LessonPlanDeleted {
+        lesson_plan_id: lesson_plan.id,
+        event_id,
+        correlation_id: lesson_plan.correlation_id,
+        occurred_at: now,
+    })
 }
 
 /// Create a [`Lesson`] and emit a [`LessonCreated`] event.

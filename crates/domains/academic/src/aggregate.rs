@@ -29,13 +29,16 @@ use std::collections::HashSet;
 use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
 use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
+use chrono::NaiveDate;
+
 use crate::value_objects::{
     AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassPeriod, ClassRoutineId,
-    ClassRoomId, ClassSectionId, ClassSubjectId, ClassSubjectScope, DayOfWeek, EmailAddress,
-    FileId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId, LessonTopicId,
-    OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold, PassMark, PhoneNumber,
-    RegistrationFieldId, Relation, SectionId, StudentCategoryId, StudentGroupId,
-    StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId, SubjectId, SubjectType,
+    ClassRoomId, ClassSectionId, ClassSubjectId, ClassSubjectScope, CompletedStatus, DayOfWeek,
+    EmailAddress, FileId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId,
+    LessonTopicId, OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold, PassMark,
+    PhoneNumber, RegistrationFieldId, Relation, SectionId, StudentCategoryId, StudentGroupId,
+    StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId, SubjectId,
+    SubjectType, SubTopic,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -1858,6 +1861,225 @@ academic_aggregate_stub! {
     /// A teacher's plan for a specific lesson topic on a specific
     /// date. See `docs/specs/academic/aggregates.md` § LessonPlan.
     pub struct LessonPlan { id: LessonPlanId }
+}
+
+// ---- Real LessonPlan aggregate (Wave 53) -----------------------------------
+//
+// Per `docs/specs/academic/aggregates.md` § LessonPlan, this
+// enforces 4 invariants:
+// - I-1: Anchored to Lesson + topic + class-section + subject + date
+// - I-2: Sub-topics (Vec<SubTopic>, zero allowed)
+// - I-3: CompletedStatus enum (Pending/InProgress/Completed/Skipped)
+// - I-4: Single teacher owner (teacher_id immutable after creation)
+
+/// Real LessonPlan aggregate (Wave 53).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealLessonPlan {
+    /// The lesson-plan's typed id (school-scoped).
+    pub id: LessonPlanId,
+    /// The owning school (tenant anchor; embedded in id).
+    pub school_id: SchoolId,
+    /// The lesson anchor (I-1).
+    pub lesson_id: LessonId,
+    /// The topic anchor (I-1).
+    pub topic_id: LessonTopicId,
+    /// The class-section anchor (I-1).
+    pub class_section_id: ClassSectionId,
+    /// The subject anchor (I-1).
+    pub subject_id: SubjectId,
+    /// The teacher who owns this lesson plan (I-4: immutable).
+    pub teacher_id: UserId,
+    /// The scheduled date (I-1).
+    pub scheduled_date: NaiveDate,
+    /// The teaching method.
+    pub teaching_method: String,
+    /// The lesson objectives.
+    pub objectives: String,
+    /// The teaching materials (Vec<String>; may be empty).
+    pub materials: Vec<String>,
+    /// The sub-topics (I-2: zero allowed).
+    pub sub_topics: Vec<SubTopic>,
+    /// The current CompletedStatus (I-3).
+    pub status: CompletedStatus,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// User who created this aggregate.
+    pub created_by: UserId,
+    /// When this aggregate was created.
+    pub created_at: Timestamp,
+    /// User who last mutated this aggregate.
+    pub updated_by: UserId,
+    /// When this aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// Soft-delete lifecycle state.
+    pub active_status: ActiveStatus,
+    /// Last domain event id produced by this aggregate.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id propagated from the tenant context.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealLessonPlan {
+    /// Construct a fresh `LessonPlan`. Enforces tenant-anchor (every
+    /// typed id shares school with `lesson_plan_id`).
+    pub fn fresh(
+        id: LessonPlanId,
+        lesson_id: LessonId,
+        topic_id: LessonTopicId,
+        class_section_id: ClassSectionId,
+        subject_id: SubjectId,
+        teacher_id: UserId,
+        scheduled_date: NaiveDate,
+        teaching_method: String,
+        objectives: String,
+        materials: Vec<String>,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        use educore_core::error::DomainError;
+        if lesson_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation(format!(
+                "lesson_id school mismatch"
+            )));
+        }
+        if topic_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation("topic_id school mismatch".into()));
+        }
+        if class_section_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation("class_section_id school mismatch".into()));
+        }
+        if subject_id.school_id() != id.school_id() {
+            return Err(DomainError::Validation("subject_id school mismatch".into()));
+        }
+
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            lesson_id,
+            topic_id,
+            class_section_id,
+            subject_id,
+            teacher_id,
+            scheduled_date,
+            teaching_method,
+            objectives,
+            materials,
+            sub_topics: Vec::new(),
+            status: CompletedStatus::Pending,
+            version: Version::initial(),
+            etag: Etag::placeholder(),
+            created_by: actor,
+            created_at: now,
+            updated_by: actor,
+            updated_at: now,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Update mutable fields. Rejects any change to `teacher_id` (I-4 immutability).
+    pub fn update(
+        &mut self,
+        teacher_id: UserId,
+        scheduled_date: Option<NaiveDate>,
+        teaching_method: Option<String>,
+        objectives: Option<String>,
+        materials: Option<Vec<String>>,
+        actor: UserId,
+        now: Timestamp,
+    ) -> educore_core::error::Result<()> {
+        use educore_core::error::DomainError;
+        if teacher_id != self.teacher_id {
+            return Err(DomainError::Conflict(
+                "LessonPlan::teacher_id is immutable; reassignment is a separate command".into(),
+            ));
+        }
+        if let Some(d) = scheduled_date { self.scheduled_date = d; }
+        if let Some(m) = teaching_method { self.teaching_method = m; }
+        if let Some(o) = objectives { self.objectives = o; }
+        if let Some(mat) = materials { self.materials = mat; }
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Transition status. Uses `CompletedStatus::can_transition_to` for the table.
+    pub fn mark_completed(
+        &mut self,
+        actor: UserId,
+        now: Timestamp,
+    ) -> educore_core::error::Result<()> {
+        use educore_core::error::DomainError;
+        if !self.status.can_transition_to(CompletedStatus::Completed) {
+            return Err(DomainError::Conflict(format!(
+                "cannot transition from {:?} to Completed", self.status
+            )));
+        }
+        self.status = CompletedStatus::Completed;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Mark as skipped (allowed from Pending or InProgress).
+    pub fn mark_skipped(
+        &mut self,
+        actor: UserId,
+        now: Timestamp,
+    ) -> educore_core::error::Result<()> {
+        use educore_core::error::DomainError;
+        if !self.status.can_transition_to(CompletedStatus::Skipped) {
+            return Err(DomainError::Conflict(format!(
+                "cannot transition from {:?} to Skipped", self.status
+            )));
+        }
+        self.status = CompletedStatus::Skipped;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Mark as in-progress.
+    pub fn mark_in_progress(
+        &mut self,
+        actor: UserId,
+        now: Timestamp,
+    ) -> educore_core::error::Result<()> {
+        use educore_core::error::DomainError;
+        if !self.status.can_transition_to(CompletedStatus::InProgress) {
+            return Err(DomainError::Conflict(format!(
+                "cannot transition from {:?} to InProgress", self.status
+            )));
+        }
+        self.status = CompletedStatus::InProgress;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Append a sub-topic (I-2).
+    pub fn add_sub_topic(&mut self, sub_topic: SubTopic, actor: UserId, now: Timestamp) {
+        self.sub_topics.push(sub_topic);
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+
+    /// Soft-delete (sets `active_status` to Retired).
+    pub fn delete(&mut self, actor: UserId, now: Timestamp) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
 }
 academic_aggregate_stub! {
     /// A unit of study within a subject, owned by a class-section.
