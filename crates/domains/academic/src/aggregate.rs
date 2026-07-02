@@ -38,7 +38,7 @@ use crate::value_objects::{
     LessonTopicId, OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold, PassMark,
     PhoneNumber, RegistrationFieldId, Relation, SectionId, StudentCategoryId, StudentGroupId,
     StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId, SubjectId,
-    SubjectType, SubTopic,
+    SubjectType, SubTopic, AdminSection, FieldName, LabelName, RegistrationFieldType,
 };
 
 /// Returns the default etag for a freshly minted aggregate.
@@ -2751,6 +2751,127 @@ academic_aggregate_stub! {
     /// A custom field on the student or staff registration form.
     /// See `docs/specs/academic/aggregates.md` § RegistrationField.
     pub struct RegistrationField { id: RegistrationFieldId }
+}
+
+// ---- Real RegistrationField aggregate (Wave 60) ------------------------------
+//
+// Per `docs/specs/academic/aggregates.md` § RegistrationField:
+// - I-1: FieldName, LabelName, Type (Student/Staff)
+// - I-2: IsRequired, IsVisible, editability flags
+// - I-3: AdminSection for placement on form
+
+/// Real RegistrationField aggregate (Wave 60).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealRegistrationField {
+    /// The field's typed id (school-scoped).
+    pub id: RegistrationFieldId,
+    /// The owning school.
+    pub school_id: SchoolId,
+    /// Machine-readable name (I-1).
+    pub field_name: FieldName,
+    /// Human-readable label (I-1).
+    pub label_name: LabelName,
+    /// Field type: Student or Staff (I-1).
+    pub field_type: RegistrationFieldType,
+    /// Whether the field is required on the form (I-2).
+    pub is_required: bool,
+    /// Whether the field is visible on the form (I-2).
+    pub is_visible: bool,
+    /// Whether the field can be edited (I-2).
+    pub is_editable: bool,
+    /// Admin section for form placement (I-3).
+    pub admin_section: AdminSection,
+    /// Display order within the section.
+    pub display_order: i32,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// User who created this aggregate.
+    pub created_by: UserId,
+    /// When this aggregate was created.
+    pub created_at: Timestamp,
+    /// User who last mutated this aggregate.
+    pub updated_by: UserId,
+    /// When this aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// Soft-delete lifecycle state.
+    pub active_status: ActiveStatus,
+    /// Last domain event id produced by this aggregate.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id propagated from the tenant context.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealRegistrationField {
+    /// Construct a fresh `RealRegistrationField`.
+    pub fn fresh(
+        id: RegistrationFieldId,
+        field_name: FieldName,
+        label_name: LabelName,
+        field_type: RegistrationFieldType,
+        is_required: bool,
+        is_visible: bool,
+        is_editable: bool,
+        admin_section: AdminSection,
+        display_order: i32,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            field_name,
+            label_name,
+            field_type,
+            is_required,
+            is_visible,
+            is_editable,
+            admin_section,
+            display_order,
+            version: Version::initial(),
+            etag: Etag::placeholder(),
+            created_by: actor,
+            created_at: now,
+            updated_by: actor,
+            updated_at: now,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Update mutable fields (label/flags/section/order).
+    pub fn update(
+        &mut self,
+        label_name: Option<LabelName>,
+        is_required: Option<bool>,
+        is_visible: Option<bool>,
+        is_editable: Option<bool>,
+        admin_section: Option<AdminSection>,
+        display_order: Option<i32>,
+        actor: UserId,
+        now: Timestamp,
+    ) {
+        if let Some(l) = label_name { self.label_name = l; }
+        if let Some(v) = is_required { self.is_required = v; }
+        if let Some(v) = is_visible { self.is_visible = v; }
+        if let Some(v) = is_editable { self.is_editable = v; }
+        if let Some(s) = admin_section { self.admin_section = s; }
+        if let Some(o) = display_order { self.display_order = o; }
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+
+    /// Soft-delete.
+    pub fn delete(&mut self, actor: UserId, now: Timestamp) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
 }
 academic_aggregate_stub! {
     /// A configurable certificate template: transfer, character,

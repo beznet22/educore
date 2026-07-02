@@ -43,7 +43,7 @@ use educore_core::value_objects::ActiveStatus;
 use crate::aggregate::{
     AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
     IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealLesson, RealLessonPlan,
-    RealLessonTopic, RealStudentCategory, RealStudentGroup, RealStudentPromotion, RegistrationField, Section,
+    RealLessonTopic, RealRegistrationField, RealStudentCategory, RealStudentGroup, RealStudentPromotion, RegistrationField, Section,
     Student, StudentCategory, StudentGroup, StudentGuardianLink, StudentPromotion, StudentRecord,
     Subject,
 };
@@ -69,7 +69,7 @@ use crate::commands::{
     UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand, UpdateClassCommand,
     UpdateGuardianContactCommand, UpdateHomeworkCommand, UpdateLessonPlanCommand, UpdateSectionCommand,
     UpdateStudentProfileCommand, UpdateSubjectCommand, UpdateClassRoutinePeriodCommand,
-    AddSubTopicCommand, AddStudentToGroupCommand, CancelHomeworkCommand, DeleteLessonCommand, DeleteLessonPlanCommand,
+    AddSubTopicCommand, AddStudentToGroupCommand, CancelHomeworkCommand, DeleteRegistrationFieldCommand, RealCreateRegistrationFieldCommand, UpdateRegistrationFieldCommand, DeleteLessonCommand, DeleteLessonPlanCommand,
     DeleteLessonTopicCommand, EnrollStudentCommand, MarkGraduateCommand,
     MarkLessonPlanCompletedCommand, MarkTopicCompletedCommand, RealCreateLessonCommand,
     RealCreateLessonPlanCommand, RealCreateLessonTopicCommand, RealCreateStudentGroupCommand, RemoveStudentFromGroupCommand, SetDefaultRecordCommand,
@@ -88,7 +88,7 @@ use crate::events::{
     RealLessonCreated, RealLessonPlanCreated, RealLessonTopicCreated, RollNumberAssigned,
     StudentMarkedGraduate, StudentRecordEnrolled, SubTopicAdded, DefaultRecordSet, LessonUpdated,
     OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
-    RegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
+    RegistrationFieldCreated, RegistrationFieldDeleted, RegistrationFieldUpdated, RealRegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
     StudentAddedToGroup, StudentCategoryDeleted, StudentCategoryUpdated, StudentGroupDeleted, StudentGroupUpdated, StudentRemovedFromGroup, RealStudentCategoryCreated, RealStudentGroupCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
     StudentPromoted, StudentPromotionRecorded, StudentReinstated, StudentSuspended,
     StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
@@ -3214,34 +3214,7 @@ where
     Ok((aggregate, event))
 }
 
-/// Create a [`RegistrationField`] and emit a [`RegistrationFieldCreated`] event.
-pub fn create_registration_field<C, G>(
-    cmd: CreateRegistrationFieldCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<(RegistrationField, RegistrationFieldCreated)>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let CreateRegistrationFieldCommand { id, school_id } = cmd;
-    if id.school_id() != school_id {
-        return Err(DomainError::Validation(format!(
-            "registration field id {id} is in school {}, command school_id is {school_id}",
-            id.school_id(),
-        )));
-    }
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let aggregate = RegistrationField { id, school_id };
-    let event = RegistrationFieldCreated {
-        event_id,
-        school_id,
-        aggregate_id: id,
-        occurred_at: now,
-    };
-    Ok((aggregate, event))
-}
+/// Create a [`RealRegistrationField`] (Wave 60 replacement).
 
 /// Create a [`Certificate`] template and emit a [`CertificateCreated`] event.
 pub fn create_certificate<C, G>(
@@ -4531,6 +4504,115 @@ where
         student_group_id: group.id,
         event_id,
         correlation_id: group.correlation_id,
+        occurred_at: now,
+    })
+}
+
+// =============================================================================
+// RegistrationField services (Wave 60: full impl)
+// =============================================================================
+
+/// Create a [`RealRegistrationField`] and emit a [`RealRegistrationFieldCreated`] event.
+pub fn create_registration_field_aggregate<C, G>(
+    cmd: RealCreateRegistrationFieldCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealRegistrationField, RealRegistrationFieldCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    let aggregate = RealRegistrationField::fresh(
+        cmd.registration_field_id,
+        cmd.field_name,
+        cmd.label_name,
+        cmd.field_type,
+        cmd.is_required,
+        cmd.is_visible,
+        cmd.is_editable,
+        cmd.admin_section,
+        cmd.display_order,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    let event = RealRegistrationFieldCreated {
+        registration_field_id: aggregate.id,
+        field_name: aggregate.field_name.clone(),
+        label_name: aggregate.label_name.clone(),
+        field_type: aggregate.field_type,
+        is_required: aggregate.is_required,
+        is_visible: aggregate.is_visible,
+        is_editable: aggregate.is_editable,
+        admin_section: aggregate.admin_section,
+        display_order: aggregate.display_order,
+        event_id,
+        correlation_id: aggregate.correlation_id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Update a [`RealRegistrationField`] and emit a [`RegistrationFieldUpdated`] event.
+pub fn update_registration_field<C, G>(
+    cmd: UpdateRegistrationFieldCommand,
+    field: &mut RealRegistrationField,
+    clock: &C,
+    ids: &G,
+) -> Result<RegistrationFieldUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    field.update(
+        cmd.label_name,
+        cmd.is_required,
+        cmd.is_visible,
+        cmd.is_editable,
+        cmd.admin_section,
+        cmd.display_order,
+        actor,
+        now,
+    );
+    Ok(RegistrationFieldUpdated {
+        registration_field_id: field.id,
+        label_name: Some(field.label_name.clone()),
+        is_required: Some(field.is_required),
+        is_visible: Some(field.is_visible),
+        is_editable: Some(field.is_editable),
+        admin_section: Some(field.admin_section),
+        display_order: Some(field.display_order),
+        event_id,
+        correlation_id: field.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Soft-delete a [`RealRegistrationField`].
+pub fn delete_registration_field<C, G>(
+    _cmd: DeleteRegistrationFieldCommand,
+    field: &mut RealRegistrationField,
+    clock: &C,
+    ids: &G,
+) -> Result<RegistrationFieldDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = _cmd.tenant.actor_id;
+    field.delete(actor, now);
+    Ok(RegistrationFieldDeleted {
+        registration_field_id: field.id,
+        event_id,
+        correlation_id: field.correlation_id,
         occurred_at: now,
     })
 }

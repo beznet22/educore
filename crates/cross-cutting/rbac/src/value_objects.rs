@@ -1636,6 +1636,12 @@ pub enum Capability {
     AcademicCertificate,
     /// Capability for `Academic.Id.Card`.
     AcademicIdCard,
+    /// Capability for `Academic.RegistrationField.Create`.
+    AcademicRegistrationFieldCreate,
+    /// Capability for `Academic.RegistrationField.Update`.
+    AcademicRegistrationFieldUpdate,
+    /// Capability for `Academic.RegistrationField.Delete`.
+    AcademicRegistrationFieldDelete,
     /// Capability for `Academic.Admission.Query`.
     AcademicAdmissionQuery,
     /// Capability for `Assessment.Exam.Type`.
@@ -2389,6 +2395,9 @@ impl Capability {
             | Self::AcademicStudentGroupDelete => CapabilityDomain::Academic,
             | Self::AcademicCertificate => CapabilityDomain::Academic,
             | Self::AcademicIdCard => CapabilityDomain::Academic,
+            | Self::AcademicRegistrationFieldCreate => CapabilityDomain::Academic,
+            | Self::AcademicRegistrationFieldUpdate => CapabilityDomain::Academic,
+            | Self::AcademicRegistrationFieldDelete => CapabilityDomain::Academic,
             | Self::AcademicAdmissionQuery => CapabilityDomain::Academic,
             | Self::AssessmentExamType => CapabilityDomain::Assessment,
             | Self::AssessmentExamSetup => CapabilityDomain::Assessment,
@@ -3092,6 +3101,10 @@ impl Capability {
             Self::AcademicLessonPlanCreate | Self::AcademicLessonPlanUpdate | Self::AcademicLessonPlanComplete | Self::AcademicLessonPlanSubTopic | Self::AcademicLessonPlanDelete => "LessonPlan",
             Self::AcademicCertificate => "Certificate",
             Self::AcademicIdCard => "Id",
+            Self::AcademicRegistrationFieldCreate | Self::AcademicRegistrationFieldUpdate | Self::AcademicRegistrationFieldDelete => "RegistrationField",
+            Self::AcademicRegistrationFieldCreate => "Create",
+            Self::AcademicRegistrationFieldUpdate => "Update",
+            Self::AcademicRegistrationFieldDelete => "Delete",
             Self::AcademicAdmissionQuery => "Admission",
             Self::AssessmentExamType | Self::AssessmentExamSetup | Self::AssessmentExamAttendance => "Exam",
             Self::AssessmentMarkStore => "Mark",
@@ -3158,6 +3171,8 @@ impl Capability {
             | Self::AttendanceSubjectCreate
             | Self::AttendanceStaffCreate
             | Self::AttendanceExamCreate
+            | Self::AcademicRegistrationFieldCreate => "Create",
+            | Self::AcademicRegistrationFieldCreate => "Create",
             | Self::AttendanceImportCreate => "Create",
             Self::PlatformSchoolRead
             | Self::PlatformUserRead
@@ -3297,6 +3312,7 @@ impl Capability {
             | Self::CmsAboutPageUpdate
             | Self::CmsContactPageUpdate
             | Self::CmsCoursePageUpdate
+            | Self::AcademicRegistrationFieldUpdate => "Update",
             | Self::CmsFrontendPageUpdate => "Update",
             Self::PlatformSchoolDelete
             | Self::PlatformUserDelete
@@ -3357,6 +3373,7 @@ impl Capability {
             | Self::CmsContactPageDelete
             | Self::CmsCoursePageDelete
             | Self::CmsHomePageSettingDelete
+            | Self::AcademicRegistrationFieldDelete => "Delete",
             | Self::CmsFrontendPageDelete => "Delete",
             Self::RbacRoleManage => "Manage",
             Self::RbacRoleClone => "Clone",
@@ -4565,6 +4582,9 @@ impl Capability {
             Self::AcademicStudentGroupDelete => "Academic.Student.Group.Delete",
             Self::AcademicCertificate => "Academic.Certificate",
             Self::AcademicIdCard => "Academic.Id.Card",
+            Self::AcademicRegistrationFieldCreate => "Academic.RegistrationField.Create",
+            Self::AcademicRegistrationFieldUpdate => "Academic.RegistrationField.Update",
+            Self::AcademicRegistrationFieldDelete => "Academic.RegistrationField.Delete",
             Self::AcademicAdmissionQuery => "Academic.Admission.Query",
             Self::AssessmentExamType => "Assessment.Exam.Type",
             Self::AssessmentExamSetup => "Assessment.Exam.Setup",

@@ -425,18 +425,18 @@
 
 ## RegistrationField Aggregate (3 invariants)
 
-- [ ] I-1: `FieldName` + `LabelName` + `Type`
+- [x] I-1: `FieldName` + `LabelName` + `Type` (Student/Staff)
   - Spec: `docs/specs/academic/aggregates.md#registrationfield`
-  - Enforcement: MISSING — placeholder at `aggregate.rs:387-390`
-  - Test: MISSING
-- [ ] I-2: `IsRequired` / `IsVisible` + editability flags
+  - Enforcement: `RealRegistrationField` struct has `field_name: FieldName`, `label_name: LabelName`, `field_type: RegistrationFieldType` (Student/Staff enum). `FieldName::new`/`LabelName::new` validate 1..=100 / 1..=200 chars.
+  - Test: `tests/registration_field.rs::registration_field_create_succeeds` (passes), `::registration_field_empty_label_name_rejected` (passes), `::registration_field_staff_type_succeeds` (passes).
+- [x] I-2: `IsRequired` / `IsVisible` + editability flags
   - Spec: `docs/specs/academic/aggregates.md#registrationfield`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-3: `AdminSection`
+  - Enforcement: `RealRegistrationField.is_required: bool`, `is_visible: bool`, `is_editable: bool`; `update` service mutates all three.
+  - Test: `tests/registration_field.rs::registration_field_update_flags_succeeds` (passes).
+- [x] I-3: `AdminSection`
   - Spec: `docs/specs/academic/aggregates.md#registrationfield`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
+  - Enforcement: `RealRegistrationField.admin_section: AdminSection` (Personal/Contact/Guardian/Academic/Documents/Other enum); `update` service mutates the section.
+  - Test: `tests/registration_field.rs::registration_field_admin_section_persisted` (passes).
 
 ## Certificate Aggregate (3 invariants)
 

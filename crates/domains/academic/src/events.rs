@@ -43,7 +43,7 @@ use crate::entities::StudentDocumentId;
 use crate::value_objects::{
     AcademicYearId, CertificateId, ClassId, ClassRoomId, ClassRoutineId, ClassSectionId,
     ClassSubjectId, FileId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId,
-    LessonTopicId, OptionalSubjectAssignmentId, RegistrationFieldId, Relation, ResultStatus,
+    AdminSection, FieldName, LabelName, LessonTopicId, OptionalSubjectAssignmentId, RegistrationFieldId, RegistrationFieldType, Relation, ResultStatus,
     StudentRecordId,
     SectionId, StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId,
     StudentPromotionId, StudentStatus, SubjectId, SubjectType,
@@ -4430,5 +4430,106 @@ impl DomainEvent for StudentGroupDeleted {
     fn event_id(&self) -> EventId { self.event_id }
     fn aggregate_id(&self) -> Uuid { self.student_group_id.as_uuid() }
     fn school_id(&self) -> SchoolId { self.student_group_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+// =============================================================================
+// RegistrationField events (Wave 60: full impl)
+// =============================================================================
+
+/// Event: a [`RealRegistrationField`](crate::aggregate::RealRegistrationField) was created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealRegistrationFieldCreated {
+    /// The field's typed id.
+    pub registration_field_id: RegistrationFieldId,
+    /// The field name (I-1).
+    pub field_name: FieldName,
+    /// The label name (I-1).
+    pub label_name: LabelName,
+    /// The field type (I-1).
+    pub field_type: RegistrationFieldType,
+    /// Whether required (I-2).
+    pub is_required: bool,
+    /// Whether visible (I-2).
+    pub is_visible: bool,
+    /// Whether editable (I-2).
+    pub is_editable: bool,
+    /// The admin section (I-3).
+    pub admin_section: AdminSection,
+    /// Display order.
+    pub display_order: i32,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for RealRegistrationFieldCreated {
+    const EVENT_TYPE: &'static str = "academic.registration_field.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "registration_field";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.registration_field_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.registration_field_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`RealRegistrationField`](crate::aggregate::RealRegistrationField) was updated.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RegistrationFieldUpdated {
+    /// The field's typed id.
+    pub registration_field_id: RegistrationFieldId,
+    /// Optional new label.
+    pub label_name: Option<LabelName>,
+    /// Optional new required flag.
+    pub is_required: Option<bool>,
+    /// Optional new visible flag.
+    pub is_visible: Option<bool>,
+    /// Optional new editable flag.
+    pub is_editable: Option<bool>,
+    /// Optional new admin section.
+    pub admin_section: Option<AdminSection>,
+    /// Optional new display order.
+    pub display_order: Option<i32>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for RegistrationFieldUpdated {
+    const EVENT_TYPE: &'static str = "academic.registration_field.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "registration_field";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.registration_field_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.registration_field_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`RealRegistrationField`](crate::aggregate::RealRegistrationField) was soft-deleted.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RegistrationFieldDeleted {
+    /// The field's typed id.
+    pub registration_field_id: RegistrationFieldId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for RegistrationFieldDeleted {
+    const EVENT_TYPE: &'static str = "academic.registration_field.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "registration_field";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.registration_field_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.registration_field_id.school_id() }
     fn occurred_at(&self) -> Timestamp { self.occurred_at }
 }

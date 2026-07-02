@@ -64,7 +64,7 @@ pub const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 // ---- Aggregate roots --------------------------------------------------------
 
 /// The 5 prompt-named aggregate roots.
-pub use crate::aggregate::{AcademicYear, Class, RealLesson, RealLessonPlan, RealLessonTopic, RealStudentCategory, RealStudentGroup, RealStudentPromotion, Section, Student, Subject};
+pub use crate::aggregate::{AcademicYear, Class, RealLesson, RealLessonPlan, RealLessonTopic, RealRegistrationField, RealStudentCategory, RealStudentGroup, RealStudentPromotion, Section, Student, Subject};
 
 /// The 14 placeholder aggregate stubs (Guardian, ClassSection,
 /// ClassSubject, etc.). Exposed at the crate root so integration
@@ -103,7 +103,7 @@ pub use crate::services::{
     assign_subject_teacher, assign_subject_to_class, close_academic_year, copy_academic_year,
     create_academic_year, create_certificate, create_class, create_class_routine,
     create_class_section, create_class_subject, create_homework, create_id_card, create_lesson,
-    create_lesson_plan, create_lesson_topic, create_registration_field, create_section,
+    create_lesson_plan, create_lesson_topic, create_registration_field_aggregate, create_section,
     create_student_category_aggregate, create_student_group, create_subject, delete_class,
     delete_class_routine, delete_class_section, delete_section, delete_subject, graduate_student,
     link_guardian_to_student, mark_primary_guardian, promote_student, reassign_teacher,
@@ -149,10 +149,10 @@ pub use crate::value_objects::{
     ClassSubjectId, ClassSubjectScope, ClassTimeId, CompletedStatus, DateOfBirth, DayOfWeek, EmailAddress,
     FileId, FullName, Gender, GuardianId, HomeworkId, HomeworkMark, HomeworkStatus, IdCardId,
     LessonId, LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold,
-    PassMark, PersonName, PhoneNumber, RegistrationFieldId, Relation, ResultStatus, RollNumber,
+    PassMark, PersonName, PhoneNumber, Relation, ResultStatus, RollNumber,
     SectionId, SectionName, StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId,
     StudentPromotionId, StudentRecordId, StudentStatus, SubjectCode, SubjectId, SubjectType, SubTopic,
-    SuspensionReason, TransferReason, WithdrawalReason,
+    SuspensionReason, TransferReason, WithdrawalReason, AdminSection, FieldName, LabelName, RegistrationFieldType, RegistrationFieldId,
 };
 
 // ---- Re-exports of the engine types most commonly reached for ----------------
@@ -224,7 +224,7 @@ pub mod prelude {
         assign_subject_teacher, assign_subject_to_class, close_academic_year, copy_academic_year,
         create_academic_year, create_certificate, create_class, create_class_routine,
         create_class_section, create_class_subject, create_homework, create_id_card, create_lesson,
-        create_lesson_plan, create_lesson_topic, create_registration_field, create_section,
+        create_lesson_plan, create_lesson_topic, create_registration_field_aggregate, create_section,
         create_student_category_aggregate, create_student_group, create_subject, delete_class,
         delete_class_routine, delete_class_section, delete_section, delete_subject,
         graduate_student, link_guardian_to_student, mark_primary_guardian, promote_student,
@@ -242,10 +242,10 @@ pub mod prelude {
         ClassSectionId, ClassSubjectId, ClassSubjectScope, ClassTimeId, CompletedStatus, DateOfBirth, DayOfWeek,
         EmailAddress, FullName, Gender, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId,
         LessonTopicId, OptionalSubjectAssignmentId, OptionalSubjectGpaThreshold, PassMark,
-        PersonName, PhoneNumber, RegistrationFieldId, Relation, ResultStatus, RollNumber,
+        PersonName, PhoneNumber, Relation, ResultStatus, RollNumber,
         SectionId, SectionName, StudentCategoryId, StudentGroupId, StudentGuardianLinkId,
         StudentId, StudentPromotionId, StudentRecordId, StudentStatus, SubjectCode, SubjectId,
-        SubjectType, SuspensionReason, TransferReason, WithdrawalReason,
+        SubjectType, SuspensionReason, TransferReason, WithdrawalReason, AdminSection, FieldName, LabelName, RegistrationFieldType, RegistrationFieldId,
     };
 }
 
