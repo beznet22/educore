@@ -64,7 +64,7 @@ pub const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 // ---- Aggregate roots --------------------------------------------------------
 
 /// The 5 prompt-named aggregate roots.
-pub use crate::aggregate::{AcademicYear, Class, RealLesson, RealLessonPlan, RealLessonTopic, RealStudentCategory, RealStudentPromotion, Section, Student, Subject};
+pub use crate::aggregate::{AcademicYear, Class, RealLesson, RealLessonPlan, RealLessonTopic, RealStudentCategory, RealStudentGroup, RealStudentPromotion, Section, Student, Subject};
 
 /// The 14 placeholder aggregate stubs (Guardian, ClassSection,
 /// ClassSubject, etc.). Exposed at the crate root so integration

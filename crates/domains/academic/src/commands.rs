@@ -82,6 +82,9 @@ pub trait UniquenessChecker: Send + Sync {
     /// Returns `true` if a subject with the given code
     /// already exists in the school. Per Subject I-1.
     fn subject_code_exists(&self, school: SchoolId, code: &str) -> bool;
+    /// Returns `true` if a StudentGroup with the given name
+    /// already exists in the school. Per StudentGroup I-1.
+    fn student_group_name_exists(&self, school: SchoolId, name: &str) -> bool;
     /// Returns `true` if a StudentCategory with the given name
     /// already exists in the school. Per StudentCategory I-1.
     fn student_category_name_exists(&self, school: SchoolId, name: &str) -> bool;
@@ -1613,6 +1616,107 @@ academic_command_stub! {
     /// `docs/specs/academic/aggregates.md` § StudentGroup.
     pub struct CreateStudentGroupCommand { id: StudentGroupId }
 }
+
+// =============================================================================
+// StudentGroup commands (Wave 59: full impl)
+// =============================================================================
+
+/// Command: create a [`RealStudentGroup`](crate::aggregate::RealStudentGroup).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealCreateStudentGroupCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The group's typed id.
+    pub student_group_id: StudentGroupId,
+    /// The group's name (1..=200 chars; I-1 unique within school).
+    pub name: String,
+    /// Optional description.
+    pub description: String,
+}
+
+impl RealCreateStudentGroupCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentGroupCreate]
+    }
+}
+
+/// Command: update a [`RealStudentGroup`](crate::aggregate::RealStudentGroup).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateStudentGroupCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The group's typed id.
+    pub student_group_id: StudentGroupId,
+    /// Optional new name.
+    pub name: Option<String>,
+    /// Optional new description.
+    pub description: Option<String>,
+}
+
+impl UpdateStudentGroupCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentGroupUpdate]
+    }
+}
+
+/// Command: add a student to a group (I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AddStudentToGroupCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The group's typed id.
+    pub student_group_id: StudentGroupId,
+    /// The student being added.
+    pub student_id: StudentId,
+}
+
+impl AddStudentToGroupCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentGroupAdd]
+    }
+}
+
+/// Command: remove a student from a group (I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RemoveStudentFromGroupCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The group's typed id.
+    pub student_group_id: StudentGroupId,
+    /// The student being removed.
+    pub student_id: StudentId,
+}
+
+impl RemoveStudentFromGroupCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentGroupRemove]
+    }
+}
+
+/// Command: soft-delete a [`RealStudentGroup`](crate::aggregate::RealStudentGroup).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeleteStudentGroupCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The group's typed id.
+    pub student_group_id: StudentGroupId,
+}
+
+impl DeleteStudentGroupCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentGroupDelete]
+    }
+}
 academic_command_stub! {
     /// Command stub: create a registration custom field. See
     /// `docs/specs/academic/aggregates.md` § RegistrationField.
@@ -2239,25 +2343,7 @@ impl EvaluateHomeworkCommand {
         vec![Capability::AcademicStudentHomeworkEvaluate]
     }
 }
-/// Command: add a student to a student group.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct AddStudentToGroupCommand {
-    /// The active tenant.
-    pub tenant: TenantContext,
-    /// The target student group.
-    pub group_id: StudentGroupId,
-    /// The student being added.
-    pub student_id: StudentId,
-}
 
-
-impl AddStudentToGroupCommand {
-    /// The capabilities required to dispatch this command.
-    #[must_use]
-    pub fn required_capabilities() -> Vec<Capability> {
-        vec![Capability::AcademicStudentUpdate]
-    }
-}
 /// Command: register a new admission query (inquiry).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RegisterAdmissionQueryCommand {

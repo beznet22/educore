@@ -414,14 +414,14 @@
 
 ## StudentGroup Aggregate (2 invariants)
 
-- [ ] I-1: Unique name within school
+- [x] I-1: Unique name within school
   - Spec: `docs/specs/academic/aggregates.md#studentgroup`
-  - Enforcement: MISSING — placeholder at `aggregate.rs:381-384`
-  - Test: MISSING
-- [N/A] I-2: Student can be in many groups
+  - Enforcement: `create_student_group_aggregate` service rejects via `UniquenessChecker::student_group_name_exists(school, name)` with `DomainError::Conflict`.
+  - Test: `tests/student_group.rs::student_group_duplicate_name_rejected` (passes), `::student_group_create_succeeds` (passes).
+- [x] I-2: Student can be in many groups
   - Spec: `docs/specs/academic/aggregates.md#studentgroup`
-  - Enforcement: Pervasive
-  - Test: N/A
+  - Enforcement: `RealStudentGroup.member_ids: Vec<StudentId>` (a student can be in N groups); `add_student` is idempotent; `remove_student` is idempotent.
+  - Test: `tests/student_group.rs::student_group_add_student_succeeds` (passes), `::student_group_add_same_student_idempotent` (passes), `::student_group_remove_student_succeeds` (passes).
 
 ## RegistrationField Aggregate (3 invariants)
 

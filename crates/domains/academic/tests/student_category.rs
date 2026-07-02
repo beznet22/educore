@@ -78,6 +78,12 @@ impl UniquenessChecker for InMemoryUniqueness {
     fn student_category_name_exists(&self, school: SchoolId, name: &str) -> bool {
         self.category_names.contains(&(school, name.to_string()))
     }
+
+    fn student_group_name_exists(
+        &self, _: SchoolId, _: &str,
+    ) -> bool {
+        false
+    }
 }
 
 // =============================================================================

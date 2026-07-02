@@ -187,6 +187,12 @@ impl UniquenessChecker for TestUniqueness {
     ) -> bool {
         false
     }
+
+    fn student_group_name_exists(
+        &self, _: SchoolId, _: &str,
+    ) -> bool {
+        false
+    }
 }
 
 /// A fresh `TenantContext` for a `SchoolAdmin` acting on a freshly-minted school.
@@ -1060,6 +1066,12 @@ impl educore_academic::commands::UniquenessChecker for NoOpUniquenessChecker {
     fn student_has_active_record(&self, _school: educore_core::ids::SchoolId, _student_id: educore_academic::StudentId, _academic_year_id: educore_academic::AcademicYearId) -> bool { false }
 
     fn student_category_name_exists(
+        &self, _: SchoolId, _: &str,
+    ) -> bool {
+        false
+    }
+
+    fn student_group_name_exists(
         &self, _: SchoolId, _: &str,
     ) -> bool {
         false

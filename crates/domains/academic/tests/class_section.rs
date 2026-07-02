@@ -187,6 +187,12 @@ impl UniquenessChecker for TestUniqueness {
     ) -> bool {
         false
     }
+
+    fn student_group_name_exists(
+        &self, _: SchoolId, _: &str,
+    ) -> bool {
+        false
+    }
 }
 
 // =============================================================================

@@ -1622,6 +1622,16 @@ pub enum Capability {
     AcademicStudentRecordGraduate,
     /// Capability for `Academic.Student.Group`.
     AcademicStudentGroup,
+    /// Capability for `Academic.Student.Group.Create`.
+    AcademicStudentGroupCreate,
+    /// Capability for `Academic.Student.Group.Update`.
+    AcademicStudentGroupUpdate,
+    /// Capability for `Academic.Student.Group.Add`.
+    AcademicStudentGroupAdd,
+    /// Capability for `Academic.Student.Group.Remove`.
+    AcademicStudentGroupRemove,
+    /// Capability for `Academic.Student.Group.Delete`.
+    AcademicStudentGroupDelete,
     /// Capability for `Academic.Certificate`.
     AcademicCertificate,
     /// Capability for `Academic.Id.Card`.
@@ -2372,6 +2382,11 @@ impl Capability {
             | Self::AcademicStudentRecordSetDefault => CapabilityDomain::Academic,
             | Self::AcademicStudentRecordGraduate => CapabilityDomain::Academic,
             | Self::AcademicStudentGroup => CapabilityDomain::Academic,
+            | Self::AcademicStudentGroupCreate => CapabilityDomain::Academic,
+            | Self::AcademicStudentGroupUpdate => CapabilityDomain::Academic,
+            | Self::AcademicStudentGroupAdd => CapabilityDomain::Academic,
+            | Self::AcademicStudentGroupRemove => CapabilityDomain::Academic,
+            | Self::AcademicStudentGroupDelete => CapabilityDomain::Academic,
             | Self::AcademicCertificate => CapabilityDomain::Academic,
             | Self::AcademicIdCard => CapabilityDomain::Academic,
             | Self::AcademicAdmissionQuery => CapabilityDomain::Academic,
@@ -2425,6 +2440,12 @@ impl Capability {
             | Self::AcademicStudentCategoryCreate
             | Self::AcademicStudentCategoryUpdate
             | Self::AcademicStudentCategoryDelete => "StudentCategory",
+            Self::AcademicStudentGroup
+            | Self::AcademicStudentGroupCreate
+            | Self::AcademicStudentGroupUpdate
+            | Self::AcademicStudentGroupAdd
+            | Self::AcademicStudentGroupRemove
+            | Self::AcademicStudentGroupDelete => "StudentGroup",
             Self::AcademicStudentRecordEnroll
             | Self::AcademicStudentRecordSetRoll
             | Self::AcademicStudentRecordSetDefault
@@ -3795,6 +3816,12 @@ impl Capability {
             Self::AcademicStudentCategoryCreate => "Create",
             Self::AcademicStudentCategoryUpdate => "Update",
             Self::AcademicStudentCategoryDelete => "Delete",
+            Self::AcademicStudentGroup => "Group",
+            Self::AcademicStudentGroupCreate => "Create",
+            Self::AcademicStudentGroupUpdate => "Update",
+            Self::AcademicStudentGroupAdd => "Add",
+            Self::AcademicStudentGroupRemove => "Remove",
+            Self::AcademicStudentGroupDelete => "Delete",
             Self::AcademicStudentRecordEnroll => "Enroll",
             Self::AcademicStudentRecordSetRoll => "SetRoll",
             Self::AcademicStudentRecordSetDefault => "SetDefault",
@@ -4531,6 +4558,11 @@ impl Capability {
             Self::AcademicStudentRecordSetDefault => "Academic.Student.Record.SetDefault",
             Self::AcademicStudentRecordGraduate => "Academic.Student.Record.Graduate",
             Self::AcademicStudentGroup => "Academic.Student.Group",
+            Self::AcademicStudentGroupCreate => "Academic.Student.Group.Create",
+            Self::AcademicStudentGroupUpdate => "Academic.Student.Group.Update",
+            Self::AcademicStudentGroupAdd => "Academic.Student.Group.Add",
+            Self::AcademicStudentGroupRemove => "Academic.Student.Group.Remove",
+            Self::AcademicStudentGroupDelete => "Academic.Student.Group.Delete",
             Self::AcademicCertificate => "Academic.Certificate",
             Self::AcademicIdCard => "Academic.Id.Card",
             Self::AcademicAdmissionQuery => "Academic.Admission.Query",

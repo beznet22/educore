@@ -2619,6 +2619,134 @@ academic_aggregate_stub! {
     /// `docs/specs/academic/aggregates.md` § StudentGroup.
     pub struct StudentGroup { id: StudentGroupId }
 }
+
+// ---- Real StudentGroup aggregate (Wave 59) ---------------------------------
+//
+// Per `docs/specs/academic/aggregates.md` § StudentGroup:
+// - I-1: Group uniquely named within school
+// - I-2: A student can be in many groups (membership stored as set of StudentIds)
+
+/// Real StudentGroup aggregate (Wave 59).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealStudentGroup {
+    /// The group's typed id (school-scoped).
+    pub id: StudentGroupId,
+    /// The owning school.
+    pub school_id: SchoolId,
+    /// The group's name (1..=200 chars; I-1 unique within school).
+    pub name: String,
+    /// Optional description.
+    pub description: String,
+    /// The set of student ids in this group (I-2: a student can be in many groups).
+    pub member_ids: Vec<StudentId>,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// User who created this aggregate.
+    pub created_by: UserId,
+    /// When this aggregate was created.
+    pub created_at: Timestamp,
+    /// User who last mutated this aggregate.
+    pub updated_by: UserId,
+    /// When this aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// Soft-delete lifecycle state.
+    pub active_status: ActiveStatus,
+    /// Last domain event id produced by this aggregate.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id propagated from the tenant context.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealStudentGroup {
+    /// Construct a fresh `RealStudentGroup`. Enforces name validation.
+    pub fn fresh(
+        id: StudentGroupId,
+        name: String,
+        description: String,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        use educore_core::error::DomainError;
+        if name.trim().is_empty() {
+            return Err(DomainError::validation("StudentGroup::name must not be empty"));
+        }
+        if name.chars().count() > 200 {
+            return Err(DomainError::validation("StudentGroup::name must be 1..=200 chars"));
+        }
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            name,
+            description,
+            member_ids: Vec::new(),
+            version: Version::initial(),
+            etag: Etag::placeholder(),
+            created_by: actor,
+            created_at: now,
+            updated_by: actor,
+            updated_at: now,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Update mutable fields (name/description).
+    pub fn update(
+        &mut self,
+        name: Option<String>,
+        description: Option<String>,
+        actor: UserId,
+        now: Timestamp,
+    ) -> educore_core::error::Result<()> {
+        use educore_core::error::DomainError;
+        if let Some(n) = name {
+            if n.trim().is_empty() {
+                return Err(DomainError::validation("StudentGroup::name must not be empty"));
+            }
+            if n.chars().count() > 200 {
+                return Err(DomainError::validation("StudentGroup::name must be 1..=200 chars"));
+            }
+            self.name = n;
+        }
+        if let Some(d) = description {
+            self.description = d;
+        }
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Add a student to the group (I-2: idempotent — adding same student is a no-op).
+    pub fn add_student(&mut self, student_id: StudentId, actor: UserId, now: Timestamp) {
+        if !self.member_ids.contains(&student_id) {
+            self.member_ids.push(student_id);
+        }
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+
+    /// Remove a student from the group (idempotent).
+    pub fn remove_student(&mut self, student_id: &StudentId, actor: UserId, now: Timestamp) {
+        self.member_ids.retain(|s| s != student_id);
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+
+    /// Soft-delete.
+    pub fn delete(&mut self, actor: UserId, now: Timestamp) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+}
 academic_aggregate_stub! {
     /// A custom field on the student or staff registration form.
     /// See `docs/specs/academic/aggregates.md` § RegistrationField.

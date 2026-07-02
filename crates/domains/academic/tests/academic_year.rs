@@ -341,4 +341,10 @@ impl educore_academic::commands::UniquenessChecker for NoOpUniquenessChecker {
     ) -> bool {
         false
     }
+
+    fn student_group_name_exists(
+        &self, _: SchoolId, _: &str,
+    ) -> bool {
+        false
+    }
 }
