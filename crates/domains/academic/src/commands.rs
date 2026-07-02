@@ -26,7 +26,7 @@ use educore_rbac::value_objects::Capability;
 use educore_core::tenant::TenantContext;
 
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, AdminSection, CertificateId, ClassId, ClassRoomId, ClassRoutineId,
+    AcademicYearId, AcademicYearRange, AdminSection, CertificateId, CertificateLayout, ClassId, ClassRoomId, ClassRoutineId,
     ClassSectionId, ClassSubjectId, DayOfWeek, FieldName, EmailAddress, FileId, GuardianId, HomeworkId,
     IdCardId, LessonId, LessonPlanId, LabelName, LessonTopicId, OptionalSubjectAssignmentId, PhoneNumber,
     RegistrationFieldId, RegistrationFieldType, Relation, ResultStatus, SectionId, StudentCategoryId, StudentGroupId,
@@ -1809,6 +1809,89 @@ academic_command_stub! {
     /// Command stub: create a certificate template. See
     /// `docs/specs/academic/aggregates.md` § Certificate.
     pub struct CreateCertificateCommand { id: CertificateId }
+}
+
+// =============================================================================
+// Certificate commands (Wave 61: full impl)
+// =============================================================================
+
+/// Command: create a [`RealCertificate`](crate::aggregate::RealCertificate).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealCreateCertificateCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The certificate's typed id.
+    pub certificate_id: CertificateId,
+    /// The certificate's name.
+    pub name: String,
+    /// Layout (I-1).
+    pub layout: CertificateLayout,
+    /// Body template (I-1).
+    pub body: String,
+    /// Footer labels (I-1: up to 3).
+    pub footer_labels: Vec<String>,
+    /// Whether the certificate includes a photo (I-1).
+    pub has_photo: bool,
+    /// Optional attached file (I-2).
+    pub attachment_id: Option<FileId>,
+    /// Whether this certificate is the default for course certificates (I-3).
+    pub default_for_course: bool,
+}
+
+impl RealCreateCertificateCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicCertificateCreate]
+    }
+}
+
+/// Command: update a [`RealCertificate`](crate::aggregate::RealCertificate).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateCertificateCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The certificate's typed id.
+    pub certificate_id: CertificateId,
+    /// Optional new name.
+    pub name: Option<String>,
+    /// Optional new layout.
+    pub layout: Option<CertificateLayout>,
+    /// Optional new body.
+    pub body: Option<String>,
+    /// Optional new footer labels.
+    pub footer_labels: Option<Vec<String>>,
+    /// Optional new photo flag.
+    pub has_photo: Option<bool>,
+    /// Triple-Option for attachment.
+    pub attachment_id: Option<Option<FileId>>,
+    /// Optional new default_for_course flag.
+    pub default_for_course: Option<bool>,
+}
+
+impl UpdateCertificateCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicCertificateUpdate]
+    }
+}
+
+/// Command: soft-delete a [`RealCertificate`](crate::aggregate::RealCertificate).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeleteCertificateCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The certificate's typed id.
+    pub certificate_id: CertificateId,
+}
+
+impl DeleteCertificateCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicCertificateDelete]
+    }
 }
 academic_command_stub! {
     /// Command stub: create an ID card template. See

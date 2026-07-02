@@ -43,7 +43,7 @@ use crate::entities::StudentDocumentId;
 use crate::value_objects::{
     AcademicYearId, CertificateId, ClassId, ClassRoomId, ClassRoutineId, ClassSectionId,
     ClassSubjectId, FileId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId,
-    AdminSection, FieldName, LabelName, LessonTopicId, OptionalSubjectAssignmentId, RegistrationFieldId, RegistrationFieldType, Relation, ResultStatus,
+    AdminSection, CertificateLayout, FieldName, LabelName, LessonTopicId, OptionalSubjectAssignmentId, RegistrationFieldId, RegistrationFieldType, Relation, ResultStatus,
     StudentRecordId,
     SectionId, StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId,
     StudentPromotionId, StudentStatus, SubjectId, SubjectType,
@@ -4531,5 +4531,106 @@ impl DomainEvent for RegistrationFieldDeleted {
     fn event_id(&self) -> EventId { self.event_id }
     fn aggregate_id(&self) -> Uuid { self.registration_field_id.as_uuid() }
     fn school_id(&self) -> SchoolId { self.registration_field_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+// =============================================================================
+// Certificate events (Wave 61: full impl)
+// =============================================================================
+
+/// Event: a [`RealCertificate`](crate::aggregate::RealCertificate) was created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealCertificateCreated {
+    /// The certificate's typed id.
+    pub certificate_id: CertificateId,
+    /// The certificate's name.
+    pub name: String,
+    /// Layout (I-1).
+    pub layout: CertificateLayout,
+    /// Body template (I-1).
+    pub body: String,
+    /// Footer labels (I-1).
+    pub footer_labels: Vec<String>,
+    /// Photo flag (I-1).
+    pub has_photo: bool,
+    /// Optional attachment (I-2).
+    pub attachment_id: Option<FileId>,
+    /// Default-for-course flag (I-3).
+    pub default_for_course: bool,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for RealCertificateCreated {
+    const EVENT_TYPE: &'static str = "academic.certificate.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "certificate";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.certificate_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.certificate_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`RealCertificate`](crate::aggregate::RealCertificate) was updated.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CertificateUpdated {
+    /// The certificate's typed id.
+    pub certificate_id: CertificateId,
+    /// Optional new name.
+    pub name: Option<String>,
+    /// Optional new layout.
+    pub layout: Option<CertificateLayout>,
+    /// Optional new body.
+    pub body: Option<String>,
+    /// Optional new footer labels.
+    pub footer_labels: Option<Vec<String>>,
+    /// Optional new photo flag.
+    pub has_photo: Option<bool>,
+    /// Triple-Option for attachment.
+    pub attachment_id: Option<Option<FileId>>,
+    /// Optional new default-for-course flag.
+    pub default_for_course: Option<bool>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for CertificateUpdated {
+    const EVENT_TYPE: &'static str = "academic.certificate.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "certificate";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.certificate_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.certificate_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`RealCertificate`](crate::aggregate::RealCertificate) was soft-deleted.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CertificateDeleted {
+    /// The certificate's typed id.
+    pub certificate_id: CertificateId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for CertificateDeleted {
+    const EVENT_TYPE: &'static str = "academic.certificate.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "certificate";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.certificate_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.certificate_id.school_id() }
     fn occurred_at(&self) -> Timestamp { self.occurred_at }
 }

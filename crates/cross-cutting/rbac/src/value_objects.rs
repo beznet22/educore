@@ -1634,6 +1634,12 @@ pub enum Capability {
     AcademicStudentGroupDelete,
     /// Capability for `Academic.Certificate`.
     AcademicCertificate,
+    /// Capability for `Academic.Certificate.Create`.
+    AcademicCertificateCreate,
+    /// Capability for `Academic.Certificate.Update`.
+    AcademicCertificateUpdate,
+    /// Capability for `Academic.Certificate.Delete`.
+    AcademicCertificateDelete,
     /// Capability for `Academic.Id.Card`.
     AcademicIdCard,
     /// Capability for `Academic.RegistrationField.Create`.
@@ -2394,6 +2400,9 @@ impl Capability {
             | Self::AcademicStudentGroupRemove => CapabilityDomain::Academic,
             | Self::AcademicStudentGroupDelete => CapabilityDomain::Academic,
             | Self::AcademicCertificate => CapabilityDomain::Academic,
+            | Self::AcademicCertificateCreate => CapabilityDomain::Academic,
+            | Self::AcademicCertificateUpdate => CapabilityDomain::Academic,
+            | Self::AcademicCertificateDelete => CapabilityDomain::Academic,
             | Self::AcademicIdCard => CapabilityDomain::Academic,
             | Self::AcademicRegistrationFieldCreate => CapabilityDomain::Academic,
             | Self::AcademicRegistrationFieldUpdate => CapabilityDomain::Academic,
@@ -3099,7 +3108,11 @@ impl Capability {
             Self::AcademicLesson | Self::AcademicLessonCreate | Self::AcademicLessonUpdate | Self::AcademicLessonDelete => "Lesson",
             Self::AcademicLessonTopicCreate | Self::AcademicLessonTopicComplete | Self::AcademicLessonTopicDelete => "LessonTopic",
             Self::AcademicLessonPlanCreate | Self::AcademicLessonPlanUpdate | Self::AcademicLessonPlanComplete | Self::AcademicLessonPlanSubTopic | Self::AcademicLessonPlanDelete => "LessonPlan",
+            Self::AcademicCertificate | Self::AcademicCertificateCreate | Self::AcademicCertificateUpdate | Self::AcademicCertificateDelete => "Certificate",
             Self::AcademicCertificate => "Certificate",
+            Self::AcademicCertificateCreate => "Create",
+            Self::AcademicCertificateUpdate => "Update",
+            Self::AcademicCertificateDelete => "Delete",
             Self::AcademicIdCard => "Id",
             Self::AcademicRegistrationFieldCreate | Self::AcademicRegistrationFieldUpdate | Self::AcademicRegistrationFieldDelete => "RegistrationField",
             Self::AcademicRegistrationFieldCreate => "Create",
@@ -3845,6 +3858,9 @@ impl Capability {
             Self::AcademicStudentRecordGraduate => "Graduate",
             Self::AcademicStudentGroup => "Group",
             Self::AcademicCertificate => "Certificate",
+            Self::AcademicCertificateCreate => "Create",
+            Self::AcademicCertificateUpdate => "Update",
+            Self::AcademicCertificateDelete => "Delete",
             Self::AcademicIdCard => "Card",
             Self::AcademicAdmissionQuery => "Query",
             Self::AssessmentExamType => "Type",
@@ -4581,6 +4597,9 @@ impl Capability {
             Self::AcademicStudentGroupRemove => "Academic.Student.Group.Remove",
             Self::AcademicStudentGroupDelete => "Academic.Student.Group.Delete",
             Self::AcademicCertificate => "Academic.Certificate",
+            Self::AcademicCertificateCreate => "Academic.Certificate.Create",
+            Self::AcademicCertificateUpdate => "Academic.Certificate.Update",
+            Self::AcademicCertificateDelete => "Academic.Certificate.Delete",
             Self::AcademicIdCard => "Academic.Id.Card",
             Self::AcademicRegistrationFieldCreate => "Academic.RegistrationField.Create",
             Self::AcademicRegistrationFieldUpdate => "Academic.RegistrationField.Update",
