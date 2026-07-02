@@ -30,7 +30,8 @@ use crate::value_objects::{
     ClassSectionId, ClassSubjectId, DayOfWeek, EmailAddress, FileId, GuardianId, HomeworkId,
     IdCardId, LessonId, LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId, PhoneNumber,
     RegistrationFieldId, Relation, ResultStatus, SectionId, StudentCategoryId, StudentGroupId,
-    StudentGuardianLinkId, StudentId, StudentPromotionId, SubjectId, ClassPeriod, ClassTimeId,
+    StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId, SubjectId,
+    ClassPeriod, ClassTimeId,
 };
 
 // =============================================================================
@@ -81,6 +82,15 @@ pub trait UniquenessChecker: Send + Sync {
     /// Returns `true` if a subject with the given code
     /// already exists in the school. Per Subject I-1.
     fn subject_code_exists(&self, school: SchoolId, code: &str) -> bool;
+    /// Returns `true` if the student already has a non-graduate,
+    /// non-withdrawn `StudentRecord` for the given academic year.
+    /// Per StudentRecord I-1.
+    fn student_has_active_record(
+        &self,
+        school: SchoolId,
+        student_id: StudentId,
+        academic_year_id: AcademicYearId,
+    ) -> bool;
     /// Returns `true` if a lesson with the given title already
     /// exists within the (class_section_id, subject_id) scope.
     /// Per Lesson I-1.
@@ -2346,5 +2356,89 @@ mod tests {
             range.end,
             chrono::NaiveDate::from_ymd_opt(2027, 1, 1).unwrap()
         );
+    }
+}
+
+// =============================================================================
+// StudentRecord commands (Wave 56: full impl)
+// =============================================================================
+
+/// Command: enroll a student in a (class, section, academic_year).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EnrollStudentCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The student-record's typed id.
+    pub student_record_id: StudentRecordId,
+    /// The student being enrolled.
+    pub student_id: StudentId,
+    /// The class.
+    pub class_id: ClassId,
+    /// The section.
+    pub section_id: SectionId,
+    /// The academic year of enrollment.
+    pub academic_year_id: AcademicYearId,
+    /// Optional admission number carried from admission (I-6).
+    pub admission_number: Option<String>,
+}
+
+impl EnrollStudentCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentRecordEnroll]
+    }
+}
+
+/// Command: assign a roll number (I-2 uniqueness enforced by service).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SetRollNumberCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The student-record's typed id.
+    pub student_record_id: StudentRecordId,
+    /// The new roll number.
+    pub roll_number: String,
+}
+
+impl SetRollNumberCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentRecordSetRoll]
+    }
+}
+
+/// Command: set this record as the student's default (I-3).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SetDefaultRecordCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The student-record's typed id.
+    pub student_record_id: StudentRecordId,
+}
+
+impl SetDefaultRecordCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentRecordSetDefault]
+    }
+}
+
+/// Command: mark a student record as graduated (I-5).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MarkGraduateCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The student-record's typed id.
+    pub student_record_id: StudentRecordId,
+}
+
+impl MarkGraduateCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicStudentRecordGraduate]
     }
 }

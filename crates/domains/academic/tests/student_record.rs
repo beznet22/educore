@@ -1,3 +1,16 @@
+//! Integration tests for the **StudentRecord aggregate** vertical slice.
+//!
+//! Pins the enroll / set-roll / set-default / mark-graduate
+//! contracts for the `StudentRecord` aggregate end-to-end
+//! through the service layer, exercising all 6 spec invariants:
+//!
+//! - I-1: At most one non-graduate, non-withdrawn record per student per year
+//! - I-2: RollNumber unique within (class, section, academic_year)
+//! - I-3: IsDefault flag
+//! - I-4: IsPromote=false until StudentPromoted closes
+//! - I-5: IsGraduate=true when graduated
+//! - I-6: AdmissionNumber carried from admission
+
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,
@@ -6,61 +19,27 @@
     missing_docs
 )]
 
-//! Integration tests for the **StudentRecord aggregate** vertical slice.
-//!
-//! Pins the typed-id contract for
-//! [`StudentRecord`](educore_academic::StudentRecord)
-//! end-to-end:
-//!
-//! 1. The `StudentRecordId` typed id carries a `SchoolId` and
-//!    a `Uuid` (the per-academic-year enrollment row's primary
-//!    key).
-//!
-//! The tests use the same fixture pattern as
-//! `crates/domains/academic/tests/class.rs`,
-//! `crates/domains/academic/tests/lesson_topic.rs`,
-//! `crates/domains/academic/tests/student_category.rs`, and
-//! `crates/domains/academic/tests/student_promotion.rs`
-//! (`TestClock` + `SystemIdGen`).
-//!
-//! Note on `StudentRecord` field set: the aggregate is a
-//! placeholder carrying only `id` and `school_id` (per
-//! `docs/specs/academic/aggregates.md` § StudentRecord); the
-//! full per-academic-year enrollment aggregate lands in a
-//! later academic phase (Phase 3 hand-off § Open questions).
-//! The typed id is added in Phase 4 as a non-breaking
-//! additive so the assessment domain can declare its
-//! foreign-key fields against a stable type from the
-//! academic crate.
-//!
-//! These tests pin the typed-id invariants that downstream
-//! domains depend on:
-//!
-//! - `StudentRecordId::new(school, uuid)` round-trips
-//!   `school_id()` and `as_uuid()`.
-/// - Two distinct ids in the same school do not collide
-///   (uuid-based).
-/// - A `StudentRecordId` belongs to exactly one school
-///   (cross-tenant confusion is a compile-time error).
-///
-/// Note on user role: the platform's [`UserType`] enum does
-/// not expose an `Admin` variant — the school-scoped
-/// administrative role is [`UserType::SchoolAdmin`]. These
-/// tests use `SchoolAdmin` to match the rest of the
-/// academic + lesson_topic test suites.
+use std::collections::HashSet;
 
 use educore_academic::prelude::*;
-use educore_academic::value_objects::StudentRecordId;
-use educore_core::clock::SystemIdGen;
+use educore_academic::commands::{
+    EnrollStudentCommand, MarkGraduateCommand, SetDefaultRecordCommand, SetRollNumberCommand,
+};
+use educore_academic::events::{
+    DefaultRecordSet, RollNumberAssigned, StudentMarkedGraduate, StudentRecordEnrolled,
+};
+use educore_academic::services::{
+    enroll_student, mark_graduate, set_default_record, set_roll_number,
+};
+use educore_academic::StudentRecord;
+use educore_core::clock::{SystemIdGen, TestClock};
+use educore_core::error::DomainError;
+use educore_core::ids::SchoolId;
 
 // =============================================================================
 // Fixtures
 // =============================================================================
 
-/// A fresh `TenantContext` for a `SchoolAdmin` acting on a
-/// freshly-minted school. Returns the context plus the
-/// generator so tests can mint child ids from the same
-/// school.
 fn admin_context() -> (TenantContext, SystemIdGen) {
     let g = SystemIdGen;
     let school = g.next_school_id();
@@ -72,109 +51,269 @@ fn admin_context() -> (TenantContext, SystemIdGen) {
     )
 }
 
-fn student_record_id(
-    g: &SystemIdGen,
-    school: educore_core::ids::SchoolId,
-) -> StudentRecordId {
+fn student_record_id(g: &SystemIdGen, school: SchoolId) -> StudentRecordId {
     StudentRecordId::new(school, g.next_uuid())
 }
 
-// =============================================================================
-// 1. Happy path: typed-id invariants for a StudentRecord
-// =============================================================================
+fn student_id(g: &SystemIdGen, school: SchoolId) -> StudentId {
+    StudentId::new(school, g.next_uuid())
+}
 
-/// Pins the typed-id invariants for `StudentRecordId` that
-/// the assessment + downstream domains depend on:
-///
-/// 1. `StudentRecordId::new(school, uuid)` round-trips
-///    `school_id()` and `as_uuid()` (the typed id is the
-///    composite key for the per-academic-year enrollment
-///    row).
-/// 2. Two distinct ids minted in the same school do not
-///    collide (uuid-based; `PartialEq` is derived on the
-///    uuid).
-/// 3. The typed id's `Hash` / `Eq` contract is sound across
-///    schools (two ids minted in different schools have
-///    distinct `school_id()` accessors, even if they share
-///    a uuid by accident — the composite key enforces
-///    tenant isolation at the type level).
-#[test]
-fn student_record_typed_id_round_trips_and_isolates_tenants() {
-    let (tenant, g) = admin_context();
-    let school = tenant.school_id;
+fn class_id(g: &SystemIdGen, school: SchoolId) -> ClassId {
+    ClassId::new(school, g.next_uuid())
+}
 
-    // ---- Round-trip: id -> school_id / uuid ----
-    let record_id = student_record_id(&g, school);
-    assert_eq!(record_id.school_id(), school);
-    // The typed id carries the per-school uuid; round-trip
-    // is via school_id() + the original uuid (not a fresh
-    // g.next_uuid() which would be a distinct value).
-    assert_eq!(record_id.school_id(), school);
-    // A second mint in the same school is distinct.
-    let record_id_b = student_record_id(&g, school);
-    assert_eq!(record_id_b.school_id(), school);
-    assert_ne!(record_id, record_id_b);
+fn section_id(g: &SystemIdGen, school: SchoolId) -> SectionId {
+    SectionId::new(school, g.next_uuid())
+}
 
-    // ---- Cross-tenant isolation ----
-    let (other_tenant, g_other) = admin_context();
-    let other_school = other_tenant.school_id;
-    assert_ne!(school, other_school);
-    let foreign_id = student_record_id(&g_other, other_school);
-    // The foreign id's school_id is the *foreign* school,
-    // not ours — the type system catches cross-tenant
-    // confusion at the assertion boundary.
-    assert_eq!(foreign_id.school_id(), other_school);
-    assert_ne!(foreign_id.school_id(), school);
+fn academic_year_id(g: &SystemIdGen, school: SchoolId) -> AcademicYearId {
+    AcademicYearId::new(school, g.next_uuid())
+}
+
+fn make_cmd(tenant: TenantContext, g: &SystemIdGen, school: SchoolId) -> EnrollStudentCommand {
+    EnrollStudentCommand {
+        tenant,
+        student_record_id: student_record_id(g, school),
+        student_id: student_id(g, school),
+        class_id: class_id(g, school),
+        section_id: section_id(g, school),
+        academic_year_id: academic_year_id(g, school),
+        admission_number: Some("ADM-2025-0001".to_string()),
+    }
+}
+
+/// In-memory uniqueness checker.
+#[derive(Default)]
+struct InMemoryUniqueness {
+    active_records: HashSet<(SchoolId, StudentId, AcademicYearId)>,
+    roll_numbers: HashSet<(SchoolId, ClassId, SectionId, AcademicYearId, String)>,
+}
+
+impl UniquenessChecker for InMemoryUniqueness {
+    fn student_admission_no_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn student_email_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn roll_no_exists(
+        &self, school: SchoolId, class: ClassId, section: SectionId,
+        year: AcademicYearId, roll: &str,
+    ) -> bool {
+        self.roll_numbers.contains(&(school, class, section, year, roll.to_string()))
+    }
+    fn class_name_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn section_name_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn subject_code_exists(&self, _: SchoolId, _: &str) -> bool { false }
+    fn lesson_title_exists(&self, _: SchoolId, _: ClassSectionId, _: SubjectId, _: &str) -> bool { false }
+    fn class_section_exists(&self, _: SchoolId, _: ClassId, _: SectionId, _: AcademicYearId) -> bool { false }
+    fn class_section_has_student_records(&self, _: SchoolId, _: ClassSectionId) -> bool { false }
+    fn academic_year_overlaps(&self, _: SchoolId, _: AcademicYearRange, _: Option<AcademicYearId>) -> bool { false }
+    fn optional_subject_assigned_exists(&self, _: SchoolId, _: StudentId, _: AcademicYearId) -> bool { false }
+    fn primary_guardian_link_exists(&self, _: SchoolId, _: StudentId) -> bool { false }
+    fn student_has_active_record(
+        &self, school: SchoolId, student: StudentId, year: AcademicYearId,
+    ) -> bool {
+        self.active_records.contains(&(school, student, year))
+    }
+    fn teacher_has_conflict(&self, _: SchoolId, _: UserId, _: DayOfWeek, _: u8) -> bool { false }
+    fn room_has_conflict(&self, _: SchoolId, _: ClassRoomId, _: DayOfWeek, _: u8) -> bool { false }
 }
 
 // =============================================================================
-// 2. Happy path: composite key ordering and typed-id ergonomics
+// 1. Happy path
 // =============================================================================
 
-/// Pins the composite-key ordering for `StudentRecordId`:
-///
-/// 1. The typed id's `Ord` derives from its inner uuid (the
-///    `Identifier` trait delegates to `Uuid`'s total
-///    ordering), so ids sort deterministically across
-///    rebuilds — important for pagination cursors in
-///    downstream query layers.
-/// 2. `Clone + Copy + Debug` hold, so the typed id is
-///    ergonomic to pass across module boundaries (matches
-///    the rest of the typed-id family in the academic
-///    crate).
-/// 3. A fresh `StudentRecordId::default()` (if available)
-///    is distinct from a freshly-minted id — the
-///    `default()` semantics are out of scope for this
-///    placeholder phase, so we only assert the freshness of
-///    a hand-minted id here.
 #[test]
-fn student_record_typed_id_orders_and_clones_predictably() {
+fn student_record_enroll_succeeds() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
 
-    // ---- Ordering: three ids in the same school ----
-    let a = student_record_id(&g, school);
-    let b = student_record_id(&g, school);
-    let c = student_record_id(&g, school);
-    let mut ids = vec![c, a, b];
-    ids.sort();
-    // After sort, the ids are in deterministic uuid order.
-    // The composite key (school_id, uuid) means a stable
-    // total order.
-    assert_eq!(ids[0].school_id(), school);
-    assert_eq!(ids[1].school_id(), school);
-    assert_eq!(ids[2].school_id(), school);
-    // The sorted order is consistent — sorting again is a
-    // no-op.
-    let mut ids_copy = ids.clone();
-    ids_copy.sort();
-    assert_eq!(ids, ids_copy);
+    let cmd = make_cmd(tenant, &g, school);
+    let (agg, event) = enroll_student(cmd, &clock, &ids, &uniqueness)
+        .expect("enroll should succeed");
 
-    // ---- Clone / Copy ergonomics ----
-    let cloned = a;
-    let copied = a;
-    assert_eq!(cloned, a);
-    assert_eq!(copied, a);
-    assert_eq!(cloned.school_id(), a.school_id());
-    assert_eq!(copied.as_uuid(), a.as_uuid());
+    assert_eq!(agg.school_id, school);
+    assert_eq!(agg.is_default, true); // I-3: default on initial enrollment
+    assert_eq!(agg.is_promote, false); // I-4: false initially
+    assert_eq!(agg.is_graduate, false); // I-5
+    assert_eq!(agg.admission_number, Some("ADM-2025-0001".to_string())); // I-6
+
+    assert_eq!(StudentRecordEnrolled::EVENT_TYPE, "academic.student_record.enrolled");
+    assert_eq!(StudentRecordEnrolled::AGGREGATE_TYPE, "student_record");
+    assert_eq!(event.school_id(), school);
+}
+
+// =============================================================================
+// 2. I-1: duplicate active record rejected
+// =============================================================================
+
+#[test]
+fn student_record_duplicate_active_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant, &g, school);
+    let year = cmd.academic_year_id;
+    let student = cmd.student_id;
+    let mut uniqueness = InMemoryUniqueness::default();
+    uniqueness.active_records.insert((school, student, year));
+
+    let err = enroll_student(cmd, &clock, &ids, &uniqueness)
+        .expect_err("duplicate active record must fail");
+    assert!(matches!(err, DomainError::Conflict(_)), "got {err:?}");
+}
+
+// =============================================================================
+// 3. I-2: duplicate roll number rejected
+// =============================================================================
+
+#[test]
+fn student_record_duplicate_roll_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let class = cmd.class_id;
+    let section = cmd.section_id;
+    let year = cmd.academic_year_id;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let (mut agg, _event) = enroll_student(cmd, &clock, &ids, &uniqueness).expect("enroll");
+
+    // Pre-record roll 5 as taken.
+    let mut uniqueness = uniqueness;
+    uniqueness.roll_numbers.insert((school, class, section, year, "5".to_string()));
+
+    let roll_cmd = SetRollNumberCommand {
+        tenant,
+        student_record_id: agg.id,
+        roll_number: "5".to_string(),
+    };
+    let err = set_roll_number(roll_cmd, &mut agg, &clock, &ids, &uniqueness)
+        .expect_err("duplicate roll must fail");
+    assert!(matches!(err, DomainError::Conflict(_)), "got {err:?}");
+}
+
+// =============================================================================
+// 4. I-3: set default
+// =============================================================================
+
+#[test]
+fn student_record_set_default_succeeds() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = enroll_student(cmd, &clock, &ids, &uniqueness).expect("enroll");
+
+    let default_cmd = SetDefaultRecordCommand {
+        tenant,
+        student_record_id: agg.id,
+    };
+    let event = set_default_record(default_cmd, &mut agg, &clock, &ids).expect("set default");
+    assert!(agg.is_default);
+    let _: DefaultRecordSet = event;
+}
+
+// =============================================================================
+// 5. I-4: promote mark + close
+// =============================================================================
+
+#[test]
+fn student_record_mark_promote_and_close() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant, &g, school);
+    let (mut agg, _event) = enroll_student(cmd, &clock, &ids, &uniqueness).expect("enroll");
+    assert!(!agg.is_promote);
+
+    agg.mark_promote(agg.created_by, clock.now());
+    assert!(agg.is_promote);
+
+    agg.close_promotion(agg.created_by, clock.now());
+    assert!(!agg.is_promote);
+}
+
+// =============================================================================
+// 6. I-5: mark graduate
+// =============================================================================
+
+#[test]
+fn student_record_mark_graduate_succeeds() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = enroll_student(cmd, &clock, &ids, &uniqueness).expect("enroll");
+
+    let grad_cmd = MarkGraduateCommand {
+        tenant,
+        student_record_id: agg.id,
+    };
+    let event = mark_graduate(grad_cmd, &mut agg, &clock, &ids).expect("mark graduate");
+    assert!(agg.is_graduate);
+    let _: StudentMarkedGraduate = event;
+}
+
+// =============================================================================
+// 7. I-6: admission number carried + can be reassigned
+// =============================================================================
+
+#[test]
+fn student_record_admission_number_carried() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant, &g, school);
+    let (agg, _event) = enroll_student(cmd, &clock, &ids, &uniqueness).expect("enroll");
+    assert_eq!(agg.admission_number, Some("ADM-2025-0001".to_string()));
+
+    // Reassign admission number (e.g. on promotion).
+    let (mut agg, _) = (agg, ());
+    agg.set_admission_number("ADM-2026-0001".to_string(), agg.created_by, clock.now());
+    assert_eq!(agg.admission_number, Some("ADM-2026-0001".to_string()));
+}
+
+// =============================================================================
+// 8. set_roll_number happy path
+// =============================================================================
+
+#[test]
+fn student_record_set_roll_number_succeeds() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let uniqueness = InMemoryUniqueness::default();
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = enroll_student(cmd, &clock, &ids, &uniqueness).expect("enroll");
+
+    let roll_cmd = SetRollNumberCommand {
+        tenant,
+        student_record_id: agg.id,
+        roll_number: "12".to_string(),
+    };
+    let event = set_roll_number(roll_cmd, &mut agg, &clock, &ids, &uniqueness)
+        .expect("set roll");
+    assert_eq!(agg.roll_number, Some("12".to_string()));
+    let _: RollNumberAssigned = event;
 }

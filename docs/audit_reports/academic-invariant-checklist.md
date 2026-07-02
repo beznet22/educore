@@ -42,6 +42,8 @@
 
 **Wave 55 (LessonTopic):** 2 invariants reach [x] (LessonTopic I-1/2). Total enforced now 37.
 
+**Wave 56 (StudentRecord):** 6 invariants reach [x] (StudentRecord I-1/2/3/4/5/6). Total enforced now 43.
+
 ---
 
 ## Student Aggregate (6 invariants)
@@ -315,6 +317,31 @@
   - Test: MISSING
 
 ## StudentRecord Aggregate (6 invariants)
+
+- [x] I-1: At most one non-graduate, non-withdrawn record per academic year
+  - Spec: `docs/specs/academic/aggregates.md#studentrecord`
+  - Enforcement: `enroll_student` service rejects via `UniquenessChecker::student_has_active_record(school, student_id, academic_year_id)` with `DomainError::Conflict`.
+  - Test: `tests/student_record.rs::student_record_duplicate_active_rejected` (passes).
+- [x] I-2: RollNumber unique within (class, section, academic_year)
+  - Spec: `docs/specs/academic/aggregates.md#studentrecord`
+  - Enforcement: `set_roll_number` service rejects via `UniquenessChecker::roll_no_exists(school, class, section, year, roll)` with `DomainError::Conflict`.
+  - Test: `tests/student_record.rs::student_record_duplicate_roll_rejected` (passes), `::student_record_set_roll_number_succeeds` (passes).
+- [x] I-3: IsDefault flag (current default per student)
+  - Spec: `docs/specs/academic/aggregates.md#studentrecord`
+  - Enforcement: `StudentRecord.is_default: bool` field; `set_default` / `unset_default` methods; `set_default_record` service emits `DefaultRecordSet` event.
+  - Test: `tests/student_record.rs::student_record_set_default_succeeds` (passes), `::student_record_enroll_succeeds` (asserts initial is_default=true).
+- [x] I-4: IsPromote=false until StudentPromoted closes
+  - Spec: `docs/specs/academic/aggregates.md#studentrecord`
+  - Enforcement: `StudentRecord.is_promote: bool` field; `mark_promote` sets true, `close_promotion` sets false; initial state is false on enrollment.
+  - Test: `tests/student_record.rs::student_record_mark_promote_and_close` (passes), `::student_record_enroll_succeeds` (asserts initial is_promote=false).
+- [x] I-5: IsGraduate=true when graduated
+  - Spec: `docs/specs/academic/aggregates.md#studentrecord`
+  - Enforcement: `StudentRecord.is_graduate: bool` field; `mark_graduate` method; `mark_graduate` service emits `StudentMarkedGraduate` event.
+  - Test: `tests/student_record.rs::student_record_mark_graduate_succeeds` (passes).
+- [x] I-6: AdmissionNumber carried from admission + reassignable on promotion
+  - Spec: `docs/specs/academic/aggregates.md#studentrecord`
+  - Enforcement: `StudentRecord.admission_number: Option<String>` field; `fresh` constructor stores the optional admission number; `set_admission_number` method allows reassignment.
+  - Test: `tests/student_record.rs::student_record_admission_number_carried` (passes), `::student_record_enroll_succeeds` (asserts initial admission_number carried).
 
 - [ ] I-1: At most one non-graduate, non-withdrawn per academic year
   - Spec: `docs/specs/academic/aggregates.md#studentrecord`

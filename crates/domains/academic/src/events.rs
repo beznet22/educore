@@ -44,6 +44,7 @@ use crate::value_objects::{
     AcademicYearId, CertificateId, ClassId, ClassRoomId, ClassRoutineId, ClassSectionId,
     ClassSubjectId, FileId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId,
     LessonTopicId, OptionalSubjectAssignmentId, RegistrationFieldId, Relation, ResultStatus,
+    StudentRecordId,
     SectionId, StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId,
     StudentPromotionId, StudentStatus, SubjectId, SubjectType,
 };
@@ -4100,4 +4101,114 @@ mod tests {
         assert_eq!(value["last_name"], "Lovelace");
         assert_eq!(value["roll_no"], "1");
     }
+}
+
+// =============================================================================
+// StudentRecord events (Wave 56: full impl)
+// =============================================================================
+
+/// Event: a [`StudentRecord`] was enrolled.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StudentRecordEnrolled {
+    /// The student-record's typed id.
+    pub student_record_id: StudentRecordId,
+    /// The student enrolled.
+    pub student_id: StudentId,
+    /// The class.
+    pub class_id: ClassId,
+    /// The section.
+    pub section_id: SectionId,
+    /// The academic year.
+    pub academic_year_id: AcademicYearId,
+    /// Admission number carried (I-6).
+    pub admission_number: Option<String>,
+    /// Whether this record is the student's default (I-3: true on initial enrollment).
+    pub is_default: bool,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for StudentRecordEnrolled {
+    const EVENT_TYPE: &'static str = "academic.student_record.enrolled";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_record";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.student_record_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.student_record_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a roll number was assigned (I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RollNumberAssigned {
+    /// The student-record's typed id.
+    pub student_record_id: StudentRecordId,
+    /// The assigned roll number.
+    pub roll_number: String,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for RollNumberAssigned {
+    const EVENT_TYPE: &'static str = "academic.student_record.roll_number_assigned";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_record";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.student_record_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.student_record_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a record was set as default (I-3).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DefaultRecordSet {
+    /// The student-record's typed id.
+    pub student_record_id: StudentRecordId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for DefaultRecordSet {
+    const EVENT_TYPE: &'static str = "academic.student_record.default_set";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_record";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.student_record_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.student_record_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a student record was marked graduated (I-5).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StudentMarkedGraduate {
+    /// The student-record's typed id.
+    pub student_record_id: StudentRecordId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for StudentMarkedGraduate {
+    const EVENT_TYPE: &'static str = "academic.student_record.marked_graduate";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student_record";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.student_record_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.student_record_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
 }
