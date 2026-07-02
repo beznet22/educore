@@ -1742,6 +1742,110 @@ impl fmt::Display for CompletedStatus {
     }
 }
 
+// =============================================================================
+// RegistrationField value objects (Wave 60)
+//
+// Per `docs/specs/academic/aggregates.md` § RegistrationField:
+// - I-1: FieldName + LabelName + Type (Student/Staff)
+// - I-2: IsRequired, IsVisible, editability flags
+// - I-3: AdminSection for placement on form
+// =============================================================================
+
+/// The machine-readable name of a custom registration field (1..=100 chars).
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct FieldName(String);
+
+impl FieldName {
+    /// Constructs a validated `FieldName`. Returns `DomainError::Validation` if empty or > 100 chars.
+    pub fn new(s: impl Into<String>) -> Result<Self> {
+        let s: String = s.into();
+        if s.is_empty() {
+            return Err(DomainError::validation("FieldName must not be empty"));
+        }
+        if s.chars().count() > 100 {
+            return Err(DomainError::validation("FieldName must be 1..=100 chars"));
+        }
+        Ok(Self(s))
+    }
+    /// Returns the field name as a string slice.
+    pub fn as_str(&self) -> &str { &self.0 }
+}
+
+/// The human-readable label shown on the registration form (1..=200 chars).
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct LabelName(String);
+
+impl LabelName {
+    /// Constructs a validated `LabelName`. Returns `DomainError::Validation` if empty or > 200 chars.
+    pub fn new(s: impl Into<String>) -> Result<Self> {
+        let s: String = s.into();
+        if s.is_empty() {
+            return Err(DomainError::validation("LabelName must not be empty"));
+        }
+        if s.chars().count() > 200 {
+            return Err(DomainError::validation("LabelName must be 1..=200 chars"));
+        }
+        Ok(Self(s))
+    }
+    /// Returns the label name as a string slice.
+    pub fn as_str(&self) -> &str { &self.0 }
+}
+
+/// The section of the registration form where the field is placed (I-3).
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum AdminSection {
+    /// Personal information section.
+    #[default]
+    Personal,
+    /// Contact details section.
+    Contact,
+    /// Guardian information section.
+    Guardian,
+    /// Academic history section.
+    Academic,
+    /// Document uploads section.
+    Documents,
+    /// Custom/other section.
+    Other,
+}
+
+impl AdminSection {
+    /// Returns the canonical snake_case wire string for this admin section.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Personal => "personal",
+            Self::Contact => "contact",
+            Self::Guardian => "guardian",
+            Self::Academic => "academic",
+            Self::Documents => "documents",
+            Self::Other => "other",
+        }
+    }
+}
+
+/// Whether a field applies to Student or Staff registration (I-1).
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum RegistrationFieldType {
+    /// Field appears on the student registration form.
+    #[default]
+    Student,
+    /// Field appears on the staff registration form.
+    Staff,
+}
+
+impl RegistrationFieldType {
+    /// Returns the canonical snake_case wire string for this field type.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Student => "student",
+            Self::Staff => "staff",
+        }
+    }
+}
+
+
 /// A sub-topic within a [`LessonPlan`](crate::aggregate::LessonPlan).
 ///
 /// Per `docs/specs/academic/aggregates.md` § LessonPlan § I-2,

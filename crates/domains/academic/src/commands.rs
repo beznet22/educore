@@ -26,10 +26,10 @@ use educore_rbac::value_objects::Capability;
 use educore_core::tenant::TenantContext;
 
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, CertificateId, ClassId, ClassRoomId, ClassRoutineId,
-    ClassSectionId, ClassSubjectId, DayOfWeek, EmailAddress, FileId, GuardianId, HomeworkId,
-    IdCardId, LessonId, LessonPlanId, LessonTopicId, OptionalSubjectAssignmentId, PhoneNumber,
-    RegistrationFieldId, Relation, ResultStatus, SectionId, StudentCategoryId, StudentGroupId,
+    AcademicYearId, AcademicYearRange, AdminSection, CertificateId, ClassId, ClassRoomId, ClassRoutineId,
+    ClassSectionId, ClassSubjectId, DayOfWeek, FieldName, EmailAddress, FileId, GuardianId, HomeworkId,
+    IdCardId, LessonId, LessonPlanId, LabelName, LessonTopicId, OptionalSubjectAssignmentId, PhoneNumber,
+    RegistrationFieldId, RegistrationFieldType, Relation, ResultStatus, SectionId, StudentCategoryId, StudentGroupId,
     StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId, SubjectId,
     ClassPeriod, ClassTimeId,
 };
@@ -1721,6 +1721,89 @@ academic_command_stub! {
     /// Command stub: create a registration custom field. See
     /// `docs/specs/academic/aggregates.md` § RegistrationField.
     pub struct CreateRegistrationFieldCommand { id: RegistrationFieldId }
+}
+
+// =============================================================================
+// RegistrationField commands (Wave 60: full impl)
+// =============================================================================
+
+/// Command: create a [`RealRegistrationField`](crate::aggregate::RealRegistrationField).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealCreateRegistrationFieldCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The field's typed id.
+    pub registration_field_id: RegistrationFieldId,
+    /// Machine-readable name (I-1).
+    pub field_name: FieldName,
+    /// Human-readable label (I-1).
+    pub label_name: LabelName,
+    /// Field type (I-1): Student or Staff.
+    pub field_type: RegistrationFieldType,
+    /// Whether the field is required (I-2).
+    pub is_required: bool,
+    /// Whether the field is visible (I-2).
+    pub is_visible: bool,
+    /// Whether the field is editable (I-2).
+    pub is_editable: bool,
+    /// Admin section for placement (I-3).
+    pub admin_section: AdminSection,
+    /// Display order within the section.
+    pub display_order: i32,
+}
+
+impl RealCreateRegistrationFieldCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicRegistrationFieldCreate]
+    }
+}
+
+/// Command: update a [`RealRegistrationField`](crate::aggregate::RealRegistrationField).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateRegistrationFieldCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The field's typed id.
+    pub registration_field_id: RegistrationFieldId,
+    /// Optional new label.
+    pub label_name: Option<LabelName>,
+    /// Optional new required flag.
+    pub is_required: Option<bool>,
+    /// Optional new visible flag.
+    pub is_visible: Option<bool>,
+    /// Optional new editable flag.
+    pub is_editable: Option<bool>,
+    /// Optional new admin section.
+    pub admin_section: Option<AdminSection>,
+    /// Optional new display order.
+    pub display_order: Option<i32>,
+}
+
+impl UpdateRegistrationFieldCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicRegistrationFieldUpdate]
+    }
+}
+
+/// Command: soft-delete a [`RealRegistrationField`](crate::aggregate::RealRegistrationField).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeleteRegistrationFieldCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The field's typed id.
+    pub registration_field_id: RegistrationFieldId,
+}
+
+impl DeleteRegistrationFieldCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicRegistrationFieldDelete]
+    }
 }
 academic_command_stub! {
     /// Command stub: create a certificate template. See
