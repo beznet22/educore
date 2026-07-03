@@ -42,7 +42,7 @@ use educore_core::value_objects::ActiveStatus;
 
 use crate::aggregate::{
     AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
-    IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealCertificate, RealLesson, RealLessonPlan,
+    IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealCertificate, RealIdCard, RealLesson, RealLessonPlan,
     RealLessonTopic, RealRegistrationField, RealStudentCategory, RealStudentGroup, RealStudentPromotion, RegistrationField, Section,
     Student, StudentCategory, StudentGroup, StudentGuardianLink, StudentPromotion, StudentRecord,
     Subject,
@@ -69,7 +69,7 @@ use crate::commands::{
     UnlinkGuardianFromStudentCommand, UpdateAcademicYearDatesCommand, UpdateClassCommand,
     UpdateGuardianContactCommand, UpdateHomeworkCommand, UpdateLessonPlanCommand, UpdateSectionCommand,
     UpdateStudentProfileCommand, UpdateSubjectCommand, UpdateClassRoutinePeriodCommand,
-    AddSubTopicCommand, AddStudentToGroupCommand, CancelHomeworkCommand, DeleteCertificateCommand, RealCreateCertificateCommand, UpdateCertificateCommand, DeleteRegistrationFieldCommand, RealCreateRegistrationFieldCommand, UpdateRegistrationFieldCommand, DeleteLessonCommand, DeleteLessonPlanCommand,
+    AddSubTopicCommand, AddStudentToGroupCommand, CancelHomeworkCommand, DeleteCertificateCommand, DeleteIdCardCommand, RealCreateCertificateCommand, RealCreateIdCardCommand, UpdateCertificateCommand, UpdateIdCardCommand, DeleteRegistrationFieldCommand, RealCreateRegistrationFieldCommand, UpdateRegistrationFieldCommand, DeleteLessonCommand, DeleteLessonPlanCommand,
     DeleteLessonTopicCommand, EnrollStudentCommand, MarkGraduateCommand,
     MarkLessonPlanCompletedCommand, MarkTopicCompletedCommand, RealCreateLessonCommand,
     RealCreateLessonPlanCommand, RealCreateLessonTopicCommand, RealCreateStudentGroupCommand, RemoveStudentFromGroupCommand, SetDefaultRecordCommand,
@@ -83,7 +83,7 @@ use crate::events::{
     ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated, GuardianLinkedToStudent,
     GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent, HomeworkCancelled,
     HomeworkCreated, HomeworkUpdated,
-    IdCardCreated, LessonCreated, LessonDeleted, LessonPlanCompleted, LessonPlanCreated,
+    IdCardCreated, IdCardDeleted, IdCardUpdated, LessonCreated, LessonDeleted, RealIdCardCreated, LessonPlanCompleted, LessonPlanCreated,
     LessonPlanDeleted, LessonPlanUpdated, LessonTopicCompleted, LessonTopicCreated, LessonTopicDeleted,
     RealLessonCreated, RealLessonPlanCreated, RealLessonTopicCreated, RollNumberAssigned,
     StudentMarkedGraduate, StudentRecordEnrolled, SubTopicAdded, DefaultRecordSet, LessonUpdated,
@@ -3321,33 +3321,125 @@ where
     })
 }
 
-/// Create an [`IdCard`] template and emit an [`IdCardCreated`] event.
-pub fn create_id_card<C, G>(
-    cmd: CreateIdCardCommand,
+/// Create a [`RealIdCard`] and emit a [`RealIdCardCreated`] event.
+pub fn create_id_card_aggregate<C, G>(
+    cmd: RealCreateIdCardCommand,
     clock: &C,
     ids: &G,
-) -> Result<(IdCard, IdCardCreated)>
+) -> Result<(RealIdCard, RealIdCardCreated)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let CreateIdCardCommand { id, school_id } = cmd;
-    if id.school_id() != school_id {
-        return Err(DomainError::Validation(format!(
-            "id card id {id} is in school {}, command school_id is {school_id}",
-            id.school_id(),
-        )));
-    }
     let now = clock.now();
     let event_id = fresh_event_id(ids);
-    let aggregate = IdCard { id, school_id };
-    let event = IdCardCreated {
+    let actor = cmd.tenant.actor_id;
+    let aggregate = RealIdCard::fresh(
+        cmd.id_card_id,
+        cmd.name,
+        cmd.show_admission_no,
+        cmd.show_name,
+        cmd.show_class,
+        cmd.show_photo,
+        cmd.show_roll_no,
+        cmd.show_contact,
+        cmd.width_mm,
+        cmd.height_mm,
+        cmd.margin_mm,
+        cmd.spacing_mm,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    let event = RealIdCardCreated {
+        id_card_id: aggregate.id,
+        name: aggregate.name.clone(),
+        show_admission_no: aggregate.show_admission_no,
+        show_name: aggregate.show_name,
+        show_class: aggregate.show_class,
+        show_photo: aggregate.show_photo,
+        show_roll_no: aggregate.show_roll_no,
+        show_contact: aggregate.show_contact,
+        width_mm: aggregate.width_mm,
+        height_mm: aggregate.height_mm,
+        margin_mm: aggregate.margin_mm,
+        spacing_mm: aggregate.spacing_mm,
         event_id,
-        school_id,
-        aggregate_id: id,
+        correlation_id: aggregate.correlation_id,
         occurred_at: now,
     };
     Ok((aggregate, event))
+}
+
+/// Update a [`RealIdCard`] and emit an [`IdCardUpdated`] event.
+pub fn update_id_card<C, G>(
+    cmd: UpdateIdCardCommand,
+    id_card: &mut RealIdCard,
+    clock: &C,
+    ids: &G,
+) -> Result<IdCardUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    id_card.update(
+        cmd.name,
+        cmd.show_admission_no,
+        cmd.show_name,
+        cmd.show_class,
+        cmd.show_photo,
+        cmd.show_roll_no,
+        cmd.show_contact,
+        cmd.width_mm,
+        cmd.height_mm,
+        cmd.margin_mm,
+        cmd.spacing_mm,
+        actor,
+        now,
+    )?;
+    Ok(IdCardUpdated {
+        id_card_id: id_card.id,
+        name: Some(id_card.name.clone()),
+        show_admission_no: Some(id_card.show_admission_no),
+        show_name: Some(id_card.show_name),
+        show_class: Some(id_card.show_class),
+        show_photo: Some(id_card.show_photo),
+        show_roll_no: Some(id_card.show_roll_no),
+        show_contact: Some(id_card.show_contact),
+        width_mm: Some(id_card.width_mm),
+        height_mm: Some(id_card.height_mm),
+        margin_mm: Some(id_card.margin_mm),
+        spacing_mm: Some(id_card.spacing_mm),
+        event_id,
+        correlation_id: id_card.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Soft-delete a [`RealIdCard`].
+pub fn delete_id_card<C, G>(
+    _cmd: DeleteIdCardCommand,
+    id_card: &mut RealIdCard,
+    clock: &C,
+    ids: &G,
+) -> Result<IdCardDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = _cmd.tenant.actor_id;
+    id_card.delete(actor, now);
+    Ok(IdCardDeleted {
+        id_card_id: id_card.id,
+        event_id,
+        correlation_id: id_card.correlation_id,
+        occurred_at: now,
+    })
 }
 
 #[cfg(test)]

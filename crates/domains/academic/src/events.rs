@@ -3648,6 +3648,123 @@ academic_event_stub! {
 }
 
 // =============================================================================
+// IdCard events (Wave 62: full impl)
+// =============================================================================
+
+/// Event: a [`RealIdCard`](crate::aggregate::RealIdCard) was created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealIdCardCreated {
+    /// The template's typed id.
+    pub id_card_id: IdCardId,
+    /// The template's name.
+    pub name: String,
+    /// I-1: show admission_no flag.
+    pub show_admission_no: bool,
+    /// I-1: show name flag.
+    pub show_name: bool,
+    /// I-1: show class flag.
+    pub show_class: bool,
+    /// I-1: show photo flag.
+    pub show_photo: bool,
+    /// I-1: show roll_no flag.
+    pub show_roll_no: bool,
+    /// I-1: show contact flag.
+    pub show_contact: bool,
+    /// I-2: layout width (mm).
+    pub width_mm: u32,
+    /// I-2: layout height (mm).
+    pub height_mm: u32,
+    /// I-2: layout margin (mm).
+    pub margin_mm: u32,
+    /// I-2: spacing between elements (mm).
+    pub spacing_mm: u32,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for RealIdCardCreated {
+    const EVENT_TYPE: &'static str = "academic.id_card.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "id_card";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.id_card_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.id_card_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`RealIdCard`](crate::aggregate::RealIdCard) was updated.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct IdCardUpdated {
+    /// The template's typed id.
+    pub id_card_id: IdCardId,
+    /// Optional new name.
+    pub name: Option<String>,
+    /// Optional new show_admission_no flag.
+    pub show_admission_no: Option<bool>,
+    /// Optional new show_name flag.
+    pub show_name: Option<bool>,
+    /// Optional new show_class flag.
+    pub show_class: Option<bool>,
+    /// Optional new show_photo flag.
+    pub show_photo: Option<bool>,
+    /// Optional new show_roll_no flag.
+    pub show_roll_no: Option<bool>,
+    /// Optional new show_contact flag.
+    pub show_contact: Option<bool>,
+    /// Optional new width_mm.
+    pub width_mm: Option<u32>,
+    /// Optional new height_mm.
+    pub height_mm: Option<u32>,
+    /// Optional new margin_mm.
+    pub margin_mm: Option<u32>,
+    /// Optional new spacing_mm.
+    pub spacing_mm: Option<u32>,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for IdCardUpdated {
+    const EVENT_TYPE: &'static str = "academic.id_card.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "id_card";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.id_card_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.id_card_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+/// Event: a [`RealIdCard`](crate::aggregate::RealIdCard) was soft-deleted.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct IdCardDeleted {
+    /// The template's typed id.
+    pub id_card_id: IdCardId,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// Correlation id.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+impl DomainEvent for IdCardDeleted {
+    const EVENT_TYPE: &'static str = "academic.id_card.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "id_card";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.id_card_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.id_card_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
+// =============================================================================
 // Newly added events (Cluster D final — minimal placeholder structs so the
 // `educore-core::lint` spec_to_code check passes). Each carries the typed
 // fields declared in `docs/specs/academic/events.md` plus the standard

@@ -1,39 +1,11 @@
 //! Integration tests for the **IdCard aggregate** vertical slice.
 //!
-//! Pins the create contract for
-//! [`IdCard`](educore_academic::IdCard) end-to-end
-//! through the service layer:
+//! Pins the create / update / delete contracts for the `IdCard`
+//! aggregate end-to-end through the service layer, exercising
+//! all 2 spec invariants:
 //!
-//! 1. `create_id_card` validates that the typed id's
-//!    school matches the command's `school_id`, constructs
-//!    the aggregate, and emits an [`IdCardCreated`] event.
-//!
-//! The tests use the same fixture pattern as
-//! `crates/domains/academic/tests/class.rs` and
-//! `crates/domains/academic/tests/subject.rs`
-//! (`TestClock` + `SystemIdGen`).
-//!
-//! Per the academic/workflows.rs pattern, the **handlers**
-//! themselves are not wired end-to-end (no subscriber
-//! fan-out, no outbox commit, no audit row). These tests
-//! pin the contract of the **service layer** that the
-//! dispatcher will eventually wrap.
-//!
-//! Note on `IdCard` field set: the aggregate is a
-//! placeholder stub carrying only `id` (typed `IdCardId`)
-//! and `school_id`. The full attribute surface (template
-//! body, layout, signature lines, etc.) lives in
-//! `docs/specs/academic/aggregates.md` § IdCard but has not
-//! been wired into the typed command shape yet. The tests
-//! below therefore exercise the real contract available
-//! today: `id` + `school_id` round-trip through the
-//! aggregate and the emitted `IdCardCreated` event.
-//!
-//! Note on user role: the platform's [`UserType`] enum does
-//! not expose an `Admin` variant — the school-scoped
-//! administrative role is [`UserType::SchoolAdmin`]. These
-//! tests use `SchoolAdmin` to match the rest of the
-//! academic + subject test suites.
+//! - I-1: Boolean display flags (admission_no, name, class, photo, etc.)
+//! - I-2: Layout dimensions and spacing parameters
 
 #![allow(
     clippy::unwrap_used,
@@ -43,25 +15,19 @@
     missing_docs
 )]
 
-use educore_academic::IdCard;
-use educore_academic::commands::CreateIdCardCommand;
-use educore_academic::events::IdCardCreated;
-use educore_academic::services::create_id_card;
-use educore_core::clock::{Clock as _, IdGenerator as _, SystemIdGen, TestClock};
-use uuid::Uuid;
+use educore_academic::commands::{DeleteIdCardCommand, RealCreateIdCardCommand, UpdateIdCardCommand};
+use educore_academic::events::{IdCardDeleted, IdCardUpdated, RealIdCardCreated};
+use educore_academic::prelude::*;
+use educore_academic::services::{create_id_card_aggregate, delete_id_card, update_id_card};
+use educore_academic::RealIdCard;
+use educore_core::clock::{SystemIdGen, TestClock};
 use educore_core::error::DomainError;
-use educore_academic::value_objects::IdCardId;
-use educore_core::tenant::{TenantContext, UserType};
-use educore_events::domain_event::DomainEvent;
+use educore_core::ids::SchoolId;
 
 // =============================================================================
 // Fixtures
 // =============================================================================
 
-/// A fresh `TenantContext` for a `SchoolAdmin` acting on a
-/// freshly-minted school. Returns the context plus the
-/// generator so tests can mint child ids from the same
-/// school.
 fn admin_context() -> (TenantContext, SystemIdGen) {
     let g = SystemIdGen;
     let school = g.next_school_id();
@@ -73,101 +39,199 @@ fn admin_context() -> (TenantContext, SystemIdGen) {
     )
 }
 
-fn id_card_id(g: &SystemIdGen, school: educore_core::ids::SchoolId) -> IdCardId {
+fn id_card_id(g: &SystemIdGen, school: SchoolId) -> IdCardId {
     IdCardId::new(school, g.next_uuid())
 }
 
-// =============================================================================
-// 1. Happy path: create an IdCard template
-// =============================================================================
-
-/// End-to-end happy path for the `IdCard` aggregate. Mint
-/// a fresh school + actor, build a `CreateIdCardCommand`,
-/// and assert that:
-///
-/// 1. `create_id_card` returns an `IdCard` aggregate
-///    carrying the typed `id` and the command's
-///    `school_id`.
-/// 2. The emitted `IdCardCreated` event has the right
-///    `event_type`, `aggregate_type`, and `schema_version`
-///    from the `DomainEvent` trait, plus a matching
-///    `aggregate_id` and `school_id`.
-/// 3. The event's `event_id` is fresh (non-zero) and
-///    `occurred_at` is sourced from the test clock.
-#[test]
-fn id_card_create_builds_aggregate_and_emits_id_card_created_event() {
-    let (tenant, g) = admin_context();
-    let school = tenant.school_id;
-    let clock = TestClock::new();
-    let ids = SystemIdGen;
-
-    // ---- Create flow ----
-    let create_cmd = CreateIdCardCommand {
-        id: id_card_id(&g, school),
-        school_id: school,
-    };
-    let (agg, created_event) = create_id_card(create_cmd, &clock, &ids).expect("create");
-
-    // Aggregate fields are populated from the command.
-    assert_eq!(agg.id.school_id(), school);
-    assert_eq!(agg.school_id, school);
-
-    // Event metadata matches the DomainEvent trait contract.
-    assert_eq!(
-        <IdCardCreated as DomainEvent>::EVENT_TYPE,
-        "academic.id_card.created"
-    );
-    assert_eq!(<IdCardCreated as DomainEvent>::AGGREGATE_TYPE, "id_card");
-    assert_eq!(<IdCardCreated as DomainEvent>::SCHEMA_VERSION, 1);
-    assert_eq!(created_event.aggregate_id, agg.id);
-    assert_eq!(created_event.school_id, school);
-    // The event's id and timestamp are stamped from the
-    // generator and clock respectively.
-    assert_ne!(created_event.event_id.0, Uuid::nil());
-    assert_eq!(created_event.occurred_at, clock.now());
+fn make_cmd(tenant: TenantContext, g: &SystemIdGen, school: SchoolId) -> RealCreateIdCardCommand {
+    RealCreateIdCardCommand {
+        tenant,
+        id_card_id: id_card_id(g, school),
+        name: "Student ID Card (2025)".to_string(),
+        show_admission_no: true,
+        show_name: true,
+        show_class: true,
+        show_photo: true,
+        show_roll_no: true,
+        show_contact: false,
+        width_mm: 85,
+        height_mm: 54,
+        margin_mm: 3,
+        spacing_mm: 2,
+    }
 }
 
 // =============================================================================
-// 2. Validation failure: school_id mismatch returns DomainError::Validation
+// 1. Happy path
 // =============================================================================
 
-/// Validation-failure path on the create flow: when the
-/// typed id's `school_id()` does not match the command's
-/// `school_id`, `create_id_card` returns
-/// `DomainError::Validation` and emits no event (the
-/// function returns `Err` before the aggregate or the
-/// event are constructed).
 #[test]
-fn id_card_create_with_school_id_mismatch_returns_validation_error() {
-    let (_tenant, g) = admin_context();
-    let school = g.next_school_id();
-    // Build the typed id in `school`, then lie about the
-    // command's school — the validation guard must catch
-    // the mismatch.
-    let other_school = g.next_school_id();
-    let mismatched_cmd = CreateIdCardCommand {
-        id: IdCardId::new(school, g.next_uuid()),
-        school_id: other_school,
-    };
-    let clock = TestClock::new();
-    let ids = SystemIdGen;
-    let err = create_id_card(mismatched_cmd, &clock, &ids)
-        .expect_err("cross-school id must fail validation");
-    assert!(
-        matches!(err, DomainError::Validation(_)),
-        "expected Validation, got {err:?}"
-    );
-
-    // Sanity check: a subsequent call with matching
-    // id.school_id() and command school_id succeeds,
-    // proving the failure was tied to the cross-school id
-    // (and not to a corrupt clock, ids, or fixture).
+fn id_card_create_succeeds() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let ok_cmd = CreateIdCardCommand {
-        id: IdCardId::new(school, g.next_uuid()),
-        school_id: school,
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant, &g, school);
+    let (agg, event) = create_id_card_aggregate(cmd, &clock, &ids)
+        .expect("create should succeed");
+
+    // I-1: display flags
+    assert!(agg.show_admission_no);
+    assert!(agg.show_name);
+    assert!(agg.show_class);
+    assert!(agg.show_photo);
+    assert!(agg.show_roll_no);
+    assert!(!agg.show_contact);
+    // I-2: layout
+    assert_eq!(agg.width_mm, 85);
+    assert_eq!(agg.height_mm, 54);
+    assert_eq!(agg.margin_mm, 3);
+    assert_eq!(agg.spacing_mm, 2);
+
+    assert_eq!(RealIdCardCreated::EVENT_TYPE, "academic.id_card.created");
+    assert_eq!(RealIdCardCreated::AGGREGATE_TYPE, "id_card");
+    assert_eq!(event.school_id(), school);
+}
+
+// =============================================================================
+// 2. I-2: zero width rejected
+// =============================================================================
+
+#[test]
+fn id_card_zero_width_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let mut cmd = make_cmd(tenant, &g, school);
+    cmd.width_mm = 0;
+
+    let err = create_id_card_aggregate(cmd, &clock, &ids)
+        .expect_err("zero width must fail");
+    assert!(matches!(err, DomainError::Validation(_)), "got {err:?}");
+}
+
+// =============================================================================
+// 3. I-2: zero height rejected
+// =============================================================================
+
+#[test]
+fn id_card_zero_height_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let mut cmd = make_cmd(tenant, &g, school);
+    cmd.height_mm = 0;
+
+    let err = create_id_card_aggregate(cmd, &clock, &ids)
+        .expect_err("zero height must fail");
+    assert!(matches!(err, DomainError::Validation(_)), "got {err:?}");
+}
+
+// =============================================================================
+// 4. Empty name rejected
+// =============================================================================
+
+#[test]
+fn id_card_empty_name_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let mut cmd = make_cmd(tenant, &g, school);
+    cmd.name = "   ".to_string();
+
+    let err = create_id_card_aggregate(cmd, &clock, &ids)
+        .expect_err("empty name must fail");
+    assert!(matches!(err, DomainError::Validation(_)), "got {err:?}");
+}
+
+// =============================================================================
+// 5. I-1: all flags false (minimal card) accepted
+// =============================================================================
+
+#[test]
+fn id_card_all_flags_false_succeeds() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let mut cmd = make_cmd(tenant, &g, school);
+    cmd.show_admission_no = false;
+    cmd.show_name = false;
+    cmd.show_class = false;
+    cmd.show_photo = false;
+    cmd.show_roll_no = false;
+    cmd.show_contact = false;
+
+    let (agg, _event) = create_id_card_aggregate(cmd, &clock, &ids)
+        .expect("all flags false is valid (just a blank template)");
+    assert!(!agg.show_admission_no);
+    assert!(!agg.show_name);
+}
+
+// =============================================================================
+// 6. Update
+// =============================================================================
+
+#[test]
+fn id_card_update_changes_flags() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_id_card_aggregate(cmd, &clock, &ids)
+        .expect("create");
+
+    let upd = UpdateIdCardCommand {
+        tenant,
+        id_card_id: agg.id,
+        name: None,
+        show_admission_no: Some(false),
+        show_name: None,
+        show_class: None,
+        show_photo: None,
+        show_roll_no: None,
+        show_contact: Some(true),
+        width_mm: None,
+        height_mm: None,
+        margin_mm: None,
+        spacing_mm: None,
     };
-    let (_agg, _event) =
-        create_id_card(ok_cmd, &clock, &ids).expect("matching school id must succeed");
+    let event = update_id_card(upd, &mut agg, &clock, &ids).expect("update");
+    assert!(!agg.show_admission_no);
+    assert!(agg.show_contact);
+    let _: IdCardUpdated = event;
+}
+
+// =============================================================================
+// 7. Delete
+// =============================================================================
+
+#[test]
+fn id_card_delete_retires_aggregate() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let cmd = make_cmd(tenant.clone(), &g, school);
+    let (mut agg, _event) = create_id_card_aggregate(cmd, &clock, &ids)
+        .expect("create");
+
+    let del = DeleteIdCardCommand {
+        tenant,
+        id_card_id: agg.id,
+    };
+    let event = delete_id_card(del, &mut agg, &clock, &ids).expect("delete");
+    assert!(matches!(agg.active_status, ActiveStatus::Retired));
+    let _: IdCardDeleted = event;
 }

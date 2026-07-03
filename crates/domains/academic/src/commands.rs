@@ -1900,6 +1900,105 @@ academic_command_stub! {
 }
 
 // =============================================================================
+// IdCard commands (Wave 62: full impl)
+// =============================================================================
+
+/// Command: create a [`RealIdCard`](crate::aggregate::RealIdCard).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealCreateIdCardCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The template's typed id.
+    pub id_card_id: IdCardId,
+    /// The template's name.
+    pub name: String,
+    /// I-1: show admission_no flag.
+    pub show_admission_no: bool,
+    /// I-1: show name flag.
+    pub show_name: bool,
+    /// I-1: show class flag.
+    pub show_class: bool,
+    /// I-1: show photo flag.
+    pub show_photo: bool,
+    /// I-1: show roll_no flag.
+    pub show_roll_no: bool,
+    /// I-1: show contact flag.
+    pub show_contact: bool,
+    /// I-2: layout width (mm).
+    pub width_mm: u32,
+    /// I-2: layout height (mm).
+    pub height_mm: u32,
+    /// I-2: layout margin (mm).
+    pub margin_mm: u32,
+    /// I-2: spacing between elements (mm).
+    pub spacing_mm: u32,
+}
+
+impl RealCreateIdCardCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicIdCardCreate]
+    }
+}
+
+/// Command: update a [`RealIdCard`](crate::aggregate::RealIdCard).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateIdCardCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The template's typed id.
+    pub id_card_id: IdCardId,
+    /// Optional new name.
+    pub name: Option<String>,
+    /// Optional new show_admission_no flag.
+    pub show_admission_no: Option<bool>,
+    /// Optional new show_name flag.
+    pub show_name: Option<bool>,
+    /// Optional new show_class flag.
+    pub show_class: Option<bool>,
+    /// Optional new show_photo flag.
+    pub show_photo: Option<bool>,
+    /// Optional new show_roll_no flag.
+    pub show_roll_no: Option<bool>,
+    /// Optional new show_contact flag.
+    pub show_contact: Option<bool>,
+    /// Optional new width_mm.
+    pub width_mm: Option<u32>,
+    /// Optional new height_mm.
+    pub height_mm: Option<u32>,
+    /// Optional new margin_mm.
+    pub margin_mm: Option<u32>,
+    /// Optional new spacing_mm.
+    pub spacing_mm: Option<u32>,
+}
+
+impl UpdateIdCardCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicIdCardUpdate]
+    }
+}
+
+/// Command: soft-delete a [`RealIdCard`](crate::aggregate::RealIdCard).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeleteIdCardCommand {
+    /// The active tenant.
+    pub tenant: TenantContext,
+    /// The template's typed id.
+    pub id_card_id: IdCardId,
+}
+
+impl DeleteIdCardCommand {
+    /// Returns the capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::AcademicIdCardDelete]
+    }
+}
+
+// =============================================================================
 // Internal: shared validation helpers
 // =============================================================================
 

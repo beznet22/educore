@@ -3075,6 +3075,183 @@ academic_aggregate_stub! {
     pub struct IdCard { id: IdCardId }
 }
 
+// ---- Real IdCard aggregate (Wave 62) ----------------------------------------
+//
+// Per `docs/specs/academic/aggregates.md` § IdCard:
+// - I-1: Boolean display flags (admission_no, name, class, photo, etc.)
+// - I-2: Layout dimensions and spacing parameters
+
+/// Real IdCard aggregate (Wave 62).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealIdCard {
+    /// The template's typed id (school-scoped).
+    pub id: IdCardId,
+    /// The owning school.
+    pub school_id: SchoolId,
+    /// The template's name.
+    pub name: String,
+    /// I-1: show admission number on the card.
+    pub show_admission_no: bool,
+    /// I-1: show student name on the card.
+    pub show_name: bool,
+    /// I-1: show class/section on the card.
+    pub show_class: bool,
+    /// I-1: show student photo on the card.
+    pub show_photo: bool,
+    /// I-1: show roll number on the card.
+    pub show_roll_no: bool,
+    /// I-1: show contact details on the card.
+    pub show_contact: bool,
+    /// I-2: layout width in millimetres.
+    pub width_mm: u32,
+    /// I-2: layout height in millimetres.
+    pub height_mm: u32,
+    /// I-2: layout margin in millimetres.
+    pub margin_mm: u32,
+    /// I-2: spacing between elements in millimetres.
+    pub spacing_mm: u32,
+    /// Optimistic-concurrency counter.
+    pub version: Version,
+    /// Content hash.
+    pub etag: Etag,
+    /// User who created this aggregate.
+    pub created_by: UserId,
+    /// When this aggregate was created.
+    pub created_at: Timestamp,
+    /// User who last mutated this aggregate.
+    pub updated_by: UserId,
+    /// When this aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// Soft-delete lifecycle state.
+    pub active_status: ActiveStatus,
+    /// Last domain event id produced by this aggregate.
+    pub last_event_id: Option<EventId>,
+    /// Correlation id propagated from the tenant context.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealIdCard {
+    /// Construct a fresh `RealIdCard`. Enforces name + I-2 dimensions.
+    pub fn fresh(
+        id: IdCardId,
+        name: String,
+        show_admission_no: bool,
+        show_name: bool,
+        show_class: bool,
+        show_photo: bool,
+        show_roll_no: bool,
+        show_contact: bool,
+        width_mm: u32,
+        height_mm: u32,
+        margin_mm: u32,
+        spacing_mm: u32,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        use educore_core::error::DomainError;
+        if name.trim().is_empty() {
+            return Err(DomainError::validation("IdCard::name must not be empty"));
+        }
+        if name.chars().count() > 200 {
+            return Err(DomainError::validation("IdCard::name must be 1..=200 chars"));
+        }
+        // I-2: dimensions must be non-zero
+        if width_mm == 0 || height_mm == 0 {
+            return Err(DomainError::validation("IdCard::width_mm and height_mm must be > 0 (I-2)"));
+        }
+        // Reasonable upper bounds
+        if width_mm > 1000 || height_mm > 1000 {
+            return Err(DomainError::validation("IdCard dimensions must be ≤ 1000mm"));
+        }
+        if margin_mm >= width_mm.min(height_mm) / 2 {
+            return Err(DomainError::validation("IdCard::margin_mm must be < min(width,height)/2"));
+        }
+
+        Ok(Self {
+            id,
+            school_id: id.school_id(),
+            name,
+            show_admission_no,
+            show_name,
+            show_class,
+            show_photo,
+            show_roll_no,
+            show_contact,
+            width_mm,
+            height_mm,
+            margin_mm,
+            spacing_mm,
+            version: Version::initial(),
+            etag: Etag::placeholder(),
+            created_by: actor,
+            created_at: now,
+            updated_by: actor,
+            updated_at: now,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Update mutable fields.
+    pub fn update(
+        &mut self,
+        name: Option<String>,
+        show_admission_no: Option<bool>,
+        show_name: Option<bool>,
+        show_class: Option<bool>,
+        show_photo: Option<bool>,
+        show_roll_no: Option<bool>,
+        show_contact: Option<bool>,
+        width_mm: Option<u32>,
+        height_mm: Option<u32>,
+        margin_mm: Option<u32>,
+        spacing_mm: Option<u32>,
+        actor: UserId,
+        now: Timestamp,
+    ) -> educore_core::error::Result<()> {
+        use educore_core::error::DomainError;
+        if let Some(n) = name {
+            if n.trim().is_empty() {
+                return Err(DomainError::validation("IdCard::name must not be empty"));
+            }
+            if n.chars().count() > 200 {
+                return Err(DomainError::validation("IdCard::name must be 1..=200 chars"));
+            }
+            self.name = n;
+        }
+        if let Some(v) = show_admission_no { self.show_admission_no = v; }
+        if let Some(v) = show_name { self.show_name = v; }
+        if let Some(v) = show_class { self.show_class = v; }
+        if let Some(v) = show_photo { self.show_photo = v; }
+        if let Some(v) = show_roll_no { self.show_roll_no = v; }
+        if let Some(v) = show_contact { self.show_contact = v; }
+        if let Some(v) = width_mm {
+            if v == 0 { return Err(DomainError::validation("IdCard::width_mm must be > 0 (I-2)")); }
+            self.width_mm = v;
+        }
+        if let Some(v) = height_mm {
+            if v == 0 { return Err(DomainError::validation("IdCard::height_mm must be > 0 (I-2)")); }
+            self.height_mm = v;
+        }
+        if let Some(v) = margin_mm { self.margin_mm = v; }
+        if let Some(v) = spacing_mm { self.spacing_mm = v; }
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-delete.
+    pub fn delete(&mut self, actor: UserId, now: Timestamp) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_by = actor;
+        self.updated_at = now;
+        self.version = self.version.next();
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
