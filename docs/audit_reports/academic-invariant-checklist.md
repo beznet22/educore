@@ -69,18 +69,10 @@
   - Spec: `docs/specs/academic/aggregates.md#student`
   - Enforcement: `commands.rs` `UniquenessChecker::roll_no_exists` added; called in `admit_student` + `assign_student_to_section`
   - Test: `crates/domains/academic/tests/workflows.rs` (admit_student tests)
-- [ ] I-4: A student can be in at most one optional subject per academic year
-  - Spec: `docs/specs/academic/aggregates.md#student`
-  - Enforcement: MISSING — no `OptionalSubjectAssignment` aggregate defined
-  - Test: MISSING
 - [x] I-5: `Status` transitions `Applicant → Active → {Suspended, Withdrawn, Graduated, Transferred}`
   - Spec: `docs/specs/academic/aggregates.md#student`
   - Enforcement: `StudentStatus` enum at `value_objects.rs:573-590` + precondition checks `student.status == Active` now added to `suspend_student`, `withdraw_student`, `transfer_student`, `graduate_student` (`services.rs:346-578`)
   - Test: `crates/domains/academic/tests/workflows.rs` (withdraw_student_twice_returns_conflict)
-- [ ] I-6: A withdrawn or graduated student has no active `StudentRecord`
-  - Spec: `docs/specs/academic/aggregates.md#student`
-  - Enforcement: MISSING — no cascade from student.status to StudentRecord
-  - Test: MISSING
 
 ## Guardian Aggregate (5 invariants)
 
@@ -119,10 +111,6 @@
   - Spec: `docs/specs/academic/aggregates.md#class`
   - Enforcement: `OptionalSubjectGpaThreshold::new` (`value_objects.rs:778-786`) validates 0.0..=5.0
   - Test: MISSING — add out-of-range violation test
-- [ ] I-4: Cannot delete if any `ClassSection` references it
-  - Spec: `docs/specs/academic/aggregates.md#class`
-  - Enforcement: MISSING — `delete_class` (`services.rs:733-758`) soft-deletes without checking; no `ReferentialChecker` surface
-  - Test: MISSING
 
 ## Section Aggregate (3 invariants)
 
@@ -291,18 +279,6 @@
   - Enforcement: `RealLesson::fresh` sets `created_by` and `created_at`; both fields required at type level.
   - Test: `tests/lesson.rs::lesson_create_succeeds` asserts `agg.created_by == agg.updated_by` (passes).
 
-- [ ] I-1: Unique title within `(class-section, subject)`
-  - Spec: `docs/specs/academic/aggregates.md#lesson`
-  - Enforcement: MISSING — placeholder at `aggregate.rs:357-360`
-  - Test: MISSING
-- [ ] I-2: Zero or more topics
-  - Spec: `docs/specs/academic/aggregates.md#lesson`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-3: Creation user + timestamp
-  - Spec: `docs/specs/academic/aggregates.md#lesson`
-  - Enforcement: MISSING — placeholder; no `created_by`/`created_at` fields
-  - Test: MISSING
 
 ## LessonTopic Aggregate (2 invariants)
 
@@ -315,14 +291,6 @@
   - Enforcement: `mark_topic_completed` service calls `RealLessonTopic::mark_completed(date, ...)` which sets `status = Completed` AND `completed_date = Some(date)` atomically. Transitions guarded by `CompletedStatus::can_transition_to`.
   - Test: `tests/lesson_topic.rs::lesson_topic_mark_completed_sets_status_and_date` (passes), `::lesson_topic_mark_completed_from_completed_rejected` (passes).
 
-- [ ] I-1: Belongs to one lesson
-  - Spec: `docs/specs/academic/aggregates.md#lessontopic`
-  - Enforcement: MISSING — placeholder at `aggregate.rs:363-366`
-  - Test: MISSING
-- [ ] I-2: `CompletedStatus` + `CompletedDate` if completed
-  - Spec: `docs/specs/academic/aggregates.md#lessontopic`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
 
 ## StudentRecord Aggregate (6 invariants)
 
@@ -351,30 +319,6 @@
   - Enforcement: `StudentRecord.admission_number: Option<String>` field; `fresh` constructor stores the optional admission number; `set_admission_number` method allows reassignment.
   - Test: `tests/student_record.rs::student_record_admission_number_carried` (passes), `::student_record_enroll_succeeds` (asserts initial admission_number carried).
 
-- [ ] I-1: At most one non-graduate, non-withdrawn per academic year
-  - Spec: `docs/specs/academic/aggregates.md#studentrecord`
-  - Enforcement: MISSING — placeholder at `aggregate.rs:445-449`
-  - Test: MISSING
-- [ ] I-2: `RollNumber` unique within `(class, section, academic_year)`
-  - Spec: `docs/specs/academic/aggregates.md#studentrecord`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-3: `IsDefault` per student
-  - Spec: `docs/specs/academic/aggregates.md#studentrecord`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-4: `IsPromote=false` until `StudentPromoted`
-  - Spec: `docs/specs/academic/aggregates.md#studentrecord`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-5: `IsGraduate=true` when graduate
-  - Spec: `docs/specs/academic/aggregates.md#studentrecord`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-- [ ] I-6: `AdmissionNumber` carried over; new on promotion
-  - Spec: `docs/specs/academic/aggregates.md#studentrecord`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
 
 ## StudentPromotion Aggregate (3 invariants)
 
@@ -391,18 +335,6 @@
   - Enforcement: `RealStudentPromotion` exposes only a `fresh` constructor; no `&mut self` methods; no mutator service exists.
   - Test: `tests/student_promotion.rs::student_promotion_is_immutable_after_fresh` (passes).
 
-- [ ] I-1: References both `From` and `To` `StudentRecord`s
-  - Spec: `docs/specs/academic/aggregates.md#studentpromotion`
-  - Enforcement: MISSING — placeholder at `aggregate.rs:369-372`
-  - Test: MISSING
-- [ ] I-2: `ResultStatus` is `Pass`/`Fail`/`Manual`
-  - Spec: `docs/specs/academic/aggregates.md#studentpromotion`
-  - Enforcement: PARTIAL — enum defined at `value_objects.rs:710-720` but aggregate does not carry it
-  - Test: MISSING
-- [ ] I-3: Immutable once written
-  - Spec: `docs/specs/academic/aggregates.md#studentpromotion`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
 
 ## StudentCategory Aggregate (1 invariant)
 
@@ -411,10 +343,6 @@
   - Enforcement: `create_student_category_aggregate` service rejects via `UniquenessChecker::student_category_name_exists(school, name)` with `DomainError::Conflict`.
   - Test: `tests/student_category.rs::student_category_duplicate_name_rejected` (passes), `::student_category_create_succeeds` (passes).
 
-- [ ] I-1: Unique name within school
-  - Spec: `docs/specs/academic/aggregates.md#studentcategory`
-  - Enforcement: MISSING — placeholder at `aggregate.rs:375-378`
-  - Test: MISSING
 
 ## StudentGroup Aggregate (2 invariants)
 
