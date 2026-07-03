@@ -86,7 +86,7 @@ use crate::events::{
     IdCardCreated, IdCardDeleted, IdCardUpdated, LessonCreated, LessonDeleted, RealIdCardCreated, LessonPlanCompleted, LessonPlanCreated,
     LessonPlanDeleted, LessonPlanUpdated, LessonTopicCompleted, LessonTopicCreated, LessonTopicDeleted,
     RealLessonCreated, RealLessonPlanCreated, RealLessonTopicCreated, RollNumberAssigned,
-    StudentMarkedGraduate, StudentRecordEnrolled, SubTopicAdded, DefaultRecordSet, LessonUpdated,
+    StudentMarkedGraduate, StudentRecordEnrolled, StudentRetired, StudentRetirementReason, SubTopicAdded, DefaultRecordSet, LessonUpdated,
     OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
     RegistrationFieldCreated, RegistrationFieldDeleted, RegistrationFieldUpdated, RealRegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
     StudentAddedToGroup, StudentCategoryDeleted, StudentCategoryUpdated, StudentGroupDeleted, StudentGroupUpdated, StudentRemovedFromGroup, RealStudentCategoryCreated, RealStudentGroupCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
@@ -467,7 +467,7 @@ pub fn withdraw_student<C, G>(
     cmd: WithdrawStudentCommand,
     clock: &C,
     _ids: &G,
-) -> Result<StudentWithdrawn>
+) -> Result<(StudentWithdrawn, StudentRetired)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -505,7 +505,15 @@ where
         student.correlation_id,
         now,
     );
-    Ok(event)
+    // Student I-6: signal cascade-retire of all active StudentRecords.
+    let retired_event = StudentRetired {
+        student_id: student.id,
+        reason: StudentRetirementReason::Withdrawn,
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        correlation_id: student.correlation_id,
+        occurred_at: now,
+    };
+    Ok((event, retired_event))
 }
 
 /// Transfer a [`Student`] to another school and emit a
@@ -670,7 +678,7 @@ pub fn graduate_student<C, G>(
     cmd: GraduateStudentCommand,
     clock: &C,
     _ids: &G,
-) -> Result<StudentGraduated>
+) -> Result<(StudentGraduated, StudentRetired)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -713,7 +721,15 @@ where
         student.correlation_id,
         now,
     );
-    Ok(event)
+    // Student I-6: signal cascade-retire of all active StudentRecords.
+    let retired_event = StudentRetired {
+        student_id: student.id,
+        reason: StudentRetirementReason::Graduated,
+        event_id: EventId::from_uuid(uuid::Uuid::now_v7()),
+        correlation_id: student.correlation_id,
+        occurred_at: now,
+    };
+    Ok((event, retired_event))
 }
 
 // =============================================================================
@@ -3950,7 +3966,7 @@ mod tests {
         .unwrap();
         assert_eq!(student.status, StudentStatus::Graduated);
         assert!(student.active_status.is_retired());
-        assert_eq!(event.status, StudentStatus::Graduated);
+        assert_eq!(event.0.status, StudentStatus::Graduated);
     }
 
     #[test]
