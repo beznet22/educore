@@ -64,7 +64,7 @@ pub const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 // ---- Aggregate roots --------------------------------------------------------
 
 /// The 5 prompt-named aggregate roots.
-pub use crate::aggregate::{AcademicYear, Class, RealLesson, RealCertificate, RealLessonPlan, RealLessonTopic, RealRegistrationField, RealStudentCategory, RealStudentGroup, RealStudentPromotion, Section, Student, Subject};
+pub use crate::aggregate::{AcademicYear, Class, RealLesson, RealCertificate, RealIdCard, RealLessonPlan, RealLessonTopic, RealRegistrationField, RealStudentCategory, RealStudentGroup, RealStudentPromotion, Section, Student, Subject};
 
 /// The 14 placeholder aggregate stubs (Guardian, ClassSection,
 /// ClassSubject, etc.). Exposed at the crate root so integration
@@ -102,7 +102,7 @@ pub use crate::services::{
     admit_student, assign_class_room, assign_class_teacher, assign_optional_subject,
     assign_subject_teacher, assign_subject_to_class, close_academic_year, copy_academic_year,
     create_academic_year, create_certificate_aggregate, create_class, create_class_routine,
-    create_class_section, create_class_subject, create_homework, create_id_card, create_lesson,
+    create_class_section, create_class_subject, create_homework, create_id_card_aggregate, create_lesson,
     create_lesson_plan, create_lesson_topic, create_registration_field_aggregate, create_section,
     create_student_category_aggregate, create_student_group, create_subject, delete_class,
     delete_class_routine, delete_class_section, delete_section, delete_subject, graduate_student,
@@ -223,7 +223,7 @@ pub mod prelude {
         admit_student, assign_class_room, assign_class_teacher, assign_optional_subject,
         assign_subject_teacher, assign_subject_to_class, close_academic_year, copy_academic_year,
         create_academic_year, create_certificate_aggregate, create_class, create_class_routine,
-        create_class_section, create_class_subject, create_homework, create_id_card, create_lesson,
+        create_class_section, create_class_subject, create_homework, create_id_card_aggregate, create_lesson,
         create_lesson_plan, create_lesson_topic, create_registration_field_aggregate, create_section,
         create_student_category_aggregate, create_student_group, create_subject, delete_class,
         delete_class_routine, delete_class_section, delete_section, delete_subject,

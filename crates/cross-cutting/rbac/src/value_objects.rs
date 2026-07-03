@@ -1642,6 +1642,12 @@ pub enum Capability {
     AcademicCertificateDelete,
     /// Capability for `Academic.Id.Card`.
     AcademicIdCard,
+    /// Capability for `Academic.IdCard.Create`.
+    AcademicIdCardCreate,
+    /// Capability for `Academic.IdCard.Update`.
+    AcademicIdCardUpdate,
+    /// Capability for `Academic.IdCard.Delete`.
+    AcademicIdCardDelete,
     /// Capability for `Academic.RegistrationField.Create`.
     AcademicRegistrationFieldCreate,
     /// Capability for `Academic.RegistrationField.Update`.
@@ -2404,6 +2410,9 @@ impl Capability {
             | Self::AcademicCertificateUpdate => CapabilityDomain::Academic,
             | Self::AcademicCertificateDelete => CapabilityDomain::Academic,
             | Self::AcademicIdCard => CapabilityDomain::Academic,
+            | Self::AcademicIdCardCreate => CapabilityDomain::Academic,
+            | Self::AcademicIdCardUpdate => CapabilityDomain::Academic,
+            | Self::AcademicIdCardDelete => CapabilityDomain::Academic,
             | Self::AcademicRegistrationFieldCreate => CapabilityDomain::Academic,
             | Self::AcademicRegistrationFieldUpdate => CapabilityDomain::Academic,
             | Self::AcademicRegistrationFieldDelete => CapabilityDomain::Academic,
@@ -2472,6 +2481,10 @@ impl Capability {
             | Self::AcademicClassRead
             | Self::AcademicClassUpdate
             | Self::AcademicClassDelete => "Class",
+            Self::AcademicRegistrationFieldCreate
+            | Self::AcademicRegistrationFieldUpdate
+            | Self::AcademicRegistrationFieldDelete => "RegistrationField",
+            Self::AcademicIdCard | Self::AcademicIdCardCreate | Self::AcademicIdCardUpdate | Self::AcademicIdCardDelete => "IdCard",
             Self::AssessmentExamCreate
             | Self::AssessmentExamRead
             | Self::AssessmentExamUpdate
@@ -3118,6 +3131,7 @@ impl Capability {
             Self::AcademicRegistrationFieldCreate => "Create",
             Self::AcademicRegistrationFieldUpdate => "Update",
             Self::AcademicRegistrationFieldDelete => "Delete",
+            Self::AcademicIdCardCreate => "Create",
             Self::AcademicAdmissionQuery => "Admission",
             Self::AssessmentExamType | Self::AssessmentExamSetup | Self::AssessmentExamAttendance => "Exam",
             Self::AssessmentMarkStore => "Mark",
@@ -3185,6 +3199,7 @@ impl Capability {
             | Self::AttendanceStaffCreate
             | Self::AttendanceExamCreate
             | Self::AcademicRegistrationFieldCreate => "Create",
+            | Self::AcademicIdCardCreate => "Create",
             | Self::AcademicRegistrationFieldCreate => "Create",
             | Self::AttendanceImportCreate => "Create",
             Self::PlatformSchoolRead
@@ -3325,6 +3340,8 @@ impl Capability {
             | Self::CmsAboutPageUpdate
             | Self::CmsContactPageUpdate
             | Self::CmsCoursePageUpdate
+            | Self::AcademicIdCardUpdate => "Update",
+            | Self::AcademicIdCardUpdate => "Update",
             | Self::AcademicRegistrationFieldUpdate => "Update",
             | Self::CmsFrontendPageUpdate => "Update",
             Self::PlatformSchoolDelete
@@ -3386,6 +3403,8 @@ impl Capability {
             | Self::CmsContactPageDelete
             | Self::CmsCoursePageDelete
             | Self::CmsHomePageSettingDelete
+            | Self::AcademicIdCardDelete => "Delete",
+            | Self::AcademicIdCardDelete => "Delete",
             | Self::AcademicRegistrationFieldDelete => "Delete",
             | Self::CmsFrontendPageDelete => "Delete",
             Self::RbacRoleManage => "Manage",
@@ -3862,6 +3881,8 @@ impl Capability {
             Self::AcademicCertificateUpdate => "Update",
             Self::AcademicCertificateDelete => "Delete",
             Self::AcademicIdCard => "Card",
+            Self::AcademicIdCardUpdate => "Update",
+            Self::AcademicIdCardDelete => "Delete",
             Self::AcademicAdmissionQuery => "Query",
             Self::AssessmentExamType => "Type",
             Self::AssessmentExamSetup => "Setup",
@@ -4601,6 +4622,9 @@ impl Capability {
             Self::AcademicCertificateUpdate => "Academic.Certificate.Update",
             Self::AcademicCertificateDelete => "Academic.Certificate.Delete",
             Self::AcademicIdCard => "Academic.Id.Card",
+            Self::AcademicIdCardCreate => "Academic.IdCard.Create",
+            Self::AcademicIdCardUpdate => "Academic.IdCard.Update",
+            Self::AcademicIdCardDelete => "Academic.IdCard.Delete",
             Self::AcademicRegistrationFieldCreate => "Academic.RegistrationField.Create",
             Self::AcademicRegistrationFieldUpdate => "Academic.RegistrationField.Update",
             Self::AcademicRegistrationFieldDelete => "Academic.RegistrationField.Delete",

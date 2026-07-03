@@ -453,18 +453,14 @@
   - Enforcement: `RealCertificate.default_for_course: bool` flag; `update` service mutates the flag.
   - Test: `tests/certificate.rs::certificate_default_for_course_succeeds` (passes).## IdCard Aggregate (2 invariants)
 
-- [ ] I-1: Boolean display flags
+- [x] I-1: Boolean display flags (admission_no, name, class, photo, roll_no, contact)
   - Spec: `docs/specs/academic/aggregates.md#idcard`
-  - Enforcement: MISSING — placeholder at `aggregate.rs:399-402`
-  - Test: MISSING
-- [ ] I-2: Layout dimensions + spacing
+  - Enforcement: `RealIdCard` struct has 6 boolean flags (`show_admission_no`, `show_name`, `show_class`, `show_photo`, `show_roll_no`, `show_contact`); `update` service mutates all six.
+  - Test: `tests/id_card.rs::id_card_create_succeeds` (passes), `::id_card_all_flags_false_succeeds` (passes), `::id_card_update_changes_flags` (passes).
+- [x] I-2: Layout dimensions and spacing parameters
   - Spec: `docs/specs/academic/aggregates.md#idcard`
-  - Enforcement: MISSING — placeholder
-  - Test: MISSING
-
----
-
-## Cross-cutting Enforcement Gaps
+  - Enforcement: `RealIdCard::fresh` enforces `width_mm > 0`, `height_mm > 0`, `width_mm/height_mm ≤ 1000`, `margin_mm < min(width,height)/2`. `update` service mutates all four layout fields.
+  - Test: `tests/id_card.rs::id_card_create_succeeds` (passes, asserts layout), `::id_card_zero_width_rejected` (passes), `::id_card_zero_height_rejected` (passes).## Cross-cutting Enforcement Gaps
 
 1. **`UniquenessChecker` incomplete** (`commands.rs:50-57`) — only `student_admission_no_exists` + `student_email_exists`. Missing 6+ methods: `class_name_exists`, `section_name_exists`, `subject_code_exists`, `student_category_name_exists`, `student_group_name_exists`, `roll_no_exists(school, class, section, year)`.
 2. **No `ReferentialChecker` surface** — Class#4, ClassSection#4, ClassRoutine#4/#5 cannot be enforced without it.
