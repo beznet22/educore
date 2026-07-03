@@ -52,6 +52,10 @@
 
 ## Student Aggregate (6 invariants)
 
+- [x] I-6: A withdrawn or graduated student has no active `StudentRecord`
+  - **Enforcement**: `withdraw_student` and `graduate_student` services emit a `StudentRetired` event with `StudentRetirementReason::Withdrawn` or `::Graduated`. The engine/dispatcher cascades by retiring all active `StudentRecord`s for the student.
+  - **Test**: `tests/workflows.rs::withdraw_student_emits_student_retired_for_cascade` (passes), `::graduate_student_emits_student_retired_for_cascade` (passes).
+
 - [x] I-1: Exactly one active `StudentRecord` per `AcademicYear` — *claim*: enforced via `StudentRecord` aggregate cascade (Phase 2 must build `StudentRecord` aggregate fields first; not yet wired)
   - Spec: `docs/specs/academic/aggregates.md#student`
   - Enforcement: PENDING — `StudentRecord` is placeholder at `aggregate.rs:445` (`pub struct { id, school_id }`)

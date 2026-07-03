@@ -89,7 +89,7 @@ pub use crate::events::{
     OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked, RegistrationFieldCreated,
     SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted, StudentCategoryCreated,
     StudentGraduated, StudentGroupCreated, StudentProfileUpdated, StudentPromoted,
-    StudentPromotionRecorded, StudentReinstated, StudentSuspended, StudentTransferred,
+    StudentPromotionRecorded, StudentRetired, StudentRetirementReason, StudentReinstated, StudentSuspended, StudentTransferred,
     StudentWithdrawn, SubjectAssignedToClass, SubjectCreated, SubjectDeleted, SubjectUnassigned,
     SubjectUpdated, SubjectTeacherAssigned, TeacherReassigned,
 };

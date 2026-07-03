@@ -37,6 +37,7 @@ use std::sync::Mutex;
 
 use chrono::NaiveDate;
 
+use educore_academic::events::StudentRetired;
 use educore_academic::prelude::*;
 use educore_core::clock::{IdGenerator as _, SystemIdGen, TestClock};
 use educore_core::error::DomainError;
@@ -463,7 +464,8 @@ fn withdraw_student_happy_path_emits_student_withdrawn() {
         effective_from: naive(2026, 9, 15),
         note: Some("Graduating cohort".to_owned()),
     };
-    let event: StudentWithdrawn = withdraw_student(&mut student, cmd, &clock, &g).unwrap();
+    let (event, retired_event): (StudentWithdrawn, StudentRetired) = withdraw_student(&mut student, cmd, &clock, &g).unwrap();
+    assert_eq!(retired_event.student_id, student.id);
     assert_eq!(
         <StudentWithdrawn as DomainEvent>::EVENT_TYPE,
         "academic.student.withdrawn"
@@ -508,7 +510,7 @@ fn withdraw_student_twice_returns_conflict() {
         effective_from: naive(2026, 9, 15),
         note: None,
     };
-    let _first: StudentWithdrawn = withdraw_student(&mut student, cmd.clone(), &clock, &g).unwrap();
+    let _first: (StudentWithdrawn, StudentRetired) = withdraw_student(&mut student, cmd.clone(), &clock, &g).unwrap();
     // Second attempt should be rejected because the aggregate
     // is now retired. The contract here is "DomainError::Conflict".
     let err = withdraw_student(&mut student, cmd, &clock, &g)
@@ -740,7 +742,8 @@ fn graduate_student_happy_path_emits_student_graduated() {
         academic_year_id: year_id(&g, school),
         graduation_date: naive(2026, 6, 30),
     };
-    let event: StudentGraduated = graduate_student(&mut student, cmd, &clock, &g).unwrap();
+    let (event, retired_event): (StudentGraduated, StudentRetired) = graduate_student(&mut student, cmd, &clock, &g).unwrap();
+    assert_eq!(retired_event.student_id, student.id);
     assert_eq!(
         <StudentGraduated as DomainEvent>::EVENT_TYPE,
         "academic.student.graduated"
@@ -1076,4 +1079,98 @@ impl educore_academic::commands::UniquenessChecker for NoOpUniquenessChecker {
     ) -> bool {
         false
     }
+}
+
+// =============================================================================
+// Wave 63: Student I-6 cascade signal
+//
+// Per `docs/specs/academic/aggregates.md` § Student § I-6:
+//   "A withdrawn or graduated student has no active StudentRecord."
+//
+// The `withdraw_student` and `graduate_student` services emit a
+// `StudentRetired` event to signal the engine/dispatcher to
+// cascade-retire all active `StudentRecord`s for the student.
+// =============================================================================
+
+/// Student I-6: withdraw_student emits StudentRetired(Withdrawn).
+#[test]
+fn withdraw_student_emits_student_retired_for_cascade() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let uniqueness = TestUniqueness::new();
+
+    let admit_cmd = AdmitStudentCommand::new(
+        tenant.clone(),
+        student_id(&g, school),
+        "ADM-2026-CAS1".to_owned(),
+        "Cascade".to_owned(),
+        "Test".to_owned(),
+        naive(2010, 1, 1),
+        Gender::Male,
+        naive(2025, 6, 1),
+        class_id(&g, school),
+        section_id(&g, school),
+        year_id(&g, school),
+    );
+    let (mut student, _admit_event) =
+        admit_student(admit_cmd, &clock, &g, &uniqueness).expect("admit");
+
+    let wd_cmd = WithdrawStudentCommand {
+        tenant: tenant.clone(),
+        student_id: student.id,
+        reason: "Family relocation".to_string(),
+        effective_from: naive(2025, 6, 30),
+        note: None,
+    };
+    let (_withdrawn, retired) = withdraw_student(&mut student, wd_cmd, &clock, &g)
+        .expect("withdraw should succeed");
+    assert_eq!(retired.student_id, student.id);
+    assert_eq!(
+        retired.reason,
+        educore_academic::events::StudentRetirementReason::Withdrawn
+    );
+    assert_eq!(
+        <educore_academic::events::StudentRetired as educore_events::domain_event::DomainEvent>::EVENT_TYPE,
+        "academic.student.retired"
+    );
+}
+
+/// Student I-6: graduate_student emits StudentRetired(Graduated).
+#[test]
+fn graduate_student_emits_student_retired_for_cascade() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let clock = TestClock::new();
+    let uniqueness = TestUniqueness::new();
+
+    let admit_cmd = AdmitStudentCommand::new(
+        tenant.clone(),
+        student_id(&g, school),
+        "ADM-2026-CAS2".to_owned(),
+        "Graduate".to_owned(),
+        "Cascade".to_owned(),
+        naive(2010, 1, 1),
+        Gender::Male,
+        naive(2025, 6, 1),
+        class_id(&g, school),
+        section_id(&g, school),
+        year_id(&g, school),
+    );
+    let (mut student, _admit_event) =
+        admit_student(admit_cmd, &clock, &g, &uniqueness).expect("admit");
+
+    let grad_cmd = GraduateStudentCommand {
+        tenant: tenant.clone(),
+        student_id: student.id,
+        academic_year_id: year_id(&g, school),
+        graduation_date: naive(2025, 6, 30),
+    };
+    let (_graduated, retired) = graduate_student(&mut student, grad_cmd, &clock, &g)
+        .expect("graduate should succeed");
+    assert_eq!(retired.student_id, student.id);
+    assert_eq!(
+        retired.reason,
+        educore_academic::events::StudentRetirementReason::Graduated
+    );
 }

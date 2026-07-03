@@ -331,6 +331,66 @@ pub struct StudentWithdrawn {
     pub occurred_at: Timestamp,
 }
 
+// =============================================================================
+// StudentRetired event (Wave 63: Student I-6 cascade signal)
+//
+// Per `docs/specs/academic/aggregates.md` § Student § I-6:
+//   "A withdrawn or graduated student has no active `StudentRecord`."
+//
+// `StudentRetired` is emitted by `withdraw_student` and `graduate_student`
+// to signal the engine/dispatcher to cascade-retire all active
+// `StudentRecord` rows for the student. The engine iterates
+// `student_records` where `student_id == event.student_id &&
+// active_status == Active`, marks each retired, and writes a
+// per-record audit row.
+// =============================================================================
+
+/// Event: a student has been withdrawn or graduated, signalling that all
+/// their active [`StudentRecord`]s must be cascade-retired (Student I-6).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StudentRetired {
+    /// The student's typed id.
+    pub student_id: StudentId,
+    /// The reason for the retirement (`"withdrawn"` or `"graduated"`).
+    pub reason: StudentRetirementReason,
+    /// Mint-time event id.
+    pub event_id: EventId,
+    /// The correlation id of the request that triggered the event.
+    pub correlation_id: CorrelationId,
+    /// Clock time of the event.
+    pub occurred_at: Timestamp,
+}
+
+/// Reason a student was retired (drives downstream cascade policy).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum StudentRetirementReason {
+    /// Student was withdrawn (StudentStatus::Withdrawn).
+    Withdrawn,
+    /// Student was graduated (StudentStatus::Graduated).
+    Graduated,
+}
+
+impl StudentRetirementReason {
+    /// Returns the canonical snake_case wire string.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Withdrawn => "withdrawn",
+            Self::Graduated => "graduated",
+        }
+    }
+}
+
+impl DomainEvent for StudentRetired {
+    const EVENT_TYPE: &'static str = "academic.student.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "student";
+    fn event_id(&self) -> EventId { self.event_id }
+    fn aggregate_id(&self) -> Uuid { self.student_id.as_uuid() }
+    fn school_id(&self) -> SchoolId { self.student_id.school_id() }
+    fn occurred_at(&self) -> Timestamp { self.occurred_at }
+}
+
 impl StudentWithdrawn {
     /// Mints a fresh `StudentWithdrawn`.
     #[allow(clippy::too_many_arguments)]
