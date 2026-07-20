@@ -33,7 +33,10 @@ use educore_core::error::{DomainError, Result};
 use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 
-use crate::aggregate::{Expense, FeesInvoice, FeesPayment, RealFmFeesGroup, RealIncomeHead, Wallet, WalletTransaction};
+use crate::aggregate::{
+    Expense, FeesInvoice, FeesPayment, RealFmFeesGroup, RealIncomeHead, RealInvoiceSetting, Wallet,
+    WalletTransaction,
+};
 use crate::commands::{
     CreateDirectFeesInstallmentChildPaymentCommand, CreateDonorCommand,
     CreateFeesAssignDiscountCommand, CreateFeesInstallmentCreditCommand,
@@ -41,7 +44,7 @@ use crate::commands::{
     CreateFmFeesInvoiceCommand, CreateFmFeesInvoiceSettingCommand,
     CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
     CreateFmFeesWeaverCommand, CreateIncomeHeadCommand, CreateInventoryPaymentCommand,
-    CreateProductPurchaseCommand, CreateTransactionCommand,
+    CreateInvoiceSettingCommand, CreateProductPurchaseCommand, CreateTransactionCommand,
     ReadDirectFeesInstallmentChildPaymentCommand, ReadDonorCommand,
     ReadFeesAssignDiscountCommand, ReadFeesInstallmentCreditCommand, ReadFeesInvoiceSettingCommand,
     ReadFmFeesGroupCommand, ReadFmFeesInvoiceChildCommand, ReadFmFeesInvoiceCommand,
@@ -51,12 +54,12 @@ use crate::commands::{
 };
 use crate::events::{
     ExpenseRecorded, FmFeesGroupCreated, IncomeHeadCreated, InvoiceNumberingConfigured,
-    PaymentReceived, WalletCreated, WalletCredited, WalletDebited, WalletRefundRequested,
-    WalletTransactionApproved, WalletTransactionRejected,
+    InvoiceSettingCreated, PaymentReceived, WalletCreated, WalletCredited, WalletDebited,
+    WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
 };
 use crate::value_objects::{
     BankAccountId, Currency, ExpenseHeadId, ExpenseId, FeesInvoiceId, FeesPaymentId, FmFeesGroupId,
-    IncomeHeadId, WalletId, WalletTransactionId, WalletTxType,
+    IncomeHeadId, InvoiceSettingId, WalletId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -1145,6 +1148,50 @@ where
         now,
     );
     Ok((group, event))
+}
+
+// =============================================================================
+// Command: create an invoice setting (reference data, Wave 67)
+// =============================================================================
+
+/// Builds a new [`RealInvoiceSetting`] aggregate + an
+/// [`InvoiceSettingCreated`] event. The invoice setting is the school's
+/// invoice numbering configuration (prefix + start_form), per v3 Part 2
+/// F54. Enforces ISv I-1: the `prefix` must be 1..=10 chars after trim.
+pub fn create_invoice_setting<C, G>(
+    cmd: CreateInvoiceSettingCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealInvoiceSetting, InvoiceSettingCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let school = cmd.tenant.school_id;
+    let id = InvoiceSettingId::new(school, event_id_to_uuid(event_id));
+
+    let mut setting = RealInvoiceSetting::fresh(
+        id,
+        cmd.prefix,
+        cmd.start_form,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    setting.last_event_id = Some(event_id);
+
+    let event = InvoiceSettingCreated::new(
+        id,
+        setting.prefix.clone(),
+        setting.start_form,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((setting, event))
 }
 
 /// Handler skeleton: read an `FmFeesGroup` aggregate.

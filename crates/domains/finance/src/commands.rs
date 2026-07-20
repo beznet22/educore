@@ -1719,7 +1719,14 @@ impl ReadChartOfAccountCommand {
         vec![Capability::FinanceChartOfAccountRead]
     }
 }
-// -- InvoiceSetting (the school's invoice-numbering config; read) --
+// -- InvoiceSetting (the school's invoice-numbering config) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateInvoiceSettingCommand {
+    pub tenant: TenantContext,
+    pub prefix: String,
+    pub start_form: i64,
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadInvoiceSettingCommand {

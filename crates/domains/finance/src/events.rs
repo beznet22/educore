@@ -31,8 +31,9 @@ use crate::value_objects::{
     FeesCarryForwardId, FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentId,
     FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
     FmFeesInvoiceLineNoteId, FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
-    IncomeId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId, PayrollPaymentApprovalId,
-    PayrollPaymentId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
+    IncomeId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId,
+    PayrollPaymentApprovalId, PayrollPaymentId, WalletId, WalletTransactionApprovalId,
+    WalletTransactionId, WalletTxType,
 };
 
 use educore_academic::{ClassId, SectionId};
@@ -918,6 +919,162 @@ impl DomainEvent for FmFeesGroupDeleted {
     }
     fn school_id(&self) -> SchoolId {
         self.fm_fees_group_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// InvoiceSetting events (Wave 67 — RealInvoiceSetting headline events)
+// =============================================================================
+
+/// Emitted when a new `RealInvoiceSetting` is created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct InvoiceSettingCreated {
+    pub invoice_setting_id: InvoiceSettingId,
+    pub prefix: String,
+    pub start_form: i64,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl InvoiceSettingCreated {
+    pub fn new(
+        invoice_setting_id: InvoiceSettingId,
+        prefix: String,
+        start_form: i64,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            invoice_setting_id,
+            prefix,
+            start_form,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for InvoiceSettingCreated {
+    const EVENT_TYPE: &'static str = "finance.invoice_setting.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "invoice_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.invoice_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.invoice_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealInvoiceSetting` is updated (prefix / start_form
+/// change).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct InvoiceSettingUpdated {
+    pub invoice_setting_id: InvoiceSettingId,
+    pub prefix: String,
+    pub start_form: i64,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl InvoiceSettingUpdated {
+    pub fn new(
+        invoice_setting_id: InvoiceSettingId,
+        prefix: String,
+        start_form: i64,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            invoice_setting_id,
+            prefix,
+            start_form,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for InvoiceSettingUpdated {
+    const EVENT_TYPE: &'static str = "finance.invoice_setting.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "invoice_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.invoice_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.invoice_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealInvoiceSetting` is retired (soft-deleted via
+/// `RealInvoiceSetting::retire`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct InvoiceSettingDeleted {
+    pub invoice_setting_id: InvoiceSettingId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl InvoiceSettingDeleted {
+    pub fn new(
+        invoice_setting_id: InvoiceSettingId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            invoice_setting_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for InvoiceSettingDeleted {
+    const EVENT_TYPE: &'static str = "finance.invoice_setting.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "invoice_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.invoice_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.invoice_setting_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at
