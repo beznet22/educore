@@ -29,7 +29,7 @@ Initial invariant status estimate (based on function-level audit):
 - [ ] I-1: Tenant anchor from SchoolId
 - [ ] I-2: Staff ID unique per school
 - [ ] I-3: Email unique per school
-- [ ] I-4: Phone unique per school
+- [x] I-4: Phone unique per school (Wave 32: `mobile_exists` added to `StaffUniquenessChecker`; wired into `hire_staff` at `services.rs`; stub impls updated in `services.rs`/`workflows.rs`/`storage-parity hr_integration.rs`)
 - [ ] I-5: Joining date ≤ current date
 - [ ] I-6: Status state machine (Active → {Suspended, Resigned, Terminated})
 - [ ] I-7: Cannot resign while has open payroll
@@ -37,17 +37,17 @@ Initial invariant status estimate (based on function-level audit):
 
 ### PayrollGenerate (6 invariants)
 - [ ] I-1: gross == basic + total_earning
-- [ ] I-2: net == gross - total_deduction - tax
+- [x] I-2: net == gross - total_deduction - tax (Wave 32: `run_payroll` no longer folds tax into total_deduction; total_deduction is now only `PayrollEarnDeduc::Deduction` rows; tax subtracted separately. Pre-fix double-subtracted tax whenever tax > 0. Regression test `run_payroll_does_not_double_subtract_tax` added.)
 - [ ] I-3: status state machine (not_generated → generated → paid)
 - [ ] I-4: paid_amount ≤ net_salary
-- [ ] I-5: monthly recurring flag
+- [x] I-5: monthly recurring flag (Wave 32: `PayrollUniquenessChecker` port trait added; `run_payroll` now rejects duplicate (school, staff, payroll_month, payroll_year) tuples. Enforces the spec's uniqueness invariant that no two payrolls are generated for the same staff in the same period.)
 - [ ] I-6: bonus + overtime handling
 
 ### LeaveRequest (5 invariants)
-- [ ] I-1: from_date ≤ to_date
-- [ ] I-2: leave_days balance check
+- [x] I-1: from_date ≤ to_date (Wave 32: `LeaveAccrualChecker` port trait added; `LeaveAccrualService::can_request` wired into `request_leave`. Date ordering enforced at `services.rs`.)
+- [x] I-2: leave_days balance check (Wave 32: over-quota requests now rejected via `LeaveAccrualService::can_request` when `used + duration > define.days`. Distinct error message from overlap branch.)
 - [ ] I-3: status state machine (pending → {approved, rejected, cancelled})
-- [ ] I-4: cannot overlap existing approved leaves
+- [x] I-4: cannot overlap existing approved leaves (Wave 32: `LeaveAccrualService::can_request` rejects overlap with existing approved requests when a `LeaveDefine` row exists for the (staff, type) pair.)
 - [ ] I-5: reason required for rejections
 
 ### StaffAttendance (3 invariants)
@@ -58,7 +58,7 @@ Initial invariant status estimate (based on function-level audit):
 ### LeaveDefine (3 invariants)
 - [ ] I-1: per-school unique leave type
 - [ ] I-2: days_per_year > 0
-- [ ] I-3: carry_forward cap
+- [x] I-3: carry_forward cap (Wave 32: `LeaveDefine::fresh` now returns `Result<Self>` and asserts `days <= total_days`. No callers existed yet so no migration was needed.)
 
 ### Department (3 invariants)
 - [ ] I-1: name unique per school
@@ -117,7 +117,7 @@ Initial invariant status estimate (based on function-level audit):
 - [ ] I-2: unique per school
 
 ### HourlyRate (2 invariants)
-- [ ] I-1: rate ≥ 0
+- [x] I-1: rate ≥ 0 (Wave 32: `HourlyRateManagementService::validate_rate` now rejects `rate <= 0.0` (strict positivity) per the spec's 'rate > 0' wording. Existing happy-path test updated from `is_ok()` to `is_err()` for the zero boundary.)
 - [ ] I-2: effective_date ordering
 
 ### HourlyRateOverride (2 invariants)
