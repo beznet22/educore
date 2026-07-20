@@ -33,7 +33,7 @@ use educore_core::error::{DomainError, Result};
 use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 
-use crate::aggregate::{Expense, FeesInvoice, FeesPayment, RealIncomeHead, Wallet, WalletTransaction};
+use crate::aggregate::{Expense, FeesInvoice, FeesPayment, RealFmFeesGroup, RealIncomeHead, Wallet, WalletTransaction};
 use crate::commands::{
     CreateDirectFeesInstallmentChildPaymentCommand, CreateDonorCommand,
     CreateFeesAssignDiscountCommand, CreateFeesInstallmentCreditCommand,
@@ -50,13 +50,13 @@ use crate::commands::{
     ReadInventoryPaymentCommand, ReadProductPurchaseCommand, ReadTransactionCommand,
 };
 use crate::events::{
-    ExpenseRecorded, IncomeHeadCreated, InvoiceNumberingConfigured, PaymentReceived, WalletCreated,
-    WalletCredited, WalletDebited, WalletRefundRequested, WalletTransactionApproved,
-    WalletTransactionRejected,
+    ExpenseRecorded, FmFeesGroupCreated, IncomeHeadCreated, InvoiceNumberingConfigured,
+    PaymentReceived, WalletCreated, WalletCredited, WalletDebited, WalletRefundRequested,
+    WalletTransactionApproved, WalletTransactionRejected,
 };
 use crate::value_objects::{
-    BankAccountId, Currency, ExpenseHeadId, ExpenseId, FeesInvoiceId, FeesPaymentId, IncomeHeadId,
-    WalletId, WalletTransactionId, WalletTxType,
+    BankAccountId, Currency, ExpenseHeadId, ExpenseId, FeesInvoiceId, FeesPaymentId, FmFeesGroupId,
+    IncomeHeadId, WalletId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -1107,16 +1107,44 @@ where
     Ok(())
 }
 
-/// Handler skeleton: create an `FmFeesGroup` aggregate.
-/// Full implementation lands in Phase 7 Workstream G.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn create_fm_fees_group<C, G>(cmd: CreateFmFeesGroupCommand, clock: &C, ids: &G) -> Result<()>
+/// Builds a new [`RealFmFeesGroup`] aggregate + an
+/// [`FmFeesGroupCreated`] event. The FM fees group is the FM invoice
+/// scheme's fee-grouping primitive (per v3 Part 2 F40). Enforces
+/// FFG I-1: the `name` must be non-empty after trim.
+pub fn create_fm_fees_group<C, G>(
+    cmd: CreateFmFeesGroupCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFmFeesGroup, FmFeesGroupCreated)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let _ = (cmd, clock, ids);
-    Ok(())
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let school = cmd.tenant.school_id;
+    let id = FmFeesGroupId::new(school, event_id_to_uuid(event_id));
+
+    let mut group = RealFmFeesGroup::fresh(
+        id,
+        cmd.name,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    group.last_event_id = Some(event_id);
+
+    let event = FmFeesGroupCreated::new(
+        id,
+        group.name.clone(),
+        group.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((group, event))
 }
 
 /// Handler skeleton: read an `FmFeesGroup` aggregate.

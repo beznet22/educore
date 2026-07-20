@@ -46,7 +46,8 @@ pub mod prelude {
 
     // Headline 6 aggregates
     pub use crate::aggregate::{
-        Expense, FeesInvoice, FeesPayment, RealIncomeHead, Wallet, WalletTransaction,
+        Expense, FeesInvoice, FeesPayment, RealFmFeesGroup, RealIncomeHead, Wallet,
+        WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::WalletTransactionApproval;
@@ -54,32 +55,32 @@ pub mod prelude {
     pub use crate::commands::{
         BlockLoginForDueFeesCommand, CarryForwardFeesBalanceCommand, ConfigureFeesGroupCommand,
         ConfigureFeesTypeCommand, ConfigureInvoiceNumberingCommand, CreateExpenseHeadCommand,
-        CreateIncomeHeadCommand, CreateWalletCommand, CreditWalletCommand,
-        DeductWalletCreditCommand, OpenBankAccountCommand, RecordExpenseCommand,
-        RecordPaymentCommand, RequestWalletRefundCommand, FINANCE_EXPENSE_DELETE_COMMAND_TYPE,
-        FINANCE_EXPENSE_RECORD_COMMAND_TYPE, FINANCE_EXPENSE_UPDATE_COMMAND_TYPE,
-        FINANCE_FEES_INVOICE_CONFIGURE_COMMAND_TYPE, FINANCE_FEES_PAYMENT_RECORD_COMMAND_TYPE,
-        FINANCE_PAYROLL_PAYMENT_RECORD_COMMAND_TYPE, FINANCE_WALLET_CREATE_COMMAND_TYPE,
-        FINANCE_WALLET_CREDIT_COMMAND_TYPE, FINANCE_WALLET_DEBIT_COMMAND_TYPE,
-        FINANCE_WALLET_REFUND_REQUEST_COMMAND_TYPE,
+        CreateFmFeesGroupCommand, CreateIncomeHeadCommand, CreateWalletCommand,
+        CreditWalletCommand, DeductWalletCreditCommand, OpenBankAccountCommand,
+        RecordExpenseCommand, RecordPaymentCommand, RequestWalletRefundCommand,
+        FINANCE_EXPENSE_DELETE_COMMAND_TYPE, FINANCE_EXPENSE_RECORD_COMMAND_TYPE,
+        FINANCE_EXPENSE_UPDATE_COMMAND_TYPE, FINANCE_FEES_INVOICE_CONFIGURE_COMMAND_TYPE,
+        FINANCE_FEES_PAYMENT_RECORD_COMMAND_TYPE, FINANCE_PAYROLL_PAYMENT_RECORD_COMMAND_TYPE,
+        FINANCE_WALLET_CREATE_COMMAND_TYPE, FINANCE_WALLET_CREDIT_COMMAND_TYPE,
+        FINANCE_WALLET_DEBIT_COMMAND_TYPE, FINANCE_WALLET_REFUND_REQUEST_COMMAND_TYPE,
         FINANCE_WALLET_TRANSACTION_APPROVE_COMMAND_TYPE,
         FINANCE_WALLET_TRANSACTION_REJECT_COMMAND_TYPE,
     };
     pub use crate::entities::WalletTransactionApproval as WalletTransactionApprovalEntity;
     pub use crate::errors::FinanceError;
     pub use crate::events::{
-        ExpenseRecorded, IncomeHeadCreated, InvoiceNumberingConfigured, PaymentReceived,
-        PayrollPaymentRecorded, WalletCreated, WalletCredited, WalletDebited,
+        ExpenseRecorded, FmFeesGroupCreated, IncomeHeadCreated, InvoiceNumberingConfigured,
+        PaymentReceived, PayrollPaymentRecorded, WalletCreated, WalletCredited, WalletDebited,
         WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
     };
     pub use crate::query::{FeesPaymentQuery, WalletQuery, WalletTransactionQuery};
     pub use crate::repository::{WalletRepository, WalletTransactionRepository};
     pub use crate::services::{
-        approve_wallet_transaction, configure_invoice_numbering, create_income_head,
-        create_wallet, credit_wallet, deduct_wallet_credit, record_expense, record_payment,
-        reject_wallet_transaction, request_wallet_refund, ChargeRequest, PaymentProvider,
-        PaymentProviderPaymentId, PaymentProviderStatus, PaymentReceipt, PaymentStatus,
-        RefundReceipt, RefundRequest, StubPaymentProvider, WalletService,
+        approve_wallet_transaction, configure_invoice_numbering, create_fm_fees_group,
+        create_income_head, create_wallet, credit_wallet, deduct_wallet_credit, record_expense,
+        record_payment, reject_wallet_transaction, request_wallet_refund, ChargeRequest,
+        PaymentProvider, PaymentProviderPaymentId, PaymentProviderStatus, PaymentReceipt,
+        PaymentStatus, RefundReceipt, RefundRequest, StubPaymentProvider, WalletService,
     };
     pub use crate::value_objects::{
         validate_bank_account_number, validate_discount_name, validate_donor_name,

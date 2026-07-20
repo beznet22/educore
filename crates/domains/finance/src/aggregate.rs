@@ -1928,3 +1928,129 @@ impl RealIncomeHead {
         Ok(())
     }
 }
+
+// =============================================================================
+// RealFmFeesGroup — Wave 66 (per-aggregate wave pattern from Wave 65)
+// =============================================================================
+//
+// Per v3 Part 2 F40: 1 invariant — "Unique by `name` within a school."
+// Reference data aggregate (FM fees group catalogue — the FM invoice
+// scheme's fee-grouping primitive). The placeholder stub above
+// (`finance_aggregate_stub! { struct FmFeesGroup { _id: () } }`) remains
+// in the file for documentation purposes; the real implementation is
+// below. The service layer MUST use `RealFmFeesGroup` for new code; the
+// stub is kept only to avoid breaking downstream code that referenced
+// `FmFeesGroup` as a type name during Phase 7.
+
+/// FM fees group catalogue entry. One invariant: name is unique
+/// within a school (FFG I-1).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFmFeesGroup {
+    /// The typed id (school_id + uuid).
+    pub id: FmFeesGroupId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The FM group name (unique within school, non-empty after trim).
+    pub name: String,
+    /// Optional free-form description.
+    pub description: Option<String>,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFmFeesGroup {
+    /// Constructs a new `RealFmFeesGroup`. Enforces FFG I-1:
+    /// `name` must be non-empty after trim.
+    pub fn fresh(
+        id: FmFeesGroupId,
+        name: String,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesGroup name must be non-empty after trim",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            name: trimmed.to_owned(),
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the FM fees group is currently active.
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Mutates name + description. Enforces FFG I-1: new name must be
+    /// non-empty after trim. Bumps version, advances `updated_at`,
+    /// sets `updated_by`.
+    pub fn update_metadata(
+        &mut self,
+        name: String,
+        description: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesGroup name must be non-empty after trim",
+            ));
+        }
+        self.name = trimmed.to_owned();
+        self.description = description
+            .map(|d| d.trim().to_owned())
+            .filter(|d| !d.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the FM fees group by flipping `active_status` to
+    /// `Retired`. Bumps version, advances `updated_at`, sets
+    /// `updated_by`.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "FmFeesGroup is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}

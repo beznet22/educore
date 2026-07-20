@@ -29,10 +29,10 @@ use crate::value_objects::{
     DirectFeesInstallmentAssignChildId, DirectFeesInstallmentId, DueFeesLoginPreventId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentId,
-    FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId,
-    FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId, IncomeId, PaymentMethodId,
-    PaymentMethodKind, PayrollGenerateId, PayrollPaymentApprovalId, PayrollPaymentId, WalletId,
-    WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
+    FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
+    FmFeesInvoiceLineNoteId, FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
+    IncomeId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId, PayrollPaymentApprovalId,
+    PayrollPaymentId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 
 use educore_academic::{ClassId, SectionId};
@@ -763,6 +763,161 @@ impl DomainEvent for IncomeHeadDeleted {
     }
     fn school_id(&self) -> SchoolId {
         self.income_head_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// FmFeesGroup events (Wave 66 — RealFmFeesGroup headline events)
+// =============================================================================
+
+/// Emitted when a new `RealFmFeesGroup` is created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesGroupCreated {
+    pub fm_fees_group_id: FmFeesGroupId,
+    pub name: String,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesGroupCreated {
+    pub fn new(
+        fm_fees_group_id: FmFeesGroupId,
+        name: String,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_group_id,
+            name,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesGroupCreated {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_group.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_group";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_group_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_group_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesGroup` is updated (name/description change).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesGroupUpdated {
+    pub fm_fees_group_id: FmFeesGroupId,
+    pub name: String,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesGroupUpdated {
+    pub fn new(
+        fm_fees_group_id: FmFeesGroupId,
+        name: String,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_group_id,
+            name,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesGroupUpdated {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_group.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_group";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_group_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_group_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesGroup` is retired (soft-deleted via
+/// `RealFmFeesGroup::retire`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesGroupDeleted {
+    pub fm_fees_group_id: FmFeesGroupId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesGroupDeleted {
+    pub fn new(
+        fm_fees_group_id: FmFeesGroupId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_group_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesGroupDeleted {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_group.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_group";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_group_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_group_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

@@ -2275,7 +2275,8 @@ impl ReadDirectFeesInstallmentChildPaymentCommand {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFmFeesGroupCommand {
     pub tenant: TenantContext,
-    pub fm_fees_group_id: FmFeesGroupId,
+    pub name: String,
+    pub description: Option<String>,
 }
 
 
