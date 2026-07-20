@@ -1734,6 +1734,16 @@ pub struct ReadInvoiceSettingCommand {
     pub invoice_setting_id: InvoiceSettingId,
 }
 
+// -- QuestionBankFee (the per-question fee amount; Wave 68) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateQuestionBankFeeCommand {
+    pub tenant: TenantContext,
+    pub name: String,
+    pub amount_minor: i64,
+    pub description: Option<String>,
+}
+
 
 impl ReadInvoiceSettingCommand {
     /// The capabilities required to dispatch this command.

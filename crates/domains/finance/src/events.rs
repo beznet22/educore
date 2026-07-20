@@ -32,8 +32,8 @@ use crate::value_objects::{
     FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
     FmFeesInvoiceLineNoteId, FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
     IncomeId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId,
-    PayrollPaymentApprovalId, PayrollPaymentId, WalletId, WalletTransactionApprovalId,
-    WalletTransactionId, WalletTxType,
+    PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, WalletId,
+    WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 
 use educore_academic::{ClassId, SectionId};
@@ -1075,6 +1075,170 @@ impl DomainEvent for InvoiceSettingDeleted {
     }
     fn school_id(&self) -> SchoolId {
         self.invoice_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// QuestionBankFee events (Wave 68 — RealQuestionBankFee headline events)
+// =============================================================================
+
+/// Emitted when a new `RealQuestionBankFee` is created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct QuestionBankFeeCreated {
+    pub question_bank_fee_id: QuestionBankFeeId,
+    pub name: String,
+    pub amount_minor: i64,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl QuestionBankFeeCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        question_bank_fee_id: QuestionBankFeeId,
+        name: String,
+        amount_minor: i64,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            question_bank_fee_id,
+            name,
+            amount_minor,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for QuestionBankFeeCreated {
+    const EVENT_TYPE: &'static str = "finance.question_bank_fee.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "question_bank_fee";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.question_bank_fee_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.question_bank_fee_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealQuestionBankFee` is updated (name/amount_minor/
+/// description change).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct QuestionBankFeeUpdated {
+    pub question_bank_fee_id: QuestionBankFeeId,
+    pub name: String,
+    pub amount_minor: i64,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl QuestionBankFeeUpdated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        question_bank_fee_id: QuestionBankFeeId,
+        name: String,
+        amount_minor: i64,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            question_bank_fee_id,
+            name,
+            amount_minor,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for QuestionBankFeeUpdated {
+    const EVENT_TYPE: &'static str = "finance.question_bank_fee.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "question_bank_fee";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.question_bank_fee_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.question_bank_fee_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealQuestionBankFee` is retired (soft-deleted via
+/// `RealQuestionBankFee::retire`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct QuestionBankFeeDeleted {
+    pub question_bank_fee_id: QuestionBankFeeId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl QuestionBankFeeDeleted {
+    pub fn new(
+        question_bank_fee_id: QuestionBankFeeId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            question_bank_fee_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for QuestionBankFeeDeleted {
+    const EVENT_TYPE: &'static str = "finance.question_bank_fee.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "question_bank_fee";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.question_bank_fee_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.question_bank_fee_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

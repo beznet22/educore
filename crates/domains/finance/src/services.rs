@@ -34,8 +34,8 @@ use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
-    Expense, FeesInvoice, FeesPayment, RealFmFeesGroup, RealIncomeHead, RealInvoiceSetting, Wallet,
-    WalletTransaction,
+    Expense, FeesInvoice, FeesPayment, RealFmFeesGroup, RealIncomeHead, RealInvoiceSetting,
+    RealQuestionBankFee, Wallet, WalletTransaction,
 };
 use crate::commands::{
     CreateDirectFeesInstallmentChildPaymentCommand, CreateDonorCommand,
@@ -44,7 +44,8 @@ use crate::commands::{
     CreateFmFeesInvoiceCommand, CreateFmFeesInvoiceSettingCommand,
     CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
     CreateFmFeesWeaverCommand, CreateIncomeHeadCommand, CreateInventoryPaymentCommand,
-    CreateInvoiceSettingCommand, CreateProductPurchaseCommand, CreateTransactionCommand,
+    CreateInvoiceSettingCommand, CreateProductPurchaseCommand, CreateQuestionBankFeeCommand,
+    CreateTransactionCommand,
     ReadDirectFeesInstallmentChildPaymentCommand, ReadDonorCommand,
     ReadFeesAssignDiscountCommand, ReadFeesInstallmentCreditCommand, ReadFeesInvoiceSettingCommand,
     ReadFmFeesGroupCommand, ReadFmFeesInvoiceChildCommand, ReadFmFeesInvoiceCommand,
@@ -54,12 +55,13 @@ use crate::commands::{
 };
 use crate::events::{
     ExpenseRecorded, FmFeesGroupCreated, IncomeHeadCreated, InvoiceNumberingConfigured,
-    InvoiceSettingCreated, PaymentReceived, WalletCreated, WalletCredited, WalletDebited,
-    WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
+    InvoiceSettingCreated, PaymentReceived, QuestionBankFeeCreated, WalletCreated,
+    WalletCredited, WalletDebited, WalletRefundRequested, WalletTransactionApproved,
+    WalletTransactionRejected,
 };
 use crate::value_objects::{
     BankAccountId, Currency, ExpenseHeadId, ExpenseId, FeesInvoiceId, FeesPaymentId, FmFeesGroupId,
-    IncomeHeadId, InvoiceSettingId, WalletId, WalletTransactionId, WalletTxType,
+    IncomeHeadId, InvoiceSettingId, QuestionBankFeeId, WalletId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -1192,6 +1194,51 @@ where
         now,
     );
     Ok((setting, event))
+}
+
+// =============================================================================
+// Command: create a question-bank fee (reference data, Wave 68)
+// =============================================================================
+
+/// Builds a new [`RealQuestionBankFee`] aggregate + a
+/// [`QuestionBankFeeCreated`] event. Per v3 Part 2 F62. Enforces QBF I-1:
+/// `name` must be non-empty after trim; `amount_minor` must be ≥ 0.
+pub fn create_question_bank_fee<C, G>(
+    cmd: CreateQuestionBankFeeCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealQuestionBankFee, QuestionBankFeeCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let school = cmd.tenant.school_id;
+    let id = QuestionBankFeeId::new(school, event_id_to_uuid(event_id));
+
+    let mut fee = RealQuestionBankFee::fresh(
+        id,
+        cmd.name,
+        cmd.amount_minor,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    fee.last_event_id = Some(event_id);
+
+    let event = QuestionBankFeeCreated::new(
+        id,
+        fee.name.clone(),
+        fee.amount_minor,
+        fee.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((fee, event))
 }
 
 /// Handler skeleton: read an `FmFeesGroup` aggregate.

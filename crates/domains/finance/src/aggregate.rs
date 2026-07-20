@@ -2202,3 +2202,148 @@ impl RealInvoiceSetting {
         Ok(())
     }
 }
+
+// =============================================================================
+// RealQuestionBankFee — Wave 68 (per-aggregate wave pattern from Waves 65–67)
+// =============================================================================
+//
+// Per v3 Part 2 F62: 1 invariant — "Amount ≥ 0" (QBF I-1).
+// Reference data aggregate (a per-question fee amount attached to the
+// school's question bank — the negative case would represent a negative
+// fee, which is meaningless). The placeholder stub above
+// (`finance_aggregate_stub! { struct QuestionBankFee { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealQuestionBankFee` for new code; the stub is kept only to avoid
+// breaking downstream code that referenced `QuestionBankFee` as a type
+// name during Phase 7.
+
+/// Fee amount attached to a question-bank entry. One invariant: the
+/// `amount_minor` must be ≥ 0 (QBF I-1).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealQuestionBankFee {
+    /// The typed id (school_id + uuid).
+    pub id: QuestionBankFeeId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The fee name (non-empty after trim).
+    pub name: String,
+    /// The fee amount in minor currency units (≥ 0, per QBF I-1).
+    pub amount_minor: i64,
+    /// Optional free-form description.
+    pub description: Option<String>,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealQuestionBankFee {
+    /// Constructs a new `RealQuestionBankFee`. Enforces QBF I-1:
+    /// `name` must be non-empty after trim; `amount_minor` must be ≥ 0.
+    pub fn fresh(
+        id: QuestionBankFeeId,
+        name: String,
+        amount_minor: i64,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "QuestionBankFee name must be non-empty after trim",
+            ));
+        }
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "QuestionBankFee amount_minor must be non-negative (QBF I-1)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            name: trimmed.to_owned(),
+            amount_minor,
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the question bank fee is currently active.
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Mutates name + amount_minor + description. Enforces QBF I-1:
+    /// new `name` must be non-empty after trim and new `amount_minor`
+    /// must be ≥ 0. Bumps version, advances `updated_at`, sets
+    /// `updated_by`.
+    pub fn update_metadata(
+        &mut self,
+        name: String,
+        amount_minor: i64,
+        description: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "QuestionBankFee name must be non-empty after trim",
+            ));
+        }
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "QuestionBankFee amount_minor must be non-negative (QBF I-1)",
+            ));
+        }
+        self.name = trimmed.to_owned();
+        self.amount_minor = amount_minor;
+        self.description = description
+            .map(|d| d.trim().to_owned())
+            .filter(|d| !d.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the question bank fee by flipping `active_status`
+    /// to `Retired`. Bumps version, advances `updated_at`, sets
+    /// `updated_by`.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "QuestionBankFee is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
