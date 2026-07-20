@@ -16,13 +16,15 @@
 
 | Status | Count | % |
 |---|---|---|
-| Enforced [x] | 15 | 20.5% |
-| Partial [~] | 2 | 2.7% |
-| Missing [ ] | 54 | 74.0% |
-| Permissive [N/A] | 2 | 2.7% |
-| **Total invariants** | **73** | **100%** |
+| Enforced [x] | 67 | 95.7% |
+| Partial [~] | 0 | 0.0% |
+| Missing [ ] | 0 | 0.0% |
+| Permissive [N/A] | 3 | 4.3% |
+| **Total invariants** | **70** | **100%** |
 
-**Coverage gap to close:** 54 missing + 2 partial = **56 invariants** must reach [x].
+**Coverage gap to close:** 0 missing + 0 partial = **0 invariants** must reach [x].
+
+> **Source:** counts derived from `grep -c '^- \[x\]' docs/audit_reports/academic-invariant-checklist.md` etc. on the file at HEAD `c676003`. Wave 64 (`c676003`) closed the loop: 67 invariants reach `[x]`, 0 remain `[ ]`. The original 73-count included 3 entries that were removed as duplicates during Waves 48–63 cleanup, yielding the 70 total.
 
 **Batch 1 progress (Wave 47):** 11 invariants reach [x] (Student I-2/3/5, Class I-2/4, Section I-1, Subject I-1, AcademicYear I-2/3/5). Remaining gaps: Class I-4 delete-guard (deferred — needs ClassSection), Student I-4/I-6 (needs StudentRecord aggregate from Batch 4).
 
