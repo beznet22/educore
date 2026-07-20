@@ -305,7 +305,7 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 
 ### IncomeHead (1 invariant)
 
-- [ ] IH I-1: unique name within school — missing (placeholder stub)
+- [~] IH I-1: unique name within school — **partial (Wave 65 partial drop)** — `RealIncomeHead` struct + impl shipped at `crates/domains/finance/src/aggregate.rs:~1810` with `fresh()` validating non-empty trimmed name. Service function `create_income_head`, prelude re-export, behavioral test, and dispatcher wiring all deferred to the next session (the stub `create_fm_fees_group` at `services.rs:1067` shows the Phase 7 handler-skeleton pattern; writing a real handler requires dispatcher wiring per v3 Part 6, 0/509 wrappers done).
 
 ### InventoryPayment (3 invariants)
 
