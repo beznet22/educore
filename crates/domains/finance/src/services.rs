@@ -33,15 +33,16 @@ use educore_core::error::{DomainError, Result};
 use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 
-use crate::aggregate::{Expense, FeesInvoice, FeesPayment, Wallet, WalletTransaction};
+use crate::aggregate::{Expense, FeesInvoice, FeesPayment, RealIncomeHead, Wallet, WalletTransaction};
 use crate::commands::{
     CreateDirectFeesInstallmentChildPaymentCommand, CreateDonorCommand,
     CreateFeesAssignDiscountCommand, CreateFeesInstallmentCreditCommand,
     CreateFeesInvoiceSettingCommand, CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
     CreateFmFeesInvoiceCommand, CreateFmFeesInvoiceSettingCommand,
     CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
-    CreateFmFeesWeaverCommand, CreateInventoryPaymentCommand, CreateProductPurchaseCommand,
-    CreateTransactionCommand, ReadDirectFeesInstallmentChildPaymentCommand, ReadDonorCommand,
+    CreateFmFeesWeaverCommand, CreateIncomeHeadCommand, CreateInventoryPaymentCommand,
+    CreateProductPurchaseCommand, CreateTransactionCommand,
+    ReadDirectFeesInstallmentChildPaymentCommand, ReadDonorCommand,
     ReadFeesAssignDiscountCommand, ReadFeesInstallmentCreditCommand, ReadFeesInvoiceSettingCommand,
     ReadFmFeesGroupCommand, ReadFmFeesInvoiceChildCommand, ReadFmFeesInvoiceCommand,
     ReadFmFeesInvoiceSettingCommand, ReadFmFeesTransactionChildCommand,
@@ -49,12 +50,13 @@ use crate::commands::{
     ReadInventoryPaymentCommand, ReadProductPurchaseCommand, ReadTransactionCommand,
 };
 use crate::events::{
-    ExpenseRecorded, InvoiceNumberingConfigured, PaymentReceived, WalletCreated, WalletCredited,
-    WalletDebited, WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
+    ExpenseRecorded, IncomeHeadCreated, InvoiceNumberingConfigured, PaymentReceived, WalletCreated,
+    WalletCredited, WalletDebited, WalletRefundRequested, WalletTransactionApproved,
+    WalletTransactionRejected,
 };
 use crate::value_objects::{
-    BankAccountId, Currency, ExpenseHeadId, ExpenseId, FeesInvoiceId, FeesPaymentId, WalletId,
-    WalletTransactionId, WalletTxType,
+    BankAccountId, Currency, ExpenseHeadId, ExpenseId, FeesInvoiceId, FeesPaymentId, IncomeHeadId,
+    WalletId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -636,6 +638,50 @@ pub struct ConfigureInvoiceNumberingCommand {
     pub tenant: TenantContext,
     pub prefix: String,
     pub start_form: i64,
+}
+
+// =============================================================================
+// Command: create an income head (reference data, Wave 65)
+// =============================================================================
+
+/// Builds a new [`RealIncomeHead`] aggregate + an [`IncomeHeadCreated`]
+/// event. The income head is the income-category catalogue entry
+/// (e.g. "Donations", "Rentals", "Sales"). Enforces F52 I-1: the
+/// `name` must be non-empty after trim.
+pub fn create_income_head<C, G>(
+    cmd: CreateIncomeHeadCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealIncomeHead, IncomeHeadCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let school = cmd.tenant.school_id;
+    let id = IncomeHeadId::new(school, event_id_to_uuid(event_id));
+
+    let mut income_head = RealIncomeHead::fresh(
+        id,
+        cmd.name,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    income_head.last_event_id = Some(event_id);
+
+    let event = IncomeHeadCreated::new(
+        id,
+        income_head.name.clone(),
+        income_head.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((income_head, event))
 }
 
 // =============================================================================

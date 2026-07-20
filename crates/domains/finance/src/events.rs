@@ -615,6 +615,161 @@ impl DomainEvent for PayrollPaymentRecorded {
 }
 
 // =============================================================================
+// IncomeHead events (Wave 65 — RealIncomeHead headline events)
+// =============================================================================
+
+/// Emitted when a new `RealIncomeHead` is created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct IncomeHeadCreated {
+    pub income_head_id: IncomeHeadId,
+    pub name: String,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl IncomeHeadCreated {
+    pub fn new(
+        income_head_id: IncomeHeadId,
+        name: String,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            income_head_id,
+            name,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for IncomeHeadCreated {
+    const EVENT_TYPE: &'static str = "finance.income_head.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "income_head";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.income_head_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.income_head_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealIncomeHead` is updated (name/description change).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct IncomeHeadUpdated {
+    pub income_head_id: IncomeHeadId,
+    pub name: String,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl IncomeHeadUpdated {
+    pub fn new(
+        income_head_id: IncomeHeadId,
+        name: String,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            income_head_id,
+            name,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for IncomeHeadUpdated {
+    const EVENT_TYPE: &'static str = "finance.income_head.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "income_head";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.income_head_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.income_head_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealIncomeHead` is retired (soft-deleted via
+/// `RealIncomeHead::retire`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct IncomeHeadDeleted {
+    pub income_head_id: IncomeHeadId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl IncomeHeadDeleted {
+    pub fn new(
+        income_head_id: IncomeHeadId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            income_head_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for IncomeHeadDeleted {
+    const EVENT_TYPE: &'static str = "finance.income_head.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "income_head";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.income_head_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.income_head_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
 // Aggregate headline event stubs (Cluster D final 20%).
 // Each stub carries only `event_id`, `school_id`, `aggregate_id`,
 // `correlation_id`, and `occurred_at`. Real payload fields land with the
