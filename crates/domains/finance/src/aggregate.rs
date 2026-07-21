@@ -28,6 +28,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use educore_academic::{AcademicYearId, StudentId};
 use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
 use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
@@ -2517,6 +2518,128 @@ impl RealDirectFeesSetting {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "DirectFeesSetting is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
+// RealFeesCarryForwardLog — Wave 70 (per-aggregate wave pattern from Waves 65–69)
+// =============================================================================
+//
+// Per v3 Part 2 F28 + checklist § FeesCarryForwardLog: 2 invariants:
+//   - FCFL I-1: append-only (no update / no delete; only retire)
+//   - FCFL I-2: amount_minor ≥ 0
+// Append-only ledger of per-student per-academic-year carry-forward
+// rows (the record of how much balance was rolled over from the previous
+// academic year into the next). The placeholder stub above
+// (`finance_aggregate_stub! { struct FeesCarryForwardLog { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealFeesCarryForwardLog` for new code; the stub is kept only to avoid
+// breaking downstream code that referenced `FeesCarryForwardLog` as a
+// type name during Phase 7.
+
+/// Append-only ledger row for a per-student per-academic-year balance
+/// carry-forward. Two invariants: append-only (FCFL I-1, enforced at the
+/// API surface by *not* exposing `update_*` mutators); `amount_minor >= 0`
+/// (FCFL I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFeesCarryForwardLog {
+    /// The typed id (school_id + uuid).
+    pub id: FeesCarryForwardLogId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The student whose balance is being carried forward.
+    pub student_id: StudentId,
+    /// The academic year the balance is being carried *into* (the new
+    /// year).
+    pub academic_year_id: AcademicYearId,
+    /// The carried-forward amount in minor currency units (≥ 0, per FCFL I-2).
+    pub amount_minor: i64,
+    /// Optional free-form description / source note.
+    pub description: Option<String>,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFeesCarryForwardLog {
+    /// Constructs a new `RealFeesCarryForwardLog`. Enforces FCFL I-2:
+    /// `amount_minor` must be ≥ 0. Note: FCFL I-1 (append-only) is
+    /// enforced at the API surface — this aggregate intentionally
+    /// exposes no `update_*` mutator. The only post-creation
+    /// transitions are the version-bumping `retire()` (soft-delete,
+    /// for legal-record retention policies) and the aggregate is
+    /// otherwise immutable.
+    pub fn fresh(
+        id: FeesCarryForwardLogId,
+        student_id: StudentId,
+        academic_year_id: AcademicYearId,
+        amount_minor: i64,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesCarryForwardLog amount_minor must be non-negative (FCFL I-2)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            student_id,
+            academic_year_id,
+            amount_minor,
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the carry-forward log row is currently active.
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the carry-forward log row by flipping `active_status`
+    /// to `Retired`. Bumps version, advances `updated_at`, sets
+    /// `updated_by`. Note: this does **not** violate FCFL I-1 (append-only)
+    /// because the audit footer + the `Retired` status together preserve
+    /// the original record; the soft-delete is a tombstone, not a
+    /// modification of the carried amount or student/year references.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesCarryForwardLog is already retired",
             ));
         }
         self.active_status = ActiveStatus::Retired;

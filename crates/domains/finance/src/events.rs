@@ -29,7 +29,8 @@ use crate::value_objects::{
     DirectFeesInstallmentAssignChildId, DirectFeesInstallmentId, DirectFeesSettingId,
     DueFeesLoginPreventId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
-    FeesCarryForwardId, FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentId,
+    FeesCarryForwardId, FeesCarryForwardLogId, FeesGroupId, FeesInstallmentAssignDiscountId,
+    FeesInstallmentId,
     FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
     FmFeesInvoiceLineNoteId, FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
     IncomeId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId,
@@ -37,7 +38,7 @@ use crate::value_objects::{
     WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 
-use educore_academic::{ClassId, SectionId};
+use educore_academic::{AcademicYearId, ClassId, SectionId, StudentId};
 
 // =============================================================================
 // Wallet events
@@ -1417,6 +1418,122 @@ impl DomainEvent for DirectFeesSettingDeleted {
     }
     fn school_id(&self) -> SchoolId {
         self.direct_fees_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// FeesCarryForwardLog events (Wave 70 — RealFeesCarryForwardLog headline events)
+// =============================================================================
+//
+// FCFL I-1 (append-only) is enforced at the API surface by NOT emitting
+// an `Updated` event for this aggregate. The only two transitions are
+// create (always present) and retire (soft-tombstone, never a
+// modification of the original record).
+
+/// Emitted when a new `RealFeesCarryForwardLog` row is appended.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesCarryForwardLogCreated {
+    pub fees_carry_forward_log_id: FeesCarryForwardLogId,
+    pub student_id: StudentId,
+    pub academic_year_id: AcademicYearId,
+    pub amount_minor: i64,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesCarryForwardLogCreated {
+    pub fn new(
+        fees_carry_forward_log_id: FeesCarryForwardLogId,
+        student_id: StudentId,
+        academic_year_id: AcademicYearId,
+        amount_minor: i64,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_carry_forward_log_id,
+            student_id,
+            academic_year_id,
+            amount_minor,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesCarryForwardLogCreated {
+    const EVENT_TYPE: &'static str = "finance.fees_carry_forward_log.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_carry_forward_log";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_carry_forward_log_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_carry_forward_log_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesCarryForwardLog` row is retired (soft-deleted
+/// via `RealFeesCarryForwardLog::retire`). Note: this does NOT violate
+/// FCFL I-1 (append-only) — the tombstone preserves the original record
+/// in the audit footer + the `Retired` active_status.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesCarryForwardLogRetired {
+    pub fees_carry_forward_log_id: FeesCarryForwardLogId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesCarryForwardLogRetired {
+    pub fn new(
+        fees_carry_forward_log_id: FeesCarryForwardLogId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_carry_forward_log_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesCarryForwardLogRetired {
+    const EVENT_TYPE: &'static str = "finance.fees_carry_forward_log.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_carry_forward_log";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_carry_forward_log_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_carry_forward_log_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

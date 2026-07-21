@@ -34,12 +34,14 @@ use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
-    Expense, FeesInvoice, FeesPayment, RealDirectFeesSetting, RealFmFeesGroup, RealIncomeHead,
-    RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
+    Expense, FeesInvoice, FeesPayment, RealDirectFeesSetting, RealFeesCarryForwardLog,
+    RealFmFeesGroup, RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, Wallet,
+    WalletTransaction,
 };
 use crate::commands::{
     CreateDirectFeesInstallmentChildPaymentCommand, CreateDirectFeesSettingCommand,
-    CreateDonorCommand, CreateFeesAssignDiscountCommand, CreateFeesInstallmentCreditCommand,
+    CreateDonorCommand, CreateFeesAssignDiscountCommand, CreateFeesCarryForwardLogCommand,
+    CreateFeesInstallmentCreditCommand,
     CreateFeesInvoiceSettingCommand, CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
     CreateFmFeesInvoiceCommand, CreateFmFeesInvoiceSettingCommand,
     CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
@@ -54,15 +56,15 @@ use crate::commands::{
     ReadInventoryPaymentCommand, ReadProductPurchaseCommand, ReadTransactionCommand,
 };
 use crate::events::{
-    DirectFeesSettingCreated, ExpenseRecorded, FmFeesGroupCreated, IncomeHeadCreated,
-    InvoiceNumberingConfigured, InvoiceSettingCreated, PaymentReceived, QuestionBankFeeCreated,
-    WalletCreated, WalletCredited, WalletDebited, WalletRefundRequested,
+    DirectFeesSettingCreated, ExpenseRecorded, FeesCarryForwardLogCreated, FmFeesGroupCreated,
+    IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated, PaymentReceived,
+    QuestionBankFeeCreated, WalletCreated, WalletCredited, WalletDebited, WalletRefundRequested,
     WalletTransactionApproved, WalletTransactionRejected,
 };
 use crate::value_objects::{
-    BankAccountId, Currency, DirectFeesSettingId, ExpenseHeadId, ExpenseId, FeesInvoiceId,
-    FeesPaymentId, FmFeesGroupId, IncomeHeadId, InvoiceSettingId, QuestionBankFeeId, WalletId,
-    WalletTransactionId, WalletTxType,
+    BankAccountId, Currency, DirectFeesSettingId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId,
+    FeesInvoiceId, FeesPaymentId, FmFeesGroupId, IncomeHeadId, InvoiceSettingId, QuestionBankFeeId,
+    WalletId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -1292,6 +1294,55 @@ where
         now,
     );
     Ok((setting, event))
+}
+
+// =============================================================================
+// Command: append a fees-carry-forward log row (append-only, Wave 70)
+// =============================================================================
+
+/// Builds a new [`RealFeesCarryForwardLog`] aggregate + a
+/// [`FeesCarryForwardLogCreated`] event. Append-only ledger: the
+/// aggregate intentionally exposes no `update_*` mutator so FCFL I-1
+/// is enforced at the API surface. FCFL I-2 (`amount_minor >= 0`) is
+/// enforced here.
+pub fn create_fees_carry_forward_log<C, G>(
+    cmd: CreateFeesCarryForwardLogCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesCarryForwardLog, FeesCarryForwardLogCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let school = cmd.tenant.school_id;
+    let id = FeesCarryForwardLogId::new(school, event_id_to_uuid(event_id));
+
+    let mut row = RealFeesCarryForwardLog::fresh(
+        id,
+        cmd.student_id,
+        cmd.academic_year_id,
+        cmd.amount_minor,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = FeesCarryForwardLogCreated::new(
+        id,
+        row.student_id,
+        row.academic_year_id,
+        row.amount_minor,
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
 }
 
 /// Handler skeleton: read an `FmFeesGroup` aggregate.

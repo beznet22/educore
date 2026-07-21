@@ -46,18 +46,19 @@ pub mod prelude {
 
     // Headline 6 aggregates
     pub use crate::aggregate::{
-        Expense, FeesInvoice, FeesPayment, RealDirectFeesSetting, RealFmFeesGroup, RealIncomeHead,
-        RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
+        Expense, FeesInvoice, FeesPayment, RealDirectFeesSetting, RealFeesCarryForwardLog,
+        RealFmFeesGroup, RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, Wallet,
+        WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::WalletTransactionApproval;
 
     pub use crate::commands::{
         BlockLoginForDueFeesCommand, CarryForwardFeesBalanceCommand, ConfigureFeesGroupCommand,
-        ConfigureFeesTypeCommand, ConfigureInvoiceNumberingCommand, CreateDirectFeesSettingCommand,
-        CreateExpenseHeadCommand, CreateFmFeesGroupCommand, CreateIncomeHeadCommand,
-        CreateInvoiceSettingCommand, CreateQuestionBankFeeCommand, CreateWalletCommand,
-        CreditWalletCommand,
+        ConfigureFeesTypeCommand, ConfigureInvoiceNumberingCommand,
+        CreateDirectFeesSettingCommand, CreateExpenseHeadCommand, CreateFeesCarryForwardLogCommand,
+        CreateFmFeesGroupCommand, CreateIncomeHeadCommand, CreateInvoiceSettingCommand,
+        CreateQuestionBankFeeCommand, CreateWalletCommand, CreditWalletCommand,
         DeductWalletCreditCommand, OpenBankAccountCommand,
         RecordExpenseCommand, RecordPaymentCommand, RequestWalletRefundCommand,
         FINANCE_EXPENSE_DELETE_COMMAND_TYPE, FINANCE_EXPENSE_RECORD_COMMAND_TYPE,
@@ -71,7 +72,8 @@ pub mod prelude {
     pub use crate::entities::WalletTransactionApproval as WalletTransactionApprovalEntity;
     pub use crate::errors::FinanceError;
     pub use crate::events::{
-        DirectFeesSettingCreated, ExpenseRecorded, FmFeesGroupCreated, IncomeHeadCreated,
+        DirectFeesSettingCreated, ExpenseRecorded, FeesCarryForwardLogCreated,
+        FeesCarryForwardLogRetired, FmFeesGroupCreated, IncomeHeadCreated,
         InvoiceNumberingConfigured, InvoiceSettingCreated, PaymentReceived,
         PayrollPaymentRecorded, QuestionBankFeeCreated, WalletCreated, WalletCredited,
         WalletDebited, WalletRefundRequested, WalletTransactionApproved,
@@ -81,8 +83,8 @@ pub mod prelude {
     pub use crate::repository::{WalletRepository, WalletTransactionRepository};
     pub use crate::services::{
         approve_wallet_transaction, configure_invoice_numbering, create_direct_fees_setting,
-        create_fm_fees_group, create_income_head, create_invoice_setting,
-        create_question_bank_fee, create_wallet, credit_wallet,
+        create_fees_carry_forward_log, create_fm_fees_group, create_income_head,
+        create_invoice_setting, create_question_bank_fee, create_wallet, credit_wallet,
         deduct_wallet_credit, record_expense, record_payment, reject_wallet_transaction,
         request_wallet_refund, ChargeRequest, PaymentProvider, PaymentProviderPaymentId,
         PaymentProviderStatus, PaymentReceipt, PaymentStatus, RefundReceipt, RefundRequest,

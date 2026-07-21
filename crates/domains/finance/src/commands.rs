@@ -22,6 +22,7 @@ use serde::{Deserialize, Serialize};
 
 use educore_core::ids::UserId;
 use educore_rbac::value_objects::Capability;
+use educore_academic::{AcademicYearId, StudentId};
 use educore_core::tenant::TenantContext;
 
 use crate::value_objects::{
@@ -1610,6 +1611,14 @@ impl ConfigureFeesCarryForwardCommand {
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesCarryForwardConfigure]
     }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFeesCarryForwardLogCommand {
+    pub tenant: TenantContext,
+    pub student_id: StudentId,
+    pub academic_year_id: AcademicYearId,
+    pub amount_minor: i64,
+    pub description: Option<String>,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFeesCarryForwardLogCommand {
