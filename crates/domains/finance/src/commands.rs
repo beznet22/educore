@@ -740,6 +740,9 @@ impl DeleteDirectFeesInstallmentAssignCommand {
 pub struct CreateDirectFeesSettingCommand {
     pub tenant: TenantContext,
     pub enabled: bool,
+    pub reminder_before: i64,
+    pub no_installment: i64,
+    pub due_date_from_sem: u8,
     pub description: Option<String>,
 }
 

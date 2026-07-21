@@ -34,7 +34,8 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 use crate::value_objects::{
     validate_discount_name, validate_donor_name, validate_ledger_name, AccountType, Amount,
     ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankStatementAttachmentId,
-    ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DiscountType, DonorId,
+    ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
+    DiscountType, DonorId,
     DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId,
     FeesAssignId, FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
     FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId,
@@ -2338,6 +2339,184 @@ impl RealQuestionBankFee {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "QuestionBankFee is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
+// RealDirectFeesSetting — Wave 69 (per-aggregate wave pattern from Waves 65–68)
+// =============================================================================
+//
+// Per v3 Part 2 F43 / checklist § DirectFeesSetting: 2 invariants:
+//   - DFS I-1: reminder_before ≥ 0, no_installment ≥ 0
+//   - DFS I-2: due_date_from_sem ∈ 1..=28
+// Per-school configuration aggregate (the direct-fees programme's
+// per-school config: enabled flag + reminder window + installment cap +
+// due-day-of-month). The placeholder stub above
+// (`finance_aggregate_stub! { struct DirectFeesSetting { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealDirectFeesSetting` for new code; the stub is kept only to avoid
+// breaking downstream code that referenced `DirectFeesSetting` as a type
+// name during Phase 7.
+
+/// Per-school direct-fees programme configuration. Two invariants:
+/// `reminder_before >= 0 && no_installment >= 0` (DFS I-1);
+/// `due_date_from_sem in 1..=28` (DFS I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealDirectFeesSetting {
+    /// The typed id (school_id + uuid).
+    pub id: DirectFeesSettingId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// Whether the direct-fees programme is enabled at this school.
+    pub enabled: bool,
+    /// Days before due_date that a reminder is sent (DFS I-1: >= 0).
+    pub reminder_before: i64,
+    /// Maximum number of installments a student may have open (DFS I-1: >= 0).
+    pub no_installment: i64,
+    /// Day of month on which installments fall due (DFS I-2: 1..=28).
+    pub due_date_from_sem: u8,
+    /// Optional free-form description.
+    pub description: Option<String>,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealDirectFeesSetting {
+    /// Maximum allowed day-of-month for `due_date_from_sem` (DFS I-2).
+    /// 28 (not 31) is chosen so the due-day is valid for every month,
+    /// including February in non-leap years.
+    pub const MAX_DUE_DAY: u8 = 28;
+
+    /// Constructs a new `RealDirectFeesSetting`. Enforces DFS I-1
+    /// (`reminder_before >= 0`, `no_installment >= 0`) and DFS I-2
+    /// (`due_date_from_sem in 1..=MAX_DUE_DAY`).
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: DirectFeesSettingId,
+        enabled: bool,
+        reminder_before: i64,
+        no_installment: i64,
+        due_date_from_sem: u8,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        if reminder_before < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "DirectFeesSetting reminder_before must be non-negative (DFS I-1)",
+            ));
+        }
+        if no_installment < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "DirectFeesSetting no_installment must be non-negative (DFS I-1)",
+            ));
+        }
+        if !(1..=Self::MAX_DUE_DAY).contains(&due_date_from_sem) {
+            return Err(educore_core::error::DomainError::validation(format!(
+                "DirectFeesSetting due_date_from_sem must be in 1..={} (DFS I-2)",
+                Self::MAX_DUE_DAY
+            )));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            enabled,
+            reminder_before,
+            no_installment,
+            due_date_from_sem,
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the direct-fees setting is currently active.
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Mutates enabled + reminder_before + no_installment +
+    /// due_date_from_sem + description. Enforces DFS I-1 (both ints
+    /// >= 0) and DFS I-2 (day in 1..=MAX_DUE_DAY). Bumps version,
+    /// advances `updated_at`, sets `updated_by`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn update_config(
+        &mut self,
+        enabled: bool,
+        reminder_before: i64,
+        no_installment: i64,
+        due_date_from_sem: u8,
+        description: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if reminder_before < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "DirectFeesSetting reminder_before must be non-negative (DFS I-1)",
+            ));
+        }
+        if no_installment < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "DirectFeesSetting no_installment must be non-negative (DFS I-1)",
+            ));
+        }
+        if !(1..=Self::MAX_DUE_DAY).contains(&due_date_from_sem) {
+            return Err(educore_core::error::DomainError::validation(format!(
+                "DirectFeesSetting due_date_from_sem must be in 1..={} (DFS I-2)",
+                Self::MAX_DUE_DAY
+            )));
+        }
+        self.enabled = enabled;
+        self.reminder_before = reminder_before;
+        self.no_installment = no_installment;
+        self.due_date_from_sem = due_date_from_sem;
+        self.description = description
+            .map(|d| d.trim().to_owned())
+            .filter(|d| !d.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the direct-fees setting by flipping `active_status`
+    /// to `Retired`. Bumps version, advances `updated_at`, sets
+    /// `updated_by`.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "DirectFeesSetting is already retired",
             ));
         }
         self.active_status = ActiveStatus::Retired;

@@ -26,7 +26,8 @@ use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
     BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId, Currency,
-    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentId, DueFeesLoginPreventId,
+    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentId, DirectFeesSettingId,
+    DueFeesLoginPreventId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentId,
     FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
@@ -1239,6 +1240,183 @@ impl DomainEvent for QuestionBankFeeDeleted {
     }
     fn school_id(&self) -> SchoolId {
         self.question_bank_fee_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// DirectFeesSetting events (Wave 69 — RealDirectFeesSetting headline events)
+// =============================================================================
+
+/// Emitted when a new `RealDirectFeesSetting` is created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesSettingCreated {
+    pub direct_fees_setting_id: DirectFeesSettingId,
+    pub enabled: bool,
+    pub reminder_before: i64,
+    pub no_installment: i64,
+    pub due_date_from_sem: u8,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesSettingCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        direct_fees_setting_id: DirectFeesSettingId,
+        enabled: bool,
+        reminder_before: i64,
+        no_installment: i64,
+        due_date_from_sem: u8,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            direct_fees_setting_id,
+            enabled,
+            reminder_before,
+            no_installment,
+            due_date_from_sem,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesSettingCreated {
+    const EVENT_TYPE: &'static str = "finance.direct_fees_setting.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.direct_fees_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.direct_fees_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealDirectFeesSetting` is updated (any of enabled /
+/// reminder_before / no_installment / due_date_from_sem / description
+/// changes).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesSettingUpdated {
+    pub direct_fees_setting_id: DirectFeesSettingId,
+    pub enabled: bool,
+    pub reminder_before: i64,
+    pub no_installment: i64,
+    pub due_date_from_sem: u8,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesSettingUpdated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        direct_fees_setting_id: DirectFeesSettingId,
+        enabled: bool,
+        reminder_before: i64,
+        no_installment: i64,
+        due_date_from_sem: u8,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            direct_fees_setting_id,
+            enabled,
+            reminder_before,
+            no_installment,
+            due_date_from_sem,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesSettingUpdated {
+    const EVENT_TYPE: &'static str = "finance.direct_fees_setting.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.direct_fees_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.direct_fees_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealDirectFeesSetting` is retired (soft-deleted via
+/// `RealDirectFeesSetting::retire`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesSettingDeleted {
+    pub direct_fees_setting_id: DirectFeesSettingId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesSettingDeleted {
+    pub fn new(
+        direct_fees_setting_id: DirectFeesSettingId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            direct_fees_setting_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesSettingDeleted {
+    const EVENT_TYPE: &'static str = "finance.direct_fees_setting.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.direct_fees_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.direct_fees_setting_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

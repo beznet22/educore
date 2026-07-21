@@ -34,12 +34,12 @@ use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
-    Expense, FeesInvoice, FeesPayment, RealFmFeesGroup, RealIncomeHead, RealInvoiceSetting,
-    RealQuestionBankFee, Wallet, WalletTransaction,
+    Expense, FeesInvoice, FeesPayment, RealDirectFeesSetting, RealFmFeesGroup, RealIncomeHead,
+    RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
 };
 use crate::commands::{
-    CreateDirectFeesInstallmentChildPaymentCommand, CreateDonorCommand,
-    CreateFeesAssignDiscountCommand, CreateFeesInstallmentCreditCommand,
+    CreateDirectFeesInstallmentChildPaymentCommand, CreateDirectFeesSettingCommand,
+    CreateDonorCommand, CreateFeesAssignDiscountCommand, CreateFeesInstallmentCreditCommand,
     CreateFeesInvoiceSettingCommand, CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
     CreateFmFeesInvoiceCommand, CreateFmFeesInvoiceSettingCommand,
     CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
@@ -54,14 +54,15 @@ use crate::commands::{
     ReadInventoryPaymentCommand, ReadProductPurchaseCommand, ReadTransactionCommand,
 };
 use crate::events::{
-    ExpenseRecorded, FmFeesGroupCreated, IncomeHeadCreated, InvoiceNumberingConfigured,
-    InvoiceSettingCreated, PaymentReceived, QuestionBankFeeCreated, WalletCreated,
-    WalletCredited, WalletDebited, WalletRefundRequested, WalletTransactionApproved,
-    WalletTransactionRejected,
+    DirectFeesSettingCreated, ExpenseRecorded, FmFeesGroupCreated, IncomeHeadCreated,
+    InvoiceNumberingConfigured, InvoiceSettingCreated, PaymentReceived, QuestionBankFeeCreated,
+    WalletCreated, WalletCredited, WalletDebited, WalletRefundRequested,
+    WalletTransactionApproved, WalletTransactionRejected,
 };
 use crate::value_objects::{
-    BankAccountId, Currency, ExpenseHeadId, ExpenseId, FeesInvoiceId, FeesPaymentId, FmFeesGroupId,
-    IncomeHeadId, InvoiceSettingId, QuestionBankFeeId, WalletId, WalletTransactionId, WalletTxType,
+    BankAccountId, Currency, DirectFeesSettingId, ExpenseHeadId, ExpenseId, FeesInvoiceId,
+    FeesPaymentId, FmFeesGroupId, IncomeHeadId, InvoiceSettingId, QuestionBankFeeId, WalletId,
+    WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -1239,6 +1240,58 @@ where
         now,
     );
     Ok((fee, event))
+}
+
+// =============================================================================
+// Command: create a direct-fees setting (per-school config, Wave 69)
+// =============================================================================
+
+/// Builds a new [`RealDirectFeesSetting`] aggregate + a
+/// [`DirectFeesSettingCreated`] event. The direct-fees setting is the
+/// per-school config for the direct-fees programme. Enforces DFS I-1
+/// (`reminder_before >= 0`, `no_installment >= 0`) and DFS I-2
+/// (`due_date_from_sem in 1..=MAX_DUE_DAY`).
+#[allow(clippy::too_many_arguments)]
+pub fn create_direct_fees_setting<C, G>(
+    cmd: CreateDirectFeesSettingCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealDirectFeesSetting, DirectFeesSettingCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let school = cmd.tenant.school_id;
+    let id = DirectFeesSettingId::new(school, event_id_to_uuid(event_id));
+
+    let mut setting = RealDirectFeesSetting::fresh(
+        id,
+        cmd.enabled,
+        cmd.reminder_before,
+        cmd.no_installment,
+        cmd.due_date_from_sem,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    setting.last_event_id = Some(event_id);
+
+    let event = DirectFeesSettingCreated::new(
+        id,
+        setting.enabled,
+        setting.reminder_before,
+        setting.no_installment,
+        setting.due_date_from_sem,
+        setting.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((setting, event))
 }
 
 /// Handler skeleton: read an `FmFeesGroup` aggregate.
