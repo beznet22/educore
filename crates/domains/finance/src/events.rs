@@ -1541,6 +1541,119 @@ impl DomainEvent for FeesCarryForwardLogRetired {
 }
 
 // =============================================================================
+// FmFeesInvoiceLineNote events (Wave 72 — RealFmFeesInvoiceLineNote headline events)
+// =============================================================================
+//
+// Per v3 Part 2 F30 + checklist § FmFeesInvoiceLineNote: 2 invariants:
+//   - FFILN I-1: note non-empty (validated in RealFmFeesInvoiceLineNote::fresh)
+//   - FFILN I-2: append-only (enforced at the API surface by NOT emitting
+//                an `Updated` event for this aggregate). The only two
+//                transitions are create (always present) and retire
+//                (soft-tombstone, never a modification of the original
+//                record).
+
+/// Emitted when a new `RealFmFeesInvoiceLineNote` row is appended.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesInvoiceLineNoteCreated {
+    pub fm_fees_invoice_line_note_id: FmFeesInvoiceLineNoteId,
+    pub fm_fees_invoice_id: FmFeesInvoiceId,
+    pub note: String,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesInvoiceLineNoteCreated {
+    pub fn new(
+        fm_fees_invoice_line_note_id: FmFeesInvoiceLineNoteId,
+        fm_fees_invoice_id: FmFeesInvoiceId,
+        note: String,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_invoice_line_note_id,
+            fm_fees_invoice_id,
+            note,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesInvoiceLineNoteCreated {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_invoice_line_note.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_invoice_line_note";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_invoice_line_note_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_invoice_line_note_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesInvoiceLineNote` row is retired
+/// (soft-deleted via `RealFmFeesInvoiceLineNote::retire`). Note: this
+/// does NOT violate FFILN I-2 (append-only) — the tombstone preserves
+/// the original record in the audit footer + the `Retired` active_status.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesInvoiceLineNoteRetired {
+    pub fm_fees_invoice_line_note_id: FmFeesInvoiceLineNoteId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesInvoiceLineNoteRetired {
+    pub fn new(
+        fm_fees_invoice_line_note_id: FmFeesInvoiceLineNoteId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_invoice_line_note_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesInvoiceLineNoteRetired {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_invoice_line_note.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_invoice_line_note";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_invoice_line_note_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_invoice_line_note_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
 // Donor events (Wave 71 — RealDonor headline events)
 // =============================================================================
 

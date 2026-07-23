@@ -1105,6 +1105,20 @@ pub fn validate_donor_name(name: &str) -> Result<()> {
     Ok(())
 }
 
+/// Validates that a free-form note text (e.g. line-note, transaction
+/// note, refund reason) is 1..=2000 chars after trim. Used by the
+/// `FmFeesInvoiceLineNote` and `FmFeesTransactionLineNote` aggregates
+/// (FFILN I-1, FFTLN I-1).
+pub fn validate_note_text(note: &str) -> Result<()> {
+    if note.is_empty() || note.chars().count() > 2000 {
+        return Err(DomainError::validation(format!(
+            "note text must be 1..=2000 chars, got {}",
+            note.chars().count()
+        )));
+    }
+    Ok(())
+}
+
 /// Validates that a donor email is non-empty, ≤200 chars, and contains
 /// an `@` sign (RFC-5322 light check, matching the HR pattern in
 /// `crates/domains/hr/src/value_objects.rs::validate_email`).

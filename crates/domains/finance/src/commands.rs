@@ -1620,6 +1620,25 @@ pub struct CreateFeesCarryForwardLogCommand {
     pub amount_minor: i64,
     pub description: Option<String>,
 }
+
+/// Command: append a new free-form note to an [`FmFeesInvoice`] line
+/// (per v3 Part 2 F30 + checklist § FmFeesInvoiceLineNote). Dispatched
+/// by the `create_fm_fees_invoice_line_note` service function in
+/// `services.rs`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFmFeesInvoiceLineNoteCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_invoice_id: FmFeesInvoiceId,
+    pub note: String,
+}
+
+impl CreateFmFeesInvoiceLineNoteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceConfigure]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFeesCarryForwardLogCommand {
     pub tenant: TenantContext,

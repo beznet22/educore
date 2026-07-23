@@ -2651,6 +2651,118 @@ impl RealFeesCarryForwardLog {
 }
 
 // =============================================================================
+// RealFmFeesInvoiceLineNote — Wave 72 (per-aggregate wave pattern from
+// Waves 65–71)
+// =============================================================================
+//
+// Per v3 Part 2 F30 + checklist § FmFeesInvoiceLineNote: 2 invariants:
+//   - FFILN I-1: note non-empty (after trim, 1..=2000 chars)
+//   - FFILN I-2: append-only (no update / no delete; only retire)
+// Free-form note attached to a line on an `FmFeesInvoice` aggregate.
+// Used by school finance staff to record per-line context that doesn't
+// fit the structured fields. The placeholder stub above
+// (`finance_aggregate_stub! { struct FmFeesInvoiceLineNote { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealFmFeesInvoiceLineNote` for new code; the stub is kept only to
+// avoid breaking downstream code that referenced
+// `FmFeesInvoiceLineNote` as a type name during Phase 7.
+
+/// A free-form note line attached to a [`FmFeesInvoice`] aggregate.
+/// Two invariants: note is non-empty after trim (FFILN I-1); the
+/// aggregate is append-only (FFILN I-2, enforced at the API surface by
+/// *not* exposing any `update_*` mutator). The only post-creation
+/// transition is the version-bumping `retire()` (soft-delete for
+/// legal-record retention), which is itself a tombstone and not a
+/// modification.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFmFeesInvoiceLineNote {
+    /// The typed id (school_id + uuid).
+    pub id: FmFeesInvoiceLineNoteId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The parent invoice this note line belongs to.
+    pub fm_fees_invoice_id: FmFeesInvoiceId,
+    /// The note text (1..=2000 chars after trim, per FFILN I-1).
+    pub note: String,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFmFeesInvoiceLineNote {
+    /// Constructs a new `RealFmFeesInvoiceLineNote`. Enforces FFILN I-1
+    /// (note non-empty, 1..=2000 chars after trim). Note: FFILN I-2
+    /// (append-only) is enforced at the API surface — this aggregate
+    /// intentionally exposes no `update_*` mutator. The only
+    /// post-creation transition is the version-bumping `retire()`
+    /// (soft-delete, for legal-record retention policies).
+    pub fn fresh(
+        id: FmFeesInvoiceLineNoteId,
+        fm_fees_invoice_id: FmFeesInvoiceId,
+        note: String,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        let trimmed = note.trim();
+        crate::value_objects::validate_note_text(trimmed)?;
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            fm_fees_invoice_id,
+            note: trimmed.to_owned(),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the note line is currently active.
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the note line by flipping `active_status` to
+    /// `Retired`. Bumps version, advances `updated_at`, sets
+    /// `updated_by`. Note: this does **not** violate FFILN I-2
+    /// (append-only) because the audit footer + the `Retired` status
+    /// together preserve the original record; the soft-delete is a
+    /// tombstone, not a modification of the note text or the parent
+    /// invoice reference.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "FmFeesInvoiceLineNote is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
 // RealDonor — Wave 71 (per-aggregate wave pattern from Waves 65–70)
 // =============================================================================
 //

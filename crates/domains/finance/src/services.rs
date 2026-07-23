@@ -35,12 +35,13 @@ use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealDirectFeesSetting, RealDonor,
-    RealFeesCarryForwardLog, RealFmFeesGroup, RealIncomeHead, RealInvoiceSetting,
-    RealQuestionBankFee, Wallet, WalletTransaction,
+    RealFeesCarryForwardLog, RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealIncomeHead,
+    RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
 };
 use crate::commands::{
     CreateDirectFeesInstallmentChildPaymentCommand, CreateDirectFeesSettingCommand,
     CreateDonorCommand, CreateFeesAssignDiscountCommand, CreateFeesCarryForwardLogCommand,
+    CreateFmFeesInvoiceLineNoteCommand,
     CreateFeesInstallmentCreditCommand,
     CreateFeesInvoiceSettingCommand, CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
     CreateFmFeesInvoiceCommand, CreateFmFeesInvoiceSettingCommand,
@@ -57,14 +58,16 @@ use crate::commands::{
 };
 use crate::events::{
     DirectFeesSettingCreated, DonorCreated, ExpenseRecorded, FeesCarryForwardLogCreated,
-    FmFeesGroupCreated, IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
+    FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated, IncomeHeadCreated,
+    InvoiceNumberingConfigured, InvoiceSettingCreated,
     PaymentReceived, QuestionBankFeeCreated, WalletCreated, WalletCredited, WalletDebited,
     WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
 };
 use crate::value_objects::{
     BankAccountId, Currency, DirectFeesSettingId, DonorId, ExpenseHeadId, ExpenseId,
-    FeesCarryForwardLogId, FeesInvoiceId, FeesPaymentId, FmFeesGroupId, IncomeHeadId,
-    InvoiceSettingId, QuestionBankFeeId, WalletId, WalletTransactionId, WalletTxType,
+    FeesCarryForwardLogId, FeesInvoiceId, FeesPaymentId, FmFeesGroupId, FmFeesInvoiceId,
+    FmFeesInvoiceLineNoteId, IncomeHeadId, InvoiceSettingId, QuestionBankFeeId, WalletId,
+    WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -1355,6 +1358,48 @@ where
 {
     let _ = (cmd, clock, ids);
     Ok(())
+}
+
+/// Service function: append a new free-form note to an [`FmFeesInvoice`]
+/// line. Per v3 Part 2 F30 + checklist § FmFeesInvoiceLineNote, enforces
+/// FFILN I-1 (note 1..=2000 chars after trim, via
+/// `RealFmFeesInvoiceLineNote::fresh` -> `validate_note_text`) and
+/// FFILN I-2 (append-only — no update mutator exists on the
+/// aggregate, and no `Updated` event is emitted).
+pub fn create_fm_fees_invoice_line_note<C, G>(
+    cmd: CreateFmFeesInvoiceLineNoteCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFmFeesInvoiceLineNote, FmFeesInvoiceLineNoteCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let school = cmd.tenant.school_id;
+    let id = FmFeesInvoiceLineNoteId::new(school, event_id_to_uuid(event_id));
+
+    let mut note_row = RealFmFeesInvoiceLineNote::fresh(
+        id,
+        cmd.fm_fees_invoice_id,
+        cmd.note,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    note_row.last_event_id = Some(event_id);
+
+    let event = FmFeesInvoiceLineNoteCreated::new(
+        id,
+        note_row.fm_fees_invoice_id,
+        note_row.note.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((note_row, event))
 }
 
 /// Handler skeleton: create an `FmFeesType` aggregate.

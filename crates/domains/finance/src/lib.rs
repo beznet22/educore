@@ -47,8 +47,8 @@ pub mod prelude {
     // Headline 6 aggregates
     pub use crate::aggregate::{
         Expense, FeesInvoice, FeesPayment, RealDirectFeesSetting, RealDonor,
-        RealFeesCarryForwardLog, RealFmFeesGroup, RealIncomeHead, RealInvoiceSetting,
-        RealQuestionBankFee, Wallet, WalletTransaction,
+        RealFeesCarryForwardLog, RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealIncomeHead,
+        RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::WalletTransactionApproval;
@@ -57,7 +57,8 @@ pub mod prelude {
         BlockLoginForDueFeesCommand, CarryForwardFeesBalanceCommand, ConfigureFeesGroupCommand,
         ConfigureFeesTypeCommand, ConfigureInvoiceNumberingCommand,
         CreateDirectFeesSettingCommand, CreateDonorCommand, CreateExpenseHeadCommand,
-        CreateFeesCarryForwardLogCommand, CreateFmFeesGroupCommand, CreateIncomeHeadCommand,
+        CreateFeesCarryForwardLogCommand, CreateFmFeesGroupCommand,
+        CreateFmFeesInvoiceLineNoteCommand, CreateIncomeHeadCommand,
         CreateInvoiceSettingCommand, CreateQuestionBankFeeCommand, CreateWalletCommand,
         CreditWalletCommand,
         DeductWalletCreditCommand, OpenBankAccountCommand,
@@ -74,7 +75,8 @@ pub mod prelude {
     pub use crate::errors::FinanceError;
     pub use crate::events::{
         DirectFeesSettingCreated, DonorCreated, ExpenseRecorded, FeesCarryForwardLogCreated,
-        FeesCarryForwardLogRetired, FmFeesGroupCreated, IncomeHeadCreated,
+        FeesCarryForwardLogRetired, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
+        FmFeesInvoiceLineNoteRetired, IncomeHeadCreated,
         InvoiceNumberingConfigured, InvoiceSettingCreated, PaymentReceived,
         PayrollPaymentRecorded, QuestionBankFeeCreated, WalletCreated, WalletCredited,
         WalletDebited, WalletRefundRequested, WalletTransactionApproved,
@@ -84,9 +86,10 @@ pub mod prelude {
     pub use crate::repository::{WalletRepository, WalletTransactionRepository};
     pub use crate::services::{
         approve_wallet_transaction, configure_invoice_numbering, create_direct_fees_setting,
-        create_donor, create_fees_carry_forward_log, create_fm_fees_group, create_income_head,
-        create_invoice_setting, create_question_bank_fee, create_wallet, credit_wallet,
-        deduct_wallet_credit, record_expense, record_payment, reject_wallet_transaction,
+        create_donor, create_fees_carry_forward_log, create_fm_fees_group,
+        create_fm_fees_invoice_line_note, create_income_head, create_invoice_setting,
+        create_question_bank_fee, create_wallet, credit_wallet, deduct_wallet_credit,
+        record_expense, record_payment, reject_wallet_transaction,
         request_wallet_refund, ChargeRequest, PaymentProvider, PaymentProviderPaymentId,
         PaymentProviderStatus, PaymentReceipt, PaymentStatus, RefundReceipt, RefundRequest,
         StubPaymentProvider, WalletService,
