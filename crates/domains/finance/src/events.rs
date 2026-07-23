@@ -2786,46 +2786,167 @@ impl DomainEvent for IncomeApprovalRecorded {
     }
 }
 
-/// Emitted when a `WalletTransactionApproval` child entity is recorded.
+/// Emitted when a new `WalletTransactionApproval` child row is created
+/// (initial pending state). Per v3 Part 2 + checklist § WTA: WTA I-1
+/// (state machine pending → approved/rejected) is enforced in the
+/// aggregate via `approve()` / `reject()`; WTA I-2 (timestamps +
+/// reason) is enforced via the `approved_at` / `rejected_at` /
+/// `reject_note` fields on the aggregate and the corresponding event
+/// payloads.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct WalletTransactionApprovalRecorded {
+pub struct WalletTransactionApprovalCreated {
+    pub wallet_transaction_approval_id: WalletTransactionApprovalId,
+    pub wallet_transaction_id: WalletTransactionId,
+    pub created_by: UserId,
     pub event_id: EventId,
-    pub school_id: SchoolId,
-    pub aggregate_id: WalletTransactionApprovalId,
     pub correlation_id: CorrelationId,
     pub occurred_at: Timestamp,
 }
 
-impl WalletTransactionApprovalRecorded {
+impl WalletTransactionApprovalCreated {
     pub fn new(
+        wallet_transaction_approval_id: WalletTransactionApprovalId,
+        wallet_transaction_id: WalletTransactionId,
+        created_by: UserId,
         event_id: EventId,
-        school_id: SchoolId,
-        aggregate_id: WalletTransactionApprovalId,
         correlation_id: CorrelationId,
         occurred_at: Timestamp,
     ) -> Self {
         Self {
+            wallet_transaction_approval_id,
+            wallet_transaction_id,
+            created_by,
             event_id,
-            school_id,
-            aggregate_id,
             correlation_id,
             occurred_at,
         }
     }
 }
 
-impl DomainEvent for WalletTransactionApprovalRecorded {
-    const EVENT_TYPE: &'static str = "finance.wallet_transaction_approval.recorded";
+impl DomainEvent for WalletTransactionApprovalCreated {
+    const EVENT_TYPE: &'static str = "finance.wallet_transaction_approval.created";
     const SCHEMA_VERSION: u32 = 1;
     const AGGREGATE_TYPE: &'static str = "wallet_transaction_approval";
     fn event_id(&self) -> EventId {
         self.event_id
     }
     fn aggregate_id(&self) -> Uuid {
-        self.aggregate_id.as_uuid()
+        self.wallet_transaction_approval_id.as_uuid()
     }
     fn school_id(&self) -> SchoolId {
-        self.school_id
+        self.wallet_transaction_approval_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `WalletTransactionApproval` row transitions from
+/// `pending` to `approved` via `WalletTransactionApproval::approve()`.
+/// Per WTA I-1, this is the first terminal state of the state machine.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WalletTransactionApprovalApproved {
+    pub wallet_transaction_approval_id: WalletTransactionApprovalId,
+    pub wallet_transaction_id: WalletTransactionId,
+    pub approver_id: UserId,
+    pub approved_at: Timestamp,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl WalletTransactionApprovalApproved {
+    pub fn new(
+        wallet_transaction_approval_id: WalletTransactionApprovalId,
+        wallet_transaction_id: WalletTransactionId,
+        approver_id: UserId,
+        approved_at: Timestamp,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            wallet_transaction_approval_id,
+            wallet_transaction_id,
+            approver_id,
+            approved_at,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for WalletTransactionApprovalApproved {
+    const EVENT_TYPE: &'static str = "finance.wallet_transaction_approval.approved";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "wallet_transaction_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.wallet_transaction_approval_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.wallet_transaction_approval_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `WalletTransactionApproval` row transitions from
+/// `pending` to `rejected` via `WalletTransactionApproval::reject()`.
+/// Per WTA I-1, this is the second terminal state of the state machine.
+/// Per WTA I-2, the `reject_note` (reason) is required and recorded.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WalletTransactionApprovalRejected {
+    pub wallet_transaction_approval_id: WalletTransactionApprovalId,
+    pub wallet_transaction_id: WalletTransactionId,
+    pub rejecter_id: UserId,
+    pub rejected_at: Timestamp,
+    pub reject_note: String,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl WalletTransactionApprovalRejected {
+    pub fn new(
+        wallet_transaction_approval_id: WalletTransactionApprovalId,
+        wallet_transaction_id: WalletTransactionId,
+        rejecter_id: UserId,
+        rejected_at: Timestamp,
+        reject_note: String,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            wallet_transaction_approval_id,
+            wallet_transaction_id,
+            rejecter_id,
+            rejected_at,
+            reject_note,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for WalletTransactionApprovalRejected {
+    const EVENT_TYPE: &'static str = "finance.wallet_transaction_approval.rejected";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "wallet_transaction_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.wallet_transaction_approval_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.wallet_transaction_approval_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

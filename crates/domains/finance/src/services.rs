@@ -39,11 +39,14 @@ use crate::aggregate::{
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionLineNote, RealIncomeHead, RealInvoiceSetting,
     RealQuestionBankFee, Wallet, WalletTransaction,
 };
+use crate::entities::WalletTransactionApproval;
 use crate::commands::{
-    CreateChartOfAccountCommand, CreateDirectFeesInstallmentAssignChildCommand,
-    CreateDirectFeesInstallmentChildPaymentCommand, CreateDirectFeesSettingCommand,
-    CreateDonorCommand, CreateFeesAssignDiscountCommand, CreateFeesCarryForwardLogCommand,
-    CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
+    ApproveWalletTransactionApprovalCommand, CreateChartOfAccountCommand,
+    CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesInstallmentChildPaymentCommand,
+    CreateDirectFeesSettingCommand, CreateDonorCommand, CreateFeesAssignDiscountCommand,
+    CreateFeesCarryForwardLogCommand, CreateFmFeesInvoiceLineNoteCommand,
+    CreateFmFeesTransactionLineNoteCommand,
+    CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
     CreateFeesInstallmentCreditCommand,
     CreateFeesInvoiceSettingCommand, CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
     CreateFmFeesInvoiceCommand, CreateFmFeesInvoiceSettingCommand,
@@ -63,7 +66,8 @@ use crate::events::{
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseRecorded, FeesCarryForwardLogCreated, FmFeesGroupCreated,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionLineNoteAdded, IncomeHeadCreated,
-    InvoiceNumberingConfigured, InvoiceSettingCreated,
+    InvoiceNumberingConfigured, InvoiceSettingCreated, WalletTransactionApprovalApproved,
+    WalletTransactionApprovalCreated, WalletTransactionApprovalRejected,
     PaymentReceived, QuestionBankFeeCreated, WalletCreated, WalletCredited, WalletDebited,
     WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
 };
@@ -72,7 +76,7 @@ use crate::value_objects::{
     DonorId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesInvoiceId, FeesPaymentId,
     FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionId,
     FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId, QuestionBankFeeId, WalletId,
-    WalletTransactionId, WalletTxType,
+    WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -397,6 +401,130 @@ where
         note,
         event_id,
         tx.correlation_id,
+        now,
+    ))
+}
+
+// =============================================================================
+// WalletTransactionApproval (child entity — Wave 76 full drop)
+// =============================================================================
+//
+// Per v3 Part 2 + checklist § WalletTransactionApproval: 2
+// invariants:
+//   - WTA I-1: state machine pending → approved/rejected (enforced
+//              in `WalletTransactionApproval::approve()` /
+//              `WalletTransactionApproval::reject()` — both methods
+//              return Conflict if the row is already approved or
+//              already rejected).
+//   - WTA I-2: timestamps + reason recorded (approved_at + rejected_at
+//              + reject_note, all required on transition).
+
+/// Service function: create a new `WalletTransactionApproval` row in
+/// the initial pending state. The supplied id is required (the
+/// dispatcher mints it for idempotency).
+pub fn create_wallet_transaction_approval<C, G>(
+    cmd: CreateWalletTransactionApprovalCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(WalletTransactionApproval, WalletTransactionApprovalCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    // Defense-in-depth: id must belong to the tenant's school.
+    if cmd.wallet_transaction_approval_id.school_id() != cmd.tenant.school_id
+        || cmd.wallet_transaction_id.school_id() != cmd.tenant.school_id
+    {
+        return Err(educore_core::error::DomainError::validation(
+            "CreateWalletTransactionApprovalCommand ids do not belong to tenant's school",
+        ));
+    }
+    let mut approval = WalletTransactionApproval::fresh(
+        cmd.wallet_transaction_id,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    );
+    // Overwrite the auto-derived school_id with the supplied id's
+    // school (the fresh() helper derives from the parent
+    // wallet_transaction_id; we want the child row's own typed id to
+    // be the source of truth).
+    approval.school_id = cmd.wallet_transaction_approval_id.school_id();
+    approval.last_event_id = Some(event_id);
+
+    let event = WalletTransactionApprovalCreated::new(
+        cmd.wallet_transaction_approval_id,
+        cmd.wallet_transaction_id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((approval, event))
+}
+
+/// Service function: transition a `WalletTransactionApproval` row
+/// from `pending` to `approved`. Per WTA I-1, returns Conflict if
+/// the row is already approved or already rejected.
+pub fn approve_wallet_transaction_approval<C, G>(
+    cmd: ApproveWalletTransactionApprovalCommand,
+    approval: &mut WalletTransactionApproval,
+    clock: &C,
+    ids: &G,
+) -> Result<WalletTransactionApprovalApproved>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    approval.approve(cmd.approver_user_id, now, event_id)?;
+    Ok(WalletTransactionApprovalApproved::new(
+        cmd.wallet_transaction_approval_id,
+        approval.wallet_transaction_id,
+        cmd.approver_user_id,
+        now,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Service function: transition a `WalletTransactionApproval` row
+/// from `pending` to `rejected` with a required reason note. Per WTA
+/// I-1, returns Conflict if the row is already approved or already
+/// rejected. Per WTA I-2, the reason note is validated via
+/// `validate_reject_note` (1..=500 chars after trim).
+pub fn reject_wallet_transaction_approval<C, G>(
+    cmd: RejectWalletTransactionApprovalCommand,
+    approval: &mut WalletTransactionApproval,
+    clock: &C,
+    ids: &G,
+) -> Result<WalletTransactionApprovalRejected>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let trimmed = cmd.reason.trim();
+    crate::value_objects::validate_reject_note(trimmed)?;
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    approval.reject(
+        cmd.rejecter_user_id,
+        trimmed.to_owned(),
+        now,
+        event_id,
+    )?;
+    Ok(WalletTransactionApprovalRejected::new(
+        cmd.wallet_transaction_approval_id,
+        approval.wallet_transaction_id,
+        cmd.rejecter_user_id,
+        now,
+        trimmed.to_owned(),
+        event_id,
+        cmd.tenant.correlation_id,
         now,
     ))
 }

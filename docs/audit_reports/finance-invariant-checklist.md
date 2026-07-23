@@ -386,8 +386,8 @@ See above.
 
 ### WalletTransactionApproval (2 invariants)
 
-- [~] WTA I-1: state machine — partial (ApprovalStatus enum)
-- [ ] WTA I-2: timestamps + reason — missing
+- [x] WTA I-1: state machine — **complete (Wave 76 full drop)** — enforced at the aggregate surface via `WalletTransactionApproval::approve()` (`crates/domains/finance/src/entities.rs:126`) and `WalletTransactionApproval::reject()` (`crates/domains/finance/src/entities.rs:158`). Both methods reject the transition with `Conflict` if the row is already approved or already rejected; the only valid transitions are `pending → approved` and `pending → rejected`. The `is_pending()` / `is_approved()` / `is_rejected()` predicates (`crates/domains/finance/src/entities.rs:97` and adjacent) make the state machine observable to consumers. The service functions `approve_wallet_transaction_approval` (`crates/domains/finance/src/services.rs:471`) and `reject_wallet_transaction_approval` (`crates/domains/finance/src/services.rs:500`) propagate the Conflict error unchanged. (Wave 76 supersedes the partial `[~]` entry that was pinned only on the `ApprovalStatus` enum — the state machine is now enforced in the aggregate, not just an enum.)
+- [x] WTA I-2: timestamps + reason — **complete (Wave 76 full drop)** — timestamps are recorded on transition (`approved_at` / `rejected_at` set by `approve()` / `reject()`; `updated_at` advances; `updated_by` set). Reject reason is validated via `validate_reject_note` (1..=500 chars after trim, `crates/domains/finance/src/value_objects.rs:1126`) inside the service function before the aggregate mutator is called; the trimmed reason is stored in `reject_note` and emitted in the `WalletTransactionApprovalRejected` event (`crates/domains/finance/src/events.rs:2903`, `EVENT_TYPE = "finance.wallet_transaction_approval.rejected"`).
 
 ## Cross-cutting Enforcement Gaps
 

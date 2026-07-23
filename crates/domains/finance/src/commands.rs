@@ -38,7 +38,8 @@ use crate::value_objects::{
     FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId, FmFeesWeaverId, GatewayMode,
     IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId,
     PaymentMethodId, PaymentMethodKind, PayrollPaymentId, PreventReason, ProductPurchaseId,
-    SalaryTemplateId, TransactionId, WalletId, WalletTransactionId, WalletTxType,
+    SalaryTemplateId, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId,
+    WalletTxType,
 };
 
 // =============================================================================
@@ -1583,6 +1584,64 @@ pub struct RejectWalletTransactionCommand {
 
 
 impl RejectWalletTransactionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceWalletReject]
+    }
+}
+
+/// Command: create a new `WalletTransactionApproval` child row in
+/// the initial pending state. Dispatched by the
+/// `create_wallet_transaction_approval` service function in
+/// `services.rs`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateWalletTransactionApprovalCommand {
+    pub tenant: TenantContext,
+    pub wallet_transaction_approval_id: WalletTransactionApprovalId,
+    pub wallet_transaction_id: WalletTransactionId,
+}
+
+impl CreateWalletTransactionApprovalCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceWalletApprove]
+    }
+}
+
+/// Command: transition a `WalletTransactionApproval` row from
+/// `pending` to `approved`. Dispatched by the
+/// `approve_wallet_transaction_approval` service function in
+/// `services.rs`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ApproveWalletTransactionApprovalCommand {
+    pub tenant: TenantContext,
+    pub wallet_transaction_approval_id: WalletTransactionApprovalId,
+    pub approver_user_id: UserId,
+}
+
+impl ApproveWalletTransactionApprovalCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceWalletApprove]
+    }
+}
+
+/// Command: transition a `WalletTransactionApproval` row from
+/// `pending` to `rejected` with a required reason note (per WTA I-2).
+/// Dispatched by the `reject_wallet_transaction_approval` service
+/// function in `services.rs`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RejectWalletTransactionApprovalCommand {
+    pub tenant: TenantContext,
+    pub wallet_transaction_approval_id: WalletTransactionApprovalId,
+    pub rejecter_user_id: UserId,
+    pub reason: String,
+}
+
+impl RejectWalletTransactionApprovalCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {

@@ -90,6 +90,97 @@ impl WalletTransactionApproval {
             correlation_id,
         }
     }
+
+    /// Returns `true` if the approval row is in the pending state
+    /// (no approval, no rejection recorded yet).
+    #[must_use]
+    pub const fn is_pending(&self) -> bool {
+        self.approved_at.is_none() && self.rejected_at.is_none()
+    }
+
+    /// Returns `true` if the approval row is currently active (not
+    /// retired via tombstone).
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Returns `true` if the approval row has been approved.
+    #[must_use]
+    pub const fn is_approved(&self) -> bool {
+        self.approved_at.is_some()
+    }
+
+    /// Returns `true` if the approval row has been rejected.
+    #[must_use]
+    pub const fn is_rejected(&self) -> bool {
+        self.rejected_at.is_some()
+    }
+
+    /// Transitions the approval row from `pending` to `approved`.
+    /// Per WTA I-1, this is a state-machine transition: cannot approve
+    /// a row that is already approved or rejected. Sets `approver_id`,
+    /// `approved_at`, bumps version, advances `updated_at`, sets
+    /// `updated_by`. The caller (the service layer) mints the
+    /// `event_id` and sets `last_event_id` after construction.
+    pub fn approve(
+        &mut self,
+        approver: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if self.is_approved() {
+            return Err(educore_core::error::DomainError::conflict(
+                "WalletTransactionApproval is already approved",
+            ));
+        }
+        if self.is_rejected() {
+            return Err(educore_core::error::DomainError::conflict(
+                "WalletTransactionApproval is already rejected; cannot approve",
+            ));
+        }
+        self.approver_id = Some(approver);
+        self.approved_at = Some(at);
+        self.updated_at = at;
+        self.updated_by = approver;
+        self.last_event_id = Some(event_id);
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Transitions the approval row from `pending` to `rejected`.
+    /// Per WTA I-1, this is a state-machine transition: cannot reject
+    /// a row that is already approved or rejected. Sets `rejecter_id`,
+    /// `rejected_at`, `reject_note`, bumps version, advances
+    /// `updated_at`, sets `updated_by`. Per WTA I-2, the reject note is
+    /// required and validated (1..=500 chars after trim) by the
+    /// caller via `validate_reject_note` before this method is called.
+    pub fn reject(
+        &mut self,
+        rejecter: UserId,
+        note: String,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if self.is_approved() {
+            return Err(educore_core::error::DomainError::conflict(
+                "WalletTransactionApproval is already approved; cannot reject",
+            ));
+        }
+        if self.is_rejected() {
+            return Err(educore_core::error::DomainError::conflict(
+                "WalletTransactionApproval is already rejected",
+            ));
+        }
+        self.rejecter_id = Some(rejecter);
+        self.rejected_at = Some(at);
+        self.reject_note = Some(note);
+        self.updated_at = at;
+        self.updated_by = rejecter;
+        self.last_event_id = Some(event_id);
+        self.version = self.version.next();
+        Ok(())
+    }
 }
 
 // =============================================================================

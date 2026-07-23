@@ -1119,6 +1119,20 @@ pub fn validate_note_text(note: &str) -> Result<()> {
     Ok(())
 }
 
+/// Validates that a rejection reason is 1..=500 chars after trim.
+/// Used by `WalletTransactionApproval::reject()` (WTA I-2) — a reject
+/// MUST carry a reason (per the spec) and the reason must be
+/// concise enough to fit in an audit log row.
+pub fn validate_reject_note(note: &str) -> Result<()> {
+    if note.is_empty() || note.chars().count() > 500 {
+        return Err(DomainError::validation(format!(
+            "reject note must be 1..=500 chars, got {}",
+            note.chars().count()
+        )));
+    }
+    Ok(())
+}
+
 /// Validates that a donor email is non-empty, ≤200 chars, and contains
 /// an `@` sign (RFC-5322 light check, matching the HR pattern in
 /// `crates/domains/hr/src/value_objects.rs::validate_email`).
