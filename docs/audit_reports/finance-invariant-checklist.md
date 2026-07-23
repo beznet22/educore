@@ -278,8 +278,8 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 
 ### FmFeesTransactionLineNote (2 invariants)
 
-- [ ] FFTLN I-1: non-empty — missing (placeholder stub)
-- [ ] FFTLN I-2: append-only — missing
+- [x] FFTLN I-1: non-empty — **complete (Wave 75 full drop)** — `RealFmFeesTransactionLineNote::fresh()` validates the note via the shared `crate::value_objects::validate_note_text` helper (non-empty, 1..=2000 chars after trim) at `crates/domains/finance/src/value_objects.rs:1112`. The note is stored trimmed. Aggregate at `crates/domains/finance/src/aggregate.rs:2679`. (Same shape as the Wave 72 FFILN drop; the helper is shared.)
+- [x] FFTLN I-2: append-only — **complete (Wave 75 full drop)** — enforced at the API surface by *not* exposing any `update_*` mutator on `RealFmFeesTransactionLineNote` (impl at `crates/domains/finance/src/aggregate.rs:2700`); only `fresh`, `is_active`, and `retire` are public methods. Additionally enforced at the event surface: only `FmFeesTransactionLineNoteAdded` (`events.rs:2459`, `EVENT_TYPE = "finance.fm_fees_transaction_line_note.added"`) and `FmFeesTransactionLineNoteRetired` (`events.rs:2515`, `EVENT_TYPE = "finance.fm_fees_transaction_line_note.retired"`) exist; no `Updated` event variant is defined. The `retire()` method preserves the original note text + parent transaction reference via the audit footer + `Retired` active_status, making it a tombstone rather than a modification.
 
 ### FmFeesType (3 invariants)
 

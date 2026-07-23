@@ -1662,6 +1662,30 @@ impl CreateFmFeesInvoiceLineNoteCommand {
         vec![Capability::FinanceFeesInvoiceConfigure]
     }
 }
+
+/// Command: append a new free-form note to an [`FmFeesTransaction`]
+/// line (per v3 Part 2 F32 + checklist § FmFeesTransactionLineNote).
+/// Dispatched by the `create_fm_fees_transaction_line_note` service
+/// function in `services.rs`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFmFeesTransactionLineNoteCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+    pub note: String,
+}
+
+impl CreateFmFeesTransactionLineNoteCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        // Falls back to FinanceFeesInvoiceConfigure since the RBAC
+        // capability enum does not yet have a Fm-prefix variant
+        // (per Wave 72 FFILN precedent). When Fm-prefix variants land
+        // in a future RBAC revision, this will be updated to
+        // FinanceFmFeesTransactionConfigure.
+        vec![Capability::FinanceFeesInvoiceConfigure]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFeesCarryForwardLogCommand {
     pub tenant: TenantContext,

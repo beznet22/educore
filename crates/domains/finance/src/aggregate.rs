@@ -2651,6 +2651,119 @@ impl RealFeesCarryForwardLog {
 }
 
 // =============================================================================
+// RealFmFeesTransactionLineNote — Wave 75 (per-aggregate wave pattern
+// from Waves 65–74)
+// =============================================================================
+//
+// Per v3 Part 2 F32 + checklist § FmFeesTransactionLineNote: 2
+// invariants:
+//   - FFTLN I-1: note non-empty (after trim, 1..=2000 chars)
+//   - FFTLN I-2: append-only (no update / no delete; only retire)
+// Free-form note attached to a line on an `FmFeesTransaction` aggregate.
+// The placeholder stub above
+// (`finance_aggregate_stub! { struct FmFeesTransactionLineNote { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealFmFeesTransactionLineNote` for new code; the stub is kept only
+// to avoid breaking downstream code that referenced
+// `FmFeesTransactionLineNote` as a type name during Phase 7.
+
+/// A free-form note line attached to a [`FmFeesTransaction`] aggregate.
+/// Two invariants: note is non-empty after trim (FFTLN I-1); the
+/// aggregate is append-only (FFTLN I-2, enforced at the API surface by
+/// *not* exposing any `update_*` mutator). The only post-creation
+/// transition is the version-bumping `retire()` (soft-delete for
+/// legal-record retention), which is itself a tombstone and not a
+/// modification.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFmFeesTransactionLineNote {
+    /// The typed id (school_id + uuid).
+    pub id: FmFeesTransactionLineNoteId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The parent transaction this note line belongs to.
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+    /// The note text (1..=2000 chars after trim, per FFTLN I-1).
+    pub note: String,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFmFeesTransactionLineNote {
+    /// Constructs a new `RealFmFeesTransactionLineNote`. Enforces
+    /// FFTLN I-1 (note 1..=2000 chars after trim) via
+    /// `RealFmFeesTransactionLineNote::fresh` -> `validate_note_text`.
+    /// Note: FFTLN I-2 (append-only) is enforced at the API surface —
+    /// this aggregate intentionally exposes no `update_*` mutator. The
+    /// only post-creation transition is the version-bumping `retire()`
+    /// (soft-delete, for legal-record retention policies).
+    pub fn fresh(
+        id: FmFeesTransactionLineNoteId,
+        fm_fees_transaction_id: FmFeesTransactionId,
+        note: String,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        let trimmed = note.trim();
+        crate::value_objects::validate_note_text(trimmed)?;
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            fm_fees_transaction_id,
+            note: trimmed.to_owned(),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the note line is currently active.
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the note line by flipping `active_status` to
+    /// `Retired`. Bumps version, advances `updated_at`, sets
+    /// `updated_by`. Note: this does **not** violate FFTLN I-2
+    /// (append-only) because the audit footer + the `Retired` status
+    /// together preserve the original record; the soft-delete is a
+    /// tombstone, not a modification of the note text or the parent
+    /// transaction reference.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "FmFeesTransactionLineNote is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
 // RealChartOfAccount — Wave 74 (per-aggregate wave pattern from
 // Waves 65–73)
 // =============================================================================

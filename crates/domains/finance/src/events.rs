@@ -33,7 +33,7 @@ use crate::value_objects::{
     FeesCarryForwardId, FeesCarryForwardLogId, FeesGroupId, FeesInstallmentAssignDiscountId,
     FeesInstallmentId,
     FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
-    FmFeesInvoiceLineNoteId, FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
+    FmFeesInvoiceLineNoteId, FmFeesTransactionId, FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
     IncomeId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId,
     PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, WalletId,
     WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
@@ -2447,28 +2447,41 @@ impl DomainEvent for FmFeesInvoiceLineNoteAdded {
     }
 }
 
-/// Emitted when an `FmFeesTransactionLineNote` child entity is added.
+/// Emitted when a new `RealFmFeesTransactionLineNote` row is appended.
+/// Per v3 Part 2 F32 + checklist § FmFeesTransactionLineNote: FFTLN
+/// I-1 (note 1..=2000 chars after trim, validated in
+/// `RealFmFeesTransactionLineNote::fresh`) and FFTLN I-2 (append-only,
+/// enforced at the API surface by NOT emitting an `Updated` event for
+/// this aggregate). The only two transitions are create (always
+/// present) and retire (soft-tombstone, never a modification of the
+/// original record).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FmFeesTransactionLineNoteAdded {
+    pub fm_fees_transaction_line_note_id: FmFeesTransactionLineNoteId,
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+    pub note: String,
+    pub created_by: UserId,
     pub event_id: EventId,
-    pub school_id: SchoolId,
-    pub aggregate_id: FmFeesTransactionLineNoteId,
     pub correlation_id: CorrelationId,
     pub occurred_at: Timestamp,
 }
 
 impl FmFeesTransactionLineNoteAdded {
     pub fn new(
+        fm_fees_transaction_line_note_id: FmFeesTransactionLineNoteId,
+        fm_fees_transaction_id: FmFeesTransactionId,
+        note: String,
+        created_by: UserId,
         event_id: EventId,
-        school_id: SchoolId,
-        aggregate_id: FmFeesTransactionLineNoteId,
         correlation_id: CorrelationId,
         occurred_at: Timestamp,
     ) -> Self {
         Self {
+            fm_fees_transaction_line_note_id,
+            fm_fees_transaction_id,
+            note,
+            created_by,
             event_id,
-            school_id,
-            aggregate_id,
             correlation_id,
             occurred_at,
         }
@@ -2483,10 +2496,60 @@ impl DomainEvent for FmFeesTransactionLineNoteAdded {
         self.event_id
     }
     fn aggregate_id(&self) -> Uuid {
-        self.aggregate_id.as_uuid()
+        self.fm_fees_transaction_line_note_id.as_uuid()
     }
     fn school_id(&self) -> SchoolId {
-        self.school_id
+        self.fm_fees_transaction_line_note_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesTransactionLineNote` row is retired
+/// (soft-deleted via `RealFmFeesTransactionLineNote::retire`). Note:
+/// this does NOT violate FFTLN I-2 (append-only) — the tombstone
+/// preserves the original record in the audit footer + the `Retired`
+/// active_status.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesTransactionLineNoteRetired {
+    pub fm_fees_transaction_line_note_id: FmFeesTransactionLineNoteId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesTransactionLineNoteRetired {
+    pub fn new(
+        fm_fees_transaction_line_note_id: FmFeesTransactionLineNoteId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_transaction_line_note_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesTransactionLineNoteRetired {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_transaction_line_note.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_transaction_line_note";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_transaction_line_note_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_transaction_line_note_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

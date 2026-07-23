@@ -36,14 +36,14 @@ use educore_core::tenant::TenantContext;
 use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
     RealDirectFeesSetting, RealDonor, RealFeesCarryForwardLog, RealFmFeesGroup,
-    RealFmFeesInvoiceLineNote, RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, Wallet,
-    WalletTransaction,
+    RealFmFeesInvoiceLineNote, RealFmFeesTransactionLineNote, RealIncomeHead, RealInvoiceSetting,
+    RealQuestionBankFee, Wallet, WalletTransaction,
 };
 use crate::commands::{
     CreateChartOfAccountCommand, CreateDirectFeesInstallmentAssignChildCommand,
     CreateDirectFeesInstallmentChildPaymentCommand, CreateDirectFeesSettingCommand,
     CreateDonorCommand, CreateFeesAssignDiscountCommand, CreateFeesCarryForwardLogCommand,
-    CreateFmFeesInvoiceLineNoteCommand,
+    CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateFeesInstallmentCreditCommand,
     CreateFeesInvoiceSettingCommand, CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
     CreateFmFeesInvoiceCommand, CreateFmFeesInvoiceSettingCommand,
@@ -62,16 +62,17 @@ use crate::events::{
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseRecorded, FeesCarryForwardLogCreated, FmFeesGroupCreated,
-    FmFeesInvoiceLineNoteCreated, IncomeHeadCreated, InvoiceNumberingConfigured,
-    InvoiceSettingCreated,
+    FmFeesInvoiceLineNoteCreated, FmFeesTransactionLineNoteAdded, IncomeHeadCreated,
+    InvoiceNumberingConfigured, InvoiceSettingCreated,
     PaymentReceived, QuestionBankFeeCreated, WalletCreated, WalletCredited, WalletDebited,
     WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
 };
 use crate::value_objects::{
     AccountType, BankAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
     DonorId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesInvoiceId, FeesPaymentId,
-    FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, IncomeHeadId, InvoiceSettingId,
-    QuestionBankFeeId, WalletId, WalletTransactionId, WalletTxType,
+    FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionId,
+    FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId, QuestionBankFeeId, WalletId,
+    WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -1397,6 +1398,49 @@ where
     let event = FmFeesInvoiceLineNoteCreated::new(
         id,
         note_row.fm_fees_invoice_id,
+        note_row.note.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((note_row, event))
+}
+
+/// Service function: append a new free-form note to an
+/// [`FmFeesTransaction`] line. Per v3 Part 2 F32 + checklist §
+/// FmFeesTransactionLineNote, enforces FFTLN I-1 (note 1..=2000 chars
+/// after trim, via `RealFmFeesTransactionLineNote::fresh` ->
+/// `validate_note_text`) and FFTLN I-2 (append-only — no update
+/// mutator exists on the aggregate, and no `Updated` event is
+/// emitted).
+pub fn create_fm_fees_transaction_line_note<C, G>(
+    cmd: CreateFmFeesTransactionLineNoteCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFmFeesTransactionLineNote, FmFeesTransactionLineNoteAdded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let school = cmd.tenant.school_id;
+    let id = FmFeesTransactionLineNoteId::new(school, event_id_to_uuid(event_id));
+
+    let mut note_row = RealFmFeesTransactionLineNote::fresh(
+        id,
+        cmd.fm_fees_transaction_id,
+        cmd.note,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    note_row.last_event_id = Some(event_id);
+
+    let event = FmFeesTransactionLineNoteAdded::new(
+        id,
+        note_row.fm_fees_transaction_id,
         note_row.note.clone(),
         cmd.tenant.actor_id,
         event_id,
