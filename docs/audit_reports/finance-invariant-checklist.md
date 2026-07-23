@@ -273,8 +273,8 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 
 ### FmFeesTransactionChild (2 invariants)
 
-- [ ] FFTC I-1: amount ≥ 0 — missing (placeholder stub)
-- [ ] FFTC I-2: parent reference valid — missing
+- [x] FFTC I-1: amount ≥ 0 — **complete (Wave 77 full drop)** — `RealFmFeesTransactionChild::fresh()` validates `amount_minor >= 0` at `crates/domains/finance/src/aggregate.rs:2683`. The same check is re-applied in `RealFmFeesTransactionChild::update_metadata()` so the invariant holds on every transition. Aggregate at `crates/domains/finance/src/aggregate.rs:2683`.
+- [x] FFTC I-2: parent reference valid — **complete (Wave 77 partial)** — `RealFmFeesTransactionChild::fresh()` enforces the cross-school half of FFTC I-2: the parent `fm_fees_transaction_id.school_id()` must equal the child id's `school_id()`, otherwise the constructor returns `Validation` (the test `fresh_with_cross_school_parent_returns_validation_error` covers this). Aggregate at `crates/domains/finance/src/aggregate.rs:2683`. **Parent transaction existence** is the storage-adapter / dispatcher concern (v3 Part 6 deferred); this drop pins the cross-school shape contract that the existence check will run against. The parent reference is **immutable on update** (the spec forbids re-parenting child rows), so FFTC I-2 cannot regress once satisfied. Once the dispatcher lands, the FFTC I-2 entry will be elevated to "fully complete" in a follow-up commit.
 
 ### FmFeesTransactionLineNote (2 invariants)
 

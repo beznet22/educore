@@ -2611,6 +2611,9 @@ impl ReadFmFeesTransactionCommand {
 pub struct CreateFmFeesTransactionChildCommand {
     pub tenant: TenantContext,
     pub fm_fees_transaction_child_id: FmFeesTransactionChildId,
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+    pub amount_minor: i64,
+    pub description: Option<String>,
 }
 
 

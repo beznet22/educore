@@ -36,8 +36,8 @@ use educore_core::tenant::TenantContext;
 use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
     RealDirectFeesSetting, RealDonor, RealFeesCarryForwardLog, RealFmFeesGroup,
-    RealFmFeesInvoiceLineNote, RealFmFeesTransactionLineNote, RealIncomeHead, RealInvoiceSetting,
-    RealQuestionBankFee, Wallet, WalletTransaction,
+    RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
 };
 use crate::entities::WalletTransactionApproval;
 use crate::commands::{
@@ -65,18 +65,19 @@ use crate::events::{
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseRecorded, FeesCarryForwardLogCreated, FmFeesGroupCreated,
-    FmFeesInvoiceLineNoteCreated, FmFeesTransactionLineNoteAdded, IncomeHeadCreated,
-    InvoiceNumberingConfigured, InvoiceSettingCreated, WalletTransactionApprovalApproved,
-    WalletTransactionApprovalCreated, WalletTransactionApprovalRejected,
+    FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
+    IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
+    WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
+    WalletTransactionApprovalRejected,
     PaymentReceived, QuestionBankFeeCreated, WalletCreated, WalletCredited, WalletDebited,
     WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
 };
 use crate::value_objects::{
     AccountType, BankAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
     DonorId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesInvoiceId, FeesPaymentId,
-    FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionId,
-    FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId, QuestionBankFeeId, WalletId,
-    WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
+    FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
+    FmFeesTransactionId, FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId,
+    QuestionBankFeeId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -1827,20 +1828,56 @@ where
     Ok(())
 }
 
-/// Handler skeleton: create an `FmFeesTransactionChild` aggregate.
-/// Full implementation lands in Phase 7 Workstream G.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
+/// Service function: append a new child row under an existing
+/// [`FmFeesTransaction`] aggregate. Per v3 Part 2 F33 + checklist §
+/// FmFeesTransactionChild, enforces FFTC I-1 (`amount_minor >= 0`)
+/// and FFTC I-2 (parent `FmFeesTransactionId` belongs to the same
+/// school as the child id) via
+/// `RealFmFeesTransactionChild::fresh` -> amount validation + cross-
+/// school defense-in-depth. Parent transaction existence is the
+/// dispatcher's concern.
 pub fn create_fm_fees_transaction_child<C, G>(
     cmd: CreateFmFeesTransactionChildCommand,
     clock: &C,
     ids: &G,
-) -> Result<()>
+) -> Result<(RealFmFeesTransactionChild, FmFeesTransactionChildCreated)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let _ = (cmd, clock, ids);
-    Ok(())
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    // Defense-in-depth: id must belong to the tenant's school.
+    if cmd.fm_fees_transaction_child_id.school_id() != cmd.tenant.school_id
+        || cmd.fm_fees_transaction_id.school_id() != cmd.tenant.school_id
+    {
+        return Err(educore_core::error::DomainError::validation(
+            "CreateFmFeesTransactionChildCommand ids do not belong to tenant's school",
+        ));
+    }
+    let id = cmd.fm_fees_transaction_child_id;
+    let mut child = RealFmFeesTransactionChild::fresh(
+        id,
+        cmd.fm_fees_transaction_id,
+        cmd.amount_minor,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    child.last_event_id = Some(event_id);
+
+    let event = FmFeesTransactionChildCreated::new(
+        id,
+        child.fm_fees_transaction_id,
+        child.amount_minor,
+        child.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((child, event))
 }
 
 /// Handler skeleton: read an `FmFeesTransactionChild` aggregate.

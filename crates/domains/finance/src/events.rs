@@ -33,7 +33,8 @@ use crate::value_objects::{
     FeesCarryForwardId, FeesCarryForwardLogId, FeesGroupId, FeesInstallmentAssignDiscountId,
     FeesInstallmentId,
     FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
-    FmFeesInvoiceLineNoteId, FmFeesTransactionId, FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
+    FmFeesInvoiceLineNoteId, FmFeesTransactionChildId, FmFeesTransactionId,
+    FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
     IncomeId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId,
     PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, WalletId,
     WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
@@ -2550,6 +2551,180 @@ impl DomainEvent for FmFeesTransactionLineNoteRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.fm_fees_transaction_line_note_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// FmFeesTransactionChild events (Wave 77 — RealFmFeesTransactionChild
+// headline events)
+// =============================================================================
+//
+// Per v3 Part 2 F33 + checklist § FmFeesTransactionChild: 2 invariants:
+//   - FFTC I-1: amount_minor ≥ 0 (validated in
+//               `RealFmFeesTransactionChild::fresh` and
+//               `update_metadata`).
+//   - FFTC I-2: parent reference valid (cross-school consistency
+//               enforced in `fresh`; parent existence is the
+//               dispatcher's concern).
+
+/// Emitted when a new `RealFmFeesTransactionChild` row is appended.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesTransactionChildCreated {
+    pub fm_fees_transaction_child_id: FmFeesTransactionChildId,
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+    pub amount_minor: i64,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesTransactionChildCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fm_fees_transaction_child_id: FmFeesTransactionChildId,
+        fm_fees_transaction_id: FmFeesTransactionId,
+        amount_minor: i64,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_transaction_child_id,
+            fm_fees_transaction_id,
+            amount_minor,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesTransactionChildCreated {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_transaction_child.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_transaction_child";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_transaction_child_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_transaction_child_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesTransactionChild`'s amount / description
+/// is updated via `RealFmFeesTransactionChild::update_metadata`. The
+/// parent `fm_fees_transaction_id` is immutable on update (FFTC I-2;
+/// the spec forbids re-parenting).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesTransactionChildUpdated {
+    pub fm_fees_transaction_child_id: FmFeesTransactionChildId,
+    pub amount_minor: i64,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesTransactionChildUpdated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fm_fees_transaction_child_id: FmFeesTransactionChildId,
+        amount_minor: i64,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_transaction_child_id,
+            amount_minor,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesTransactionChildUpdated {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_transaction_child.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_transaction_child";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_transaction_child_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_transaction_child_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesTransactionChild` row is retired
+/// (soft-deleted via `RealFmFeesTransactionChild::retire`). The
+/// original amount + parent reference are preserved in the audit
+/// footer for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesTransactionChildRetired {
+    pub fm_fees_transaction_child_id: FmFeesTransactionChildId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesTransactionChildRetired {
+    pub fn new(
+        fm_fees_transaction_child_id: FmFeesTransactionChildId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_transaction_child_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesTransactionChildRetired {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_transaction_child.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_transaction_child";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_transaction_child_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_transaction_child_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

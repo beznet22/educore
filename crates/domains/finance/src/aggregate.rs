@@ -2651,6 +2651,171 @@ impl RealFeesCarryForwardLog {
 }
 
 // =============================================================================
+// RealFmFeesTransactionChild — Wave 77 (per-aggregate wave pattern
+// from Waves 65–75)
+// =============================================================================
+//
+// Per v3 Part 2 F33 + checklist § FmFeesTransactionChild: 2 invariants:
+//   - FFTC I-1: amount_minor ≥ 0 (numeric money invariant)
+//   - FFTC I-2: parent reference valid (the parent
+//               FmFeesTransactionId must belong to the same school as
+//               the child; cross-school defense-in-depth is enforced
+//               at the aggregate surface; full existence check
+//               against the `FmFeesTransaction` row is the
+//               dispatcher / storage-adapter's concern).
+// Child entity under a `FmFeesTransaction` aggregate — one row per
+// line in a transaction (amount + optional description). The
+// placeholder stub above
+// (`finance_aggregate_stub! { struct FmFeesTransactionChild { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealFmFeesTransactionChild` for new code; the stub is kept only
+// to avoid breaking downstream code that referenced
+// `FmFeesTransactionChild` as a type name during Phase 7.
+
+/// A child row under a [`FmFeesTransaction`] aggregate. Two
+/// invariants: amount_minor is non-negative (FFTC I-1), and the
+/// parent transaction reference belongs to the same school as the
+/// child (FFTC I-2 cross-school check; existence check is the
+/// dispatcher's concern). Full lifecycle: fresh + update_metadata +
+/// retire.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFmFeesTransactionChild {
+    /// The typed id (school_id + uuid).
+    pub id: FmFeesTransactionChildId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The parent transaction this child row belongs to.
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+    /// The amount for this child row (in minor currency units,
+    /// ≥ 0 per FFTC I-1).
+    pub amount_minor: i64,
+    /// Optional free-form description.
+    pub description: Option<String>,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFmFeesTransactionChild {
+    /// Constructs a new `RealFmFeesTransactionChild`. Enforces FFTC
+    /// I-1 (`amount_minor >= 0`) and FFTC I-2 cross-school
+    /// consistency (the parent `FmFeesTransactionId` must belong to
+    /// the same school as the child `FmFeesTransactionChildId`).
+    /// Existence of the parent transaction is the dispatcher's
+    /// concern.
+    pub fn fresh(
+        id: FmFeesTransactionChildId,
+        fm_fees_transaction_id: FmFeesTransactionId,
+        amount_minor: i64,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FFTC I-1: amount must be non-negative.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesTransactionChild amount_minor must be non-negative (FFTC I-1)",
+            ));
+        }
+        // FFTC I-2 (cross-school): parent id must belong to the same
+        // school as the child id.
+        if fm_fees_transaction_id.school_id() != id.school_id() {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesTransactionChild parent fm_fees_transaction_id must belong to the same school as the child id (FFTC I-2)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            fm_fees_transaction_id,
+            amount_minor,
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the child row is currently active.
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Updates the amount and description of a child row. Re-validates
+    /// FFTC I-1 (`amount_minor >= 0`). FFTC I-2 (parent reference) is
+    /// immutable on update — the parent is set at creation and cannot
+    /// change (the dispatcher rejects `Reparent` commands; the spec
+    /// forbids re-parenting child rows). Bumps version, advances
+    /// `updated_at`, sets `updated_by`.
+    pub fn update_metadata(
+        &mut self,
+        amount_minor: i64,
+        description: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "FmFeesTransactionChild is retired; cannot update metadata",
+            ));
+        }
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesTransactionChild amount_minor must be non-negative on update (FFTC I-1)",
+            ));
+        }
+        self.amount_minor = amount_minor;
+        self.description = description
+            .map(|d| d.trim().to_owned())
+            .filter(|d| !d.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the child row by flipping `active_status` to
+    /// `Retired`. Bumps version, advances `updated_at`, sets
+    /// `updated_by`. Preserves FFTC I-1 (the original amount is
+    /// preserved in the audit footer) and FFTC I-2 (the parent
+    /// reference is immutable, so it remains valid even after retire).
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "FmFeesTransactionChild is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
 // RealFmFeesTransactionLineNote — Wave 75 (per-aggregate wave pattern
 // from Waves 65–74)
 // =============================================================================
