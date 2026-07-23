@@ -26,7 +26,7 @@ use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
     BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId, Currency,
-    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentId, DirectFeesSettingId, DonorId,
+    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DirectFeesInstallmentId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesCarryForwardLogId, FeesGroupId, FeesInstallmentAssignDiscountId,
@@ -2093,28 +2093,44 @@ impl DomainEvent for FeesInstallmentAssignDiscountAdded {
     }
 }
 
-/// Emitted when a `DirectFeesInstallmentAssignChild` child entity is added.
+/// Emitted when a new `RealDirectFeesInstallmentAssignChild` row is
+/// appended. Per v3 Part 2 F12 + checklist § DFIAC: DFIAC I-1
+/// (append-only) is enforced at the API surface by NOT emitting an
+/// `Updated` event for this aggregate. The only two transitions are
+/// create (always present) and retire (soft-tombstone, never a
+/// modification of the original record). DFIAC I-2 (timestamps
+/// monotonic) is enforced in the aggregate via the `fresh` and
+/// `retire` mutators and pinned here by including both timestamps.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DirectFeesInstallmentAssignChildAdded {
+    pub direct_fees_installment_assign_child_id: DirectFeesInstallmentAssignChildId,
+    pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
+    pub amount_minor: i64,
+    pub created_at: Timestamp,
+    pub created_by: UserId,
     pub event_id: EventId,
-    pub school_id: SchoolId,
-    pub aggregate_id: DirectFeesInstallmentAssignChildId,
     pub correlation_id: CorrelationId,
     pub occurred_at: Timestamp,
 }
 
 impl DirectFeesInstallmentAssignChildAdded {
     pub fn new(
+        direct_fees_installment_assign_child_id: DirectFeesInstallmentAssignChildId,
+        direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
+        amount_minor: i64,
+        created_at: Timestamp,
+        created_by: UserId,
         event_id: EventId,
-        school_id: SchoolId,
-        aggregate_id: DirectFeesInstallmentAssignChildId,
         correlation_id: CorrelationId,
         occurred_at: Timestamp,
     ) -> Self {
         Self {
+            direct_fees_installment_assign_child_id,
+            direct_fees_installment_assign_id,
+            amount_minor,
+            created_at,
+            created_by,
             event_id,
-            school_id,
-            aggregate_id,
             correlation_id,
             occurred_at,
         }
@@ -2129,10 +2145,65 @@ impl DomainEvent for DirectFeesInstallmentAssignChildAdded {
         self.event_id
     }
     fn aggregate_id(&self) -> Uuid {
-        self.aggregate_id.as_uuid()
+        self.direct_fees_installment_assign_child_id.as_uuid()
     }
     fn school_id(&self) -> SchoolId {
-        self.school_id
+        self.direct_fees_installment_assign_child_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealDirectFeesInstallmentAssignChild` row is
+/// retired (soft-deleted via `RealDirectFeesInstallmentAssignChild::retire`).
+/// Note: this does NOT violate DFIAC I-1 (append-only) — the tombstone
+/// preserves the original record in the audit footer + the `Retired`
+/// active_status. DFIAC I-2 (timestamps monotonic) is preserved
+/// because `retire` always advances `updated_at` strictly past
+/// `created_at`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesInstallmentAssignChildRetired {
+    pub direct_fees_installment_assign_child_id: DirectFeesInstallmentAssignChildId,
+    pub retired_at: Timestamp,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesInstallmentAssignChildRetired {
+    pub fn new(
+        direct_fees_installment_assign_child_id: DirectFeesInstallmentAssignChildId,
+        retired_at: Timestamp,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            direct_fees_installment_assign_child_id,
+            retired_at,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesInstallmentAssignChildRetired {
+    const EVENT_TYPE: &'static str = "finance.direct_fees_installment_assign_child.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_installment_assign_child";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.direct_fees_installment_assign_child_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.direct_fees_installment_assign_child_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

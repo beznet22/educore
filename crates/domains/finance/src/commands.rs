@@ -27,7 +27,8 @@ use educore_core::tenant::TenantContext;
 
 use crate::value_objects::{
     AccountType, AmountTransferId, BankAccountId, BankMode, BankPaymentSlipId, BankStatementId,
-    ChartOfAccountId, Currency, DirectFeesInstallmentAssignId, DirectFeesInstallmentChildPaymentId,
+    ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId,
+    DirectFeesInstallmentChildPaymentId,
     DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId,
@@ -733,6 +734,28 @@ impl DeleteDirectFeesInstallmentAssignCommand {
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceDirectFeesInstallmentDelete]
+    }
+}
+
+/// Command: append a new child row under an existing
+/// [`DirectFeesInstallmentAssign`] aggregate (per v3 Part 2 F12 +
+/// checklist § DirectFeesInstallmentAssignChild). The child row
+/// represents one installment in the per-installment breakdown (amount
+/// + due date). DFIAC I-1 (append-only) and DFIAC I-2 (timestamps
+/// monotonic) are enforced by the service function
+/// `create_direct_fees_installment_assign_child` in `services.rs`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateDirectFeesInstallmentAssignChildCommand {
+    pub tenant: TenantContext,
+    pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
+    pub amount_minor: i64,
+}
+
+impl CreateDirectFeesInstallmentAssignChildCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDirectFeesInstallmentAssign]
     }
 }
 // -- DirectFeesSetting (per-school direct-fees configuration) --

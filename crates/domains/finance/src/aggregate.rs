@@ -35,8 +35,8 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 use crate::value_objects::{
     validate_discount_name, validate_donor_name, validate_ledger_name, AccountType, Amount,
     ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankStatementAttachmentId,
-    ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
-    DiscountType, DonorId,
+    ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId,
+    DirectFeesInstallmentAssignId, DirectFeesSettingId, DiscountType, DonorId,
     DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId,
     FeesAssignId, FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
     FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId,
@@ -2644,6 +2644,150 @@ impl RealFeesCarryForwardLog {
         }
         self.active_status = ActiveStatus::Retired;
         self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
+// RealDirectFeesInstallmentAssignChild — Wave 73 (per-aggregate wave
+// pattern from Waves 65–72)
+// =============================================================================
+//
+// Per v3 Part 2 F12 + checklist § DirectFeesInstallmentAssignChild:
+// 2 invariants:
+//   - DFIAC I-1: append-only (no update / no delete; only retire)
+//   - DFIAC I-2: timestamps monotonic (created_at ≤ updated_at on every
+//                transition; retire() advances updated_at past created_at)
+// Child entity that lives under a `DirectFeesInstallmentAssign`
+// aggregate (one installment assignment can have many child rows
+// representing the per-installment breakdown: amount, due date,
+// optional discount). The placeholder stub above
+// (`finance_aggregate_stub! { struct DirectFeesInstallmentAssignChild { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealDirectFeesInstallmentAssignChild` for new code; the stub is
+// kept only to avoid breaking downstream code that referenced
+// `DirectFeesInstallmentAssignChild` as a type name during Phase 7.
+
+/// Child entity under a [`DirectFeesInstallmentAssign`] aggregate. Two
+/// invariants: append-only (DFIAC I-1, enforced at the API surface by
+/// *not* exposing any `update_*` mutator), and timestamps monotonic
+/// (DFIAC I-2 — `created_at <= updated_at` always holds; the only
+/// post-creation transition is `retire()`, which advances `updated_at`
+/// past `created_at` and bumps version).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealDirectFeesInstallmentAssignChild {
+    /// The typed id (school_id + uuid).
+    pub id: DirectFeesInstallmentAssignChildId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The parent assignment this child belongs to.
+    pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
+    /// The amount for this child installment (in minor currency units).
+    /// Per DFIAC I-2 (timestamps monotonic), the `created_at` of this
+    /// aggregate is the time the child row was appended; the audit
+    /// footer advances monotonically on every state transition.
+    pub amount_minor: i64,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealDirectFeesInstallmentAssignChild {
+    /// Constructs a new `RealDirectFeesInstallmentAssignChild`. The
+    /// constructor itself enforces DFIAC I-2 by setting `updated_at =
+    /// created_at` (monotonic baseline). DFIAC I-1 (append-only) is
+    /// enforced at the API surface — this aggregate intentionally
+    /// exposes no `update_*` mutator. The only post-creation
+    /// transition is the version-bumping `retire()` (soft-delete for
+    /// legal-record retention), which preserves the original
+    /// `created_at`, parent assignment reference, and amount via the
+    /// audit footer + the `Retired` active_status.
+    pub fn fresh(
+        id: DirectFeesInstallmentAssignChildId,
+        direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
+        amount_minor: i64,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "DirectFeesInstallmentAssignChild amount_minor must be non-negative",
+            ));
+        }
+        // DFIAC I-2 (monotonic timestamps): constructed baseline
+        // satisfies created_at == updated_at.
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            direct_fees_installment_assign_id,
+            amount_minor,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the child row is currently active.
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Returns `true` if `updated_at >= created_at` (DFIAC I-2
+    /// monotonic invariant). The baseline is `updated_at == created_at`
+    /// on `fresh`; `retire` advances `updated_at` strictly past
+    /// `created_at`.
+    #[must_use]
+    pub fn timestamps_monotonic(&self) -> bool {
+        self.updated_at.as_datetime() >= self.created_at.as_datetime()
+    }
+
+    /// Soft-deletes the child row by flipping `active_status` to
+    /// `Retired`. Bumps version, advances `updated_at` strictly past
+    /// `created_at`, sets `updated_by`. Preserves DFIAC I-1
+    /// (append-only) because the audit footer + the `Retired` status
+    /// together preserve the original record; the soft-delete is a
+    /// tombstone, not a modification of the amount or parent
+    /// assignment reference.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "DirectFeesInstallmentAssignChild is already retired",
+            ));
+        }
+        // DFIAC I-2: updated_at must advance strictly past created_at
+        // on retire. If the caller passes a stale timestamp, advance
+        // forward by one nanosecond.
+        let advanced = if at.as_datetime() <= self.created_at.as_datetime() {
+            Timestamp::from_datetime(
+                self.created_at.as_datetime() + chrono::Duration::nanoseconds(1),
+            )
+        } else {
+            at
+        };
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = advanced;
         self.updated_by = actor;
         self.version = self.version.next();
         Ok(())

@@ -34,11 +34,12 @@ use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
-    Expense, FeesInvoice, FeesPayment, RealDirectFeesSetting, RealDonor,
-    RealFeesCarryForwardLog, RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealIncomeHead,
+    Expense, FeesInvoice, FeesPayment, RealDirectFeesInstallmentAssignChild, RealDirectFeesSetting,
+    RealDonor, RealFeesCarryForwardLog, RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealIncomeHead,
     RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
 };
 use crate::commands::{
+    CreateDirectFeesInstallmentAssignChildCommand,
     CreateDirectFeesInstallmentChildPaymentCommand, CreateDirectFeesSettingCommand,
     CreateDonorCommand, CreateFeesAssignDiscountCommand, CreateFeesCarryForwardLogCommand,
     CreateFmFeesInvoiceLineNoteCommand,
@@ -57,6 +58,7 @@ use crate::commands::{
     ReadInventoryPaymentCommand, ReadProductPurchaseCommand, ReadTransactionCommand,
 };
 use crate::events::{
+    DirectFeesInstallmentAssignChildAdded, DirectFeesInstallmentAssignChildRetired,
     DirectFeesSettingCreated, DonorCreated, ExpenseRecorded, FeesCarryForwardLogCreated,
     FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated, IncomeHeadCreated,
     InvoiceNumberingConfigured, InvoiceSettingCreated,
@@ -64,10 +66,10 @@ use crate::events::{
     WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
 };
 use crate::value_objects::{
-    BankAccountId, Currency, DirectFeesSettingId, DonorId, ExpenseHeadId, ExpenseId,
-    FeesCarryForwardLogId, FeesInvoiceId, FeesPaymentId, FmFeesGroupId, FmFeesInvoiceId,
-    FmFeesInvoiceLineNoteId, IncomeHeadId, InvoiceSettingId, QuestionBankFeeId, WalletId,
-    WalletTransactionId, WalletTxType,
+    BankAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesSettingId, DonorId,
+    ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesInvoiceId, FeesPaymentId, FmFeesGroupId,
+    FmFeesInvoiceId, FmFeesInvoiceLineNoteId, IncomeHeadId, InvoiceSettingId, QuestionBankFeeId,
+    WalletId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -1400,6 +1402,50 @@ where
         now,
     );
     Ok((note_row, event))
+}
+
+/// Service function: append a new child row under an existing
+/// [`DirectFeesInstallmentAssign`] aggregate. Per v3 Part 2 F12 +
+/// checklist § DFIAC, enforces DFIAC I-1 (append-only — no update
+/// mutator exists on the aggregate, no `Updated` event is emitted)
+/// and DFIAC I-2 (timestamps monotonic — `fresh` sets
+/// `created_at == updated_at`; `retire` advances `updated_at`
+/// strictly past `created_at`).
+pub fn create_direct_fees_installment_assign_child<C, G>(
+    cmd: CreateDirectFeesInstallmentAssignChildCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealDirectFeesInstallmentAssignChild, DirectFeesInstallmentAssignChildAdded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let school = cmd.tenant.school_id;
+    let id = DirectFeesInstallmentAssignChildId::new(school, event_id_to_uuid(event_id));
+
+    let mut child = RealDirectFeesInstallmentAssignChild::fresh(
+        id,
+        cmd.direct_fees_installment_assign_id,
+        cmd.amount_minor,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    child.last_event_id = Some(event_id);
+
+    let event = DirectFeesInstallmentAssignChildAdded::new(
+        id,
+        child.direct_fees_installment_assign_id,
+        child.amount_minor,
+        child.created_at,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((child, event))
 }
 
 /// Handler skeleton: create an `FmFeesType` aggregate.

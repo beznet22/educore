@@ -122,8 +122,8 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 
 ### DirectFeesInstallmentAssignChild (2 invariants)
 
-- [ ] DFIAC I-1: append-only — missing (placeholder stub)
-- [ ] DFIAC I-2: timestamps monotonic — missing
+- [x] DFIAC I-1: append-only — **complete (Wave 73 full drop)** — enforced at the API surface by *not* exposing any `update_*` mutator on `RealDirectFeesInstallmentAssignChild` (impl at `crates/domains/finance/src/aggregate.rs:2705`); only `fresh`, `is_active`, `timestamps_monotonic`, and `retire` are public methods. Additionally enforced at the event surface: only `DirectFeesInstallmentAssignChildAdded` (`events.rs:2105`, `EVENT_TYPE = "finance.direct_fees_installment_assign_child.added"`) and `DirectFeesInstallmentAssignChildRetired` (`events.rs:2166`, `EVENT_TYPE = "finance.direct_fees_installment_assign_child.retired"`) exist; no `Updated` event variant is defined. The `retire()` method preserves the original amount + parent assignment reference via the audit footer + `Retired` active_status, making it a tombstone rather than a modification.
+- [x] DFIAC I-2: timestamps monotonic — **complete (Wave 73 full drop)** — enforced at three points: (1) `RealDirectFeesInstallmentAssignChild::fresh()` sets `updated_at = created_at` (baseline monotonicity, `crates/domains/finance/src/aggregate.rs:2681`); (2) `timestamps_monotonic()` returns `updated_at.as_datetime() >= created_at.as_datetime()` and is exercised in tests; (3) `retire()` clamps the caller-supplied timestamp forward by 1 nanosecond if it is at or before `created_at`, guaranteeing `updated_at > created_at` strictly after retire.
 
 ### DirectFeesInstallmentChildPayment (2 invariants)
 

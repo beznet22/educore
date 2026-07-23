@@ -1,12 +1,12 @@
 # Graph Report - smscore  (2026-07-23)
 
 ## Corpus Check
-- 618 files · ~2,090,821 words
+- 618 files · ~2,092,983 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 20904 nodes · 44650 edges · 351 communities detected
-- Extraction: 67% EXTRACTED · 33% INFERRED · 0% AMBIGUOUS · INFERRED: 14925 edges (avg confidence: 0.8)
+- 20937 nodes · 44749 edges · 351 communities detected
+- Extraction: 67% EXTRACTED · 33% INFERRED · 0% AMBIGUOUS · INFERRED: 14957 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -138,8 +138,8 @@
 - [[_COMMUNITY_Community 125|Community 125]]
 - [[_COMMUNITY_Community 126|Community 126]]
 - [[_COMMUNITY_Community 127|Community 127]]
+- [[_COMMUNITY_Community 128|Community 128]]
 - [[_COMMUNITY_Community 129|Community 129]]
-- [[_COMMUNITY_Community 130|Community 130]]
 - [[_COMMUNITY_Community 131|Community 131]]
 - [[_COMMUNITY_Community 132|Community 132]]
 - [[_COMMUNITY_Community 133|Community 133]]
@@ -164,7 +164,7 @@
 - [[_COMMUNITY_Community 152|Community 152]]
 - [[_COMMUNITY_Community 153|Community 153]]
 - [[_COMMUNITY_Community 154|Community 154]]
-- [[_COMMUNITY_Community 156|Community 156]]
+- [[_COMMUNITY_Community 155|Community 155]]
 - [[_COMMUNITY_Community 157|Community 157]]
 - [[_COMMUNITY_Community 158|Community 158]]
 - [[_COMMUNITY_Community 159|Community 159]]
@@ -367,7 +367,7 @@
 2. `EventId` - 130 edges
 3. `Platform Domain` - 130 edges
 4. `docs/commands/platform.md` - 118 edges
-5. `fresh_etag()` - 114 edges
+5. `fresh_etag()` - 115 edges
 6. `Finance Domain` - 92 edges
 7. `ctx()` - 91 edges
 8. `SchoolId` - 86 edges
@@ -377,540 +377,540 @@
 ## Surprising Connections (you probably didn't know these)
 - `School (aggregate)` --calls--> `SchoolId`  [INFERRED]
   docs/events/platform.md → crates/infra/core/src/ids.rs
-- `School (aggregate)` --calls--> `audit_target_type_and_id_for_school()`  [INFERRED]
-  docs/events/platform.md → crates/cross-cutting/audit/src/writer.rs
 - `item_issue_outstanding_quantity()` --calls--> `Role (aggregate)`  [INFERRED]
   crates/domains/facilities/src/aggregate.rs → docs/events/rbac.md
 - `Role (aggregate)` --calls--> `facilities_integration_sqlite_vertical_slice()`  [INFERRED]
   docs/events/rbac.md → crates/tools/storage-parity/tests/facilities_integration.rs
-- `item_sell_child_single_line_aggregates_subtotal_and_audit_footer()` --calls--> `Role (aggregate)`  [INFERRED]
-  crates/domains/facilities/tests/item_sell_child.rs → docs/events/rbac.md
+- `language_activate_deactivate()` --calls--> `School (aggregate)`  [EXTRACTED]
+  crates/cross-cutting/settings/src/aggregate.rs → docs/events/platform.md
+- `style_activate_demotes_previous()` --calls--> `School (aggregate)`  [EXTRACTED]
+  crates/cross-cutting/settings/src/aggregate.rs → docs/events/platform.md
 
 ## Communities
 
 ### Community 0 - "Community 0"
 Cohesion: 0.0
-Nodes (424): AuditLogRow, MysqlAuditLog, PostgresAuditLog, SqliteAuditLog, String, bytes_to_json_value(), json_value_to_bytes(), opt_bytes_to_json_value() (+416 more)
+Nodes (445): AuditLogRow, MysqlAuditLog, PostgresAuditLog, SqliteAuditLog, String, bytes_to_json_value(), json_value_to_bytes(), opt_bytes_to_json_value() (+437 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.0
-Nodes (1359): absent_notification_time_setup_create(), absent_notification_time_setup_update(), admin_context(), time_from(), time_to(), academic_event_type_round_trip_for_all_aggregates(), academic_year_create_then_update_dates_mutates_aggregate_and_emits_events(), academic_year_create_with_inverted_range_returns_validation_error() (+1351 more)
+Nodes (679): AbsentNotificationTimeSetup Aggregate, assign_incident_requires_exactly_one_assignee(), AssignClassTeacher, AssignClassTeacherScope, AssignIncident, AssignVehicle, AttendanceBulk, Backup (+671 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.0
-Nodes (766): AbsentNotificationTimeSetup Aggregate, academic_year_fresh_starts_not_current_not_closed(), AcademicYear, actor(), AdmitCard, AdmitCardSetting, AllExamWisePosition, AssignClassTeacher (+758 more)
+Nodes (1268): absent_notification_time_setup_create(), absent_notification_time_setup_update(), admin_context(), time_from(), time_to(), admin_context(), admit_card_generate_builds_aggregate_and_emits_admit_card_generated_event(), admit_card_regenerate_emits_admit_card_regenerated_event() (+1260 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.0
-Nodes (312): school_fresh_starts_at_initial_version(), school_contact_round_trip_serde(), SchoolContact, user_session_carries_session_id(), UserLogin, UserPreference, UserSession, AboutPageCreated (+304 more)
+Nodes (722): academic_year_create_then_update_dates_mutates_aggregate_and_emits_events(), academic_year_create_with_inverted_range_returns_validation_error(), admin_context(), year_id(), BackgroundSetting, BaseGroup, BaseSetup, Book (+714 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.01
-Nodes (533): about_page_id(), about_page_typed_id_round_trips_school(), about_page_typed_ids_are_distinct_within_school(), admin_context(), admin_context(), amount_transfer_id(), amount_transfer_typed_id_round_trips_school(), amount_transfer_typed_ids_are_distinct_within_school() (+525 more)
+Nodes (649): about_page_id(), about_page_typed_id_round_trips_school(), about_page_typed_ids_are_distinct_within_school(), admin_context(), academic_capability_check_gates_admit_student(), academic_event_type_round_trip_for_all_aggregates(), cross_cutting_integration_academic(), cross_cutting_integration_academic_mysql() (+641 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.01
-Nodes (330): academic_capability_check_gates_admit_student(), cross_cutting_integration_academic(), cross_cutting_integration_academic_mysql(), cross_cutting_integration_academic_postgres(), dispatch_admit_student(), relay_outbox_to_event_log(), setup_sqlite(), TestUniqueness (+322 more)
+Nodes (293): StubIdempotency, CmsError, conflict_carries_message(), convenience_constructors_build_expected_variants(), deserialize_failed(), DocumentsError, duplicate_reference_no_carries_payload(), duplicate_slug_carries_payload() (+285 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.01
-Nodes (270): FormDownload, PostalDispatch, PostalReceive, cross_tenant_delete_rejected(), cross_tenant_order_independent(), cross_tenant_read_rejected(), cross_tenant_same_school_allowed(), cross_tenant_school_only_not_actor() (+262 more)
+Cohesion: 0.0
+Nodes (196): active_forms_matches_when_active_status_is_true(), ActiveForms, coordinator_upload_form_skeleton_returns_validation_error(), dispatches_in_date_range_inclusive_bounds(), DispatchesInDateRange, DocumentsCoordinator, DocumentsCoordinator<'a, E>, make_dispatch() (+188 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.0
-Nodes (195): active_forms_matches_when_active_status_is_true(), ActiveForms, coordinator_upload_form_skeleton_returns_validation_error(), dispatches_in_date_range_inclusive_bounds(), DispatchesInDateRange, DocumentsCoordinator, DocumentsCoordinator<'a, E>, make_dispatch() (+187 more)
+Cohesion: 0.01
+Nodes (298): about_page_new_succeeds(), AboutPage, contact_page_new_succeeds(), ContactPage, content_available_to_role_with_no_filter_returns_true(), content_new_with_empty_file_name_returns_error(), content_new_with_negative_size_returns_error(), content_share_list_cancel_only_in_draft() (+290 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.01
-Nodes (216): file_ref(), form_download_is_deliverable_iff_link_or_file_set(), form_download_new_with_both_link_and_file_succeeds(), form_download_new_with_file_succeeds(), form_download_new_with_link_succeeds(), form_download_new_without_link_or_file_returns_form_has_no_content(), form_download_soft_delete_succeeds_then_double_delete_returns_conflict(), form_download_update_clearing_content_returns_form_has_no_content() (+208 more)
+Cohesion: 0.0
+Nodes (247): AddFeesInstallmentCreditCommand, AddLeaveDeductionInfoCommand, AddPayrollDeductionCommand, AddPayrollEarningCommand, AddWalletCreditCommand, ApproveBankPaymentCommand, ApproveBankSlipCommand, ApproveExpenseCommand (+239 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.0
-Nodes (246): AddFeesInstallmentCreditCommand, AddLeaveDeductionInfoCommand, AddPayrollDeductionCommand, AddPayrollEarningCommand, AddWalletCreditCommand, ApproveBankPaymentCommand, ApproveBankSlipCommand, ApproveExpenseCommand (+238 more)
+Cohesion: 0.01
+Nodes (490): CoursePage.Delete, CoursePage.Update, Platform.AddOn.Install, Platform.AddOn.Uninstall, Platform.AmountTransfer.Create, Platform.AmountTransfer.Delete, Platform.AmountTransfer.Update, Platform.BaseGroup.Create (+482 more)
 
 ### Community 10 - "Community 10"
 Cohesion: 0.01
-Nodes (482): Platform.AddOn.Install, Platform.AddOn.Uninstall, Platform.AmountTransfer.Create, Platform.AmountTransfer.Delete, Platform.AmountTransfer.Update, Platform.BaseGroup.Create, Platform.BaseGroup.Delete, Platform.BaseGroup.Update (+474 more)
+Nodes (449): AssignClassTeacher.Create, AssignClassTeacher.Delete, AssignClassTeacher.Update, Attendance.BulkMark, Attendance.Import, Attendance.Mark, Attendance.Notify, Attendance.Staff.Delete (+441 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.01
-Nodes (195): StubIdempotency, admin_context(), marks_grade_create_happy_path(), marks_grade_create_rejects_cross_tenant(), marks_grade_delete_happy_path(), marks_grade_delete_rejects_cross_tenant(), marks_grade_id(), marks_grade_update_happy_path() (+187 more)
+Nodes (407): Complaint Aggregate, EmailSetting Aggregate, Notice Aggregate, Notification Aggregate, NotificationSetting Aggregate, SendMessage Aggregate, SmsTemplate Aggregate, AboutPage.Create (+399 more)
 
 ### Community 12 - "Community 12"
 Cohesion: 0.01
-Nodes (445): AssignClassTeacher.Create, AssignClassTeacher.Delete, AssignClassTeacher.Update, Attendance.BulkMark, Attendance.Import, Attendance.Mark, Attendance.Notify, Attendance.Staff.Delete (+437 more)
+Nodes (71): AbsentNotificationDeleted, AbsentNotificationDisabled, AbsentNotificationEnabled, AbsentNotificationScheduled, AbsentNotificationSent, ChatConversationClosed, ChatConversationOpened, ChatGroupCreated (+63 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.01
-Nodes (73): AbsentNotificationDeleted, AbsentNotificationDisabled, AbsentNotificationEnabled, AbsentNotificationScheduled, AbsentNotificationSent, ChatConversationClosed, ChatConversationOpened, ChatGroupCreated (+65 more)
+Nodes (140): CommandHandle, CommandOutcome, CommandRegistry, CommandStatus, handle(), handle_display_uses_short_id(), handle_serde_round_trip(), mark_completed_sets_terminal_state() (+132 more)
 
 ### Community 14 - "Community 14"
 Cohesion: 0.01
-Nodes (394): 17-Phase Sequential Build Plan (Phase 0..17), Academic Domain, academic_students domain aggregate example, AcademicYear (current flag, transitions), AdmitStudentCommand, ADR-015 External Crate Selection (27 crates, MSRV pinning policy), ADR-016 Engine Graph (graphify rationale + workflow), AI Agent Tool Surface (+386 more)
+Nodes (207): AcademicYearRepository, AdmitCardRepository, AdmitCardSettingRepository, AllExamWisePositionRepository, AmountTransferRepository, _assert_object_safe(), AssignClassTeacherRepository, AssignClassTeacherScopeRepository (+199 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.01
-Nodes (362): AboutPage.Create, AboutPage.Delete, AboutPage.Update, AbsentNotification.Configure, AbsentNotification.Delete, AbsentNotification.Disable, AbsentNotification.Enable, Chat.Accept (+354 more)
+Nodes (325): 17-Phase Sequential Build Plan (Phase 0..17), academic_students domain aggregate example, AdmitStudentCommand, ADR-015 External Crate Selection (27 crates, MSRV pinning policy), ADR-016 Engine Graph (graphify rationale + workflow), AI Agent Tool Surface, Audit-first design (every state change writes an immutable record), audit_log Table (append-only WORM compliance trail) (+317 more)
 
 ### Community 16 - "Community 16"
 Cohesion: 0.01
-Nodes (183): DomainEvent, EmittedEvent, EventFactory, into_envelope_populates_metadata_from_context(), RawPayload, apply_critical_bypass(), email_provider_builder_constructs_with_defaults(), email_provider_rejects_non_email_channel() (+175 more)
+Nodes (151): academic_year_fresh_starts_not_current_not_closed(), AcademicYear, actor(), AdmitCard, AdmitCardSetting, AllExamWisePosition, behavior_record_flags_default_off(), BehaviorRecordSetting (+143 more)
 
 ### Community 17 - "Community 17"
 Cohesion: 0.01
-Nodes (206): AcademicYearRepository, AdmitCardRepository, AdmitCardSettingRepository, AllExamWisePositionRepository, AmountTransferRepository, _assert_object_safe(), AssignClassTeacherRepository, AssignClassTeacherScopeRepository (+198 more)
+Nodes (70): all_event_types_have_nonempty_wire_form(), dormitory_updated_and_deleted_event_happy_path(), DormitoryCreated, DormitoryDeleted, DormitoryUpdated, DriverAssignedToVehicle, fixture(), IssuedItemReturned (+62 more)
 
 ### Community 18 - "Community 18"
 Cohesion: 0.01
-Nodes (70): all_event_types_have_nonempty_wire_form(), dormitory_updated_and_deleted_event_happy_path(), DormitoryCreated, DormitoryDeleted, DormitoryUpdated, DriverAssignedToVehicle, fixture(), IssuedItemReturned (+62 more)
+Nodes (226): Academic Domain, AcademicYear (current flag, transitions), ActiveIncidents Specification, AmountTransfer, Assessment Domain, AssignIncident Aggregate, AssignIncident Command, assign_incident_comments Table (+218 more)
 
 ### Community 19 - "Community 19"
 Cohesion: 0.01
-Nodes (105): parse_uuid(), SecretString, assign_permission_query_chains_filters(), AssignPermissionQuery, column_type_variants_are_distinct(), ColumnDescriptor, ColumnType, DummyField (+97 more)
+Nodes (147): Subject, DomainEvent, EmittedEvent, EventFactory, into_envelope_populates_metadata_from_context(), RawPayload, apply_critical_bypass(), build_lettre_message() (+139 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.01
-Nodes (131): AcceptChatInvitationCommand, ActivateEmailSettingCommand, ActivateSmsGatewayCommand, AddComplaintNoteCommand, AddUserToChatGroupCommand, ArchivePageCommand, AssignComplaintCommand, BlockUserCommand (+123 more)
+Nodes (104): parse_uuid(), SecretString, assign_permission_query_chains_filters(), AssignPermissionQuery, column_type_variants_are_distinct(), ColumnDescriptor, ColumnType, DummyField (+96 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.01
-Nodes (124): AddTeacherRemarkCommand, ApproveTeacherEvaluationCommand, AssessmentUniquenessChecker, AttendanceUniquenessChecker, bulk_mark_student_attendance_carries_lists(), BulkMarkStudentAttendanceCommand, cancel_bulk_import_carries_reason(), CancelAdmitCardCommand (+116 more)
+Nodes (131): AcceptChatInvitationCommand, ActivateEmailSettingCommand, ActivateSmsGatewayCommand, AddComplaintNoteCommand, AddUserToChatGroupCommand, ArchivePageCommand, AssignComplaintCommand, BlockUserCommand (+123 more)
 
 ### Community 22 - "Community 22"
 Cohesion: 0.01
-Nodes (79): _assert_object_safe(), AttachmentRef, BankAccountId, BulkId, BulkRecipient, BulkRecipientIndex, CardToken, Channel (+71 more)
+Nodes (45): BankPaymentSlipAuditRecorded, BankStatementAttachmentAttached, DirectFeesInstallmentAssignChildAdded, DirectFeesSettingCreated, DirectFeesSettingDeleted, DirectFeesSettingUpdated, DonorCreated, DonorDeleted (+37 more)
 
 ### Community 23 - "Community 23"
 Cohesion: 0.01
-Nodes (225): AcademicYear.Close, AcademicYear.Create, AcademicYear.SetCurrent, AcademicYear.Update, AdmissionQuery.Convert, AdmissionQuery.Create, AdmissionQuery.FollowUp, Certificate.Create (+217 more)
+Nodes (123): AddTeacherRemarkCommand, ApproveTeacherEvaluationCommand, AssessmentUniquenessChecker, AttendanceUniquenessChecker, bulk_mark_student_attendance_carries_lists(), BulkMarkStudentAttendanceCommand, cancel_bulk_import_carries_reason(), CancelAdmitCardCommand (+115 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.02
-Nodes (54): TestTransaction, bulk_insert_into(), MysqlBulkAttendance, PostgresBulkAttendance, SqliteBulkAttendance, PostgresConnection, SurrealConnection, CachedToken (+46 more)
+Cohesion: 0.01
+Nodes (78): _assert_object_safe(), AttachmentRef, BankAccountId, BulkId, BulkRecipient, BulkRecipientIndex, CardToken, Channel (+70 more)
 
 ### Community 25 - "Community 25"
-Cohesion: 0.02
-Nodes (141): Clock, deterministic_idgen_is_stable(), deterministic_idgen_v7_marker(), deterministic_v7(), DeterministicIdGen, IdGenerator, system_clock_returns_monotonic(), SystemClock (+133 more)
+Cohesion: 0.01
+Nodes (223): AcademicYear.Close, AcademicYear.Create, AcademicYear.SetCurrent, AcademicYear.Update, AdmissionQuery.Convert, AdmissionQuery.Create, AdmissionQuery.FollowUp, Certificate.Create (+215 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.02
-Nodes (152): ctx(), Expense, expense_rejects_empty_name(), expense_rejects_mismatched_method_and_account_type(), fees_invoice_next_number_is_start_form_plus_count(), fees_invoice_next_number_rejects_overflow(), fees_invoice_rejects_empty_prefix(), fees_payment_discount_cannot_exceed_amount() (+144 more)
+Cohesion: 0.01
+Nodes (93): AdmitCardCancelled, AdmitCardGenerated, AdmitCardRegenerated, AdmitCardSettingCreated, AdmitCardSettingUpdated, CustomResultSettingCreated, CustomResultSettingUpdated, CustomTemporaryResultCreated (+85 more)
 
 ### Community 27 - "Community 27"
 Cohesion: 0.01
-Nodes (100): admin_context(), book_catalog_entry_new_populates_entity_and_event(), book_catalog_entry_sequence_monotonicity_and_school_isolation(), book_id(), AggregateTypeFilter, change_filter_for_school(), change_filter_since_and_aggregate(), ChangeEvent (+92 more)
+Nodes (185): AdmitCard.Configure, AdmitCard.Generate, Exam.Configure, Exam.Create, Exam.Delete, Exam.Schedule, Exam.Update, ExamAttendance.Mark (+177 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.02
-Nodes (105): ApiKeyAuthProvider, constant_time_eq(), empty_config_is_rejected(), hmac_digest(), hmac_digest_is_deterministic_and_label_bound(), non_api_key_credential_is_rejected(), test_jwt(), valid_key_authenticates_and_returns_session() (+97 more)
+Nodes (83): CLI as reference implementation, admit(), attendance(), dispatch(), parse_school(), parse_uuid(), payment(), consumer_e2e_admission_attendance_payment_notify_chain() (+75 more)
 
 ### Community 29 - "Community 29"
 Cohesion: 0.02
-Nodes (86): auth_capabilities_round_trip(), Capability (typed enum, atomic permission), files_capabilities_round_trip(), integrations_capabilities_round_trip(), debug_render_does_not_panic(), default_constructs_empty_invocation_log_with_3_capabilities(), health_returns_healthy(), InMemoryIntegrationGateway (+78 more)
+Nodes (101): Clock, deterministic_idgen_is_stable(), deterministic_idgen_starting_at_matches_advanced_counter(), deterministic_idgen_v7_marker(), deterministic_v7(), DeterministicIdGen, IdGenerator, system_clock_returns_monotonic() (+93 more)
 
 ### Community 30 - "Community 30"
-Cohesion: 0.01
-Nodes (185): AdmitCard.Configure, AdmitCard.Generate, Exam.Configure, Exam.Create, Exam.Delete, Exam.Schedule, Exam.Update, ExamAttendance.Mark (+177 more)
+Cohesion: 0.02
+Nodes (64): AggregateTypeFilter, change_filter_for_school(), change_filter_since_and_aggregate(), ChangeEvent, ChangeFilter, ChangeStream, MigrationReport, SchoolSnapshot (+56 more)
 
 ### Community 31 - "Community 31"
-Cohesion: 0.02
-Nodes (72): admit(), attendance(), parse_school(), parse_uuid(), payment(), consumer_e2e_admission_attendance_payment_notify_chain(), Engine, engine_builder_missing_storage_returns_error() (+64 more)
-
-### Community 32 - "Community 32"
-Cohesion: 0.02
-Nodes (78): dispatch(), configuration_key_is_alias_for_setting_name(), configuration_value_round_trips_via_serde(), ConfigurationEntry, ConfigurationService, ConfigurationValue, in_memory_delete_is_idempotent(), in_memory_entries_are_scoped_per_school() (+70 more)
-
-### Community 33 - "Community 33"
-Cohesion: 0.02
-Nodes (115): AboutPageRepository, AbsentNotificationTimeSetupRepository, BookAcquisitionRepository, BookCatalogEntryRepository, BookCategoryRepository, BookIssueRepository, BookRepository, BookReturnRepository (+107 more)
-
-### Community 34 - "Community 34"
 Cohesion: 0.01
 Nodes (80): AddBookCommand, AddStopToRouteCommand, AdjustBookQuantityCommand, AppendBookCatalogEntryCommand, AssignDriverToVehicleCommand, AssignStudentToRoomCommand, AssignStudentToRouteCommand, AssignVehicleToRouteCommand (+72 more)
 
-### Community 35 - "Community 35"
-Cohesion: 0.04
-Nodes (97): admit_student(), enter_marks(), generate_report_card(), gpa_from_table(), grade_from_table(), online_exam_lifecycle_happy_path_emits_all_five_events(), OnlineExamLifecycleService, ResultService (+89 more)
+### Community 32 - "Community 32"
+Cohesion: 0.01
+Nodes (27): backup_event_metadata_is_set(), BackupCreated, BackupDeleted, BackupMarkedActive, BackupMarkedInactive, BackupRestored, FailedJobDeleted, FailedJobRecorded (+19 more)
 
-### Community 36 - "Community 36"
+### Community 33 - "Community 33"
 Cohesion: 0.02
 Nodes (146): BackgroundSetting Aggregate, BaseGroup Aggregate, BaseSetup Aggregate, BehaviorRecordSetting Aggregate, Color Aggregate, ColorTheme Aggregate, CustomLink Aggregate, DashboardSetting Aggregate (+138 more)
 
-### Community 37 - "Community 37"
+### Community 34 - "Community 34"
 Cohesion: 0.02
 Nodes (150): Dormitory.Create, Dormitory.Delete, Dormitory.Update, Inventory.CancelReceive, Inventory.CancelSell, Inventory.Issue, Inventory.Receive, Inventory.RefundSell (+142 more)
 
-### Community 38 - "Community 38"
+### Community 35 - "Community 35"
+Cohesion: 0.01
+Nodes (25): all_event_wire_forms_resolve(), CalendarSettingCreated, CalendarSettingDeleted, CalendarSettingDisabled, CalendarSettingEnabled, CalendarSettingUpdated, EventCreated, EventDeleted (+17 more)
+
+### Community 36 - "Community 36"
+Cohesion: 0.03
+Nodes (101): CustomLinkSocial, AttemptRecord, AuthError, Clock, ip(), ip2(), limiter_with(), lockout_duration_min() (+93 more)
+
+### Community 37 - "Community 37"
 Cohesion: 0.02
-Nodes (74): BackupRepository, FailedJobRepository, JobRepository, MaintenanceSettingRepository, Migration, MigrationRepository, OAuthAccessToken, OAuthAccessTokenRepository (+66 more)
+Nodes (24): BookAcquisitionRecorded, BookAdded, BookCatalogEntryAppended, BookCategoryCreated, BookCategoryDeleted, BookCategoryUpdated, BookDeleted, BookIssued (+16 more)
+
+### Community 38 - "Community 38"
+Cohesion: 0.03
+Nodes (75): ApiKeyAuthProvider, constant_time_eq(), empty_config_is_rejected(), hmac_digest(), hmac_digest_is_deterministic_and_label_bound(), non_api_key_credential_is_rejected(), test_jwt(), valid_key_authenticates_and_returns_session() (+67 more)
 
 ### Community 39 - "Community 39"
-Cohesion: 0.03
-Nodes (92): about_page_new_succeeds(), AboutPage, contact_page_new_succeeds(), ContactPage, Content, content_available_to_role_with_no_filter_returns_true(), content_new_with_empty_file_name_returns_error(), content_new_with_negative_size_returns_error() (+84 more)
+Cohesion: 0.02
+Nodes (104): class_id(), naive(), record_id(), section_id(), student_attendance_create_rejects_duplicate_day_with_conflict(), student_attendance_create_rejects_oversized_notes_with_validation_error(), student_attendance_create_then_update_mutates_aggregate_and_emits_events(), student_attendance_update_with_no_changes_returns_validation_error() (+96 more)
 
 ### Community 40 - "Community 40"
 Cohesion: 0.02
-Nodes (105): ActivateLanguageCommand, ActivateStyleCommand, ActivateThemeCommand, AddBaseGroupCommand, AddBaseSetupCommand, AddDateFormatCommand, AddLanguageCommand, AddLanguagePhraseCommand (+97 more)
+Nodes (107): ActivateLanguageCommand, ActivateStyleCommand, ActivateThemeCommand, add_language_command_into_new_language(), AddBaseGroupCommand, AddBaseSetupCommand, AddDateFormatCommand, AddLanguageCommand (+99 more)
 
 ### Community 41 - "Community 41"
 Cohesion: 0.03
-Nodes (59): sql_has_no_duplicate_index_declarations(), convenience_constructors_build_expected_variants(), deserialize_failed(), not_supported(), publish_failed(), subscribe_failed(), AckOutcome, alias_compiles_and_resolves_to_in_process_bus() (+51 more)
+Nodes (63): debug_redacts_api_credentials(), infrastructure(), json_infrastructure(), lms_integration_builder_accepts_overrides(), lms_integration_builder_constructs_with_defaults(), lms_integration_builder_is_debug_and_default(), lms_integration_health_is_healthy(), lms_integration_invoke_unknown_action_returns_invalid_input() (+55 more)
 
 ### Community 42 - "Community 42"
 Cohesion: 0.02
-Nodes (109): Department (aggregate), HourlyRate (aggregate), LeaveDefine (aggregate), LeaveRequest (aggregate), PayrollGenerate (aggregate), SalaryTemplate (aggregate), Staff (aggregate), HR Domain — Aggregates (+101 more)
+Nodes (44): Exam, events_rrule_expansion_subset(), CalendarService, CalendarSettingService, ContentService, IncidentService, PageService, recurrence_service_expand_with_holiday_override() (+36 more)
 
 ### Community 43 - "Community 43"
+Cohesion: 0.02
+Nodes (109): Department (aggregate), HourlyRate (aggregate), LeaveDefine (aggregate), LeaveRequest (aggregate), PayrollGenerate (aggregate), SalaryTemplate (aggregate), Staff (aggregate), HR Domain — Aggregates (+101 more)
+
+### Community 44 - "Community 44"
 Cohesion: 0.04
 Nodes (94): AcademicYearId (from educore-academic), ActiveForms Specification, Form.Delete, Form.Read Capability, Form.Read.Public Capability, Form.Update, Form.Upload, Postal.Delete (+86 more)
 
-### Community 44 - "Community 44"
-Cohesion: 0.03
-Nodes (34): Exam, events_rrule_expansion_subset(), CalendarService, CalendarSettingService, IncidentService, PageService, recurrence_service_expand_with_holiday_override(), RecurrenceService (+26 more)
-
 ### Community 45 - "Community 45"
-Cohesion: 0.05
-Nodes (73): sync_events_round_trip_through_envelope(), build_aggregate_ddl(), build_aggregate_ddl_emits_one_create_table_per_aggregate(), build_aggregate_ddl_is_idempotent_via_if_not_exists_or_do_block(), build_create_table_sql(), build_create_table_sql_emits_default_for_auto_uuid_pk(), build_create_table_sql_emits_table_and_columns(), build_create_table_sql_emits_text_for_custom_unknown() (+65 more)
+Cohesion: 0.02
+Nodes (43): AboutPageRepository, ContactPageRepository, ContentRepository, ContentShareListRepository, ContentTypeRepository, CoursePageRepository, FrontendPageRepository, HomePageSettingRepository (+35 more)
 
 ### Community 46 - "Community 46"
-Cohesion: 0.04
-Nodes (35): copy_then_original_still_exists(), ctx(), delete_removes_file(), drain(), exists_returns_true_after_put_false_after_delete(), head_returns_metadata_for_existing_file(), head_returns_not_found_for_missing_key(), InMemoryFileStorage (+27 more)
-
-### Community 47 - "Community 47"
 Cohesion: 0.03
 Nodes (87): Rbac.Capability.Assign, Rbac.Capability.Revoke, Rbac.ModulePermission.Assign, Rbac.ModulePermission.Create, Rbac.ModulePermission.Delete, Rbac.ModulePermission.Revoke, Rbac.ModulePermission.Update, Rbac.Override.Clear (+79 more)
 
+### Community 47 - "Community 47"
+Cohesion: 0.04
+Nodes (42): AckOutcome, alias_compiles_and_resolves_to_in_process_bus(), AuditSink, BatchFailure, consumer_id_round_trip(), ConsumerId, DeadLetterEntry, DeadLetterQueue (+34 more)
+
 ### Community 48 - "Community 48"
-Cohesion: 0.03
-Nodes (78): Academic Domain (cross-reference), Communication Domain (cross-reference), Finance Domain (cross-reference), Operations Domain (cross-reference), RBAC Domain (cross-reference), Settings Domain (cross-reference), Specification: ActiveUsers, AddOn Aggregate (+70 more)
+Cohesion: 0.04
+Nodes (38): BackupRepository, FailedJobRepository, JobRepository, MaintenanceSettingRepository, Migration, MigrationRepository, OAuthAccessToken, OAuthAccessTokenRepository (+30 more)
 
 ### Community 49 - "Community 49"
 Cohesion: 0.04
 Nodes (74): Operations.Audit.Record` (system), Operations.Backup.Activate, Operations.Backup.Create, Operations.Backup.Deactivate, Operations.Backup.Delete, Operations.Backup.Restore, Operations.Job.Cancel, Operations.Job.Complete` (system) (+66 more)
 
 ### Community 50 - "Community 50"
-Cohesion: 0.04
-Nodes (69): RBAC Domain Aggregates, AssignCapabilityCommand, AssignPermission Aggregate, AssignPermissionRepository, assign_permissions Table, Audit Log (cross-cutting), Audit Workflow, Bootstrap Lock Recovery (+61 more)
+Cohesion: 0.05
+Nodes (25): CapabilityCheck, CommandBounds, CommandDispatcher, dispatch_happy_path_writes_outbox_audit_and_publishes(), dispatch_idempotency_hit_returns_conflict_without_service_call(), dispatch_rbac_denied_returns_forbidden_without_io(), dispatch_records_idempotency_outcome_on_success(), dispatch_service_call_error_skips_side_effects() (+17 more)
 
 ### Community 51 - "Community 51"
 Cohesion: 0.04
-Nodes (63): CalendarSetting.Create, CalendarSetting.Delete, CalendarSetting.Disable, CalendarSetting.Enable, CalendarSetting.Update, Event.Create, Event.Delete, Event.Update (+55 more)
+Nodes (69): RBAC Domain Aggregates, AssignCapabilityCommand, AssignPermission Aggregate, AssignPermissionRepository, assign_permissions Table, Audit Log (cross-cutting), Audit Workflow, Bootstrap Lock Recovery (+61 more)
 
 ### Community 52 - "Community 52"
+Cohesion: 0.08
+Nodes (35): copy_then_original_still_exists(), ctx(), delete_removes_file(), drain(), exists_returns_true_after_put_false_after_delete(), head_returns_metadata_for_existing_file(), head_returns_not_found_for_missing_key(), InMemoryFileStorage (+27 more)
+
+### Community 53 - "Community 53"
+Cohesion: 0.04
+Nodes (63): CalendarSetting.Create, CalendarSetting.Delete, CalendarSetting.Disable, CalendarSetting.Enable, CalendarSetting.Update, Event.Create, Event.Delete, Event.Update (+55 more)
+
+### Community 54 - "Community 54"
 Cohesion: 0.04
 Nodes (31): AuditPartition, backup_file_constructs(), backup_storage_ref_constructs(), BackupFile, BackupRetention, BackupSchedule, BackupStorageRef, FailedJobExceptionView (+23 more)
 
-### Community 53 - "Community 53"
+### Community 55 - "Community 55"
 Cohesion: 0.05
 Nodes (60): Book.Add, Book.AdjustQuantity, Book.Delete, Book.Read, Book.Update, BookCategory.Create, BookCategory.Delete, BookCategory.Update (+52 more)
 
-### Community 54 - "Community 54"
+### Community 56 - "Community 56"
 Cohesion: 0.05
 Nodes (57): AcademicYear Aggregate, AdmissionQuery Aggregate, Student.Admit Capability, Student.Promote Capability, Class Aggregate, ClassSection Aggregate, ClassTime Entity, AdmitStudent Command (+49 more)
 
-### Community 55 - "Community 55"
+### Community 57 - "Community 57"
 Cohesion: 0.04
 Nodes (57): BulkAttendanceImport aggregate, ClassAttendance projection, ExamAttendance aggregate (delegated to assessment), StudentAttendance aggregate, BulkMarkStudentAttendanceCommand, CommitBulkImportCommand, ImportAttendanceCommand, MarkStudentAttendanceCommand (+49 more)
 
-### Community 56 - "Community 56"
+### Community 58 - "Community 58"
+Cohesion: 0.08
+Nodes (28): batch_limit_to_usize(), CountingBus, envelope_serde_round_trip(), from_event_envelope_preserves_fields(), into_event_envelope_round_trips(), sample_event_envelope(), sample_serialized(), SerializedEnvelope (+20 more)
+
+### Community 59 - "Community 59"
 Cohesion: 0.07
 Nodes (21): auth_required_accessor(), health_degrades_on_empty_cron(), health_propagates_inner_health(), invoke_delegates_to_inner(), new_constructs_with_initial_cursor(), poll_once_returns_current_cursor_unchanged(), PollingConfig, PollingCursor (+13 more)
 
-### Community 57 - "Community 57"
-Cohesion: 0.06
-Nodes (25): CommandHandle, CommandOutcome, CommandRegistry, CommandStatus, handle(), handle_display_uses_short_id(), handle_serde_round_trip(), mark_completed_sets_terminal_state() (+17 more)
-
-### Community 58 - "Community 58"
+### Community 60 - "Community 60"
 Cohesion: 0.12
 Nodes (21): admin_context(), guardian_can_link_to_multiple_students(), guardian_create_with_two_phones_rejected_by_type_system(), guardian_id(), guardian_link_carries_relation_and_is_primary(), guardian_link_to_student_creates_student_guardian_link(), guardian_mark_primary_emits_event_and_sets_flag(), guardian_mark_primary_when_already_primary_rejected() (+13 more)
 
-### Community 59 - "Community 59"
+### Community 61 - "Community 61"
 Cohesion: 0.14
 Nodes (20): academic_year_id(), admin_context(), build_cmd(), class_id(), class_room_id(), class_section_assign_class_and_subject_teacher(), class_section_assign_class_room_appends(), class_section_assign_teacher_cross_school_rejected() (+12 more)
 
-### Community 60 - "Community 60"
+### Community 62 - "Community 62"
+Cohesion: 0.07
+Nodes (19): Conflict, ConflictKind, ConflictResolution, ConflictResolver, ConflictResolverContext, ConflictResolverExt, ctx(), first_write_wins_picks_local() (+11 more)
+
+### Community 63 - "Community 63"
+Cohesion: 0.11
+Nodes (17): Clock, ct_eq(), FrozenClock, hex_nibble(), hmac_sha256_verifier_accepts_valid_signature(), hmac_sha256_verifier_rejects_expired_timestamp(), hmac_sha256_verifier_rejects_malformed_header(), hmac_sha256_verifier_rejects_mismatched_signature() (+9 more)
+
+### Community 64 - "Community 64"
 Cohesion: 0.06
 Nodes (37): ADR-017 SurrealDB First, ADR-018 Sync Engine Architecture, AGENTS SurrealDB Primary, AGENTS Sync Engine ADRs, Build Plan Phase 0 Crates, Build Plan SurrealDB First, Build Plan Sync Engine, CONTRIBUTING Sync Rules (+29 more)
 
-### Community 61 - "Community 61"
-Cohesion: 0.07
-Nodes (18): Conflict, ConflictKind, ConflictResolution, ConflictResolver, ConflictResolverContext, ConflictResolverExt, ctx(), first_write_wins_picks_local() (+10 more)
-
-### Community 62 - "Community 62"
+### Community 65 - "Community 65"
 Cohesion: 0.07
 Nodes (35): ActiveNews specification, News.Create capability, Page.Create capability, Page.Publish capability, CmsCoordinator cross-domain facade, CreateNews command, CreatePage command, News aggregate (+27 more)
 
-### Community 63 - "Community 63"
+### Community 66 - "Community 66"
 Cohesion: 0.06
 Nodes (35): ActiveMembers Specification, AvailableBooks Specification, Book Aggregate, BookAcquisition Entity, BookCatalogEntry Entity, BookIssue Aggregate, BookIssueFine Entity, BookIssueRenewal Entity (+27 more)
 
-### Community 64 - "Community 64"
-Cohesion: 0.09
-Nodes (10): all_four_event_types_are_unique(), event_id_from(), sync_lifecycle_events(), sync_paused_correlates_to_started(), sync_started_event_type_is_namespaced(), sync_started_serialises_to_expected_json_shape(), SyncPaused, SyncResumed (+2 more)
+### Community 67 - "Community 67"
+Cohesion: 0.11
+Nodes (19): cross_tenant_delete_rejected(), cross_tenant_order_independent(), cross_tenant_read_rejected(), cross_tenant_same_school_allowed(), cross_tenant_school_only_not_actor(), cross_tenant_write_rejected(), school(), CrossTenantError (+11 more)
 
-### Community 65 - "Community 65"
+### Community 68 - "Community 68"
 Cohesion: 0.08
 Nodes (32): AdmitCard Aggregate, Exam Aggregate, ExamAttendance Aggregate, ExamSchedule Aggregate, ExamSetup Aggregate, MarksRegister Aggregate, MeritPosition Aggregate, ResultStore Aggregate (+24 more)
 
-### Community 66 - "Community 66"
+### Community 69 - "Community 69"
+Cohesion: 0.15
+Nodes (19): bearer_regex(), compile_or_log(), default_redactor_applies_all_kinds_in_one_pass(), DefaultRedactor, email_regex(), jwt_regex(), password_regex(), phone_regex() (+11 more)
+
+### Community 70 - "Community 70"
 Cohesion: 0.06
 Nodes (15): BackgroundSettingRepository, BaseGroupRepository, BaseSetupRepository, BehaviorRecordSettingRepository, ColorRepository, ColorThemeRepository, CustomLinkRepository, DashboardSettingRepository (+7 more)
 
-### Community 67 - "Community 67"
-Cohesion: 0.09
-Nodes (29): ActiveIncidents Specification, AssignIncident Aggregate, AssignIncident Command, assign_incident_comments Table, AssignIncident Entity, AssignIncidentRepository, assign_incidents Table, CommentOnIncident Command (+21 more)
-
-### Community 68 - "Community 68"
+### Community 71 - "Community 71"
 Cohesion: 0.11
 Nodes (27): Command Flow, Audit Sink, AuthProvider, CapabilityCheck, Command Dispatcher / Command Bus, Engine Facade, Event Bus, Idempotency Store (+19 more)
 
-### Community 69 - "Community 69"
+### Community 72 - "Community 72"
+Cohesion: 0.14
+Nodes (20): admin_context(), fees_carry_forward_setting_id(), fees_carry_forward_setting_typed_id_round_trips_school(), fees_carry_forward_setting_typed_ids_are_distinct_within_school(), admin_context(), income_approval_id(), income_approval_typed_id_round_trips_school(), income_approval_typed_ids_are_distinct_within_school() (+12 more)
+
+### Community 73 - "Community 73"
 Cohesion: 0.1
 Nodes (26): ADR-001: Domain-Driven Design, ADR-003: Multi-Tenant by Default, ADR-004: Command-Oriented Execution, ADR-005: Event-Driven Design, ADR-006: Compile-Time-Safe Query Layer, ADR-007: Audit-First Design, ADR-008: Offline-Capable Design, ADR-009: Capability-Based Permissions (+18 more)
 
-### Community 70 - "Community 70"
-Cohesion: 0.22
-Nodes (13): fresh_schema_cid(), get_missing_returns_none(), InMemorySchemaRegistry, latest_picks_highest_version(), list_filters_by_kind_and_sorts(), register_and_get_round_trip(), register_conflicts_on_different_content(), register_is_idempotent_with_identical_content() (+5 more)
-
-### Community 71 - "Community 71"
-Cohesion: 0.11
-Nodes (5): BulkCommandCompleted, BulkCommandItemProcessed, BulkCommandStarted, BulkFailurePolicy, event_id_from()
-
-### Community 72 - "Community 72"
-Cohesion: 0.11
-Nodes (19): AssignFeesToClassCommand, FeesAssign aggregate, FeesAssignRepository port, finance_fees_assigns table, FeesGroup aggregate, FeesGroup.* capabilities, FeesGroupRepository port, FeesMaster aggregate (+11 more)
-
-### Community 73 - "Community 73"
-Cohesion: 0.23
-Nodes (10): admin_context(), naive(), staff_attendance_create_rejects_duplicate_day_with_conflict(), staff_attendance_create_then_update_mutates_aggregate_and_emits_events(), staff_attendance_id(), staff_attendance_typed_id_round_trips_school(), staff_attendance_typed_ids_are_distinct_within_school(), staff_attendance_update_with_no_changes_returns_validation_error() (+2 more)
-
 ### Community 74 - "Community 74"
-Cohesion: 0.48
-Nodes (16): admin_context(), build_cmd(), class_id(), class_section_id(), class_subject_assign_cross_school_class_id_rejected(), class_subject_assign_with_class_only_and_section_rejected(), class_subject_assign_with_class_only_no_section_succeeds(), class_subject_assign_with_class_section_and_no_section_rejected() (+8 more)
+Cohesion: 0.1
+Nodes (4): _NullBookIssueRepo, _NullBookReturnRepo, ReportsService, service_factory_reports_service_wiring()
 
 ### Community 75 - "Community 75"
-Cohesion: 0.11
-Nodes (1): NoOpUniquenessChecker
+Cohesion: 0.1
+Nodes (5): admin_context(), class_create_builds_aggregate_and_emits_class_created_event(), class_create_with_empty_name_returns_validation_error(), class_id(), NoOpUniquenessChecker
 
 ### Community 76 - "Community 76"
 Cohesion: 0.11
-Nodes (1): InMemoryUniqueness
+Nodes (5): BulkCommandCompleted, BulkCommandItemProcessed, BulkCommandStarted, BulkFailurePolicy, event_id_from()
 
 ### Community 77 - "Community 77"
 Cohesion: 0.11
-Nodes (1): InMemoryUniqueness
+Nodes (19): AssignFeesToClassCommand, FeesAssign aggregate, FeesAssignRepository port, finance_fees_assigns table, FeesGroup aggregate, FeesGroup.* capabilities, FeesGroupRepository port, FeesMaster aggregate (+11 more)
 
 ### Community 78 - "Community 78"
-Cohesion: 0.11
-Nodes (1): NoOpUniquenessChecker
+Cohesion: 0.48
+Nodes (16): admin_context(), build_cmd(), class_id(), class_section_id(), class_subject_assign_cross_school_class_id_rejected(), class_subject_assign_with_class_only_and_section_rejected(), class_subject_assign_with_class_only_no_section_succeeds(), class_subject_assign_with_class_section_and_no_section_rejected() (+8 more)
 
 ### Community 79 - "Community 79"
 Cohesion: 0.11
-Nodes (1): NoOpUniquenessChecker
+Nodes (1): InMemoryUniqueness
 
 ### Community 80 - "Community 80"
-Cohesion: 0.33
-Nodes (10): class_id(), naive(), record_id(), section_id(), student_attendance_create_rejects_duplicate_day_with_conflict(), student_attendance_create_rejects_oversized_notes_with_validation_error(), student_attendance_create_then_update_mutates_aggregate_and_emits_events(), student_attendance_update_with_no_changes_returns_validation_error() (+2 more)
+Cohesion: 0.11
+Nodes (1): InMemoryUniqueness
 
 ### Community 81 - "Community 81"
+Cohesion: 0.11
+Nodes (1): InMemoryUniqueness
+
+### Community 82 - "Community 82"
+Cohesion: 0.11
+Nodes (1): NoOpUniquenessChecker
+
+### Community 83 - "Community 83"
+Cohesion: 0.11
+Nodes (1): NoOpUniquenessChecker
+
+### Community 84 - "Community 84"
+Cohesion: 0.11
+Nodes (1): NoOpUniquenessChecker
+
+### Community 85 - "Community 85"
 Cohesion: 0.12
 Nodes (8): BackupQuery, FailedJobQuery, JobQuery, MaintenanceSettingQuery, SidebarQuery, SystemVersionQuery, UserLogQuery, VersionHistoryQuery
 
-### Community 82 - "Community 82"
+### Community 86 - "Community 86"
 Cohesion: 0.58
 Nodes (15): record_student_promotion_aggregate(), academic_year_id(), admin_context(), class_id(), section_id(), student_id(), student_promotion_cross_school_record_rejected(), student_promotion_fail_result_succeeds() (+7 more)
 
-### Community 83 - "Community 83"
+### Community 87 - "Community 87"
+Cohesion: 0.21
+Nodes (6): school_query_builder_setter_methods(), school_query_execute_returns_not_supported(), SchoolQuery, user_query_builder_setter_methods(), user_query_execute_returns_not_supported(), UserQuery
+
+### Community 88 - "Community 88"
 Cohesion: 0.13
 Nodes (7): AssignIncidentRepository, CalendarEventRepository, CalendarSettingRepository, HolidayRepository, IncidentCommentRepository, IncidentRepository, WeekendRepository
 
-### Community 84 - "Community 84"
+### Community 89 - "Community 89"
 Cohesion: 0.13
 Nodes (15): ClassId from educore-academic, Content aggregate, ContentAvailability embedded value, ContentCreated event, ContentRepository port, ContentRevision entity, ContentService domain service, CreateContent command (+7 more)
 
-### Community 85 - "Community 85"
+### Community 90 - "Community 90"
 Cohesion: 0.14
 Nodes (15): BookIssueEligibility Policy, CalculateFineCommand, IssueBookCommand, MarkBookLostCommand, RegisterLibraryMemberCommand, ReturnBookCommand, LibraryCoordinator, BookIssued Event (+7 more)
 
-### Community 86 - "Community 86"
-Cohesion: 0.21
-Nodes (3): BehaviorRecordSetting, BehaviorRecordFlag, BehaviorRecordService
+### Community 91 - "Community 91"
+Cohesion: 0.14
+Nodes (8): AssignCapabilityCommand, create_role_carries_school_id(), CreateRoleCommand, DeleteRoleCommand, revoke_command_carries_as_denial_flag(), RevokeCapabilityCommand, update_role_partial_fields_default_to_none(), UpdateRoleCommand
 
-### Community 87 - "Community 87"
+### Community 92 - "Community 92"
 Cohesion: 0.18
 Nodes (13): ContentShareList.Dispatch capability, ContentShareList aggregate, ContentShareListAudience entity, ContentShareListContent join entity, ContentShareListDispatched event, ContentShareListRepository port, ContentShareListService domain service, CreateContentShareList command (+5 more)
 
-### Community 88 - "Community 88"
-Cohesion: 0.48
-Nodes (11): admin_context(), id_card_all_flags_false_succeeds(), id_card_create_succeeds(), id_card_delete_retires_aggregate(), id_card_empty_name_rejected(), id_card_id(), id_card_update_changes_flags(), id_card_zero_height_rejected() (+3 more)
+### Community 93 - "Community 93"
+Cohesion: 0.17
+Nodes (3): LanguageService, RtlLanguages, RtlFlag
 
-### Community 89 - "Community 89"
-Cohesion: 0.29
-Nodes (10): aggregate_topic_falls_back_to_aggregate_type(), aggregate_topic_uses_event_type_domain(), envelope_payload_serde_round_trip(), is_for_school_matches(), sample(), envelope_bytes(), envelope_bytes_can_serialize_to_value(), payload_bytes() (+2 more)
-
-### Community 90 - "Community 90"
+### Community 94 - "Community 94"
 Cohesion: 0.18
 Nodes (12): finance_invoices table, FmFeesInvoice aggregate, FmFeesInvoiceGenerated event, FmFeesInvoiceRepository port, InvoiceGenerationService, InvoiceNumber / ReceiptNumber value objects, PayrollCalculationService, PayrollGenerate aggregate (+4 more)
 
-### Community 91 - "Community 91"
+### Community 95 - "Community 95"
 Cohesion: 0.2
 Nodes (3): event_id_from(), IdempotencyRetentionPolicy, IdempotencyTtlSweepDue
 
-### Community 92 - "Community 92"
+### Community 96 - "Community 96"
 Cohesion: 0.22
 Nodes (11): NewsComment.Moderate capability, CommentOnNews command, ModerateNewsComment command, NewsComment aggregate, NewsCommentAdded event, NewsCommentApproved event, NewsCommentPolicy, NewsCommentRepository port (+3 more)
 
-### Community 93 - "Community 93"
+### Community 97 - "Community 97"
 Cohesion: 0.22
 Nodes (2): EventLogRetentionPolicy, EventLogRetentionSweepDue
 
-### Community 94 - "Community 94"
+### Community 98 - "Community 98"
 Cohesion: 0.2
 Nodes (10): StaffImportBulkTemporary (aggregate), BulkImportService, ImportStaffBulkCommand, PromoteStaffImportCommand, BulkImportJob, StaffImportResolution, StaffImportPromoted, StaffImportBulkTemporaryRepository (+2 more)
 
-### Community 95 - "Community 95"
+### Community 99 - "Community 99"
 Cohesion: 0.31
 Nodes (10): Library Aggregates, Anti-Goal: Inter-library loans out of scope, Library Commands, Library Entities, Library Events, Library Domain Overview, Library Repositories, Library Tables (+2 more)
 
-### Community 96 - "Community 96"
+### Community 100 - "Community 100"
 Cohesion: 0.22
 Nodes (10): DisableMaintenanceCommand, EnableMaintenanceCommand, MaintenanceDisabled Event, MaintenanceEnabled Event, Maintenance Mode Workflow, MaintenanceService, MaintenanceSetting Aggregate, MaintenanceSettingRepository (+2 more)
 
-### Community 97 - "Community 97"
+### Community 101 - "Community 101"
 Cohesion: 0.2
 Nodes (10): ApplyRemoteChangeCommand, ConflictRecord Aggregate, ConflictReported Event, OutboxDrained Event, OutboxEntry Aggregate, ResolveConflictCommand, SwitchSchoolCommand, SyncCursor Aggregate (+2 more)
 
-### Community 98 - "Community 98"
+### Community 102 - "Community 102"
 Cohesion: 0.2
 Nodes (10): SQL Comparison SurrealDB, SQL Dialects SurrealDB Added, DEFINE EVENT Trigger, DEFINE FIELD Statement, DEFINE INDEX Statement, DEFINE TABLE Statement, SurrealDB Dialect Conventions, LIVE SELECT Change Feed (+2 more)
 
-### Community 99 - "Community 99"
-Cohesion: 0.36
-Nodes (2): ReportsService, service_factory_reports_service_wiring()
+### Community 103 - "Community 103"
+Cohesion: 0.22
+Nodes (2): StaffAttendanceImport, StudentAttendanceImport
 
-### Community 100 - "Community 100"
+### Community 104 - "Community 104"
+Cohesion: 0.22
+Nodes (2): BackupService, DatabaseBackups
+
+### Community 105 - "Community 105"
 Cohesion: 0.22
 Nodes (9): educore-operations README, docs/specs/operations/, Engine-Internal Tables, Backups, Operations Domain, Engine Lifecycle Recording, Runtime Maintenance Windows, Scheduled Jobs (+1 more)
 
-### Community 101 - "Community 101"
+### Community 106 - "Community 106"
 Cohesion: 0.22
 Nodes (9): operations_system_versions Table, RecordVersionHistoryCommand, RegisterSystemVersionCommand, SystemVersion Aggregate, System Version Bump Workflow, SystemVersionBumped Event, SystemVersionRegistered Event, SystemVersionRepository (+1 more)
 
-### Community 102 - "Community 102"
-Cohesion: 0.25
-Nodes (2): StaffAttendanceImport, StudentAttendanceImport
-
-### Community 103 - "Community 103"
-Cohesion: 0.25
-Nodes (1): _NullBookIssueRepo
-
-### Community 104 - "Community 104"
+### Community 107 - "Community 107"
 Cohesion: 0.29
 Nodes (8): CreateHomework Command, Homework Aggregate, HomeworkSubmission Entity, HomeworkRepository, Teacher Role, HomeworkService, academic_homeworks Table, Homework Workflow
 
-### Community 105 - "Community 105"
+### Community 108 - "Community 108"
 Cohesion: 0.25
 Nodes (8): CommandEnvelope Type, CommandOutcome Type, Device Token Auth, Event Bus Sync Bridge, EventFilter Type, SchoolSnapshot Type, SyncAdapter Trait, SyncHealth Type
 
-### Community 106 - "Community 106"
+### Community 109 - "Community 109"
 Cohesion: 0.25
 Nodes (8): SurrealDB audit_log Table, SurrealDB include_str! Pattern, SurrealDB Namespace Database, SurrealDB event_log Table, SurrealDB idempotency Table, SurrealDB outbox Table, SurrealDB schema_registry Table, SurrealDB system_user Table
 
-### Community 107 - "Community 107"
-Cohesion: 0.52
-Nodes (6): admin_context(), admin_context_fixture_returns_distinct_ids_and_valid_timestamp(), form_download_new_with_file_populates_aggregate(), form_download_new_with_link_populates_aggregate(), new_form_with_file(), new_form_with_link()
-
-### Community 108 - "Community 108"
-Cohesion: 0.29
-Nodes (1): _NullBookCategoryRepo
-
-### Community 109 - "Community 109"
-Cohesion: 0.29
-Nodes (1): _NullFineRepo
-
 ### Community 110 - "Community 110"
 Cohesion: 0.29
-Nodes (7): CreateLessonPlan Command, Lesson Aggregate, LessonPlan Aggregate, LessonTopic Aggregate, LessonPlanService, lesson_planners Table, Lesson Plan Workflow
+Nodes (3): ExamScheduleSubject, MarksRegisterChild, SeatPlanChild
 
 ### Community 111 - "Community 111"
 Cohesion: 0.29
-Nodes (7): OnlineExam Aggregate, QuestionBank Aggregate, OnlineExamRepository Port, OnlineExamService, OnlineExamStatus Enum, QuestionType Enum, Online Exam Lifecycle Workflow
+Nodes (1): _NullBookCategoryRepo
 
 ### Community 112 - "Community 112"
-Cohesion: 0.33
-Nodes (7): SubjectAttendance aggregate, MarkSubjectAttendanceCommand, SubjectAbsentNotificationRequested, SubjectAttendanceMarked, Attendance.Subject.Mark capability, SubjectAttendanceRepository, attendance_subject_attendances table
+Cohesion: 0.29
+Nodes (7): CreateLessonPlan Command, Lesson Aggregate, LessonPlan Aggregate, LessonTopic Aggregate, LessonPlanService, lesson_planners Table, Lesson Plan Workflow
 
 ### Community 113 - "Community 113"
-Cohesion: 0.38
-Nodes (7): StaffAttendance aggregate, MarkStaffAttendanceCommand, StaffAbsentForDay, StaffAttendanceMarked, Attendance.Staff.Mark capability, StaffAttendanceRepository, attendance_staff_attendances table
+Cohesion: 0.29
+Nodes (7): OnlineExam Aggregate, QuestionBank Aggregate, OnlineExamRepository Port, OnlineExamService, OnlineExamStatus Enum, QuestionType Enum, Online Exam Lifecycle Workflow
 
 ### Community 114 - "Community 114"
 Cohesion: 0.33
-Nodes (7): Facilities Domain Aggregates, Facilities Domain Commands, Facilities Domain Entities, Facilities Domain Events, Facilities Domain Overview, Facilities Domain Tables, Facilities Domain Value Objects
+Nodes (7): SubjectAttendance aggregate, MarkSubjectAttendanceCommand, SubjectAbsentNotificationRequested, SubjectAttendanceMarked, Attendance.Subject.Mark capability, SubjectAttendanceRepository, attendance_subject_attendances table
 
 ### Community 115 - "Community 115"
-Cohesion: 0.29
-Nodes (7): InventoryService Domain Service, ItemReceive Aggregate, ItemReceiveChild Aggregate, PaidStatus Value Object, PaymentMethod Value Object, Supplier Aggregate, SupplierStatus Value Object
+Cohesion: 0.38
+Nodes (7): StaffAttendance aggregate, MarkStaffAttendanceCommand, StaffAbsentForDay, StaffAttendanceMarked, Attendance.Staff.Mark capability, StaffAttendanceRepository, attendance_staff_attendances table
 
 ### Community 116 - "Community 116"
+Cohesion: 0.33
+Nodes (7): Facilities Domain Aggregates, Facilities Domain Commands, Facilities Domain Entities, Facilities Domain Events, Facilities Domain Overview, Facilities Domain Tables, Facilities Domain Value Objects
+
+### Community 117 - "Community 117"
 Cohesion: 0.29
 Nodes (7): Vehicle.Create Capability, CreateVehicleCommand, DriverAssignment Entity, RouteStop Entity, Vehicle Aggregate, VehicleCreated Event, VehicleStatus Value Object
 
-### Community 117 - "Community 117"
-Cohesion: 0.33
-Nodes (2): SyncHealth, SyncStatus
-
 ### Community 118 - "Community 118"
-Cohesion: 0.33
-Nodes (6): CreateNoticeBoard command, NoticeBoard aggregate (public-site), NoticeBoardRepository port, cms_notice_boards table, Url value object, Notice aggregate (communication domain)
+Cohesion: 0.29
+Nodes (7): InventoryService Domain Service, ItemReceive Aggregate, ItemReceiveChild Aggregate, PaidStatus Value Object, PaymentMethod Value Object, Supplier Aggregate, SupplierStatus Value Object
 
 ### Community 119 - "Community 119"
-Cohesion: 0.33
-Nodes (6): CreateTestimonial command, Testimonial aggregate, TestimonialCreated event, TestimonialService domain service, StarRating value object, Testimonial Curation Workflow
+Cohesion: 0.8
+Nodes (4): admin_context(), payroll_generate_id(), payroll_generate_typed_id_round_trips_school(), payroll_generate_typed_ids_are_distinct_within_school()
 
 ### Community 120 - "Community 120"
-Cohesion: 0.33
-Nodes (6): Dormitory Aggregate, DormitoryService Domain Service, DormitoryType Value Object, Room Aggregate, RoomAssignment Entity, RoomType Aggregate
+Cohesion: 0.8
+Nodes (4): admin_context(), payroll_earn_deduc_id(), payroll_earn_deduc_typed_id_round_trips_school(), payroll_earn_deduc_typed_ids_are_distinct_within_school()
 
 ### Community 121 - "Community 121"
 Cohesion: 0.33
-Nodes (6): CarryForwardFeesBalanceCommand, CarryForwardService, Carry Forward workflow, FeesCarriedForward event, FeesCarryForward aggregate, fees_carry_forwards table
+Nodes (2): SyncHealth, SyncStatus
 
 ### Community 122 - "Community 122"
 Cohesion: 0.33
-Nodes (6): StaffAttendanceImport (aggregate), AttendanceImportService, StaffAttendanceImportBatch, StaffAttendancePromotion, StaffAttendanceImportRepository, Table: attendance_staff_attendance_imports
+Nodes (6): CreateNoticeBoard command, NoticeBoard aggregate (public-site), NoticeBoardRepository port, cms_notice_boards table, Url value object, Notice aggregate (communication domain)
 
 ### Community 123 - "Community 123"
 Cohesion: 0.33
-Nodes (6): IpAddress Value Object, LoginOutcome Value Object, Operations.Audit.* Capabilities, RecordUserLogCommand, UserLogService, UserLogged Event
+Nodes (6): CreateTestimonial command, Testimonial aggregate, TestimonialCreated event, TestimonialService domain service, StarRating value object, Testimonial Curation Workflow
 
 ### Community 124 - "Community 124"
-Cohesion: 0.5
-Nodes (1): AbsentNotificationService
+Cohesion: 0.33
+Nodes (6): Dormitory Aggregate, DormitoryService Domain Service, DormitoryType Value Object, Room Aggregate, RoomAssignment Entity, RoomType Aggregate
 
 ### Community 125 - "Community 125"
-Cohesion: 0.4
-Nodes (1): StubUniqueness
+Cohesion: 0.33
+Nodes (6): CarryForwardFeesBalanceCommand, CarryForwardService, Carry Forward workflow, FeesCarriedForward event, FeesCarryForward aggregate, fees_carry_forwards table
 
 ### Community 126 - "Community 126"
-Cohesion: 0.4
-Nodes (1): ComplaintService
+Cohesion: 0.33
+Nodes (6): StaffAttendanceImport (aggregate), AttendanceImportService, StaffAttendanceImportBatch, StaffAttendancePromotion, StaffAttendanceImportRepository, Table: attendance_staff_attendance_imports
 
 ### Community 127 - "Community 127"
-Cohesion: 0.4
-Nodes (1): TestUniqueness
+Cohesion: 0.33
+Nodes (6): IpAddress Value Object, LoginOutcome Value Object, Operations.Audit.* Capabilities, RecordUserLogCommand, UserLogService, UserLogged Event
+
+### Community 128 - "Community 128"
+Cohesion: 0.8
+Nodes (4): admin_context(), expense_id(), expense_typed_id_round_trips_school(), expense_typed_ids_are_distinct_within_school()
 
 ### Community 129 - "Community 129"
-Cohesion: 0.5
-Nodes (5): ClassRoutine Aggregate, ClassRoutineRepository, RoutineService, academic_class_routines Table, Routine Construction Workflow
-
-### Community 130 - "Community 130"
-Cohesion: 0.4
-Nodes (5): HomePageSetting.Configure capability, ConfigureHomePage command, HomePageSetting aggregate, cms_home_page_settings table, Home Page Configuration Workflow
+Cohesion: 0.8
+Nodes (4): admin_context(), amount_transfer_id(), amount_transfer_typed_id_round_trips_school(), amount_transfer_typed_ids_are_distinct_within_school()
 
 ### Community 131 - "Community 131"
-Cohesion: 0.4
-Nodes (5): CreateHomeSlider command, HomeSlider aggregate, HomeSliderService domain service, HomeSliderUpdated event, FileReference value object
+Cohesion: 0.5
+Nodes (5): ClassRoutine Aggregate, ClassRoutineRepository, RoutineService, academic_class_routines Table, Routine Construction Workflow
 
 ### Community 132 - "Community 132"
 Cohesion: 0.4
@@ -918,39 +918,39 @@ Nodes (5): CoursePage aggregate, CoursePageRelation entity, CreateCoursePage com
 
 ### Community 133 - "Community 133"
 Cohesion: 0.4
-Nodes (5): IssueAuthorization Policy, IssueItemCommand, ItemIssued Event, Facilities Domain Permissions, Facilities Domain Services
+Nodes (5): CreateHomeSlider command, HomeSlider aggregate, HomeSliderService domain service, HomeSliderUpdated event, FileReference value object
 
 ### Community 134 - "Community 134"
 Cohesion: 0.4
-Nodes (5): Designation (aggregate), CreateDesignationCommand, DesignationRepository, DesignationGrade, Table: hr_designations
+Nodes (5): HomePageSetting.Configure capability, ConfigureHomePage command, HomePageSetting aggregate, cms_home_page_settings table, Home Page Configuration Workflow
 
 ### Community 135 - "Community 135"
 Cohesion: 0.4
-Nodes (5): StaffAttendance (aggregate), AttendanceService, StaffAttendancePunch, StaffAttendanceRepository, Table: hr_staff_attendances
+Nodes (5): IssueAuthorization Policy, IssueItemCommand, ItemIssued Event, Facilities Domain Permissions, Facilities Domain Services
 
 ### Community 136 - "Community 136"
 Cohesion: 0.4
-Nodes (5): StaffRegistrationField (aggregate), CreateStaffRegistrationFieldCommand, StaffRegistrationFieldOption, StaffRegistrationFieldRepository, Table: hr_staff_registration_fields
+Nodes (5): Designation (aggregate), CreateDesignationCommand, DesignationRepository, DesignationGrade, Table: hr_designations
 
 ### Community 137 - "Community 137"
 Cohesion: 0.4
-Nodes (5): Operations Aggregates, Operations Commands, Operations Events, Operations Domain Overview, Operations Value Objects
+Nodes (5): StaffAttendance (aggregate), AttendanceService, StaffAttendancePunch, StaffAttendanceRepository, Table: hr_staff_attendances
 
 ### Community 138 - "Community 138"
-Cohesion: 0.5
-Nodes (5): AuditService, operations_user_logs Table, UserLog Aggregate, UserLogRepository, User Log Retention Workflow
+Cohesion: 0.4
+Nodes (5): StaffRegistrationField (aggregate), CreateStaffRegistrationFieldCommand, StaffRegistrationFieldOption, StaffRegistrationFieldRepository, Table: hr_staff_registration_fields
 
 ### Community 139 - "Community 139"
 Cohesion: 0.4
-Nodes (5): rbac_sidebars Table, Sidebar Aggregate, SidebarEntry Entity, Sidebar Layout Workflow, SidebarRepository
+Nodes (5): Operations Aggregates, Operations Commands, Operations Events, Operations Domain Overview, Operations Value Objects
 
 ### Community 140 - "Community 140"
 Cohesion: 0.5
-Nodes (1): NoOpRefUniqueness
+Nodes (5): AuditService, operations_user_logs Table, UserLog Aggregate, UserLogRepository, User Log Retention Workflow
 
 ### Community 141 - "Community 141"
-Cohesion: 0.5
-Nodes (1): NoOpRefUniqueness
+Cohesion: 0.4
+Nodes (5): rbac_sidebars Table, Sidebar Aggregate, SidebarEntry Entity, Sidebar Layout Workflow, SidebarRepository
 
 ### Community 142 - "Community 142"
 Cohesion: 0.67
@@ -958,23 +958,23 @@ Nodes (2): dummy_witness(), dummy_witness_returns_unit()
 
 ### Community 143 - "Community 143"
 Cohesion: 0.5
-Nodes (4): ADR-002: Hexagonal Architecture, ADR-013: Crate Layout (5-tier), Port & Adapter (Hexagonal), 5-Tier Crate Layout (lint-enforced)
+Nodes (2): InvariantError, TestkitError
 
 ### Community 144 - "Community 144"
 Cohesion: 0.5
-Nodes (4): EventEnvelope, EventBus trait, EventSubscription trait, Topic + SubscribeOptions
+Nodes (4): ADR-002: Hexagonal Architecture, ADR-013: Crate Layout (5-tier), Port & Adapter (Hexagonal), 5-Tier Crate Layout (lint-enforced)
 
 ### Community 145 - "Community 145"
+Cohesion: 0.5
+Nodes (4): EventEnvelope, EventBus trait, EventSubscription trait, Topic + SubscribeOptions
+
+### Community 146 - "Community 146"
 Cohesion: 0.67
 Nodes (4): Assessment Domain Aggregates, Assessment Domain Overview, Assessment Domain Tables, Assessment Domain Value Objects
 
-### Community 146 - "Community 146"
-Cohesion: 0.5
-Nodes (4): CreateUploadContent command, UploadContent aggregate, UploadContentScope embedded value, Admin Content Upload Workflow
-
 ### Community 147 - "Community 147"
 Cohesion: 0.5
-Nodes (4): AssignStudentToRoomCommand, AssignStudentToRouteCommand, StudentAssignedToRoom Event, StudentAssignedToRoute Event
+Nodes (4): CreateUploadContent command, UploadContent aggregate, UploadContentScope embedded value, Admin Content Upload Workflow
 
 ### Community 148 - "Community 148"
 Cohesion: 0.5
@@ -982,31 +982,31 @@ Nodes (4): AssignVehicleToRouteCommand, TransportService Domain Service, Vehicle
 
 ### Community 149 - "Community 149"
 Cohesion: 0.5
-Nodes (4): BlockLoginForDueFeesCommand, DueFees.Block capability, DueFeesLoginPrevent aggregate, DueFeesLoginPrevented event
+Nodes (4): AssignStudentToRoomCommand, AssignStudentToRouteCommand, StudentAssignedToRoom Event, StudentAssignedToRoute Event
 
 ### Community 150 - "Community 150"
 Cohesion: 0.5
-Nodes (4): LeaveType (aggregate), CreateLeaveTypeCommand, LeaveTypeRepository, Table: hr_leave_types
+Nodes (4): BlockLoginForDueFeesCommand, DueFees.Block capability, DueFeesLoginPrevent aggregate, DueFeesLoginPrevented event
 
 ### Community 151 - "Community 151"
 Cohesion: 0.5
-Nodes (4): AssignClassTeacher (aggregate), AssignClassTeacherRepository, AssignClassTeacherScope, Table: hr_assign_class_teachers
+Nodes (4): LeaveType (aggregate), CreateLeaveTypeCommand, LeaveTypeRepository, Table: hr_leave_types
 
 ### Community 152 - "Community 152"
 Cohesion: 0.5
-Nodes (4): BookRenewalEligibility Policy, RenewBookCommand, BookRenewed Event, Book Renewal Workflow
+Nodes (4): AssignClassTeacher (aggregate), AssignClassTeacherRepository, AssignClassTeacherScope, Table: hr_assign_class_teachers
 
 ### Community 153 - "Community 153"
 Cohesion: 0.5
-Nodes (4): WaiveBookIssueFineCommand, FineWaived Event, BookIssue.WaiveFine Capability, Librarian Default Role
+Nodes (4): BookRenewalEligibility Policy, RenewBookCommand, BookRenewed Event, Book Renewal Workflow
 
 ### Community 154 - "Community 154"
 Cohesion: 0.5
-Nodes (4): JobQueue Value Object, JobScheduled Event, Operations.Job.* Capabilities, ScheduleJobCommand
+Nodes (4): WaiveBookIssueFineCommand, FineWaived Event, BookIssue.WaiveFine Capability, Librarian Default Role
 
-### Community 156 - "Community 156"
-Cohesion: 0.67
-Nodes (1): SetupAdminService
+### Community 155 - "Community 155"
+Cohesion: 0.5
+Nodes (4): JobQueue Value Object, JobScheduled Event, Operations.Job.* Capabilities, ScheduleJobCommand
 
 ### Community 157 - "Community 157"
 Cohesion: 0.67
@@ -1014,23 +1014,23 @@ Nodes (2): Cli, Command
 
 ### Community 158 - "Community 158"
 Cohesion: 1.0
-Nodes (3): Report Card Generation Guide, MarksGrade, Report Card Generation Workflow
+Nodes (3): BulkStudentImporter, School Onboarding Guide, School Onboarding Workflow
 
 ### Community 159 - "Community 159"
 Cohesion: 1.0
-Nodes (3): BulkStudentImporter, School Onboarding Guide, School Onboarding Workflow
+Nodes (3): Report Card Generation Guide, MarksGrade, Report Card Generation Workflow
 
 ### Community 160 - "Community 160"
 Cohesion: 0.67
 Nodes (3): Guardian Aggregate, GuardianRepository, academic_parents Table
 
 ### Community 161 - "Community 161"
-Cohesion: 1.0
-Nodes (3): TransferStudent Command, StudentTransferred, Transfer Workflow
-
-### Community 162 - "Community 162"
 Cohesion: 0.67
 Nodes (3): AssignOptionalSubject Command, StudentSuspended, OptionalSubjectEligibility
+
+### Community 162 - "Community 162"
+Cohesion: 1.0
+Nodes (3): TransferStudent Command, StudentTransferred, Transfer Workflow
 
 ### Community 163 - "Community 163"
 Cohesion: 0.67
@@ -1042,7 +1042,7 @@ Nodes (3): CMS Aggregates Spec, CMS Domain Overview, CMS Value Objects Spec
 
 ### Community 165 - "Community 165"
 Cohesion: 0.67
-Nodes (3): CreateFrontendPage command, FrontendPage aggregate, cms_frontend_pages table
+Nodes (3): CreateSpeechSlider command, SpeechSlider aggregate (CMS-side), SpeechSlider (communication domain)
 
 ### Community 166 - "Community 166"
 Cohesion: 0.67
@@ -1050,23 +1050,23 @@ Nodes (3): NewsCategory aggregate, NewsCategoryRepository port, cms_news_categor
 
 ### Community 167 - "Community 167"
 Cohesion: 0.67
-Nodes (3): CreateSpeechSlider command, SpeechSlider aggregate (CMS-side), SpeechSlider (communication domain)
+Nodes (3): CreateFrontendPage command, FrontendPage aggregate, cms_frontend_pages table
 
 ### Community 168 - "Community 168"
 Cohesion: 0.67
-Nodes (3): InventoryOnHandReport, TransportRosterReport, Facilities Domain Workflows
+Nodes (3): Item Aggregate, ItemCategory Aggregate, StockMovement Entity
 
 ### Community 169 - "Community 169"
 Cohesion: 0.67
-Nodes (3): Item Aggregate, ItemCategory Aggregate, StockMovement Entity
+Nodes (3): Inventory.Receive Capability, ItemReceived Event, ReceiveItemCommand
 
 ### Community 170 - "Community 170"
 Cohesion: 0.67
-Nodes (3): Inventory.Receive Capability, ItemReceived Event, ReceiveItemCommand
+Nodes (3): InventoryOnHandReport, TransportRosterReport, Facilities Domain Workflows
 
 ### Community 171 - "Community 171"
 Cohesion: 0.67
-Nodes (3): BankPaymentApproved event, BankPaymentSlip aggregate, GenerateBankPaymentSlipCommand
+Nodes (3): BankAccount aggregate, BankAccountRepository port, Bank.Transfer capability
 
 ### Community 172 - "Community 172"
 Cohesion: 0.67
@@ -1078,7 +1078,7 @@ Nodes (3): BankReconciliationService, BankStatement aggregate, ChartOfAccount ag
 
 ### Community 174 - "Community 174"
 Cohesion: 0.67
-Nodes (3): BankAccount aggregate, BankAccountRepository port, Bank.Transfer capability
+Nodes (3): BankPaymentApproved event, BankPaymentSlip aggregate, GenerateBankPaymentSlipCommand
 
 ### Community 175 - "Community 175"
 Cohesion: 0.67
@@ -1178,11 +1178,11 @@ Nodes (2): Assessment Domain Permissions, Assessment Domain Services
 
 ### Community 199 - "Community 199"
 Cohesion: 1.0
-Nodes (2): RequestAbsenceNotificationCommand, AbsenceNotificationRequested
+Nodes (2): CancelBulkImportCommand, BulkImportCancelled
 
 ### Community 200 - "Community 200"
 Cohesion: 1.0
-Nodes (2): CancelBulkImportCommand, BulkImportCancelled
+Nodes (2): RequestAbsenceNotificationCommand, AbsenceNotificationRequested
 
 ### Community 201 - "Community 201"
 Cohesion: 1.0
@@ -1194,15 +1194,15 @@ Nodes (2): CMS Commands Spec, CMS Events Spec
 
 ### Community 203 - "Community 203"
 Cohesion: 1.0
-Nodes (2): ArchivePage command, PageArchived event
+Nodes (2): PageUpdated event, UpdatePage command
 
 ### Community 204 - "Community 204"
 Cohesion: 1.0
-Nodes (2): NewsUnpublished event, UnpublishNews command
+Nodes (2): ArchivePage command, PageArchived event
 
 ### Community 205 - "Community 205"
 Cohesion: 1.0
-Nodes (2): PageUpdated event, UpdatePage command
+Nodes (2): NewsUnpublished event, UnpublishNews command
 
 ### Community 206 - "Community 206"
 Cohesion: 1.0
@@ -1210,7 +1210,7 @@ Nodes (2): DeletePage command, PageDeleted event
 
 ### Community 207 - "Community 207"
 Cohesion: 1.0
-Nodes (2): AssignVehicle Aggregate, TransportMembership Entity
+Nodes (2): ItemStore Aggregate, StoreStocktake Entity
 
 ### Community 208 - "Community 208"
 Cohesion: 1.0
@@ -1222,15 +1222,15 @@ Nodes (2): ItemSell Aggregate, ItemSellChild Aggregate
 
 ### Community 210 - "Community 210"
 Cohesion: 1.0
-Nodes (2): ItemStore Aggregate, StoreStocktake Entity
+Nodes (2): AssignVehicle Aggregate, TransportMembership Entity
 
 ### Community 211 - "Community 211"
 Cohesion: 1.0
-Nodes (2): CreateSupplierCommand, SupplierCreated Event
+Nodes (2): ItemSold Event, SellItemCommand
 
 ### Community 212 - "Community 212"
 Cohesion: 1.0
-Nodes (2): ItemSold Event, SellItemCommand
+Nodes (2): CreateSupplierCommand, SupplierCreated Event
 
 ### Community 213 - "Community 213"
 Cohesion: 1.0
@@ -1242,7 +1242,7 @@ Nodes (2): ItemRepository, facilities_items Table
 
 ### Community 215 - "Community 215"
 Cohesion: 1.0
-Nodes (2): DirectFeesInstallment aggregate, PayDirectInstallmentCommand
+Nodes (2): WalletService, WalletTransaction aggregate
 
 ### Community 216 - "Community 216"
 Cohesion: 1.0
@@ -1250,19 +1250,19 @@ Nodes (2): DiscountService, FeesDiscount aggregate
 
 ### Community 217 - "Community 217"
 Cohesion: 1.0
-Nodes (2): WalletService, WalletTransaction aggregate
+Nodes (2): DirectFeesInstallment aggregate, PayDirectInstallmentCommand
 
 ### Community 218 - "Community 218"
 Cohesion: 1.0
-Nodes (2): UpdateStaffCommand, StaffUpdated
+Nodes (2): ChangeStaffDepartmentCommand, StaffDepartmentChanged
 
 ### Community 219 - "Community 219"
 Cohesion: 1.0
-Nodes (2): ChangeStaffDepartmentCommand, StaffDepartmentChanged
+Nodes (2): CreateDepartmentCommand, DepartmentCreated
 
 ### Community 220 - "Community 220"
 Cohesion: 1.0
-Nodes (2): ChangeStaffDesignationCommand, StaffDesignationChanged
+Nodes (2): CancelLeaveCommand, LeaveCancelled
 
 ### Community 221 - "Community 221"
 Cohesion: 1.0
@@ -1270,23 +1270,23 @@ Nodes (2): PromoteStaffAttendanceCommand, StaffAttendancePromoted
 
 ### Community 222 - "Community 222"
 Cohesion: 1.0
-Nodes (2): AddPayrollDeductionCommand, PayrollDeductionAdded
+Nodes (2): AddPayrollEarningCommand, PayrollEarningAdded
 
 ### Community 223 - "Community 223"
 Cohesion: 1.0
-Nodes (2): CreateDepartmentCommand, DepartmentCreated
+Nodes (2): AddPayrollDeductionCommand, PayrollDeductionAdded
 
 ### Community 224 - "Community 224"
 Cohesion: 1.0
-Nodes (2): RejectLeaveCommand, LeaveRejected
+Nodes (2): UpdateStaffCommand, StaffUpdated
 
 ### Community 225 - "Community 225"
 Cohesion: 1.0
-Nodes (2): CancelLeaveCommand, LeaveCancelled
+Nodes (2): ChangeStaffDesignationCommand, StaffDesignationChanged
 
 ### Community 226 - "Community 226"
 Cohesion: 1.0
-Nodes (2): AddPayrollEarningCommand, PayrollEarningAdded
+Nodes (2): RejectLeaveCommand, LeaveRejected
 
 ### Community 227 - "Community 227"
 Cohesion: 1.0
@@ -1801,45 +1801,31 @@ Nodes (1): Storage VersionCursor Type
 ## Knowledge Gaps
 - **3168 isolated node(s):** `Convert AggregateName -> aggregate_name.      Handles CamelCase, including conse`, `Extract root aggregate names from aggregates.md.      A heading is a root aggreg`, `Extract workflow names from workflows.md.      Workflows are ## headings (dedupe`, `Extract capability names from permissions.md.      Capabilities are typically ##`, `Check if the aggregate has integration test coverage.      Two cases count as co` (+3163 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 75`** (18 nodes): `NoOpUniquenessChecker`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
+- **Thin community `Community 79`** (18 nodes): `InMemoryUniqueness`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 76`** (18 nodes): `InMemoryUniqueness`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
+- **Thin community `Community 80`** (18 nodes): `InMemoryUniqueness`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 77`** (18 nodes): `InMemoryUniqueness`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
+- **Thin community `Community 81`** (18 nodes): `InMemoryUniqueness`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 78`** (18 nodes): `NoOpUniquenessChecker`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
+- **Thin community `Community 82`** (18 nodes): `NoOpUniquenessChecker`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 79`** (18 nodes): `NoOpUniquenessChecker`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
+- **Thin community `Community 83`** (18 nodes): `NoOpUniquenessChecker`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 93`** (10 nodes): `event_retention.rs`, `EventLogRetentionPolicy`, `.default()`, `EventLogRetentionSweepDue`, `.aggregate_id()`, `.event_id()`, `.new()`, `.occurred_at()`, `.school_id()`, `.typed_event_id()`
+- **Thin community `Community 84`** (18 nodes): `NoOpUniquenessChecker`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 99`** (9 nodes): `ReportsService`, `.book_category_repo()`, `.book_issue_repo()`, `.book_repo()`, `.book_return_repo()`, `.fine_repo()`, `.library_member_repo()`, `.new()`, `service_factory_reports_service_wiring()`
+- **Thin community `Community 97`** (10 nodes): `event_retention.rs`, `EventLogRetentionPolicy`, `.default()`, `EventLogRetentionSweepDue`, `.aggregate_id()`, `.event_id()`, `.new()`, `.occurred_at()`, `.school_id()`, `.typed_event_id()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 102`** (8 nodes): `entities.rs`, `StaffAttendanceImport`, `.is_validated()`, `.school_id()`, `StudentAttendanceImport`, `.is_validated()`, `.is_well_formed()`, `.school_id()`
+- **Thin community `Community 103`** (9 nodes): `entities.rs`, `StaffAttendanceImport`, `.is_validated()`, `.is_well_formed()`, `.school_id()`, `StudentAttendanceImport`, `.is_validated()`, `.is_well_formed()`, `.school_id()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 103`** (8 nodes): `_NullBookIssueRepo`, `.get()`, `.insert()`, `.list_for_book()`, `.list_for_member()`, `.list_overdue()`, `.open_quantity_for_book()`, `.update()`
+- **Thin community `Community 104`** (9 nodes): `BackupService`, `.can_delete()`, `.can_restore()`, `.is_database()`, `.is_file()`, `.is_image()`, `.retention_cutoff()`, `DatabaseBackups`, `.is_satisfied_by()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 108`** (7 nodes): `_NullBookCategoryRepo`, `.delete()`, `.find_by_name()`, `.get()`, `.insert()`, `.list()`, `.update()`
+- **Thin community `Community 111`** (7 nodes): `_NullBookCategoryRepo`, `.delete()`, `.find_by_name()`, `.get()`, `.insert()`, `.list()`, `.update()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 109`** (7 nodes): `_NullFineRepo`, `.get()`, `.insert()`, `.list_for_issue()`, `.list_for_school()`, `.list_open_for_member()`, `.update()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 117`** (6 nodes): `health.rs`, `SyncHealth`, `.default()`, `SyncStatus`, `.as_str()`, `.default()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 124`** (5 nodes): `AbsentNotificationService`, `.build_dispatch()`, `.in_window()`, `.render()`, `.should_dispatch()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 125`** (5 nodes): `StubUniqueness`, `.email_exists()`, `.employee_id_exists()`, `.mobile_exists()`, `.staff_no_exists()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 126`** (5 nodes): `ComplaintService`, `.categorize()`, `.escalation_path()`, `.is_anonymous()`, `.next_status()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 127`** (5 nodes): `TestUniqueness`, `.import_source_date_exists()`, `.staff_day_exists()`, `.student_day_exists()`, `.subject_day_exists()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 140`** (4 nodes): `NoOpRefUniqueness`, `.department_name_exists()`, `.designation_title_exists()`, `.leave_type_name_exists()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 141`** (4 nodes): `NoOpRefUniqueness`, `.department_name_exists()`, `.designation_title_exists()`, `.leave_type_name_exists()`
+- **Thin community `Community 121`** (6 nodes): `health.rs`, `SyncHealth`, `.default()`, `SyncStatus`, `.as_str()`, `.default()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 142`** (4 nodes): `sync.rs`, `dummy_witness()`, `dummy_witness_returns_unit()`, `module_loads()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 156`** (3 nodes): `SetupAdminService`, `.by_type()`, `.can_delete()`
+- **Thin community `Community 143`** (4 nodes): `errors.rs`, `InvariantError`, `.fmt()`, `TestkitError`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 157`** (3 nodes): `lib.rs`, `Cli`, `Command`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -1877,61 +1863,61 @@ Nodes (1): Storage VersionCursor Type
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 198`** (2 nodes): `Assessment Domain Permissions`, `Assessment Domain Services`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 199`** (2 nodes): `RequestAbsenceNotificationCommand`, `AbsenceNotificationRequested`
+- **Thin community `Community 199`** (2 nodes): `CancelBulkImportCommand`, `BulkImportCancelled`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 200`** (2 nodes): `CancelBulkImportCommand`, `BulkImportCancelled`
+- **Thin community `Community 200`** (2 nodes): `RequestAbsenceNotificationCommand`, `AbsenceNotificationRequested`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 201`** (2 nodes): `CMS Permissions Spec`, `CMS Services Spec`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 202`** (2 nodes): `CMS Commands Spec`, `CMS Events Spec`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 203`** (2 nodes): `ArchivePage command`, `PageArchived event`
+- **Thin community `Community 203`** (2 nodes): `PageUpdated event`, `UpdatePage command`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 204`** (2 nodes): `NewsUnpublished event`, `UnpublishNews command`
+- **Thin community `Community 204`** (2 nodes): `ArchivePage command`, `PageArchived event`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 205`** (2 nodes): `PageUpdated event`, `UpdatePage command`
+- **Thin community `Community 205`** (2 nodes): `NewsUnpublished event`, `UnpublishNews command`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 206`** (2 nodes): `DeletePage command`, `PageDeleted event`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 207`** (2 nodes): `AssignVehicle Aggregate`, `TransportMembership Entity`
+- **Thin community `Community 207`** (2 nodes): `ItemStore Aggregate`, `StoreStocktake Entity`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 208`** (2 nodes): `IssueStatus Value Object`, `ItemIssue Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 209`** (2 nodes): `ItemSell Aggregate`, `ItemSellChild Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 210`** (2 nodes): `ItemStore Aggregate`, `StoreStocktake Entity`
+- **Thin community `Community 210`** (2 nodes): `AssignVehicle Aggregate`, `TransportMembership Entity`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 211`** (2 nodes): `CreateSupplierCommand`, `SupplierCreated Event`
+- **Thin community `Community 211`** (2 nodes): `ItemSold Event`, `SellItemCommand`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 212`** (2 nodes): `ItemSold Event`, `SellItemCommand`
+- **Thin community `Community 212`** (2 nodes): `CreateSupplierCommand`, `SupplierCreated Event`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 213`** (2 nodes): `VehicleRepository`, `facilities_vehicles Table`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 214`** (2 nodes): `ItemRepository`, `facilities_items Table`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 215`** (2 nodes): `DirectFeesInstallment aggregate`, `PayDirectInstallmentCommand`
+- **Thin community `Community 215`** (2 nodes): `WalletService`, `WalletTransaction aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 216`** (2 nodes): `DiscountService`, `FeesDiscount aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 217`** (2 nodes): `WalletService`, `WalletTransaction aggregate`
+- **Thin community `Community 217`** (2 nodes): `DirectFeesInstallment aggregate`, `PayDirectInstallmentCommand`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 218`** (2 nodes): `UpdateStaffCommand`, `StaffUpdated`
+- **Thin community `Community 218`** (2 nodes): `ChangeStaffDepartmentCommand`, `StaffDepartmentChanged`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 219`** (2 nodes): `ChangeStaffDepartmentCommand`, `StaffDepartmentChanged`
+- **Thin community `Community 219`** (2 nodes): `CreateDepartmentCommand`, `DepartmentCreated`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 220`** (2 nodes): `ChangeStaffDesignationCommand`, `StaffDesignationChanged`
+- **Thin community `Community 220`** (2 nodes): `CancelLeaveCommand`, `LeaveCancelled`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 221`** (2 nodes): `PromoteStaffAttendanceCommand`, `StaffAttendancePromoted`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 222`** (2 nodes): `AddPayrollDeductionCommand`, `PayrollDeductionAdded`
+- **Thin community `Community 222`** (2 nodes): `AddPayrollEarningCommand`, `PayrollEarningAdded`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 223`** (2 nodes): `CreateDepartmentCommand`, `DepartmentCreated`
+- **Thin community `Community 223`** (2 nodes): `AddPayrollDeductionCommand`, `PayrollDeductionAdded`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 224`** (2 nodes): `RejectLeaveCommand`, `LeaveRejected`
+- **Thin community `Community 224`** (2 nodes): `UpdateStaffCommand`, `StaffUpdated`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 225`** (2 nodes): `CancelLeaveCommand`, `LeaveCancelled`
+- **Thin community `Community 225`** (2 nodes): `ChangeStaffDesignationCommand`, `StaffDesignationChanged`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 226`** (2 nodes): `AddPayrollEarningCommand`, `PayrollEarningAdded`
+- **Thin community `Community 226`** (2 nodes): `RejectLeaveCommand`, `LeaveRejected`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 227`** (2 nodes): `Library Permissions`, `Library Services`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -2193,12 +2179,12 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
 - **What is the exact relationship between `StudentSuspended` and `AssignOptionalSubject Command`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `Capability (typed enum, atomic permission)` connect `Community 29` to `Community 1`, `Community 2`, `Community 34`, `Community 5`, `Community 6`, `Community 9`, `Community 14`, `Community 20`, `Community 21`, `Community 28`, `Community 31`?**
-  _High betweenness centrality (0.101) - this node is a cross-community bridge._
-- **Why does `<domain>_<aggregate> naming convention` connect `Community 47` to `Community 10`, `Community 12`, `Community 15`, `Community 23`, `Community 30`?**
+- **Why does `Capability (typed enum, atomic permission)` connect `Community 18` to `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 38`, `Community 8`, `Community 41`, `Community 13`, `Community 15`, `Community 19`, `Community 21`, `Community 23`, `Community 31`?**
+  _High betweenness centrality (0.104) - this node is a cross-community bridge._
+- **Why does `<domain>_<aggregate> naming convention` connect `Community 46` to `Community 9`, `Community 10`, `Community 11`, `Community 25`, `Community 27`?**
   _High betweenness centrality (0.077) - this node is a cross-community bridge._
-- **Why does `Cms Domain` connect `Community 15` to `Community 47`?**
-  _High betweenness centrality (0.076) - this node is a cross-community bridge._
+- **Why does `Cms Domain` connect `Community 11` to `Community 9`, `Community 46`?**
+  _High betweenness centrality (0.073) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `admin_context()` (e.g. with `.for_user()` and `UserId`) actually correct?**
   _`admin_context()` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 125 inferred relationships involving `EventId` (e.g. with `.new()` and `update_page_service()`) actually correct?**
