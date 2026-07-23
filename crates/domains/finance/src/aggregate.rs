@@ -2649,3 +2649,156 @@ impl RealFeesCarryForwardLog {
         Ok(())
     }
 }
+
+// =============================================================================
+// RealDonor — Wave 71 (per-aggregate wave pattern from Waves 65–70)
+// =============================================================================
+//
+// Per v3 Part 2 F23 + checklist § Donor: 2 invariants:
+//   - DO I-1: `show_public` is a boolean (always satisfied; pinned by
+//             the type system — the field is a Rust `bool`).
+//   - DO I-2: email unique within school (uniqueness is enforced at
+//             the storage-adapter layer per v3 Part 6 — this drop
+//             pins the shape + validation; the actual uniqueness
+//             check is wired in when the dispatcher is implemented).
+// Reference data aggregate (a school's donor directory — alumni,
+// parents, foundations that donate funds). The placeholder stub above
+// (`finance_aggregate_stub! { struct Donor { _id: () } }`) remains in
+// the file for documentation purposes; the real implementation is
+// below. The service layer MUST use `RealDonor` for new code; the
+// stub is kept only to avoid breaking downstream code that referenced
+// `Donor` as a type name during Phase 7.
+
+/// A school's donor directory entry. Two invariants: `show_public` is
+/// a boolean (DO I-1, pinned by `bool` type) and the email is
+/// non-empty / 1..=200 chars / contains `@` (DO I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealDonor {
+    /// The typed id (school_id + uuid).
+    pub id: DonorId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The donor's name (1..=200 chars after trim).
+    pub name: String,
+    /// The donor's email (non-empty, 1..=200 chars, contains `@`).
+    pub email: String,
+    /// Whether the donor is shown on the public donor wall.
+    pub show_public: bool,
+    /// Optional phone number (free-form string; no E.164 enforcement
+    /// in this drop — v3 deferred that to a typed value object).
+    pub phone: Option<String>,
+    /// Optional free-form description.
+    pub description: Option<String>,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealDonor {
+    /// Constructs a new `RealDonor`. Enforces DO I-2 (email non-empty,
+    /// length-bounded, `@`-bearing) via `validate_donor_name` and
+    /// `validate_donor_email`. DO I-1 (`show_public` boolean) is
+    /// pinned at the type-system level (`pub show_public: bool`).
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: DonorId,
+        name: String,
+        email: String,
+        show_public: bool,
+        phone: Option<String>,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        crate::value_objects::validate_donor_name(name.trim())?;
+        crate::value_objects::validate_donor_email(email.trim())?;
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            name: name.trim().to_owned(),
+            email: email.trim().to_owned(),
+            show_public,
+            phone: phone
+                .map(|p| p.trim().to_owned())
+                .filter(|p| !p.is_empty()),
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the donor is currently active.
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Mutates name + email + show_public + phone + description.
+    /// Enforces DO I-2 (same email validation as `fresh`). DO I-1
+    /// stays pinned by the `bool` type. Bumps version, advances
+    /// `updated_at`, sets `updated_by`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn update_metadata(
+        &mut self,
+        name: String,
+        email: String,
+        show_public: bool,
+        phone: Option<String>,
+        description: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        crate::value_objects::validate_donor_name(name.trim())?;
+        crate::value_objects::validate_donor_email(email.trim())?;
+        self.name = name.trim().to_owned();
+        self.email = email.trim().to_owned();
+        self.show_public = show_public;
+        self.phone = phone
+            .map(|p| p.trim().to_owned())
+            .filter(|p| !p.is_empty());
+        self.description = description
+            .map(|d| d.trim().to_owned())
+            .filter(|d| !d.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the donor by flipping `active_status` to
+    /// `Retired`. Bumps version, advances `updated_at`, sets
+    /// `updated_by`.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "Donor is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}

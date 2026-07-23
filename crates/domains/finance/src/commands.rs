@@ -2635,7 +2635,11 @@ impl ReadTransactionCommand {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateDonorCommand {
     pub tenant: TenantContext,
-    pub donor_id: DonorId,
+    pub name: String,
+    pub email: String,
+    pub show_public: bool,
+    pub phone: Option<String>,
+    pub description: Option<String>,
 }
 
 

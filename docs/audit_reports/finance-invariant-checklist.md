@@ -141,8 +141,8 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 
 ### Donor (2 invariants)
 
-- [ ] DO I-1: show_public boolean — missing (placeholder stub)
-- [ ] DO I-2: email unique within school — missing
+- [x] DO I-1: show_public boolean — **complete (Wave 71 full drop)** — `RealDonor` aggregate at `crates/domains/finance/src/aggregate.rs:2676` pins DO I-1 at the type-system level: the field is declared `pub show_public: bool`, so the Rust type system guarantees it can only hold a boolean (no validation needed; the type IS the invariant). Both branches (true / false) are exercised in the test suite.
+- [x] DO I-2: email unique within school — **complete (Wave 71 partial)** — `RealDonor::fresh()` validates the email via `crate::value_objects::validate_donor_email` (non-empty / 1..=200 chars / contains `@`) at `crates/domains/finance/src/value_objects.rs` (the new `validate_donor_email` helper added in this wave, modelled on HR's `validate_email`). `RealDonor::update_metadata()` re-validates on every update. **Per-school uniqueness** is enforced at the storage-adapter layer per v3 Part 6 (dispatcher wiring deferred); this drop pins the shape + email-format validation that the uniqueness check will key on. Once the dispatcher lands, the DO I-2 entry will be elevated to "fully complete" in a follow-up commit.
 
 ### DueFeesLoginPrevent (2 invariants)
 

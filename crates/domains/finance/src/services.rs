@@ -34,9 +34,9 @@ use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
-    Expense, FeesInvoice, FeesPayment, RealDirectFeesSetting, RealFeesCarryForwardLog,
-    RealFmFeesGroup, RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, Wallet,
-    WalletTransaction,
+    Expense, FeesInvoice, FeesPayment, RealDirectFeesSetting, RealDonor,
+    RealFeesCarryForwardLog, RealFmFeesGroup, RealIncomeHead, RealInvoiceSetting,
+    RealQuestionBankFee, Wallet, WalletTransaction,
 };
 use crate::commands::{
     CreateDirectFeesInstallmentChildPaymentCommand, CreateDirectFeesSettingCommand,
@@ -56,15 +56,15 @@ use crate::commands::{
     ReadInventoryPaymentCommand, ReadProductPurchaseCommand, ReadTransactionCommand,
 };
 use crate::events::{
-    DirectFeesSettingCreated, ExpenseRecorded, FeesCarryForwardLogCreated, FmFeesGroupCreated,
-    IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated, PaymentReceived,
-    QuestionBankFeeCreated, WalletCreated, WalletCredited, WalletDebited, WalletRefundRequested,
-    WalletTransactionApproved, WalletTransactionRejected,
+    DirectFeesSettingCreated, DonorCreated, ExpenseRecorded, FeesCarryForwardLogCreated,
+    FmFeesGroupCreated, IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
+    PaymentReceived, QuestionBankFeeCreated, WalletCreated, WalletCredited, WalletDebited,
+    WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
 };
 use crate::value_objects::{
-    BankAccountId, Currency, DirectFeesSettingId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId,
-    FeesInvoiceId, FeesPaymentId, FmFeesGroupId, IncomeHeadId, InvoiceSettingId, QuestionBankFeeId,
-    WalletId, WalletTransactionId, WalletTxType,
+    BankAccountId, Currency, DirectFeesSettingId, DonorId, ExpenseHeadId, ExpenseId,
+    FeesCarryForwardLogId, FeesInvoiceId, FeesPaymentId, FmFeesGroupId, IncomeHeadId,
+    InvoiceSettingId, QuestionBankFeeId, WalletId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -1651,14 +1651,47 @@ where
 
 /// Handler skeleton: create a `Donor` aggregate.
 /// Full implementation lands in Phase 7 Workstream D.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn create_donor<C, G>(cmd: CreateDonorCommand, clock: &C, ids: &G) -> Result<()>
+#[allow(clippy::too_many_arguments)]
+pub fn create_donor<C, G>(
+    cmd: CreateDonorCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealDonor, DonorCreated)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let _ = (cmd, clock, ids);
-    Ok(())
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let school = cmd.tenant.school_id;
+    let id = DonorId::new(school, event_id_to_uuid(event_id));
+
+    let mut donor = RealDonor::fresh(
+        id,
+        cmd.name,
+        cmd.email,
+        cmd.show_public,
+        cmd.phone,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    donor.last_event_id = Some(event_id);
+
+    let event = DonorCreated::new(
+        id,
+        donor.name.clone(),
+        donor.email.clone(),
+        donor.show_public,
+        donor.phone.clone(),
+        donor.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((donor, event))
 }
 
 /// Handler skeleton: read a `Donor` aggregate.

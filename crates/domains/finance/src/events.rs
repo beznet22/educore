@@ -26,7 +26,7 @@ use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
     BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId, Currency,
-    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentId, DirectFeesSettingId,
+    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesCarryForwardLogId, FeesGroupId, FeesInstallmentAssignDiscountId,
@@ -1534,6 +1534,182 @@ impl DomainEvent for FeesCarryForwardLogRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.fees_carry_forward_log_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// Donor events (Wave 71 — RealDonor headline events)
+// =============================================================================
+
+/// Emitted when a new `RealDonor` is created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DonorCreated {
+    pub donor_id: DonorId,
+    pub name: String,
+    pub email: String,
+    pub show_public: bool,
+    pub phone: Option<String>,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DonorCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        donor_id: DonorId,
+        name: String,
+        email: String,
+        show_public: bool,
+        phone: Option<String>,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            donor_id,
+            name,
+            email,
+            show_public,
+            phone,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DonorCreated {
+    const EVENT_TYPE: &'static str = "finance.donor.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "donor";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.donor_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.donor_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealDonor` is updated (name / email / show_public /
+/// phone / description change).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DonorUpdated {
+    pub donor_id: DonorId,
+    pub name: String,
+    pub email: String,
+    pub show_public: bool,
+    pub phone: Option<String>,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DonorUpdated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        donor_id: DonorId,
+        name: String,
+        email: String,
+        show_public: bool,
+        phone: Option<String>,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            donor_id,
+            name,
+            email,
+            show_public,
+            phone,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DonorUpdated {
+    const EVENT_TYPE: &'static str = "finance.donor.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "donor";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.donor_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.donor_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealDonor` is retired (soft-deleted via
+/// `RealDonor::retire`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DonorDeleted {
+    pub donor_id: DonorId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DonorDeleted {
+    pub fn new(
+        donor_id: DonorId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            donor_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DonorDeleted {
+    const EVENT_TYPE: &'static str = "finance.donor.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "donor";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.donor_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.donor_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

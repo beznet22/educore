@@ -1105,6 +1105,24 @@ pub fn validate_donor_name(name: &str) -> Result<()> {
     Ok(())
 }
 
+/// Validates that a donor email is non-empty, ≤200 chars, and contains
+/// an `@` sign (RFC-5322 light check, matching the HR pattern in
+/// `crates/domains/hr/src/value_objects.rs::validate_email`).
+pub fn validate_donor_email(email: &str) -> Result<()> {
+    if email.is_empty() || email.len() > 200 {
+        return Err(DomainError::validation(format!(
+            "donor email must be 1..=200 chars, got {}",
+            email.len()
+        )));
+    }
+    if !email.contains('@') {
+        return Err(DomainError::validation(format!(
+            "donor email must contain an '@' sign, got {email:?}"
+        )));
+    }
+    Ok(())
+}
+
 /// Validates that an expense / income name is 1..=200 chars.
 pub fn validate_ledger_name(name: &str) -> Result<()> {
     if name.is_empty() || name.chars().count() > 200 {
