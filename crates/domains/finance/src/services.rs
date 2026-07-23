@@ -34,12 +34,13 @@ use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
-    Expense, FeesInvoice, FeesPayment, RealDirectFeesInstallmentAssignChild, RealDirectFeesSetting,
-    RealDonor, RealFeesCarryForwardLog, RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealIncomeHead,
-    RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
+    Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
+    RealDirectFeesSetting, RealDonor, RealFeesCarryForwardLog, RealFmFeesGroup,
+    RealFmFeesInvoiceLineNote, RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, Wallet,
+    WalletTransaction,
 };
 use crate::commands::{
-    CreateDirectFeesInstallmentAssignChildCommand,
+    CreateChartOfAccountCommand, CreateDirectFeesInstallmentAssignChildCommand,
     CreateDirectFeesInstallmentChildPaymentCommand, CreateDirectFeesSettingCommand,
     CreateDonorCommand, CreateFeesAssignDiscountCommand, CreateFeesCarryForwardLogCommand,
     CreateFmFeesInvoiceLineNoteCommand,
@@ -58,18 +59,19 @@ use crate::commands::{
     ReadInventoryPaymentCommand, ReadProductPurchaseCommand, ReadTransactionCommand,
 };
 use crate::events::{
-    DirectFeesInstallmentAssignChildAdded, DirectFeesInstallmentAssignChildRetired,
-    DirectFeesSettingCreated, DonorCreated, ExpenseRecorded, FeesCarryForwardLogCreated,
-    FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated, IncomeHeadCreated,
-    InvoiceNumberingConfigured, InvoiceSettingCreated,
+    ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
+    DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
+    ExpenseRecorded, FeesCarryForwardLogCreated, FmFeesGroupCreated,
+    FmFeesInvoiceLineNoteCreated, IncomeHeadCreated, InvoiceNumberingConfigured,
+    InvoiceSettingCreated,
     PaymentReceived, QuestionBankFeeCreated, WalletCreated, WalletCredited, WalletDebited,
     WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
 };
 use crate::value_objects::{
-    BankAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesSettingId, DonorId,
-    ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesInvoiceId, FeesPaymentId, FmFeesGroupId,
-    FmFeesInvoiceId, FmFeesInvoiceLineNoteId, IncomeHeadId, InvoiceSettingId, QuestionBankFeeId,
-    WalletId, WalletTransactionId, WalletTxType,
+    AccountType, BankAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
+    DonorId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesInvoiceId, FeesPaymentId,
+    FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, IncomeHeadId, InvoiceSettingId,
+    QuestionBankFeeId, WalletId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -1446,6 +1448,63 @@ where
         now,
     );
     Ok((child, event))
+}
+
+/// Service function: create a new chart-of-account entry. Per v3
+/// Part 2 F7 + checklist § ChartOfAccount, enforces COA I-1 (name
+/// 1..=100 chars + code matches `[A-Z0-9-]{1,20}` via
+/// `RealChartOfAccount::fresh` -> `validate_chart_of_account_name` +
+/// `validate_chart_of_account_code`; per-school uniqueness is the
+/// dispatcher's concern, this drop pins the shape). COA I-2
+/// (cannot delete while referenced) is a dispatcher-level
+/// reference-integrity check that gates the `Delete` command; this
+/// drop exposes the `retire()` tombstone that the dispatcher will
+/// call after confirming reference integrity.
+pub fn create_chart_of_account<C, G>(
+    cmd: CreateChartOfAccountCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealChartOfAccount, ChartOfAccountCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    // Validate tenant scope: the supplied id must belong to the
+    // tenant's school (the dispatcher enforces this on the wire, but
+    // the service re-validates as a defense-in-depth measure).
+    if cmd.chart_of_account_id.school_id() != cmd.tenant.school_id {
+        return Err(educore_core::error::DomainError::validation(
+            "CreateChartOfAccountCommand id does not belong to tenant's school",
+        ));
+    }
+    let id = cmd.chart_of_account_id;
+    let event_id = ids.next_event_id();
+
+    let mut account = RealChartOfAccount::fresh(
+        id,
+        cmd.code,
+        cmd.name,
+        cmd.account_type,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    account.last_event_id = Some(event_id);
+
+    let event = ChartOfAccountCreated::new(
+        id,
+        account.code.clone(),
+        account.name.clone(),
+        account.account_type,
+        account.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((account, event))
 }
 
 /// Handler skeleton: create an `FmFeesType` aggregate.

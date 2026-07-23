@@ -3200,6 +3200,10 @@ impl AttachFeesToQuestionBankCommand {
 pub struct CreateChartOfAccountCommand {
     pub tenant: TenantContext,
     pub chart_of_account_id: ChartOfAccountId,
+    pub code: String,
+    pub name: String,
+    pub account_type: crate::value_objects::AccountType,
+    pub description: Option<String>,
 }
 
 

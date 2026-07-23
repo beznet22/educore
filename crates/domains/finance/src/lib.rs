@@ -46,10 +46,10 @@ pub mod prelude {
 
     // Headline 6 aggregates
     pub use crate::aggregate::{
-        Expense, FeesInvoice, FeesPayment, RealDirectFeesInstallmentAssignChild,
-        RealDirectFeesSetting, RealDonor, RealFeesCarryForwardLog, RealFmFeesGroup,
-        RealFmFeesInvoiceLineNote, RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, Wallet,
-        WalletTransaction,
+        Expense, FeesInvoice, FeesPayment, RealChartOfAccount,
+        RealDirectFeesInstallmentAssignChild, RealDirectFeesSetting, RealDonor,
+        RealFeesCarryForwardLog, RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealIncomeHead,
+        RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::WalletTransactionApproval;
@@ -57,9 +57,10 @@ pub mod prelude {
     pub use crate::commands::{
         BlockLoginForDueFeesCommand, CarryForwardFeesBalanceCommand, ConfigureFeesGroupCommand,
         ConfigureFeesTypeCommand, ConfigureInvoiceNumberingCommand,
-        CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesSettingCommand,
-        CreateDonorCommand, CreateExpenseHeadCommand, CreateFeesCarryForwardLogCommand,
-        CreateFmFeesGroupCommand, CreateFmFeesInvoiceLineNoteCommand, CreateIncomeHeadCommand,
+        CreateChartOfAccountCommand, CreateDirectFeesInstallmentAssignChildCommand,
+        CreateDirectFeesSettingCommand, CreateDonorCommand, CreateExpenseHeadCommand,
+        CreateFeesCarryForwardLogCommand, CreateFmFeesGroupCommand,
+        CreateFmFeesInvoiceLineNoteCommand, CreateIncomeHeadCommand,
         CreateInvoiceSettingCommand, CreateQuestionBankFeeCommand, CreateWalletCommand,
         CreditWalletCommand,
         DeductWalletCreditCommand, OpenBankAccountCommand,
@@ -75,6 +76,7 @@ pub mod prelude {
     pub use crate::entities::WalletTransactionApproval as WalletTransactionApprovalEntity;
     pub use crate::errors::FinanceError;
     pub use crate::events::{
+        ChartOfAccountCreated, ChartOfAccountDeleted, ChartOfAccountUpdated,
         DirectFeesInstallmentAssignChildAdded, DirectFeesInstallmentAssignChildRetired,
         DirectFeesSettingCreated, DonorCreated, ExpenseRecorded, FeesCarryForwardLogCreated,
         FeesCarryForwardLogRetired, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
@@ -87,7 +89,7 @@ pub mod prelude {
     pub use crate::query::{FeesPaymentQuery, WalletQuery, WalletTransactionQuery};
     pub use crate::repository::{WalletRepository, WalletTransactionRepository};
     pub use crate::services::{
-        approve_wallet_transaction, configure_invoice_numbering,
+        approve_wallet_transaction, configure_invoice_numbering, create_chart_of_account,
         create_direct_fees_installment_assign_child, create_direct_fees_setting,
         create_donor, create_fees_carry_forward_log, create_fm_fees_group,
         create_fm_fees_invoice_line_note, create_income_head, create_invoice_setting,

@@ -1137,6 +1137,41 @@ pub fn validate_donor_email(email: &str) -> Result<()> {
     Ok(())
 }
 
+/// Validates that a chart-of-account name is 1..=100 chars (per the
+/// spec, chart-of-account names are short labels like "Cash" or
+/// "Student Fees Receivable"). Used by the `RealChartOfAccount`
+/// aggregate (COA I-1).
+pub fn validate_chart_of_account_name(name: &str) -> Result<()> {
+    if name.is_empty() || name.chars().count() > 100 {
+        return Err(DomainError::validation(format!(
+            "chart_of_account name must be 1..=100 chars, got {}",
+            name.chars().count()
+        )));
+    }
+    Ok(())
+}
+
+/// Validates that a chart-of-account code matches `[A-Z0-9-]{1,20}`.
+/// Codes are alphanumeric + dashes (e.g. `1000`, `1100-CASH`,
+/// `4000-REV`). Used by the `RealChartOfAccount` aggregate (COA I-1).
+pub fn validate_chart_of_account_code(code: &str) -> Result<()> {
+    if code.is_empty() || code.len() > 20 {
+        return Err(DomainError::validation(format!(
+            "chart_of_account code must be 1..=20 chars, got {}",
+            code.len()
+        )));
+    }
+    if !code
+        .chars()
+        .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '-')
+    {
+        return Err(DomainError::validation(format!(
+            "chart_of_account code must match [A-Z0-9-]{{1,20}}, got {code:?}"
+        )));
+    }
+    Ok(())
+}
+
 /// Validates that an expense / income name is 1..=200 chars.
 pub fn validate_ledger_name(name: &str) -> Result<()> {
     if name.is_empty() || name.chars().count() > 200 {

@@ -25,8 +25,9 @@ use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
-    BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId, Currency,
-    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DirectFeesInstallmentId, DirectFeesSettingId, DonorId,
+    AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
+    ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId,
+    DirectFeesInstallmentId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesCarryForwardLogId, FeesGroupId, FeesInstallmentAssignDiscountId,
@@ -1534,6 +1535,196 @@ impl DomainEvent for FeesCarryForwardLogRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.fees_carry_forward_log_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// ChartOfAccount events (Wave 74 — RealChartOfAccount headline events)
+// =============================================================================
+//
+// Per v3 Part 2 F7 + checklist § ChartOfAccount: 2 invariants:
+//   - COA I-1: unique name within school (shape validated here;
+//              per-school uniqueness is the dispatcher's concern)
+//   - COA I-2: cannot delete while referenced (reference integrity
+//              is the dispatcher's concern; the `ChartOfAccountDeleted`
+//              event is only emitted by the dispatcher when no
+//              references exist; the aggregate's `retire()` method
+//              emits `ChartOfAccountDeleted` after the dispatcher
+//              confirms reference integrity)
+
+/// Emitted when a new `RealChartOfAccount` is created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ChartOfAccountCreated {
+    pub chart_of_account_id: ChartOfAccountId,
+    pub code: String,
+    pub name: String,
+    pub account_type: AccountType,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ChartOfAccountCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        chart_of_account_id: ChartOfAccountId,
+        code: String,
+        name: String,
+        account_type: AccountType,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            chart_of_account_id,
+            code,
+            name,
+            account_type,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ChartOfAccountCreated {
+    const EVENT_TYPE: &'static str = "finance.chart_of_account.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "chart_of_account";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.chart_of_account_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.chart_of_account_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealChartOfAccount`'s metadata (code / name /
+/// account_type / description) is updated via
+/// `RealChartOfAccount::update_metadata`. Per-school name uniqueness
+/// is the dispatcher's concern and is enforced outside the aggregate
+/// (this event is only emitted when the dispatcher confirms the new
+/// name does not collide with any other `RealChartOfAccount` in the
+/// same school).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ChartOfAccountUpdated {
+    pub chart_of_account_id: ChartOfAccountId,
+    pub code: String,
+    pub name: String,
+    pub account_type: AccountType,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ChartOfAccountUpdated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        chart_of_account_id: ChartOfAccountId,
+        code: String,
+        name: String,
+        account_type: AccountType,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            chart_of_account_id,
+            code,
+            name,
+            account_type,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ChartOfAccountUpdated {
+    const EVENT_TYPE: &'static str = "finance.chart_of_account.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "chart_of_account";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.chart_of_account_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.chart_of_account_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealChartOfAccount` is retired (soft-deleted via
+/// `RealChartOfAccount::retire`). Per COA I-2, the service layer MUST
+/// check reference integrity (no ledger entries reference this
+/// chart-of-account) BEFORE calling `retire`; the dispatcher rejects
+/// the `Delete` command when references exist. This event marks a
+/// tombstone for legal-record retention; the original code/name/
+/// account_type are preserved in the audit footer.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ChartOfAccountDeleted {
+    pub chart_of_account_id: ChartOfAccountId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ChartOfAccountDeleted {
+    pub fn new(
+        chart_of_account_id: ChartOfAccountId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            chart_of_account_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ChartOfAccountDeleted {
+    const EVENT_TYPE: &'static str = "finance.chart_of_account.deleted";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "chart_of_account";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.chart_of_account_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.chart_of_account_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

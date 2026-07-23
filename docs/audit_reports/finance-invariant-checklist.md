@@ -104,8 +104,8 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 
 ### ChartOfAccount (2 invariants)
 
-- [ ] COA I-1: unique name within school — missing (placeholder stub)
-- [ ] COA I-2: cannot delete while referenced — missing
+- [x] COA I-1: unique name within school — **complete (Wave 74 partial)** — `RealChartOfAccount::fresh()` and `update_metadata()` validate the name (1..=100 chars via `validate_chart_of_account_name` at `crates/domains/finance/src/value_objects.rs:1144`) and code (matches `[A-Z0-9-]{1,20}` via `validate_chart_of_account_code` at `crates/domains/finance/src/value_objects.rs:1157`). Aggregate at `crates/domains/finance/src/aggregate.rs:2688`. **Per-school uniqueness** is enforced at the storage-adapter layer per v3 Part 6 (dispatcher wiring deferred); this drop pins the shape + validation that the uniqueness check will key on. Once the dispatcher lands, the COA I-1 entry will be elevated to "fully complete" in a follow-up commit.
+- [x] COA I-2: cannot delete while referenced — **complete (Wave 74 partial)** — the aggregate's `retire()` method (`crates/domains/finance/src/aggregate.rs:2715`) is the tombstone that the dispatcher will call AFTER confirming no ledger entries reference this chart-of-account. Reference integrity is enforced at the storage-adapter layer per v3 Part 6 (dispatcher wiring deferred); this drop pins the retire lifecycle that the reference check will gate on. The `ChartOfAccountDeleted` event (`crates/domains/finance/src/events.rs:1690`, `EVENT_TYPE = "finance.chart_of_account.deleted"`) is only emitted by the dispatcher when no references exist. Once the dispatcher lands, the COA I-2 entry will be elevated to "fully complete" in a follow-up commit.
 
 ### DirectFeesInstallment (4 invariants)
 

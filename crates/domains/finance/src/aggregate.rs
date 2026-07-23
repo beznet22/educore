@@ -2651,6 +2651,178 @@ impl RealFeesCarryForwardLog {
 }
 
 // =============================================================================
+// RealChartOfAccount — Wave 74 (per-aggregate wave pattern from
+// Waves 65–73)
+// =============================================================================
+//
+// Per v3 Part 2 F7 + checklist § ChartOfAccount: 2 invariants:
+//   - COA I-1: unique name within school (per-school uniqueness is a
+//              dispatcher / storage-adapter concern; this drop pins
+//              the shape + name/code validation that the uniqueness
+//              check will key on).
+//   - COA I-2: cannot delete while referenced by any ledger entry
+//              (reference integrity is a dispatcher / storage-adapter
+//              concern; this drop pins the retire lifecycle that the
+//              reference check will gate on — `delete_attempted` is
+//              only allowed when no references exist; retire is the
+//              tombstone when references exist).
+// Foundational aggregate for double-entry bookkeeping: every ledger
+// entry (transaction, expense, payment, fee assignment) references a
+// `ChartOfAccount` by id. The placeholder stub above
+// (`finance_aggregate_stub! { struct ChartOfAccount { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealChartOfAccount` for new code; the stub is kept only to avoid
+// breaking downstream code that referenced `ChartOfAccount` as a
+// type name during Phase 7.
+
+/// Foundational chart-of-account aggregate. Two invariants: name and
+/// code must be valid format (COA I-1 pins the shape; per-school
+/// uniqueness is the dispatcher's concern), and the aggregate cannot
+/// be deleted while referenced by any ledger entry (COA I-2; reference
+/// integrity is the dispatcher's concern). The aggregate exposes a
+/// full lifecycle (`fresh` / `update_metadata` / `retire`) because
+/// chart-of-account entries are long-lived reference data, not
+/// append-only logs.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealChartOfAccount {
+    /// The typed id (school_id + uuid).
+    pub id: ChartOfAccountId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The chart-of-account code (1..=20 chars, matches `[A-Z0-9-]`).
+    /// e.g. `1000`, `1100-CASH`, `4000-REV`.
+    pub code: String,
+    /// The chart-of-account name (1..=100 chars).
+    /// e.g. `Cash`, `Student Fees Receivable`.
+    pub name: String,
+    /// The account type (asset, liability, equity, revenue, expense).
+    pub account_type: AccountType,
+    /// Optional free-form description.
+    pub description: Option<String>,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealChartOfAccount {
+    /// Constructs a new `RealChartOfAccount`. Enforces the shape
+    /// validation that COA I-1 will key on (code + name format). Per-
+    /// school name uniqueness is the dispatcher's concern (v3 Part 6);
+    /// this drop pins the field-level contract that the uniqueness
+    /// check will run against.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: ChartOfAccountId,
+        code: String,
+        name: String,
+        account_type: AccountType,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        let trimmed_code = code.trim();
+        let trimmed_name = name.trim();
+        crate::value_objects::validate_chart_of_account_code(trimmed_code)?;
+        crate::value_objects::validate_chart_of_account_name(trimmed_name)?;
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            code: trimmed_code.to_owned(),
+            name: trimmed_name.to_owned(),
+            account_type,
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the chart-of-account entry is currently active.
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Updates the metadata of a chart-of-account entry: code, name,
+    /// account_type, description. Re-validates the code and name
+    /// format. Per-school uniqueness is the dispatcher's concern and
+    /// is checked outside this aggregate. Bumps version, advances
+    /// `updated_at`, sets `updated_by`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn update_metadata(
+        &mut self,
+        code: String,
+        name: String,
+        account_type: AccountType,
+        description: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "ChartOfAccount is retired; cannot update metadata",
+            ));
+        }
+        let trimmed_code = code.trim();
+        let trimmed_name = name.trim();
+        crate::value_objects::validate_chart_of_account_code(trimmed_code)?;
+        crate::value_objects::validate_chart_of_account_name(trimmed_name)?;
+        self.code = trimmed_code.to_owned();
+        self.name = trimmed_name.to_owned();
+        self.account_type = account_type;
+        self.description = description
+            .map(|d| d.trim().to_owned())
+            .filter(|d| !d.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the chart-of-account entry by flipping
+    /// `active_status` to `Retired`. Per COA I-2, the service layer
+    /// MUST check reference integrity (no ledger entries reference
+    /// this chart-of-account) BEFORE calling this method; the
+    /// dispatcher rejects the `Delete` command when references
+    /// exist. This method itself is a tombstone that preserves the
+    /// audit trail + original code/name/account_type for legal-record
+    /// retention.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "ChartOfAccount is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
 // RealDirectFeesInstallmentAssignChild — Wave 73 (per-aggregate wave
 // pattern from Waves 65–72)
 // =============================================================================
