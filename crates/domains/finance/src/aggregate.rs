@@ -44,7 +44,7 @@ use crate::value_objects::{
     FeesPaymentId, FeesPaymentStatus, FeesTypeId, FineAmount, FmFeesGroupId, FmFeesInvoiceChildId,
     FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesWeaverId, FmInvoiceType,
-    IncomeApprovalId, IncomeHeadId, InvoiceSettingId, Money, PaymentGatewaySettingId,
+    IncomeApprovalId, IncomeHeadId, IncomeId, InvoiceSettingId, Money, PaymentGatewaySettingId,
     PaymentMethodId, PaymentMethodKind, PayrollEarnDeducId, PayrollGenerateId,
     PayrollPaymentApprovalId, PayrollPaymentId, ProductPurchaseId, QuestionBankFeeId,
     StatementType, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
@@ -3868,6 +3868,202 @@ impl RealExpenseApproval {
         self.reject_reason = reason
             .map(|r| r.trim().to_owned())
             .filter(|r| !r.is_empty()); // EA I-2
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
+// RealIncomeApproval — Wave 80 (per-aggregate wave pattern from
+// Waves 65–79)
+// =============================================================================
+//
+// Per v3 Part 2 F28 + checklist § IncomeApproval: 2 invariants:
+//   - IA I-1: state machine — a fresh approval starts in
+//             ApprovalStatus::Pending; it can transition to
+//             Approved or Rejected exactly once. Any subsequent
+//             transition (or a transition out of a terminal state)
+//             returns DomainError::conflict. The state field is
+//             the `ApprovalStatus` enum (typed at compile time).
+//   - IA I-2: timestamps recorded — every state transition stamps
+//             `decided_at` and `decided_by` on the aggregate; the
+//             reject path also captures an optional `reason`
+//             string. The audit footer (10 fields, per AGENTS.md)
+//             preserves the full approval history.
+// Structurally identical to RealExpenseApproval (Wave 79) with the
+// parent reference renamed from `expense_id` to `income_id` and the
+// RBAC capability switched from FinanceExpenseApprove to
+// FinanceIncomeApprove. Approval is a child entity under an
+// Income: each Income gets one or more IncomeApproval rows tracking
+// the approval workflow. The placeholder stub above
+// (`finance_aggregate_stub! { struct IncomeApproval { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealIncomeApproval` for new code; the stub is kept only to
+// avoid breaking downstream code that referenced `IncomeApproval`
+// as a type name during Phase 7.
+
+/// An approval workflow row for an [`Income`]. Two invariants:
+/// IA I-1 (state machine pending → approved/rejected, enforced at
+/// the type-system level via the `ApprovalStatus` enum + invalid
+/// transition guards) and IA I-2 (timestamps recorded: every
+/// transition stamps `decided_at` + `decided_by` on the aggregate,
+/// and the reject path also captures an optional `reason` string).
+/// Lifecycle: fresh (Pending) → approve() / reject() (terminal).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealIncomeApproval {
+    /// The typed id (school_id + uuid).
+    pub id: IncomeApprovalId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The parent income this approval belongs to.
+    pub income_id: IncomeId,
+    /// The current approval state (Pending | Approved | Rejected).
+    /// IA I-1.
+    pub status: ApprovalStatus,
+    /// Who initiated the approval (set at `fresh`, immutable).
+    pub requested_by: UserId,
+    /// When the approval was created (set at `fresh`, immutable).
+    pub requested_at: Timestamp,
+    /// Who decided the approval (set by `approve()` / `reject()`).
+    /// IA I-2.
+    pub decided_by: Option<UserId>,
+    /// When the approval was decided (set by `approve()` /
+    /// `reject()`). IA I-2.
+    pub decided_at: Option<Timestamp>,
+    /// The optional reason for rejection (set by `reject()` only).
+    /// IA I-2.
+    pub reject_reason: Option<String>,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealIncomeApproval {
+    /// Constructs a new `RealIncomeApproval` in the Pending state.
+    /// The aggregate cannot be constructed directly into Approved or
+    /// Rejected — those transitions require the corresponding
+    /// `approve()` / `reject()` call.
+    pub fn fresh(
+        id: IncomeApprovalId,
+        income_id: IncomeId,
+        requested_by: UserId,
+        requested_at: Timestamp,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // Cross-school defense-in-depth: the income must belong to
+        // the same school as the approval.
+        if income_id.school_id() != id.school_id() {
+            return Err(educore_core::error::DomainError::validation(
+                "IncomeApproval income_id must belong to the same school as the approval id (IA I-1)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            income_id,
+            status: ApprovalStatus::Pending,
+            requested_by,
+            requested_at,
+            decided_by: None,
+            decided_at: None,
+            reject_reason: None,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the approval is in the Pending state.
+    #[must_use]
+    pub const fn is_pending(&self) -> bool {
+        matches!(self.status, ApprovalStatus::Pending)
+    }
+
+    /// Returns `true` if the approval is in the Approved state.
+    #[must_use]
+    pub const fn is_approved(&self) -> bool {
+        matches!(self.status, ApprovalStatus::Approved)
+    }
+
+    /// Returns `true` if the approval is in the Rejected state.
+    #[must_use]
+    pub const fn is_rejected(&self) -> bool {
+        matches!(self.status, ApprovalStatus::Rejected)
+    }
+
+    /// Returns `true` if the approval is still pending (i.e. has
+    /// not been decided).
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.is_pending()
+    }
+
+    /// Transitions the approval from Pending to Approved (IA I-1).
+    /// Returns `DomainError::conflict` if the approval is already in
+    /// a terminal state. Stamps `decided_by` + `decided_at` on the
+    /// aggregate (IA I-2). Bumps version, advances `updated_at`,
+    /// sets `updated_by`.
+    pub fn approve(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        // IA I-1: only Pending can transition.
+        if !self.is_pending() {
+            return Err(educore_core::error::DomainError::conflict(
+                "IncomeApproval is not pending; cannot approve",
+            ));
+        }
+        self.status = ApprovalStatus::Approved;
+        self.decided_by = Some(actor); // IA I-2
+        self.decided_at = Some(at); // IA I-2
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Transitions the approval from Pending to Rejected (IA I-1).
+    /// Returns `DomainError::conflict` if the approval is already in
+    /// a terminal state. Stamps `decided_by` + `decided_at` +
+    /// `reject_reason` on the aggregate (IA I-2). Bumps version,
+    /// advances `updated_at`, sets `updated_by`.
+    pub fn reject(
+        &mut self,
+        reason: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        // IA I-1: only Pending can transition.
+        if !self.is_pending() {
+            return Err(educore_core::error::DomainError::conflict(
+                "IncomeApproval is not pending; cannot reject",
+            ));
+        }
+        self.status = ApprovalStatus::Rejected;
+        self.decided_by = Some(actor); // IA I-2
+        self.decided_at = Some(at); // IA I-2
+        self.reject_reason = reason
+            .map(|r| r.trim().to_owned())
+            .filter(|r| !r.is_empty()); // IA I-2
         self.updated_at = at;
         self.updated_by = actor;
         self.version = self.version.next();

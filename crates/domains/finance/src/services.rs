@@ -35,17 +35,18 @@ use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
-    RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup,
+    RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
     RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
 };
 use crate::entities::WalletTransactionApproval;
 use crate::commands::{
-    ApproveExpenseApprovalCommand, ApproveWalletTransactionApprovalCommand,
+    ApproveExpenseApprovalCommand, ApproveIncomeApprovalCommand, ApproveWalletTransactionApprovalCommand,
     CreateChartOfAccountCommand,
     CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesInstallmentChildPaymentCommand,
     CreateDirectFeesSettingCommand, CreateDonorCommand, CreateExpenseApprovalCommand, CreateFeesAssignDiscountCommand,
-    RejectExpenseApprovalCommand,
+    CreateIncomeApprovalCommand,
+    RejectExpenseApprovalCommand, RejectIncomeApprovalCommand,
     CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
@@ -68,7 +69,7 @@ use crate::events::{
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
-    FmFeesGroupCreated,
+    FmFeesGroupCreated, IncomeApprovalApproved, IncomeApprovalCreated, IncomeApprovalRejected,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -79,6 +80,7 @@ use crate::events::{
 use crate::value_objects::{
     AccountType, BankAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
     DonorId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
+    IncomeApprovalId, IncomeId,
     FeesInvoiceId, FeesPaymentId,
     FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId,
@@ -646,6 +648,130 @@ where
 
     Ok(ExpenseApprovalRejected::new(
         cmd.expense_approval_id,
+        actor,
+        cmd.reason,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+// =============================================================================
+// IncomeApproval services (Wave 80 — per-aggregate wave pattern from
+// Waves 65–79)
+// =============================================================================
+//
+// Per v3 Part 2 F28 + checklist § IncomeApproval: 2 invariants:
+//   - IA I-1: state machine pending → approved/rejected (invalid
+//             transitions return DomainError::conflict).
+//   - IA I-2: timestamps recorded (every transition stamps
+//             decided_by + decided_at on the aggregate; reject also
+//             captures an optional reason).
+//
+// Structurally identical to the Wave 79 ExpenseApproval services
+// with the parent reference renamed from `expense_id` to
+// `income_id` and the RBAC capability switched from
+// FinanceExpenseApprove to FinanceIncomeApprove.
+//
+// Three service functions: create_income_approval (enter Pending),
+// approve_income_approval (Pending→Approved), and
+// reject_income_approval (Pending→Rejected with optional reason).
+// The approve + reject functions take a mutable reference to the
+// aggregate (the dispatcher is responsible for loading it from
+// storage), mirroring the Wave 76 WalletTransactionApproval pattern.
+
+/// Builds a new [`RealIncomeApproval`] aggregate + an
+/// [`IncomeApprovalCreated`] event. The aggregate enters the
+/// Pending state (IA I-1); the aggregate cannot be created directly
+/// into Approved or Rejected. Stamps `requested_by` + `requested_at`
+/// (IA I-2 partial — creation timestamps).
+pub fn create_income_approval<C, G>(
+    cmd: CreateIncomeApprovalCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealIncomeApproval, IncomeApprovalCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let _ = event_id_to_uuid(event_id); // reserved for future audit-footer linking
+
+    let mut row = RealIncomeApproval::fresh(
+        cmd.income_approval_id,
+        cmd.income_id,
+        cmd.requested_by,
+        now,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = IncomeApprovalCreated::new(
+        cmd.income_approval_id,
+        cmd.income_id,
+        cmd.requested_by,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+/// Transitions an existing [`RealIncomeApproval`] aggregate from
+/// Pending to Approved (IA I-1). Returns `DomainError::conflict` if
+/// the aggregate is already in a terminal state. Stamps `decided_by`
+/// + `decided_at` on the aggregate (IA I-2).
+pub fn approve_income_approval<C, G>(
+    cmd: ApproveIncomeApprovalCommand,
+    clock: &C,
+    ids: &G,
+    approval: &mut RealIncomeApproval,
+) -> Result<IncomeApprovalApproved>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let actor = cmd.tenant.actor_id;
+    approval.approve(now, actor)?;
+    approval.last_event_id = Some(event_id);
+
+    Ok(IncomeApprovalApproved::new(
+        cmd.income_approval_id,
+        actor,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Transitions an existing [`RealIncomeApproval`] aggregate from
+/// Pending to Rejected (IA I-1). Returns `DomainError::conflict` if
+/// the aggregate is already in a terminal state. Stamps `decided_by`
+/// + `decided_at` + `reject_reason` on the aggregate (IA I-2).
+pub fn reject_income_approval<C, G>(
+    cmd: RejectIncomeApprovalCommand,
+    clock: &C,
+    ids: &G,
+    approval: &mut RealIncomeApproval,
+) -> Result<IncomeApprovalRejected>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let actor = cmd.tenant.actor_id;
+    approval.reject(cmd.reason.clone(), now, actor)?;
+    approval.last_event_id = Some(event_id);
+
+    Ok(IncomeApprovalRejected::new(
+        cmd.income_approval_id,
         actor,
         cmd.reason,
         event_id,

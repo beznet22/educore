@@ -36,7 +36,7 @@ use crate::value_objects::{
     FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId, FeesPaymentId, FeesPaymentSlipId,
     FeesTypeId, FmFeesGroupId, FmFeesInvoiceChildId, FmFeesInvoiceId, FmFeesInvoiceSettingId,
     FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId, FmFeesWeaverId, GatewayMode,
-    IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId,
+    IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId,
     PaymentMethodId, PaymentMethodKind, PayrollPaymentId, PreventReason, ProductPurchaseId,
     SalaryTemplateId, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId,
     WalletTxType,
@@ -1709,6 +1709,71 @@ impl RejectExpenseApprovalCommand {
     #[must_use]
     pub const fn required_capabilities() -> &'static [Capability] {
         &[Capability::FinanceExpenseApprove]
+    }
+}
+
+// -----------------------------------------------------------------------------
+// IncomeApproval commands (Wave 80 — per-aggregate wave pattern from
+// Waves 65–79)
+// -----------------------------------------------------------------------------
+//
+// Per v3 Part 2 F28 + checklist § IncomeApproval: 2 invariants:
+//   - IA I-1: state machine pending → approved/rejected.
+//   - IA I-2: timestamps recorded (every transition stamps
+//             decided_by + decided_at; reject also captures reason).
+//
+// Structurally identical to the Wave 79 ExpenseApproval commands
+// with the parent reference renamed from `expense_id` to
+// `income_id` and the RBAC capability switched from
+// FinanceExpenseApprove to FinanceIncomeApprove (existing variant
+// at `crates/cross-cutting/rbac/src/value_objects.rs:345`).
+//
+// Three commands: Create (enter Pending), Approve (Pending→Approved),
+// Reject (Pending→Rejected with optional reason).
+
+/// Command: create a new `IncomeApproval` row in the Pending state.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateIncomeApprovalCommand {
+    pub tenant: TenantContext,
+    pub income_approval_id: IncomeApprovalId,
+    pub income_id: IncomeId,
+    pub requested_by: UserId,
+}
+
+impl CreateIncomeApprovalCommand {
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        &[Capability::FinanceIncomeApprove]
+    }
+}
+
+/// Command: transition an `IncomeApproval` from Pending to Approved.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ApproveIncomeApprovalCommand {
+    pub tenant: TenantContext,
+    pub income_approval_id: IncomeApprovalId,
+}
+
+impl ApproveIncomeApprovalCommand {
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        &[Capability::FinanceIncomeApprove]
+    }
+}
+
+/// Command: transition an `IncomeApproval` from Pending to Rejected
+/// with an optional reason string.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RejectIncomeApprovalCommand {
+    pub tenant: TenantContext,
+    pub income_approval_id: IncomeApprovalId,
+    pub reason: Option<String>,
+}
+
+impl RejectIncomeApprovalCommand {
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        &[Capability::FinanceIncomeApprove]
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

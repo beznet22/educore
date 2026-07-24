@@ -3476,6 +3476,178 @@ impl DomainEvent for ExpenseApprovalRejected {
     }
 }
 
+// =============================================================================
+// IncomeApproval events — Wave 80 (per-aggregate wave pattern from
+// Waves 65–79)
+// =============================================================================
+//
+// Per v3 Part 2 F28 + checklist § IncomeApproval: 2 invariants:
+//   - IA I-1: state machine pending → approved/rejected (enforced
+//             at the type-system level via the ApprovalStatus enum
+//             + invalid transition guards; invalid transitions
+//             emit DomainError::conflict).
+//   - IA I-2: timestamps recorded (every state transition stamps
+//             decided_by + decided_at on the aggregate; the reject
+//             path also captures an optional reason string).
+// Structurally identical to the Wave 79 ExpenseApproval event
+// family, with the parent reference renamed from expense_id to
+// income_id. Three headline events: Created (Pending entry),
+// Approved (Pending → Approved), Rejected (Pending → Rejected with
+// optional reason).
+
+/// Emitted when a new `RealIncomeApproval` row is created in the
+/// Pending state.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct IncomeApprovalCreated {
+    pub income_approval_id: IncomeApprovalId,
+    pub income_id: IncomeId,
+    pub requested_by: UserId,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl IncomeApprovalCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        income_approval_id: IncomeApprovalId,
+        income_id: IncomeId,
+        requested_by: UserId,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            income_approval_id,
+            income_id,
+            requested_by,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for IncomeApprovalCreated {
+    const EVENT_TYPE: &'static str = "finance.income_approval.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "income_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.income_approval_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.income_approval_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealIncomeApproval` transitions from Pending to
+/// Approved (IA I-1). Stamps `decided_by` + `decided_at` on the
+/// aggregate (IA I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct IncomeApprovalApproved {
+    pub income_approval_id: IncomeApprovalId,
+    pub decided_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl IncomeApprovalApproved {
+    pub fn new(
+        income_approval_id: IncomeApprovalId,
+        decided_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            income_approval_id,
+            decided_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for IncomeApprovalApproved {
+    const EVENT_TYPE: &'static str = "finance.income_approval.approved";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "income_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.income_approval_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.income_approval_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealIncomeApproval` transitions from Pending to
+/// Rejected (IA I-1). Stamps `decided_by` + `decided_at` +
+/// `reject_reason` on the aggregate (IA I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct IncomeApprovalRejected {
+    pub income_approval_id: IncomeApprovalId,
+    pub decided_by: UserId,
+    pub reject_reason: Option<String>,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl IncomeApprovalRejected {
+    pub fn new(
+        income_approval_id: IncomeApprovalId,
+        decided_by: UserId,
+        reject_reason: Option<String>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            income_approval_id,
+            decided_by,
+            reject_reason,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for IncomeApprovalRejected {
+    const EVENT_TYPE: &'static str = "finance.income_approval.rejected";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "income_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.income_approval_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.income_approval_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 
 #[cfg(test)]
 #[allow(
