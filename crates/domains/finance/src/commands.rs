@@ -30,7 +30,7 @@ use crate::value_objects::{
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId,
     DirectFeesInstallmentChildPaymentId,
     DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
-    DueFeesLoginPreventId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
+    DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId,
     FeesGroupId, FeesInstallmentAssignId, FeesInstallmentCreditId, FeesInstallmentId,
     FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId, FeesPaymentId, FeesPaymentSlipId,
@@ -1646,6 +1646,69 @@ impl RejectWalletTransactionApprovalCommand {
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceWalletReject]
+    }
+}
+
+// -----------------------------------------------------------------------------
+// ExpenseApproval commands (Wave 79 — per-aggregate wave pattern from
+// Waves 65–78)
+// -----------------------------------------------------------------------------
+//
+// Per v3 Part 2 F20 + checklist § ExpenseApproval: 2 invariants:
+//   - EA I-1: state machine pending → approved/rejected.
+//   - EA I-2: timestamps recorded (every transition stamps
+//             decided_by + decided_at; reject also captures reason).
+//
+// Three commands: Create (enter Pending), Approve (Pending→Approved),
+// Reject (Pending→Rejected with optional reason).
+
+/// Command: create a new `ExpenseApproval` row in the Pending state.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateExpenseApprovalCommand {
+    pub tenant: TenantContext,
+    pub expense_approval_id: ExpenseApprovalId,
+    pub expense_id: ExpenseId,
+    pub requested_by: UserId,
+}
+
+impl CreateExpenseApprovalCommand {
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        // Fm-prefix / EA-prefix RBAC variants don't exist yet; fall
+        // back to the closest existing capability (Wave 72/75/77
+        // precedent). To be revisited in a future RBAC revision (v3
+        // Part 6).
+        &[Capability::FinanceExpenseApprove]
+    }
+}
+
+/// Command: transition an `ExpenseApproval` from Pending to Approved.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ApproveExpenseApprovalCommand {
+    pub tenant: TenantContext,
+    pub expense_approval_id: ExpenseApprovalId,
+}
+
+impl ApproveExpenseApprovalCommand {
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        &[Capability::FinanceExpenseApprove]
+    }
+}
+
+/// Command: transition an `ExpenseApproval` from Pending to Rejected
+/// with an optional reason string.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RejectExpenseApprovalCommand {
+    pub tenant: TenantContext,
+    pub expense_approval_id: ExpenseApprovalId,
+    pub reason: Option<String>,
+}
+
+impl RejectExpenseApprovalCommand {
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        &[Capability::FinanceExpenseApprove]
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

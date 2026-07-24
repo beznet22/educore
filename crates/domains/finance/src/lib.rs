@@ -48,26 +48,29 @@ pub mod prelude {
     pub use crate::aggregate::{
         Expense, FeesInvoice, FeesPayment, RealChartOfAccount,
         RealDirectFeesInstallmentAssignChild, RealDirectFeesSetting, RealDonor,
-        RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup,
-        RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-        RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
+        RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting,
+        RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild,
+        RealFmFeesTransactionLineNote, RealIncomeHead, RealInvoiceSetting,
+        RealQuestionBankFee, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::WalletTransactionApproval;
 
     pub use crate::commands::{
-        ApproveWalletTransactionApprovalCommand, BlockLoginForDueFeesCommand,
+        ApproveExpenseApprovalCommand, ApproveWalletTransactionApprovalCommand,
+        BlockLoginForDueFeesCommand,
         CarryForwardFeesBalanceCommand, ConfigureFeesGroupCommand, ConfigureFeesTypeCommand,
         ConfigureInvoiceNumberingCommand, CreateChartOfAccountCommand,
         CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesSettingCommand,
-        CreateDonorCommand, CreateExpenseHeadCommand, CreateFeesCarryForwardLogCommand,
+        CreateDonorCommand, CreateExpenseApprovalCommand, CreateExpenseHeadCommand, CreateFeesCarryForwardLogCommand,
         CreateFeesCarryForwardSettingCommand,
         CreateFmFeesGroupCommand, CreateFmFeesInvoiceLineNoteCommand,
         CreateFmFeesTransactionLineNoteCommand, CreateIncomeHeadCommand,
         CreateInvoiceSettingCommand, CreateQuestionBankFeeCommand, CreateWalletCommand,
         CreateWalletTransactionApprovalCommand, CreditWalletCommand,
         DeductWalletCreditCommand, OpenBankAccountCommand,
-        RecordExpenseCommand, RecordPaymentCommand, RequestWalletRefundCommand,
+        RecordExpenseCommand, RecordPaymentCommand, RejectExpenseApprovalCommand,
+        RequestWalletRefundCommand,
         FINANCE_EXPENSE_DELETE_COMMAND_TYPE, FINANCE_EXPENSE_RECORD_COMMAND_TYPE,
         FINANCE_EXPENSE_UPDATE_COMMAND_TYPE, FINANCE_FEES_INVOICE_CONFIGURE_COMMAND_TYPE,
         FINANCE_FEES_PAYMENT_RECORD_COMMAND_TYPE, FINANCE_PAYROLL_PAYMENT_RECORD_COMMAND_TYPE,
@@ -81,7 +84,8 @@ pub mod prelude {
     pub use crate::events::{
         ChartOfAccountCreated, ChartOfAccountDeleted, ChartOfAccountUpdated,
         DirectFeesInstallmentAssignChildAdded, DirectFeesInstallmentAssignChildRetired,
-        DirectFeesSettingCreated, DonorCreated, ExpenseRecorded, FeesCarryForwardLogCreated,
+        DirectFeesSettingCreated, DonorCreated, ExpenseApprovalApproved, ExpenseApprovalCreated,
+        ExpenseApprovalRejected, ExpenseRecorded, FeesCarryForwardLogCreated,
         FeesCarryForwardLogRetired, FeesCarryForwardSettingCreated,
         FeesCarryForwardSettingRetired, FeesCarryForwardSettingUpdated, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
         FmFeesInvoiceLineNoteRetired, FmFeesTransactionChildCreated,
@@ -96,16 +100,16 @@ pub mod prelude {
     pub use crate::query::{FeesPaymentQuery, WalletQuery, WalletTransactionQuery};
     pub use crate::repository::{WalletRepository, WalletTransactionRepository};
     pub use crate::services::{
-        approve_wallet_transaction, approve_wallet_transaction_approval,
+        approve_expense_approval, approve_wallet_transaction, approve_wallet_transaction_approval,
         configure_invoice_numbering, create_chart_of_account,
         create_direct_fees_installment_assign_child, create_direct_fees_setting,
-        create_donor, create_fees_carry_forward_log, create_fees_carry_forward_setting,
+        create_donor, create_expense_approval, create_fees_carry_forward_log, create_fees_carry_forward_setting,
         create_fm_fees_group,
         create_fm_fees_invoice_line_note, create_fm_fees_transaction_child,
         create_fm_fees_transaction_line_note,
         create_income_head, create_invoice_setting, create_question_bank_fee, create_wallet,
         create_wallet_transaction_approval, credit_wallet, deduct_wallet_credit,
-        record_expense, record_payment, reject_wallet_transaction,
+        record_expense, record_payment, reject_expense_approval, reject_wallet_transaction,
         reject_wallet_transaction_approval,
         request_wallet_refund, ChargeRequest, PaymentProvider, PaymentProviderPaymentId,
         PaymentProviderStatus, PaymentReceipt, PaymentStatus, RefundReceipt, RefundRequest,

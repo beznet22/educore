@@ -35,15 +35,17 @@ use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
-    RealDirectFeesSetting, RealDonor, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup,
+    RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
     RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
 };
 use crate::entities::WalletTransactionApproval;
 use crate::commands::{
-    ApproveWalletTransactionApprovalCommand, CreateChartOfAccountCommand,
+    ApproveExpenseApprovalCommand, ApproveWalletTransactionApprovalCommand,
+    CreateChartOfAccountCommand,
     CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesInstallmentChildPaymentCommand,
-    CreateDirectFeesSettingCommand, CreateDonorCommand, CreateFeesAssignDiscountCommand,
+    CreateDirectFeesSettingCommand, CreateDonorCommand, CreateExpenseApprovalCommand, CreateFeesAssignDiscountCommand,
+    RejectExpenseApprovalCommand,
     CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
@@ -64,6 +66,7 @@ use crate::commands::{
 use crate::events::{
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
+    ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
     FmFeesGroupCreated,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
@@ -75,7 +78,7 @@ use crate::events::{
 };
 use crate::value_objects::{
     AccountType, BankAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
-    DonorId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
+    DonorId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
     FeesInvoiceId, FeesPaymentId,
     FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId,
@@ -526,6 +529,125 @@ where
         cmd.rejecter_user_id,
         now,
         trimmed.to_owned(),
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+// =============================================================================
+// ExpenseApproval services (Wave 79 — per-aggregate wave pattern from
+// Waves 65–78)
+// =============================================================================
+//
+// Per v3 Part 2 F20 + checklist § ExpenseApproval: 2 invariants:
+//   - EA I-1: state machine pending → approved/rejected (invalid
+//             transitions return DomainError::conflict).
+//   - EA I-2: timestamps recorded (every transition stamps
+//             decided_by + decided_at on the aggregate; reject also
+//             captures an optional reason).
+//
+// Three service functions: create_expense_approval (enter Pending),
+// approve_expense_approval (Pending→Approved), and
+// reject_expense_approval (Pending→Rejected with optional reason).
+// The approve + reject functions take a mutable reference to the
+// aggregate (the dispatcher is responsible for loading it from
+// storage), mirroring the Wave 76 WalletTransactionApproval pattern.
+
+/// Builds a new [`RealExpenseApproval`] aggregate + an
+/// [`ExpenseApprovalCreated`] event. The aggregate enters the
+/// Pending state (EA I-1); the aggregate cannot be created directly
+/// into Approved or Rejected. Stamps `requested_by` + `requested_at`
+/// (EA I-2 partial — creation timestamps).
+pub fn create_expense_approval<C, G>(
+    cmd: CreateExpenseApprovalCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealExpenseApproval, ExpenseApprovalCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let _ = event_id_to_uuid(event_id); // reserved for future audit-footer linking
+
+    let mut row = RealExpenseApproval::fresh(
+        cmd.expense_approval_id,
+        cmd.expense_id,
+        cmd.requested_by,
+        now,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = ExpenseApprovalCreated::new(
+        cmd.expense_approval_id,
+        cmd.expense_id,
+        cmd.requested_by,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+/// Transitions an existing [`RealExpenseApproval`] aggregate from
+/// Pending to Approved (EA I-1). Returns `DomainError::conflict` if
+/// the aggregate is already in a terminal state. Stamps `decided_by`
+/// + `decided_at` on the aggregate (EA I-2).
+pub fn approve_expense_approval<C, G>(
+    cmd: ApproveExpenseApprovalCommand,
+    clock: &C,
+    ids: &G,
+    approval: &mut RealExpenseApproval,
+) -> Result<ExpenseApprovalApproved>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let actor = cmd.tenant.actor_id;
+    approval.approve(now, actor)?;
+    approval.last_event_id = Some(event_id);
+
+    Ok(ExpenseApprovalApproved::new(
+        cmd.expense_approval_id,
+        actor,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Transitions an existing [`RealExpenseApproval`] aggregate from
+/// Pending to Rejected (EA I-1). Returns `DomainError::conflict` if
+/// the aggregate is already in a terminal state. Stamps `decided_by`
+/// + `decided_at` + `reject_reason` on the aggregate (EA I-2).
+pub fn reject_expense_approval<C, G>(
+    cmd: RejectExpenseApprovalCommand,
+    clock: &C,
+    ids: &G,
+    approval: &mut RealExpenseApproval,
+) -> Result<ExpenseApprovalRejected>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let actor = cmd.tenant.actor_id;
+    approval.reject(cmd.reason.clone(), now, actor)?;
+    approval.last_event_id = Some(event_id);
+
+    Ok(ExpenseApprovalRejected::new(
+        cmd.expense_approval_id,
+        actor,
+        cmd.reason,
         event_id,
         cmd.tenant.correlation_id,
         now,

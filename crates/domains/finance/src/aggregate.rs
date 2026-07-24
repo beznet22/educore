@@ -3681,3 +3681,196 @@ impl RealFeesCarryForwardSetting {
         Ok(())
     }
 }
+
+// =============================================================================
+// RealExpenseApproval — Wave 79 (per-aggregate wave pattern from
+// Waves 65–78)
+// =============================================================================
+//
+// Per v3 Part 2 F20 + checklist § ExpenseApproval: 2 invariants:
+//   - EA I-1: state machine — a fresh approval starts in
+//             ApprovalStatus::Pending; it can transition to
+//             Approved or Rejected exactly once. Any subsequent
+//             transition (or a transition out of a terminal state)
+//             returns DomainError::conflict. The state field is the
+//             `ApprovalStatus` enum (typed at compile time).
+//   - EA I-2: timestamps recorded — every state transition stamps
+//             `decided_at` and `decided_by` on the aggregate; the
+//             reject path also captures an optional `reason`
+//             string. The audit footer (10 fields, per AGENTS.md)
+//             preserves the full approval history.
+// Approval is a child entity under an Expense: each Expense gets one
+// or more ExpenseApproval rows tracking the approval workflow. The
+// placeholder stub above
+// (`finance_aggregate_stub! { struct ExpenseApproval { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealExpenseApproval` for new code; the stub is kept only to
+// avoid breaking downstream code that referenced `ExpenseApproval`
+// as a type name during Phase 7.
+
+/// An approval workflow row for an [`Expense`]. Two invariants:
+/// EA I-1 (state machine pending → approved/rejected, enforced at
+/// the type-system level via the `ApprovalStatus` enum + invalid
+/// transition guards) and EA I-2 (timestamps recorded: every
+/// transition stamps `decided_at` + `decided_by` on the aggregate,
+/// and the reject path also captures an optional `reason` string).
+/// Lifecycle: fresh (Pending) → approve() / reject() (terminal).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealExpenseApproval {
+    /// The typed id (school_id + uuid).
+    pub id: ExpenseApprovalId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The parent expense this approval belongs to.
+    pub expense_id: ExpenseId,
+    /// The current approval state (Pending | Approved | Rejected).
+    /// EA I-1.
+    pub status: ApprovalStatus,
+    /// Who initiated the approval (set at `fresh`, immutable).
+    pub requested_by: UserId,
+    /// When the approval was created (set at `fresh`, immutable).
+    pub requested_at: Timestamp,
+    /// Who decided the approval (set by `approve()` / `reject()`).
+    /// EA I-2.
+    pub decided_by: Option<UserId>,
+    /// When the approval was decided (set by `approve()` /
+    /// `reject()`). EA I-2.
+    pub decided_at: Option<Timestamp>,
+    /// The optional reason for rejection (set by `reject()` only).
+    /// EA I-2.
+    pub reject_reason: Option<String>,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealExpenseApproval {
+    /// Constructs a new `RealExpenseApproval` in the Pending state.
+    /// The aggregate cannot be constructed directly into Approved or
+    /// Rejected — those transitions require the corresponding
+    /// `approve()` / `reject()` call.
+    pub fn fresh(
+        id: ExpenseApprovalId,
+        expense_id: ExpenseId,
+        requested_by: UserId,
+        requested_at: Timestamp,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // Cross-school defense-in-depth: the expense must belong to
+        // the same school as the approval.
+        if expense_id.school_id() != id.school_id() {
+            return Err(educore_core::error::DomainError::validation(
+                "ExpenseApproval expense_id must belong to the same school as the approval id (EA I-1)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            expense_id,
+            status: ApprovalStatus::Pending,
+            requested_by,
+            requested_at,
+            decided_by: None,
+            decided_at: None,
+            reject_reason: None,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the approval is in the Pending state.
+    #[must_use]
+    pub const fn is_pending(&self) -> bool {
+        matches!(self.status, ApprovalStatus::Pending)
+    }
+
+    /// Returns `true` if the approval is in the Approved state.
+    #[must_use]
+    pub const fn is_approved(&self) -> bool {
+        matches!(self.status, ApprovalStatus::Approved)
+    }
+
+    /// Returns `true` if the approval is in the Rejected state.
+    #[must_use]
+    pub const fn is_rejected(&self) -> bool {
+        matches!(self.status, ApprovalStatus::Rejected)
+    }
+
+    /// Returns `true` if the approval is still pending (i.e. has
+    /// not been decided).
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.is_pending()
+    }
+
+    /// Transitions the approval from Pending to Approved (EA I-1).
+    /// Returns `DomainError::conflict` if the approval is already in
+    /// a terminal state. Stamps `decided_by` + `decided_at` on the
+    /// aggregate (EA I-2). Bumps version, advances `updated_at`,
+    /// sets `updated_by`.
+    pub fn approve(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        // EA I-1: only Pending can transition.
+        if !self.is_pending() {
+            return Err(educore_core::error::DomainError::conflict(
+                "ExpenseApproval is not pending; cannot approve",
+            ));
+        }
+        self.status = ApprovalStatus::Approved;
+        self.decided_by = Some(actor); // EA I-2
+        self.decided_at = Some(at); // EA I-2
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Transitions the approval from Pending to Rejected (EA I-1).
+    /// Returns `DomainError::conflict` if the approval is already in
+    /// a terminal state. Stamps `decided_by` + `decided_at` +
+    /// `reject_reason` on the aggregate (EA I-2). Bumps version,
+    /// advances `updated_at`, sets `updated_by`.
+    pub fn reject(
+        &mut self,
+        reason: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        // EA I-1: only Pending can transition.
+        if !self.is_pending() {
+            return Err(educore_core::error::DomainError::conflict(
+                "ExpenseApproval is not pending; cannot reject",
+            ));
+        }
+        self.status = ApprovalStatus::Rejected;
+        self.decided_by = Some(actor); // EA I-2
+        self.decided_at = Some(at); // EA I-2
+        self.reject_reason = reason
+            .map(|r| r.trim().to_owned())
+            .filter(|r| !r.is_empty()); // EA I-2
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}

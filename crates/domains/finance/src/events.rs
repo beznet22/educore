@@ -3306,6 +3306,177 @@ impl DomainEvent for FeesCarryForwardSettingRetired {
     }
 }
 
+// =============================================================================
+// ExpenseApproval events — Wave 79 (per-aggregate wave pattern from
+// Waves 65–78)
+// =============================================================================
+//
+// Per v3 Part 2 F20 + checklist § ExpenseApproval: 2 invariants:
+//   - EA I-1: state machine pending → approved/rejected (enforced
+//             at the type-system level via the ApprovalStatus enum
+//             + invalid transition guards; invalid transitions
+//             emit DomainError::conflict).
+//   - EA I-2: timestamps recorded (every state transition stamps
+//             decided_by + decided_at on the aggregate; the reject
+//             path also captures an optional reason string).
+// Three headline events: Created (when the aggregate enters
+// Pending), Approved (Pending → Approved transition), and Rejected
+// (Pending → Rejected transition with optional reason).
+
+/// Emitted when a new `RealExpenseApproval` row is created in the
+/// Pending state.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExpenseApprovalCreated {
+    pub expense_approval_id: ExpenseApprovalId,
+    pub expense_id: ExpenseId,
+    pub requested_by: UserId,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ExpenseApprovalCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        expense_approval_id: ExpenseApprovalId,
+        expense_id: ExpenseId,
+        requested_by: UserId,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            expense_approval_id,
+            expense_id,
+            requested_by,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ExpenseApprovalCreated {
+    const EVENT_TYPE: &'static str = "finance.expense_approval.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "expense_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.expense_approval_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.expense_approval_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealExpenseApproval` transitions from Pending to
+/// Approved (EA I-1). Stamps `decided_by` + `decided_at` on the
+/// aggregate (EA I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExpenseApprovalApproved {
+    pub expense_approval_id: ExpenseApprovalId,
+    pub decided_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ExpenseApprovalApproved {
+    pub fn new(
+        expense_approval_id: ExpenseApprovalId,
+        decided_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            expense_approval_id,
+            decided_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ExpenseApprovalApproved {
+    const EVENT_TYPE: &'static str = "finance.expense_approval.approved";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "expense_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.expense_approval_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.expense_approval_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealExpenseApproval` transitions from Pending to
+/// Rejected (EA I-1). Stamps `decided_by` + `decided_at` +
+/// `reject_reason` on the aggregate (EA I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExpenseApprovalRejected {
+    pub expense_approval_id: ExpenseApprovalId,
+    pub decided_by: UserId,
+    pub reject_reason: Option<String>,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ExpenseApprovalRejected {
+    pub fn new(
+        expense_approval_id: ExpenseApprovalId,
+        decided_by: UserId,
+        reject_reason: Option<String>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            expense_approval_id,
+            decided_by,
+            reject_reason,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ExpenseApprovalRejected {
+    const EVENT_TYPE: &'static str = "finance.expense_approval.rejected";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "expense_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.expense_approval_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.expense_approval_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
