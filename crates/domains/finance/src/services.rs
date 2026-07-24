@@ -35,7 +35,7 @@ use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
-    RealDirectFeesSetting, RealDonor, RealFeesCarryForwardLog, RealFmFeesGroup,
+    RealDirectFeesSetting, RealDonor, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
     RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
 };
@@ -44,8 +44,8 @@ use crate::commands::{
     ApproveWalletTransactionApprovalCommand, CreateChartOfAccountCommand,
     CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesInstallmentChildPaymentCommand,
     CreateDirectFeesSettingCommand, CreateDonorCommand, CreateFeesAssignDiscountCommand,
-    CreateFeesCarryForwardLogCommand, CreateFmFeesInvoiceLineNoteCommand,
-    CreateFmFeesTransactionLineNoteCommand,
+    CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
+    CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
     CreateFeesInstallmentCreditCommand,
     CreateFeesInvoiceSettingCommand, CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
@@ -64,7 +64,8 @@ use crate::commands::{
 use crate::events::{
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
-    ExpenseRecorded, FeesCarryForwardLogCreated, FmFeesGroupCreated,
+    ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
+    FmFeesGroupCreated,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -74,7 +75,8 @@ use crate::events::{
 };
 use crate::value_objects::{
     AccountType, BankAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
-    DonorId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesInvoiceId, FeesPaymentId,
+    DonorId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
+    FeesInvoiceId, FeesPaymentId,
     FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId,
     QuestionBankFeeId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
@@ -1473,6 +1475,56 @@ where
         row.student_id,
         row.academic_year_id,
         row.amount_minor,
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+/// Builds a new [`RealFeesCarryForwardSetting`] aggregate + a
+/// [`FeesCarryForwardSettingCreated`] event. Per-school config
+/// (FCFA I-1, inherent in the typed id; uniqueness is a dispatcher
+/// concern) + threshold validation (FCFA I-2, `threshold_minor >=
+/// 0`) are enforced here.
+pub fn create_fees_carry_forward_setting<C, G>(
+    cmd: CreateFeesCarryForwardSettingCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesCarryForwardSetting, FeesCarryForwardSettingCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    // FCFA I-1 (cross-school defense-in-depth): the supplied id must
+    // belong to the tenant's school.
+    if cmd.fees_carry_forward_setting_id.school_id() != cmd.tenant.school_id {
+        return Err(educore_core::error::DomainError::validation(
+            "FeesCarryForwardSetting id school_id must match tenant school_id (FCFA I-1)",
+        ));
+    }
+
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let _ = event_id_to_uuid(event_id); // reserved for future audit-footer linking
+
+    let mut row = RealFeesCarryForwardSetting::fresh(
+        cmd.fees_carry_forward_setting_id,
+        cmd.threshold_minor,
+        cmd.enabled,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = FeesCarryForwardSettingCreated::new(
+        cmd.fees_carry_forward_setting_id,
+        row.threshold_minor,
+        row.enabled,
         row.description.clone(),
         cmd.tenant.actor_id,
         event_id,

@@ -1703,6 +1703,32 @@ pub struct CreateFeesCarryForwardLogCommand {
     pub description: Option<String>,
 }
 
+/// Command: create a new per-school `FeesCarryForwardSetting` (per
+/// v3 Part 2 F34 + checklist § FeesCarryForwardSetting). Dispatched
+/// by the `create_fees_carry_forward_setting` service function in
+/// `services.rs`. Enforces FCFA I-1 (per-school scoping via the
+/// typed id) and FCFA I-2 (`threshold_minor >= 0`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFeesCarryForwardSettingCommand {
+    pub tenant: TenantContext,
+    pub fees_carry_forward_setting_id: FeesCarryForwardSettingId,
+    pub threshold_minor: i64,
+    pub enabled: bool,
+    pub description: Option<String>,
+}
+
+impl CreateFeesCarryForwardSettingCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        // Fm-prefix RBAC variants don't exist yet; fall back to the
+        // closest existing capability. See Wave 72 / Wave 75 lessons
+        // for the Fm-prefix RBAC variant gap. To be revisited in a
+        // future RBAC revision (v3 Part 6).
+        &[Capability::FinanceFeesCarryForwardConfigure]
+    }
+}
+
 /// Command: append a new free-form note to an [`FmFeesInvoice`] line
 /// (per v3 Part 2 F30 + checklist § FmFeesInvoiceLineNote). Dispatched
 /// by the `create_fm_fees_invoice_line_note` service function in

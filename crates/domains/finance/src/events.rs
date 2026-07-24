@@ -30,7 +30,7 @@ use crate::value_objects::{
     DirectFeesInstallmentId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
-    FeesCarryForwardId, FeesCarryForwardLogId, FeesGroupId, FeesInstallmentAssignDiscountId,
+    FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesGroupId, FeesInstallmentAssignDiscountId,
     FeesInstallmentId,
     FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
     FmFeesInvoiceLineNoteId, FmFeesTransactionChildId, FmFeesTransactionId,
@@ -3122,6 +3122,184 @@ impl DomainEvent for WalletTransactionApprovalRejected {
     }
     fn school_id(&self) -> SchoolId {
         self.wallet_transaction_approval_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// FeesCarryForwardSetting events — Wave 78 (per-aggregate wave pattern
+// from Waves 65–77)
+// =============================================================================
+//
+// Per v3 Part 2 F34 + checklist § FeesCarryForwardSetting: 2
+// invariants:
+//   - FCFA I-1: per-school config (the typed id carries the
+//              school_id; uniqueness is a dispatcher concern).
+//   - FCFA I-2: threshold_minor >= 0.
+// Full lifecycle (Created + Updated + Retired); the setting is
+// reference data so updates are expected (not append-only).
+
+/// Emitted when a new `RealFeesCarryForwardSetting` row is created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesCarryForwardSettingCreated {
+    pub fees_carry_forward_setting_id: FeesCarryForwardSettingId,
+    pub threshold_minor: i64,
+    pub enabled: bool,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesCarryForwardSettingCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_carry_forward_setting_id: FeesCarryForwardSettingId,
+        threshold_minor: i64,
+        enabled: bool,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_carry_forward_setting_id,
+            threshold_minor,
+            enabled,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesCarryForwardSettingCreated {
+    const EVENT_TYPE: &'static str = "finance.fees_carry_forward_setting.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_carry_forward_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_carry_forward_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_carry_forward_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesCarryForwardSetting`'s threshold / enabled
+/// flag / description is updated via
+/// `RealFeesCarryForwardSetting::update_metadata`. The school_id is
+/// immutable on update (FCFA I-1 per-school scoping; the typed id
+/// carries it so it cannot change).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesCarryForwardSettingUpdated {
+    pub fees_carry_forward_setting_id: FeesCarryForwardSettingId,
+    pub threshold_minor: i64,
+    pub enabled: bool,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesCarryForwardSettingUpdated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_carry_forward_setting_id: FeesCarryForwardSettingId,
+        threshold_minor: i64,
+        enabled: bool,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_carry_forward_setting_id,
+            threshold_minor,
+            enabled,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesCarryForwardSettingUpdated {
+    const EVENT_TYPE: &'static str = "finance.fees_carry_forward_setting.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_carry_forward_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_carry_forward_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_carry_forward_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesCarryForwardSetting` row is retired
+/// (soft-deleted via `RealFeesCarryForwardSetting::retire`). The
+/// original threshold + enabled flag are preserved in the audit
+/// footer for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesCarryForwardSettingRetired {
+    pub fees_carry_forward_setting_id: FeesCarryForwardSettingId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesCarryForwardSettingRetired {
+    pub fn new(
+        fees_carry_forward_setting_id: FeesCarryForwardSettingId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_carry_forward_setting_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesCarryForwardSettingRetired {
+    const EVENT_TYPE: &'static str = "finance.fees_carry_forward_setting.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_carry_forward_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_carry_forward_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_carry_forward_setting_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

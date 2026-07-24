@@ -3508,3 +3508,176 @@ impl RealDonor {
         Ok(())
     }
 }
+
+// =============================================================================
+// RealFeesCarryForwardSetting — Wave 78 (per-aggregate wave pattern from
+// Waves 65–77)
+// =============================================================================
+//
+// Per v3 Part 2 F34 + checklist § FeesCarryForwardSetting: 2
+// invariants:
+//   - FCFA I-1: per-school config — meaning each school gets its own
+//              carry-forward setting (no global config). The
+//              `FeesCarryForwardSettingId` typed id carries the
+//              `school_id` so the aggregate is inherently school-scoped.
+//              One-config-per-school uniqueness is a dispatcher /
+//              storage-adapter concern (parallel to COA I-1 from
+//              Wave 74); this drop pins the shape that the
+//              uniqueness check will key on.
+//   - FCFA I-2: threshold >= 0 — the carry-forward threshold
+//              (in minor currency units) must be non-negative. A
+//              threshold of 0 means "carry forward everything above
+//              zero"; a threshold > 0 means "only carry forward
+//              balances above the threshold". Negative thresholds
+//              are nonsensical and rejected at construction + on
+//              update.
+// Foundational aggregate for the carry-forward feature: every
+// `FeesCarryForward` row references a `FeesCarryForwardSetting` by id
+// to read the per-school threshold + enabled flag. The placeholder
+// stub above
+// (`finance_aggregate_stub! { struct FeesCarryForwardSetting { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealFeesCarryForwardSetting` for new code; the stub is kept only
+// to avoid breaking downstream code that referenced
+// `FeesCarryForwardSetting` as a type name during Phase 7.
+
+/// Per-school configuration for the fees-carry-forward feature.
+/// Two invariants: FCFA I-1 (per-school config; the typed id
+/// carries the school_id, so the aggregate is inherently
+/// school-scoped — uniqueness across schools is meaningless because
+/// the aggregate is keyed by `(school_id, uuid)`, and one-per-school
+/// is a dispatcher concern) and FCFA I-2 (threshold_minor >= 0).
+/// Full lifecycle: fresh + update_metadata + retire.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFeesCarryForwardSetting {
+    /// The typed id (school_id + uuid).
+    pub id: FeesCarryForwardSettingId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The carry-forward threshold (in minor currency units, ≥ 0 per
+    /// FCFA I-2). A threshold of 0 means "carry forward everything
+    /// above zero"; a threshold > 0 means "only carry forward
+    /// balances above the threshold".
+    pub threshold_minor: i64,
+    /// Whether the carry-forward feature is enabled for this
+    /// school. When `false`, `FeesCarryForward` rows must not be
+    /// created for this school.
+    pub enabled: bool,
+    /// Optional free-form description (e.g. "Carry forward only
+    /// balances above 100.00").
+    pub description: Option<String>,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFeesCarryForwardSetting {
+    /// Constructs a new `RealFeesCarryForwardSetting`. Enforces FCFA
+    /// I-2 (`threshold_minor >= 0`). FCFA I-1 (per-school scoping) is
+    /// inherent in the typed id — the school_id is derived from
+    /// `id.school_id()` and stored redundantly for query convenience.
+    pub fn fresh(
+        id: FeesCarryForwardSettingId,
+        threshold_minor: i64,
+        enabled: bool,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FCFA I-2: threshold must be non-negative.
+        if threshold_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesCarryForwardSetting threshold_minor must be non-negative (FCFA I-2)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            threshold_minor,
+            enabled,
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the setting is currently active (not retired).
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Updates the threshold, enabled flag, and description of the
+    /// setting. Re-validates FCFA I-2 (`threshold_minor >= 0`).
+    /// Bumps version, advances `updated_at`, sets `updated_by`.
+    pub fn update_metadata(
+        &mut self,
+        threshold_minor: i64,
+        enabled: bool,
+        description: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesCarryForwardSetting is retired; cannot update metadata",
+            ));
+        }
+        // FCFA I-2: threshold must be non-negative on update.
+        if threshold_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesCarryForwardSetting threshold_minor must be non-negative on update (FCFA I-2)",
+            ));
+        }
+        self.threshold_minor = threshold_minor;
+        self.enabled = enabled;
+        self.description = description
+            .map(|d| d.trim().to_owned())
+            .filter(|d| !d.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the setting by flipping `active_status` to
+    /// `Retired`. Bumps version, advances `updated_at`, sets
+    /// `updated_by`. Preserves FCFA I-2 (the original threshold is
+    /// preserved in the audit footer) and FCFA I-1 (the school_id is
+    /// immutable, so the per-school scope is preserved even after
+    /// retire).
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesCarryForwardSetting is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
