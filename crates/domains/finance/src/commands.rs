@@ -2906,34 +2906,73 @@ impl ReadFmFeesTypeCommand {
         vec![Capability::FinanceFeesTypeRead]
     }
 }
-// -- FmFeesInvoice (Phase 7 Workstream G) --
+// -- FmFeesInvoice (Wave 100 — RealFmFeesInvoice) --
+
+/// COMMAND_TYPE discriminator for `CreateFmFeesInvoiceCommand`.
+pub const FINANCE_FM_FEES_INVOICE_CREATE_COMMAND_TYPE: &str =
+    "finance.fm_fees_invoice.create";
+
+/// COMMAND_TYPE discriminator for `ReadFmFeesInvoiceCommand`.
+pub const FINANCE_FM_FEES_INVOICE_READ_COMMAND_TYPE: &str =
+    "finance.fm_fees_invoice.read";
+
+/// COMMAND_TYPE discriminator for `RetireFmFeesInvoiceCommand`.
+pub const FINANCE_FM_FEES_INVOICE_RETIRE_COMMAND_TYPE: &str =
+    "finance.fm_fees_invoice.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFmFeesInvoiceCommand {
     pub tenant: TenantContext,
     pub fm_fees_invoice_id: FmFeesInvoiceId,
+    pub invoice_number: String,
+    pub payer_reference: String,
+    pub amount_minor: i64, // FFI I-1
+    pub discount_minor: Option<i64>,
+    pub note: Option<String>,
 }
 
-
 impl CreateFmFeesInvoiceCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_INVOICE_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesInvoiceGenerate]
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFmFeesInvoiceCommand {
     pub tenant: TenantContext,
     pub fm_fees_invoice_id: FmFeesInvoiceId,
 }
 
-
 impl ReadFmFeesInvoiceCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_INVOICE_READ_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesInvoiceRead]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFmFeesInvoiceCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_invoice_id: FmFeesInvoiceId,
+}
+
+impl RetireFmFeesInvoiceCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_INVOICE_RETIRE_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceConfigure]
     }
 }
 // -- FmFeesInvoiceChild (Phase 7 Workstream G) --

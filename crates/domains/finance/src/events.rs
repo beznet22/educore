@@ -6662,6 +6662,123 @@ impl DomainEvent for ProductPurchaseRetired {
     }
 }
 
+// ===================================================================
+// Wave 100 — RealFmFeesInvoice events (per-aggregate wave pattern from Waves 65-99)
+// ===================================================================
+
+/// Emitted when a `RealFmFeesInvoice` is created via
+/// `RealFmFeesInvoice::fresh`. Carries `invoice_number` +
+/// `payer_reference` + `amount_minor` (FFI I-1 — >= 0) +
+/// optional `discount_minor` + optional `note`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesInvoiceCreated {
+    pub fm_fees_invoice_id: FmFeesInvoiceId,
+    pub invoice_number: String,
+    pub payer_reference: String,
+    pub amount_minor: i64, // FFI I-1
+    pub discount_minor: Option<i64>,
+    pub note: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesInvoiceCreated {
+    pub fn new(
+        fm_fees_invoice_id: FmFeesInvoiceId,
+        invoice_number: String,
+        payer_reference: String,
+        amount_minor: i64,
+        discount_minor: Option<i64>,
+        note: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_invoice_id,
+            invoice_number,
+            payer_reference,
+            amount_minor,
+            discount_minor,
+            note,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesInvoiceCreated {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_invoice.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_invoice";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_invoice_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_invoice_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesInvoice` is retired (soft-deleted via
+/// `RealFmFeesInvoice::retire`). The original `invoice_number` +
+/// `payer_reference` + `amount_minor` (FFI I-1) + `discount_minor` +
+/// `note` are preserved in the audit footer for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesInvoiceRetired {
+    pub fm_fees_invoice_id: FmFeesInvoiceId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesInvoiceRetired {
+    pub fn new(
+        fm_fees_invoice_id: FmFeesInvoiceId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_invoice_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesInvoiceRetired {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_invoice.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_invoice";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_invoice_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_invoice_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 
 #[cfg(test)]
 #[allow(

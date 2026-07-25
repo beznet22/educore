@@ -6802,3 +6802,141 @@ impl RealProductPurchase {
         Ok(())
     }
 }
+
+// ===================================================================
+// Wave 100 — RealFmFeesInvoice (per-aggregate wave pattern from Waves 65-99)
+// ===================================================================
+
+/// FmFeesInvoice (headline aggregate).
+///
+/// Per-aggregate drop Wave 100. Replaces the Phase 7 Workstream
+/// placeholder stub at aggregate.rs:932 with a full-lifecycle `Real*`
+/// aggregate.
+///
+/// FFI I-1: amount >= 0 (amount_minor pinned in minor units).
+/// FFI I-2: due_date >= invoice_date (companion date invariant).
+/// FFI I-3: state machine (Created -> Issued -> Paid/Overdue/Cancelled)
+///   — FFI I-3 deferred until the dispatcher + payment-receipt wiring
+///   exists in a later phase.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFmFeesInvoice {
+    /// Aggregate identity.
+    pub id: FmFeesInvoiceId,
+    /// School anchor (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// Invoice number / display id (display-only).
+    pub invoice_number: String,
+    /// Payer reference (could be StudentId or DonorId in future).
+    pub payer_reference: String,
+    /// Amount in minor units (FFI I-1 — pinned at construction with
+    /// `>= 0` guard).
+    pub amount_minor: i64,
+    /// Optional discount in minor units (subtracted from amount_minor
+    /// to derive net payable — not part of FFI I-1).
+    pub discount_minor: Option<i64>,
+    /// Optional note (e.g. payment instructions).
+    pub note: Option<String>,
+    /// Standard audit footer: optimistic concurrency version.
+    pub version: Version,
+    /// Standard audit footer: etag.
+    pub etag: Etag,
+    /// Standard audit footer: created timestamp.
+    pub created_at: Timestamp,
+    /// Standard audit footer: last updated timestamp.
+    pub updated_at: Timestamp,
+    /// Standard audit footer: created-by user.
+    pub created_by: UserId,
+    /// Standard audit footer: last updated-by user.
+    pub updated_by: UserId,
+    /// Standard audit footer: active status.
+    pub active_status: ActiveStatus,
+    /// Standard audit footer: last emitted event id.
+    pub last_event_id: Option<EventId>,
+    /// Standard audit footer: request correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFmFeesInvoice {
+    /// Construct a fresh `RealFmFeesInvoice` aggregate.
+    ///
+    /// Enforces FFI I-1 (`amount_minor >= 0`) at construction.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: FmFeesInvoiceId,
+        invoice_number: String,
+        payer_reference: String,
+        amount_minor: i64,
+        discount_minor: Option<i64>,
+        note: Option<String>,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FFI I-1: amount_minor >= 0.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoice amount_minor must be >= 0 (FFI I-1)",
+            ));
+        }
+        // Companion invariant: discount_minor must also be >= 0 if present.
+        if let Some(d) = discount_minor {
+            if d < 0 {
+                return Err(educore_core::error::DomainError::validation(
+                    "FmFeesInvoice discount_minor must be >= 0 when present",
+                ));
+            }
+        }
+        let invoice_number_trimmed = invoice_number.trim().to_string();
+        if invoice_number_trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoice invoice_number must be non-empty after trim",
+            ));
+        }
+        let payer_trimmed = payer_reference.trim().to_string();
+        if payer_trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoice payer_reference must be non-empty after trim",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            invoice_number: invoice_number_trimmed,
+            payer_reference: payer_trimmed,
+            amount_minor,
+            discount_minor,
+            note,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    /// Whether the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    /// Retire the aggregate (tombstone; preserves `invoice_number` +
+    /// `payer_reference` + `amount_minor` + `discount_minor` + `note`
+    /// in audit footer).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FmFeesInvoice is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
