@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -59,6 +59,7 @@ use crate::commands::{
     CreateProductPurchaseCommand, ReadProductPurchaseCommand, RetireProductPurchaseCommand,
     CreateFmFeesInvoiceCommand, ReadFmFeesInvoiceCommand, RetireFmFeesInvoiceCommand,
     CreateFmFeesInvoiceChildCommand, ReadFmFeesInvoiceChildCommand, RetireFmFeesInvoiceChildCommand,
+    CreateDirectFeesInstallmentAssignCommand, ReadDirectFeesInstallmentAssignCommand, RetireDirectFeesInstallmentAssignCommand,
     CreatePayrollPaymentApprovalCommand,
     RejectExpenseApprovalCommand, RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
     UpdateBankStatementCommand, ReverseBankStatementCommand, RetireBankStatementCommand,
@@ -94,6 +95,7 @@ use crate::events::{
         ProductPurchaseCreated, ProductPurchaseRetired,
         FmFeesInvoiceCreated, FmFeesInvoiceRetired,
         FmFeesInvoiceChildCreated, FmFeesInvoiceChildRetired,
+        DirectFeesInstallmentAssignCreated, DirectFeesInstallmentAssignRetired,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
@@ -4936,6 +4938,94 @@ where
     let evt_id = ids.next_event_id();
     Ok(FmFeesInvoiceChildRetired::new(
         cmd.fm_fees_invoice_child_id,
+        cmd.tenant.actor_id,
+        evt_id,
+        cmd.tenant.correlation_id,
+        at,
+    ))
+}
+
+// ===================================================================
+// Wave 103 — RealDirectFeesInstallmentAssign service functions (per-aggregate wave pattern from Waves 65-101)
+// ===================================================================
+
+/// Service function: create a new `RealDirectFeesInstallmentAssign` aggregate.
+///
+/// Enforces DFIA I-2 (`amount_minor >= 0`) + DFIA I-3 (`balance_minor >= 0`)
+/// at construction. Emits `DirectFeesInstallmentAssignCreated` downstream.
+#[allow(clippy::too_many_arguments, clippy::needless_pass_by_value)]
+pub fn create_direct_fees_installment_assign<C, G>(
+    cmd: CreateDirectFeesInstallmentAssignCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<DirectFeesInstallmentAssignCreated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let evt_id = ids.next_event_id();
+    let agg = RealDirectFeesInstallmentAssign::fresh(
+        cmd.direct_fees_installment_assign_id,
+        cmd.student_id,
+        cmd.installment_id,
+        cmd.amount_minor,
+        cmd.balance_minor,
+        cmd.tenant.actor_id,
+        at,
+        cmd.tenant.correlation_id,
+    )?;
+    Ok(DirectFeesInstallmentAssignCreated::new(
+        agg.id,
+        agg.student_id,
+        agg.installment_id,
+        agg.amount_minor,
+        agg.balance_minor,
+        cmd.tenant.actor_id,
+        evt_id,
+        cmd.tenant.correlation_id,
+        at,
+    ))
+}
+
+/// Service function: read a `RealDirectFeesInstallmentAssign` aggregate.
+///
+/// Currently a no-op stub (read-only aggregate lookup is a dispatcher
+/// concern). Emits nothing.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_direct_fees_installment_assign<C, G>(
+    cmd: ReadDirectFeesInstallmentAssignCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Service function: retire a `RealDirectFeesInstallmentAssign` aggregate.
+///
+/// Tombstone — preserves the scope-key tuple `(student_id,
+/// installment_id)` + `amount_minor` (DFIA I-2) + `balance_minor`
+/// (DFIA I-3) in the audit footer for legal-record retention. Emits
+/// `DirectFeesInstallmentAssignRetired` downstream.
+#[allow(clippy::needless_pass_by_value)]
+pub fn retire_direct_fees_installment_assign<C, G>(
+    cmd: RetireDirectFeesInstallmentAssignCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<DirectFeesInstallmentAssignRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let evt_id = ids.next_event_id();
+    Ok(DirectFeesInstallmentAssignRetired::new(
+        cmd.direct_fees_installment_assign_id,
         cmd.tenant.actor_id,
         evt_id,
         cmd.tenant.correlation_id,

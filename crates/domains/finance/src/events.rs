@@ -6890,6 +6890,121 @@ impl DomainEvent for FmFeesInvoiceChildRetired {
     }
 }
 
+// ===================================================================
+// Wave 103 — RealDirectFeesInstallmentAssign events (per-aggregate wave pattern from Waves 65-101)
+// ===================================================================
+
+/// Emitted when a `RealDirectFeesInstallmentAssign` is created via
+/// `RealDirectFeesInstallmentAssign::fresh`. Carries the scope-key
+/// tuple `(student_id, installment_id)` (DFIA I-1) + `amount_minor`
+/// (DFIA I-2) + `balance_minor` (DFIA I-3).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesInstallmentAssignCreated {
+    pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
+    pub student_id: StudentId,
+    pub installment_id: DirectFeesInstallmentId,
+    pub amount_minor: i64,   // DFIA I-2
+    pub balance_minor: i64,  // DFIA I-3
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesInstallmentAssignCreated {
+    pub fn new(
+        direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
+        student_id: StudentId,
+        installment_id: DirectFeesInstallmentId,
+        amount_minor: i64,
+        balance_minor: i64,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            direct_fees_installment_assign_id,
+            student_id,
+            installment_id,
+            amount_minor,
+            balance_minor,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesInstallmentAssignCreated {
+    const EVENT_TYPE: &'static str = "finance.direct_fees_installment_assign.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_installment_assign";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.direct_fees_installment_assign_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.direct_fees_installment_assign_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealDirectFeesInstallmentAssign` is retired
+/// (soft-deleted via `RealDirectFeesInstallmentAssign::retire`). The
+/// original scope-key tuple + `amount_minor` (DFIA I-2) +
+/// `balance_minor` (DFIA I-3) are preserved in the audit footer for
+/// legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesInstallmentAssignRetired {
+    pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesInstallmentAssignRetired {
+    pub fn new(
+        direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            direct_fees_installment_assign_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesInstallmentAssignRetired {
+    const EVENT_TYPE: &'static str = "finance.direct_fees_installment_assign.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_installment_assign";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.direct_fees_installment_assign_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.direct_fees_installment_assign_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 
 #[cfg(test)]
 #[allow(

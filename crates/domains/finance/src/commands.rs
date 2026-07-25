@@ -727,31 +727,69 @@ impl ReadDirectFeesInstallmentCommand {
 }
 // -- DirectFeesInstallmentAssign (per-student linkage) --
 
+
+// -- DirectFeesInstallmentAssign (Wave 103 — RealDirectFeesInstallmentAssign) --
+
+/// COMMAND_TYPE discriminator for `CreateDirectFeesInstallmentAssignCommand`.
+pub const FINANCE_DIRECT_FEES_INSTALLMENT_ASSIGN_CREATE_COMMAND_TYPE: &str =
+    "finance.direct_fees_installment_assign.create";
+
+/// COMMAND_TYPE discriminator for `ReadDirectFeesInstallmentAssignCommand`.
+pub const FINANCE_DIRECT_FEES_INSTALLMENT_ASSIGN_READ_COMMAND_TYPE: &str =
+    "finance.direct_fees_installment_assign.read";
+
+/// COMMAND_TYPE discriminator for `RetireDirectFeesInstallmentAssignCommand`.
+pub const FINANCE_DIRECT_FEES_INSTALLMENT_ASSIGN_RETIRE_COMMAND_TYPE: &str =
+    "finance.direct_fees_installment_assign.retire";
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateDirectFeesInstallmentAssignCommand {
     pub tenant: TenantContext,
-    pub direct_fees_installment_id: DirectFeesInstallmentId,
-    pub student_id: educore_academic::StudentId,
-    pub amount_minor: i64,
-    pub currency: Currency,
+    pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
+    pub student_id: StudentId,
+    pub installment_id: DirectFeesInstallmentId,
+    pub amount_minor: i64, // DFIA I-2
+    pub balance_minor: i64, // DFIA I-3
 }
 
-
 impl CreateDirectFeesInstallmentAssignCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_DIRECT_FEES_INSTALLMENT_ASSIGN_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceDirectFeesInstallmentCreate]
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DeleteDirectFeesInstallmentAssignCommand {
+pub struct ReadDirectFeesInstallmentAssignCommand {
     pub tenant: TenantContext,
     pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
 }
 
+impl ReadDirectFeesInstallmentAssignCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_DIRECT_FEES_INSTALLMENT_ASSIGN_READ_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDirectFeesInstallmentCreate]
+    }
+}
 
-impl DeleteDirectFeesInstallmentAssignCommand {
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireDirectFeesInstallmentAssignCommand {
+    pub tenant: TenantContext,
+    pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
+}
+
+impl RetireDirectFeesInstallmentAssignCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_DIRECT_FEES_INSTALLMENT_ASSIGN_RETIRE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
