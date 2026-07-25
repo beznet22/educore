@@ -35,6 +35,7 @@ use crate::value_objects::{
     FeesInstallmentId,
     FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
     FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId,
+    FmFeesWeaverId,
     FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
     IncomeId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId,
     PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, SalaryTemplateId, WalletId,
@@ -6096,6 +6097,115 @@ impl DomainEvent for FmFeesInvoiceSettingRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.fm_fees_invoice_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+
+
+// ===================================================================
+// Wave 95 — RealFmFeesWeaver events (per-aggregate wave pattern from Waves 65-94)
+// ===================================================================
+
+/// Emitted when a `RealFmFeesWeaver` is created via
+/// `RealFmFeesWeaver::fresh`. Carries `name` + `percentage`
+/// (FFW I-1: `percentage` ∈ [0, 100]).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesWeaverCreated {
+    pub fm_fees_weaver_id: FmFeesWeaverId,
+    pub name: String,
+    pub percentage: i64, // FFW I-1
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesWeaverCreated {
+    pub fn new(
+        fm_fees_weaver_id: FmFeesWeaverId,
+        name: String,
+        percentage: i64,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_weaver_id,
+            name,
+            percentage,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesWeaverCreated {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_weaver.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_weaver";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_weaver_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_weaver_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesWeaver` is retired (soft-deleted via
+/// `RealFmFeesWeaver::retire`). The original `name` + `percentage`
+/// (FFW I-1) are preserved in the audit footer for legal-record
+/// retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesWeaverRetired {
+    pub fm_fees_weaver_id: FmFeesWeaverId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesWeaverRetired {
+    pub fn new(
+        fm_fees_weaver_id: FmFeesWeaverId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_weaver_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesWeaverRetired {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_weaver.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_weaver";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_weaver_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_weaver_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

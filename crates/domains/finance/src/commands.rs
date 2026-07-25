@@ -3043,34 +3043,70 @@ impl ReadFmFeesTransactionChildCommand {
         vec![Capability::FinanceInvoiceRead]
     }
 }
-// -- FmFeesWeaver (Phase 7 Workstream G) --
+// -- FmFeesWeaver (Wave 95 — RealFmFeesWeaver) --
+
+/// COMMAND_TYPE discriminator for `CreateFmFeesWeaverCommand`.
+pub const FINANCE_FM_FEES_WEAVER_CREATE_COMMAND_TYPE: &str =
+    "finance.fm_fees_weaver.create";
+
+/// COMMAND_TYPE discriminator for `ReadFmFeesWeaverCommand`.
+pub const FINANCE_FM_FEES_WEAVER_READ_COMMAND_TYPE: &str =
+    "finance.fm_fees_weaver.read";
+
+/// COMMAND_TYPE discriminator for `RetireFmFeesWeaverCommand`.
+pub const FINANCE_FM_FEES_WEAVER_RETIRE_COMMAND_TYPE: &str =
+    "finance.fm_fees_weaver.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFmFeesWeaverCommand {
     pub tenant: TenantContext,
     pub fm_fees_weaver_id: FmFeesWeaverId,
+    pub name: String,
+    pub percentage: i64, // FFW I-1: must be in [0, 100]
 }
 
-
 impl CreateFmFeesWeaverCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_WEAVER_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceInvoiceRead]
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFmFeesWeaverCommand {
     pub tenant: TenantContext,
     pub fm_fees_weaver_id: FmFeesWeaverId,
 }
 
-
 impl ReadFmFeesWeaverCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_WEAVER_READ_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceInvoiceRead]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFmFeesWeaverCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_weaver_id: FmFeesWeaverId,
+}
+
+impl RetireFmFeesWeaverCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_WEAVER_RETIRE_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceConfigure]
     }
 }
 // -- FeesInvoiceSetting (Phase 7 Workstream B) --

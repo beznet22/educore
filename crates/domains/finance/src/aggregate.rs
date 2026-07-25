@@ -6252,3 +6252,110 @@ impl RealFmFeesInvoiceSetting {
         Ok(())
     }
 }
+
+
+// ===================================================================
+// Wave 95 — RealFmFeesWeaver (per-aggregate wave pattern from Waves 65-94)
+// ===================================================================
+
+/// FmFeesWeaver (headline aggregate).
+///
+/// Per-aggregate drop Wave 95. Replaces the Phase 7 Workstream G
+/// placeholder stub at aggregate.rs:950-951 with a full-lifecycle
+/// `Real*` aggregate.
+///
+/// FFW I-1: percentage ∈ [0, 100] (integer percentage points; 0 and
+/// 100 are valid boundaries).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFmFeesWeaver {
+    /// Aggregate identity.
+    pub id: FmFeesWeaverId,
+    /// School anchor (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// Weaver name (display-only).
+    pub name: String,
+    /// Percentage 0..=100 (FFW I-1).
+    pub percentage: i64,
+    /// Standard audit footer: optimistic concurrency version.
+    pub version: Version,
+    /// Standard audit footer: etag.
+    pub etag: Etag,
+    /// Standard audit footer: created timestamp.
+    pub created_at: Timestamp,
+    /// Standard audit footer: last updated timestamp.
+    pub updated_at: Timestamp,
+    /// Standard audit footer: created-by user.
+    pub created_by: UserId,
+    /// Standard audit footer: last updated-by user.
+    pub updated_by: UserId,
+    /// Standard audit footer: active status.
+    pub active_status: ActiveStatus,
+    /// Standard audit footer: last emitted event id.
+    pub last_event_id: Option<EventId>,
+    /// Standard audit footer: request correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFmFeesWeaver {
+    /// Construct a fresh `RealFmFeesWeaver` aggregate.
+    ///
+    /// Enforces FFW I-1 (`percentage ∈ [0, 100]`) at construction.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: FmFeesWeaverId,
+        name: String,
+        percentage: i64,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FFW I-1: percentage in [0, 100].
+        if percentage < 0 || percentage > 100 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesWeaver percentage must be in [0, 100] (FFW I-1)",
+            ));
+        }
+        let name_trimmed = name.trim().to_string();
+        if name_trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesWeaver name must be non-empty after trim",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            name: name_trimmed,
+            percentage,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    /// Whether the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    /// Retire the aggregate (tombstone; preserves `name` + `percentage`
+    /// for legal-record retention).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FmFeesWeaver is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
