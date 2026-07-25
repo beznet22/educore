@@ -2975,34 +2975,71 @@ impl RetireFmFeesInvoiceCommand {
         vec![Capability::FinanceFeesInvoiceConfigure]
     }
 }
-// -- FmFeesInvoiceChild (Phase 7 Workstream G) --
+// -- FmFeesInvoiceChild (Wave 101 — RealFmFeesInvoiceChild) --
+
+/// COMMAND_TYPE discriminator for `CreateFmFeesInvoiceChildCommand`.
+pub const FINANCE_FM_FEES_INVOICE_CHILD_CREATE_COMMAND_TYPE: &str =
+    "finance.fm_fees_invoice_child.create";
+
+/// COMMAND_TYPE discriminator for `ReadFmFeesInvoiceChildCommand`.
+pub const FINANCE_FM_FEES_INVOICE_CHILD_READ_COMMAND_TYPE: &str =
+    "finance.fm_fees_invoice_child.read";
+
+/// COMMAND_TYPE discriminator for `RetireFmFeesInvoiceChildCommand`.
+pub const FINANCE_FM_FEES_INVOICE_CHILD_RETIRE_COMMAND_TYPE: &str =
+    "finance.fm_fees_invoice_child.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFmFeesInvoiceChildCommand {
     pub tenant: TenantContext,
     pub fm_fees_invoice_child_id: FmFeesInvoiceChildId,
+    pub invoice_id: FmFeesInvoiceId,
+    pub description: String,
+    pub amount_minor: i64, // FFIChild I-1
 }
 
-
 impl CreateFmFeesInvoiceChildCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_INVOICE_CHILD_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesInvoiceGenerate]
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFmFeesInvoiceChildCommand {
     pub tenant: TenantContext,
     pub fm_fees_invoice_child_id: FmFeesInvoiceChildId,
 }
 
-
 impl ReadFmFeesInvoiceChildCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_INVOICE_CHILD_READ_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesInvoiceRead]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFmFeesInvoiceChildCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_invoice_child_id: FmFeesInvoiceChildId,
+}
+
+impl RetireFmFeesInvoiceChildCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_INVOICE_CHILD_RETIRE_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceConfigure]
     }
 }
 // -- FmFeesInvoiceSetting (Wave 94 — RealFmFeesInvoiceSetting) --

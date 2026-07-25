@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -58,6 +58,7 @@ use crate::commands::{
     CreateInventoryPaymentCommand, ReadInventoryPaymentCommand, RetireInventoryPaymentCommand,
     CreateProductPurchaseCommand, ReadProductPurchaseCommand, RetireProductPurchaseCommand,
     CreateFmFeesInvoiceCommand, ReadFmFeesInvoiceCommand, RetireFmFeesInvoiceCommand,
+    CreateFmFeesInvoiceChildCommand, ReadFmFeesInvoiceChildCommand, RetireFmFeesInvoiceChildCommand,
     CreatePayrollPaymentApprovalCommand,
     RejectExpenseApprovalCommand, RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
     UpdateBankStatementCommand, ReverseBankStatementCommand, RetireBankStatementCommand,
@@ -73,14 +74,14 @@ use crate::commands::{
     CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
-    CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
+    CreateFmFeesGroupCommand,
     CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
     CreateIncomeHeadCommand,
     CreateInvoiceSettingCommand, CreateQuestionBankFeeCommand,
     CreateTransactionCommand,
     ReadDirectFeesInstallmentChildPaymentCommand, ReadDonorCommand,
     ReadFeesAssignDiscountCommand,
-    ReadFmFeesGroupCommand, ReadFmFeesInvoiceChildCommand,
+    ReadFmFeesGroupCommand,
     ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
     ReadTransactionCommand,
@@ -92,6 +93,7 @@ use crate::events::{
         InventoryPaymentCreated, InventoryPaymentRetired,
         ProductPurchaseCreated, ProductPurchaseRetired,
         FmFeesInvoiceCreated, FmFeesInvoiceRetired,
+        FmFeesInvoiceChildCreated, FmFeesInvoiceChildRetired,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
@@ -2561,38 +2563,6 @@ where
 
 // Wave 100 FmFeesInvoice service functions appended below at the end of the file (before #[cfg(test)]).
 
-/// Handler skeleton: create an `FmFeesInvoiceChild` aggregate.
-/// Full implementation lands in Phase 7 Workstream G.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn create_fm_fees_invoice_child<C, G>(
-    cmd: CreateFmFeesInvoiceChildCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let _ = (cmd, clock, ids);
-    Ok(())
-}
-
-/// Handler skeleton: read an `FmFeesInvoiceChild` aggregate.
-/// Full implementation lands in Phase 7 Workstream G.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_fm_fees_invoice_child<C, G>(
-    cmd: ReadFmFeesInvoiceChildCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let _ = (cmd, clock, ids);
-    Ok(())
-}
-
 /// Handler skeleton: create an `FmFeesTransaction` aggregate.
 /// Full implementation lands in Phase 7 Workstream G.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
@@ -4881,6 +4851,91 @@ where
     let evt_id = ids.next_event_id();
     Ok(FmFeesInvoiceRetired::new(
         cmd.fm_fees_invoice_id,
+        cmd.tenant.actor_id,
+        evt_id,
+        cmd.tenant.correlation_id,
+        at,
+    ))
+}
+
+// ===================================================================
+// Wave 101 — RealFmFeesInvoiceChild service functions (per-aggregate wave pattern from Waves 65-100)
+// ===================================================================
+
+/// Service function: create a new `RealFmFeesInvoiceChild` aggregate.
+///
+/// Enforces FFIChild I-1 (`amount_minor >= 0`) at construction.
+/// Emits `FmFeesInvoiceChildCreated` downstream.
+#[allow(clippy::too_many_arguments, clippy::needless_pass_by_value)]
+pub fn create_fm_fees_invoice_child<C, G>(
+    cmd: CreateFmFeesInvoiceChildCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<FmFeesInvoiceChildCreated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let evt_id = ids.next_event_id();
+    let agg = RealFmFeesInvoiceChild::fresh(
+        cmd.fm_fees_invoice_child_id,
+        cmd.invoice_id,
+        cmd.description,
+        cmd.amount_minor,
+        cmd.tenant.actor_id,
+        at,
+        cmd.tenant.correlation_id,
+    )?;
+    Ok(FmFeesInvoiceChildCreated::new(
+        agg.id,
+        agg.invoice_id,
+        agg.description,
+        agg.amount_minor,
+        cmd.tenant.actor_id,
+        evt_id,
+        cmd.tenant.correlation_id,
+        at,
+    ))
+}
+
+/// Service function: read a `RealFmFeesInvoiceChild` aggregate.
+///
+/// Currently a no-op stub (read-only aggregate lookup is a dispatcher
+/// concern). Emits nothing.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_fm_fees_invoice_child<C, G>(
+    cmd: ReadFmFeesInvoiceChildCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Service function: retire a `RealFmFeesInvoiceChild` aggregate.
+///
+/// Tombstone — preserves `invoice_id` + `description` + `amount_minor`
+/// (FFIChild I-1) in the audit footer for legal-record retention.
+/// Emits `FmFeesInvoiceChildRetired` downstream.
+#[allow(clippy::needless_pass_by_value)]
+pub fn retire_fm_fees_invoice_child<C, G>(
+    cmd: RetireFmFeesInvoiceChildCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<FmFeesInvoiceChildRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let evt_id = ids.next_event_id();
+    Ok(FmFeesInvoiceChildRetired::new(
+        cmd.fm_fees_invoice_child_id,
         cmd.tenant.actor_id,
         evt_id,
         cmd.tenant.correlation_id,

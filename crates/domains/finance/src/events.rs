@@ -37,7 +37,7 @@ use crate::value_objects::{
     FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId,
     FmFeesWeaverId,
     FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
-    IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId, ProductPurchaseId,
+    IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId, ProductPurchaseId, FmFeesInvoiceChildId,
     PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, SalaryTemplateId, WalletId,
     WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
@@ -6773,6 +6773,117 @@ impl DomainEvent for FmFeesInvoiceRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.fm_fees_invoice_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// ===================================================================
+// Wave 101 — RealFmFeesInvoiceChild events (per-aggregate wave pattern from Waves 65-100)
+// ===================================================================
+
+/// Emitted when a `RealFmFeesInvoiceChild` is created via
+/// `RealFmFeesInvoiceChild::fresh`. Carries `invoice_id`
+/// (scope-key FmFeesInvoiceId) + `description` + `amount_minor`
+/// (FFIChild I-1 — >= 0).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesInvoiceChildCreated {
+    pub fm_fees_invoice_child_id: FmFeesInvoiceChildId,
+    pub invoice_id: FmFeesInvoiceId,
+    pub description: String,
+    pub amount_minor: i64, // FFIChild I-1
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesInvoiceChildCreated {
+    pub fn new(
+        fm_fees_invoice_child_id: FmFeesInvoiceChildId,
+        invoice_id: FmFeesInvoiceId,
+        description: String,
+        amount_minor: i64,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_invoice_child_id,
+            invoice_id,
+            description,
+            amount_minor,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesInvoiceChildCreated {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_invoice_child.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_invoice_child";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_invoice_child_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_invoice_child_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesInvoiceChild` is retired (soft-deleted via
+/// `RealFmFeesInvoiceChild::retire`). The original `invoice_id` +
+/// `description` + `amount_minor` (FFIChild I-1) are preserved in the
+/// audit footer for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesInvoiceChildRetired {
+    pub fm_fees_invoice_child_id: FmFeesInvoiceChildId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesInvoiceChildRetired {
+    pub fn new(
+        fm_fees_invoice_child_id: FmFeesInvoiceChildId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_invoice_child_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesInvoiceChildRetired {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_invoice_child.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_invoice_child";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_invoice_child_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_invoice_child_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

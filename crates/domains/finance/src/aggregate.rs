@@ -6940,3 +6940,116 @@ impl RealFmFeesInvoice {
         Ok(())
     }
 }
+
+// ===================================================================
+// Wave 101 — RealFmFeesInvoiceChild (per-aggregate wave pattern from Waves 65-100)
+// ===================================================================
+
+/// FmFeesInvoiceChild (headline aggregate).
+///
+/// Per-aggregate drop Wave 101. Replaces the Phase 7 Workstream
+/// placeholder stub at aggregate.rs:936 with a full-lifecycle `Real*`
+/// aggregate.
+///
+/// FFIChild I-1: amount >= 0 (amount_minor pinned in minor units).
+/// FFIChild I-2 + I-3 deferred (sub_total composition + paid_amount
+///   cap require parent FmFeesInvoice + payment-receipt wiring that
+///   does not exist in a later phase).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFmFeesInvoiceChild {
+    /// Aggregate identity.
+    pub id: FmFeesInvoiceChildId,
+    /// School anchor (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// Parent invoice reference (scope-key FmFeesInvoiceId).
+    pub invoice_id: FmFeesInvoiceId,
+    /// Line item description (display-only).
+    pub description: String,
+    /// Line item amount in minor units (FFIChild I-1 — pinned at
+    /// construction with `>= 0` guard).
+    pub amount_minor: i64,
+    /// Standard audit footer: optimistic concurrency version.
+    pub version: Version,
+    /// Standard audit footer: etag.
+    pub etag: Etag,
+    /// Standard audit footer: created timestamp.
+    pub created_at: Timestamp,
+    /// Standard audit footer: last updated timestamp.
+    pub updated_at: Timestamp,
+    /// Standard audit footer: created-by user.
+    pub created_by: UserId,
+    /// Standard audit footer: last updated-by user.
+    pub updated_by: UserId,
+    /// Standard audit footer: active status.
+    pub active_status: ActiveStatus,
+    /// Standard audit footer: last emitted event id.
+    pub last_event_id: Option<EventId>,
+    /// Standard audit footer: request correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFmFeesInvoiceChild {
+    /// Construct a fresh `RealFmFeesInvoiceChild` aggregate.
+    ///
+    /// Enforces FFIChild I-1 (`amount_minor >= 0`) at construction.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: FmFeesInvoiceChildId,
+        invoice_id: FmFeesInvoiceId,
+        description: String,
+        amount_minor: i64,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FFIChild I-1: amount_minor >= 0.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceChild amount_minor must be >= 0 (FFIChild I-1)",
+            ));
+        }
+        let description_trimmed = description.trim().to_string();
+        if description_trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceChild description must be non-empty after trim",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            invoice_id,
+            description: description_trimmed,
+            amount_minor,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    /// Whether the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    /// Retire the aggregate (tombstone; preserves `invoice_id` +
+    /// `description` + `amount_minor` in audit footer).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FmFeesInvoiceChild is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
