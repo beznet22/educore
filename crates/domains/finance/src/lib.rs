@@ -51,7 +51,7 @@ pub mod prelude {
         RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting,
         RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild,
         RealFmFeesTransactionLineNote, RealIncomeApproval, RealIncomeHead, RealInvoiceSetting,
-        RealBankPaymentSlipAudit, RealBankStatement, RealQuestionBankFee, RealSalaryTemplate, Wallet, WalletTransaction,
+        RealBankPaymentSlipAudit, RealBankStatement, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::{
@@ -68,6 +68,7 @@ pub mod prelude {
         CreateBankPaymentSlipAuditCommand,
     CreateBankStatementAttachmentCommand,
     CreateBankStatementCommand,
+    CreateFeesDiscountCommand,
         ConfigureInvoiceNumberingCommand, CreateChartOfAccountCommand,
         CreateSalaryTemplateCommand,
         CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesSettingCommand,
@@ -107,6 +108,7 @@ pub mod prelude {
         BankPaymentSlipAuditCreated, BankPaymentSlipAuditRetired,
         BankStatementAttachmentCreated, BankStatementAttachmentRetired,
         BankStatementCreated, BankStatementReversed, BankStatementRetired, BankStatementUpdated,
+        FeesDiscountCreated, FeesDiscountRetired, FeesDiscountUpdated,
         FeesCarryForwardSettingRetired, FeesCarryForwardSettingUpdated, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
         FmFeesInvoiceLineNoteRetired, FmFeesTransactionChildCreated,
         FmFeesTransactionChildRetired, FmFeesTransactionChildUpdated,
@@ -124,7 +126,7 @@ pub mod prelude {
         approve_wallet_transaction, approve_wallet_transaction_approval,
         configure_invoice_numbering, create_chart_of_account,
         create_direct_fees_installment_assign_child, create_direct_fees_setting,
-        create_bank_payment_slip_audit, create_bank_statement, create_bank_statement_attachment, create_donor, create_expense_approval, create_fees_carry_forward_log, create_fees_carry_forward_setting,
+        create_bank_payment_slip_audit, create_bank_statement, create_bank_statement_attachment, create_donor, create_expense_approval, create_fees_carry_forward_log, create_fees_carry_forward_setting, create_fees_discount,
         create_fm_fees_group, create_income_approval, create_payroll_payment_approval,
         create_salary_template,
         create_fm_fees_invoice_line_note, create_fm_fees_transaction_child,

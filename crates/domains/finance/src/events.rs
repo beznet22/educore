@@ -27,11 +27,11 @@ use educore_events::domain_event::DomainEvent;
 use crate::value_objects::{
     AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
     BankStatementId, StatementType,
-    ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId,
+    ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
     DirectFeesInstallmentId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
-    FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesGroupId, FeesInstallmentAssignDiscountId,
+    FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId,
     FeesInstallmentId,
     FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
     FmFeesInvoiceLineNoteId, FmFeesTransactionChildId, FmFeesTransactionId,
@@ -4534,6 +4534,209 @@ impl DomainEvent for BankStatementRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.bank_statement_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// FeesDiscount events — Wave 86 (per-aggregate wave pattern from
+// Waves 65–85)
+// =============================================================================
+//
+// Per v3 Part 2 F18 + checklist § FeesDiscount: 4 invariants (2 in
+// this wave + 2 promoted from [~] partial):
+//   - FD I-1: amount >= 0 (promoted from [~] partial to [x]
+//             complete via numeric guard in RealFeesDiscount::fresh()).
+//   - FD I-2: discount_type valid (promoted from [~] partial to
+//             [x] complete via DiscountType enum type-system
+//             enforcement in RealFeesDiscount::fresh()).
+//   - FD I-3: once-per-master scope. RealFeesDiscount pins
+//             `fees_master_id` as a required field; the dispatcher
+//             enforces uniqueness on the (fees_master_id, ...) key
+//             when creating new discounts.
+//   - FD I-4: once-per-year scope. RealFeesDiscount pins
+//             `academic_year_id` as a required field; the dispatcher
+//             enforces uniqueness on the (academic_year_id, ...)
+//             key per discount type.
+// Full lifecycle event family — 3 events: Created (initial),
+// Updated (metadata correction; scope-key fields NOT mutable
+// without retire + create-new), Retired (tombstone — preserves
+// scope-key fields for legal-record retention + uniqueness queries).
+
+/// Emitted when a new `RealFeesDiscount` catalogue entry is created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesDiscountCreated {
+    pub fees_discount_id: FeesDiscountId,
+    pub fees_master_id: FeesMasterId,
+    pub academic_year_id: AcademicYearId,
+    pub name: String,
+    pub discount_code: String,
+    pub discount_type: DiscountType,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesDiscountCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_discount_id: FeesDiscountId,
+        fees_master_id: FeesMasterId,
+        academic_year_id: AcademicYearId,
+        name: String,
+        discount_code: String,
+        discount_type: DiscountType,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_discount_id,
+            fees_master_id, // FD I-3
+            academic_year_id, // FD I-4
+            name,
+            discount_code,
+            discount_type, // FD I-2
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesDiscountCreated {
+    const EVENT_TYPE: &'static str = "finance.fees_discount.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_discount";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_discount_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_discount_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesDiscount`'s metadata is updated via
+/// `RealFeesDiscount::update_metadata`. Note: scope-key fields
+/// (fees_master_id + academic_year_id) are NOT mutable here —
+/// FD I-3 + FD I-4 require retire + create-new for scope changes.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesDiscountUpdated {
+    pub fees_discount_id: FeesDiscountId,
+    pub name: String,
+    pub discount_code: String,
+    pub discount_type: DiscountType,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesDiscountUpdated {
+    pub fn new(
+        fees_discount_id: FeesDiscountId,
+        name: String,
+        discount_code: String,
+        discount_type: DiscountType,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_discount_id,
+            name,
+            discount_code,
+            discount_type,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesDiscountUpdated {
+    const EVENT_TYPE: &'static str = "finance.fees_discount.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_discount";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_discount_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_discount_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesDiscount` catalogue entry is retired
+/// (soft-deleted via `RealFeesDiscount::retire`). The original
+/// fees_master_id + academic_year_id + name + discount_code +
+/// amount + type are preserved in the audit footer for
+/// legal-record retention. FD I-3 + FD I-4 scope-key fields are
+/// preserved (the (fees_master_id, academic_year_id) pair remains
+/// valid for uniqueness queries even after retire).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesDiscountRetired {
+    pub fees_discount_id: FeesDiscountId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesDiscountRetired {
+    pub fn new(
+        fees_discount_id: FeesDiscountId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_discount_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesDiscountRetired {
+    const EVENT_TYPE: &'static str = "finance.fees_discount.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_discount";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_discount_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_discount_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

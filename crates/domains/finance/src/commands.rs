@@ -41,6 +41,7 @@ use crate::value_objects::{
     IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId,
     PaymentMethodId, PaymentMethodKind, PayrollPaymentId, PreventReason, ProductPurchaseId,
     SalaryTemplateId, StatementType, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId,
+    DiscountType,
     WalletTxType,
 };
 
@@ -480,10 +481,12 @@ impl ReadFeesMasterCommand {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFeesDiscountCommand {
     pub tenant: TenantContext,
+    pub fees_discount_id: FeesDiscountId,
+    pub fees_master_id: FeesMasterId,
+    pub academic_year_id: AcademicYearId,
     pub name: String,
     pub discount_code: String,
-    pub amount_minor: i64,
-    pub currency: Currency,
+    pub discount_type: DiscountType,
     pub description: Option<String>,
 }
 
@@ -500,7 +503,8 @@ pub struct UpdateFeesDiscountCommand {
     pub tenant: TenantContext,
     pub fees_discount_id: FeesDiscountId,
     pub name: Option<String>,
-    pub amount_minor: Option<i64>,
+    pub discount_code: Option<String>,
+    pub discount_type: Option<DiscountType>,
     pub description: Option<String>,
 }
 

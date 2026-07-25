@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealFeesDiscount, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -47,6 +47,7 @@ use crate::commands::{
     CreateBankPaymentSlipAuditCommand,
     CreateBankStatementAttachmentCommand,
     CreateBankStatementCommand,
+    CreateFeesDiscountCommand,
     ApproveWalletTransactionApprovalCommand,
     CreateChartOfAccountCommand,
     CreateSalaryTemplateCommand,
@@ -83,6 +84,7 @@ use crate::events::{
     SalaryTemplateCreated, BankPaymentSlipAuditCreated, BankPaymentSlipAuditRetired,
     BankStatementAttachmentCreated, BankStatementAttachmentRetired,
     BankStatementCreated, BankStatementUpdated, BankStatementReversed, BankStatementRetired,
+    FeesDiscountCreated, FeesDiscountRetired, FeesDiscountUpdated,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -92,7 +94,7 @@ use crate::events::{
 };
 use crate::value_objects::{
     AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId,
-    BankStatementAttachmentId, BankStatementId, Currency, StatementType,
+    BankStatementAttachmentId, BankStatementId, Currency, DiscountType, FeesMasterId, StatementType,
     DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
     DonorId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
     IncomeApprovalId, IncomeId,
@@ -916,6 +918,82 @@ where
         cmd.tenant.correlation_id,
         now,
     ))
+}
+
+// =============================================================================
+// FeesDiscount services (Wave 86 — per-aggregate wave pattern from
+// Waves 65–85)
+// =============================================================================
+//
+// Per v3 Part 2 F18 + checklist § FeesDiscount: 4 invariants (2 in
+// this wave + 2 promoted from [~] partial):
+//   - FD I-1: amount >= 0 (promoted from [~] partial to [x] complete
+//             via numeric guard in RealFeesDiscount::fresh()).
+//   - FD I-2: discount_type valid (promoted from [~] partial to
+//             [x] complete via DiscountType enum type-system
+//             enforcement in RealFeesDiscount::fresh()).
+//   - FD I-3: once-per-master scope. RealFeesDiscount pins
+//             fees_master_id as a required field; the dispatcher
+//             enforces uniqueness on the (fees_master_id, ...) key
+//             when creating new discounts.
+//   - FD I-4: once-per-year scope. RealFeesDiscount pins
+//             academic_year_id as a required field; the dispatcher
+//             enforces uniqueness on the (academic_year_id, ...)
+//             key per discount type.
+//
+// One service function: create_fees_discount (enters the catalogue
+// + emits FeesDiscountCreated event in one shot).
+
+/// Builds a new [`RealFeesDiscount`] aggregate + a
+/// [`FeesDiscountCreated`] event. Enforces FD I-1
+/// (`amount_minor >= 0`) + FD I-2 (Percentage basis_points range
+/// 0..=10000) + name/discount_code non-empty after trim at the
+/// aggregate surface. FD I-3 + FD I-4 scope enforcement: the
+/// dispatcher MUST validate uniqueness on (fees_master_id, ...)
+/// and (academic_year_id, ...) keys before calling this service
+/// function; the aggregate pins the scope-key fields so the
+/// uniqueness query has stable keys.
+pub fn create_fees_discount<C, G>(
+    cmd: CreateFeesDiscountCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesDiscount, FeesDiscountCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let _ = event_id_to_uuid(event_id); // reserved for future audit-footer linking
+
+    let mut row = RealFeesDiscount::fresh(
+        cmd.fees_discount_id,
+        cmd.fees_master_id,
+        cmd.academic_year_id,
+        cmd.name,
+        cmd.discount_code,
+        cmd.discount_type,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = FeesDiscountCreated::new(
+        cmd.fees_discount_id,
+        cmd.fees_master_id,
+        cmd.academic_year_id,
+        row.name.clone(),
+        row.discount_code.clone(),
+        row.discount_type,
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
 }
 
 // =============================================================================

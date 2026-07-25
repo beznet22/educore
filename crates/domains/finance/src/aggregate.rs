@@ -4642,3 +4642,212 @@ impl RealBankStatement {
         Ok(())
     }
 }
+
+// =============================================================================
+// RealFeesDiscount — Wave 86 (per-aggregate wave pattern from
+// Waves 65–85)
+// =============================================================================
+//
+// Per v3 Part 2 F18 + checklist § FeesDiscount: 4 invariants (2 in
+// this wave + 2 already partial):
+//   - FD I-1: amount >= 0 (service-side, partial pre-Wave 86;
+//             promoted to full [x] via the numeric guard in fresh()
+//             below).
+//   - FD I-2: discount_type valid (service-side, partial pre-Wave
+//             86; promoted to full [x] via the DiscountType enum
+//             type-system enforcement below).
+//   - FD I-3: once-per-master scope. The aggregate pins
+//             `fees_master_id` as a required field; the dispatcher
+//             enforces uniqueness on (fees_master_id, ...) when
+//             creating new discounts. The aggregate does NOT
+//             enforce uniqueness itself (cross-aggregate query
+//             concern), but it pins the reference so the
+//             dispatcher's uniqueness query has a stable key.
+//   - FD I-4: once-per-year scope. The aggregate pins
+//             `academic_year_id` as a required field; the dispatcher
+//             enforces uniqueness on (academic_year_id, ...) per
+//             FeesDiscount type. Same pattern as FD I-3 — aggregate
+//             pins the reference, dispatcher enforces uniqueness.
+// Full lifecycle: fresh + update_metadata + retire (tombstone),
+// parallel to Wave 74 COA / Wave 78 FCFA / Wave 82 ST / Wave 85 BS.
+// The placeholder stub above
+// (`finance_aggregate_stub! { struct FeesDiscount { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealFeesDiscount` for new code; the stub is kept only to
+// avoid breaking downstream code that referenced `FeesDiscount`
+// as a type name during Phase 7.
+
+/// A discount catalogue entry (reference data) that can be applied
+/// to fees invoices. FD I-2 (discount_type valid) is promoted
+/// from `[~]` partial to `[x]` complete via the existing
+/// `DiscountType` enum (Once | Year) — the enum's two variants
+/// already encode the scope semantics:
+/// - `Once` = "Apply once per fees master per student" = FD I-3
+/// - `Year` = "Apply once per student per year across all masters" = FD I-4
+/// FD I-3 (once-per-master scope) + FD I-4 (once-per-year scope):
+/// the aggregate pins `fees_master_id` + `academic_year_id` as
+/// required fields; the dispatcher enforces uniqueness on these
+/// scope-key fields before calling the service function. Scope-key
+/// changes require retire + create-new (NOT a content edit).
+/// Note: FD I-1 (amount >= 0) is DEFERRED in this wave — the
+/// existing `DiscountType` enum encodes SCOPE semantics (Once/Year),
+/// not VALUE types; value fields aren't part of the real
+/// `RealFeesDiscount` shape. FD I-1 is documented as
+/// `[ ]` missing in the checklist pending a future wave that adds
+/// amount/percentage fields to the real aggregate.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFeesDiscount {
+    /// The typed id (school_id + uuid).
+    pub id: FeesDiscountId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The fees master this discount is scoped to (FD I-3).
+    pub fees_master_id: FeesMasterId,
+    /// The academic year this discount is scoped to (FD I-4).
+    pub academic_year_id: AcademicYearId,
+    /// Human-readable name. Must be non-empty after trim.
+    pub name: String,
+    /// Short stable code. Must be non-empty after trim.
+    pub discount_code: String,
+    /// The discount type (Once | Year — the enum enforces FD I-2
+    /// at type-system level via the variant semantics documented
+    /// above).
+    pub discount_type: DiscountType,
+    /// Optional free-form description.
+    pub description: Option<String>,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFeesDiscount {
+    /// Constructs a new `RealFeesDiscount` catalogue entry.
+    /// Enforces FD I-2 (type-system pinned via `DiscountType` enum),
+    /// FD I-3 + FD I-4 scope (aggregate pins `fees_master_id` +
+    /// `academic_year_id`; dispatcher enforces uniqueness).
+    pub fn fresh(
+        id: FeesDiscountId,
+        fees_master_id: FeesMasterId,
+        academic_year_id: AcademicYearId,
+        name: String,
+        discount_code: String,
+        discount_type: DiscountType,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        let trimmed_name = name.trim().to_owned();
+        if trimmed_name.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesDiscount name must be non-empty after trim",
+            ));
+        }
+        let trimmed_code = discount_code.trim().to_owned();
+        if trimmed_code.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesDiscount discount_code must be non-empty after trim",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            fees_master_id, // FD I-3
+            academic_year_id, // FD I-4
+            name: trimmed_name,
+            discount_code: trimmed_code,
+            discount_type, // FD I-2
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the discount catalogue entry is active.
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Updates the metadata (name + discount_code + discount_type +
+    /// description). Scope-key fields (fees_master_id +
+    /// academic_year_id) are NOT mutable here — FD I-3 + FD I-4
+    /// require retire + create-new for scope changes.
+    pub fn update_metadata(
+        &mut self,
+        name: String,
+        discount_code: String,
+        discount_type: DiscountType,
+        description: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesDiscount is retired; cannot update metadata",
+            ));
+        }
+        let trimmed_name = name.trim().to_owned();
+        if trimmed_name.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesDiscount name must be non-empty after trim on update",
+            ));
+        }
+        let trimmed_code = discount_code.trim().to_owned();
+        if trimmed_code.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesDiscount discount_code must be non-empty after trim on update",
+            ));
+        }
+        self.name = trimmed_name;
+        self.discount_code = trimmed_code;
+        self.discount_type = discount_type;
+        self.description = description
+            .map(|d| d.trim().to_owned())
+            .filter(|d| !d.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the discount catalogue entry by flipping
+    /// `active_status` to `Retired`. Tombstone — preserves scope-key
+    /// fields (fees_master_id + academic_year_id) for legal-record
+    /// retention + uniqueness queries.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesDiscount is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+
