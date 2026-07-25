@@ -304,6 +304,90 @@ impl PayrollPaymentApproval {
             correlation_id,
         }
     }
+
+    /// Returns `true` if the approval is in the Pending state
+    /// (PPA I-1). Pending means neither approved_at nor rejected_at
+    /// has been set.
+    #[must_use]
+    pub const fn is_pending(&self) -> bool {
+        self.approved_at.is_none() && self.rejected_at.is_none()
+    }
+
+    /// Returns `true` if the approval is in the Approved state
+    /// (PPA I-1). Approved means approved_at has been set.
+    #[must_use]
+    pub const fn is_approved(&self) -> bool {
+        self.approved_at.is_some()
+    }
+
+    /// Returns `true` if the approval is in the Rejected state
+    /// (PPA I-1). Rejected means rejected_at has been set.
+    #[must_use]
+    pub const fn is_rejected(&self) -> bool {
+        self.rejected_at.is_some()
+    }
+
+    /// Returns `true` if the approval is still pending (i.e. has
+    /// not been decided). Equivalent to `is_pending()` — kept as a
+    /// separate method to match the Wave 76 / Wave 79 / Wave 80
+    /// naming convention.
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.is_pending()
+    }
+
+    /// Transitions the approval from Pending to Approved (PPA I-1).
+    /// Returns `DomainError::conflict` if the approval is already
+    /// in a terminal state (already approved or already rejected).
+    /// Stamps `approver_id` + `approved_at` on the aggregate
+    /// (PPA I-2). Bumps version, advances `updated_at`, sets
+    /// `updated_by`.
+    pub fn approve(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        // PPA I-1: only Pending can transition.
+        if !self.is_pending() {
+            return Err(educore_core::error::DomainError::conflict(
+                "PayrollPaymentApproval is not pending; cannot approve",
+            ));
+        }
+        self.approver_id = Some(actor); // PPA I-2
+        self.approved_at = Some(at); // PPA I-2
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Transitions the approval from Pending to Rejected (PPA I-1).
+    /// Returns `DomainError::conflict` if the approval is already
+    /// in a terminal state. Stamps `rejecter_id` + `rejected_at` +
+    /// `rejection_reason` on the aggregate (PPA I-2). Bumps version,
+    /// advances `updated_at`, sets `updated_by`.
+    pub fn reject(
+        &mut self,
+        reason: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        // PPA I-1: only Pending can transition.
+        if !self.is_pending() {
+            return Err(educore_core::error::DomainError::conflict(
+                "PayrollPaymentApproval is not pending; cannot reject",
+            ));
+        }
+        self.rejecter_id = Some(actor); // PPA I-2
+        self.rejected_at = Some(at); // PPA I-2
+        self.rejection_reason = reason
+            .map(|r| r.trim().to_owned())
+            .filter(|r| !r.is_empty()); // PPA I-2
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
 }
 
 // =============================================================================

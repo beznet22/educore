@@ -3648,6 +3648,178 @@ impl DomainEvent for IncomeApprovalRejected {
     }
 }
 
+// =============================================================================
+// PayrollPaymentApproval events — Wave 81 (per-aggregate wave pattern
+// from Waves 65–80)
+// =============================================================================
+//
+// Per v3 Part 2 F44 + checklist § PayrollPaymentApproval: 2 invariants:
+//   - PPA I-1: state machine pending → approved/rejected (enforced
+//             at the type-system level via the existing approved_at
+//             + rejected_at timestamp fields — derived state, no
+//             explicit ApprovalStatus enum field; invalid
+//             transitions emit DomainError::conflict).
+//   - PPA I-2: timestamps recorded (every state transition stamps
+//             approver_id + approved_at on the aggregate; reject
+//             also captures rejecter_id + rejected_at + reason).
+// Structurally identical to the Wave 79 ExpenseApproval and
+// Wave 80 IncomeApproval event families, but since the
+// PayrollPaymentApproval struct (entities.rs) does NOT have its own
+// id field (parent_id is de-facto identity), the events use
+// payroll_payment_id as the aggregate identifier.
+//
+// Three headline events: Created (Pending entry), Approved (Pending
+// → Approved), Rejected (Pending → Rejected with optional reason).
+
+/// Emitted when a new `PayrollPaymentApproval` row is created in
+/// the Pending state.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PayrollPaymentApprovalCreated {
+    pub payroll_payment_id: PayrollPaymentId,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl PayrollPaymentApprovalCreated {
+    pub fn new(
+        payroll_payment_id: PayrollPaymentId,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            payroll_payment_id,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for PayrollPaymentApprovalCreated {
+    const EVENT_TYPE: &'static str = "finance.payroll_payment_approval.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "payroll_payment_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        // The PayrollPaymentApproval struct does not have its own
+        // id field; payroll_payment_id serves as the de-facto
+        // aggregate identifier.
+        self.payroll_payment_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.payroll_payment_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `PayrollPaymentApproval` transitions from Pending
+/// to Approved (PPA I-1). Stamps `approver_id` + `approved_at` on
+/// the aggregate (PPA I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PayrollPaymentApprovalApproved {
+    pub payroll_payment_id: PayrollPaymentId,
+    pub approver_id: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl PayrollPaymentApprovalApproved {
+    pub fn new(
+        payroll_payment_id: PayrollPaymentId,
+        approver_id: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            payroll_payment_id,
+            approver_id,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for PayrollPaymentApprovalApproved {
+    const EVENT_TYPE: &'static str = "finance.payroll_payment_approval.approved";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "payroll_payment_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.payroll_payment_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.payroll_payment_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `PayrollPaymentApproval` transitions from Pending
+/// to Rejected (PPA I-1). Stamps `rejecter_id` + `rejected_at` +
+/// `rejection_reason` on the aggregate (PPA I-2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PayrollPaymentApprovalRejected {
+    pub payroll_payment_id: PayrollPaymentId,
+    pub rejecter_id: UserId,
+    pub rejection_reason: Option<String>,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl PayrollPaymentApprovalRejected {
+    pub fn new(
+        payroll_payment_id: PayrollPaymentId,
+        rejecter_id: UserId,
+        rejection_reason: Option<String>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            payroll_payment_id,
+            rejecter_id,
+            rejection_reason,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for PayrollPaymentApprovalRejected {
+    const EVENT_TYPE: &'static str = "finance.payroll_payment_approval.rejected";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "payroll_payment_approval";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.payroll_payment_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.payroll_payment_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 
 #[cfg(test)]
 #[allow(

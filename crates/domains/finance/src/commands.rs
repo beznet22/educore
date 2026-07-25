@@ -1776,6 +1776,82 @@ impl RejectIncomeApprovalCommand {
         &[Capability::FinanceIncomeApprove]
     }
 }
+
+// -----------------------------------------------------------------------------
+// PayrollPaymentApproval commands (Wave 81 — per-aggregate wave pattern
+// from Waves 65–80)
+// -----------------------------------------------------------------------------
+//
+// Per v3 Part 2 F44 + checklist § PayrollPaymentApproval: 2 invariants:
+//   - PPA I-1: state machine pending → approved/rejected.
+//   - PPA I-2: timestamps recorded (every transition stamps
+//             approver_id + approved_at; reject also captures
+//             rejecter_id + rejected_at + rejection_reason).
+//
+// Structurally identical to the Wave 79 ExpenseApproval and
+// Wave 80 IncomeApproval commands, but the
+// PayrollPaymentApproval aggregate does NOT have its own id field
+// (parent payroll_payment_id is de-facto identity) so the commands
+// reference payroll_payment_id directly.
+//
+// Three commands: Create (enter Pending), Approve (Pending→Approved),
+// Reject (Pending→Rejected with optional reason). RBAC fallback:
+// Capability::FinancePayrollPaymentApprove does NOT exist; use the
+// closest existing variant (FinancePayrollPaymentRecord). To be
+// revisited in a future RBAC revision (v3 Part 6).
+
+/// Command: create a new `PayrollPaymentApproval` row in the Pending
+/// state. The PayrollPayment aggregate's create flow typically mints
+/// the approval inline (see entities.rs:499); this command is for
+/// the dispatcher-level explicit create path.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreatePayrollPaymentApprovalCommand {
+    pub tenant: TenantContext,
+    pub payroll_payment_id: PayrollPaymentId,
+}
+
+impl CreatePayrollPaymentApprovalCommand {
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        // Wave 72/75/77/78/81 Fm-prefix / approval-prefix RBAC
+        // fallback: FinancePayrollPaymentApprove does not exist;
+        // closest semantic match is FinancePayrollPaymentRecord.
+        &[Capability::FinancePayrollPaymentRecord]
+    }
+}
+
+/// Command: transition a `PayrollPaymentApproval` from Pending to
+/// Approved.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ApprovePayrollPaymentApprovalCommand {
+    pub tenant: TenantContext,
+    pub payroll_payment_id: PayrollPaymentId,
+}
+
+impl ApprovePayrollPaymentApprovalCommand {
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        // Same fallback as Create.
+        &[Capability::FinancePayrollPaymentRecord]
+    }
+}
+
+/// Command: transition a `PayrollPaymentApproval` from Pending to
+/// Rejected with an optional reason string.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RejectPayrollPaymentApprovalCommand {
+    pub tenant: TenantContext,
+    pub payroll_payment_id: PayrollPaymentId,
+    pub reason: Option<String>,
+}
+
+impl RejectPayrollPaymentApprovalCommand {
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        // Same fallback as Create.
+        &[Capability::FinancePayrollPaymentRecord]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadWalletTransactionCommand {
     pub tenant: TenantContext,

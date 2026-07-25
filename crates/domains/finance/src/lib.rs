@@ -24,7 +24,7 @@ pub mod value_objects;
 
 mod aggregate;
 pub mod commands;
-mod entities;
+pub mod entities;
 mod errors;
 pub mod events;
 pub mod query;
@@ -54,10 +54,11 @@ pub mod prelude {
         RealQuestionBankFee, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
-    pub use crate::entities::WalletTransactionApproval;
+    pub use crate::entities::{PayrollPaymentApproval, WalletTransactionApproval};
 
     pub use crate::commands::{
         ApproveExpenseApprovalCommand, ApproveIncomeApprovalCommand,
+        ApprovePayrollPaymentApprovalCommand,
         ApproveWalletTransactionApprovalCommand,
         BlockLoginForDueFeesCommand,
         CarryForwardFeesBalanceCommand, ConfigureFeesGroupCommand, ConfigureFeesTypeCommand,
@@ -67,13 +68,14 @@ pub mod prelude {
         CreateFeesCarryForwardLogCommand,
         CreateFeesCarryForwardSettingCommand,
         CreateIncomeApprovalCommand,
+        CreatePayrollPaymentApprovalCommand,
         CreateFmFeesGroupCommand, CreateFmFeesInvoiceLineNoteCommand,
         CreateFmFeesTransactionLineNoteCommand, CreateIncomeHeadCommand,
         CreateInvoiceSettingCommand, CreateQuestionBankFeeCommand, CreateWalletCommand,
         CreateWalletTransactionApprovalCommand, CreditWalletCommand,
         DeductWalletCreditCommand, OpenBankAccountCommand,
         RecordExpenseCommand, RecordPaymentCommand, RejectExpenseApprovalCommand,
-        RejectIncomeApprovalCommand,
+        RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
         RequestWalletRefundCommand,
         FINANCE_EXPENSE_DELETE_COMMAND_TYPE, FINANCE_EXPENSE_RECORD_COMMAND_TYPE,
         FINANCE_EXPENSE_UPDATE_COMMAND_TYPE, FINANCE_FEES_INVOICE_CONFIGURE_COMMAND_TYPE,
@@ -92,6 +94,8 @@ pub mod prelude {
         ExpenseApprovalRejected, ExpenseRecorded, FeesCarryForwardLogCreated,
         FeesCarryForwardLogRetired, FeesCarryForwardSettingCreated,
         IncomeApprovalApproved, IncomeApprovalCreated, IncomeApprovalRejected,
+        PayrollPaymentApprovalApproved, PayrollPaymentApprovalCreated,
+        PayrollPaymentApprovalRejected,
         FeesCarryForwardSettingRetired, FeesCarryForwardSettingUpdated, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
         FmFeesInvoiceLineNoteRetired, FmFeesTransactionChildCreated,
         FmFeesTransactionChildRetired, FmFeesTransactionChildUpdated,
@@ -105,16 +109,18 @@ pub mod prelude {
     pub use crate::query::{FeesPaymentQuery, WalletQuery, WalletTransactionQuery};
     pub use crate::repository::{WalletRepository, WalletTransactionRepository};
     pub use crate::services::{
-        approve_expense_approval, approve_income_approval, approve_wallet_transaction, approve_wallet_transaction_approval,
+        approve_expense_approval, approve_income_approval, approve_payroll_payment_approval,
+        approve_wallet_transaction, approve_wallet_transaction_approval,
         configure_invoice_numbering, create_chart_of_account,
         create_direct_fees_installment_assign_child, create_direct_fees_setting,
         create_donor, create_expense_approval, create_fees_carry_forward_log, create_fees_carry_forward_setting,
-        create_fm_fees_group, create_income_approval,
+        create_fm_fees_group, create_income_approval, create_payroll_payment_approval,
         create_fm_fees_invoice_line_note, create_fm_fees_transaction_child,
         create_fm_fees_transaction_line_note,
         create_income_head, create_invoice_setting, create_question_bank_fee, create_wallet,
         create_wallet_transaction_approval, credit_wallet, deduct_wallet_credit,
         record_expense, record_payment, reject_expense_approval, reject_income_approval,
+        reject_payroll_payment_approval,
         reject_wallet_transaction,
         reject_wallet_transaction_approval,
         request_wallet_refund, ChargeRequest, PaymentProvider, PaymentProviderPaymentId,

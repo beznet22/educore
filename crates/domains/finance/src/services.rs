@@ -39,14 +39,16 @@ use crate::aggregate::{
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
     RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
 };
-use crate::entities::WalletTransactionApproval;
+use crate::entities::{PayrollPaymentApproval, WalletTransactionApproval};
 use crate::commands::{
-    ApproveExpenseApprovalCommand, ApproveIncomeApprovalCommand, ApproveWalletTransactionApprovalCommand,
+    ApproveExpenseApprovalCommand, ApproveIncomeApprovalCommand, ApprovePayrollPaymentApprovalCommand,
+    ApproveWalletTransactionApprovalCommand,
     CreateChartOfAccountCommand,
     CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesInstallmentChildPaymentCommand,
     CreateDirectFeesSettingCommand, CreateDonorCommand, CreateExpenseApprovalCommand, CreateFeesAssignDiscountCommand,
     CreateIncomeApprovalCommand,
-    RejectExpenseApprovalCommand, RejectIncomeApprovalCommand,
+    CreatePayrollPaymentApprovalCommand,
+    RejectExpenseApprovalCommand, RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
     CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
@@ -70,6 +72,7 @@ use crate::events::{
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
     FmFeesGroupCreated, IncomeApprovalApproved, IncomeApprovalCreated, IncomeApprovalRejected,
+    PayrollPaymentApprovalApproved, PayrollPaymentApprovalCreated, PayrollPaymentApprovalRejected,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -81,6 +84,7 @@ use crate::value_objects::{
     AccountType, BankAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
     DonorId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
     IncomeApprovalId, IncomeId,
+    PayrollPaymentApprovalId, PayrollPaymentId,
     FeesInvoiceId, FeesPaymentId,
     FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId,
@@ -772,6 +776,127 @@ where
 
     Ok(IncomeApprovalRejected::new(
         cmd.income_approval_id,
+        actor,
+        cmd.reason,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+// =============================================================================
+// PayrollPaymentApproval services (Wave 81 — per-aggregate wave pattern
+// from Waves 65–80)
+// =============================================================================
+//
+// Per v3 Part 2 F44 + checklist § PayrollPaymentApproval: 2 invariants:
+//   - PPA I-1: state machine pending → approved/rejected (invalid
+//             transitions return DomainError::conflict).
+//   - PPA I-2: timestamps recorded (every transition stamps
+//             approver_id + approved_at on the aggregate; reject also
+//             captures rejecter_id + rejected_at + rejection_reason).
+//
+// Wave 81 follows the Wave 76 pattern (extend existing entities.rs
+// struct, NOT new Real* in aggregate.rs) because PayrollPaymentApproval
+// is a child entity owned by PayrollPayment (not a standalone root
+// aggregate). The struct doesn't have its own id field —
+// payroll_payment_id is de-facto identity.
+//
+// Three service functions: create_payroll_payment_approval (enter
+// Pending), approve_payroll_payment_approval (Pending→Approved), and
+// reject_payroll_payment_approval (Pending→Rejected with optional
+// reason). approve + reject take a mutable reference to the
+// aggregate (the dispatcher is responsible for loading it from
+// storage), mirroring the Wave 76/79/80 pattern.
+
+/// Builds a new [`PayrollPaymentApproval`] aggregate + a
+/// [`PayrollPaymentApprovalCreated`] event. The aggregate enters the
+/// Pending state (PPA I-1). Note: this service function exists for
+/// the dispatcher-level explicit create path; the PayrollPayment
+/// aggregate typically mints the approval inline via
+/// `PayrollPaymentApproval::fresh(...)` in entities.rs.
+pub fn create_payroll_payment_approval<C, G>(
+    cmd: CreatePayrollPaymentApprovalCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(PayrollPaymentApproval, PayrollPaymentApprovalCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let _ = event_id_to_uuid(event_id); // reserved for future audit-footer linking
+
+    let mut row = PayrollPaymentApproval::fresh(
+        cmd.payroll_payment_id,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    );
+    row.last_event_id = Some(event_id);
+
+    let event = PayrollPaymentApprovalCreated::new(
+        cmd.payroll_payment_id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+/// Transitions an existing [`PayrollPaymentApproval`] aggregate from
+/// Pending to Approved (PPA I-1). Returns `DomainError::conflict` if
+/// the aggregate is already in a terminal state. Stamps `approver_id`
+/// + `approved_at` on the aggregate (PPA I-2).
+pub fn approve_payroll_payment_approval<C, G>(
+    cmd: ApprovePayrollPaymentApprovalCommand,
+    clock: &C,
+    ids: &G,
+    approval: &mut PayrollPaymentApproval,
+) -> Result<PayrollPaymentApprovalApproved>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let actor = cmd.tenant.actor_id;
+    approval.approve(now, actor)?;
+    approval.last_event_id = Some(event_id);
+
+    Ok(PayrollPaymentApprovalApproved::new(
+        cmd.payroll_payment_id,
+        actor,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Transitions an existing [`PayrollPaymentApproval`] aggregate from
+/// Pending to Rejected (PPA I-1). Returns `DomainError::conflict` if
+/// the aggregate is already in a terminal state. Stamps `rejecter_id`
+/// + `rejected_at` + `rejection_reason` on the aggregate (PPA I-2).
+pub fn reject_payroll_payment_approval<C, G>(
+    cmd: RejectPayrollPaymentApprovalCommand,
+    clock: &C,
+    ids: &G,
+    approval: &mut PayrollPaymentApproval,
+) -> Result<PayrollPaymentApprovalRejected>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let actor = cmd.tenant.actor_id;
+    approval.reject(cmd.reason.clone(), now, actor)?;
+    approval.last_event_id = Some(event_id);
+
+    Ok(PayrollPaymentApprovalRejected::new(
+        cmd.payroll_payment_id,
         actor,
         cmd.reason,
         event_id,
