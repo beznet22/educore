@@ -26,6 +26,7 @@ use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
     AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
+    BankStatementId,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId,
     DirectFeesInstallmentId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId,
@@ -2771,6 +2772,148 @@ impl DomainEvent for BankStatementAttachmentAttached {
     }
     fn school_id(&self) -> SchoolId {
         self.school_id
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// BankStatementAttachment events — Wave 84 (per-aggregate wave pattern from
+// Waves 65–83)
+// =============================================================================
+//
+// Per v3 Part 2 F47 + checklist § BankStatementAttachment: 2 invariants:
+//   - BSA I-1: attachment ref valid — the file_reference Uuid must
+//             point to an existing file in the file storage port
+//             (dispatcher responsibility, not aggregate).
+//   - BSA I-2: orphan after BankStatement delete — the
+//             bank_statement_id reference is preserved in the audit
+//             footer even after retire; cascade-delete handled by
+//             the dispatcher.
+// Append-only event family — parallel to Wave 81
+// PayrollPaymentApproval events + Wave 83 BankPaymentSlipAudit
+// events. Since the BankStatementAttachment struct (entities.rs)
+// does NOT have its own id field (parent bank_statement_id is
+// de-facto identity + file_reference Uuid serves as a secondary
+// identifier), the events use bank_statement_id.as_uuid() as the
+// aggregate_id in their DomainEvent impl.
+//
+// Two headline events: Created (initial attach), Retired (tombstone).
+
+/// Emitted when a new `BankStatementAttachment` row is created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankStatementAttachmentCreated {
+    pub bank_statement_id: BankStatementId,
+    pub file_reference: Uuid,
+    pub uploaded_at: Timestamp,
+    pub uploaded_by: UserId,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankStatementAttachmentCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        bank_statement_id: BankStatementId,
+        file_reference: Uuid,
+        uploaded_at: Timestamp,
+        uploaded_by: UserId,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_statement_id,
+            file_reference,
+            uploaded_at,
+            uploaded_by,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankStatementAttachmentCreated {
+    const EVENT_TYPE: &'static str = "finance.bank_statement_attachment.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_statement_attachment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        // The BankStatementAttachment struct does not have its own
+        // id field; bank_statement_id serves as the de-facto
+        // aggregate identifier.
+        self.bank_statement_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_statement_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `BankStatementAttachment` row is retired
+/// (soft-deleted via `BankStatementAttachment::retire`). The
+/// original `bank_statement_id` + `file_reference` + `uploaded_at`
+/// + `uploaded_by` + `description` are preserved in the audit
+/// footer for legal-record retention. BSA I-1 (attachment ref
+/// valid) is upheld because retire does NOT mutate the
+/// file_reference; BSA I-2 (orphan after BankStatement delete) is
+/// upheld because the `bank_statement_id` reference is preserved
+/// in the audit footer even after retire.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankStatementAttachmentRetired {
+    pub bank_statement_id: BankStatementId,
+    pub file_reference: Uuid,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankStatementAttachmentRetired {
+    pub fn new(
+        bank_statement_id: BankStatementId,
+        file_reference: Uuid,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_statement_id,
+            file_reference,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankStatementAttachmentRetired {
+    const EVENT_TYPE: &'static str = "finance.bank_statement_attachment.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_statement_attachment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_statement_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_statement_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

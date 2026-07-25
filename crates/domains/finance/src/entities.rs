@@ -525,6 +525,39 @@ impl BankStatementAttachment {
             correlation_id,
         }
     }
+
+    /// Returns `true` if the attachment is currently active (not retired).
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the attachment by flipping `active_status` to
+    /// `Retired`. This is a **tombstone**, NOT a content edit —
+    /// the original `bank_statement_id` + `file_reference` +
+    /// `uploaded_at` + `uploaded_by` + `description` are preserved in
+    /// the audit footer for legal-record retention. BSA I-1
+    /// (attachment ref valid) is upheld because `retire()` does NOT
+    /// mutate the file_reference; BSA I-2 (orphan after
+    /// BankStatement delete) is upheld because the
+    /// `bank_statement_id` reference is preserved in the audit
+    /// footer even after retire.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "BankStatementAttachment is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
 }
 
 #[cfg(test)]

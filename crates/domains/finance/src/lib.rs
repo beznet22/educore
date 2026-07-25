@@ -54,7 +54,9 @@ pub mod prelude {
         RealBankPaymentSlipAudit, RealQuestionBankFee, RealSalaryTemplate, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
-    pub use crate::entities::{PayrollPaymentApproval, WalletTransactionApproval};
+    pub use crate::entities::{
+        BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
+    };
 
     pub use crate::commands::{
         ApproveExpenseApprovalCommand, ApproveIncomeApprovalCommand,
@@ -63,6 +65,7 @@ pub mod prelude {
         BlockLoginForDueFeesCommand,
         CarryForwardFeesBalanceCommand, ConfigureFeesGroupCommand, ConfigureFeesTypeCommand,
         CreateBankPaymentSlipAuditCommand,
+    CreateBankStatementAttachmentCommand,
         ConfigureInvoiceNumberingCommand, CreateChartOfAccountCommand,
         CreateSalaryTemplateCommand,
         CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesSettingCommand,
@@ -100,6 +103,7 @@ pub mod prelude {
         PayrollPaymentApprovalRejected,
         SalaryTemplateCreated, SalaryTemplateRetired, SalaryTemplateUpdated,
         BankPaymentSlipAuditCreated, BankPaymentSlipAuditRetired,
+        BankStatementAttachmentCreated, BankStatementAttachmentRetired,
         FeesCarryForwardSettingRetired, FeesCarryForwardSettingUpdated, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
         FmFeesInvoiceLineNoteRetired, FmFeesTransactionChildCreated,
         FmFeesTransactionChildRetired, FmFeesTransactionChildUpdated,
@@ -117,7 +121,7 @@ pub mod prelude {
         approve_wallet_transaction, approve_wallet_transaction_approval,
         configure_invoice_numbering, create_chart_of_account,
         create_direct_fees_installment_assign_child, create_direct_fees_setting,
-        create_bank_payment_slip_audit, create_donor, create_expense_approval, create_fees_carry_forward_log, create_fees_carry_forward_setting,
+        create_bank_payment_slip_audit, create_bank_statement_attachment, create_donor, create_expense_approval, create_fees_carry_forward_log, create_fees_carry_forward_setting,
         create_fm_fees_group, create_income_approval, create_payroll_payment_approval,
         create_salary_template,
         create_fm_fees_invoice_line_note, create_fm_fees_transaction_child,

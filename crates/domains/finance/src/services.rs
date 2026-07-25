@@ -39,10 +39,13 @@ use crate::aggregate::{
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
     RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, Wallet, WalletTransaction,
 };
-use crate::entities::{PayrollPaymentApproval, WalletTransactionApproval};
+use crate::entities::{
+    BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
+};
 use crate::commands::{
     ApproveExpenseApprovalCommand, ApproveIncomeApprovalCommand, ApprovePayrollPaymentApprovalCommand,
     CreateBankPaymentSlipAuditCommand,
+    CreateBankStatementAttachmentCommand,
     ApproveWalletTransactionApprovalCommand,
     CreateChartOfAccountCommand,
     CreateSalaryTemplateCommand,
@@ -76,6 +79,7 @@ use crate::events::{
     FmFeesGroupCreated, IncomeApprovalApproved, IncomeApprovalCreated, IncomeApprovalRejected,
     PayrollPaymentApprovalApproved, PayrollPaymentApprovalCreated, PayrollPaymentApprovalRejected,
     SalaryTemplateCreated, BankPaymentSlipAuditCreated, BankPaymentSlipAuditRetired,
+    BankStatementAttachmentCreated, BankStatementAttachmentRetired,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -84,7 +88,8 @@ use crate::events::{
     WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
 };
 use crate::value_objects::{
-    AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, Currency,
+    AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId,
+    BankStatementAttachmentId, BankStatementId, Currency,
     DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
     DonorId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
     IncomeApprovalId, IncomeId,
@@ -2217,6 +2222,70 @@ where
         row.amount_minor,
         row.currency,
         row.recorded_at,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+// =============================================================================
+// BankStatementAttachment services (Wave 84 — per-aggregate wave pattern from
+// Waves 65–83)
+// =============================================================================
+//
+// Per v3 Part 2 F47 + checklist § BankStatementAttachment: 2 invariants:
+//   - BSA I-1: attachment ref valid (file_reference must point to
+//             an existing file in the file storage port; dispatcher
+//             responsibility, not aggregate).
+//   - BSA I-2: orphan after BankStatement delete (bank_statement_id
+//             reference is preserved in the audit footer even after
+//             retire; cascade-delete handled by dispatcher).
+//
+// Append-only service function — parallel to Wave 81
+// create_payroll_payment_approval. Returns the aggregate + the
+// BankStatementAttachmentCreated event in one shot.
+
+/// Builds a new [`BankStatementAttachment`] aggregate + a
+/// [`BankStatementAttachmentCreated`] event. The aggregate uses
+/// `bank_statement_id` as the de-facto identity (parallel to Wave 81
+/// PayrollPaymentApproval). BSA I-1 (attachment ref valid) is the
+/// dispatcher's responsibility to validate before calling this
+/// service function; BSA I-2 (orphan after BankStatement delete) is
+/// upheld by preserving the `bank_statement_id` reference in the
+/// audit footer.
+pub fn create_bank_statement_attachment<C, G>(
+    cmd: CreateBankStatementAttachmentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(BankStatementAttachment, BankStatementAttachmentCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let _ = event_id_to_uuid(event_id); // reserved for future audit-footer linking
+
+    let mut row = BankStatementAttachment::fresh(
+        cmd.bank_statement_id,
+        cmd.file_reference,
+        cmd.uploaded_at,
+        cmd.uploaded_by,
+        cmd.description.clone(),
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    );
+    row.last_event_id = Some(event_id);
+
+    let event = BankStatementAttachmentCreated::new(
+        cmd.bank_statement_id,
+        cmd.file_reference,
+        cmd.uploaded_at,
+        cmd.uploaded_by,
+        cmd.description.clone(),
         cmd.tenant.actor_id,
         event_id,
         cmd.tenant.correlation_id,

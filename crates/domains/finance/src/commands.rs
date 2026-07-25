@@ -21,6 +21,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use educore_core::ids::UserId;
+use uuid::Uuid;
 use educore_rbac::value_objects::Capability;
 use educore_academic::{AcademicYearId, StudentId};
 use educore_core::tenant::TenantContext;
@@ -3598,6 +3599,55 @@ impl CreateBankPaymentSlipAuditCommand {
         // bank-slip generation flow). Parallel to Wave 72/75/77/78/
         // 80/81/82 fallback chain.
         &[Capability::FinanceBankSlipGenerate]
+    }
+}
+
+// -----------------------------------------------------------------------------
+// BankStatementAttachment commands (Wave 84 — per-aggregate wave pattern from
+// Waves 65–83)
+// -----------------------------------------------------------------------------
+//
+// Per v3 Part 2 F47 + checklist § BankStatementAttachment: 2 invariants:
+//   - BSA I-1: attachment ref valid (file_reference must point to
+//             an existing file in the file storage port; dispatcher
+//             responsibility, not aggregate).
+//   - BSA I-2: orphan after BankStatement delete (bank_statement_id
+//             reference is preserved in the audit footer even after
+//             retire; cascade-delete handled by dispatcher).
+//
+// Append-only event family — parallel to Wave 81 PayrollPaymentApproval
+// commands + Wave 83 BankPaymentSlipAudit commands. GREENFIELD command
+// (no skeleton existed per Wave 84 recon). The BankStatementAttachment
+// struct (entities.rs) does NOT have its own id field (parent
+// bank_statement_id is de-facto identity + file_reference Uuid serves
+// as a secondary identifier), so the command references
+// bank_statement_id directly. RBAC fallback:
+// Capability::FinanceBankStatementAttachment does not exist; use the
+// closest existing variant (FinanceBankStatementRecord, parallel to
+// Wave 72/75/77/78/80/81/82/83 fallback chain).
+
+/// Command: create a new `BankStatementAttachment` row. The
+/// dispatcher validates BSA I-1 (file_reference exists at the file
+/// storage port) before calling the service function.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateBankStatementAttachmentCommand {
+    pub tenant: TenantContext,
+    pub bank_statement_id: BankStatementId,
+    pub file_reference: Uuid,
+    pub uploaded_at: Timestamp,
+    pub uploaded_by: UserId,
+    pub description: Option<String>,
+}
+
+impl CreateBankStatementAttachmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        // Wave 84 RBAC: FinanceBankStatementAttachment does not exist;
+        // use FinanceBankStatementRecord (closest existing variant for
+        // the bank-statement record flow). Parallel to Wave 72/75/77/78/
+        // 80/81/82/83 fallback chain.
+        &[Capability::FinanceBankStatementRecord]
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
