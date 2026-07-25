@@ -49,8 +49,7 @@ use crate::value_objects::{
     IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, Money, PaymentGatewaySettingId,
     PaymentMethodId, PaymentMethodKind, PayrollEarnDeducId, PayrollGenerateId,
     PayrollPaymentApprovalId, PayrollPaymentId, ProductPurchaseId, QuestionBankFeeId,
-    SalaryTemplateId,
-    StatementType, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
+    SalaryTemplateId, StatementType, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 use educore_core::clock::Clock;
 use educore_core::ids::Identifier;
@@ -7180,6 +7179,184 @@ impl RealDirectFeesInstallmentAssign {
         if self.active_status == ActiveStatus::Retired {
             return Err(educore_core::error::DomainError::conflict(
                 "DirectFeesInstallmentAssign is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// -- Wave 104 — RealTransaction (double-entry journal line) --
+//
+// TR I-1: balanced journal line — the sum of debit lines equals
+// the sum of credit lines (a transaction is a single balanced
+// journal entry). Pinned at construction with two non-negative
+// guards + one equality guard (`total_debits_minor ==
+// total_credits_minor`). Corrections require retire + create-new
+// (no update mutator — append-only on the totals; ledger entries
+// are immutable once posted).
+//
+// Companion invariants enforced at `fresh()`:
+//   * `description` must be non-empty after trimming whitespace.
+//   * `currency` is required (the totals are denominated in a
+//     specific currency; mismatched currencies across debits +
+//     credits would silently violate the equality invariant).
+
+/// The [`Transaction`] aggregate — a double-entry journal line.
+///
+/// `RealTransaction` carries the pre-summed totals for a journal
+/// entry. The equality invariant (`total_debits_minor ==
+/// total_credits_minor`) is the cornerstone of double-entry
+/// accounting: a transaction is balanced iff the two totals agree.
+/// Unbalanced entries are rejected at construction with a
+/// `DomainError::Validation` error.
+///
+/// Append-only on `total_debits_minor` + `total_credits_minor`:
+/// corrections require retire + create-new. This mirrors the
+/// accounting reality that posted ledger entries are immutable
+/// for audit-trail integrity.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealTransaction {
+    /// Aggregate identity.
+    pub id: TransactionId,
+    /// School anchor (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// Transaction date (the date the transaction is recorded;
+    /// distinct from `created_at` which is when the row was
+    /// physically inserted into the database).
+    pub transaction_date: NaiveDate,
+    /// Human-readable description (TR I-1 companion: non-empty
+    /// after trimming whitespace; a journal entry without a
+    /// description cannot be reconciled).
+    pub description: String,
+    /// Optional external reference (e.g. invoice number, payment
+    /// gateway id, or bank reconciliation id).
+    pub reference: Option<String>,
+    /// Sum of debit lines in minor units (TR I-1: pinned at
+    /// construction with `>= 0` guard).
+    pub total_debits_minor: i64,
+    /// Sum of credit lines in minor units (TR I-1: pinned at
+    /// construction with `>= 0` guard; companion invariant
+    /// `total_debits_minor == total_credits_minor`).
+    pub total_credits_minor: i64,
+    /// Currency the totals are denominated in (TR I-1 companion:
+    /// required — debits + credits must be in the same currency).
+    pub currency: Currency,
+    /// Standard audit footer: optimistic concurrency version.
+    pub version: Version,
+    /// Standard audit footer: etag.
+    pub etag: Etag,
+    /// Standard audit footer: created timestamp.
+    pub created_at: Timestamp,
+    /// Standard audit footer: last updated timestamp.
+    pub updated_at: Timestamp,
+    /// Standard audit footer: created-by user.
+    pub created_by: UserId,
+    /// Standard audit footer: last updated-by user.
+    pub updated_by: UserId,
+    /// Standard audit footer: active status.
+    pub active_status: ActiveStatus,
+    /// Standard audit footer: last emitted event id.
+    pub last_event_id: Option<EventId>,
+    /// Standard audit footer: request correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealTransaction {
+    /// Construct a fresh `RealTransaction` aggregate.
+    ///
+    /// Enforces TR I-1: `total_debits_minor >= 0` AND
+    /// `total_credits_minor >= 0` AND
+    /// `total_debits_minor == total_credits_minor` (the
+    /// double-entry balancing invariant). Also enforces companion
+    /// invariants: `description` non-empty trimmed; `currency`
+    /// required (carried by the type).
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: TransactionId,
+        transaction_date: NaiveDate,
+        description: String,
+        reference: Option<String>,
+        total_debits_minor: i64,
+        total_credits_minor: i64,
+        currency: Currency,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // TR I-1 guard 1: total_debits_minor >= 0.
+        if total_debits_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "Transaction total_debits_minor must be >= 0 (TR I-1)",
+            ));
+        }
+        // TR I-1 guard 2: total_credits_minor >= 0.
+        if total_credits_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "Transaction total_credits_minor must be >= 0 (TR I-1)",
+            ));
+        }
+        // TR I-1 guard 3: equality (double-entry balancing invariant).
+        if total_debits_minor != total_credits_minor {
+            return Err(educore_core::error::DomainError::validation(
+                "Transaction total_debits_minor must equal total_credits_minor (TR I-1)",
+            ));
+        }
+        // Companion invariant: description non-empty trimmed.
+        if description.trim().is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "Transaction description must be non-empty after trimming",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            transaction_date,
+            description,
+            reference,
+            total_debits_minor,
+            total_credits_minor,
+            currency,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    /// Whether the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    /// Whether the journal entry is balanced (the corner-stone
+    /// double-entry invariant: debits equal credits). This is the
+    /// TR I-1 check as a method (the same check is enforced at
+    /// `fresh()` but reading the persisted aggregate should not
+    /// silently mis-classify unbalanced entries — there should be
+    /// none, but the method is provided for defense-in-depth).
+    #[must_use]
+    pub fn is_balanced(&self) -> bool {
+        self.total_debits_minor == self.total_credits_minor
+    }
+
+    /// Retire the aggregate (tombstone; preserves
+    /// `transaction_date` + `description` + `reference` +
+    /// `total_debits_minor` + `total_credits_minor` + `currency`
+    /// in the audit footer for legal-record retention).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "Transaction is already retired",
             ));
         }
         self.active_status = ActiveStatus::Retired;

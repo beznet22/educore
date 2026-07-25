@@ -39,7 +39,7 @@ use crate::value_objects::{
     FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
     IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId, ProductPurchaseId, FmFeesInvoiceChildId,
     PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, SalaryTemplateId, WalletId,
-    WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
+    WalletTransactionApprovalId, WalletTransactionId, WalletTxType, TransactionId,
 };
 
 use educore_academic::{AcademicYearId, ClassId, SectionId, StudentId};
@@ -6999,6 +6999,156 @@ impl DomainEvent for DirectFeesInstallmentAssignRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.direct_fees_installment_assign_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+
+// -- Wave 104 — Transaction (double-entry journal line) --
+//
+// TR I-1: the sum of debit lines equals the sum of credit lines
+// (the double-entry balancing invariant). Both `TransactionCreated`
+// (which carries the totals + description + reference + currency
+// downstream) and `TransactionRetired` (which is a tombstone
+// preserving the totals + description for legal-record retention)
+// are emitted by `create_transaction` / `retire_transaction`
+// service functions.
+
+/// Emitted when a `Transaction` is first created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TransactionCreated {
+    /// Aggregate identity.
+    pub transaction_id: TransactionId,
+    /// Transaction date (the date the transaction is recorded).
+    pub transaction_date: NaiveDate,
+    /// Human-readable description (TR I-1 companion: non-empty
+    /// after trimming whitespace).
+    pub description: String,
+    /// Optional external reference.
+    pub reference: Option<String>,
+    /// Sum of debit lines in minor units (TR I-1: pinned at
+    /// construction with `>= 0` guard; companion invariant
+    /// `total_debits_minor == total_credits_minor`).
+    pub total_debits_minor: i64,
+    /// Sum of credit lines in minor units (TR I-1: pinned at
+    /// construction with `>= 0` guard; companion invariant
+    /// `total_debits_minor == total_credits_minor`).
+    pub total_credits_minor: i64,
+    /// Currency the totals are denominated in.
+    pub currency: Currency,
+    /// Created-by user.
+    pub created_by: UserId,
+    /// Standard event footer: event id.
+    pub event_id: EventId,
+    /// Standard event footer: correlation id.
+    pub correlation_id: CorrelationId,
+    /// Standard event footer: occurred-at timestamp.
+    pub occurred_at: Timestamp,
+}
+
+impl TransactionCreated {
+    /// Construct a new `TransactionCreated` event.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        transaction_id: TransactionId,
+        transaction_date: NaiveDate,
+        description: String,
+        reference: Option<String>,
+        total_debits_minor: i64,
+        total_credits_minor: i64,
+        currency: Currency,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            transaction_id,
+            transaction_date,
+            description,
+            reference,
+            total_debits_minor,
+            total_credits_minor,
+            currency,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for TransactionCreated {
+    const EVENT_TYPE: &'static str = "finance.transaction.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "transaction";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.transaction_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.transaction_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `Transaction` is retired (tombstone; preserves
+/// `transaction_date` + `description` + `reference` +
+/// `total_debits_minor` + `total_credits_minor` + `currency` for
+/// legal-record retention). The transaction totals are NOT
+/// carried on the event (they are preserved in the aggregate's
+/// audit footer).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TransactionRetired {
+    /// Aggregate identity.
+    pub transaction_id: TransactionId,
+    /// Retired-by user.
+    pub retired_by: UserId,
+    /// Standard event footer: event id.
+    pub event_id: EventId,
+    /// Standard event footer: correlation id.
+    pub correlation_id: CorrelationId,
+    /// Standard event footer: occurred-at timestamp.
+    pub occurred_at: Timestamp,
+}
+
+impl TransactionRetired {
+    /// Construct a new `TransactionRetired` event.
+    pub fn new(
+        transaction_id: TransactionId,
+        retired_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            transaction_id,
+            retired_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for TransactionRetired {
+    const EVENT_TYPE: &'static str = "finance.transaction.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "transaction";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.transaction_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.transaction_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

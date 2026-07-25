@@ -3458,12 +3458,34 @@ impl RetireFeesInstallmentCreditCommand {
         vec![Capability::FinanceFeesInstallmentCreate]
     }
 }
-// -- Transaction (Phase 7 Workstream C — double-entry journal line) --
+// -- Wave 104 — Transaction (Phase 7 Workstream C — double-entry journal line) --
+//
+// TR I-1: the sum of debit lines equals the sum of credit lines.
+// The Create command carries `transaction_date` +
+// `description` (TR I-1 companion: non-empty trimmed) +
+// `reference` (optional) + `total_debits_minor` (TR I-1 guard 1:
+// pinned at construction with `>= 0` guard) +
+// `total_credits_minor` (TR I-1 guard 2: pinned at construction
+// with `>= 0` guard; companion invariant `total_debits_minor ==
+// total_credits_minor`) + `currency` (companion invariant).
+
+/// Stable command type identifier for [`CreateTransactionCommand`].
+pub const FINANCE_TRANSACTION_CREATE_COMMAND_TYPE: &str = "finance.transaction.create";
+/// Stable command type identifier for [`ReadTransactionCommand`].
+pub const FINANCE_TRANSACTION_READ_COMMAND_TYPE: &str = "finance.transaction.read";
+/// Stable command type identifier for [`RetireTransactionCommand`].
+pub const FINANCE_TRANSACTION_RETIRE_COMMAND_TYPE: &str = "finance.transaction.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateTransactionCommand {
     pub tenant: TenantContext,
     pub transaction_id: TransactionId,
+    pub transaction_date: chrono::NaiveDate,
+    pub description: String,
+    pub reference: Option<String>,
+    pub total_debits_minor: i64,
+    pub total_credits_minor: i64,
+    pub currency: Currency,
 }
 
 
@@ -3471,7 +3493,7 @@ impl CreateTransactionCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
-        vec![Capability::FinanceInvoiceRead]
+        vec![Capability::FinanceInvoiceCreate]
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -3486,6 +3508,20 @@ impl ReadTransactionCommand {
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceInvoiceRead]
+    }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireTransactionCommand {
+    pub tenant: TenantContext,
+    pub transaction_id: TransactionId,
+}
+
+
+impl RetireTransactionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceCreate]
     }
 }
 // -- Donor (Phase 7 Workstream D) --
