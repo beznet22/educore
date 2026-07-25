@@ -5536,3 +5536,233 @@ impl RealFeesGroup {
         Ok(())
     }
 }
+
+// =============================================================================
+// Wave 91 — RealDueFeesLoginPrevent (per-aggregate wave pattern
+// from Waves 65—90)
+//
+// RealDueFeesLoginPrevent replaces the placeholder
+// `DueFeesLoginPrevent` stub at aggregate.rs:1031 (Phase 7
+// Workstream J). Full lifecycle: fresh + update_metadata + retire
+// + prune.
+//
+// Invariants covered (Wave 91 — 2 invariants):
+// - DFLP I-1: unique per (school, academic, user, role) — pinned
+//   at construction via scope-key fields (academic_year_id +
+//   user_id + user_type + derived school_id); NOT mutable via
+//   update_metadata; dispatcher enforces the 4-key tuple
+//   uniqueness at the storage layer via a DB unique index
+//   (parallel to Wave 87 BA I-1 + Wave 89 EH I-1 + Wave 90 FG I-1
+//   patterns)
+// - DFLP I-2: auto-pruned when balance = 0 — dedicated `prune()`
+//   method (distinct from manual `retire()`) emits a separate
+//   `DueFeesLoginPreventPruned` event for audit clarity; the
+//   dispatcher calls `prune()` when the user's
+//   outstanding_balance reaches 0 (parallel to Wave 89 EH
+//   tombstone pattern, but auto-driven by balance change)
+// =============================================================================
+
+/// The role of the user being blocked from login due to overdue
+/// fees. The (school_id, academic_year_id, user_id, user_type)
+/// tuple is the DFLP I-1 uniqueness key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum DueFeesLoginPreventRole {
+    /// The student themselves is blocked.
+    Student,
+    /// A parent/guardian of the student is blocked.
+    Parent,
+    /// A staff member with overdue fees is blocked.
+    Staff,
+}
+
+/// `RealDueFeesLoginPrevent` shape. A row representing that a
+/// specific user (in a specific role, for a specific academic
+/// year, at a specific school) is currently blocked from login
+/// due to overdue fees.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealDueFeesLoginPrevent {
+    /// The typed id (school_id + uuid).
+    pub id: DueFeesLoginPreventId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The academic year this block is scoped to. DFLP I-1
+    /// scope-key field (NOT mutable via update_metadata).
+    pub academic_year_id: educore_academic::AcademicYearId,
+    /// The user this block targets. DFLP I-1 scope-key field
+    /// (NOT mutable).
+    pub user_id: UserId,
+    /// The role of the user being blocked. DFLP I-1 scope-key
+    /// field (NOT mutable).
+    pub user_type: DueFeesLoginPreventRole,
+    /// The outstanding balance at the time of block creation,
+    /// in MINOR units (e.g. paise for INR). PINNED at
+    /// construction (NOT mutable via update_metadata); the
+    /// dispatcher tracks the current balance separately via the
+    /// FeesPayment aggregate and decides when to call `prune()`
+    /// (DFLP I-2).
+    pub outstanding_balance_minor: i64,
+    /// Human-readable reason for the block (e.g. "Tuition
+    /// overdue Q3 2026"). MUTABLE via update_metadata.
+    pub reason: String,
+    /// The audit footer (9 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealDueFeesLoginPrevent {
+    /// Constructs a new `RealDueFeesLoginPrevent`.
+    ///
+    /// Enforces DFLP I-1 (scope-key fields academic_year_id +
+    /// user_id + user_type + school_id derived from id are
+    /// pinned at construction; dispatcher enforces the 4-key
+    /// tuple uniqueness at the storage layer via a DB unique
+    /// index). Enforces DFLP I-2 indirectly: the
+    /// `outstanding_balance_minor` field must be > 0 (you cannot
+    /// block a user from login if their balance is already 0).
+    pub fn fresh(
+        id: DueFeesLoginPreventId,
+        academic_year_id: educore_academic::AcademicYearId,
+        user_id: UserId,
+        user_type: DueFeesLoginPreventRole,
+        outstanding_balance_minor: i64,
+        reason: String,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        let trimmed_reason = reason.trim().to_owned();
+        if trimmed_reason.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "DueFeesLoginPrevent reason must be non-empty after trim",
+            ));
+        }
+        if outstanding_balance_minor <= 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "DueFeesLoginPrevent outstanding_balance_minor must be > 0 at creation (DFLP I-2: a zero balance means no block is needed)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            academic_year_id, // DFLP I-1 pinned
+            user_id,          // DFLP I-1 pinned
+            user_type,        // DFLP I-1 pinned
+            outstanding_balance_minor, // pinned at construction
+            reason: trimmed_reason,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the block is active (not retired and
+    /// not pruned).
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Returns `true` if the user is being blocked in the
+    /// `Student` role.
+    #[must_use]
+    pub const fn is_student_role(&self) -> bool {
+        matches!(self.user_type, DueFeesLoginPreventRole::Student)
+    }
+
+    /// Returns `true` if the user is being blocked in the
+    /// `Parent` role.
+    #[must_use]
+    pub const fn is_parent_role(&self) -> bool {
+        matches!(self.user_type, DueFeesLoginPreventRole::Parent)
+    }
+
+    /// Returns `true` if the user is being blocked in the
+    /// `Staff` role.
+    #[must_use]
+    pub const fn is_staff_role(&self) -> bool {
+        matches!(self.user_type, DueFeesLoginPreventRole::Staff)
+    }
+
+    /// Updates the reason (the only MUTABLE field). DFLP I-1
+    /// scope-key fields (academic_year_id + user_id + user_type)
+    /// are NOT mutable here. The outstanding_balance_minor is
+    /// also pinned at construction.
+    pub fn update_metadata(
+        &mut self,
+        reason: String,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "DueFeesLoginPrevent is not active; cannot update metadata",
+            ));
+        }
+        let trimmed_reason = reason.trim().to_owned();
+        if trimmed_reason.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "DueFeesLoginPrevent reason must be non-empty after trim on update",
+            ));
+        }
+        self.reason = trimmed_reason;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Manually retires the block (e.g. school admin overrides).
+    /// For the auto-prune flow when balance reaches 0, see
+    /// [`RealDueFeesLoginPrevent::prune`].
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "DueFeesLoginPrevent is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Auto-prunes the block when the user's outstanding balance
+    /// reaches 0. Emits a `DueFeesLoginPreventPruned` event
+    /// (distinct from manual retire's `DueFeesLoginPreventRetired`
+    /// event) so the dispatcher / audit log can distinguish
+    /// manual retirement from auto-pruning. DFLP I-2.
+    pub fn prune(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "DueFeesLoginPrevent is already retired; cannot prune",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}

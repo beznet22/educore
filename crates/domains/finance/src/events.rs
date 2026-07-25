@@ -5421,6 +5421,228 @@ impl DomainEvent for FeesGroupRetired {
     }
 }
 
+/// Emitted when a `RealDueFeesLoginPrevent` block is created via
+/// `RealDueFeesLoginPrevent::fresh`. Carries the DFLP I-1
+/// scope-key fields (academic_year_id + user_id + user_type) +
+/// the pinned `outstanding_balance_minor` + the mutable
+/// `reason`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DueFeesLoginPreventCreated {
+    pub due_fees_login_prevent_id: DueFeesLoginPreventId,
+    pub academic_year_id: educore_academic::AcademicYearId,
+    pub user_id: UserId,
+    pub user_type: crate::aggregate::DueFeesLoginPreventRole,
+    pub outstanding_balance_minor: i64,
+    pub reason: String,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DueFeesLoginPreventCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        due_fees_login_prevent_id: DueFeesLoginPreventId,
+        academic_year_id: educore_academic::AcademicYearId,
+        user_id: UserId,
+        user_type: crate::aggregate::DueFeesLoginPreventRole,
+        outstanding_balance_minor: i64,
+        reason: String,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            due_fees_login_prevent_id,
+            academic_year_id,
+            user_id,
+            user_type,
+            outstanding_balance_minor,
+            reason,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DueFeesLoginPreventCreated {
+    const EVENT_TYPE: &'static str = "finance.due_fees_login_prevent.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "due_fees_login_prevent";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.due_fees_login_prevent_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.due_fees_login_prevent_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealDueFeesLoginPrevent`'s mutable `reason`
+/// is updated via `RealDueFeesLoginPrevent::update_metadata`.
+/// Carries only the MUTABLE `reason` field. DFLP I-1 scope-key
+/// fields (academic_year_id + user_id + user_type) +
+/// `outstanding_balance_minor` (pinned at construction) are NOT
+/// carried here — preserved in the aggregate audit footer.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DueFeesLoginPreventUpdated {
+    pub due_fees_login_prevent_id: DueFeesLoginPreventId,
+    pub reason: String,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DueFeesLoginPreventUpdated {
+    pub fn new(
+        due_fees_login_prevent_id: DueFeesLoginPreventId,
+        reason: String,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            due_fees_login_prevent_id,
+            reason,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DueFeesLoginPreventUpdated {
+    const EVENT_TYPE: &'static str = "finance.due_fees_login_prevent.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "due_fees_login_prevent";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.due_fees_login_prevent_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.due_fees_login_prevent_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealDueFeesLoginPrevent` is MANUALLY retired
+/// (e.g. school admin overrides) via
+/// `RealDueFeesLoginPrevent::retire`. The original DFLP I-1
+/// scope-key fields are preserved in the audit footer for
+/// legal-record retention. For AUTO-prune when balance reaches 0
+/// (DFLP I-2), see [`DueFeesLoginPreventPruned`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DueFeesLoginPreventRetired {
+    pub due_fees_login_prevent_id: DueFeesLoginPreventId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DueFeesLoginPreventRetired {
+    pub fn new(
+        due_fees_login_prevent_id: DueFeesLoginPreventId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            due_fees_login_prevent_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DueFeesLoginPreventRetired {
+    const EVENT_TYPE: &'static str = "finance.due_fees_login_prevent.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "due_fees_login_prevent";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.due_fees_login_prevent_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.due_fees_login_prevent_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealDueFeesLoginPrevent` is AUTO-pruned via
+/// `RealDueFeesLoginPrevent::prune` because the user's
+/// outstanding balance reached 0 (DFLP I-2). Distinct event
+/// type from manual [`DueFeesLoginPreventRetired`] so the
+/// dispatcher / audit log can distinguish manual retirement
+/// from auto-pruning driven by balance change.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DueFeesLoginPreventPruned {
+    pub due_fees_login_prevent_id: DueFeesLoginPreventId,
+    pub pruned_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DueFeesLoginPreventPruned {
+    pub fn new(
+        due_fees_login_prevent_id: DueFeesLoginPreventId,
+        pruned_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            due_fees_login_prevent_id,
+            pruned_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DueFeesLoginPreventPruned {
+    const EVENT_TYPE: &'static str = "finance.due_fees_login_prevent.pruned";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "due_fees_login_prevent";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.due_fees_login_prevent_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.due_fees_login_prevent_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 
 #[cfg(test)]
 #[allow(

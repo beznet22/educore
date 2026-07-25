@@ -51,7 +51,7 @@ pub mod prelude {
         RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting,
         RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild,
         RealFmFeesTransactionLineNote, RealIncomeApproval, RealIncomeHead, RealInvoiceSetting,
-        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, Wallet, WalletTransaction,
+        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, DueFeesLoginPreventRole, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::{
@@ -86,6 +86,7 @@ pub mod prelude {
         CreateDirectFeesReminderCommand, UpdateDirectFeesReminderCommand, DeleteDirectFeesReminderCommand,
         UpdateExpenseHeadCommand, DeleteExpenseHeadCommand,
         CreateFeesGroupCommand, UpdateFeesGroupCommand, DeleteFeesGroupCommand,
+        UnblockLoginForDueFeesCommand, ReadDueFeesBlockCommand,
         RecordExpenseCommand, RecordPaymentCommand, RejectExpenseApprovalCommand,
         RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
         RequestWalletRefundCommand,
@@ -117,6 +118,7 @@ pub mod prelude {
         DirectFeesReminderCreated, DirectFeesReminderUpdated, DirectFeesReminderRetired,
         ExpenseHeadCreated, ExpenseHeadUpdated, ExpenseHeadRetired,
         FeesGroupCreated, FeesGroupUpdated, FeesGroupRetired,
+        DueFeesLoginPreventCreated, DueFeesLoginPreventUpdated, DueFeesLoginPreventRetired, DueFeesLoginPreventPruned,
         FeesCarryForwardSettingRetired, FeesCarryForwardSettingUpdated, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
         FmFeesInvoiceLineNoteRetired, FmFeesTransactionChildCreated,
         FmFeesTransactionChildRetired, FmFeesTransactionChildUpdated,
@@ -150,6 +152,7 @@ pub mod prelude {
         create_direct_fees_reminder, update_direct_fees_reminder, retire_direct_fees_reminder,
         create_expense_head, update_expense_head, retire_expense_head,
         create_fees_group, update_fees_group, retire_fees_group,
+        create_due_fees_login_prevent, update_due_fees_login_prevent, retire_due_fees_login_prevent, prune_due_fees_login_prevent,
         request_wallet_refund, ChargeRequest, PaymentProvider, PaymentProviderPaymentId,
         PaymentProviderStatus, PaymentReceipt, PaymentStatus, RefundReceipt, RefundRequest,
         StubPaymentProvider, WalletService,

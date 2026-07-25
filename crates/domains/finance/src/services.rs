@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -61,6 +61,7 @@ use crate::commands::{
     CreateDirectFeesReminderCommand, UpdateDirectFeesReminderCommand, DeleteDirectFeesReminderCommand,
     CreateExpenseHeadCommand, UpdateExpenseHeadCommand, DeleteExpenseHeadCommand,
     CreateFeesGroupCommand, UpdateFeesGroupCommand, DeleteFeesGroupCommand,
+    BlockLoginForDueFeesCommand, UnblockLoginForDueFeesCommand, ReadDueFeesBlockCommand,
     CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
@@ -93,6 +94,7 @@ use crate::events::{
     DirectFeesReminderCreated, DirectFeesReminderUpdated, DirectFeesReminderRetired,
     ExpenseHeadCreated, ExpenseHeadUpdated, ExpenseHeadRetired,
     FeesGroupCreated, FeesGroupUpdated, FeesGroupRetired,
+    DueFeesLoginPreventCreated, DueFeesLoginPreventUpdated, DueFeesLoginPreventRetired, DueFeesLoginPreventPruned,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -104,7 +106,7 @@ use crate::value_objects::{
     AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId,
     BankStatementAttachmentId, BankStatementId, Currency, DiscountType, FeesMasterId, StatementType,
     DirectFeesInstallmentAssignChildId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId,
-    DonorId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
+    DonorId, DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
     IncomeApprovalId, IncomeId,
     PayrollPaymentApprovalId, PayrollPaymentId,
     SalaryTemplateId,
@@ -4039,6 +4041,169 @@ where
 
     let event = FeesGroupRetired::new(
         cmd.fees_group_id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+// =============================================================================
+// Command: create a DueFeesLoginPrevent (RealDueFeesLoginPrevent)
+// =============================================================================
+
+/// Builds a new [`RealDueFeesLoginPrevent`] aggregate + a
+/// [`DueFeesLoginPreventCreated`] event. The aggregate pins DFLP
+/// I-1 (scope-key fields academic_year_id + user_id + user_type
+/// + school_id derived from id) + DFLP I-2 indirectly
+/// (outstanding_balance_minor > 0 at construction; auto-prune
+/// at balance = 0 is dispatched via [`prune_due_fees_login_prevent`])
+/// via `RealDueFeesLoginPrevent::fresh`.
+#[allow(clippy::too_many_arguments)]
+pub fn create_due_fees_login_prevent<C, G>(
+    cmd: BlockLoginForDueFeesCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealDueFeesLoginPrevent, DueFeesLoginPreventCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut row = RealDueFeesLoginPrevent::fresh(
+        cmd.due_fees_login_prevent_id,
+        cmd.academic_year_id, // DFLP I-1 pinned
+        cmd.user_id,          // DFLP I-1 pinned
+        cmd.user_type,        // DFLP I-1 pinned
+        cmd.outstanding_balance_minor, // pinned at construction
+        cmd.reason,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = DueFeesLoginPreventCreated::new(
+        cmd.due_fees_login_prevent_id,
+        row.academic_year_id, // DFLP I-1
+        row.user_id,          // DFLP I-1
+        row.user_type,        // DFLP I-1
+        row.outstanding_balance_minor,
+        row.reason.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+// =============================================================================
+// Command: update a DueFeesLoginPrevent's mutable reason
+// =============================================================================
+
+/// Updates a [`RealDueFeesLoginPrevent`]'s mutable `reason` via
+/// [`RealDueFeesLoginPrevent::update_metadata`] + emits a
+/// [`DueFeesLoginPreventUpdated`] event. DFLP I-1 scope-key
+/// fields (academic_year_id + user_id + user_type) +
+/// `outstanding_balance_minor` (pinned at construction) are NOT
+/// mutable here — only the `reason` can change.
+pub fn update_due_fees_login_prevent<C, G>(
+    cmd: UnblockLoginForDueFeesCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealDueFeesLoginPrevent,
+) -> Result<DueFeesLoginPreventUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    row.update_metadata(cmd.reason, now, cmd.tenant.actor_id)?;
+    row.last_event_id = Some(event_id);
+
+    let event = DueFeesLoginPreventUpdated::new(
+        cmd.due_fees_login_prevent_id,
+        row.reason.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+// =============================================================================
+// Command: manually retire a DueFeesLoginPrevent (school admin override)
+// =============================================================================
+
+/// Manually retires a [`RealDueFeesLoginPrevent`] via
+/// [`RealDueFeesLoginPrevent::retire`] + emits a
+/// [`DueFeesLoginPreventRetired`] event. For the AUTO-prune
+/// flow when balance reaches 0 (DFLP I-2), see
+/// [`prune_due_fees_login_prevent`] which emits a distinct
+/// [`DueFeesLoginPreventPruned`] event.
+pub fn retire_due_fees_login_prevent<C, G>(
+    cmd: UnblockLoginForDueFeesCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealDueFeesLoginPrevent,
+) -> Result<DueFeesLoginPreventRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    row.retire(now, cmd.tenant.actor_id)?;
+    row.last_event_id = Some(event_id);
+
+    let event = DueFeesLoginPreventRetired::new(
+        cmd.due_fees_login_prevent_id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+// =============================================================================
+// Command: auto-prune a DueFeesLoginPrevent when balance reaches 0
+// =============================================================================
+
+/// Auto-prunes a [`RealDueFeesLoginPrevent`] via
+/// [`RealDueFeesLoginPrevent::prune`] + emits a
+/// [`DueFeesLoginPreventPruned`] event (distinct from the
+/// manual [`DueFeesLoginPreventRetired`] event). DFLP I-2: the
+/// dispatcher calls this when the user's outstanding balance
+/// reaches 0 (e.g. they paid off their overdue fees). The audit
+/// log can distinguish manual retirement from auto-pruning by
+/// the event type.
+pub fn prune_due_fees_login_prevent<C, G>(
+    cmd: UnblockLoginForDueFeesCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealDueFeesLoginPrevent,
+) -> Result<DueFeesLoginPreventPruned>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    row.prune(now, cmd.tenant.actor_id)?;
+    row.last_event_id = Some(event_id);
+
+    let event = DueFeesLoginPreventPruned::new(
+        cmd.due_fees_login_prevent_id,
         cmd.tenant.actor_id,
         event_id,
         cmd.tenant.correlation_id,

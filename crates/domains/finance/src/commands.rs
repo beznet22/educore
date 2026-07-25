@@ -2105,6 +2105,11 @@ pub struct UnblockLoginForDueFeesCommand {
 
 
 impl UnblockLoginForDueFeesCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_DUE_FEES_UNBLOCK_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -2119,10 +2124,15 @@ pub struct ReadDueFeesBlockCommand {
 
 
 impl ReadDueFeesBlockCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_DUE_FEES_READ_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
-        vec![Capability::FinanceDueFeesBlock]
+        vec![Capability::FinanceDueFeesRead]
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -2651,12 +2661,21 @@ impl CreateExpenseHeadCommand {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockLoginForDueFeesCommand {
     pub tenant: TenantContext,
+    pub due_fees_login_prevent_id: DueFeesLoginPreventId,
+    pub academic_year_id: educore_academic::AcademicYearId,
     pub user_id: UserId,
-    pub reason: crate::value_objects::PreventReason,
+    pub user_type: crate::aggregate::DueFeesLoginPreventRole,
+    pub outstanding_balance_minor: i64,
+    pub reason: String,
 }
 
 
 impl BlockLoginForDueFeesCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_DUE_FEES_BLOCK_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
