@@ -2092,14 +2092,6 @@ macro_rules! finance_event_stub {
 }
 
 finance_event_stub! {
-    /// Emitted when a new `FeesGroup` aggregate is created.
-    pub struct FeesGroupCreated;
-    event_type: "finance.fees_group.created",
-    aggregate_type: "fees_group",
-    aggregate_id: FeesGroupId,
-}
-
-finance_event_stub! {
     /// Emitted when a new `FeesType` aggregate is created.
     pub struct FeesTypeCreated;
     event_type: "finance.fees_type.created",
@@ -5267,6 +5259,162 @@ impl DomainEvent for ExpenseHeadRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.expense_head_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesGroup` catalogue entry is created via
+/// `RealFeesGroup::fresh`. Carries `name` (FG I-1 uniqueness
+/// anchor + FG I-2 non-empty trim guard — both pinned at
+/// construction) + the mutable `description`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesGroupCreated {
+    pub fees_group_id: FeesGroupId,
+    pub name: String, // FG I-1 + FG I-2 pinned
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesGroupCreated {
+    pub fn new(
+        fees_group_id: FeesGroupId,
+        name: String,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_group_id,
+            name,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesGroupCreated {
+    const EVENT_TYPE: &'static str = "finance.fees_group.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_group";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_group_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_group_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesGroup`'s mutable metadata is updated
+/// via `RealFeesGroup::update_metadata`. Carries only the
+/// MUTABLE `description`. FG I-1 (`name`) is NOT carried here —
+/// it is preserved in the audit footer of the aggregate itself.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesGroupUpdated {
+    pub fees_group_id: FeesGroupId,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesGroupUpdated {
+    pub fn new(
+        fees_group_id: FeesGroupId,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_group_id,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesGroupUpdated {
+    const EVENT_TYPE: &'static str = "finance.fees_group.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_group";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_group_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_group_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesGroup` is retired (soft-deleted via
+/// `RealFeesGroup::retire`). The original `name` (FG I-1) is
+/// preserved in the audit footer for legal-record retention +
+/// uniqueness queries.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesGroupRetired {
+    pub fees_group_id: FeesGroupId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesGroupRetired {
+    pub fn new(
+        fees_group_id: FeesGroupId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_group_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesGroupRetired {
+    const EVENT_TYPE: &'static str = "finance.fees_group.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_group";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_group_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_group_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

@@ -51,7 +51,7 @@ pub mod prelude {
         RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting,
         RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild,
         RealFmFeesTransactionLineNote, RealIncomeApproval, RealIncomeHead, RealInvoiceSetting,
-        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, Wallet, WalletTransaction,
+        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::{
@@ -85,6 +85,7 @@ pub mod prelude {
         UpdateBankAccountCommand, DeleteBankAccountCommand, ReadBankAccountCommand,
         CreateDirectFeesReminderCommand, UpdateDirectFeesReminderCommand, DeleteDirectFeesReminderCommand,
         UpdateExpenseHeadCommand, DeleteExpenseHeadCommand,
+        CreateFeesGroupCommand, UpdateFeesGroupCommand, DeleteFeesGroupCommand,
         RecordExpenseCommand, RecordPaymentCommand, RejectExpenseApprovalCommand,
         RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
         RequestWalletRefundCommand,
@@ -115,6 +116,7 @@ pub mod prelude {
         BankAccountCreated, BankAccountUpdated, BankAccountRetired,
         DirectFeesReminderCreated, DirectFeesReminderUpdated, DirectFeesReminderRetired,
         ExpenseHeadCreated, ExpenseHeadUpdated, ExpenseHeadRetired,
+        FeesGroupCreated, FeesGroupUpdated, FeesGroupRetired,
         FeesCarryForwardSettingRetired, FeesCarryForwardSettingUpdated, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
         FmFeesInvoiceLineNoteRetired, FmFeesTransactionChildCreated,
         FmFeesTransactionChildRetired, FmFeesTransactionChildUpdated,
@@ -147,6 +149,7 @@ pub mod prelude {
         open_bank_account, update_bank_account, retire_bank_account,
         create_direct_fees_reminder, update_direct_fees_reminder, retire_direct_fees_reminder,
         create_expense_head, update_expense_head, retire_expense_head,
+        create_fees_group, update_fees_group, retire_fees_group,
         request_wallet_refund, ChargeRequest, PaymentProvider, PaymentProviderPaymentId,
         PaymentProviderStatus, PaymentReceipt, PaymentStatus, RefundReceipt, RefundRequest,
         StubPaymentProvider, WalletService,

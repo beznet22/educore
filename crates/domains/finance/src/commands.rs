@@ -288,12 +288,18 @@ pub use crate::services::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFeesGroupCommand {
     pub tenant: TenantContext,
-    pub name: String,
+    pub fees_group_id: FeesGroupId,
+    pub name: String, // FG I-1 + FG I-2 pinned
     pub description: Option<String>,
 }
 
 
 impl CreateFeesGroupCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FEES_GROUP_CREATE_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -304,15 +310,19 @@ impl CreateFeesGroupCommand {
 pub struct UpdateFeesGroupCommand {
     pub tenant: TenantContext,
     pub fees_group_id: FeesGroupId,
-    pub name: Option<String>,
+    /// Mutable description (NOT name — FG I-1 says name is the
+    /// uniqueness anchor and is NOT mutable via update_metadata;
+    /// changing the name requires retire + create-new).
     pub description: Option<String>,
-    pub start_date: Option<NaiveDate>,
-    pub end_date: Option<NaiveDate>,
-    pub due_date: Option<NaiveDate>,
 }
 
 
 impl UpdateFeesGroupCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FEES_GROUP_UPDATE_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -327,6 +337,11 @@ pub struct DeleteFeesGroupCommand {
 
 
 impl DeleteFeesGroupCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FEES_GROUP_DELETE_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {

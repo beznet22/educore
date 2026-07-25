@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -60,6 +60,7 @@ use crate::commands::{
     OpenBankAccountCommand, UpdateBankAccountCommand, DeleteBankAccountCommand,
     CreateDirectFeesReminderCommand, UpdateDirectFeesReminderCommand, DeleteDirectFeesReminderCommand,
     CreateExpenseHeadCommand, UpdateExpenseHeadCommand, DeleteExpenseHeadCommand,
+    CreateFeesGroupCommand, UpdateFeesGroupCommand, DeleteFeesGroupCommand,
     CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
@@ -91,6 +92,7 @@ use crate::events::{
     BankAccountCreated, BankAccountUpdated, BankAccountRetired,
     DirectFeesReminderCreated, DirectFeesReminderUpdated, DirectFeesReminderRetired,
     ExpenseHeadCreated, ExpenseHeadUpdated, ExpenseHeadRetired,
+    FeesGroupCreated, FeesGroupUpdated, FeesGroupRetired,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -107,7 +109,7 @@ use crate::value_objects::{
     PayrollPaymentApprovalId, PayrollPaymentId,
     SalaryTemplateId,
     FeesInvoiceId, FeesPaymentId,
-    FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
+    FeesGroupId, FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId,
     QuestionBankFeeId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
@@ -3921,6 +3923,122 @@ where
 
     let event = ExpenseHeadRetired::new(
         cmd.expense_head_id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+// =============================================================================
+// Command: create a FeesGroup (RealFeesGroup)
+// =============================================================================
+
+/// Builds a new [`RealFeesGroup`] aggregate + a
+/// [`FeesGroupCreated`] event. The aggregate pins FG I-1 (name
+/// uniqueness anchor) + FG I-2 (name non-empty trim guard) via
+/// `RealFeesGroup::fresh`.
+pub fn create_fees_group<C, G>(
+    cmd: CreateFeesGroupCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesGroup, FeesGroupCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut row = RealFeesGroup::fresh(
+        cmd.fees_group_id,
+        cmd.name, // FG I-1 + FG I-2 pinned
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = FeesGroupCreated::new(
+        cmd.fees_group_id,
+        row.name.clone(), // FG I-1 + FG I-2 carried downstream
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+// =============================================================================
+// Command: update a FeesGroup's mutable metadata
+// =============================================================================
+
+/// Updates a [`RealFeesGroup`]'s mutable metadata via
+/// [`RealFeesGroup::update_metadata`] + emits a
+/// [`FeesGroupUpdated`] event. FG I-1 (`name`) is NOT mutable
+/// here — changing the name requires retire + create-new. Only
+/// `description` can change.
+pub fn update_fees_group<C, G>(
+    cmd: UpdateFeesGroupCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealFeesGroup,
+) -> Result<FeesGroupUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    row.update_metadata(cmd.description, now, cmd.tenant.actor_id)?;
+    row.last_event_id = Some(event_id);
+
+    let event = FeesGroupUpdated::new(
+        cmd.fees_group_id,
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+// =============================================================================
+// Command: retire a FeesGroup (soft-delete tombstone)
+// =============================================================================
+
+/// Retires a [`RealFeesGroup`] via [`RealFeesGroup::retire`] +
+/// emits a [`FeesGroupRetired`] event. The original `name` (FG
+/// I-1) is preserved in the audit footer for legal-record
+/// retention + uniqueness queries. NOTE: FG I-4 (cannot delete
+/// while referenced by RealFeesMaster) is enforced by the
+/// dispatcher before calling this function — once
+/// `RealFeesMaster` lands, the dispatcher will reject the
+/// retire call if active FeesMaster rows reference this group.
+pub fn retire_fees_group<C, G>(
+    cmd: DeleteFeesGroupCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealFeesGroup,
+) -> Result<FeesGroupRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    row.retire(now, cmd.tenant.actor_id)?;
+    row.last_event_id = Some(event_id);
+
+    let event = FeesGroupRetired::new(
+        cmd.fees_group_id,
         cmd.tenant.actor_id,
         event_id,
         cmd.tenant.correlation_id,
