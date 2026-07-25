@@ -37,7 +37,7 @@ use crate::value_objects::{
     FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId,
     FmFeesWeaverId,
     FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
-    IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId,
+    IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId, ProductPurchaseId,
     PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, SalaryTemplateId, WalletId,
     WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
@@ -6543,6 +6543,119 @@ impl DomainEvent for InventoryPaymentRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.inventory_payment_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// ===================================================================
+// Wave 99 — RealProductPurchase events (per-aggregate wave pattern from Waves 65-98)
+// ===================================================================
+
+/// Emitted when a `RealProductPurchase` is created via
+/// `RealProductPurchase::fresh`. Carries `product_name` + `quantity` +
+/// `amount_minor` (PPr I-1 — >= 0) + optional `supplier_reference`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProductPurchaseCreated {
+    pub product_purchase_id: ProductPurchaseId,
+    pub product_name: String,
+    pub quantity: i64,
+    pub amount_minor: i64, // PPr I-1
+    pub supplier_reference: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ProductPurchaseCreated {
+    pub fn new(
+        product_purchase_id: ProductPurchaseId,
+        product_name: String,
+        quantity: i64,
+        amount_minor: i64,
+        supplier_reference: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            product_purchase_id,
+            product_name,
+            quantity,
+            amount_minor,
+            supplier_reference,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ProductPurchaseCreated {
+    const EVENT_TYPE: &'static str = "finance.product_purchase.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "product_purchase";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.product_purchase_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.product_purchase_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealProductPurchase` is retired (soft-deleted via
+/// `RealProductPurchase::retire`). The original `product_name` +
+/// `quantity` + `amount_minor` (PPr I-1) + `supplier_reference` are
+/// preserved in the audit footer for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProductPurchaseRetired {
+    pub product_purchase_id: ProductPurchaseId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ProductPurchaseRetired {
+    pub fn new(
+        product_purchase_id: ProductPurchaseId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            product_purchase_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ProductPurchaseRetired {
+    const EVENT_TYPE: &'static str = "finance.product_purchase.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "product_purchase";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.product_purchase_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.product_purchase_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

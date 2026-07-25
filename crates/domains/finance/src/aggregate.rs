@@ -6681,3 +6681,124 @@ impl RealInventoryPayment {
         Ok(())
     }
 }
+
+// ===================================================================
+// Wave 99 — RealProductPurchase (per-aggregate wave pattern from Waves 65-98)
+// ===================================================================
+
+/// ProductPurchase (headline aggregate).
+///
+/// Per-aggregate drop Wave 99. Replaces the Phase 7 Workstream stub
+/// at aggregate.rs:1005 with a full-lifecycle `Real*` aggregate.
+///
+/// PPr I-1: amount >= 0 (amount_minor pinned in minor units).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealProductPurchase {
+    /// Aggregate identity.
+    pub id: ProductPurchaseId,
+    /// School anchor (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// Product name (display-only).
+    pub product_name: String,
+    /// Quantity purchased.
+    pub quantity: i64,
+    /// Amount in minor units (PPr I-1 — pinned at construction with
+    /// `>= 0` guard).
+    pub amount_minor: i64,
+    /// Optional supplier reference (could link to InventoryPayment in
+    /// future; PPr I-2/I-3 deferred).
+    pub supplier_reference: Option<String>,
+    /// Standard audit footer: optimistic concurrency version.
+    pub version: Version,
+    /// Standard audit footer: etag.
+    pub etag: Etag,
+    /// Standard audit footer: created timestamp.
+    pub created_at: Timestamp,
+    /// Standard audit footer: last updated timestamp.
+    pub updated_at: Timestamp,
+    /// Standard audit footer: created-by user.
+    pub created_by: UserId,
+    /// Standard audit footer: last updated-by user.
+    pub updated_by: UserId,
+    /// Standard audit footer: active status.
+    pub active_status: ActiveStatus,
+    /// Standard audit footer: last emitted event id.
+    pub last_event_id: Option<EventId>,
+    /// Standard audit footer: request correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealProductPurchase {
+    /// Construct a fresh `RealProductPurchase` aggregate.
+    ///
+    /// Enforces PPr I-1 (`amount_minor >= 0`) at construction.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: ProductPurchaseId,
+        product_name: String,
+        quantity: i64,
+        amount_minor: i64,
+        supplier_reference: Option<String>,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // PPr I-1: amount_minor >= 0.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "ProductPurchase amount_minor must be >= 0 (PPr I-1)",
+            ));
+        }
+        // Quantity must also be positive (companion invariant).
+        if quantity <= 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "ProductPurchase quantity must be > 0",
+            ));
+        }
+        let product_name_trimmed = product_name.trim().to_string();
+        if product_name_trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "ProductPurchase product_name must be non-empty after trim",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            product_name: product_name_trimmed,
+            quantity,
+            amount_minor,
+            supplier_reference,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    /// Whether the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    /// Retire the aggregate (tombstone; preserves `product_name` +
+    /// `quantity` + `amount_minor` + `supplier_reference` in audit
+    /// footer).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "ProductPurchase is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}

@@ -51,7 +51,7 @@ pub mod prelude {
         RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting,
         RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild,
         RealFmFeesTransactionLineNote, RealIncomeApproval, RealIncomeHead, RealInvoiceSetting,
-        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, DueFeesLoginPreventRole, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealDirectFeesInstallmentChildPayment, RealIncome, RealInventoryPayment, Wallet, WalletTransaction,
+        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, DueFeesLoginPreventRole, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealDirectFeesInstallmentChildPayment, RealIncome, RealInventoryPayment, RealProductPurchase, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::{
@@ -94,6 +94,7 @@ pub mod prelude {
         CreateDirectFeesInstallmentChildPaymentCommand, ReadDirectFeesInstallmentChildPaymentCommand, RetireDirectFeesInstallmentChildPaymentCommand,
         CreateIncomeCommand, ReadIncomeCommand, RetireIncomeCommand,
         CreateInventoryPaymentCommand, ReadInventoryPaymentCommand, RetireInventoryPaymentCommand,
+        CreateProductPurchaseCommand, ReadProductPurchaseCommand, RetireProductPurchaseCommand,
         RecordExpenseCommand, RecordPaymentCommand, RejectExpenseApprovalCommand,
         RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
         RequestWalletRefundCommand,
@@ -120,6 +121,9 @@ pub mod prelude {
         FINANCE_INVENTORY_PAYMENT_CREATE_COMMAND_TYPE,
         FINANCE_INVENTORY_PAYMENT_READ_COMMAND_TYPE,
         FINANCE_INVENTORY_PAYMENT_RETIRE_COMMAND_TYPE,
+        FINANCE_PRODUCT_PURCHASE_CREATE_COMMAND_TYPE,
+        FINANCE_PRODUCT_PURCHASE_READ_COMMAND_TYPE,
+        FINANCE_PRODUCT_PURCHASE_RETIRE_COMMAND_TYPE,
     };
     pub use crate::entities::WalletTransactionApproval as WalletTransactionApprovalEntity;
     pub use crate::errors::FinanceError;
@@ -149,6 +153,7 @@ pub mod prelude {
         DirectFeesInstallmentChildPaymentCreated, DirectFeesInstallmentChildPaymentRetired,
         IncomeCreated, IncomeRetired,
         InventoryPaymentCreated, InventoryPaymentRetired,
+        ProductPurchaseCreated, ProductPurchaseRetired,
         FeesCarryForwardSettingRetired, FeesCarryForwardSettingUpdated, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
         FmFeesInvoiceLineNoteRetired, FmFeesTransactionChildCreated,
         FmFeesTransactionChildRetired, FmFeesTransactionChildUpdated,
@@ -190,6 +195,7 @@ pub mod prelude {
         create_direct_fees_installment_child_payment, read_direct_fees_installment_child_payment, retire_direct_fees_installment_child_payment,
         create_income, read_income, retire_income,
         create_inventory_payment, read_inventory_payment, retire_inventory_payment,
+        create_product_purchase, read_product_purchase, retire_product_purchase,
         request_wallet_refund, ChargeRequest, PaymentProvider, PaymentProviderPaymentId,
         PaymentProviderStatus, PaymentReceipt, PaymentStatus, RefundReceipt, RefundRequest,
         StubPaymentProvider, WalletService,

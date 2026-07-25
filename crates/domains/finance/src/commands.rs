@@ -3408,30 +3408,68 @@ impl ReadDonorCommand {
         vec![Capability::FinanceInvoiceRead]
     }
 }
-// -- ProductPurchase (Phase 7 Workstream L) --
+// -- ProductPurchase (Wave 99 — RealProductPurchase) --
+
+/// COMMAND_TYPE discriminator for `CreateProductPurchaseCommand`.
+pub const FINANCE_PRODUCT_PURCHASE_CREATE_COMMAND_TYPE: &str =
+    "finance.product_purchase.create";
+
+/// COMMAND_TYPE discriminator for `ReadProductPurchaseCommand`.
+pub const FINANCE_PRODUCT_PURCHASE_READ_COMMAND_TYPE: &str =
+    "finance.product_purchase.read";
+
+/// COMMAND_TYPE discriminator for `RetireProductPurchaseCommand`.
+pub const FINANCE_PRODUCT_PURCHASE_RETIRE_COMMAND_TYPE: &str =
+    "finance.product_purchase.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateProductPurchaseCommand {
     pub tenant: TenantContext,
     pub product_purchase_id: ProductPurchaseId,
+    pub product_name: String,
+    pub quantity: i64,
+    pub amount_minor: i64, // PPr I-1
+    pub supplier_reference: Option<String>,
 }
 
-
 impl CreateProductPurchaseCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_PRODUCT_PURCHASE_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceInvoiceRead]
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadProductPurchaseCommand {
     pub tenant: TenantContext,
     pub product_purchase_id: ProductPurchaseId,
 }
 
-
 impl ReadProductPurchaseCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_PRODUCT_PURCHASE_READ_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireProductPurchaseCommand {
+    pub tenant: TenantContext,
+    pub product_purchase_id: ProductPurchaseId,
+}
+
+impl RetireProductPurchaseCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_PRODUCT_PURCHASE_RETIRE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
