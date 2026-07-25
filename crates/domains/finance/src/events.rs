@@ -4015,6 +4015,139 @@ impl DomainEvent for SalaryTemplateRetired {
     }
 }
 
+// =============================================================================
+// BankPaymentSlipAudit events — Wave 83 (per-aggregate wave pattern from
+// Waves 65–82)
+// =============================================================================
+//
+// Per v3 Part 2 F37 + checklist § BankPaymentSlipAudit: 2 invariants:
+//   - BPA I-1: append-only log (enforced at the API surface by
+//             intentionally exposing no `update_*` mutator on the
+//             aggregate; NO `Updated` event variant exists, which
+//             is the type-system-level enforcement).
+//   - BPA I-2: timestamps recorded (every audit row carries
+//             created_at + created_by + updated_at + updated_by in
+//             the 10-field audit footer; the `recorded_at` payload
+//             field carries the slip-recording semantic timestamp).
+// Append-only event family — parallel to Wave 70
+// FeesCarryForwardLog events (Created + Retired; no Updated).
+// Two headline events: Created (initial append), Retired
+// (tombstone — preserves original slip + bank + amount).
+
+/// Emitted when a new `RealBankPaymentSlipAudit` row is appended.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankPaymentSlipAuditCreated {
+    pub bank_payment_slip_audit_id: BankPaymentSlipAuditId,
+    pub bank_payment_slip_id: BankPaymentSlipId,
+    pub bank_account_id: BankAccountId,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub recorded_at: Timestamp,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankPaymentSlipAuditCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        bank_payment_slip_audit_id: BankPaymentSlipAuditId,
+        bank_payment_slip_id: BankPaymentSlipId,
+        bank_account_id: BankAccountId,
+        amount_minor: i64,
+        currency: Currency,
+        recorded_at: Timestamp,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_payment_slip_audit_id,
+            bank_payment_slip_id,
+            bank_account_id,
+            amount_minor,
+            currency,
+            recorded_at,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankPaymentSlipAuditCreated {
+    const EVENT_TYPE: &'static str = "finance.bank_payment_slip_audit.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_payment_slip_audit";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_payment_slip_audit_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_payment_slip_audit_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealBankPaymentSlipAudit` row is retired
+/// (soft-deleted via `RealBankPaymentSlipAudit::retire`). The
+/// original `bank_payment_slip_id` + `bank_account_id` +
+/// `amount_minor` + `currency` + `recorded_at` are preserved in
+/// the audit footer for legal-record retention. BPA I-1
+/// (append-only) is upheld because retire is a tombstone, NOT a
+/// content edit.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankPaymentSlipAuditRetired {
+    pub bank_payment_slip_audit_id: BankPaymentSlipAuditId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankPaymentSlipAuditRetired {
+    pub fn new(
+        bank_payment_slip_audit_id: BankPaymentSlipAuditId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_payment_slip_audit_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankPaymentSlipAuditRetired {
+    const EVENT_TYPE: &'static str = "finance.bank_payment_slip_audit.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_payment_slip_audit";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_payment_slip_audit_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_payment_slip_audit_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 
 #[cfg(test)]
 #[allow(

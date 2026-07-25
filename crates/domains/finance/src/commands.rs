@@ -24,9 +24,10 @@ use educore_core::ids::UserId;
 use educore_rbac::value_objects::Capability;
 use educore_academic::{AcademicYearId, StudentId};
 use educore_core::tenant::TenantContext;
+use educore_core::value_objects::Timestamp;
 
 use crate::value_objects::{
-    AccountType, AmountTransferId, BankAccountId, BankMode, BankPaymentSlipId, BankStatementId,
+    AccountType, AmountTransferId, BankAccountId, BankMode, BankPaymentSlipId, BankPaymentSlipAuditId, BankStatementId,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId,
     DirectFeesInstallmentChildPaymentId,
     DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
@@ -3551,6 +3552,52 @@ impl CreateSalaryTemplateCommand {
         // same fallback used in Wave 81 PayrollPaymentApproval
         // commands).
         vec![Capability::FinancePayrollPaymentRecord]
+    }
+}
+
+// -----------------------------------------------------------------------------
+// BankPaymentSlipAudit commands (Wave 83 — per-aggregate wave pattern from
+// Waves 65–82)
+// -----------------------------------------------------------------------------
+//
+// Per v3 Part 2 F37 + checklist § BankPaymentSlipAudit: 2 invariants:
+//   - BPA I-1: append-only log (enforced at the API surface by
+//             intentionally exposing no `update_*` mutator on the
+//             aggregate).
+//   - BPA I-2: timestamps recorded (audit footer stamps; recorded_at
+//             payload field carries the slip-recording semantic
+//             timestamp).
+//
+// Append-only event family — parallel to Wave 70
+// FeesCarryForwardLog. GREENFIELD command (no skeleton existed per
+// Wave 83 recon). RBAC fallback: Capability::FinanceBankSlipAudit
+// does not exist; use the closest existing variant
+// (FinanceBankSlipGenerate, parallel to Wave 72/75/77/78/80/81/82
+// fallback chain).
+
+/// Command: append a new `BankPaymentSlipAudit` row to the
+/// append-only log.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateBankPaymentSlipAuditCommand {
+    pub tenant: TenantContext,
+    pub bank_payment_slip_audit_id: BankPaymentSlipAuditId,
+    pub bank_payment_slip_id: BankPaymentSlipId,
+    pub bank_account_id: BankAccountId,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub recorded_at: Timestamp,
+    pub description: Option<String>,
+}
+
+impl CreateBankPaymentSlipAuditCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        // Wave 83 RBAC: FinanceBankSlipAudit does not exist; use
+        // FinanceBankSlipGenerate (closest existing variant for the
+        // bank-slip generation flow). Parallel to Wave 72/75/77/78/
+        // 80/81/82 fallback chain.
+        &[Capability::FinanceBankSlipGenerate]
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

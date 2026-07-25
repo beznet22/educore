@@ -35,13 +35,14 @@ use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
-    RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
+    RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
     RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, Wallet, WalletTransaction,
 };
 use crate::entities::{PayrollPaymentApproval, WalletTransactionApproval};
 use crate::commands::{
     ApproveExpenseApprovalCommand, ApproveIncomeApprovalCommand, ApprovePayrollPaymentApprovalCommand,
+    CreateBankPaymentSlipAuditCommand,
     ApproveWalletTransactionApprovalCommand,
     CreateChartOfAccountCommand,
     CreateSalaryTemplateCommand,
@@ -74,7 +75,7 @@ use crate::events::{
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
     FmFeesGroupCreated, IncomeApprovalApproved, IncomeApprovalCreated, IncomeApprovalRejected,
     PayrollPaymentApprovalApproved, PayrollPaymentApprovalCreated, PayrollPaymentApprovalRejected,
-    SalaryTemplateCreated,
+    SalaryTemplateCreated, BankPaymentSlipAuditCreated, BankPaymentSlipAuditRetired,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -83,7 +84,8 @@ use crate::events::{
     WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
 };
 use crate::value_objects::{
-    AccountType, BankAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
+    AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, Currency,
+    DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
     DonorId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
     IncomeApprovalId, IncomeId,
     PayrollPaymentApprovalId, PayrollPaymentId,
@@ -2151,6 +2153,70 @@ where
         row.gross_salary_minor,
         row.net_salary_minor,
         row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+// =============================================================================
+// BankPaymentSlipAudit services (Wave 83 — per-aggregate wave pattern from
+// Waves 65–82)
+// =============================================================================
+//
+// Per v3 Part 2 F37 + checklist § BankPaymentSlipAudit: 2 invariants:
+//   - BPA I-1: append-only log (enforced at the API surface by
+//             intentionally exposing no `update_*` mutator on the
+//             aggregate).
+//   - BPA I-2: timestamps recorded (audit footer stamps; recorded_at
+//             payload field carries the slip-recording semantic
+//             timestamp).
+//
+// Append-only service function — parallel to Wave 70
+// create_fees_carry_forward_log. Returns the aggregate + the
+// BankPaymentSlipAuditCreated event in one shot.
+
+/// Builds a new [`RealBankPaymentSlipAudit`] aggregate + a
+/// [`BankPaymentSlipAuditCreated`] event. Appends to the log.
+/// BPA I-1: validates `amount_minor >= 0`. BPA I-2: stamps
+/// created_at / created_by / updated_at / updated_by in the audit
+/// footer; `recorded_at` is the caller-supplied semantic timestamp
+/// (not `now()` — slips may be recorded days after payment date).
+pub fn create_bank_payment_slip_audit<C, G>(
+    cmd: CreateBankPaymentSlipAuditCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealBankPaymentSlipAudit, BankPaymentSlipAuditCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let _ = event_id_to_uuid(event_id); // reserved for future audit-footer linking
+
+    let mut row = RealBankPaymentSlipAudit::fresh(
+        cmd.bank_payment_slip_audit_id,
+        cmd.bank_payment_slip_id,
+        cmd.bank_account_id,
+        cmd.amount_minor,
+        cmd.currency,
+        cmd.recorded_at,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = BankPaymentSlipAuditCreated::new(
+        cmd.bank_payment_slip_audit_id,
+        cmd.bank_payment_slip_id,
+        cmd.bank_account_id,
+        row.amount_minor,
+        row.currency,
+        row.recorded_at,
         cmd.tenant.actor_id,
         event_id,
         cmd.tenant.correlation_id,

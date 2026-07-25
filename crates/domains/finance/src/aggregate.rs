@@ -34,7 +34,7 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
 use crate::value_objects::{
     validate_discount_name, validate_donor_name, validate_ledger_name, AccountType, Amount,
-    ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankStatementAttachmentId,
+    ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId,
     DirectFeesInstallmentAssignId, DirectFeesSettingId, DiscountType, DonorId,
     DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId,
@@ -4276,6 +4276,149 @@ impl RealSalaryTemplate {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "SalaryTemplate is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
+// RealBankPaymentSlipAudit — Wave 83 (per-aggregate wave pattern from
+// Waves 65–82)
+// =============================================================================
+//
+// Per v3 Part 2 F37 + checklist § BankPaymentSlipAudit: 2 invariants:
+//   - BPA I-1: append-only log — the aggregate intentionally exposes
+//             no `update_*` mutator (only `fresh()` and `retire()`).
+//             The retire is a tombstone, NOT a content edit, and
+//             preserves the original slip + bank + amount references.
+//             NO `Updated` event exists for this aggregate, which
+//             is the type-system-level enforcement of the append-
+//             only contract.
+//   - BPA I-2: timestamps recorded — every audit row carries
+//             created_at + created_by + updated_at + updated_by in
+//             the 10-field audit footer (per AGENTS.md); the
+//             recorded_at timestamp on the payload carries the
+//             when-the-slip-was-recorded semantic timestamp.
+// Append-only ledger: parallel to Wave 70 FeesCarryForwardLog,
+// Wave 72 FmFeesInvoiceLineNote, Wave 73 DirectFeesInstallmentAssignChild,
+// and Wave 75 FmFeesTransactionLineNote. The placeholder stub above
+// (`finance_aggregate_stub! { struct BankPaymentSlipAudit { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealBankPaymentSlipAudit` for new code; the stub is kept only to
+// avoid breaking downstream code that referenced
+// `BankPaymentSlipAudit` as a type name during Phase 7.
+
+/// An audit row for a `BankPaymentSlip` (child entity). Two
+/// invariants: BPA I-1 (append-only, enforced at the API surface by
+/// intentionally exposing no `update_*` mutator) and BPA I-2
+/// (timestamps recorded — every transition stamps created_at /
+/// created_by / updated_at / updated_by in the audit footer, and
+/// recorded_at carries the slip-recording semantic timestamp).
+/// Lifecycle: fresh (append-only) → retire (tombstone, no content edit).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealBankPaymentSlipAudit {
+    /// The typed id (school_id + uuid).
+    pub id: BankPaymentSlipAuditId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The bank payment slip this audit row belongs to.
+    pub bank_payment_slip_id: BankPaymentSlipId,
+    /// The bank account the slip was paid against.
+    pub bank_account_id: BankAccountId,
+    /// The amount paid in minor currency units (>= 0; the
+    /// aggregate enforces the lower bound; bank slips must not be
+    /// negative).
+    pub amount_minor: i64,
+    /// The currency of the amount.
+    pub currency: Currency,
+    /// The semantic timestamp when the slip was recorded (set by
+    /// the caller, not by `now()` — the slip may be recorded days
+    /// after the actual payment date).
+    pub recorded_at: Timestamp,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealBankPaymentSlipAudit {
+    /// Constructs a new `RealBankPaymentSlipAudit` row in the
+    /// append-only log. Enforces BPA I-1 lower bound
+    /// (`amount_minor >= 0`). BPA I-2 stamps `created_at` /
+    /// `created_by` / `updated_at` / `updated_by` in the audit
+    /// footer; `recorded_at` is the semantic timestamp supplied by
+    /// the caller (not `now()` — slips may be recorded days after
+    /// the actual payment date).
+    pub fn fresh(
+        id: BankPaymentSlipAuditId,
+        bank_payment_slip_id: BankPaymentSlipId,
+        bank_account_id: BankAccountId,
+        amount_minor: i64,
+        currency: Currency,
+        recorded_at: Timestamp,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // BPA I-1 lower bound: amount must be non-negative.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "BankPaymentSlipAudit amount_minor must be non-negative (BPA I-1)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            bank_payment_slip_id,
+            bank_account_id,
+            amount_minor,
+            currency,
+            recorded_at, // BPA I-2: caller-supplied semantic timestamp
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at, // BPA I-2: audit-footer created_at
+            updated_at: created_at,
+            created_by, // BPA I-2: audit-footer created_by
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the audit row is currently active (not retired).
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the audit row by flipping `active_status` to
+    /// `Retired`. This is a **tombstone**, NOT a content edit —
+    /// the original `bank_payment_slip_id` + `bank_account_id` +
+    /// `amount_minor` + `currency` + `recorded_at` are preserved in
+    /// the audit footer for legal-record retention. BPA I-1
+    /// (append-only) is upheld because `retire()` does NOT mutate
+    /// any of those fields; it only flips the active flag.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "BankPaymentSlipAudit is already retired",
             ));
         }
         self.active_status = ActiveStatus::Retired;
