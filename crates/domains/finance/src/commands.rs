@@ -2888,34 +2888,96 @@ impl ReadFmFeesInvoiceChildCommand {
         vec![Capability::FinanceFeesInvoiceRead]
     }
 }
-// -- FmFeesInvoiceSetting (Phase 7 Workstream G) --
+// -- FmFeesInvoiceSetting (Wave 94 — RealFmFeesInvoiceSetting) --
+
+/// COMMAND_TYPE discriminator for `CreateFmFeesInvoiceSettingCommand`.
+pub const FINANCE_FM_FEES_INVOICE_SETTING_CREATE_COMMAND_TYPE: &str =
+    "finance.fm_fees_invoice_setting.create";
+
+/// COMMAND_TYPE discriminator for `ReadFmFeesInvoiceSettingCommand`.
+pub const FINANCE_FM_FEES_INVOICE_SETTING_READ_COMMAND_TYPE: &str =
+    "finance.fm_fees_invoice_setting.read";
+
+/// COMMAND_TYPE discriminator for `UpdateFmFeesInvoiceSettingCommand`.
+pub const FINANCE_FM_FEES_INVOICE_SETTING_UPDATE_COMMAND_TYPE: &str =
+    "finance.fm_fees_invoice_setting.update";
+
+/// COMMAND_TYPE discriminator for `RetireFmFeesInvoiceSettingCommand`.
+pub const FINANCE_FM_FEES_INVOICE_SETTING_RETIRE_COMMAND_TYPE: &str =
+    "finance.fm_fees_invoice_setting.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFmFeesInvoiceSettingCommand {
     pub tenant: TenantContext,
     pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
+    pub prefix: String, // FFIS I-3
+    pub per_th: i64, // FFIS I-1
+    pub due_date: NaiveDate, // FFIS I-2
+    pub due_date_offset_days: i64, // FFIS I-2
 }
 
-
 impl CreateFmFeesInvoiceSettingCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_INVOICE_SETTING_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesInvoiceGenerate]
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadFmFeesInvoiceSettingCommand {
     pub tenant: TenantContext,
     pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
 }
 
-
 impl ReadFmFeesInvoiceSettingCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_INVOICE_SETTING_READ_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesInvoiceRead]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateFmFeesInvoiceSettingCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
+    pub per_th: i64, // FFIS I-1 (mutable)
+    pub due_date: NaiveDate, // FFIS I-2 (mutable)
+    pub due_date_offset_days: i64, // FFIS I-2 (mutable)
+}
+
+impl UpdateFmFeesInvoiceSettingCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_INVOICE_SETTING_UPDATE_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceConfigure]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFmFeesInvoiceSettingCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
+}
+
+impl RetireFmFeesInvoiceSettingCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_INVOICE_SETTING_RETIRE_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceConfigure]
     }
 }
 // -- FmFeesTransaction (Phase 7 Workstream G) --

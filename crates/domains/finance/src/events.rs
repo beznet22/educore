@@ -34,7 +34,7 @@ use crate::value_objects::{
     FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId,
     FeesInstallmentId,
     FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
-    FmFeesInvoiceLineNoteId, FmFeesTransactionChildId, FmFeesTransactionId,
+    FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId,
     FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
     IncomeId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId,
     PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, SalaryTemplateId, WalletId,
@@ -5917,6 +5917,185 @@ impl DomainEvent for FeesInstallmentCreditRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.fees_installment_credit_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+
+
+// ===================================================================
+// Wave 94 — RealFmFeesInvoiceSetting events (per-aggregate wave pattern from Waves 65-93)
+// ===================================================================
+
+/// Emitted when a `RealFmFeesInvoiceSetting` is created via
+/// `RealFmFeesInvoiceSetting::fresh`. Carries `prefix` (FFIS I-3
+/// pinned — non-empty trimmed + alphanumeric only) +
+/// `per_th` (FFIS I-1 mutable, >= 0) + `due_date` +
+/// `due_date_offset_days` (FFIS I-2 mutable, >= 0).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesInvoiceSettingCreated {
+    pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
+    pub prefix: String, // FFIS I-3 pinned
+    pub per_th: i64, // FFIS I-1
+    pub due_date: NaiveDate, // FFIS I-2
+    pub due_date_offset_days: i64, // FFIS I-2
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesInvoiceSettingCreated {
+    pub fn new(
+        fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
+        prefix: String,
+        per_th: i64,
+        due_date: NaiveDate,
+        due_date_offset_days: i64,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_invoice_setting_id,
+            prefix,
+            per_th,
+            due_date,
+            due_date_offset_days,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesInvoiceSettingCreated {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_invoice_setting.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_invoice_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_invoice_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_invoice_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesInvoiceSetting`'s mutable metadata is
+/// updated via `RealFmFeesInvoiceSetting::update_metadata`. Carries
+/// only the MUTABLE fields (`per_th` + `due_date` +
+/// `due_date_offset_days`). FFIS I-3 (`prefix`) is NOT carried here
+/// — preserved in the aggregate audit footer (changing the invoice
+/// prefix after invoices have been issued would break the audit
+/// trail).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesInvoiceSettingUpdated {
+    pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
+    pub per_th: i64, // FFIS I-1 (mutable)
+    pub due_date: NaiveDate, // FFIS I-2 (mutable)
+    pub due_date_offset_days: i64, // FFIS I-2 (mutable)
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesInvoiceSettingUpdated {
+    pub fn new(
+        fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
+        per_th: i64,
+        due_date: NaiveDate,
+        due_date_offset_days: i64,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_invoice_setting_id,
+            per_th,
+            due_date,
+            due_date_offset_days,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesInvoiceSettingUpdated {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_invoice_setting.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_invoice_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_invoice_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_invoice_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesInvoiceSetting` is retired
+/// (soft-deleted via `RealFmFeesInvoiceSetting::retire`). The
+/// original `prefix` (FFIS I-3) + `per_th` (FFIS I-1) +
+/// `due_date` + `due_date_offset_days` (FFIS I-2) are preserved
+/// in the audit footer for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesInvoiceSettingRetired {
+    pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesInvoiceSettingRetired {
+    pub fn new(
+        fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_invoice_setting_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesInvoiceSettingRetired {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_invoice_setting.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_invoice_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_invoice_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_invoice_setting_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

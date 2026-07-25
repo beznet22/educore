@@ -6087,3 +6087,168 @@ impl RealFeesInstallmentCredit {
         Ok(())
     }
 }
+
+
+// ===================================================================
+// Wave 94 — RealFmFeesInvoiceSetting (per-aggregate wave pattern from Waves 65-93)
+// ===================================================================
+
+/// FmFeesInvoiceSetting (headline aggregate).
+///
+/// Per-aggregate drop Wave 94. Replaces the Phase 7 Workstream G
+/// placeholder stub at aggregate.rs:938-939 with a full-lifecycle
+/// `Real*` aggregate.
+///
+/// FFIS I-1: per_th >= 0 (basis points; 0 = always trigger late fee).
+/// FFIS I-2: due_date config (NaiveDate + offset_days >= 0).
+/// FFIS I-3: prefix format (alphanumeric-only, NOT mutable).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFmFeesInvoiceSetting {
+    /// Aggregate identity.
+    pub id: FmFeesInvoiceSettingId,
+    /// School anchor (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// Invoice prefix (FFIS I-3 — alphanumeric-only, NOT mutable).
+    pub prefix: String,
+    /// Per-thousand late fee basis points (FFIS I-1 — >= 0).
+    pub per_th: i64,
+    /// Invoice due-date configuration (FFIS I-2).
+    pub due_date: NaiveDate,
+    /// Invoice due-date offset from issuance in days (FFIS I-2).
+    pub due_date_offset_days: i64,
+    /// Standard audit footer: optimistic concurrency version.
+    pub version: Version,
+    /// Standard audit footer: etag.
+    pub etag: Etag,
+    /// Standard audit footer: created timestamp.
+    pub created_at: Timestamp,
+    /// Standard audit footer: last updated timestamp.
+    pub updated_at: Timestamp,
+    /// Standard audit footer: created-by user.
+    pub created_by: UserId,
+    /// Standard audit footer: last updated-by user.
+    pub updated_by: UserId,
+    /// Standard audit footer: active status.
+    pub active_status: ActiveStatus,
+    /// Standard audit footer: last emitted event id.
+    pub last_event_id: Option<EventId>,
+    /// Standard audit footer: request correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFmFeesInvoiceSetting {
+    /// Construct a fresh `RealFmFeesInvoiceSetting` aggregate.
+    ///
+    /// Enforces FFIS I-1, I-2, I-3 invariants at construction.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: FmFeesInvoiceSettingId,
+        prefix: String,
+        per_th: i64,
+        due_date: NaiveDate,
+        due_date_offset_days: i64,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FFIS I-3: prefix must be alphanumeric-only + non-empty after trim.
+        let prefix_trimmed = prefix.trim().to_string();
+        if prefix_trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceSetting prefix must be non-empty after trim (FFIS I-3)",
+            ));
+        }
+        if !prefix_trimmed.chars().all(|c| c.is_ascii_alphanumeric()) {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceSetting prefix must be alphanumeric-only (FFIS I-3)",
+            ));
+        }
+        // FFIS I-1: per_th >= 0 (basis points; 0 is valid).
+        if per_th < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceSetting per_th must be >= 0 (FFIS I-1)",
+            ));
+        }
+        // FFIS I-2: due_date_offset_days >= 0.
+        if due_date_offset_days < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceSetting due_date_offset_days must be >= 0 (FFIS I-2)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            prefix: prefix_trimmed,
+            per_th,
+            due_date,
+            due_date_offset_days,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    /// Whether the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    /// Update mutable fields: `per_th`, `due_date`, `due_date_offset_days`.
+    ///
+    /// `prefix` is NOT mutable (FFIS I-3 — anchored for audit trail).
+    #[allow(clippy::too_many_arguments)]
+    pub fn update_metadata(
+        &mut self,
+        per_th: i64,
+        due_date: NaiveDate,
+        due_date_offset_days: i64,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FmFeesInvoiceSetting is already retired",
+            ));
+        }
+        // Re-validate FFIS I-1.
+        if per_th < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceSetting per_th must be >= 0 (FFIS I-1)",
+            ));
+        }
+        // Re-validate FFIS I-2.
+        if due_date_offset_days < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceSetting due_date_offset_days must be >= 0 (FFIS I-2)",
+            ));
+        }
+        self.per_th = per_th;
+        self.due_date = due_date;
+        self.due_date_offset_days = due_date_offset_days;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Retire the aggregate (tombstone; preserves all fields for audit).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FmFeesInvoiceSetting is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}

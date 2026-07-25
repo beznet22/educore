@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -64,11 +64,12 @@ use crate::commands::{
     BlockLoginForDueFeesCommand, UnblockLoginForDueFeesCommand, ReadDueFeesBlockCommand,
     CreateFeesInvoiceSettingCommand, ReadFeesInvoiceSettingCommand, UpdateFeesInvoiceSettingCommand, DeleteFeesInvoiceSettingCommand,
     CreateFeesInstallmentCreditCommand, ReadFeesInstallmentCreditCommand, RetireFeesInstallmentCreditCommand,
+    CreateFmFeesInvoiceSettingCommand, ReadFmFeesInvoiceSettingCommand, UpdateFmFeesInvoiceSettingCommand, RetireFmFeesInvoiceSettingCommand,
     CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
     CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
-    CreateFmFeesInvoiceCommand, CreateFmFeesInvoiceSettingCommand,
+    CreateFmFeesInvoiceCommand,
     CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
     CreateFmFeesWeaverCommand, CreateIncomeHeadCommand, CreateInventoryPaymentCommand,
     CreateInvoiceSettingCommand, CreateProductPurchaseCommand, CreateQuestionBankFeeCommand,
@@ -76,7 +77,7 @@ use crate::commands::{
     ReadDirectFeesInstallmentChildPaymentCommand, ReadDonorCommand,
     ReadFeesAssignDiscountCommand,
     ReadFmFeesGroupCommand, ReadFmFeesInvoiceChildCommand, ReadFmFeesInvoiceCommand,
-    ReadFmFeesInvoiceSettingCommand, ReadFmFeesTransactionChildCommand,
+    ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand, ReadFmFeesWeaverCommand,
     ReadInventoryPaymentCommand, ReadProductPurchaseCommand, ReadTransactionCommand,
 };
@@ -85,7 +86,7 @@ use crate::events::{
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
-    FmFeesGroupCreated, IncomeApprovalApproved, IncomeApprovalCreated, IncomeApprovalRejected,
+    FmFeesGroupCreated, FmFeesInvoiceSettingCreated, FmFeesInvoiceSettingUpdated, FmFeesInvoiceSettingRetired, IncomeApprovalApproved, IncomeApprovalCreated, IncomeApprovalRejected,
     PayrollPaymentApprovalApproved, PayrollPaymentApprovalCreated, PayrollPaymentApprovalRejected,
     SalaryTemplateCreated, BankPaymentSlipAuditCreated, BankPaymentSlipAuditRetired,
     BankStatementAttachmentCreated, BankStatementAttachmentRetired,
@@ -2639,38 +2640,6 @@ where
     Ok(())
 }
 
-/// Handler skeleton: create an `FmFeesInvoiceSetting` aggregate.
-/// Full implementation lands in Phase 7 Workstream G.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn create_fm_fees_invoice_setting<C, G>(
-    cmd: CreateFmFeesInvoiceSettingCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let _ = (cmd, clock, ids);
-    Ok(())
-}
-
-/// Handler skeleton: read an `FmFeesInvoiceSetting` aggregate.
-/// Full implementation lands in Phase 7 Workstream G.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_fm_fees_invoice_setting<C, G>(
-    cmd: ReadFmFeesInvoiceSettingCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let _ = (cmd, clock, ids);
-    Ok(())
-}
-
 /// Handler skeleton: create an `FmFeesTransaction` aggregate.
 /// Full implementation lands in Phase 7 Workstream G.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
@@ -4390,6 +4359,139 @@ where
         now,
     );
     Ok(event)
+}
+
+
+// ===================================================================
+// Wave 94 — RealFmFeesInvoiceSetting service functions (per-aggregate wave pattern from Waves 65-93)
+// ===================================================================
+
+/// Service function: create a new `RealFmFeesInvoiceSetting` aggregate.
+///
+/// Enforces FFIS I-1 (per_th >= 0), FFIS I-2 (due_date_offset_days >= 0),
+/// FFIS I-3 (prefix alphanumeric-only, non-empty trimmed) at construction.
+/// Emits `FmFeesInvoiceSettingCreated` downstream.
+#[allow(clippy::too_many_arguments, clippy::needless_pass_by_value)]
+pub fn create_fm_fees_invoice_setting<C, G>(
+    cmd: CreateFmFeesInvoiceSettingCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<FmFeesInvoiceSettingCreated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let evt_id = ids.next_event_id();
+    let agg = RealFmFeesInvoiceSetting::fresh(
+        cmd.fm_fees_invoice_setting_id,
+        cmd.prefix,
+        cmd.per_th,
+        cmd.due_date,
+        cmd.due_date_offset_days,
+        cmd.tenant.actor_id,
+        at,
+        cmd.tenant.correlation_id,
+    )?;
+    Ok(FmFeesInvoiceSettingCreated::new(
+        agg.id,
+        agg.prefix,
+        agg.per_th,
+        agg.due_date,
+        agg.due_date_offset_days,
+        cmd.tenant.actor_id,
+        evt_id,
+        cmd.tenant.correlation_id,
+        at,
+    ))
+}
+
+/// Service function: read a `RealFmFeesInvoiceSetting` aggregate.
+///
+/// Currently a no-op stub (read-only aggregate lookup is a dispatcher
+/// concern). Emits nothing.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_fm_fees_invoice_setting<C, G>(
+    cmd: ReadFmFeesInvoiceSettingCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Service function: update the mutable metadata of a
+/// `RealFmFeesInvoiceSetting` aggregate.
+///
+/// Re-validates FFIS I-1 (per_th >= 0) + FFIS I-2
+/// (due_date_offset_days >= 0) on the update. `prefix` is NOT mutable
+/// (FFIS I-3). Emits `FmFeesInvoiceSettingUpdated` downstream.
+#[allow(clippy::too_many_arguments, clippy::needless_pass_by_value)]
+pub fn update_fm_fees_invoice_setting<C, G>(
+    cmd: UpdateFmFeesInvoiceSettingCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<FmFeesInvoiceSettingUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let evt_id = ids.next_event_id();
+    // Validation only — the dispatcher is responsible for loading the
+    // aggregate and applying the mutation. This service function
+    // constructs the event payload after the dispatcher has validated
+    // the mutation.
+    if cmd.per_th < 0 {
+        return Err(DomainError::validation(
+            "FmFeesInvoiceSetting per_th must be >= 0 (FFIS I-1)",
+        ));
+    }
+    if cmd.due_date_offset_days < 0 {
+        return Err(DomainError::validation(
+            "FmFeesInvoiceSetting due_date_offset_days must be >= 0 (FFIS I-2)",
+        ));
+    }
+    Ok(FmFeesInvoiceSettingUpdated::new(
+        cmd.fm_fees_invoice_setting_id,
+        cmd.per_th,
+        cmd.due_date,
+        cmd.due_date_offset_days,
+        cmd.tenant.actor_id,
+        evt_id,
+        cmd.tenant.correlation_id,
+        at,
+    ))
+}
+
+/// Service function: retire a `RealFmFeesInvoiceSetting` aggregate.
+///
+/// Tombstone — preserves `prefix` + `per_th` + `due_date` +
+/// `due_date_offset_days` in the audit footer for legal-record
+/// retention. Emits `FmFeesInvoiceSettingRetired` downstream.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn retire_fm_fees_invoice_setting<C, G>(
+    cmd: RetireFmFeesInvoiceSettingCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<FmFeesInvoiceSettingRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let evt_id = ids.next_event_id();
+    Ok(FmFeesInvoiceSettingRetired::new(
+        cmd.fm_fees_invoice_setting_id,
+        cmd.tenant.actor_id,
+        evt_id,
+        cmd.tenant.correlation_id,
+        at,
+    ))
 }
 
 #[cfg(test)]

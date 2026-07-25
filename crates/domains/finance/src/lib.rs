@@ -51,7 +51,7 @@ pub mod prelude {
         RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting,
         RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild,
         RealFmFeesTransactionLineNote, RealIncomeApproval, RealIncomeHead, RealInvoiceSetting,
-        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, DueFeesLoginPreventRole, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, Wallet, WalletTransaction,
+        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, DueFeesLoginPreventRole, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::{
@@ -89,6 +89,7 @@ pub mod prelude {
         UnblockLoginForDueFeesCommand, ReadDueFeesBlockCommand,
         CreateFeesInvoiceSettingCommand, ReadFeesInvoiceSettingCommand, UpdateFeesInvoiceSettingCommand, DeleteFeesInvoiceSettingCommand,
         CreateFeesInstallmentCreditCommand, ReadFeesInstallmentCreditCommand, RetireFeesInstallmentCreditCommand,
+        CreateFmFeesInvoiceSettingCommand, ReadFmFeesInvoiceSettingCommand, UpdateFmFeesInvoiceSettingCommand, RetireFmFeesInvoiceSettingCommand,
         RecordExpenseCommand, RecordPaymentCommand, RejectExpenseApprovalCommand,
         RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
         RequestWalletRefundCommand,
@@ -99,6 +100,10 @@ pub mod prelude {
         FINANCE_WALLET_DEBIT_COMMAND_TYPE, FINANCE_WALLET_REFUND_REQUEST_COMMAND_TYPE,
         FINANCE_WALLET_TRANSACTION_APPROVE_COMMAND_TYPE,
         FINANCE_WALLET_TRANSACTION_REJECT_COMMAND_TYPE,
+        FINANCE_FM_FEES_INVOICE_SETTING_CREATE_COMMAND_TYPE,
+        FINANCE_FM_FEES_INVOICE_SETTING_READ_COMMAND_TYPE,
+        FINANCE_FM_FEES_INVOICE_SETTING_UPDATE_COMMAND_TYPE,
+        FINANCE_FM_FEES_INVOICE_SETTING_RETIRE_COMMAND_TYPE,
     };
     pub use crate::entities::WalletTransactionApproval as WalletTransactionApprovalEntity;
     pub use crate::errors::FinanceError;
@@ -123,6 +128,7 @@ pub mod prelude {
         DueFeesLoginPreventCreated, DueFeesLoginPreventUpdated, DueFeesLoginPreventRetired, DueFeesLoginPreventPruned,
         FeesInvoiceSettingCreated, FeesInvoiceSettingUpdated, FeesInvoiceSettingRetired,
         FeesInstallmentCreditCreated, FeesInstallmentCreditRetired,
+        FmFeesInvoiceSettingCreated, FmFeesInvoiceSettingUpdated, FmFeesInvoiceSettingRetired,
         FeesCarryForwardSettingRetired, FeesCarryForwardSettingUpdated, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
         FmFeesInvoiceLineNoteRetired, FmFeesTransactionChildCreated,
         FmFeesTransactionChildRetired, FmFeesTransactionChildUpdated,
@@ -159,6 +165,7 @@ pub mod prelude {
         create_due_fees_login_prevent, update_due_fees_login_prevent, retire_due_fees_login_prevent, prune_due_fees_login_prevent,
         create_fees_invoice_setting, update_fees_invoice_setting, retire_fees_invoice_setting,
         create_fees_installment_credit, retire_fees_installment_credit,
+        create_fm_fees_invoice_setting, read_fm_fees_invoice_setting, update_fm_fees_invoice_setting, retire_fm_fees_invoice_setting,
         request_wallet_refund, ChargeRequest, PaymentProvider, PaymentProviderPaymentId,
         PaymentProviderStatus, PaymentReceipt, PaymentStatus, RefundReceipt, RefundRequest,
         StubPaymentProvider, WalletService,
