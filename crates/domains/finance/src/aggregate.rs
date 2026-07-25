@@ -51,6 +51,8 @@ use crate::value_objects::{
     SalaryTemplateId,
     StatementType, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
+use educore_core::clock::Clock;
+use educore_core::ids::Identifier;
 
 fn fresh_etag() -> Etag {
     Etag::placeholder()
@@ -4851,3 +4853,241 @@ impl RealFeesDiscount {
 }
 
 
+
+// =============================================================================
+// Wave 87 — RealBankAccount (per-aggregate wave pattern from Waves 65—86)
+//
+// RealBankAccount replaces the placeholder `BankAccount` stub at
+// aggregate.rs:960 (Phase 7 Workstream D). Full lifecycle: fresh +
+// update_metadata + retire.
+//
+// Invariants covered:
+// - BA I-1: account_number unique — pinned (NOT mutable via
+//   update_metadata); dispatcher-side storage enforces uniqueness
+//   (DB unique index on (school_id, account_number))
+// - BA I-2: current_balance derived from BankStatement — STRUCTURAL
+//   enforcement via absence of `current_balance_minor` field; the
+//   aggregate carries only `opening_balance_minor` (immutable
+//   post-creation); the running balance is derived from the
+//   `BankStatement` rows (aggregate.rs:4700 pattern: aggregate
+//   pins the OPENING state, runtime derives the CURRENT state)
+// - BA I-3: account_type ∈ {bank, cash} — type-system pinned via
+//   the `AccountType` enum at value_objects.rs:873 (variants:
+//   `Bank` + `Cash` only). Compiler rejects any other variant.
+//
+// Non-mutable fields (BA I-1 + BA I-2 + BA I-3 + currency
+// structural): account_number, account_type, opening_balance_minor,
+// currency. Changing any of these requires retire + create-new.
+// =============================================================================
+
+/// `RealBankAccount` shape. The ledger account for cash drawers +
+/// bank accounts.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealBankAccount {
+    /// The typed id (school_id + uuid).
+    pub id: BankAccountId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// Human-readable account name (e.g. "HDFC Operating Account").
+    /// Must be non-empty after trim.
+    pub account_name: String,
+    /// The bank account number or cash drawer identifier. Pinned
+    /// (NOT mutable via update_metadata). BA I-1 uniqueness anchor —
+    /// dispatcher enforces (school_id, account_number) uniqueness
+    /// at the storage layer.
+    pub account_number: String,
+    /// Whether this is a bank account or a cash drawer. Type-system
+    /// pinned via the `AccountType` enum. BA I-3 — compiler
+    /// rejects any variant other than `Bank` or `Cash`.
+    pub account_type: AccountType,
+    /// The bank name (e.g. "HDFC Bank"). Optional for cash drawers.
+    pub bank_name: String,
+    /// The IFSC code for the bank branch. Optional.
+    pub ifsc_code: Option<String>,
+    /// The branch name. Optional.
+    pub branch: Option<String>,
+    /// The opening balance at account creation in MINOR units
+    /// (e.g. paise for INR). Pinned (NOT mutable). BA I-2
+    /// structural — this is the OPENING state; the CURRENT
+    /// balance is derived from the `BankStatement` rows.
+    pub opening_balance_minor: i64,
+    /// The ISO 4217 currency code (e.g. "INR"). Pinned
+    /// (NOT mutable). Changing currency is effectively a
+    /// different account.
+    pub currency: Currency,
+    /// Optional free-form description.
+    pub description: Option<String>,
+    /// The audit footer (9 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealBankAccount {
+    /// Constructs a new `RealBankAccount` ledger entry.
+    ///
+    /// Enforces BA I-1 (account_number pinned + non-empty trimmed),
+    /// BA I-2 (opening_balance_minor structural — `current_balance`
+    /// is NOT a field; derived from `BankStatement` rows), BA I-3
+    /// (account_type type-pinned via the `AccountType` enum).
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: BankAccountId,
+        account_name: String,
+        account_number: String,
+        account_type: AccountType,
+        bank_name: String,
+        ifsc_code: Option<String>,
+        branch: Option<String>,
+        opening_balance_minor: i64,
+        currency: Currency,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        let trimmed_name = account_name.trim().to_owned();
+        if trimmed_name.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "BankAccount account_name must be non-empty after trim",
+            ));
+        }
+        let trimmed_number = account_number.trim().to_owned();
+        if trimmed_number.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "BankAccount account_number must be non-empty after trim",
+            ));
+        }
+        let trimmed_bank = bank_name.trim().to_owned();
+        if trimmed_bank.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "BankAccount bank_name must be non-empty after trim",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            account_name: trimmed_name,
+            account_number: trimmed_number, // BA I-1 pinned
+            account_type, // BA I-3 type-pinned
+            bank_name: trimmed_bank,
+            ifsc_code: ifsc_code
+                .map(|s| s.trim().to_owned())
+                .filter(|s| !s.is_empty()),
+            branch: branch
+                .map(|s| s.trim().to_owned())
+                .filter(|s| !s.is_empty()),
+            opening_balance_minor, // BA I-2 structural
+            currency,
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the bank account is active (not retired).
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Returns `true` if the bank account is a bank account
+    /// (vs a cash drawer).
+    #[must_use]
+    pub const fn is_bank(&self) -> bool {
+        matches!(self.account_type, AccountType::Bank)
+    }
+
+    /// Returns `true` if the bank account is a cash drawer.
+    #[must_use]
+    pub const fn is_cash(&self) -> bool {
+        matches!(self.account_type, AccountType::Cash)
+    }
+
+    /// Updates the metadata (account_name + bank_name + ifsc_code +
+    /// branch + description). BA I-1 (account_number) + BA I-2
+    /// (opening_balance_minor) + BA I-3 (account_type) +
+    /// `currency` are NOT mutable here — those changes require
+    /// retire + create-new.
+    #[allow(clippy::too_many_arguments)]
+    pub fn update_metadata(
+        &mut self,
+        account_name: String,
+        bank_name: String,
+        ifsc_code: Option<String>,
+        branch: Option<String>,
+        description: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "BankAccount is retired; cannot update metadata",
+            ));
+        }
+        let trimmed_name = account_name.trim().to_owned();
+        if trimmed_name.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "BankAccount account_name must be non-empty after trim on update",
+            ));
+        }
+        let trimmed_bank = bank_name.trim().to_owned();
+        if trimmed_bank.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "BankAccount bank_name must be non-empty after trim on update",
+            ));
+        }
+        self.account_name = trimmed_name;
+        self.bank_name = trimmed_bank;
+        self.ifsc_code = ifsc_code
+            .map(|s| s.trim().to_owned())
+            .filter(|s| !s.is_empty());
+        self.branch = branch
+            .map(|s| s.trim().to_owned())
+            .filter(|s| !s.is_empty());
+        self.description = description
+            .map(|d| d.trim().to_owned())
+            .filter(|d| !d.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the bank account by flipping `active_status` to
+    /// `Retired`. Tombstone — preserves account_number +
+    /// opening_balance_minor + account_type + currency in the
+    /// audit footer for legal-record retention + uniqueness
+    /// queries.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "BankAccount is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}

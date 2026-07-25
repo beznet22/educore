@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealFeesDiscount, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -57,6 +57,7 @@ use crate::commands::{
     CreatePayrollPaymentApprovalCommand,
     RejectExpenseApprovalCommand, RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
     UpdateBankStatementCommand, ReverseBankStatementCommand, RetireBankStatementCommand,
+    OpenBankAccountCommand, UpdateBankAccountCommand, DeleteBankAccountCommand,
     CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
@@ -85,6 +86,7 @@ use crate::events::{
     BankStatementAttachmentCreated, BankStatementAttachmentRetired,
     BankStatementCreated, BankStatementUpdated, BankStatementReversed, BankStatementRetired,
     FeesDiscountCreated, FeesDiscountRetired, FeesDiscountUpdated,
+    BankAccountCreated, BankAccountUpdated, BankAccountRetired,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -3523,6 +3525,152 @@ pub struct AppliedSalaryTemplate {
     pub template_name: String,
     pub currency: Currency,
     pub lines: Vec<TemplateLine>,
+}
+
+// =============================================================================
+// Command: open a bank account (RealBankAccount)
+// =============================================================================
+
+/// Builds a new [`RealBankAccount`] aggregate + a
+/// [`BankAccountCreated`] event. The dispatcher MUST validate
+/// uniqueness on `(school_id, account_number)` before calling this
+/// service function (BA I-1 storage-layer enforcement); the
+/// aggregate pins `account_number` + `opening_balance_minor` +
+/// `account_type` + `currency` so the uniqueness query has stable
+/// keys.
+#[allow(clippy::too_many_arguments)]
+pub fn open_bank_account<C, G>(
+    cmd: OpenBankAccountCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealBankAccount, BankAccountCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut row = RealBankAccount::fresh(
+        cmd.bank_account_id,
+        cmd.account_name,
+        cmd.account_number, // BA I-1 pinned
+        cmd.account_type,   // BA I-3 type-pinned
+        cmd.bank_name,
+        cmd.ifsc_code,
+        cmd.branch,
+        cmd.opening_balance_minor, // BA I-2 structural
+        cmd.currency,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = BankAccountCreated::new(
+        cmd.bank_account_id,
+        row.account_name.clone(),
+        row.account_number.clone(),
+        row.account_type,
+        row.bank_name.clone(),
+        row.ifsc_code.clone(),
+        row.branch.clone(),
+        row.opening_balance_minor,
+        row.currency,
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+// =============================================================================
+// Command: update a bank account's mutable metadata
+// =============================================================================
+
+/// Updates a [`RealBankAccount`]'s mutable metadata via
+/// [`RealBankAccount::update_metadata`] + emits a
+/// [`BankAccountUpdated`] event. BA I-1 (account_number) + BA I-2
+/// (opening_balance_minor) + BA I-3 (account_type) + `currency`
+/// are NOT mutable here — those changes require retire +
+/// create-new. Returns the new `last_event_id` so callers can
+/// chain dispatcher updates.
+#[allow(clippy::too_many_arguments)]
+pub fn update_bank_account<C, G>(
+    cmd: UpdateBankAccountCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealBankAccount,
+) -> Result<BankAccountUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    row.update_metadata(
+        cmd.account_name,
+        cmd.bank_name,
+        cmd.ifsc_code,
+        cmd.branch,
+        cmd.description,
+        now,
+        cmd.tenant.actor_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = BankAccountUpdated::new(
+        cmd.bank_account_id,
+        row.account_name.clone(),
+        row.bank_name.clone(),
+        row.ifsc_code.clone(),
+        row.branch.clone(),
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+// =============================================================================
+// Command: retire a bank account (soft-delete tombstone)
+// =============================================================================
+
+/// Retires a [`RealBankAccount`] via [`RealBankAccount::retire`] +
+/// emits a [`BankAccountRetired`] event. The original
+/// `account_number` (BA I-1) + `opening_balance_minor` (BA I-2) +
+/// `account_type` (BA I-3) + `currency` are preserved in the
+/// audit footer for legal-record retention + uniqueness queries.
+pub fn retire_bank_account<C, G>(
+    cmd: DeleteBankAccountCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealBankAccount,
+) -> Result<BankAccountRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    row.retire(now, cmd.tenant.actor_id)?;
+    row.last_event_id = Some(event_id);
+
+    let event = BankAccountRetired::new(
+        cmd.bank_account_id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
 }
 
 #[cfg(test)]

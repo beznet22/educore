@@ -1297,21 +1297,61 @@ impl DeleteIncomeHeadCommand {
         vec![Capability::FinanceIncomeHeadDelete]
     }
 }
-// -- BankAccount (Update / Delete / Read) --
+// -- BankAccount (Open / Update / Delete / Read) --
+
+/// Command: open (create) a new `RealBankAccount` ledger entry.
+///
+/// Carries the immutable fields (BA I-1 account_number + BA I-2
+/// opening_balance_minor + BA I-3 account_type + currency) + the
+/// mutable metadata (account_name + bank_name + ifsc_code + branch
+/// + description).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OpenBankAccountCommand {
+    pub tenant: TenantContext,
+    pub bank_account_id: BankAccountId,
+    pub account_name: String,
+    pub account_number: String, // BA I-1 pinned
+    pub account_type: AccountType, // BA I-3 type-pinned
+    pub bank_name: String,
+    pub ifsc_code: Option<String>,
+    pub branch: Option<String>,
+    pub opening_balance_minor: i64, // BA I-2 structural
+    pub currency: Currency,
+    pub description: Option<String>,
+}
+
+
+impl OpenBankAccountCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_BANK_ACCOUNT_OPEN_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankOpen]
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdateBankAccountCommand {
     pub tenant: TenantContext,
     pub bank_account_id: BankAccountId,
-    pub bank_name: Option<String>,
-    pub account_number: Option<String>,
-    pub account_type: Option<AccountType>,
-    pub currency: Option<Currency>,
-    pub opening_balance_minor: Option<i64>,
+    pub account_name: String,
+    pub bank_name: String,
+    pub ifsc_code: Option<String>,
+    pub branch: Option<String>,
+    pub description: Option<String>,
 }
 
 
 impl UpdateBankAccountCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_BANK_ACCOUNT_UPDATE_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -1326,6 +1366,11 @@ pub struct DeleteBankAccountCommand {
 
 
 impl DeleteBankAccountCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_BANK_ACCOUNT_DELETE_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -1340,6 +1385,11 @@ pub struct ReadBankAccountCommand {
 
 
 impl ReadBankAccountCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_BANK_ACCOUNT_READ_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -2540,24 +2590,6 @@ impl CreateExpenseHeadCommand {
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceExpenseHeadCreate]
-    }
-}
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct OpenBankAccountCommand {
-    pub tenant: TenantContext,
-    pub bank_name: String,
-    pub account_number: String,
-    pub account_type: crate::value_objects::AccountType,
-    pub opening_balance_minor: i64,
-    pub currency: Currency,
-}
-
-
-impl OpenBankAccountCommand {
-    /// The capabilities required to dispatch this command.
-    #[must_use]
-    pub fn required_capabilities() -> Vec<Capability> {
-        vec![Capability::FinanceBankOpen]
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

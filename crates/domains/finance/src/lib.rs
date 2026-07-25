@@ -51,7 +51,7 @@ pub mod prelude {
         RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting,
         RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild,
         RealFmFeesTransactionLineNote, RealIncomeApproval, RealIncomeHead, RealInvoiceSetting,
-        RealBankPaymentSlipAudit, RealBankStatement, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, Wallet, WalletTransaction,
+        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::{
@@ -82,6 +82,7 @@ pub mod prelude {
         CreateInvoiceSettingCommand, CreateQuestionBankFeeCommand, CreateWalletCommand,
         CreateWalletTransactionApprovalCommand, CreditWalletCommand,
         DeductWalletCreditCommand, OpenBankAccountCommand,
+        UpdateBankAccountCommand, DeleteBankAccountCommand, ReadBankAccountCommand,
         RecordExpenseCommand, RecordPaymentCommand, RejectExpenseApprovalCommand,
         RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
         RequestWalletRefundCommand,
@@ -109,6 +110,7 @@ pub mod prelude {
         BankStatementAttachmentCreated, BankStatementAttachmentRetired,
         BankStatementCreated, BankStatementReversed, BankStatementRetired, BankStatementUpdated,
         FeesDiscountCreated, FeesDiscountRetired, FeesDiscountUpdated,
+        BankAccountCreated, BankAccountUpdated, BankAccountRetired,
         FeesCarryForwardSettingRetired, FeesCarryForwardSettingUpdated, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
         FmFeesInvoiceLineNoteRetired, FmFeesTransactionChildCreated,
         FmFeesTransactionChildRetired, FmFeesTransactionChildUpdated,
@@ -138,6 +140,7 @@ pub mod prelude {
         reject_wallet_transaction,
         reject_wallet_transaction_approval,
         retire_bank_statement, reverse_bank_statement,
+        open_bank_account, update_bank_account, retire_bank_account,
         request_wallet_refund, ChargeRequest, PaymentProvider, PaymentProviderPaymentId,
         PaymentProviderStatus, PaymentReceipt, PaymentStatus, RefundReceipt, RefundRequest,
         StubPaymentProvider, WalletService,

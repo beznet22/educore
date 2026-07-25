@@ -4743,6 +4743,204 @@ impl DomainEvent for FeesDiscountRetired {
     }
 }
 
+/// Emitted when a `RealBankAccount` ledger entry is created via
+/// `RealBankAccount::fresh`. Carries the full payload including the
+/// immutable fields (BA I-1 account_number + BA I-2
+/// opening_balance_minor + BA I-3 account_type + currency).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankAccountCreated {
+    pub bank_account_id: BankAccountId,
+    pub account_name: String,
+    pub account_number: String, // BA I-1 pinned
+    pub account_type: AccountType, // BA I-3 type-pinned
+    pub bank_name: String,
+    pub ifsc_code: Option<String>,
+    pub branch: Option<String>,
+    pub opening_balance_minor: i64, // BA I-2 structural
+    pub currency: Currency,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankAccountCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        bank_account_id: BankAccountId,
+        account_name: String,
+        account_number: String,
+        account_type: AccountType,
+        bank_name: String,
+        ifsc_code: Option<String>,
+        branch: Option<String>,
+        opening_balance_minor: i64,
+        currency: Currency,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_account_id,
+            account_name,
+            account_number,
+            account_type,
+            bank_name,
+            ifsc_code,
+            branch,
+            opening_balance_minor,
+            currency,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankAccountCreated {
+    const EVENT_TYPE: &'static str = "finance.bank_account.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_account";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_account_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_account_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealBankAccount` ledger entry's mutable metadata
+/// is updated via `RealBankAccount::update_metadata`. Carries only
+/// the MUTABLE fields (account_name + bank_name + ifsc_code +
+/// branch + description). The immutable fields (BA I-1
+/// account_number + BA I-2 opening_balance_minor + BA I-3
+/// account_type + currency) are NOT carried here — they are
+/// preserved in the audit footer of the aggregate itself.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankAccountUpdated {
+    pub bank_account_id: BankAccountId,
+    pub account_name: String,
+    pub bank_name: String,
+    pub ifsc_code: Option<String>,
+    pub branch: Option<String>,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankAccountUpdated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        bank_account_id: BankAccountId,
+        account_name: String,
+        bank_name: String,
+        ifsc_code: Option<String>,
+        branch: Option<String>,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_account_id,
+            account_name,
+            bank_name,
+            ifsc_code,
+            branch,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankAccountUpdated {
+    const EVENT_TYPE: &'static str = "finance.bank_account.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_account";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_account_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_account_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealBankAccount` ledger entry is retired
+/// (soft-deleted via `RealBankAccount::retire`). The original
+/// account_number + opening_balance_minor + account_type +
+/// currency are preserved in the audit footer for legal-record
+/// retention. BA I-1 (account_number) + BA I-2
+/// (opening_balance_minor) + BA I-3 (account_type) + currency are
+/// preserved (the (school_id, account_number) pair remains valid
+/// for uniqueness queries even after retire).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankAccountRetired {
+    pub bank_account_id: BankAccountId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankAccountRetired {
+    pub fn new(
+        bank_account_id: BankAccountId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_account_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankAccountRetired {
+    const EVENT_TYPE: &'static str = "finance.bank_account.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_account";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_account_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_account_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 
 #[cfg(test)]
 #[allow(
