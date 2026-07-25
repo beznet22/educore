@@ -6326,6 +6326,116 @@ impl DomainEvent for DirectFeesInstallmentChildPaymentRetired {
     }
 }
 
+// ===================================================================
+// Wave 97 — RealIncome events (per-aggregate wave pattern from Waves 65-96)
+// ===================================================================
+
+/// Emitted when a `RealIncome` is created via `RealIncome::fresh`.
+/// Carries `income_head_id` (scope-key IncomeHeadId) +
+/// `amount_minor` (IN I-1 — >= 0) + `description`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct IncomeCreated {
+    pub income_id: IncomeId,
+    pub income_head_id: IncomeHeadId,
+    pub amount_minor: i64, // IN I-1
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl IncomeCreated {
+    pub fn new(
+        income_id: IncomeId,
+        income_head_id: IncomeHeadId,
+        amount_minor: i64,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            income_id,
+            income_head_id,
+            amount_minor,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for IncomeCreated {
+    const EVENT_TYPE: &'static str = "finance.income.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "income";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.income_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.income_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealIncome` is retired (soft-deleted via
+/// `RealIncome::retire`). The original `income_head_id` +
+/// `amount_minor` (IN I-1) + `description` are preserved in the
+/// audit footer for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct IncomeRetired {
+    pub income_id: IncomeId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl IncomeRetired {
+    pub fn new(
+        income_id: IncomeId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            income_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for IncomeRetired {
+    const EVENT_TYPE: &'static str = "finance.income.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "income";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.income_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.income_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 
 #[cfg(test)]
 #[allow(

@@ -1197,8 +1197,15 @@ pub struct CreateIncomeCommand {
     pub donor_id: Option<DonorId>,
 }
 
+/// COMMAND_TYPE discriminator for `ReadIncomeCommand`.
+pub const FINANCE_INCOME_READ_COMMAND_TYPE: &str = "finance.income.read";
+
+/// COMMAND_TYPE discriminator for `RetireIncomeCommand`.
+pub const FINANCE_INCOME_RETIRE_COMMAND_TYPE: &str = "finance.income.retire";
 
 impl CreateIncomeCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str = FINANCE_INCOME_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -1233,6 +1240,40 @@ pub struct DeleteIncomeCommand {
 
 
 impl DeleteIncomeCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str = FINANCE_INCOME_RETIRE_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceIncomeDelete]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadIncomeCommand {
+    pub tenant: TenantContext,
+    pub income_id: IncomeId,
+}
+
+impl ReadIncomeCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str = FINANCE_INCOME_READ_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceIncomeRead]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireIncomeCommand {
+    pub tenant: TenantContext,
+    pub income_id: IncomeId,
+}
+
+impl RetireIncomeCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str = FINANCE_INCOME_RETIRE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {

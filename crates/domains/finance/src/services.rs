@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -54,7 +54,7 @@ use crate::commands::{
     CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesInstallmentChildPaymentCommand,
     RetireDirectFeesInstallmentChildPaymentCommand,
     CreateDirectFeesSettingCommand, CreateDonorCommand, CreateExpenseApprovalCommand, CreateFeesAssignDiscountCommand,
-    CreateIncomeApprovalCommand,
+    CreateIncomeApprovalCommand, CreateIncomeCommand, ReadIncomeCommand, RetireIncomeCommand,
     CreatePayrollPaymentApprovalCommand,
     RejectExpenseApprovalCommand, RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
     UpdateBankStatementCommand, ReverseBankStatementCommand, RetireBankStatementCommand,
@@ -86,6 +86,7 @@ use crate::commands::{
 use crate::events::{
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
     DirectFeesInstallmentChildPaymentCreated, DirectFeesInstallmentChildPaymentRetired,
+        IncomeCreated, IncomeRetired,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
@@ -4610,6 +4611,97 @@ where
     let evt_id = ids.next_event_id();
     Ok(DirectFeesInstallmentChildPaymentRetired::new(
         cmd.direct_fees_installment_child_payment_id,
+        cmd.tenant.actor_id,
+        evt_id,
+        cmd.tenant.correlation_id,
+        at,
+    ))
+}
+
+// ===================================================================
+// Wave 97 — RealIncome service functions (per-aggregate wave pattern from Waves 65-96)
+// ===================================================================
+
+/// Service function: create a new `RealIncome` aggregate.
+///
+/// Enforces IN I-1 (`amount_minor >= 0`) at construction.
+/// Emits `IncomeCreated` downstream.
+#[allow(clippy::too_many_arguments, clippy::needless_pass_by_value)]
+pub fn create_income<C, G>(
+    cmd: CreateIncomeCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<IncomeCreated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let evt_id = ids.next_event_id();
+    // Note: `CreateIncomeCommand` carries the canonical 9-field shape
+    // (name + amount_minor + currency + income_head_id + account_id +
+    // income_date + description + donor_id). RealIncome only uses the
+    // amount_minor + income_head_id + description subset for IN I-1;
+    // the dispatcher is responsible for routing the other fields to
+    // their owning aggregates (e.g. BankStatement for account_id).
+    let agg = RealIncome::fresh(
+        IncomeId::new(cmd.tenant.school_id, ids.next_uuid()),
+        cmd.income_head_id,
+        cmd.amount_minor,
+        cmd.description,
+        cmd.tenant.actor_id,
+        at,
+        cmd.tenant.correlation_id,
+    )?;
+    Ok(IncomeCreated::new(
+        agg.id,
+        agg.income_head_id,
+        agg.amount_minor,
+        agg.description,
+        cmd.tenant.actor_id,
+        evt_id,
+        cmd.tenant.correlation_id,
+        at,
+    ))
+}
+
+/// Service function: read a `RealIncome` aggregate.
+///
+/// Currently a no-op stub (read-only aggregate lookup is a dispatcher
+/// concern). Emits nothing.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_income<C, G>(
+    cmd: ReadIncomeCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Service function: retire a `RealIncome` aggregate.
+///
+/// Tombstone — preserves `income_head_id` + `amount_minor` (IN I-1) +
+/// `description` in the audit footer for legal-record retention.
+/// Emits `IncomeRetired` downstream.
+#[allow(clippy::needless_pass_by_value)]
+pub fn retire_income<C, G>(
+    cmd: RetireIncomeCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<IncomeRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let evt_id = ids.next_event_id();
+    Ok(IncomeRetired::new(
+        cmd.income_id,
         cmd.tenant.actor_id,
         evt_id,
         cmd.tenant.correlation_id,

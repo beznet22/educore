@@ -6465,3 +6465,106 @@ impl RealDirectFeesInstallmentChildPayment {
         Ok(())
     }
 }
+
+// ===================================================================
+// Wave 97 — RealIncome (per-aggregate wave pattern from Waves 65-96)
+// ===================================================================
+
+/// Income (headline aggregate).
+///
+/// Per-aggregate drop Wave 97. Replaces the Phase 7 Workstream stub
+/// at aggregate.rs:976 with a full-lifecycle `Real*` aggregate.
+///
+/// IN I-1: amount >= 0 (amount_minor pinned in minor units).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealIncome {
+    /// Aggregate identity.
+    pub id: IncomeId,
+    /// School anchor (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// Income head reference (scope-key IncomeHeadId).
+    pub income_head_id: IncomeHeadId,
+    /// Amount in minor units (IN I-1 — pinned at construction with
+    /// `>= 0` guard).
+    pub amount_minor: i64,
+    /// Optional description (e.g. payer name, reference).
+    pub description: Option<String>,
+    /// Standard audit footer: optimistic concurrency version.
+    pub version: Version,
+    /// Standard audit footer: etag.
+    pub etag: Etag,
+    /// Standard audit footer: created timestamp.
+    pub created_at: Timestamp,
+    /// Standard audit footer: last updated timestamp.
+    pub updated_at: Timestamp,
+    /// Standard audit footer: created-by user.
+    pub created_by: UserId,
+    /// Standard audit footer: last updated-by user.
+    pub updated_by: UserId,
+    /// Standard audit footer: active status.
+    pub active_status: ActiveStatus,
+    /// Standard audit footer: last emitted event id.
+    pub last_event_id: Option<EventId>,
+    /// Standard audit footer: request correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealIncome {
+    /// Construct a fresh `RealIncome` aggregate.
+    ///
+    /// Enforces IN I-1 (`amount_minor >= 0`) at construction.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: IncomeId,
+        income_head_id: IncomeHeadId,
+        amount_minor: i64,
+        description: Option<String>,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // IN I-1: amount_minor >= 0.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "Income amount_minor must be >= 0 (IN I-1)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            income_head_id,
+            amount_minor,
+            description,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    /// Whether the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    /// Retire the aggregate (tombstone; preserves `income_head_id` +
+    /// `amount_minor` + `description` in audit footer).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "Income is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
