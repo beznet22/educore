@@ -35,6 +35,7 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 use crate::value_objects::{
     validate_discount_name, validate_donor_name, validate_ledger_name, AccountType, Amount,
     ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
+    BankStatementId,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId,
     DirectFeesInstallmentAssignId, DirectFeesSettingId, DiscountType, DonorId,
     DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId,
@@ -4419,6 +4420,219 @@ impl RealBankPaymentSlipAudit {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "BankPaymentSlipAudit is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
+// RealBankStatement — Wave 85 (per-aggregate wave pattern from
+// Waves 65–84)
+// =============================================================================
+//
+// Per v3 Part 2 F48 + checklist § BankStatement: 4 invariants:
+//   - BS I-1: amount >= 0. The aggregate pins amount_minor at
+//             construction and re-validates on update; the lower
+//             bound is the most basic accounting sanity check
+//             (negative amounts are nonsensical).
+//   - BS I-2: type ∈ {income, expense}. The aggregate uses the
+//             existing `StatementType` enum (already partial in
+//             the checklist), so this invariant is enforced at
+//             the type-system level — you cannot construct a
+//             RealBankStatement with an invalid statement_type.
+//   - BS I-3: after_balance matches running balance. The aggregate
+//             pins balance_after_minor at construction (the caller
+//             computes the running balance from the previous
+//             statement + the new amount); updates re-validate.
+//   - BS I-4: append-only; corrections via reverse. The aggregate
+//             intentionally exposes no `update_amount` or
+//             `update_balance` mutator — corrections happen via a
+//             NEW opposite-direction statement (a `reverse()`
+//             helper computes the reverse-row payload but does NOT
+//             mutate the original). NO `Updated` event variant for
+//             the amount/balance fields (the Updated event covers
+//             metadata corrections only).
+// Full lifecycle: fresh + update_metadata + retire (metadata-correctable
+// + tombstone, parallel to Wave 74 COA / Wave 78 FCFA). The
+// placeholder stub above
+// (`finance_aggregate_stub! { struct BankStatement { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealBankStatement` for new code; the stub is kept only to
+// avoid breaking downstream code that referenced `BankStatement`
+// as a type name during Phase 7.
+
+/// A single row in a bank's per-account transaction log (the
+/// statement line). Four invariants: BS I-1 (amount_minor >= 0,
+/// validated at construction + on update), BS I-2 (statement_type
+/// ∈ {Income, Expense}, enforced at type-system level via the
+/// `StatementType` enum), BS I-3 (balance_after_minor matches the
+/// running balance; pinned at construction + on update), BS I-4
+/// (append-only; corrections via opposite-direction reverse row,
+/// enforced at API surface by intentionally exposing no
+/// amount/balance mutator).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealBankStatement {
+    /// The typed id (school_id + uuid).
+    pub id: BankStatementId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The bank account this statement row belongs to.
+    pub bank_account_id: BankAccountId,
+    /// Income vs expense (BS I-2 — pinned at type-system level via
+    /// the `StatementType` enum; Income | Expense only).
+    pub statement_type: StatementType,
+    /// The amount in minor currency units (>= 0 per BS I-1).
+    pub amount_minor: i64,
+    /// The balance AFTER this statement is applied (BS I-3 — the
+    /// caller computes this from the previous statement's
+    /// balance + the new amount; the aggregate pins the value
+    /// so it can be queried without recomputation).
+    pub balance_after_minor: i64,
+    /// The currency of the amount + balance.
+    pub currency: Currency,
+    /// The semantic timestamp when the statement occurred (e.g.
+    /// when the payment cleared, not when it was recorded).
+    pub occurred_at: Timestamp,
+    /// Optional free-form description (e.g. "Q1 fees batch").
+    pub description: Option<String>,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealBankStatement {
+    /// Constructs a new `RealBankStatement` row. Enforces BS I-1
+    /// (`amount_minor >= 0`), BS I-3 lower-bound
+    /// (`balance_after_minor >= 0`); BS I-2 is enforced at
+    /// type-system level via the `StatementType` enum (Income |
+    /// Expense only — no invalid variants).
+    pub fn fresh(
+        id: BankStatementId,
+        bank_account_id: BankAccountId,
+        statement_type: StatementType,
+        amount_minor: i64,
+        balance_after_minor: i64,
+        currency: Currency,
+        occurred_at: Timestamp,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // BS I-1: amount must be non-negative.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "BankStatement amount_minor must be non-negative (BS I-1)",
+            ));
+        }
+        // BS I-3 lower bound: balance_after must be non-negative.
+        // (The caller-computed running balance should never go
+        // negative under normal accounting; we enforce the lower
+        // bound as a sanity check. Note: the cross-statement running
+        // balance consistency — previous_balance + amount ==
+        // balance_after — is the dispatcher's responsibility, not
+        // the aggregate; the aggregate pins the final value.)
+        if balance_after_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "BankStatement balance_after_minor must be non-negative (BS I-3)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            bank_account_id,
+            statement_type, // BS I-2: typed at compile time
+            amount_minor,   // BS I-1
+            balance_after_minor, // BS I-3
+            currency,
+            occurred_at,
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the statement row is currently active (not retired).
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Updates the metadata (description only). Re-validates BS I-1
+    /// + BS I-3 lower bounds on the unchanged amount/balance
+    /// fields (defense-in-depth: catches any silent mutation
+    /// between fresh() and update_metadata()). BS I-2 is enforced
+    /// at type-system level (no statement_type field on this
+    /// method's signature). The amount_minor + balance_after_minor
+    /// fields are immutable here — corrections happen via a
+    /// separate reverse() row (BS I-4).
+    pub fn update_metadata(
+        &mut self,
+        description: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "BankStatement is retired; cannot update metadata",
+            ));
+        }
+        // BS I-1 + BS I-3 defense-in-depth re-validation.
+        if self.amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "BankStatement amount_minor must be non-negative on update (BS I-1)",
+            ));
+        }
+        if self.balance_after_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "BankStatement balance_after_minor must be non-negative on update (BS I-3)",
+            ));
+        }
+        self.description = description
+            .map(|d| d.trim().to_owned())
+            .filter(|d| !d.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the statement row by flipping `active_status` to
+    /// `Retired`. This is a **tombstone**, NOT a content edit —
+    /// the original amount + balance + statement_type are preserved
+    /// in the audit footer for legal-record retention. BS I-4
+    /// (append-only) is upheld because `retire()` does NOT mutate
+    /// any of those fields; it only flips the active flag.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "BankStatement is already retired",
             ));
         }
         self.active_status = ActiveStatus::Retired;

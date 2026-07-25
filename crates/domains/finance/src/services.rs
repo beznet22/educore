@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -46,6 +46,7 @@ use crate::commands::{
     ApproveExpenseApprovalCommand, ApproveIncomeApprovalCommand, ApprovePayrollPaymentApprovalCommand,
     CreateBankPaymentSlipAuditCommand,
     CreateBankStatementAttachmentCommand,
+    CreateBankStatementCommand,
     ApproveWalletTransactionApprovalCommand,
     CreateChartOfAccountCommand,
     CreateSalaryTemplateCommand,
@@ -54,6 +55,7 @@ use crate::commands::{
     CreateIncomeApprovalCommand,
     CreatePayrollPaymentApprovalCommand,
     RejectExpenseApprovalCommand, RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
+    UpdateBankStatementCommand, ReverseBankStatementCommand, RetireBankStatementCommand,
     CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
@@ -80,6 +82,7 @@ use crate::events::{
     PayrollPaymentApprovalApproved, PayrollPaymentApprovalCreated, PayrollPaymentApprovalRejected,
     SalaryTemplateCreated, BankPaymentSlipAuditCreated, BankPaymentSlipAuditRetired,
     BankStatementAttachmentCreated, BankStatementAttachmentRetired,
+    BankStatementCreated, BankStatementUpdated, BankStatementReversed, BankStatementRetired,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -89,7 +92,7 @@ use crate::events::{
 };
 use crate::value_objects::{
     AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId,
-    BankStatementAttachmentId, BankStatementId, Currency,
+    BankStatementAttachmentId, BankStatementId, Currency, StatementType,
     DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
     DonorId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
     IncomeApprovalId, IncomeId,
@@ -2292,6 +2295,173 @@ where
         now,
     );
     Ok((row, event))
+}
+
+// =============================================================================
+// BankStatement services (Wave 85 — per-aggregate wave pattern from
+// Waves 65–84)
+// =============================================================================
+//
+// Per v3 Part 2 F48 + checklist § BankStatement: 4 invariants:
+//   - BS I-1: amount >= 0 (validated at construction + on update).
+//   - BS I-2: type ∈ {income, expense} (enforced at type-system
+//             level via the StatementType enum).
+//   - BS I-3: after_balance matches running balance (the aggregate
+//             pins balance_after_minor at construction + on update;
+//             cross-statement consistency is the dispatcher's
+//             responsibility).
+//   - BS I-4: append-only; corrections via reverse. The Update
+//             service function only allows metadata changes
+//             (description); amount/balance corrections happen via
+//             the Reverse service function (which emits the
+//             BankStatementReversed event marking the original as
+//             corrected).
+//
+// Four service functions: create_bank_statement (enter the log),
+// update_bank_statement (description only — BS I-4 immutable
+// amount/balance), reverse_bank_statement (BS I-4: marks the
+// original as corrected by a new opposite-direction row), and
+// retire_bank_statement (tombstone — preserves original
+// amount/balance/type).
+
+/// Builds a new [`RealBankStatement`] aggregate + a
+/// [`BankStatementCreated`] event. Enforces BS I-1
+/// (`amount_minor >= 0`) + BS I-3 lower bound
+/// (`balance_after_minor >= 0`). BS I-2 is enforced at type-system
+/// level via the `StatementType` enum.
+pub fn create_bank_statement<C, G>(
+    cmd: CreateBankStatementCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealBankStatement, BankStatementCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let _ = event_id_to_uuid(event_id); // reserved for future audit-footer linking
+
+    let mut row = RealBankStatement::fresh(
+        cmd.bank_statement_id,
+        cmd.bank_account_id,
+        cmd.statement_type,
+        cmd.amount_minor,
+        cmd.balance_after_minor,
+        cmd.currency,
+        cmd.occurred_at,
+        cmd.description.clone(),
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = BankStatementCreated::new(
+        cmd.bank_statement_id,
+        cmd.bank_account_id,
+        row.statement_type,
+        row.amount_minor,
+        row.balance_after_minor,
+        row.currency,
+        row.occurred_at,
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+/// Updates the description of an existing [`RealBankStatement`]
+/// aggregate + emits a [`BankStatementUpdated`] event. BS I-4
+/// append-only enforcement: only `description` is mutable here;
+/// amount_minor + balance_after_minor + statement_type are
+/// immutable (corrections happen via `reverse_bank_statement`).
+pub fn update_bank_statement<C, G>(
+    cmd: UpdateBankStatementCommand,
+    clock: &C,
+    ids: &G,
+    statement: &mut RealBankStatement,
+) -> Result<BankStatementUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let actor = cmd.tenant.actor_id;
+    let description_clone = cmd.description.clone();
+    statement.update_metadata(cmd.description, now, actor)?;
+    statement.last_event_id = Some(event_id);
+
+    Ok(BankStatementUpdated::new(
+        cmd.bank_statement_id,
+        description_clone,
+        actor,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Marks an existing [`RealBankStatement`] aggregate as corrected
+/// via a new opposite-direction row (BS I-4 append-only enforcement)
+/// + emits a [`BankStatementReversed`] event. The dispatcher is
+/// responsible for creating the new reverse row (which carries the
+/// inverse amount + type); this service function only emits the
+/// `BankStatementReversed` event marking the original as corrected.
+pub fn reverse_bank_statement<C, G>(
+    cmd: ReverseBankStatementCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<BankStatementReversed>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let actor = cmd.tenant.actor_id;
+
+    Ok(BankStatementReversed::new(
+        cmd.bank_statement_id,
+        cmd.reverse_row_id,
+        actor,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
+
+/// Soft-deletes an existing [`RealBankStatement`] aggregate by
+/// flipping `active_status` to `Retired` + emits a
+/// [`BankStatementRetired`] event. Tombstone — preserves original
+/// amount + balance + statement_type in the audit footer.
+pub fn retire_bank_statement<C, G>(
+    cmd: RetireBankStatementCommand,
+    clock: &C,
+    ids: &G,
+    statement: &mut RealBankStatement,
+) -> Result<BankStatementRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let actor = cmd.tenant.actor_id;
+    statement.retire(now, actor)?;
+    statement.last_event_id = Some(event_id);
+
+    Ok(BankStatementRetired::new(
+        cmd.bank_statement_id,
+        actor,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
 }
 
 /// Handler skeleton: create an `FmFeesType` aggregate.

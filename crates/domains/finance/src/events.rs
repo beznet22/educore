@@ -26,7 +26,7 @@ use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
     AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
-    BankStatementId,
+    BankStatementId, StatementType,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId,
     DirectFeesInstallmentId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId,
@@ -4285,6 +4285,255 @@ impl DomainEvent for BankPaymentSlipAuditRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.bank_payment_slip_audit_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// BankStatement events — Wave 85 (per-aggregate wave pattern from
+// Waves 65–84)
+// =============================================================================
+//
+// Per v3 Part 2 F48 + checklist § BankStatement: 4 invariants:
+//   - BS I-1: amount >= 0 (validated at construction + on update).
+//   - BS I-2: type ∈ {income, expense} (enforced at type-system
+//             level via the StatementType enum; Income | Expense
+//             only — no invalid variants).
+//   - BS I-3: after_balance matches running balance (the aggregate
+//             pins balance_after_minor at construction + on update;
+//             the cross-statement running balance consistency is
+//             the dispatcher's responsibility).
+//   - BS I-4: append-only; corrections via reverse. The aggregate
+//             intentionally exposes no amount/balance mutator;
+//             corrections happen via a new opposite-direction row
+//             (the `Reversed` event marks the original as
+//             corrected-by-reverse-row, NOT a content mutation).
+// Full lifecycle event family — 4 events: Created (initial append),
+// Updated (metadata correction only — description; amount/balance
+// are immutable, BS I-4), Reversed (BS I-4: marks the original
+// statement as corrected by a new opposite-direction row), Retired
+// (tombstone — preserves original amount/balance/type).
+
+/// Emitted when a new `RealBankStatement` row is created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankStatementCreated {
+    pub bank_statement_id: BankStatementId,
+    pub bank_account_id: BankAccountId,
+    pub statement_type: StatementType,
+    pub amount_minor: i64,
+    pub balance_after_minor: i64,
+    pub currency: Currency,
+    pub occurred_at: Timestamp,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at_event: Timestamp,
+}
+
+impl BankStatementCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        bank_statement_id: BankStatementId,
+        bank_account_id: BankAccountId,
+        statement_type: StatementType,
+        amount_minor: i64,
+        balance_after_minor: i64,
+        currency: Currency,
+        occurred_at: Timestamp,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at_event: Timestamp,
+    ) -> Self {
+        Self {
+            bank_statement_id,
+            bank_account_id,
+            statement_type,
+            amount_minor,
+            balance_after_minor,
+            currency,
+            occurred_at,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at_event,
+        }
+    }
+}
+
+impl DomainEvent for BankStatementCreated {
+    const EVENT_TYPE: &'static str = "finance.bank_statement.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_statement";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_statement_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_statement_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at_event
+    }
+}
+
+/// Emitted when a `RealBankStatement`'s metadata is updated via
+/// `RealBankStatement::update_metadata`. Note: only `description`
+/// is mutable here; the amount_minor + balance_after_minor +
+/// statement_type fields are immutable (BS I-4 append-only).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankStatementUpdated {
+    pub bank_statement_id: BankStatementId,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankStatementUpdated {
+    pub fn new(
+        bank_statement_id: BankStatementId,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_statement_id,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankStatementUpdated {
+    const EVENT_TYPE: &'static str = "finance.bank_statement.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_statement";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_statement_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_statement_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealBankStatement` is marked as corrected via a
+/// new opposite-direction row (BS I-4 append-only enforcement).
+/// The original amount_minor + balance_after_minor + statement_type
+/// are preserved in the audit footer; the correction happens via a
+/// separate reverse-direction row (not emitted by this event — the
+/// dispatcher is responsible for creating that new row).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankStatementReversed {
+    pub bank_statement_id: BankStatementId,
+    pub reverse_row_id: BankStatementId,
+    pub reversed_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankStatementReversed {
+    pub fn new(
+        bank_statement_id: BankStatementId,
+        reverse_row_id: BankStatementId,
+        reversed_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_statement_id,
+            reverse_row_id,
+            reversed_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankStatementReversed {
+    const EVENT_TYPE: &'static str = "finance.bank_statement.reversed";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_statement";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_statement_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_statement_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealBankStatement` row is retired (soft-deleted
+/// via `RealBankStatement::retire`). The original amount + balance
+/// + statement_type are preserved in the audit footer for
+/// legal-record retention. BS I-4 (append-only) is upheld because
+/// retire is a tombstone, NOT a content edit.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankStatementRetired {
+    pub bank_statement_id: BankStatementId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankStatementRetired {
+    pub fn new(
+        bank_statement_id: BankStatementId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_statement_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankStatementRetired {
+    const EVENT_TYPE: &'static str = "finance.bank_statement.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_statement";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_statement_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_statement_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

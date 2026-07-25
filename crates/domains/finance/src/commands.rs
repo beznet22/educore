@@ -40,7 +40,7 @@ use crate::value_objects::{
     FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId, FmFeesWeaverId, GatewayMode,
     IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId,
     PaymentMethodId, PaymentMethodKind, PayrollPaymentId, PreventReason, ProductPurchaseId,
-    SalaryTemplateId, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId,
+    SalaryTemplateId, StatementType, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId,
     WalletTxType,
 };
 
@@ -3647,6 +3647,119 @@ impl CreateBankStatementAttachmentCommand {
         // use FinanceBankStatementRecord (closest existing variant for
         // the bank-statement record flow). Parallel to Wave 72/75/77/78/
         // 80/81/82/83 fallback chain.
+        &[Capability::FinanceBankStatementRecord]
+    }
+}
+
+// -----------------------------------------------------------------------------
+// BankStatement commands (Wave 85 — per-aggregate wave pattern from
+// Waves 65–84)
+// -----------------------------------------------------------------------------
+//
+// Per v3 Part 2 F48 + checklist § BankStatement: 4 invariants:
+//   - BS I-1: amount >= 0 (validated at construction + on update).
+//   - BS I-2: type ∈ {income, expense} (enforced at type-system
+//             level via the StatementType enum).
+//   - BS I-3: after_balance matches running balance (the aggregate
+//             pins balance_after_minor at construction + on update;
+//             cross-statement consistency is the dispatcher's
+//             responsibility).
+//   - BS I-4: append-only; corrections via reverse. The Update
+//             command only allows metadata changes (description);
+//             amount/balance corrections happen via the Reverse
+//             command (which creates a new opposite-direction row).
+//
+// Full lifecycle event family — 4 commands: Create (enter the log),
+// Update (description only — BS I-4 immutable amount/balance),
+// Reverse (BS I-4: marks the original as corrected by a new
+// opposite-direction row), Retire (tombstone).
+//
+// GREENFIELD drop (no skeleton existed per Wave 85 recon). RBAC:
+// FinanceBankStatementReverse exists at rbac/value_objects.rs:366
+// (BS I-4 explicit capability — use for the Reverse command);
+// FinanceBankStatementRecord is the closest existing variant for
+// Create/Update (bank-statement record flow); FinanceBankStatementRecord
+// also covers Retire (tombstone).
+
+/// Command: create a new `BankStatement` row in the per-account log.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateBankStatementCommand {
+    pub tenant: TenantContext,
+    pub bank_statement_id: BankStatementId,
+    pub bank_account_id: BankAccountId,
+    pub statement_type: StatementType,
+    pub amount_minor: i64,
+    pub balance_after_minor: i64,
+    pub currency: Currency,
+    pub occurred_at: Timestamp,
+    pub description: Option<String>,
+}
+
+impl CreateBankStatementCommand {
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        // Wave 85 RBAC: FinanceBankStatementCreate does not exist;
+        // use FinanceBankStatementRecord (closest existing variant
+        // for the bank-statement record flow).
+        &[Capability::FinanceBankStatementRecord]
+    }
+}
+
+/// Command: update the metadata of an existing `BankStatement` row.
+/// Only the `description` field is mutable here; amount_minor +
+/// balance_after_minor + statement_type are immutable (BS I-4
+/// append-only enforcement). Corrections to amount/balance happen
+/// via the `ReverseBankStatementCommand`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateBankStatementCommand {
+    pub tenant: TenantContext,
+    pub bank_statement_id: BankStatementId,
+    pub description: Option<String>,
+}
+
+impl UpdateBankStatementCommand {
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        &[Capability::FinanceBankStatementRecord]
+    }
+}
+
+/// Command: mark a `BankStatement` as corrected via a new
+/// opposite-direction row (BS I-4 append-only enforcement). The
+/// dispatcher is responsible for creating the new reverse row
+/// (which carries the inverse amount + type). This command only
+/// emits the `BankStatementReversed` event marking the original
+/// statement as corrected.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReverseBankStatementCommand {
+    pub tenant: TenantContext,
+    pub bank_statement_id: BankStatementId,
+    pub reverse_row_id: BankStatementId,
+}
+
+impl ReverseBankStatementCommand {
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
+        // FinanceBankStatementReverse EXISTS at
+        // rbac/value_objects.rs:366 — use it directly (BS I-4 explicit
+        // capability, no fallback needed).
+        &[Capability::FinanceBankStatementReverse]
+    }
+}
+
+/// Command: soft-delete a `BankStatement` row by flipping
+/// `active_status` to `Retired`. This is a tombstone, NOT a content
+/// edit — the original amount + balance + statement_type are
+/// preserved in the audit footer for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireBankStatementCommand {
+    pub tenant: TenantContext,
+    pub bank_statement_id: BankStatementId,
+}
+
+impl RetireBankStatementCommand {
+    #[must_use]
+    pub const fn required_capabilities() -> &'static [Capability] {
         &[Capability::FinanceBankStatementRecord]
     }
 }
