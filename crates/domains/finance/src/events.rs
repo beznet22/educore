@@ -28,7 +28,7 @@ use crate::value_objects::{
     AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
     BankStatementId, StatementType,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
-    DirectFeesInstallmentId, DirectFeesSettingId, DonorId,
+    DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId,
@@ -4935,6 +4935,182 @@ impl DomainEvent for BankAccountRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.bank_account_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealDirectFeesReminder` is created via
+/// `RealDirectFeesReminder::fresh`. Carries the scope-key fields
+/// (direct_fees_installment_id + student_id) + the mutable
+/// metadata (remind_at + due_date_before_days DFR I-1 + note).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesReminderCreated {
+    pub direct_fees_reminder_id: DirectFeesReminderId,
+    pub direct_fees_installment_id: DirectFeesInstallmentId,
+    pub student_id: educore_academic::StudentId,
+    pub remind_at: NaiveDate,
+    pub due_date_before_days: i64, // DFR I-1
+    pub note: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesReminderCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        direct_fees_reminder_id: DirectFeesReminderId,
+        direct_fees_installment_id: DirectFeesInstallmentId,
+        student_id: educore_academic::StudentId,
+        remind_at: NaiveDate,
+        due_date_before_days: i64,
+        note: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            direct_fees_reminder_id,
+            direct_fees_installment_id,
+            student_id,
+            remind_at,
+            due_date_before_days,
+            note,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesReminderCreated {
+    const EVENT_TYPE: &'static str = "finance.direct_fees_reminder.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_reminder";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.direct_fees_reminder_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.direct_fees_reminder_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealDirectFeesReminder`'s mutable metadata is
+/// updated via `RealDirectFeesReminder::update_metadata`. Carries
+/// only the MUTABLE fields (remind_at + due_date_before_days +
+/// note). The scope-key fields (direct_fees_installment_id +
+/// student_id) are NOT carried here — they are preserved in the
+/// audit footer of the aggregate itself.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesReminderUpdated {
+    pub direct_fees_reminder_id: DirectFeesReminderId,
+    pub remind_at: NaiveDate,
+    pub due_date_before_days: i64, // DFR I-1
+    pub note: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesReminderUpdated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        direct_fees_reminder_id: DirectFeesReminderId,
+        remind_at: NaiveDate,
+        due_date_before_days: i64,
+        note: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            direct_fees_reminder_id,
+            remind_at,
+            due_date_before_days,
+            note,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesReminderUpdated {
+    const EVENT_TYPE: &'static str = "finance.direct_fees_reminder.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_reminder";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.direct_fees_reminder_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.direct_fees_reminder_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealDirectFeesReminder` is retired
+/// (soft-deleted via `RealDirectFeesReminder::retire`). The
+/// original scope-key fields (direct_fees_installment_id +
+/// student_id + remind_at + due_date_before_days) are preserved
+/// in the audit footer for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesReminderRetired {
+    pub direct_fees_reminder_id: DirectFeesReminderId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesReminderRetired {
+    pub fn new(
+        direct_fees_reminder_id: DirectFeesReminderId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            direct_fees_reminder_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesReminderRetired {
+    const EVENT_TYPE: &'static str = "finance.direct_fees_reminder.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_reminder";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.direct_fees_reminder_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.direct_fees_reminder_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

@@ -820,18 +820,27 @@ impl DeleteDirectFeesSettingCommand {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateDirectFeesReminderCommand {
     pub tenant: TenantContext,
+    pub direct_fees_reminder_id: DirectFeesReminderId,
     pub direct_fees_installment_id: DirectFeesInstallmentId,
     pub student_id: educore_academic::StudentId,
     pub remind_at: NaiveDate,
+    /// How many days BEFORE the installment due_date to fire
+    /// the reminder. Must be >= 0. DFR I-1.
+    pub due_date_before_days: i64,
     pub note: Option<String>,
 }
 
 
 impl CreateDirectFeesReminderCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_DIRECT_FEES_REMINDER_CREATE_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
-        vec![Capability::FinanceFeesReminderRead]
+        vec![Capability::FinanceFeesReminderConfigure]
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -839,11 +848,19 @@ pub struct UpdateDirectFeesReminderCommand {
     pub tenant: TenantContext,
     pub direct_fees_reminder_id: DirectFeesReminderId,
     pub remind_at: Option<NaiveDate>,
+    /// Optional override for the days-before-due field. DFR I-1
+    /// (>= 0) is validated in the service function.
+    pub due_date_before_days: Option<i64>,
     pub note: Option<String>,
 }
 
 
 impl UpdateDirectFeesReminderCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_DIRECT_FEES_REMINDER_UPDATE_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -858,6 +875,11 @@ pub struct DeleteDirectFeesReminderCommand {
 
 
 impl DeleteDirectFeesReminderCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_DIRECT_FEES_REMINDER_DELETE_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {

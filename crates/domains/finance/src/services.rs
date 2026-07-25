@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -58,6 +58,7 @@ use crate::commands::{
     RejectExpenseApprovalCommand, RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
     UpdateBankStatementCommand, ReverseBankStatementCommand, RetireBankStatementCommand,
     OpenBankAccountCommand, UpdateBankAccountCommand, DeleteBankAccountCommand,
+    CreateDirectFeesReminderCommand, UpdateDirectFeesReminderCommand, DeleteDirectFeesReminderCommand,
     CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
@@ -87,6 +88,7 @@ use crate::events::{
     BankStatementCreated, BankStatementUpdated, BankStatementReversed, BankStatementRetired,
     FeesDiscountCreated, FeesDiscountRetired, FeesDiscountUpdated,
     BankAccountCreated, BankAccountUpdated, BankAccountRetired,
+    DirectFeesReminderCreated, DirectFeesReminderUpdated, DirectFeesReminderRetired,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -97,7 +99,7 @@ use crate::events::{
 use crate::value_objects::{
     AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId,
     BankStatementAttachmentId, BankStatementId, Currency, DiscountType, FeesMasterId, StatementType,
-    DirectFeesInstallmentAssignChildId, DirectFeesSettingId,
+    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId,
     DonorId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
     IncomeApprovalId, IncomeId,
     PayrollPaymentApprovalId, PayrollPaymentId,
@@ -3665,6 +3667,147 @@ where
 
     let event = BankAccountRetired::new(
         cmd.bank_account_id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+// =============================================================================
+// Command: create a DirectFeesReminder (RealDirectFeesReminder)
+// =============================================================================
+
+/// Builds a new [`RealDirectFeesReminder`] aggregate + a
+/// [`DirectFeesReminderCreated`] event. The aggregate pins DFR I-1
+/// (`due_date_before_days >= 0` via `RealDirectFeesReminder::fresh`).
+#[allow(clippy::too_many_arguments)]
+pub fn create_direct_fees_reminder<C, G>(
+    cmd: CreateDirectFeesReminderCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealDirectFeesReminder, DirectFeesReminderCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut row = RealDirectFeesReminder::fresh(
+        cmd.direct_fees_reminder_id,
+        cmd.direct_fees_installment_id,
+        cmd.student_id,
+        cmd.remind_at,
+        cmd.due_date_before_days, // DFR I-1
+        cmd.note,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = DirectFeesReminderCreated::new(
+        row.id,
+        row.direct_fees_installment_id,
+        row.student_id,
+        row.remind_at,
+        row.due_date_before_days, // DFR I-1
+        row.note.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+// =============================================================================
+// Command: update a DirectFeesReminder's mutable metadata
+// =============================================================================
+
+/// Updates a [`RealDirectFeesReminder`]'s mutable metadata via
+/// [`RealDirectFeesReminder::update_metadata`] + emits a
+/// [`DirectFeesReminderUpdated`] event. Scope-key fields
+/// (direct_fees_installment_id + student_id) are NOT mutable here
+/// — those changes require retire + create-new.
+pub fn update_direct_fees_reminder<C, G>(
+    cmd: UpdateDirectFeesReminderCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealDirectFeesReminder,
+) -> Result<DirectFeesReminderUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    // DFR I-1: validate the new due_date_before_days if provided.
+    if let Some(days) = cmd.due_date_before_days {
+        if days < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "DirectFeesReminder due_date_before_days must be >= 0 (DFR I-1)",
+            ));
+        }
+    }
+
+    let new_remind_at = cmd.remind_at.unwrap_or(row.remind_at);
+    let new_days = cmd.due_date_before_days.unwrap_or(row.due_date_before_days);
+    let new_note = cmd.note;
+
+    row.update_metadata(
+        new_remind_at,
+        new_days,
+        new_note,
+        now,
+        cmd.tenant.actor_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = DirectFeesReminderUpdated::new(
+        cmd.direct_fees_reminder_id,
+        row.remind_at,
+        row.due_date_before_days, // DFR I-1
+        row.note.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+// =============================================================================
+// Command: retire a DirectFeesReminder (soft-delete tombstone)
+// =============================================================================
+
+/// Retires a [`RealDirectFeesReminder`] via
+/// [`RealDirectFeesReminder::retire`] + emits a
+/// [`DirectFeesReminderRetired`] event. Scope-key fields
+/// (direct_fees_installment_id + student_id + remind_at +
+/// due_date_before_days) are preserved in the audit footer for
+/// legal-record retention.
+pub fn retire_direct_fees_reminder<C, G>(
+    cmd: DeleteDirectFeesReminderCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealDirectFeesReminder,
+) -> Result<DirectFeesReminderRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    row.retire(now, cmd.tenant.actor_id)?;
+    row.last_event_id = Some(event_id);
+
+    let event = DirectFeesReminderRetired::new(
+        cmd.direct_fees_reminder_id,
         cmd.tenant.actor_id,
         event_id,
         cmd.tenant.correlation_id,

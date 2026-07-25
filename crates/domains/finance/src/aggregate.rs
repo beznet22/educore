@@ -37,7 +37,7 @@ use crate::value_objects::{
     ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
     BankStatementId,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId,
-    DirectFeesInstallmentAssignId, DirectFeesSettingId, DiscountType, DonorId,
+    DirectFeesInstallmentAssignId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DiscountType, DonorId,
     DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId,
     FeesAssignId, FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
     FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId,
@@ -5082,6 +5082,168 @@ impl RealBankAccount {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "BankAccount is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
+// Wave 88 — RealDirectFeesReminder (per-aggregate wave pattern from
+// Waves 65—87)
+//
+// RealDirectFeesReminder replaces the placeholder `DirectFeesReminder`
+// stub at aggregate.rs:918 (Phase 7 Workstream F). Full lifecycle:
+// fresh + update_metadata + retire.
+//
+// Invariants covered:
+// - DFR I-1: due_date_before_days ≥ 0 — type-pinned via Rust's `i64`
+//   type + `fresh()` / `update_metadata()` validation guards
+//   (returns `DomainError::Validation` if < 0). The aggregate
+//   carries `due_date_before_days: i64` as a required field;
+//   dispatcher computes the absolute due_date from
+//   `direct_fees_installment.due_date - due_date_before_days`.
+//
+// Non-mutable fields (scope-key fields, parallel to Wave 86
+// FD I-3 + FD I-4 + Wave 87 BA I-1 + BA I-2 + BA I-3): scope-key
+// fields (direct_fees_installment_id + student_id) are NOT
+// mutable via update_metadata — changing scope requires
+// retire + create-new. Mutable fields: remind_at + due_date_before_days
+// + note.
+// =============================================================================
+
+/// `RealDirectFeesReminder` shape. Per-student per-installment
+/// reminder configuration.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealDirectFeesReminder {
+    /// The typed id (school_id + uuid).
+    pub id: DirectFeesReminderId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The fees installment this reminder is scoped to.
+    pub direct_fees_installment_id: DirectFeesInstallmentId,
+    /// The student this reminder is scoped to.
+    pub student_id: educore_academic::StudentId,
+    /// The absolute date the reminder should fire. Mutable.
+    pub remind_at: NaiveDate,
+    /// How many days BEFORE the installment due_date to fire
+    /// the reminder. Must be >= 0. DFR I-1.
+    pub due_date_before_days: i64,
+    /// Optional free-form note for the reminder.
+    pub note: Option<String>,
+    /// The audit footer (9 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealDirectFeesReminder {
+    /// Constructs a new `RealDirectFeesReminder`.
+    ///
+    /// Enforces DFR I-1 (`due_date_before_days >= 0` — returns
+    /// `DomainError::Validation` if < 0). Scope-key fields
+    /// (direct_fees_installment_id + student_id) are pinned at
+    /// construction.
+    pub fn fresh(
+        id: DirectFeesReminderId,
+        direct_fees_installment_id: DirectFeesInstallmentId,
+        student_id: educore_academic::StudentId,
+        remind_at: NaiveDate,
+        due_date_before_days: i64,
+        note: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        if due_date_before_days < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "DirectFeesReminder due_date_before_days must be >= 0 (DFR I-1)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            direct_fees_installment_id,
+            student_id,
+            remind_at,
+            due_date_before_days, // DFR I-1 pinned
+            note: note
+                .map(|n| n.trim().to_owned())
+                .filter(|n| !n.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the reminder is active (not retired).
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Updates the metadata (remind_at + due_date_before_days +
+    /// note). Scope-key fields (direct_fees_installment_id +
+    /// student_id) are NOT mutable here — changing the scope
+    /// requires retire + create-new.
+    pub fn update_metadata(
+        &mut self,
+        remind_at: NaiveDate,
+        due_date_before_days: i64,
+        note: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "DirectFeesReminder is retired; cannot update metadata",
+            ));
+        }
+        if due_date_before_days < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "DirectFeesReminder due_date_before_days must be >= 0 on update (DFR I-1)",
+            ));
+        }
+        self.remind_at = remind_at;
+        self.due_date_before_days = due_date_before_days;
+        self.note = note
+            .map(|n| n.trim().to_owned())
+            .filter(|n| !n.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the reminder by flipping `active_status` to
+    /// `Retired`. Tombstone — preserves scope-key fields
+    /// (direct_fees_installment_id + student_id + remind_at +
+    /// due_date_before_days) in the audit footer for legal-record
+    /// retention.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "DirectFeesReminder is already retired",
             ));
         }
         self.active_status = ActiveStatus::Retired;
