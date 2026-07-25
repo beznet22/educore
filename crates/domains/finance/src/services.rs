@@ -34,7 +34,7 @@ use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
-    Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
+    Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
     RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, Wallet, WalletTransaction,
@@ -52,6 +52,7 @@ use crate::commands::{
     CreateChartOfAccountCommand,
     CreateSalaryTemplateCommand,
     CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesInstallmentChildPaymentCommand,
+    RetireDirectFeesInstallmentChildPaymentCommand,
     CreateDirectFeesSettingCommand, CreateDonorCommand, CreateExpenseApprovalCommand, CreateFeesAssignDiscountCommand,
     CreateIncomeApprovalCommand,
     CreatePayrollPaymentApprovalCommand,
@@ -84,6 +85,7 @@ use crate::commands::{
 };
 use crate::events::{
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
+    DirectFeesInstallmentChildPaymentCreated, DirectFeesInstallmentChildPaymentRetired,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
@@ -110,7 +112,7 @@ use crate::events::{
 use crate::value_objects::{
     AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId,
     BankStatementAttachmentId, BankStatementId, Currency, DiscountType, FeesMasterId, StatementType,
-    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId,
+    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId,
     DonorId, DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
     IncomeApprovalId, IncomeId,
     PayrollPaymentApprovalId, PayrollPaymentId,
@@ -1701,37 +1703,7 @@ where
     Ok(())
 }
 
-/// Handler skeleton: create a `DirectFeesInstallmentChildPayment` aggregate.
-/// Full implementation lands in Phase 7 Workstream F.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn create_direct_fees_installment_child_payment<C, G>(
-    cmd: CreateDirectFeesInstallmentChildPaymentCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let _ = (cmd, clock, ids);
-    Ok(())
-}
-
-/// Handler skeleton: read a `DirectFeesInstallmentChildPayment` aggregate.
-/// Full implementation lands in Phase 7 Workstream F.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_direct_fees_installment_child_payment<C, G>(
-    cmd: ReadDirectFeesInstallmentChildPaymentCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let _ = (cmd, clock, ids);
-    Ok(())
-}
+// Wave 96 DirectFeesInstallmentChildPayment service functions appended below at the end of the file (before #[cfg(test)]).
 
 /// Builds a new [`RealFmFeesGroup`] aggregate + an
 /// [`FmFeesGroupCreated`] event. The FM fees group is the FM invoice
@@ -4549,6 +4521,95 @@ where
     let evt_id = ids.next_event_id();
     Ok(FmFeesWeaverRetired::new(
         cmd.fm_fees_weaver_id,
+        cmd.tenant.actor_id,
+        evt_id,
+        cmd.tenant.correlation_id,
+        at,
+    ))
+}
+
+// ===================================================================
+// Wave 96 — RealDirectFeesInstallmentChildPayment service functions (per-aggregate wave pattern from Waves 65-95)
+// ===================================================================
+
+/// Service function: create a new `RealDirectFeesInstallmentChildPayment`
+/// aggregate.
+///
+/// Enforces FFIChild I-1 (`paid_amount_minor >= 0`) at construction.
+/// Emits `DirectFeesInstallmentChildPaymentCreated` downstream.
+#[allow(clippy::too_many_arguments, clippy::needless_pass_by_value)]
+pub fn create_direct_fees_installment_child_payment<C, G>(
+    cmd: CreateDirectFeesInstallmentChildPaymentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<DirectFeesInstallmentChildPaymentCreated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let evt_id = ids.next_event_id();
+    let agg = RealDirectFeesInstallmentChildPayment::fresh(
+        cmd.direct_fees_installment_child_payment_id,
+        cmd.installment_id,
+        cmd.paid_amount_minor,
+        cmd.note,
+        cmd.tenant.actor_id,
+        at,
+        cmd.tenant.correlation_id,
+    )?;
+    Ok(DirectFeesInstallmentChildPaymentCreated::new(
+        agg.id,
+        agg.installment_id,
+        agg.paid_amount_minor,
+        agg.note,
+        cmd.tenant.actor_id,
+        evt_id,
+        cmd.tenant.correlation_id,
+        at,
+    ))
+}
+
+/// Service function: read a `RealDirectFeesInstallmentChildPayment`
+/// aggregate.
+///
+/// Currently a no-op stub (read-only aggregate lookup is a dispatcher
+/// concern). Emits nothing.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_direct_fees_installment_child_payment<C, G>(
+    cmd: ReadDirectFeesInstallmentChildPaymentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Service function: retire a `RealDirectFeesInstallmentChildPayment`
+/// aggregate.
+///
+/// Tombstone — preserves `installment_id` + `paid_amount_minor`
+/// (FFIChild I-1) + `note` in the audit footer for legal-record
+/// retention. Emits `DirectFeesInstallmentChildPaymentRetired`
+/// downstream.
+#[allow(clippy::needless_pass_by_value)]
+pub fn retire_direct_fees_installment_child_payment<C, G>(
+    cmd: RetireDirectFeesInstallmentChildPaymentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<DirectFeesInstallmentChildPaymentRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let evt_id = ids.next_event_id();
+    Ok(DirectFeesInstallmentChildPaymentRetired::new(
+        cmd.direct_fees_installment_child_payment_id,
         cmd.tenant.actor_id,
         evt_id,
         cmd.tenant.correlation_id,

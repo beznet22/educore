@@ -28,7 +28,7 @@ use crate::value_objects::{
     AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
     BankStatementId, StatementType,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
-    DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
+    DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId, FeesInstallmentCreditId, FeesInvoiceSettingId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId,
@@ -6206,6 +6206,120 @@ impl DomainEvent for FmFeesWeaverRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.fm_fees_weaver_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// ===================================================================
+// Wave 96 — RealDirectFeesInstallmentChildPayment events (per-aggregate wave pattern from Waves 65-95)
+// ===================================================================
+
+/// Emitted when a `RealDirectFeesInstallmentChildPayment` is created
+/// via `RealDirectFeesInstallmentChildPayment::fresh`. Carries
+/// `installment_id` (scope-key DirectFeesInstallmentId) +
+/// `paid_amount_minor` (FFIChild I-1 — >= 0) + `note`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesInstallmentChildPaymentCreated {
+    pub direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
+    pub installment_id: DirectFeesInstallmentId,
+    pub paid_amount_minor: i64, // FFIChild I-1
+    pub note: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesInstallmentChildPaymentCreated {
+    pub fn new(
+        direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
+        installment_id: DirectFeesInstallmentId,
+        paid_amount_minor: i64,
+        note: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            direct_fees_installment_child_payment_id,
+            installment_id,
+            paid_amount_minor,
+            note,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesInstallmentChildPaymentCreated {
+    const EVENT_TYPE: &'static str =
+        "finance.direct_fees_installment_child_payment.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_installment_child_payment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.direct_fees_installment_child_payment_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.direct_fees_installment_child_payment_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealDirectFeesInstallmentChildPayment` is retired
+/// (soft-deleted via `RealDirectFeesInstallmentChildPayment::retire`).
+/// The original `installment_id` + `paid_amount_minor` (FFIChild I-1)
+/// + `note` are preserved in the audit footer for legal-record
+/// retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesInstallmentChildPaymentRetired {
+    pub direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesInstallmentChildPaymentRetired {
+    pub fn new(
+        direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            direct_fees_installment_child_payment_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesInstallmentChildPaymentRetired {
+    const EVENT_TYPE: &'static str =
+        "finance.direct_fees_installment_child_payment.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_installment_child_payment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.direct_fees_installment_child_payment_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.direct_fees_installment_child_payment_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

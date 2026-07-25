@@ -2737,34 +2737,71 @@ impl ReadFeesAssignDiscountCommand {
         vec![Capability::FinanceFeesAssignRead]
     }
 }
-// -- DirectFeesInstallmentChildPayment (Phase 7 Workstream F) --
+// -- DirectFeesInstallmentChildPayment (Wave 96 — RealDirectFeesInstallmentChildPayment) --
+
+/// COMMAND_TYPE discriminator for `CreateDirectFeesInstallmentChildPaymentCommand`.
+pub const FINANCE_DIRECT_FEES_INSTALLMENT_CHILD_PAYMENT_CREATE_COMMAND_TYPE: &str =
+    "finance.direct_fees_installment_child_payment.create";
+
+/// COMMAND_TYPE discriminator for `ReadDirectFeesInstallmentChildPaymentCommand`.
+pub const FINANCE_DIRECT_FEES_INSTALLMENT_CHILD_PAYMENT_READ_COMMAND_TYPE: &str =
+    "finance.direct_fees_installment_child_payment.read";
+
+/// COMMAND_TYPE discriminator for `RetireDirectFeesInstallmentChildPaymentCommand`.
+pub const FINANCE_DIRECT_FEES_INSTALLMENT_CHILD_PAYMENT_RETIRE_COMMAND_TYPE: &str =
+    "finance.direct_fees_installment_child_payment.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateDirectFeesInstallmentChildPaymentCommand {
     pub tenant: TenantContext,
     pub direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
+    pub installment_id: DirectFeesInstallmentId,
+    pub paid_amount_minor: i64, // FFIChild I-1
+    pub note: Option<String>,
 }
 
-
 impl CreateDirectFeesInstallmentChildPaymentCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_DIRECT_FEES_INSTALLMENT_CHILD_PAYMENT_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceDirectFeesInstallmentCreate]
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadDirectFeesInstallmentChildPaymentCommand {
     pub tenant: TenantContext,
     pub direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
 }
 
-
 impl ReadDirectFeesInstallmentChildPaymentCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_DIRECT_FEES_INSTALLMENT_CHILD_PAYMENT_READ_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceDirectFeesInstallmentPay]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireDirectFeesInstallmentChildPaymentCommand {
+    pub tenant: TenantContext,
+    pub direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
+}
+
+impl RetireDirectFeesInstallmentChildPaymentCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_DIRECT_FEES_INSTALLMENT_CHILD_PAYMENT_RETIRE_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDirectFeesInstallmentDelete]
     }
 }
 // -- FmFeesGroup (Phase 7 Workstream G) --
