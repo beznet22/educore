@@ -36,7 +36,7 @@ use crate::value_objects::{
     FmFeesInvoiceLineNoteId, FmFeesTransactionChildId, FmFeesTransactionId,
     FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
     IncomeId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId,
-    PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, WalletId,
+    PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, SalaryTemplateId, WalletId,
     WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 
@@ -3814,6 +3814,201 @@ impl DomainEvent for PayrollPaymentApprovalRejected {
     }
     fn school_id(&self) -> SchoolId {
         self.payroll_payment_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// SalaryTemplate events — Wave 82 (per-aggregate wave pattern from
+// Waves 65–81)
+// =============================================================================
+//
+// Per v3 Part 2 F44 + checklist § SalaryTemplate: 2 invariants:
+//   - ST I-1: gross_salary composition (gross_salary_minor >= 0
+//             pinned at construction; service-side composition
+//             via SalaryTemplateService::create_template).
+//   - ST I-2: net_salary == gross - total_deduction
+//             (net_salary_minor >= 0 lower bound pinned at
+//             construction; service-side composition via
+//             SalaryTemplateService::apply_template).
+// Full lifecycle (Created / Updated / Retired) — reference data
+// with corrections expected, parallel to Wave 74 ChartOfAccount
+// and Wave 78 FeesCarryForwardSetting event families.
+//
+// Note: SalaryTemplateId is re-exported from educore_hr (cross-
+// crate dep, parallel to Wave 71 Donor pattern).
+
+/// Emitted when a new `RealSalaryTemplate` row is created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SalaryTemplateCreated {
+    pub salary_template_id: SalaryTemplateId,
+    pub name: String,
+    pub currency: Currency,
+    pub gross_salary_minor: i64,
+    pub net_salary_minor: i64,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl SalaryTemplateCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        salary_template_id: SalaryTemplateId,
+        name: String,
+        currency: Currency,
+        gross_salary_minor: i64,
+        net_salary_minor: i64,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            salary_template_id,
+            name,
+            currency,
+            gross_salary_minor,
+            net_salary_minor,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for SalaryTemplateCreated {
+    const EVENT_TYPE: &'static str = "finance.salary_template.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "salary_template";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.salary_template_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.salary_template_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealSalaryTemplate`'s metadata is updated via
+/// `RealSalaryTemplate::update_metadata`. Re-validates ST I-1 +
+/// ST I-2 lower bound at the aggregate surface.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SalaryTemplateUpdated {
+    pub salary_template_id: SalaryTemplateId,
+    pub name: String,
+    pub currency: Currency,
+    pub gross_salary_minor: i64,
+    pub net_salary_minor: i64,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl SalaryTemplateUpdated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        salary_template_id: SalaryTemplateId,
+        name: String,
+        currency: Currency,
+        gross_salary_minor: i64,
+        net_salary_minor: i64,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            salary_template_id,
+            name,
+            currency,
+            gross_salary_minor,
+            net_salary_minor,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for SalaryTemplateUpdated {
+    const EVENT_TYPE: &'static str = "finance.salary_template.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "salary_template";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.salary_template_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.salary_template_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealSalaryTemplate` row is retired (soft-deleted
+/// via `RealSalaryTemplate::retire`). The original gross_salary_minor
+/// + net_salary_minor are preserved in the audit footer for legal-
+/// record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SalaryTemplateRetired {
+    pub salary_template_id: SalaryTemplateId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl SalaryTemplateRetired {
+    pub fn new(
+        salary_template_id: SalaryTemplateId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            salary_template_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for SalaryTemplateRetired {
+    const EVENT_TYPE: &'static str = "finance.salary_template.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "salary_template";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.salary_template_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.salary_template_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

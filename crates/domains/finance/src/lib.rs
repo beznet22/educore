@@ -51,7 +51,7 @@ pub mod prelude {
         RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting,
         RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild,
         RealFmFeesTransactionLineNote, RealIncomeApproval, RealIncomeHead, RealInvoiceSetting,
-        RealQuestionBankFee, Wallet, WalletTransaction,
+        RealQuestionBankFee, RealSalaryTemplate, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::{PayrollPaymentApproval, WalletTransactionApproval};
@@ -63,6 +63,7 @@ pub mod prelude {
         BlockLoginForDueFeesCommand,
         CarryForwardFeesBalanceCommand, ConfigureFeesGroupCommand, ConfigureFeesTypeCommand,
         ConfigureInvoiceNumberingCommand, CreateChartOfAccountCommand,
+        CreateSalaryTemplateCommand,
         CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesSettingCommand,
         CreateDonorCommand, CreateExpenseApprovalCommand, CreateExpenseHeadCommand,
         CreateFeesCarryForwardLogCommand,
@@ -96,6 +97,7 @@ pub mod prelude {
         IncomeApprovalApproved, IncomeApprovalCreated, IncomeApprovalRejected,
         PayrollPaymentApprovalApproved, PayrollPaymentApprovalCreated,
         PayrollPaymentApprovalRejected,
+        SalaryTemplateCreated, SalaryTemplateRetired, SalaryTemplateUpdated,
         FeesCarryForwardSettingRetired, FeesCarryForwardSettingUpdated, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
         FmFeesInvoiceLineNoteRetired, FmFeesTransactionChildCreated,
         FmFeesTransactionChildRetired, FmFeesTransactionChildUpdated,
@@ -115,6 +117,7 @@ pub mod prelude {
         create_direct_fees_installment_assign_child, create_direct_fees_setting,
         create_donor, create_expense_approval, create_fees_carry_forward_log, create_fees_carry_forward_setting,
         create_fm_fees_group, create_income_approval, create_payroll_payment_approval,
+        create_salary_template,
         create_fm_fees_invoice_line_note, create_fm_fees_transaction_child,
         create_fm_fees_transaction_line_note,
         create_income_head, create_invoice_setting, create_question_bank_fee, create_wallet,

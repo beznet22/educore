@@ -37,13 +37,14 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
     RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, Wallet, WalletTransaction,
 };
 use crate::entities::{PayrollPaymentApproval, WalletTransactionApproval};
 use crate::commands::{
     ApproveExpenseApprovalCommand, ApproveIncomeApprovalCommand, ApprovePayrollPaymentApprovalCommand,
     ApproveWalletTransactionApprovalCommand,
     CreateChartOfAccountCommand,
+    CreateSalaryTemplateCommand,
     CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesInstallmentChildPaymentCommand,
     CreateDirectFeesSettingCommand, CreateDonorCommand, CreateExpenseApprovalCommand, CreateFeesAssignDiscountCommand,
     CreateIncomeApprovalCommand,
@@ -73,6 +74,7 @@ use crate::events::{
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
     FmFeesGroupCreated, IncomeApprovalApproved, IncomeApprovalCreated, IncomeApprovalRejected,
     PayrollPaymentApprovalApproved, PayrollPaymentApprovalCreated, PayrollPaymentApprovalRejected,
+    SalaryTemplateCreated,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -85,6 +87,7 @@ use crate::value_objects::{
     DonorId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
     IncomeApprovalId, IncomeId,
     PayrollPaymentApprovalId, PayrollPaymentId,
+    SalaryTemplateId,
     FeesInvoiceId, FeesPaymentId,
     FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId,
@@ -2103,6 +2106,57 @@ where
         now,
     );
     Ok((account, event))
+}
+
+/// Builds a new [`RealSalaryTemplate`] aggregate + a
+/// [`SalaryTemplateCreated`] event. Enforces ST I-1
+/// (`gross_salary_minor >= 0`) and ST I-2 lower bound
+/// (`net_salary_minor >= 0`) at the aggregate surface. The full
+/// composition invariant (gross == sum of earnings, net == gross -
+/// total_deduction) is service-side via the existing
+/// `SalaryTemplateService::create_template` + `apply_template`
+/// helpers at services.rs:2984/3026; this function mints the
+/// aggregate + event from the pre-computed values returned by those
+/// helpers.
+pub fn create_salary_template<C, G>(
+    cmd: CreateSalaryTemplateCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealSalaryTemplate, SalaryTemplateCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let _ = event_id_to_uuid(event_id); // reserved for future audit-footer linking
+
+    let mut row = RealSalaryTemplate::fresh(
+        cmd.salary_template_id,
+        cmd.name,
+        cmd.currency,
+        cmd.gross_salary_minor,
+        cmd.net_salary_minor,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = SalaryTemplateCreated::new(
+        cmd.salary_template_id,
+        row.name.clone(),
+        row.currency,
+        row.gross_salary_minor,
+        row.net_salary_minor,
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
 }
 
 /// Handler skeleton: create an `FmFeesType` aggregate.

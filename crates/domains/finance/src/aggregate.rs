@@ -47,6 +47,7 @@ use crate::value_objects::{
     IncomeApprovalId, IncomeHeadId, IncomeId, InvoiceSettingId, Money, PaymentGatewaySettingId,
     PaymentMethodId, PaymentMethodKind, PayrollEarnDeducId, PayrollGenerateId,
     PayrollPaymentApprovalId, PayrollPaymentId, ProductPurchaseId, QuestionBankFeeId,
+    SalaryTemplateId,
     StatementType, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 
@@ -4064,6 +4065,220 @@ impl RealIncomeApproval {
         self.reject_reason = reason
             .map(|r| r.trim().to_owned())
             .filter(|r| !r.is_empty()); // IA I-2
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
+// RealSalaryTemplate — Wave 82 (per-aggregate wave pattern from
+// Waves 65–81)
+// =============================================================================
+//
+// Per v3 Part 2 F44 + checklist § SalaryTemplate: 2 invariants:
+//   - ST I-1: gross_salary composition — gross_salary_minor must be
+//             >= 0. The composition logic (gross == sum of all
+//             earnings template lines) is service-side (handled by
+//             `SalaryTemplateService::create_template` at
+//             services.rs:2984); this aggregate pins the final
+//             value at construction so it can be queried without
+//             recomputation. Promotion from [~] partial (service
+//             side) to [x] complete (aggregate-side pinned value).
+//   - ST I-2: net_salary == gross - total_deduction. Composition
+//             handled by `SalaryTemplateService::apply_template`
+//             at services.rs:3026; this aggregate pins the final
+//             net_salary_minor at construction so it can be
+//             reported directly.
+// Full lifecycle: fresh + update_metadata + retire (ST is reference
+// data with corrections expected, parallel to Wave 74 ChartOfAccount
+// + Wave 78 FeesCarryForwardSetting).
+// The placeholder stub above
+// (`finance_aggregate_stub! { struct SalaryTemplate { _id: () } }`)
+// remains in the file for documentation purposes; the real
+// implementation is below. The service layer MUST use
+// `RealSalaryTemplate` for new code; the stub is kept only to
+// avoid breaking downstream code that referenced `SalaryTemplate`
+// as a type name during Phase 7.
+
+/// A per-school salary template (reference data) that captures the
+/// final computed `gross_salary_minor` + `net_salary_minor` so they
+/// can be queried/reported without recomputation. Composition
+/// (gross == sum of earnings, net == gross - deductions) is
+/// service-side (see `SalaryTemplateService`). The aggregate enforces
+/// `gross_salary_minor >= 0` (ST I-1) and `net_salary_minor >= 0`
+/// (ST I-2 lower bound — net cannot be negative). Full lifecycle:
+/// fresh + update_metadata + retire.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealSalaryTemplate {
+    /// The typed id (school_id + uuid), re-exported from
+    /// `educore_hr::value_objects::SalaryTemplateId`.
+    pub id: SalaryTemplateId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The human-readable template name (e.g. "Senior Teacher").
+    /// Must be non-empty after trim.
+    pub name: String,
+    /// The currency for the gross + net salary fields.
+    pub currency: Currency,
+    /// The pre-tax gross salary in minor currency units (>= 0 per
+    /// ST I-1). Composed from the earnings template lines by
+    /// `SalaryTemplateService::create_template`; the aggregate
+    /// pins the final value.
+    pub gross_salary_minor: i64,
+    /// The post-tax net salary in minor currency units (>= 0 per
+    /// ST I-2 lower bound). Composed by
+    /// `SalaryTemplateService::apply_template`; the aggregate
+    /// pins the final value.
+    pub net_salary_minor: i64,
+    /// Optional free-form description (e.g. "Base + housing
+    /// allowance + transport; minus tax + insurance").
+    pub description: Option<String>,
+    /// The audit footer (10 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealSalaryTemplate {
+    /// Constructs a new `RealSalaryTemplate`. Enforces ST I-1
+    /// (`gross_salary_minor >= 0`) and ST I-2 lower-bound
+    /// (`net_salary_minor >= 0`). The aggregate is school-scoped
+    /// via the typed id (which carries the school_id from
+    /// `educore_hr::value_objects::SalaryTemplateId`).
+    pub fn fresh(
+        id: SalaryTemplateId,
+        name: String,
+        currency: Currency,
+        gross_salary_minor: i64,
+        net_salary_minor: i64,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // ST I-1: gross_salary_minor must be non-negative.
+        if gross_salary_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "SalaryTemplate gross_salary_minor must be non-negative (ST I-1)",
+            ));
+        }
+        // ST I-2 lower bound: net_salary_minor must be non-negative.
+        // (Note: net >= 0 is a necessary but not sufficient condition
+        // for net == gross - total_deduction; the full composition
+        // invariant is enforced service-side by SalaryTemplateService.)
+        if net_salary_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "SalaryTemplate net_salary_minor must be non-negative (ST I-2)",
+            ));
+        }
+        let trimmed_name = name.trim().to_owned();
+        if trimmed_name.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "SalaryTemplate name must be non-empty after trim",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            name: trimmed_name,
+            currency,
+            gross_salary_minor,
+            net_salary_minor,
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the template is currently active (not retired).
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Updates the name, currency, gross/net salary, and description.
+    /// Re-validates ST I-1 (`gross_salary_minor >= 0`), ST I-2 lower
+    /// bound (`net_salary_minor >= 0`), and name non-empty. Bumps
+    /// version, advances `updated_at`, sets `updated_by`.
+    pub fn update_metadata(
+        &mut self,
+        name: String,
+        currency: Currency,
+        gross_salary_minor: i64,
+        net_salary_minor: i64,
+        description: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "SalaryTemplate is retired; cannot update metadata",
+            ));
+        }
+        // ST I-1 on update.
+        if gross_salary_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "SalaryTemplate gross_salary_minor must be non-negative on update (ST I-1)",
+            ));
+        }
+        // ST I-2 lower bound on update.
+        if net_salary_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "SalaryTemplate net_salary_minor must be non-negative on update (ST I-2)",
+            ));
+        }
+        let trimmed_name = name.trim().to_owned();
+        if trimmed_name.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "SalaryTemplate name must be non-empty after trim on update",
+            ));
+        }
+        self.name = trimmed_name;
+        self.currency = currency;
+        self.gross_salary_minor = gross_salary_minor;
+        self.net_salary_minor = net_salary_minor;
+        self.description = description
+            .map(|d| d.trim().to_owned())
+            .filter(|d| !d.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the template by flipping `active_status` to
+    /// `Retired`. Bumps version, advances `updated_at`, sets
+    /// `updated_by`. Preserves ST I-1 (the original gross_salary_minor
+    /// is preserved in the audit footer) and ST I-2 (the original
+    /// net_salary_minor is preserved in the audit footer).
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "SalaryTemplate is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
         self.updated_at = at;
         self.updated_by = actor;
         self.version = self.version.next();

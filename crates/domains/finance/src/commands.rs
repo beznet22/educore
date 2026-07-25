@@ -3534,6 +3534,11 @@ impl CreateChartOfAccountCommand {
 pub struct CreateSalaryTemplateCommand {
     pub tenant: TenantContext,
     pub salary_template_id: SalaryTemplateId,
+    pub name: String,
+    pub currency: Currency,
+    pub gross_salary_minor: i64,
+    pub net_salary_minor: i64,
+    pub description: Option<String>,
 }
 
 
@@ -3541,7 +3546,11 @@ impl CreateSalaryTemplateCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
-        vec![Capability::FinanceInvoiceRead]
+        // Wave 82 RBAC: FinancePayrollPaymentRecord (closest existing
+        // variant — FinancePayrollPaymentApprove does not exist;
+        // same fallback used in Wave 81 PayrollPaymentApproval
+        // commands).
+        vec![Capability::FinancePayrollPaymentRecord]
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
