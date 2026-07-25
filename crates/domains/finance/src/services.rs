@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -55,6 +55,7 @@ use crate::commands::{
     RetireDirectFeesInstallmentChildPaymentCommand,
     CreateDirectFeesSettingCommand, CreateDonorCommand, CreateExpenseApprovalCommand, CreateFeesAssignDiscountCommand,
     CreateIncomeApprovalCommand, CreateIncomeCommand, ReadIncomeCommand, RetireIncomeCommand,
+    CreateInventoryPaymentCommand, ReadInventoryPaymentCommand, RetireInventoryPaymentCommand,
     CreatePayrollPaymentApprovalCommand,
     RejectExpenseApprovalCommand, RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
     UpdateBankStatementCommand, ReverseBankStatementCommand, RetireBankStatementCommand,
@@ -73,7 +74,7 @@ use crate::commands::{
     CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
     CreateFmFeesInvoiceCommand,
     CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
-    CreateIncomeHeadCommand, CreateInventoryPaymentCommand,
+    CreateIncomeHeadCommand,
     CreateInvoiceSettingCommand, CreateProductPurchaseCommand, CreateQuestionBankFeeCommand,
     CreateTransactionCommand,
     ReadDirectFeesInstallmentChildPaymentCommand, ReadDonorCommand,
@@ -81,12 +82,13 @@ use crate::commands::{
     ReadFmFeesGroupCommand, ReadFmFeesInvoiceChildCommand, ReadFmFeesInvoiceCommand,
     ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
-    ReadInventoryPaymentCommand, ReadProductPurchaseCommand, ReadTransactionCommand,
+    ReadProductPurchaseCommand, ReadTransactionCommand,
 };
 use crate::events::{
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
     DirectFeesInstallmentChildPaymentCreated, DirectFeesInstallmentChildPaymentRetired,
         IncomeCreated, IncomeRetired,
+        InventoryPaymentCreated, InventoryPaymentRetired,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
@@ -115,7 +117,7 @@ use crate::value_objects::{
     BankStatementAttachmentId, BankStatementId, Currency, DiscountType, FeesMasterId, StatementType,
     DirectFeesInstallmentAssignChildId, DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId,
     DonorId, DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
-    IncomeApprovalId, IncomeId,
+    IncomeApprovalId, IncomeId, InventoryPaymentId,
     PayrollPaymentApprovalId, PayrollPaymentId,
     SalaryTemplateId,
     FeesInvoiceId, FeesPaymentId,
@@ -2861,38 +2863,6 @@ where
     Ok(())
 }
 
-/// Handler skeleton: create an `InventoryPayment` aggregate.
-/// Full implementation lands in Phase 7 Workstream L.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn create_inventory_payment<C, G>(
-    cmd: CreateInventoryPaymentCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let _ = (cmd, clock, ids);
-    Ok(())
-}
-
-/// Handler skeleton: read an `InventoryPayment` aggregate.
-/// Full implementation lands in Phase 7 Workstream L.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_inventory_payment<C, G>(
-    cmd: ReadInventoryPaymentCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let _ = (cmd, clock, ids);
-    Ok(())
-}
-
 // =============================================================================
 // Workflow: Fees Assignment
 // =============================================================================
@@ -4702,6 +4672,93 @@ where
     let evt_id = ids.next_event_id();
     Ok(IncomeRetired::new(
         cmd.income_id,
+        cmd.tenant.actor_id,
+        evt_id,
+        cmd.tenant.correlation_id,
+        at,
+    ))
+}
+
+// ===================================================================
+// Wave 98 — RealInventoryPayment service functions (per-aggregate wave pattern from Waves 65-97)
+// ===================================================================
+
+/// Service function: create a new `RealInventoryPayment` aggregate.
+///
+/// Enforces IP I-1 (`amount_minor >= 0`) at construction.
+/// Emits `InventoryPaymentCreated` downstream.
+#[allow(clippy::too_many_arguments, clippy::needless_pass_by_value)]
+pub fn create_inventory_payment<C, G>(
+    cmd: CreateInventoryPaymentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<InventoryPaymentCreated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let evt_id = ids.next_event_id();
+    let agg = RealInventoryPayment::fresh(
+        cmd.inventory_payment_id,
+        cmd.supplier_name,
+        cmd.amount_minor,
+        cmd.currency,
+        cmd.note,
+        cmd.tenant.actor_id,
+        at,
+        cmd.tenant.correlation_id,
+    )?;
+    Ok(InventoryPaymentCreated::new(
+        agg.id,
+        agg.supplier_name,
+        agg.amount_minor,
+        agg.currency,
+        agg.note,
+        cmd.tenant.actor_id,
+        evt_id,
+        cmd.tenant.correlation_id,
+        at,
+    ))
+}
+
+/// Service function: read a `RealInventoryPayment` aggregate.
+///
+/// Currently a no-op stub (read-only aggregate lookup is a dispatcher
+/// concern). Emits nothing.
+#[allow(clippy::needless_pass_by_value, unused_variables)]
+pub fn read_inventory_payment<C, G>(
+    cmd: ReadInventoryPaymentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Service function: retire a `RealInventoryPayment` aggregate.
+///
+/// Tombstone — preserves `supplier_name` + `amount_minor` (IP I-1) +
+/// `currency` + `note` in the audit footer for legal-record retention.
+/// Emits `InventoryPaymentRetired` downstream.
+#[allow(clippy::needless_pass_by_value)]
+pub fn retire_inventory_payment<C, G>(
+    cmd: RetireInventoryPaymentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<InventoryPaymentRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let evt_id = ids.next_event_id();
+    Ok(InventoryPaymentRetired::new(
+        cmd.inventory_payment_id,
         cmd.tenant.actor_id,
         evt_id,
         cmd.tenant.correlation_id,

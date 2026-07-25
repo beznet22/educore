@@ -37,7 +37,7 @@ use crate::value_objects::{
     FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId,
     FmFeesWeaverId,
     FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
-    IncomeId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId,
+    IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId,
     PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, SalaryTemplateId, WalletId,
     WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
@@ -6430,6 +6430,119 @@ impl DomainEvent for IncomeRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.income_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// ===================================================================
+// Wave 98 — RealInventoryPayment events (per-aggregate wave pattern from Waves 65-97)
+// ===================================================================
+
+/// Emitted when a `RealInventoryPayment` is created via
+/// `RealInventoryPayment::fresh`. Carries `supplier_name` +
+/// `amount_minor` (IP I-1 — >= 0) + `currency` + optional `note`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct InventoryPaymentCreated {
+    pub inventory_payment_id: InventoryPaymentId,
+    pub supplier_name: String,
+    pub amount_minor: i64, // IP I-1
+    pub currency: Currency,
+    pub note: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl InventoryPaymentCreated {
+    pub fn new(
+        inventory_payment_id: InventoryPaymentId,
+        supplier_name: String,
+        amount_minor: i64,
+        currency: Currency,
+        note: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            inventory_payment_id,
+            supplier_name,
+            amount_minor,
+            currency,
+            note,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for InventoryPaymentCreated {
+    const EVENT_TYPE: &'static str = "finance.inventory_payment.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "inventory_payment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.inventory_payment_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.inventory_payment_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealInventoryPayment` is retired (soft-deleted via
+/// `RealInventoryPayment::retire`). The original `supplier_name` +
+/// `amount_minor` (IP I-1) + `currency` + `note` are preserved in the
+/// audit footer for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct InventoryPaymentRetired {
+    pub inventory_payment_id: InventoryPaymentId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl InventoryPaymentRetired {
+    pub fn new(
+        inventory_payment_id: InventoryPaymentId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            inventory_payment_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for InventoryPaymentRetired {
+    const EVENT_TYPE: &'static str = "finance.inventory_payment.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "inventory_payment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.inventory_payment_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.inventory_payment_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

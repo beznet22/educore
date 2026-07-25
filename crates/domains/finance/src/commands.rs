@@ -3438,30 +3438,68 @@ impl ReadProductPurchaseCommand {
         vec![Capability::FinanceInvoiceRead]
     }
 }
-// -- InventoryPayment (Phase 7 Workstream L) --
+// -- InventoryPayment (Wave 98 — RealInventoryPayment) --
+
+/// COMMAND_TYPE discriminator for `CreateInventoryPaymentCommand`.
+pub const FINANCE_INVENTORY_PAYMENT_CREATE_COMMAND_TYPE: &str =
+    "finance.inventory_payment.create";
+
+/// COMMAND_TYPE discriminator for `ReadInventoryPaymentCommand`.
+pub const FINANCE_INVENTORY_PAYMENT_READ_COMMAND_TYPE: &str =
+    "finance.inventory_payment.read";
+
+/// COMMAND_TYPE discriminator for `RetireInventoryPaymentCommand`.
+pub const FINANCE_INVENTORY_PAYMENT_RETIRE_COMMAND_TYPE: &str =
+    "finance.inventory_payment.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateInventoryPaymentCommand {
     pub tenant: TenantContext,
     pub inventory_payment_id: InventoryPaymentId,
+    pub supplier_name: String,
+    pub amount_minor: i64, // IP I-1
+    pub currency: Currency,
+    pub note: Option<String>,
 }
 
-
 impl CreateInventoryPaymentCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_INVENTORY_PAYMENT_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinancePaymentRead]
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadInventoryPaymentCommand {
     pub tenant: TenantContext,
     pub inventory_payment_id: InventoryPaymentId,
 }
 
-
 impl ReadInventoryPaymentCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_INVENTORY_PAYMENT_READ_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentRead]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireInventoryPaymentCommand {
+    pub tenant: TenantContext,
+    pub inventory_payment_id: InventoryPaymentId,
+}
+
+impl RetireInventoryPaymentCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_INVENTORY_PAYMENT_RETIRE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
