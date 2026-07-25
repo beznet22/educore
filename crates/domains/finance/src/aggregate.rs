@@ -5932,3 +5932,158 @@ impl RealFeesInvoiceSetting {
         Ok(())
     }
 }
+
+// =============================================================================
+// Wave 93 — RealFeesInstallmentCredit (per-aggregate wave
+// pattern from Waves 65—92)
+//
+// RealFeesInstallmentCredit replaces the placeholder
+// `FeesInstallmentCredit` stub at aggregate.rs:1047 (Phase 7
+// Workstream F). Append-only: fresh + retire only (no
+// update mutator \xe2\x80\x94 the struct intentionally exposes no
+// `update_*` method to enforce FIC I-3 at the API surface).
+//
+// Invariants covered (Wave 93 \xe2\x80\x94 3 invariants):
+// - FIC I-1: amount \xe2\x89\xa5 0 \xe2\x80\x94 `amount_minor` is i64 minor
+//   units; pinned (NOT mutable; append-only); validated at
+//   construction (returns `DomainError::Validation` if < 0)
+// - FIC I-2: credit source valid \xe2\x80\x94 `credit_source` is
+//   type-pinned via the new `FeesInstallmentCreditSource` enum
+//   with only 3 variants: `Overpayment | Correction |
+//   ManualAdjustment`. The Rust compiler rejects any other
+//   variant at construction.
+// - FIC I-3: append-only \xe2\x80\x94 NO `update_*` method is
+//   exposed; the struct can only be created via `fresh()` or
+//   retired via `retire()` (tombstone). The `Updated` event
+//   type is NOT generated \xe2\x80\x94 only `Created` + `Retired`
+//   events exist for this aggregate. This is the type-system
+//   enforcement of the append-only contract (parallel to Wave
+//   70 `RealFeesCarryForwardLog` pattern).
+// =============================================================================
+
+/// The reason a credit row exists. Pinned at construction via
+/// the `FeesInstallmentCreditSource` enum \xe2\x80\x94 the compiler
+/// rejects any other variant. FIC I-2.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum FeesInstallmentCreditSource {
+    /// Credit applied because the student overpaid on a
+    /// previous installment.
+    #[default]
+    Overpayment,
+    /// Credit applied as a manual correction (e.g. reversing
+    /// a wrongly-recorded fee).
+    Correction,
+    /// Credit applied as a manual adjustment (e.g. goodwill,
+    /// scholarship top-up, admin waiver).
+    ManualAdjustment,
+}
+
+/// `RealFeesInstallmentCredit` shape. An immutable credit
+/// record applied to a specific fees installment for a
+/// student. Append-only \xe2\x80\x94 once created, a credit row
+/// can never be updated (only retired as a tombstone).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFeesInstallmentCredit {
+    /// The typed id (school_id + uuid).
+    pub id: FeesInstallmentCreditId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// The credit amount in MINOR units (e.g. paise for INR).
+    /// Pinned at construction; must be >= 0. FIC I-1.
+    pub amount_minor: i64,
+    /// The reason this credit exists. Pinned at construction
+    /// via the `FeesInstallmentCreditSource` enum. FIC I-2.
+    pub credit_source: FeesInstallmentCreditSource,
+    /// The fees installment this credit is scoped to. Scope-key
+    /// field (NOT mutable \xe2\x80\x94 append-only; the dispatcher
+    /// tracks which installment the credit applies to).
+    pub source_installment_id: FeesInstallmentId,
+    /// Optional free-form description.
+    pub description: Option<String>,
+    /// The audit footer (9 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFeesInstallmentCredit {
+    /// Constructs a new `RealFeesInstallmentCredit` credit row.
+    ///
+    /// Enforces FIC I-1 (`amount_minor >= 0`) + FIC I-2
+    /// (`credit_source` type-pinned via the enum \xe2\x80\x94 the
+    /// compiler rejects any variant other than the 3 enum
+    /// variants). FIC I-3 is enforced at the API surface by
+    /// the absence of any `update_*` method.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: FeesInstallmentCreditId,
+        amount_minor: i64,
+        credit_source: FeesInstallmentCreditSource,
+        source_installment_id: FeesInstallmentId,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesInstallmentCredit amount_minor must be >= 0 (FIC I-1)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            amount_minor, // FIC I-1 pinned
+            credit_source, // FIC I-2 type-pinned
+            source_installment_id,
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the credit row is active (not retired).
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the credit row by flipping `active_status`
+    /// to `Retired`. Tombstone \xe2\x80\x94 preserves `amount_minor`
+    /// (FIC I-1) + `credit_source` (FIC I-2) +
+    /// `source_installment_id` (scope-key) in the audit footer
+    /// for legal-record retention. NOTE: FIC I-3 append-only
+    /// means there is NO `update_*` method \xe2\x80\x94 the only
+    /// way to "modify" a credit row is retire + create-new.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesInstallmentCredit is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}

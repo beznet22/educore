@@ -3100,14 +3100,30 @@ impl DeleteFeesInvoiceSettingCommand {
 }
 // -- FeesInstallmentCredit (Phase 7 Workstream F) --
 
+pub const FINANCE_FEES_INSTALLMENT_CREDIT_CREATE_COMMAND_TYPE: &str =
+    "finance.fees_installment_credit.create";
+pub const FINANCE_FEES_INSTALLMENT_CREDIT_READ_COMMAND_TYPE: &str =
+    "finance.fees_installment_credit.read";
+pub const FINANCE_FEES_INSTALLMENT_CREDIT_RETIRE_COMMAND_TYPE: &str =
+    "finance.fees_installment_credit.retire";
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFeesInstallmentCreditCommand {
     pub tenant: TenantContext,
     pub fees_installment_credit_id: FeesInstallmentCreditId,
+    pub amount_minor: i64, // FIC I-1 pinned
+    pub credit_source: crate::aggregate::FeesInstallmentCreditSource, // FIC I-2 type-pinned
+    pub source_installment_id: FeesInstallmentId,
+    pub description: Option<String>,
 }
 
 
 impl CreateFeesInstallmentCreditCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FEES_INSTALLMENT_CREDIT_CREATE_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3122,10 +3138,34 @@ pub struct ReadFeesInstallmentCreditCommand {
 
 
 impl ReadFeesInstallmentCreditCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FEES_INSTALLMENT_CREDIT_READ_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesInstallmentRead]
+    }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFeesInstallmentCreditCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_credit_id: FeesInstallmentCreditId,
+}
+
+
+impl RetireFeesInstallmentCreditCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FEES_INSTALLMENT_CREDIT_RETIRE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInstallmentCreate]
     }
 }
 // -- Transaction (Phase 7 Workstream C — double-entry journal line) --

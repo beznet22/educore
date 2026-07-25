@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -63,10 +63,10 @@ use crate::commands::{
     CreateFeesGroupCommand, UpdateFeesGroupCommand, DeleteFeesGroupCommand,
     BlockLoginForDueFeesCommand, UnblockLoginForDueFeesCommand, ReadDueFeesBlockCommand,
     CreateFeesInvoiceSettingCommand, ReadFeesInvoiceSettingCommand, UpdateFeesInvoiceSettingCommand, DeleteFeesInvoiceSettingCommand,
+    CreateFeesInstallmentCreditCommand, ReadFeesInstallmentCreditCommand, RetireFeesInstallmentCreditCommand,
     CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
-    CreateFeesInstallmentCreditCommand,
     CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
     CreateFmFeesInvoiceCommand, CreateFmFeesInvoiceSettingCommand,
     CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
@@ -74,7 +74,7 @@ use crate::commands::{
     CreateInvoiceSettingCommand, CreateProductPurchaseCommand, CreateQuestionBankFeeCommand,
     CreateTransactionCommand,
     ReadDirectFeesInstallmentChildPaymentCommand, ReadDonorCommand,
-    ReadFeesAssignDiscountCommand, ReadFeesInstallmentCreditCommand,
+    ReadFeesAssignDiscountCommand,
     ReadFmFeesGroupCommand, ReadFmFeesInvoiceChildCommand, ReadFmFeesInvoiceCommand,
     ReadFmFeesInvoiceSettingCommand, ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand, ReadFmFeesWeaverCommand,
@@ -97,6 +97,7 @@ use crate::events::{
     FeesGroupCreated, FeesGroupUpdated, FeesGroupRetired,
     DueFeesLoginPreventCreated, DueFeesLoginPreventUpdated, DueFeesLoginPreventRetired, DueFeesLoginPreventPruned,
     FeesInvoiceSettingCreated, FeesInvoiceSettingUpdated, FeesInvoiceSettingRetired,
+    FeesInstallmentCreditCreated, FeesInstallmentCreditRetired,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -113,7 +114,7 @@ use crate::value_objects::{
     PayrollPaymentApprovalId, PayrollPaymentId,
     SalaryTemplateId,
     FeesInvoiceId, FeesPaymentId,
-    FeesGroupId, FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
+    FeesGroupId, FeesInstallmentCreditId, FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId,
     QuestionBankFeeId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
@@ -2810,22 +2811,6 @@ where
     Ok(())
 }
 
-/// Handler skeleton: create a `FeesInstallmentCredit` aggregate.
-/// Full implementation lands in Phase 7 Workstream F.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn create_fees_installment_credit<C, G>(
-    cmd: CreateFeesInstallmentCreditCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let _ = (cmd, clock, ids);
-    Ok(())
-}
-
 /// Handler skeleton: read a `FeesInstallmentCredit` aggregate.
 /// Full implementation lands in Phase 7 Workstream F.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
@@ -4308,6 +4293,97 @@ where
 
     let event = FeesInvoiceSettingRetired::new(
         cmd.fees_invoice_setting_id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+// =============================================================================
+// Command: create a FeesInstallmentCredit (RealFeesInstallmentCredit)
+// =============================================================================
+
+/// Builds a new [`RealFeesInstallmentCredit`] credit row + a
+/// [`FeesInstallmentCreditCreated`] event. The aggregate pins
+/// FIC I-1 (`amount_minor >= 0`) + FIC I-2 (`credit_source`
+/// type-pinned via the enum) via
+/// `RealFeesInstallmentCredit::fresh`. FIC I-3 append-only is
+/// enforced at the API surface by the absence of any
+/// `update_*` method (this is the ONLY way to create a credit
+/// row \xe2\x80\x94 once created, the row is immutable except for
+/// retire).
+#[allow(clippy::too_many_arguments)]
+pub fn create_fees_installment_credit<C, G>(
+    cmd: CreateFeesInstallmentCreditCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesInstallmentCredit, FeesInstallmentCreditCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut row = RealFeesInstallmentCredit::fresh(
+        cmd.fees_installment_credit_id,
+        cmd.amount_minor, // FIC I-1 pinned
+        cmd.credit_source, // FIC I-2 type-pinned
+        cmd.source_installment_id,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = FeesInstallmentCreditCreated::new(
+        cmd.fees_installment_credit_id,
+        row.amount_minor, // FIC I-1 carried downstream
+        row.credit_source, // FIC I-2 carried downstream
+        row.source_installment_id,
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+// =============================================================================
+// Command: retire a FeesInstallmentCredit (soft-delete tombstone)
+// =============================================================================
+
+/// Retires a [`RealFeesInstallmentCredit`] via
+/// [`RealFeesInstallmentCredit::retire`] + emits a
+/// [`FeesInstallmentCreditRetired`] event. The original
+/// `amount_minor` (FIC I-1) + `credit_source` (FIC I-2) +
+/// `source_installment_id` (scope-key) are preserved in the
+/// audit footer for legal-record retention. NOTE: FIC I-3
+/// append-only means there is NO update service function
+/// \xe2\x80\x94 the only way to "modify" a credit row is retire +
+/// create-new.
+pub fn retire_fees_installment_credit<C, G>(
+    cmd: RetireFeesInstallmentCreditCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealFeesInstallmentCredit,
+) -> Result<FeesInstallmentCreditRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    row.retire(now, cmd.tenant.actor_id)?;
+    row.last_event_id = Some(event_id);
+
+    let event = FeesInstallmentCreditRetired::new(
+        cmd.fees_installment_credit_id,
         cmd.tenant.actor_id,
         event_id,
         cmd.tenant.correlation_id,

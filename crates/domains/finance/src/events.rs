@@ -29,7 +29,7 @@ use crate::value_objects::{
     BankStatementId, StatementType,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
     DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
-    DueFeesLoginPreventId, FeesInvoiceSettingId,
+    DueFeesLoginPreventId, FeesInstallmentCreditId, FeesInvoiceSettingId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId,
     FeesInstallmentId,
@@ -5801,6 +5801,122 @@ impl DomainEvent for FeesInvoiceSettingRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.fees_invoice_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesInstallmentCredit` credit row is
+/// created via `RealFeesInstallmentCredit::fresh`. Carries the
+/// FIC I-1 `amount_minor` (pinned at construction) + FIC I-2
+/// `credit_source` (type-pinned via the enum) + the scope-key
+/// `source_installment_id`. NOTE: NO `Updated` event exists for
+/// this aggregate — the type-system-level enforcement of the
+/// FIC I-3 append-only contract (parallel to Wave 70
+/// `RealFeesCarryForwardLog` pattern).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesInstallmentCreditCreated {
+    pub fees_installment_credit_id: FeesInstallmentCreditId,
+    pub amount_minor: i64, // FIC I-1 pinned
+    pub credit_source: crate::aggregate::FeesInstallmentCreditSource, // FIC I-2 type-pinned
+    pub source_installment_id: FeesInstallmentId,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesInstallmentCreditCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_installment_credit_id: FeesInstallmentCreditId,
+        amount_minor: i64,
+        credit_source: crate::aggregate::FeesInstallmentCreditSource,
+        source_installment_id: FeesInstallmentId,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_installment_credit_id,
+            amount_minor,
+            credit_source,
+            source_installment_id,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesInstallmentCreditCreated {
+    const EVENT_TYPE: &'static str = "finance.fees_installment_credit.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_installment_credit";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_installment_credit_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_installment_credit_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesInstallmentCredit` credit row is
+/// retired (soft-deleted via `RealFeesInstallmentCredit::retire`).
+/// The original `amount_minor` (FIC I-1) + `credit_source` (FIC
+/// I-2) + `source_installment_id` (scope-key) are preserved in
+/// the audit footer for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesInstallmentCreditRetired {
+    pub fees_installment_credit_id: FeesInstallmentCreditId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesInstallmentCreditRetired {
+    pub fn new(
+        fees_installment_credit_id: FeesInstallmentCreditId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_installment_credit_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesInstallmentCreditRetired {
+    const EVENT_TYPE: &'static str = "finance.fees_installment_credit.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_installment_credit";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_installment_credit_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_installment_credit_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at
