@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -62,18 +62,19 @@ use crate::commands::{
     CreateExpenseHeadCommand, UpdateExpenseHeadCommand, DeleteExpenseHeadCommand,
     CreateFeesGroupCommand, UpdateFeesGroupCommand, DeleteFeesGroupCommand,
     BlockLoginForDueFeesCommand, UnblockLoginForDueFeesCommand, ReadDueFeesBlockCommand,
+    CreateFeesInvoiceSettingCommand, ReadFeesInvoiceSettingCommand, UpdateFeesInvoiceSettingCommand, DeleteFeesInvoiceSettingCommand,
     CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
     CreateFeesInstallmentCreditCommand,
-    CreateFeesInvoiceSettingCommand, CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
+    CreateFmFeesGroupCommand, CreateFmFeesInvoiceChildCommand,
     CreateFmFeesInvoiceCommand, CreateFmFeesInvoiceSettingCommand,
     CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
     CreateFmFeesWeaverCommand, CreateIncomeHeadCommand, CreateInventoryPaymentCommand,
     CreateInvoiceSettingCommand, CreateProductPurchaseCommand, CreateQuestionBankFeeCommand,
     CreateTransactionCommand,
     ReadDirectFeesInstallmentChildPaymentCommand, ReadDonorCommand,
-    ReadFeesAssignDiscountCommand, ReadFeesInstallmentCreditCommand, ReadFeesInvoiceSettingCommand,
+    ReadFeesAssignDiscountCommand, ReadFeesInstallmentCreditCommand,
     ReadFmFeesGroupCommand, ReadFmFeesInvoiceChildCommand, ReadFmFeesInvoiceCommand,
     ReadFmFeesInvoiceSettingCommand, ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand, ReadFmFeesWeaverCommand,
@@ -95,6 +96,7 @@ use crate::events::{
     ExpenseHeadCreated, ExpenseHeadUpdated, ExpenseHeadRetired,
     FeesGroupCreated, FeesGroupUpdated, FeesGroupRetired,
     DueFeesLoginPreventCreated, DueFeesLoginPreventUpdated, DueFeesLoginPreventRetired, DueFeesLoginPreventPruned,
+    FeesInvoiceSettingCreated, FeesInvoiceSettingUpdated, FeesInvoiceSettingRetired,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -2792,22 +2794,6 @@ where
     Ok(())
 }
 
-/// Handler skeleton: create a `FeesInvoiceSetting` aggregate.
-/// Full implementation lands in Phase 7 Workstream B.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn create_fees_invoice_setting<C, G>(
-    cmd: CreateFeesInvoiceSettingCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let _ = (cmd, clock, ids);
-    Ok(())
-}
-
 /// Handler skeleton: read a `FeesInvoiceSetting` aggregate.
 /// Full implementation lands in Phase 7 Workstream B.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
@@ -4204,6 +4190,124 @@ where
 
     let event = DueFeesLoginPreventPruned::new(
         cmd.due_fees_login_prevent_id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+// =============================================================================
+// Command: create a FeesInvoiceSetting (RealFeesInvoiceSetting)
+// =============================================================================
+
+/// Builds a new [`RealFeesInvoiceSetting`] aggregate + a
+/// [`FeesInvoiceSettingCreated`] event. The aggregate pins
+/// FISv I-1 (prefix non-empty trimmed + alphanumeric only) +
+/// FISv I-2 (per_th >= 0) via `RealFeesInvoiceSetting::fresh`.
+pub fn create_fees_invoice_setting<C, G>(
+    cmd: CreateFeesInvoiceSettingCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesInvoiceSetting, FeesInvoiceSettingCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut row = RealFeesInvoiceSetting::fresh(
+        cmd.fees_invoice_setting_id,
+        cmd.prefix, // FISv I-1 pinned
+        cmd.per_th, // FISv I-2
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = FeesInvoiceSettingCreated::new(
+        cmd.fees_invoice_setting_id,
+        row.prefix.clone(), // FISv I-1
+        row.per_th,         // FISv I-2
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+// =============================================================================
+// Command: update a FeesInvoiceSetting's mutable metadata
+// =============================================================================
+
+/// Updates a [`RealFeesInvoiceSetting`]'s mutable metadata via
+/// [`RealFeesInvoiceSetting::update_metadata`] + emits a
+/// [`FeesInvoiceSettingUpdated`] event. FISv I-1 (`prefix`) is
+/// NOT mutable here — changing the invoice prefix after
+/// invoices have been issued would break the audit trail;
+/// retire + create-new required. Only `per_th` (FISv I-2
+/// re-validated) + `description` can change.
+pub fn update_fees_invoice_setting<C, G>(
+    cmd: UpdateFeesInvoiceSettingCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealFeesInvoiceSetting,
+) -> Result<FeesInvoiceSettingUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    row.update_metadata(cmd.per_th, cmd.description, now, cmd.tenant.actor_id)?;
+    row.last_event_id = Some(event_id);
+
+    let event = FeesInvoiceSettingUpdated::new(
+        cmd.fees_invoice_setting_id,
+        row.per_th, // FISv I-2 (mutable)
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+// =============================================================================
+// Command: retire a FeesInvoiceSetting (soft-delete tombstone)
+// =============================================================================
+
+/// Retires a [`RealFeesInvoiceSetting`] via
+/// [`RealFeesInvoiceSetting::retire`] + emits a
+/// [`FeesInvoiceSettingRetired`] event. The original `prefix`
+/// (FISv I-1) + `per_th` (FISv I-2) are preserved in the audit
+/// footer for legal-record retention.
+pub fn retire_fees_invoice_setting<C, G>(
+    cmd: DeleteFeesInvoiceSettingCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealFeesInvoiceSetting,
+) -> Result<FeesInvoiceSettingRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    row.retire(now, cmd.tenant.actor_id)?;
+    row.last_event_id = Some(event_id);
+
+    let event = FeesInvoiceSettingRetired::new(
+        cmd.fees_invoice_setting_id,
         cmd.tenant.actor_id,
         event_id,
         cmd.tenant.correlation_id,

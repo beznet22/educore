@@ -3017,14 +3017,22 @@ impl ReadFmFeesWeaverCommand {
 pub struct CreateFeesInvoiceSettingCommand {
     pub tenant: TenantContext,
     pub fees_invoice_setting_id: FeesInvoiceSettingId,
+    pub prefix: String, // FISv I-1 pinned
+    pub per_th: i64, // FISv I-2
+    pub description: Option<String>,
 }
 
 
 impl CreateFeesInvoiceSettingCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FEES_INVOICE_CONFIGURE_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
-        vec![Capability::FinanceFeesInvoiceGenerate]
+        vec![Capability::FinanceFeesInvoiceConfigure]
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -3035,10 +3043,59 @@ pub struct ReadFeesInvoiceSettingCommand {
 
 
 impl ReadFeesInvoiceSettingCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FEES_INVOICE_READ_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesInvoiceRead]
+    }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UpdateFeesInvoiceSettingCommand {
+    pub tenant: TenantContext,
+    pub fees_invoice_setting_id: FeesInvoiceSettingId,
+    /// Mutable per-thousand threshold (FISv I-2). NOT prefix
+    /// (FISv I-1 says prefix is pinned — changing the invoice
+    /// prefix after invoices have been issued would break the
+    /// audit trail; retire + create-new required).
+    pub per_th: i64,
+    pub description: Option<String>,
+}
+
+
+impl UpdateFeesInvoiceSettingCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FEES_INVOICE_UPDATE_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceUpdate]
+    }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeleteFeesInvoiceSettingCommand {
+    pub tenant: TenantContext,
+    pub fees_invoice_setting_id: FeesInvoiceSettingId,
+}
+
+
+impl DeleteFeesInvoiceSettingCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FEES_INVOICE_CANCEL_COMMAND_TYPE;
+
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceCancel]
     }
 }
 // -- FeesInstallmentCredit (Phase 7 Workstream F) --

@@ -29,7 +29,7 @@ use crate::value_objects::{
     BankStatementId, StatementType,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
     DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
-    DueFeesLoginPreventId,
+    DueFeesLoginPreventId, FeesInvoiceSettingId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId,
     FeesInstallmentId,
@@ -5637,6 +5637,170 @@ impl DomainEvent for DueFeesLoginPreventPruned {
     }
     fn school_id(&self) -> SchoolId {
         self.due_fees_login_prevent_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesInvoiceSetting` is created via
+/// `RealFeesInvoiceSetting::fresh`. Carries `prefix` (FISv I-1
+/// pinned — non-empty trimmed + alphanumeric only) +
+/// `per_th` (FISv I-2 mutable) + the mutable `description`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesInvoiceSettingCreated {
+    pub fees_invoice_setting_id: FeesInvoiceSettingId,
+    pub prefix: String, // FISv I-1 pinned
+    pub per_th: i64, // FISv I-2
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesInvoiceSettingCreated {
+    pub fn new(
+        fees_invoice_setting_id: FeesInvoiceSettingId,
+        prefix: String,
+        per_th: i64,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_invoice_setting_id,
+            prefix,
+            per_th,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesInvoiceSettingCreated {
+    const EVENT_TYPE: &'static str = "finance.fees_invoice_setting.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_invoice_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_invoice_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_invoice_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesInvoiceSetting`'s mutable metadata is
+/// updated via `RealFeesInvoiceSetting::update_metadata`. Carries
+/// only the MUTABLE fields (`per_th` + `description`). FISv I-1
+/// (`prefix`) is NOT carried here — preserved in the aggregate
+/// audit footer (changing the invoice prefix after invoices have
+/// been issued would break the audit trail).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesInvoiceSettingUpdated {
+    pub fees_invoice_setting_id: FeesInvoiceSettingId,
+    pub per_th: i64, // FISv I-2 (mutable)
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesInvoiceSettingUpdated {
+    pub fn new(
+        fees_invoice_setting_id: FeesInvoiceSettingId,
+        per_th: i64,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_invoice_setting_id,
+            per_th,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesInvoiceSettingUpdated {
+    const EVENT_TYPE: &'static str = "finance.fees_invoice_setting.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_invoice_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_invoice_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_invoice_setting_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesInvoiceSetting` is retired
+/// (soft-deleted via `RealFeesInvoiceSetting::retire`). The
+/// original `prefix` (FISv I-1) + `per_th` (FISv I-2) are
+/// preserved in the audit footer for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesInvoiceSettingRetired {
+    pub fees_invoice_setting_id: FeesInvoiceSettingId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesInvoiceSettingRetired {
+    pub fn new(
+        fees_invoice_setting_id: FeesInvoiceSettingId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_invoice_setting_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesInvoiceSettingRetired {
+    const EVENT_TYPE: &'static str = "finance.fees_invoice_setting.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_invoice_setting";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_invoice_setting_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_invoice_setting_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

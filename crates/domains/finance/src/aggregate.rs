@@ -5766,3 +5766,169 @@ impl RealDueFeesLoginPrevent {
         Ok(())
     }
 }
+
+// =============================================================================
+// Wave 92 — RealFeesInvoiceSetting (per-aggregate wave pattern
+// from Waves 65—91)
+//
+// RealFeesInvoiceSetting replaces the placeholder
+// `FeesInvoiceSetting` stub at aggregate.rs:953 (Phase 7
+// Workstream B). Full lifecycle: fresh + update_metadata + retire.
+//
+// Invariants covered (Wave 92 — 2 invariants):
+// - FISv I-1: prefix format valid — `prefix` must be non-empty
+//   after trim AND alphanumeric (letters/digits only, no
+//   special chars or whitespace); pinned at construction
+//   (NOT mutable via update_metadata \xe2\x80\x94 changing the
+//   invoice prefix after invoices have been issued would
+//   break the audit trail; retire + create-new required)
+// - FISv I-2: per_th \xe2\x89\xa5 0 \xe2\x80\x94 `per_th` (per-thousand
+//   threshold, in integer basis points where 1000 = 100%) must
+//   be >= 0 at construction + update_metadata (negative
+//   values are nonsensical for a percentage threshold)
+// =============================================================================
+
+/// `RealFeesInvoiceSetting` shape. Per-school invoice numbering
+/// + threshold configuration (e.g. prefix "INV" + per_th 0 =
+/// always trigger late fee).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFeesInvoiceSetting {
+    /// The typed id (school_id + uuid).
+    pub id: FeesInvoiceSettingId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// Invoice number prefix (e.g. "INV", "BILL"). Must be
+    /// non-empty after trim AND alphanumeric only. FISv I-1
+    /// pinned (NOT mutable via update_metadata).
+    pub prefix: String,
+    /// Per-thousand threshold for late fee triggers. Integer
+    /// basis points where 1000 = 100%. Must be >= 0. FISv I-2.
+    pub per_th: i64,
+    /// Optional free-form description.
+    pub description: Option<String>,
+    /// The audit footer (9 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFeesInvoiceSetting {
+    /// Constructs a new `RealFeesInvoiceSetting`.
+    ///
+    /// Enforces FISv I-1: `prefix` is non-empty after trim AND
+    /// alphanumeric only (no whitespace, no special chars).
+    /// Enforces FISv I-2: `per_th >= 0` (per-thousand threshold
+    /// must be non-negative).
+    pub fn fresh(
+        id: FeesInvoiceSettingId,
+        prefix: String,
+        per_th: i64,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        let trimmed_prefix = prefix.trim().to_owned();
+        if trimmed_prefix.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesInvoiceSetting prefix must be non-empty after trim (FISv I-1)",
+            ));
+        }
+        if !trimmed_prefix
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric())
+        {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesInvoiceSetting prefix must be alphanumeric only (FISv I-1)",
+            ));
+        }
+        if per_th < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesInvoiceSetting per_th must be >= 0 (FISv I-2)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            prefix: trimmed_prefix, // FISv I-1 pinned
+            per_th,                 // FISv I-2
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the setting is active (not retired).
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Updates the mutable fields: `per_th` (FISv I-2
+    /// re-validated) + `description`. FISv I-1 (`prefix`) is NOT
+    /// mutable here — changing the invoice prefix after invoices
+    /// have been issued would break the audit trail; retire +
+    /// create-new required.
+    pub fn update_metadata(
+        &mut self,
+        per_th: i64,
+        description: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesInvoiceSetting is retired; cannot update metadata",
+            ));
+        }
+        if per_th < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesInvoiceSetting per_th must be >= 0 on update (FISv I-2)",
+            ));
+        }
+        self.per_th = per_th;
+        self.description = description
+            .map(|d| d.trim().to_owned())
+            .filter(|d| !d.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the setting by flipping `active_status` to
+    /// `Retired`. Tombstone — preserves `prefix` (FISv I-1) +
+    /// `per_th` (FISv I-2) in the audit footer for legal-record
+    /// retention.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesInvoiceSetting is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
