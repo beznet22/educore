@@ -5253,3 +5253,138 @@ impl RealDirectFeesReminder {
         Ok(())
     }
 }
+
+// =============================================================================
+// Wave 89 — RealExpenseHead (per-aggregate wave pattern from
+// Waves 65—88)
+//
+// RealExpenseHead replaces the placeholder `ExpenseHead` stub at
+// aggregate.rs:981 (Phase 7 Workstream D). Full lifecycle: fresh +
+// update_metadata + retire.
+//
+// Invariants covered:
+// - EH I-1: unique name within school — pinned at construction
+//   (trim-non-empty guard returns `DomainError::Validation` if
+//   empty); NOT mutable via update_metadata (changing the name
+//   requires retire + create-new); dispatcher enforces
+//   (school_id, name) uniqueness at the storage layer via a DB
+//   unique index (parallel to Wave 87 BA I-1 pattern).
+// =============================================================================
+
+/// `RealExpenseHead` shape. Expense category catalogue entry
+/// (e.g. "Office Supplies", "Travel", "Utilities").
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealExpenseHead {
+    /// The typed id (school_id + uuid).
+    pub id: ExpenseHeadId,
+    /// The owning school (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// Human-readable name. Must be non-empty after trim. EH I-1
+    /// uniqueness anchor — pinned (NOT mutable via
+    /// update_metadata); dispatcher enforces (school_id, name)
+    /// uniqueness at the storage layer.
+    pub name: String,
+    /// Optional free-form description.
+    pub description: Option<String>,
+    /// The audit footer (9 fields, per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealExpenseHead {
+    /// Constructs a new `RealExpenseHead` catalogue entry.
+    ///
+    /// Enforces EH I-1: `name` is the uniqueness anchor; it is
+    /// pinned (NOT mutable via update_metadata) + must be
+    /// non-empty after trim. The dispatcher MUST validate
+    /// `(school_id, name)` uniqueness at the storage layer via a
+    /// DB unique index before calling this service function.
+    pub fn fresh(
+        id: ExpenseHeadId,
+        name: String,
+        description: Option<String>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        let trimmed_name = name.trim().to_owned();
+        if trimmed_name.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "ExpenseHead name must be non-empty after trim (EH I-1)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            name: trimmed_name, // EH I-1 pinned
+            description: description
+                .map(|d| d.trim().to_owned())
+                .filter(|d| !d.is_empty()),
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns `true` if the expense head is active (not retired).
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Updates the description (the only MUTABLE field). EH I-1
+    /// (`name`) is NOT mutable here — changing the name requires
+    /// retire + create-new.
+    pub fn update_metadata(
+        &mut self,
+        description: Option<String>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "ExpenseHead is retired; cannot update metadata",
+            ));
+        }
+        self.description = description
+            .map(|d| d.trim().to_owned())
+            .filter(|d| !d.is_empty());
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the expense head by flipping `active_status`
+    /// to `Retired`. Tombstone — preserves `name` in the audit
+    /// footer for legal-record retention + uniqueness queries.
+    pub fn retire(
+        &mut self,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if !self.is_active() {
+            return Err(educore_core::error::DomainError::conflict(
+                "ExpenseHead is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}

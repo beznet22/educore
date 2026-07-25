@@ -1246,12 +1246,19 @@ impl ApproveIncomeCommand {
 pub struct UpdateExpenseHeadCommand {
     pub tenant: TenantContext,
     pub expense_head_id: ExpenseHeadId,
-    pub name: Option<String>,
+    /// Mutable description (NOT name — EH I-1 says name is the
+    /// uniqueness anchor and is NOT mutable via update_metadata;
+    /// changing the name requires retire + create-new).
     pub description: Option<String>,
 }
 
 
 impl UpdateExpenseHeadCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_EXPENSE_HEAD_UPDATE_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -1266,6 +1273,11 @@ pub struct DeleteExpenseHeadCommand {
 
 
 impl DeleteExpenseHeadCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_EXPENSE_HEAD_DELETE_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -2603,11 +2615,18 @@ impl ConfigureFeesTypeCommand {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateExpenseHeadCommand {
     pub tenant: TenantContext,
-    pub name: String,
+    pub expense_head_id: ExpenseHeadId,
+    pub name: String, // EH I-1 pinned
+    pub description: Option<String>,
 }
 
 
 impl CreateExpenseHeadCommand {
+    /// The command type discriminator for the dispatcher's audit
+    /// log / idempotency table.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_EXPENSE_HEAD_CREATE_COMMAND_TYPE;
+
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {

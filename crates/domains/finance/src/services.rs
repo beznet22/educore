@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -59,6 +59,7 @@ use crate::commands::{
     UpdateBankStatementCommand, ReverseBankStatementCommand, RetireBankStatementCommand,
     OpenBankAccountCommand, UpdateBankAccountCommand, DeleteBankAccountCommand,
     CreateDirectFeesReminderCommand, UpdateDirectFeesReminderCommand, DeleteDirectFeesReminderCommand,
+    CreateExpenseHeadCommand, UpdateExpenseHeadCommand, DeleteExpenseHeadCommand,
     CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
@@ -89,6 +90,7 @@ use crate::events::{
     FeesDiscountCreated, FeesDiscountRetired, FeesDiscountUpdated,
     BankAccountCreated, BankAccountUpdated, BankAccountRetired,
     DirectFeesReminderCreated, DirectFeesReminderUpdated, DirectFeesReminderRetired,
+    ExpenseHeadCreated, ExpenseHeadUpdated, ExpenseHeadRetired,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
@@ -3808,6 +3810,117 @@ where
 
     let event = DirectFeesReminderRetired::new(
         cmd.direct_fees_reminder_id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+// =============================================================================
+// Command: create an ExpenseHead (RealExpenseHead)
+// =============================================================================
+
+/// Builds a new [`RealExpenseHead`] aggregate + a
+/// [`ExpenseHeadCreated`] event. The aggregate pins EH I-1
+/// (`name` uniqueness anchor via `RealExpenseHead::fresh`).
+pub fn create_expense_head<C, G>(
+    cmd: CreateExpenseHeadCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealExpenseHead, ExpenseHeadCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut row = RealExpenseHead::fresh(
+        cmd.expense_head_id,
+        cmd.name, // EH I-1 pinned
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    row.last_event_id = Some(event_id);
+
+    let event = ExpenseHeadCreated::new(
+        cmd.expense_head_id,
+        row.name.clone(), // EH I-1
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok((row, event))
+}
+
+// =============================================================================
+// Command: update an ExpenseHead's mutable metadata
+// =============================================================================
+
+/// Updates a [`RealExpenseHead`]'s mutable metadata via
+/// [`RealExpenseHead::update_metadata`] + emits an
+/// [`ExpenseHeadUpdated`] event. EH I-1 (`name`) is NOT mutable
+/// here — changing the name requires retire + create-new. Only
+/// `description` can change.
+pub fn update_expense_head<C, G>(
+    cmd: UpdateExpenseHeadCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealExpenseHead,
+) -> Result<ExpenseHeadUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    row.update_metadata(cmd.description, now, cmd.tenant.actor_id)?;
+    row.last_event_id = Some(event_id);
+
+    let event = ExpenseHeadUpdated::new(
+        cmd.expense_head_id,
+        row.description.clone(),
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+    Ok(event)
+}
+
+// =============================================================================
+// Command: retire an ExpenseHead (soft-delete tombstone)
+// =============================================================================
+
+/// Retires a [`RealExpenseHead`] via [`RealExpenseHead::retire`]
+/// + emits an [`ExpenseHeadRetired`] event. The original `name`
+/// (EH I-1) is preserved in the audit footer for legal-record
+/// retention + uniqueness queries.
+pub fn retire_expense_head<C, G>(
+    cmd: DeleteExpenseHeadCommand,
+    clock: &C,
+    ids: &G,
+    row: &mut RealExpenseHead,
+) -> Result<ExpenseHeadRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    row.retire(now, cmd.tenant.actor_id)?;
+    row.last_event_id = Some(event_id);
+
+    let event = ExpenseHeadRetired::new(
+        cmd.expense_head_id,
         cmd.tenant.actor_id,
         event_id,
         cmd.tenant.correlation_id,

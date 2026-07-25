@@ -5117,6 +5117,162 @@ impl DomainEvent for DirectFeesReminderRetired {
     }
 }
 
+/// Emitted when a `RealExpenseHead` catalogue entry is created
+/// via `RealExpenseHead::fresh`. Carries `name` (EH I-1
+/// uniqueness anchor — pinned at construction) + the mutable
+/// `description`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExpenseHeadCreated {
+    pub expense_head_id: ExpenseHeadId,
+    pub name: String, // EH I-1 pinned
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ExpenseHeadCreated {
+    pub fn new(
+        expense_head_id: ExpenseHeadId,
+        name: String,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            expense_head_id,
+            name,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ExpenseHeadCreated {
+    const EVENT_TYPE: &'static str = "finance.expense_head.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "expense_head";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.expense_head_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.expense_head_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealExpenseHead`'s mutable metadata is updated
+/// via `RealExpenseHead::update_metadata`. Carries only the
+/// MUTABLE `description`. EH I-1 (`name`) is NOT carried here —
+/// it is preserved in the audit footer of the aggregate itself.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExpenseHeadUpdated {
+    pub expense_head_id: ExpenseHeadId,
+    pub description: Option<String>,
+    pub updated_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ExpenseHeadUpdated {
+    pub fn new(
+        expense_head_id: ExpenseHeadId,
+        description: Option<String>,
+        updated_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            expense_head_id,
+            description,
+            updated_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ExpenseHeadUpdated {
+    const EVENT_TYPE: &'static str = "finance.expense_head.updated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "expense_head";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.expense_head_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.expense_head_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealExpenseHead` is retired (soft-deleted via
+/// `RealExpenseHead::retire`). The original `name` (EH I-1) is
+/// preserved in the audit footer for legal-record retention +
+/// uniqueness queries.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExpenseHeadRetired {
+    pub expense_head_id: ExpenseHeadId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ExpenseHeadRetired {
+    pub fn new(
+        expense_head_id: ExpenseHeadId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            expense_head_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ExpenseHeadRetired {
+    const EVENT_TYPE: &'static str = "finance.expense_head.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "expense_head";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.expense_head_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.expense_head_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 
 #[cfg(test)]
 #[allow(
