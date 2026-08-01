@@ -6810,6 +6810,9 @@ pub struct FmFeesInvoiceChildCreated {
     pub invoice_id: FmFeesInvoiceId,
     pub description: String,
     pub amount_minor: i64, // FFIChild I-1
+    pub sub_total_minor: i64, // FFIChild I-2
+    pub weaver_minor: i64, // FFIChild I-2
+    pub fine_minor: i64, // FFIChild I-2
     pub created_by: UserId,
     pub event_id: EventId,
     pub correlation_id: CorrelationId,
@@ -6822,6 +6825,9 @@ impl FmFeesInvoiceChildCreated {
         invoice_id: FmFeesInvoiceId,
         description: String,
         amount_minor: i64,
+        sub_total_minor: i64,
+        weaver_minor: i64,
+        fine_minor: i64,
         created_by: UserId,
         event_id: EventId,
         correlation_id: CorrelationId,
@@ -6832,6 +6838,9 @@ impl FmFeesInvoiceChildCreated {
             invoice_id,
             description,
             amount_minor,
+            sub_total_minor,
+            weaver_minor,
+            fine_minor,
             created_by,
             event_id,
             correlation_id,

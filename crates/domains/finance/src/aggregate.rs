@@ -7366,6 +7366,16 @@ pub struct RealFmFeesInvoiceChild {
     /// Line item amount in minor units (FFIChild I-1 — pinned at
     /// construction with `>= 0` guard).
     pub amount_minor: i64,
+    /// FFIChild I-2: subtotal = amount + weaver + fine (in minor
+    /// units). Pinned at construction with an equality
+    /// validation guard.
+    pub sub_total_minor: i64,
+    /// FFIChild I-2: weaver fee contribution (in minor units).
+    /// Optional additive component to the subtotal.
+    pub weaver_minor: i64,
+    /// FFIChild I-2: fine amount (in minor units). Optional
+    /// additive component to the subtotal.
+    pub fine_minor: i64,
     /// Standard audit footer: optimistic concurrency version.
     pub version: Version,
     /// Standard audit footer: etag.
@@ -7396,6 +7406,9 @@ impl RealFmFeesInvoiceChild {
         invoice_id: FmFeesInvoiceId,
         description: String,
         amount_minor: i64,
+        sub_total_minor: i64,
+        weaver_minor: i64,
+        fine_minor: i64,
         actor: UserId,
         at: Timestamp,
         correlation: CorrelationId,
@@ -7404,6 +7417,31 @@ impl RealFmFeesInvoiceChild {
         if amount_minor < 0 {
             return Err(educore_core::error::DomainError::validation(
                 "FmFeesInvoiceChild amount_minor must be >= 0 (FFIChild I-1)",
+            ));
+        }
+        // FFIChild I-2 companion: sub-components must be >= 0
+        // (checked first so individual field violations surface
+        // with the specific field error rather than the
+        // aggregate sub_total mismatch error).
+        if weaver_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceChild weaver_minor must be >= 0 (FFIChild I-2)",
+            ));
+        }
+        if fine_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceChild fine_minor must be >= 0 (FFIChild I-2)",
+            ));
+        }
+        if sub_total_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceChild sub_total_minor must be >= 0 (FFIChild I-2)",
+            ));
+        }
+        // FFIChild I-2: sub_total_minor == amount_minor + weaver_minor + fine_minor.
+        if sub_total_minor != amount_minor + weaver_minor + fine_minor {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceChild sub_total_minor must equal amount_minor + weaver_minor + fine_minor (FFIChild I-2)",
             ));
         }
         let description_trimmed = description.trim().to_string();
@@ -7418,6 +7456,9 @@ impl RealFmFeesInvoiceChild {
             invoice_id,
             description: description_trimmed,
             amount_minor,
+            sub_total_minor,
+            weaver_minor,
+            fine_minor,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at: at,

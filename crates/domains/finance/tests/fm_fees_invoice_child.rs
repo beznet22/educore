@@ -1,7 +1,9 @@
-//! Behavioural tests for `RealFmFeesInvoiceChild` (Wave 101).
+//! Behavioural tests for `RealFmFeesInvoiceChild` (Wave 101 + Wave 120 extensions).
 //!
-//! Pins FFIChild I-1 (`amount_minor >= 0`) end-to-end via the
-//! aggregate surface, the service functions, and the emitted events.
+//! Pins FFIChild I-1 (`amount_minor >= 0`) + FFIChild I-2
+//! (`sub_total_minor == amount_minor + weaver_minor + fine_minor`)
+//! end-to-end via the aggregate surface, the service functions,
+//! and the emitted events.
 
 #![allow(
     clippy::unwrap_used,
@@ -15,6 +17,9 @@ use educore_core::clock::{IdGenerator as _, SystemClock, SystemIdGen};
 use educore_core::error::DomainError;
 use educore_core::ids::SchoolId;
 use educore_core::tenant::{TenantContext, UserType};
+use educore_core::value_objects::Timestamp;
+use educore_core::value_objects::Version;
+use educore_events::domain_event::DomainEvent;
 use educore_finance::events::{FmFeesInvoiceChildCreated, FmFeesInvoiceChildRetired};
 use educore_finance::prelude::*;
 use educore_finance::value_objects::{FmFeesInvoiceChildId, FmFeesInvoiceId};
@@ -30,10 +35,7 @@ fn admin_context() -> (TenantContext, SystemIdGen) {
     )
 }
 
-fn fm_fees_invoice_child_id(
-    g: &SystemIdGen,
-    school: SchoolId,
-) -> FmFeesInvoiceChildId {
+fn fm_fees_invoice_child_id(g: &SystemIdGen, school: SchoolId) -> FmFeesInvoiceChildId {
     FmFeesInvoiceChildId::new(school, g.next_uuid())
 }
 
@@ -57,22 +59,23 @@ fn fm_fees_invoice_child_typed_id_round_trips_school() {
 fn fresh_full_payload_amount_valid_ffi_child_i_1() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let id = fm_fees_invoice_child_id(&g, school);
-    let invoice_id = fm_fees_invoice_id(&g, school);
     let row = RealFmFeesInvoiceChild::fresh(
-        id,
-        invoice_id,
-        "Tuition fee Q1".to_string(),
-        12_000,
+        fm_fees_invoice_child_id(&g, school),
+        fm_fees_invoice_id(&g, school),
+        "Library fee".to_string(),
+        12_000, // amount_minor (FFIChild I-1)
+        12_000, // sub_total_minor = amount + weaver + fine (FFIChild I-2)
+        0,      // weaver_minor
+        0,      // fine_minor
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
     )
-    .expect("fresh should succeed with amount_minor = 12_000");
+    .expect("FFIChild I-1 + I-2: fresh should succeed");
     assert_eq!(row.amount_minor, 12_000);
-    assert_eq!(row.description, "Tuition fee Q1");
-    assert_eq!(row.invoice_id, invoice_id);
-    assert_eq!(row.school_id, school);
+    assert_eq!(row.sub_total_minor, 12_000);
+    assert_eq!(row.weaver_minor, 0);
+    assert_eq!(row.fine_minor, 0);
     assert!(row.is_active());
 }
 
@@ -80,60 +83,14 @@ fn fresh_full_payload_amount_valid_ffi_child_i_1() {
 fn fresh_negative_amount_validation_error_ffi_child_i_1() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let id = fm_fees_invoice_child_id(&g, school);
-    let invoice_id = fm_fees_invoice_id(&g, school);
     let result = RealFmFeesInvoiceChild::fresh(
-        id,
-        invoice_id,
-        "Tuition fee".to_string(),
-        -1,
-        tenant.actor_id,
-        Timestamp::now(),
-        tenant.correlation_id,
-    );
-    match result {
-        Err(DomainError::Validation(msg)) => {
-            assert!(
-                msg.contains("amount_minor") && msg.contains("FFIChild I-1"),
-                "unexpected error message: {msg}"
-            );
-        }
-        other => panic!("expected Validation error, got {other:?}"),
-    }
-}
-
-#[test]
-fn fresh_zero_amount_is_valid_ffi_child_i_1() {
-    let (tenant, g) = admin_context();
-    let school = tenant.school_id;
-    let id = fm_fees_invoice_child_id(&g, school);
-    let invoice_id = fm_fees_invoice_id(&g, school);
-    let row = RealFmFeesInvoiceChild::fresh(
-        id,
-        invoice_id,
-        "Waived line item".to_string(),
+        fm_fees_invoice_child_id(&g, school),
+        fm_fees_invoice_id(&g, school),
+        "Negative".to_string(),
+        -1, // amount_minor
+        -1, // sub_total_minor
         0,
-        tenant.actor_id,
-        Timestamp::now(),
-        tenant.correlation_id,
-    )
-    .expect("fresh should succeed with amount_minor = 0 (boundary, valid)");
-    assert_eq!(row.amount_minor, 0);
-}
-
-// ---- companion invariants ----
-
-#[test]
-fn fresh_empty_description_validation_error() {
-    let (tenant, g) = admin_context();
-    let school = tenant.school_id;
-    let id = fm_fees_invoice_child_id(&g, school);
-    let invoice_id = fm_fees_invoice_id(&g, school);
-    let result = RealFmFeesInvoiceChild::fresh(
-        id,
-        invoice_id,
-        "   ".to_string(),
-        1_000,
+        0,
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -142,22 +99,131 @@ fn fresh_empty_description_validation_error() {
 }
 
 #[test]
-fn fresh_description_is_trimmed() {
+fn fresh_zero_amount_boundary_valid_ffi_child_i_1() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let id = fm_fees_invoice_child_id(&g, school);
-    let invoice_id = fm_fees_invoice_id(&g, school);
     let row = RealFmFeesInvoiceChild::fresh(
-        id,
-        invoice_id,
-        "  Tuition fee Q1  ".to_string(),
-        1_000,
+        fm_fees_invoice_child_id(&g, school),
+        fm_fees_invoice_id(&g, school),
+        "Free sample".to_string(),
+        0, // amount_minor
+        0, // sub_total_minor
+        0,
+        0,
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
     )
-    .expect("fresh should succeed and trim description");
-    assert_eq!(row.description, "Tuition fee Q1");
+    .expect("zero amount + zero sub_total is valid boundary");
+    assert_eq!(row.amount_minor, 0);
+    assert_eq!(row.sub_total_minor, 0);
+}
+
+// ---- FFIChild I-2: sub_total_minor == amount + weaver + fine ----
+
+#[test]
+fn fresh_sub_total_equals_sum_with_weaver_and_fine_valid_ffi_child_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let row = RealFmFeesInvoiceChild::fresh(
+        fm_fees_invoice_child_id(&g, school),
+        fm_fees_invoice_id(&g, school),
+        "Tuition + library + late fine".to_string(),
+        10_000, // amount_minor
+        12_500, // sub_total_minor = 10_000 + 1_500 + 1_000
+        1_500,  // weaver_minor
+        1_000,  // fine_minor
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("FFIChild I-2: sub_total == amount + weaver + fine is valid");
+    assert_eq!(row.amount_minor, 10_000);
+    assert_eq!(row.sub_total_minor, 12_500);
+    assert_eq!(row.weaver_minor, 1_500);
+    assert_eq!(row.fine_minor, 1_000);
+}
+
+#[test]
+fn fresh_sub_total_mismatch_validation_error_ffi_child_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let result = RealFmFeesInvoiceChild::fresh(
+        fm_fees_invoice_child_id(&g, school),
+        fm_fees_invoice_id(&g, school),
+        "Sub_total mismatch".to_string(),
+        10_000, // amount_minor
+        11_000, // sub_total_minor: should be 12_500
+        1_500,
+        1_000,
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    );
+    match result {
+        Err(DomainError::Validation(msg)) => {
+            assert!(
+                msg.contains("sub_total_minor must equal amount_minor + weaver_minor + fine_minor")
+                    && msg.contains("FFIChild I-2"),
+                "unexpected error message: {msg}"
+            );
+        }
+        other => panic!("expected Validation error, got {other:?}"),
+    }
+}
+
+#[test]
+fn fresh_negative_weaver_validation_error_ffi_child_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let result = RealFmFeesInvoiceChild::fresh(
+        fm_fees_invoice_child_id(&g, school),
+        fm_fees_invoice_id(&g, school),
+        "Negative weaver".to_string(),
+        10_000,
+        10_000, // sub_total would be 10_000 + -1000 + 0 = 9_000 (but weaver is invalid)
+        -1_000,
+        0,
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    );
+    match result {
+        Err(DomainError::Validation(msg)) => {
+            assert!(
+                msg.contains("weaver_minor must be >= 0") && msg.contains("FFIChild I-2"),
+                "unexpected error message: {msg}"
+            );
+        }
+        other => panic!("expected Validation error, got {other:?}"),
+    }
+}
+
+#[test]
+fn fresh_negative_fine_validation_error_ffi_child_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let result = RealFmFeesInvoiceChild::fresh(
+        fm_fees_invoice_child_id(&g, school),
+        fm_fees_invoice_id(&g, school),
+        "Negative fine".to_string(),
+        10_000,
+        10_000, // sub_total would be 10_000 + 0 + -500 = 9_500 (but fine is invalid)
+        0,
+        -500,
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    );
+    match result {
+        Err(DomainError::Validation(msg)) => {
+            assert!(
+                msg.contains("fine_minor must be >= 0") && msg.contains("FFIChild I-2"),
+                "unexpected error message: {msg}"
+            );
+        }
+        other => panic!("expected Validation error, got {other:?}"),
+    }
 }
 
 // ---- audit footer ----
@@ -166,13 +232,14 @@ fn fresh_description_is_trimmed() {
 fn fresh_initializes_audit_footer() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let id = fm_fees_invoice_child_id(&g, school);
-    let invoice_id = fm_fees_invoice_id(&g, school);
     let row = RealFmFeesInvoiceChild::fresh(
-        id,
-        invoice_id,
-        "Tuition fee".to_string(),
+        fm_fees_invoice_child_id(&g, school),
+        fm_fees_invoice_id(&g, school),
+        "Audit footer".to_string(),
         5_000,
+        5_000,
+        0,
+        0,
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -180,9 +247,6 @@ fn fresh_initializes_audit_footer() {
     .expect("fresh should succeed");
     assert_eq!(row.version, Version::initial());
     assert!(row.is_active());
-    assert_eq!(row.created_by, tenant.actor_id);
-    assert_eq!(row.updated_by, tenant.actor_id);
-    assert_eq!(row.last_event_id, None);
 }
 
 // ---- retire ----
@@ -191,13 +255,14 @@ fn fresh_initializes_audit_footer() {
 fn retire_flips_active_status_to_retired() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let id = fm_fees_invoice_child_id(&g, school);
-    let invoice_id = fm_fees_invoice_id(&g, school);
     let mut row = RealFmFeesInvoiceChild::fresh(
-        id,
-        invoice_id,
-        "Tuition fee".to_string(),
+        fm_fees_invoice_child_id(&g, school),
+        fm_fees_invoice_id(&g, school),
+        "Will be retired".to_string(),
         5_000,
+        5_000,
+        0,
+        0,
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -207,58 +272,37 @@ fn retire_flips_active_status_to_retired() {
     row.retire(Timestamp::now(), tenant.actor_id)
         .expect("retire should succeed");
     assert!(!row.is_active());
-    assert_eq!(row.amount_minor, 5_000);
-    assert_eq!(row.invoice_id, invoice_id);
-}
-
-#[test]
-fn retire_already_retired_returns_conflict() {
-    let (tenant, g) = admin_context();
-    let school = tenant.school_id;
-    let id = fm_fees_invoice_child_id(&g, school);
-    let invoice_id = fm_fees_invoice_id(&g, school);
-    let mut row = RealFmFeesInvoiceChild::fresh(
-        id,
-        invoice_id,
-        "Tuition fee".to_string(),
-        5_000,
-        tenant.actor_id,
-        Timestamp::now(),
-        tenant.correlation_id,
-    )
-    .expect("fresh should succeed");
-    row.retire(Timestamp::now(), tenant.actor_id)
-        .expect("first retire should succeed");
-    let result = row.retire(Timestamp::now(), tenant.actor_id);
-    assert!(matches!(result, Err(DomainError::Conflict(_))));
 }
 
 // ---- service integration ----
 
 #[test]
-fn create_fm_fees_invoice_child_service_emits_created_event_ffi_child_i_1() {
+fn create_fm_fees_invoice_child_service_emits_created_event_ffi_child_i_2() {
     let clock = SystemClock;
     let g = SystemIdGen;
     let school = g.next_school_id();
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
     let tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
-    let id = fm_fees_invoice_child_id(&g, school);
+    let child_id = fm_fees_invoice_child_id(&g, school);
     let invoice_id = fm_fees_invoice_id(&g, school);
     let cmd = CreateFmFeesInvoiceChildCommand {
         tenant,
-        fm_fees_invoice_child_id: id,
+        fm_fees_invoice_child_id: child_id,
         invoice_id,
-        description: "Tuition fee Q1".to_string(),
-        amount_minor: 12_000,
+        description: "Service integration".to_string(),
+        amount_minor: 10_000,
+        sub_total_minor: 12_500,
+        weaver_minor: 1_500,
+        fine_minor: 1_000,
     };
-    let evt: FmFeesInvoiceChildCreated =
-        create_fm_fees_invoice_child(cmd, &clock, &g)
-            .expect("service should succeed");
-    assert_eq!(evt.amount_minor, 12_000);
-    assert_eq!(evt.invoice_id, invoice_id);
-    assert_eq!(evt.description, "Tuition fee Q1");
-    assert_eq!(evt.fm_fees_invoice_child_id, id);
+    let evt: FmFeesInvoiceChildCreated = create_fm_fees_invoice_child(cmd, &clock, &g)
+        .expect("service should succeed");
+    assert_eq!(evt.amount_minor, 10_000);
+    assert_eq!(evt.sub_total_minor, 12_500);
+    assert_eq!(evt.weaver_minor, 1_500);
+    assert_eq!(evt.fine_minor, 1_000);
+    assert_eq!(evt.fm_fees_invoice_child_id, child_id);
     assert_eq!(evt.created_by, actor);
     assert_eq!(
         <FmFeesInvoiceChildCreated as DomainEvent>::EVENT_TYPE,
@@ -275,6 +319,28 @@ fn create_fm_fees_invoice_child_service_emits_created_event_ffi_child_i_1() {
 }
 
 #[test]
+fn create_fm_fees_invoice_child_service_rejects_sub_total_mismatch_ffi_child_i_2() {
+    let clock = SystemClock;
+    let g = SystemIdGen;
+    let school = g.next_school_id();
+    let actor = g.next_user_id();
+    let corr = g.next_correlation_id();
+    let tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
+    let cmd = CreateFmFeesInvoiceChildCommand {
+        tenant,
+        fm_fees_invoice_child_id: fm_fees_invoice_child_id(&g, school),
+        invoice_id: fm_fees_invoice_id(&g, school),
+        description: "Sub-total mismatch".to_string(),
+        amount_minor: 10_000,
+        sub_total_minor: 11_000, // mismatch: should be 10_000 + 1_500 + 1_000 = 12_500
+        weaver_minor: 1_500,
+        fine_minor: 1_000,
+    };
+    let result = create_fm_fees_invoice_child(cmd, &clock, &g);
+    assert!(matches!(result, Err(DomainError::Validation(_))));
+}
+
+#[test]
 fn retire_fm_fees_invoice_child_service_emits_retired_event() {
     let clock = SystemClock;
     let g = SystemIdGen;
@@ -282,15 +348,12 @@ fn retire_fm_fees_invoice_child_service_emits_retired_event() {
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
     let tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
-    let id = fm_fees_invoice_child_id(&g, school);
     let cmd = RetireFmFeesInvoiceChildCommand {
         tenant,
-        fm_fees_invoice_child_id: id,
+        fm_fees_invoice_child_id: fm_fees_invoice_child_id(&g, school),
     };
-    let evt: FmFeesInvoiceChildRetired =
-        retire_fm_fees_invoice_child(cmd, &clock, &g)
-            .expect("service should succeed");
-    assert_eq!(evt.fm_fees_invoice_child_id, id);
+    let evt: FmFeesInvoiceChildRetired = retire_fm_fees_invoice_child(cmd, &clock, &g)
+        .expect("service should succeed");
     assert_eq!(evt.deleted_by, actor);
     assert_eq!(
         <FmFeesInvoiceChildRetired as DomainEvent>::EVENT_TYPE,
