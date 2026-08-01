@@ -484,3 +484,40 @@ fn fiv_i_4_due_date_ordering_dispatcher_enforced() {
     .expect("first installment constructs with any due_date");
     let _ = _first;
 }
+
+// =========================================================================
+// -- Wave 139 -- RealFeesInstallment -- FIv I-3 percentage sum marker --
+// =========================================================================
+
+#[test]
+fn fiv_i_3_percentage_sum_dispatcher_enforced() {
+    // FIv I-3 marker test: the percentage sum invariant (the
+    // sum of all installment percentages for a single fees_master
+    // must be <= 100) is dispatcher-enforced -- the aggregate
+    // carries `percentage: i64` + `fees_master_id: FeesMasterId`
+    // as required fields, but the cross-row sum check requires
+    // visibility into the sibling rows. The dispatcher must, on
+    // create, query for existing installments with the same
+    // `fees_master_id`, sum their `percentage` values, and
+    // reject the create if (new.percentage + sum) > 100.
+
+    // The aggregate itself cannot enforce this invariant
+    // without a sibling-row aggregation, so we document the
+    // dispatcher's responsibility here.
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let _first = RealFeesInstallment::fresh(
+        fiv_id(&g, school),
+        master_id(&g, school),
+        "First installment 50pct".to_owned(),
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+        5_000,
+        Currency::INR,
+        50,
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("first installment at 50pct constructs");
+    let _ = _first;
+}
