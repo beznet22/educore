@@ -3037,6 +3037,10 @@ pub struct CreateDirectFeesInstallmentChildPaymentCommand {
     pub direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
     pub installment_id: DirectFeesInstallmentId,
     pub paid_amount_minor: i64, // FFIChild I-1
+    /// DFIACP I-2: optional previous cumulative paid amount for
+    /// monotonicity check. When None, this is the first payment
+    /// row for the installment.
+    pub previous_paid_amount_minor: Option<i64>, // DFIACP I-2
     pub note: Option<String>,
 }
 

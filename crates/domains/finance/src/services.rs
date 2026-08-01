@@ -5445,6 +5445,7 @@ where
         cmd.direct_fees_installment_child_payment_id,
         cmd.installment_id,
         cmd.paid_amount_minor,
+        cmd.previous_paid_amount_minor, // DFIACP I-2
         cmd.note,
         cmd.tenant.actor_id,
         at,

@@ -6798,6 +6798,7 @@ impl RealDirectFeesInstallmentChildPayment {
         id: DirectFeesInstallmentChildPaymentId,
         installment_id: DirectFeesInstallmentId,
         paid_amount_minor: i64,
+        previous_paid_amount_minor: Option<i64>,
         note: Option<String>,
         actor: UserId,
         at: Timestamp,
@@ -6808,6 +6809,23 @@ impl RealDirectFeesInstallmentChildPayment {
             return Err(educore_core::error::DomainError::validation(
                 "DirectFeesInstallmentChildPayment paid_amount_minor must be >= 0 (FFIChild I-1)",
             ));
+        }
+        // DFIACP I-2: when previous_paid_amount_minor is Some (the
+        // dispatcher looked up the previous cumulative paid amount
+        // for this installment_id), paid_amount_minor must be >=
+        // previous_paid_amount_minor. The equality boundary is valid
+        // (a row that doesn't change the cumulative total).
+        if let Some(prev) = previous_paid_amount_minor {
+            if prev < 0 {
+                return Err(educore_core::error::DomainError::validation(
+                    "DirectFeesInstallmentChildPayment previous_paid_amount_minor must be >= 0 when present (DFIACP I-2)",
+                ));
+            }
+            if paid_amount_minor < prev {
+                return Err(educore_core::error::DomainError::validation(
+                    "DirectFeesInstallmentChildPayment paid_amount_minor must be monotonically non-decreasing (DFIACP I-2)",
+                ));
+            }
         }
         Ok(Self {
             school_id: id.school_id(),
