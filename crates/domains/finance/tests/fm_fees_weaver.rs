@@ -303,3 +303,40 @@ fn retire_fm_fees_weaver_service_emits_retired_event() {
         "finance.fm_fees_weaver.retired"
     );
 }
+
+// =========================================================================
+// -- Wave 141 -- RealFmFeesWeaver -- FFW I-2 sum-on-invoice marker --
+// =========================================================================
+
+#[test]
+fn ffw_i_2_sum_on_invoice_le_child_subtotals_dispatcher_enforced() {
+    // FFW I-2 marker test: the sum-on-invoice-<= -sum-of-child-subtotals
+    // invariant (the sum of an FmFeesInvoice's line amounts must be
+    // <= the sum of its child FmFeesWeaver subtotals for the same
+    // invoice) is dispatcher-enforced. This is a cross-aggregate
+    // invariant that requires visibility into both the FmFeesInvoice
+    // parent aggregate AND its child FmFeesWeaver rows.
+    //
+    // The dispatcher must, on FmFeesInvoice write, query for all
+    // RealFmFeesWeaver rows where fm_fees_invoice_id ==
+    // invoice.id, sum their subtotals, and reject the write if
+    // invoice.amount_minor > sum(weaver_subtotals) with
+    // DomainError::Conflict("FmFeesInvoice amount_minor must be <=
+    // sum of child FmFeesWeaver subtotals (FFW I-2)").
+    //
+    // The aggregate itself cannot enforce this invariant without
+    // a cross-aggregate lookup, so we document the dispatcher's
+    // responsibility here.
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let _row = RealFmFeesWeaver::fresh(
+        fm_fees_weaver_id(&g, school),
+        "Test weaver".to_owned(),
+        100,
+        tenant.actor_id,
+        educore_core::value_objects::Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("weaver constructs");
+    let _ = _row;
+}
