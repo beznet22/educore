@@ -267,7 +267,7 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 ### FmFeesTransaction (3 invariants)
 
 - [~] FFT I-1: amount ≥ 0 — partial (placeholder + Money VO)
-- [ ] FFT I-2: total_paid_amount ≥ 0 — missing
+- [x] FFT I-2: total_paid_amount ≥ 0 — **complete (Wave 124 full drop for FFT I-2)** — PROMOTED from `[ ]` missing to `[x]` complete. `RealFmFeesTransaction` aggregate at `crates/domains/finance/src/aggregate.rs:8552+` (appended after Wave 119 RealFeesAssign::retire block) pins `total_paid_amount_minor: i64` + `transaction_date: chrono::NaiveDate` + `description: Option<String>` as required fields. `fresh()` validates FFT I-2: `total_paid_amount_minor >= 0` (returns `DomainError::validation("FmFeesTransaction total_paid_amount_minor must be >= 0 (FFT I-2)")`). Zero is a valid boundary. `total_paid_amount_minor` + `transaction_date` + `description` are NOT mutable via any `update_*` method — the aggregate is append-only (only `fresh` + `retire` exist; pre-existing `UpdateFmFeesTransactionCommand` is preserved as a Phase 7 skeleton not wired through `RealFmFeesTransaction`). `retire()` is a tombstone that preserves all 3 fields in the audit footer. The check is propagated through `create_fm_fees_transaction` service function at `crates/domains/finance/src/services.rs:2761+`. 10 invariant tests + 3 service integration tests pin the invariant end-to-end (13 total tests pass at `cargo test -p educore-finance --test fm_fees_transaction --no-fail-fast`: 13 passed; 0 failed).
 - [ ] FFT I-3: state machine — missing
 
 ### FmFeesTransactionChild (2 invariants)

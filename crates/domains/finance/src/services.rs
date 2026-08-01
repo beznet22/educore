@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFeesCarryForward, RealFeesMaster, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, RealFmFeesTransaction, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -86,6 +86,7 @@ use crate::commands::{
     ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
     ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand, CreateDirectFeesInstallmentCommand, ReadDirectFeesInstallmentCommand, RetireDirectFeesInstallmentCommand, RetireFeesAssignDiscountCommand, CreateFeesAssignCommand, ReadFeesAssignCommand, RetireFeesAssignCommand,
+    RetireFmFeesTransactionCommand,
 };
 use crate::events::{
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
@@ -119,6 +120,7 @@ use crate::events::{
     FeesInvoiceSettingCreated, FeesInvoiceSettingUpdated, FeesInvoiceSettingRetired,
     FeesInstallmentCreditCreated, FeesInstallmentCreditRetired,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
+    FmFeesTransactionCreated, FmFeesTransactionRetired,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
     WalletTransactionApprovalRejected,
@@ -2752,25 +2754,51 @@ where
 
 // Wave 100 FmFeesInvoice service functions appended below at the end of the file (before #[cfg(test)]).
 
-/// Handler skeleton: create an `FmFeesTransaction` aggregate.
-/// Full implementation lands in Phase 7 Workstream G.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
+/// Service function: create a `RealFmFeesTransaction` aggregate.
+/// Per v3 Part 2 F32 + checklist § FmFeesTransaction: enforces FFT I-2
+/// (`total_paid_amount_minor >= 0`) via `RealFmFeesTransaction::fresh`.
+#[allow(clippy::needless_pass_by_value)]
 pub fn create_fm_fees_transaction<C, G>(
     cmd: CreateFmFeesTransactionCommand,
     clock: &C,
     ids: &G,
-) -> Result<()>
+) -> Result<(RealFmFeesTransaction, FmFeesTransactionCreated)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let _ = (cmd, clock, ids);
-    Ok(())
+    let tenant = cmd.tenant.clone();
+    let at = clock.now();
+    let correlation = tenant.correlation_id;
+    let description_for_event = cmd.description.clone();
+    let agg = RealFmFeesTransaction::fresh(
+        cmd.fm_fees_transaction_id,
+        cmd.total_paid_amount_minor,
+        cmd.transaction_date,
+        cmd.description,
+        tenant.actor_id,
+        at,
+        correlation,
+    )?;
+    let evt = FmFeesTransactionCreated::new(
+        cmd.fm_fees_transaction_id,
+        cmd.total_paid_amount_minor,
+        cmd.transaction_date,
+        description_for_event,
+        tenant.actor_id,
+        ids.next_event_id(),
+        correlation,
+        at,
+    );
+    let _ = ids; // event_id already minted; ids reserved for future dispatcher calls
+    Ok((agg, evt))
 }
 
-/// Handler skeleton: read an `FmFeesTransaction` aggregate.
-/// Full implementation lands in Phase 7 Workstream G.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
+/// Service function: read a `RealFmFeesTransaction` aggregate.
+/// The in-process reference adapter does not have a backing store;
+/// dispatcher validates existence before calling this. The function
+/// exists for type-system completeness + Phase 7 contract symmetry.
+#[allow(clippy::needless_pass_by_value)]
 pub fn read_fm_fees_transaction<C, G>(
     cmd: ReadFmFeesTransactionCommand,
     clock: &C,
@@ -2782,6 +2810,32 @@ where
 {
     let _ = (cmd, clock, ids);
     Ok(())
+}
+
+/// Service function: retire a `RealFmFeesTransaction` aggregate
+/// (tombstone). The caller supplies the existing aggregate state via
+/// the dispatcher; this function only emits the retirement event.
+#[allow(clippy::needless_pass_by_value)]
+pub fn retire_fm_fees_transaction<C, G>(
+    cmd: RetireFmFeesTransactionCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<FmFeesTransactionRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let correlation = cmd.tenant.correlation_id;
+    let evt = FmFeesTransactionRetired::new(
+        cmd.fm_fees_transaction_id,
+        cmd.tenant.actor_id,
+        ids.next_event_id(),
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok(evt)
 }
 
 /// Service function: append a new child row under an existing

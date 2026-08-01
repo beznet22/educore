@@ -3390,6 +3390,9 @@ impl RetireFmFeesInvoiceSettingCommand {
 pub struct CreateFmFeesTransactionCommand {
     pub tenant: TenantContext,
     pub fm_fees_transaction_id: FmFeesTransactionId,
+    pub total_paid_amount_minor: i64,
+    pub transaction_date: chrono::NaiveDate,
+    pub description: Option<String>,
 }
 
 
@@ -3414,6 +3417,29 @@ impl ReadFmFeesTransactionCommand {
         vec![Capability::FinanceInvoiceRead]
     }
 }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFmFeesTransactionCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+}
+
+
+impl RetireFmFeesTransactionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
+
+// -- FmFeesTransaction COMMAND_TYPE constants (Wave 124) --
+
+pub const FINANCE_FM_FEES_TRANSACTION_CREATE_COMMAND_TYPE: &str =
+    "finance.fm_fees_transaction.create";
+pub const FINANCE_FM_FEES_TRANSACTION_READ_COMMAND_TYPE: &str =
+    "finance.fm_fees_transaction.read";
+pub const FINANCE_FM_FEES_TRANSACTION_RETIRE_COMMAND_TYPE: &str =
+    "finance.fm_fees_transaction.retire";
 // -- FmFeesTransactionChild (Phase 7 Workstream G) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

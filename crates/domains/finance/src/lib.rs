@@ -51,7 +51,7 @@ pub mod prelude {
         RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFeesCarryForward, RealFeesMaster,
         RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild,
         RealFmFeesTransactionLineNote, RealIncomeApproval, RealIncomeHead, RealInvoiceSetting,
-        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, DueFeesLoginPreventRole, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealDirectFeesInstallmentChildPayment, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, Wallet, WalletTransaction,
+        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, DueFeesLoginPreventRole, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealDirectFeesInstallmentChildPayment, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, RealFmFeesTransaction, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::{
@@ -78,7 +78,9 @@ pub mod prelude {
         CreateIncomeApprovalCommand,
         CreatePayrollPaymentApprovalCommand,
         CreateFmFeesGroupCommand, CreateFmFeesInvoiceLineNoteCommand,
-        CreateFmFeesTransactionLineNoteCommand, CreateIncomeHeadCommand,
+        CreateFmFeesTransactionLineNoteCommand, CreateFmFeesTransactionCommand,
+        ReadFmFeesTransactionCommand, RetireFmFeesTransactionCommand,
+        CreateIncomeHeadCommand,
         CreateInvoiceSettingCommand, CreateQuestionBankFeeCommand, CreateWalletCommand,
         CreateWalletTransactionApprovalCommand, CreditWalletCommand,
         DeductWalletCreditCommand, OpenBankAccountCommand,
@@ -202,6 +204,7 @@ pub mod prelude {
         FmFeesInvoiceLineNoteRetired, FmFeesTransactionChildCreated,
         FmFeesTransactionChildRetired, FmFeesTransactionChildUpdated,
         FmFeesTransactionLineNoteAdded, FmFeesTransactionLineNoteRetired, IncomeHeadCreated,
+        FmFeesTransactionCreated, FmFeesTransactionRetired,
         InvoiceNumberingConfigured, InvoiceSettingCreated, PaymentReceived,
         PayrollPaymentRecorded, QuestionBankFeeCreated, WalletCreated, WalletCredited,
         WalletDebited, WalletRefundRequested, WalletTransactionApprovalApproved,
@@ -219,6 +222,7 @@ pub mod prelude {
         create_fm_fees_group, create_income_approval, create_payroll_payment_approval,
         create_salary_template,
         create_fm_fees_invoice_line_note, create_fm_fees_transaction_child,
+        create_fm_fees_transaction, read_fm_fees_transaction, retire_fm_fees_transaction,
         create_fm_fees_transaction_line_note,
         create_income_head, create_invoice_setting, create_question_bank_fee, create_wallet,
         create_wallet_transaction_approval, credit_wallet, deduct_wallet_credit,

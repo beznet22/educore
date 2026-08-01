@@ -8315,6 +8315,120 @@ impl DomainEvent for FeesAssignRetired {
     }
 }
 
+// =============================================================================
+// RealFmFeesTransaction events — Wave 124 (per-aggregate wave pattern
+// from Waves 65–123)
+// =============================================================================
+//
+// Per v3 Part 2 F32 + checklist § FmFeesTransaction: 1 invariant
+// dropped in Wave 124:
+//   - FFT I-2: total_paid_amount_minor ≥ 0 (carried on Created;
+//     append-only on the parent aggregate so the invariant holds
+//     at every event emission)
+
+/// Emitted when a new `RealFmFeesTransaction` row is appended.
+/// Carries the FFT I-2 invariant value (`total_paid_amount_minor >= 0`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesTransactionCreated {
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+    pub total_paid_amount_minor: i64,
+    pub transaction_date: chrono::NaiveDate,
+    pub description: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesTransactionCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fm_fees_transaction_id: FmFeesTransactionId,
+        total_paid_amount_minor: i64,
+        transaction_date: chrono::NaiveDate,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_transaction_id,
+            total_paid_amount_minor,
+            transaction_date,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesTransactionCreated {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_transaction.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_transaction";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_transaction_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_transaction_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesTransaction` row is retired (tombstone).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesTransactionRetired {
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesTransactionRetired {
+    pub fn new(
+        fm_fees_transaction_id: FmFeesTransactionId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_transaction_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesTransactionRetired {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_transaction.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_transaction";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_transaction_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_transaction_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 #[cfg(test)]
 #[allow(t)]
 #[allow(t)]

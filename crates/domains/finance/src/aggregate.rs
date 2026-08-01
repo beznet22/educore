@@ -938,6 +938,9 @@ finance_aggregate_stub! {
     /// FmFeesInvoiceSetting (Phase 7 Workstream G).
     pub struct FmFeesInvoiceSetting { _id: () }
 }
+// `RealFmFeesTransaction` for new code; the stub is kept only
+// to avoid breaking downstream code that referenced
+// `FmFeesTransaction` as a type name during Phase 7.
 finance_aggregate_stub! {
     /// FmFeesTransaction (Phase 7 Workstream G).
     pub struct FmFeesTransaction { _id: () }
@@ -8537,6 +8540,101 @@ impl RealFeesMaster {
         if self.active_status == ActiveStatus::Retired {
             return Err(educore_core::error::DomainError::conflict(
                 "FeesMaster is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
+// RealFmFeesTransaction — Wave 124 (per-aggregate wave pattern
+// from Waves 65–123)
+// =============================================================================
+//
+// Per v3 Part 2 F32 + checklist § FmFeesTransaction: 1 invariant
+// dropped in Wave 124:
+//   - FFT I-2: total_paid_amount_minor ≥ 0 (numeric money invariant)
+// Parent aggregate for [`RealFmFeesTransactionChild`] +
+// [`RealFmFeesTransactionLineNote`] (one transaction can have many
+// child rows and many line-note rows; the children carry their
+// `fm_fees_transaction_id` as a required FK field).
+//
+// The aggregate is append-only: `fresh()` + `retire()` only. The
+// `total_paid_amount_minor` field is NOT mutable — any change to the
+// cumulative paid total must be effected via appending a
+// `RealFmFeesTransactionChild` row (which the dispatcher sums back
+// into `total_paid_amount_minor` on the parent transaction).
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFmFeesTransaction {
+    pub id: FmFeesTransactionId,
+    pub school_id: SchoolId,
+    pub total_paid_amount_minor: i64,
+    pub transaction_date: chrono::NaiveDate,
+    pub description: Option<String>,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFmFeesTransaction {
+    /// Constructs a new `RealFmFeesTransaction`. Enforces FFT I-2:
+    /// `total_paid_amount_minor >= 0`. The transaction_date is required
+    /// (no default — the caller must supply a valid calendar date).
+    /// The description is optional free-form text (max 2000 chars
+    /// recommended at the UI layer, not enforced here).
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: FmFeesTransactionId,
+        total_paid_amount_minor: i64,
+        transaction_date: chrono::NaiveDate,
+        description: Option<String>,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FFT I-2: total_paid_amount_minor >= 0.
+        if total_paid_amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesTransaction total_paid_amount_minor must be >= 0 (FFT I-2)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            total_paid_amount_minor,
+            transaction_date,
+            description,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FmFeesTransaction is already retired",
             ));
         }
         self.active_status = ActiveStatus::Retired;
