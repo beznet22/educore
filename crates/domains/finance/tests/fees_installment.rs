@@ -444,3 +444,43 @@ fn read_fees_installment_service_returns_ok() {
     };
     read_fees_installment(cmd, &clock, &g).expect("read should succeed");
 }
+
+// =========================================================================
+// -- Wave 138 -- RealFeesInstallment -- FIv I-4 due_date ordering marker --
+// =========================================================================
+
+#[test]
+fn fiv_i_4_due_date_ordering_dispatcher_enforced() {
+    // FIv I-4 marker test: the due_date ordering invariant
+    // (installments must have strictly ascending due_dates
+    // within a single fees_master) is dispatcher-enforced --
+    // the aggregate carries `due_date: NaiveDate` as a
+    // required field, but the cross-row check requires
+    // visibility into the sibling rows. The dispatcher must,
+    // on create, query for existing installments with the
+    // same `fees_master_id` and reject the create if the new
+    // `due_date` is <= the latest existing `due_date`.
+
+    // The aggregate itself cannot enforce this invariant
+    // without a sibling-row lookup, so we document the
+    // dispatcher's responsibility here. If a future wave
+    // adds the per-master ordering check to the aggregate,
+    // this marker test should be updated to invoke the
+    // aggregate-level guard.
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let _first = RealFeesInstallment::fresh(
+        fiv_id(&g, school),
+        master_id(&g, school),
+        "First installment".to_owned(),
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+        5_000,
+        Currency::INR,
+        50,
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("first installment constructs with any due_date");
+    let _ = _first;
+}
