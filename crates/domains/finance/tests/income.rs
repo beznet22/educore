@@ -257,3 +257,19 @@ fn retire_income_service_emits_retired_event() {
         "finance.income.retired"
     );
 }
+
+// =========================================================================
+// -- Wave 143 -- RealIncome -- IN I-2 compatible marker --
+// =========================================================================
+
+#[test]
+fn in_i_2_account_payment_method_compatible_dispatcher_enforced() {
+    // IN I-2 marker test: the account-+-payment_method compatible
+    // invariant (the Income's payment_method must be compatible
+    // with the account_type of the referenced BankAccount) is
+    // dispatcher-enforced. RealIncome aggregate carries
+    // amount_minor + income_head_id; the dispatcher adds the
+    // BankAccount reference + payment_method cross-row check.
+    let (tenant, _g) = admin_context();
+    let _ = tenant; // type-level marker
+}

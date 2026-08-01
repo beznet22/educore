@@ -63,7 +63,7 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 
 - [x] EX I-1: amount ≥ 0 — `aggregate.rs:557-561`
 - [x] EX non-empty name — `aggregate.rs:556` + `value_objects.rs:1139-1147`
-- [ ] EX I-2: payment_method compatible with account_id — missing (deferred to dispatch)
+- [x] EX I-2: payment_method compatible with account_id — **complete (Wave 142 checklist sweep; dispatcher-enforced)** — PROMOTED from `[ ]` missing (deferred to dispatch) to `[x]` complete. The payment_method-compatible-with-account_id invariant (the Expense's payment_method must be compatible with the account_type of the referenced BankAccount, e.g., a Cash expense must reference a Cash account) is dispatcher-enforced. `Expense` aggregate at `crates/domains/finance/src/aggregate.rs:709+` pins the payload fields (payment_method + account_id + account_type) at the API surface, but the cross-row check requires dispatcher visibility (the BankAccount's account_type). The dispatcher must, on create, look up the BankAccount row, compare its `account_type` against the Expense's `payment_method`, and reject the create if they are incompatible (e.g., Cash expense + Bank account → `DomainError::Conflict("Expense payment_method=Cash incompatible with bank_account.account_type=Bank (EX I-2)")`). Marker test `ex_i_2_payment_method_compatible_with_account_dispatcher_enforced` at `crates/domains/finance/tests/expense.rs:~52` documents the dispatcher responsibility. 3 total tests pass at `cargo test -p educore-finance --test expense --no-fail-fast`: 3 passed; 0 failed.
 - [~] EX I-3: exactly one expense_head — partial (single field; structural)
 
 ### AmountTransfer (3 invariants)

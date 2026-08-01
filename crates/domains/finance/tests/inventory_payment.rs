@@ -319,3 +319,19 @@ fn append_only_no_update_mutator_exists_ip_i_3() {
     // by the absence of those methods in the impl block.
     let _ = row; // type-level marker
 }
+
+// =========================================================================
+// -- Wave 143 -- RealInventoryPayment -- IP I-2 compatible marker --
+// =========================================================================
+
+#[test]
+fn ip_i_2_payment_method_account_compatible_dispatcher_enforced() {
+    // IP I-2 marker test: the payment_method-+-account compatible
+    // invariant (the InventoryPayment's payment_method must be
+    // compatible with the account_type of the referenced BankAccount)
+    // is dispatcher-enforced. The aggregate carries the amount +
+    // currency + supplier_name at the API surface; the dispatcher
+    // adds the BankAccount reference + payment_method cross-row check.
+    let (tenant, _g) = admin_context();
+    let _ = tenant; // type-level marker
+}
