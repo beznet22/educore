@@ -665,6 +665,7 @@ impl DeleteFeesInstallmentCommand {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateDirectFeesInstallmentCommand {
     pub tenant: TenantContext,
+    pub direct_fees_installment_id: DirectFeesInstallmentId,
     pub student_id: educore_academic::StudentId,
     pub name: String,
     pub amount_minor: i64,
@@ -725,6 +726,26 @@ impl ReadDirectFeesInstallmentCommand {
         vec![Capability::FinanceDirectFeesInstallmentRead]
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireDirectFeesInstallmentCommand {
+    pub tenant: TenantContext,
+    pub direct_fees_installment_id: DirectFeesInstallmentId,
+}
+
+impl RetireDirectFeesInstallmentCommand {
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceDirectFeesInstallmentDelete]
+    }
+}
+
+/// Stable command type identifier for [`RetireDirectFeesInstallmentCommand`].
+/// (FINANCE_DIRECT_FEES_INSTALLMENT_CREATE/UPDATE/DELETE/READ_COMMAND_TYPE
+/// are already declared earlier in this file as part of the
+/// pre-existing Phase 7 DirectFeesInstallment command set.)
+pub const FINANCE_DIRECT_FEES_INSTALLMENT_RETIRE_COMMAND_TYPE: &str =
+    "finance.direct_fees_installment.retire";
 // -- DirectFeesInstallmentAssign (per-student linkage) --
 
 

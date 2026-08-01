@@ -2157,13 +2157,16 @@ finance_event_stub! {
     aggregate_id: FmFeesInvoiceId,
 }
 
-finance_event_stub! {
-    /// Emitted when a `DirectFeesInstallment` is created.
-    pub struct DirectFeesInstallmentCreated;
-    event_type: "finance.direct_fees_installment.created",
-    aggregate_type: "direct_fees_installment",
-    aggregate_id: DirectFeesInstallmentId,
-}
+// -- Wave 111 -- DirectFeesInstallment (Wave 90 lesson: pre-existing
+// finance_event_stub! for DirectFeesInstallmentCreated was deleted and
+// replaced with a full struct below -- see aggregate.rs:DirectFeesInstallment).
+//
+// DFI I-2: amount >= 0. Both DirectFeesInstallmentCreated (carrying
+// the amount_minor + due_date + name downstream) and
+// DirectFeesInstallmentRetired (tombstone preserving the
+// identity for legal-record retention) are emitted by
+// create_direct_fees_installment / retire_direct_fees_installment
+// service functions.
 
 finance_event_stub! {
     /// Emitted when a student's balance is carried forward between
@@ -7684,6 +7687,126 @@ impl DomainEvent for AmountTransferRetired {
     }
 }
 
+
+
+// -- Wave 111 -- DirectFeesInstallment (Phase 7 stub replaced) --
+//
+// DFI I-2: amount >= 0. Both DirectFeesInstallmentCreated (carrying
+// the amount_minor + due_date + name downstream) and
+// DirectFeesInstallmentRetired (tombstone preserving the identity
+// for legal-record retention) are emitted by
+// create_direct_fees_installment / retire_direct_fees_installment
+// service functions.
+//
+// NOTE: the pre-existing finance_event_stub! macro at events.rs:2160
+// was deleted and replaced with this comment marker + the full
+// struct definitions below.
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesInstallmentCreated {
+    pub direct_fees_installment_id: DirectFeesInstallmentId,
+    pub student_id: educore_academic::StudentId,
+    pub name: String,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub due_date: NaiveDate,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesInstallmentCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        direct_fees_installment_id: DirectFeesInstallmentId,
+        student_id: educore_academic::StudentId,
+        name: String,
+        amount_minor: i64,
+        currency: Currency,
+        due_date: NaiveDate,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            direct_fees_installment_id,
+            student_id,
+            name,
+            amount_minor,
+            currency,
+            due_date,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesInstallmentCreated {
+    const EVENT_TYPE: &'static str = "finance.direct_fees_installment.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_installment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.direct_fees_installment_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.direct_fees_installment_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DirectFeesInstallmentRetired {
+    pub direct_fees_installment_id: DirectFeesInstallmentId,
+    pub retired_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl DirectFeesInstallmentRetired {
+    pub fn new(
+        direct_fees_installment_id: DirectFeesInstallmentId,
+        retired_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            direct_fees_installment_id,
+            retired_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for DirectFeesInstallmentRetired {
+    const EVENT_TYPE: &'static str = "finance.direct_fees_installment.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "direct_fees_installment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.direct_fees_installment_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.direct_fees_installment_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
 
 #[cfg(test)]
 #[allow(

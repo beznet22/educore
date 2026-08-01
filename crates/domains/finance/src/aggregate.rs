@@ -7899,3 +7899,100 @@ impl RealFeesInstallmentAssignDiscount {
         Ok(())
     }
 }
+
+
+// -- Wave 111 -- RealDirectFeesInstallment (per-student installment plan) --
+//
+// DFI I-2: amount >= 0 (amount_minor pinned in minor units; the
+// gross installment amount for a specific student). Pinned at
+// construction with `>= 0` guard.
+//
+// Companion invariants enforced at fresh():
+//   * `name` must be non-empty after trimming whitespace (a
+//     installment plan without a name cannot be reconciled).
+//   * `student_id` must reference a known student (carried as
+//     a typed-id; the dispatcher enforces FK validity at
+//     storage time).
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealDirectFeesInstallment {
+    pub id: DirectFeesInstallmentId,
+    pub school_id: SchoolId,
+    pub student_id: educore_academic::StudentId,
+    pub name: String,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub due_date: chrono::NaiveDate,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealDirectFeesInstallment {
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: DirectFeesInstallmentId,
+        student_id: educore_academic::StudentId,
+        name: String,
+        amount_minor: i64,
+        currency: Currency,
+        due_date: chrono::NaiveDate,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // DFI I-2 guard: amount_minor >= 0.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "DirectFeesInstallment amount_minor must be >= 0 (DFI I-2)",
+            ));
+        }
+        // Companion: name non-empty trimmed.
+        if name.trim().is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "DirectFeesInstallment name must be non-empty after trimming",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            student_id,
+            name,
+            amount_minor,
+            currency,
+            due_date,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "DirectFeesInstallment is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
