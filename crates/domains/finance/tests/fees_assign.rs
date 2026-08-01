@@ -353,3 +353,275 @@ fn retire_fees_assign_service_emits_retired_event_fa() {
     );
     assert_eq!(event.school_id(), school);
 }
+
+// ====================================================================
+// -- Wave 131 -- FA I-3 + FA I-4 state machine extension tests --
+// ====================================================================
+
+use educore_core::error::DomainError;
+use educore_core::ids::UserId;
+use educore_core::value_objects::Timestamp;
+use educore_finance::commands::{CancelFeesAssignCommand, RecordFeesAssignPaymentCommand};
+use educore_finance::events::{FeesAssignCancelled, FeesAssignPaymentRecorded};
+use educore_finance::services::{cancel_fees_assign, record_fees_assign_payment};
+use educore_finance::value_objects::LifecycleStatus;
+
+fn build_assign(actor: UserId, amount_minor: i64) -> RealFeesAssign {
+    let (_tenant, g) = admin_context();
+    let school = _tenant.school_id;
+    RealFeesAssign::fresh(
+        FeesAssignId::new(school, g.next_uuid()),
+        StudentId::new(school, g.next_uuid()),
+        FeesMasterId::new(school, g.next_uuid()),
+        AcademicYearId::new(school, g.next_uuid()),
+        amount_minor,
+        Currency::INR,
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+        actor,
+        Timestamp::now(),
+        _tenant.correlation_id,
+    )
+    .expect("fresh should succeed")
+}
+
+// ---- LifecycleStatus enum round-trips ----
+
+#[test]
+fn lifecycle_status_as_str_round_trip() {
+    assert_eq!(LifecycleStatus::Open.as_str(), "open");
+    assert_eq!(LifecycleStatus::Paid.as_str(), "paid");
+    assert_eq!(LifecycleStatus::Cancelled.as_str(), "cancelled");
+    assert_eq!(LifecycleStatus::parse("open"), Some(LifecycleStatus::Open));
+    assert_eq!(LifecycleStatus::parse("paid"), Some(LifecycleStatus::Paid));
+    assert_eq!(LifecycleStatus::parse("cancelled"), Some(LifecycleStatus::Cancelled));
+    assert_eq!(LifecycleStatus::parse("unknown"), None);
+}
+
+#[test]
+fn lifecycle_status_can_transition_only_from_open() {
+    assert!(LifecycleStatus::Open.can_transition_to(LifecycleStatus::Paid));
+    assert!(LifecycleStatus::Open.can_transition_to(LifecycleStatus::Cancelled));
+    assert!(!LifecycleStatus::Paid.can_transition_to(LifecycleStatus::Open));
+    assert!(!LifecycleStatus::Paid.can_transition_to(LifecycleStatus::Cancelled));
+    assert!(!LifecycleStatus::Cancelled.can_transition_to(LifecycleStatus::Open));
+    assert!(!LifecycleStatus::Cancelled.can_transition_to(LifecycleStatus::Paid));
+}
+
+// ---- fresh initializes lifecycle + paid_amount_minor ----
+
+#[test]
+fn fresh_initializes_paid_amount_zero_lifecycle_open_fa_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let agg = build_assign(actor, 10_000);
+    assert_eq!(agg.paid_amount_minor, 0);
+    assert_eq!(agg.lifecycle_status, LifecycleStatus::Open);
+    assert_eq!(agg.balance_minor(), 10_000);
+}
+
+// ---- FA I-3: payment progression ----
+
+#[test]
+fn partial_payment_bumps_paid_amount_keeps_open_fa_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_assign(actor, 10_000);
+    agg.record_payment(3_000, actor, Timestamp::now(), _g.next_event_id())
+        .expect("partial payment should succeed");
+    assert_eq!(agg.paid_amount_minor, 3_000);
+    assert_eq!(agg.lifecycle_status, LifecycleStatus::Open);
+    assert_eq!(agg.balance_minor(), 7_000);
+}
+
+#[test]
+fn full_payment_transitions_open_to_paid_fa_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_assign(actor, 10_000);
+    agg.record_payment(10_000, actor, Timestamp::now(), _g.next_event_id())
+        .expect("full payment should succeed");
+    assert_eq!(agg.paid_amount_minor, 10_000);
+    assert_eq!(agg.lifecycle_status, LifecycleStatus::Paid);
+    assert_eq!(agg.balance_minor(), 0);
+}
+
+#[test]
+fn cumulative_payments_reach_paid_fa_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_assign(actor, 10_000);
+    agg.record_payment(4_000, actor, Timestamp::now(), _g.next_event_id())
+        .expect("first payment");
+    agg.record_payment(4_000, actor, Timestamp::now(), _g.next_event_id())
+        .expect("second payment");
+    agg.record_payment(2_000, actor, Timestamp::now(), _g.next_event_id())
+        .expect("third payment reaches cap");
+    assert_eq!(agg.paid_amount_minor, 10_000);
+    assert_eq!(agg.lifecycle_status, LifecycleStatus::Paid);
+}
+
+// ---- FA I-3: payment guards ----
+
+#[test]
+fn zero_payment_returns_validation_error_fa_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_assign(actor, 10_000);
+    let result = agg.record_payment(0, actor, Timestamp::now(), _g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Validation(_))));
+}
+
+#[test]
+fn negative_payment_returns_validation_error_fa_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_assign(actor, 10_000);
+    let result = agg.record_payment(-1, actor, Timestamp::now(), _g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Validation(_))));
+}
+
+#[test]
+fn overpayment_returns_conflict_fa_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_assign(actor, 10_000);
+    let result = agg.record_payment(10_001, actor, Timestamp::now(), _g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+#[test]
+fn payment_after_paid_returns_conflict_fa_i_4() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_assign(actor, 10_000);
+    agg.record_payment(10_000, actor, Timestamp::now(), _g.next_event_id())
+        .expect("full payment");
+    let result = agg.record_payment(1, actor, Timestamp::now(), _g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+// ---- FA I-4: cancel ----
+
+#[test]
+fn cancel_open_assignment_transitions_to_cancelled_fa_i_4() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_assign(actor, 10_000);
+    agg.cancel(actor, Timestamp::now(), _g.next_event_id())
+        .expect("cancel should succeed");
+    assert_eq!(agg.lifecycle_status, LifecycleStatus::Cancelled);
+}
+
+#[test]
+fn cancel_after_payment_returns_conflict_fa_i_4() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_assign(actor, 10_000);
+    agg.record_payment(3_000, actor, Timestamp::now(), _g.next_event_id())
+        .expect("partial payment");
+    let result = agg.cancel(actor, Timestamp::now(), _g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+#[test]
+fn cancel_after_cancelled_returns_conflict_fa_i_4() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_assign(actor, 10_000);
+    agg.cancel(actor, Timestamp::now(), _g.next_event_id())
+        .expect("first cancel");
+    let result = agg.cancel(actor, Timestamp::now(), _g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+#[test]
+fn cancel_after_paid_returns_conflict_fa_i_4() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_assign(actor, 10_000);
+    agg.record_payment(10_000, actor, Timestamp::now(), _g.next_event_id())
+        .expect("full payment");
+    let result = agg.cancel(actor, Timestamp::now(), _g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+// ---- service integration ----
+
+#[test]
+fn record_payment_service_emits_event_fa_i_3() {
+    let clock = educore_core::clock::SystemClock;
+    let g = SystemIdGen;
+    let (tenant, _g) = admin_context();
+    let school = tenant.school_id;
+    let actor = tenant.actor_id;
+    let agg = RealFeesAssign::fresh(
+        FeesAssignId::new(school, g.next_uuid()),
+        StudentId::new(school, g.next_uuid()),
+        FeesMasterId::new(school, g.next_uuid()),
+        AcademicYearId::new(school, g.next_uuid()),
+        10_000,
+        Currency::INR,
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+        actor,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("fresh");
+    let id = agg.id;
+    let cmd = RecordFeesAssignPaymentCommand {
+        tenant,
+        fees_assign_id: id,
+        amount_minor: 10_000,
+    };
+    let (updated, evt): (RealFeesAssign, FeesAssignPaymentRecorded) =
+        record_fees_assign_payment(agg, cmd, &clock, &g)
+            .expect("service should succeed");
+    assert_eq!(updated.lifecycle_status, LifecycleStatus::Paid);
+    assert_eq!(evt.amount_minor, 10_000);
+    assert_eq!(evt.paid_amount_minor, 10_000);
+    assert_eq!(evt.lifecycle_status, LifecycleStatus::Paid);
+    assert_eq!(
+        <FeesAssignPaymentRecorded as DomainEvent>::EVENT_TYPE,
+        "finance.fees_assign.payment_recorded"
+    );
+    assert_eq!(
+        <FeesAssignPaymentRecorded as DomainEvent>::AGGREGATE_TYPE,
+        "fees_assign"
+    );
+}
+
+#[test]
+fn cancel_service_emits_event_fa_i_4() {
+    let clock = educore_core::clock::SystemClock;
+    let g = SystemIdGen;
+    let (tenant, _g) = admin_context();
+    let school = tenant.school_id;
+    let actor = tenant.actor_id;
+    let agg = RealFeesAssign::fresh(
+        FeesAssignId::new(school, g.next_uuid()),
+        StudentId::new(school, g.next_uuid()),
+        FeesMasterId::new(school, g.next_uuid()),
+        AcademicYearId::new(school, g.next_uuid()),
+        10_000,
+        Currency::INR,
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+        actor,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("fresh");
+    let id = agg.id;
+    let cmd = CancelFeesAssignCommand {
+        tenant,
+        fees_assign_id: id,
+    };
+    let (updated, evt): (RealFeesAssign, FeesAssignCancelled) =
+        cancel_fees_assign(agg, cmd, &clock, &g).expect("service should succeed");
+    assert_eq!(updated.lifecycle_status, LifecycleStatus::Cancelled);
+    assert_eq!(evt.cancelled_by, actor);
+    assert_eq!(evt.lifecycle_status, LifecycleStatus::Cancelled);
+    assert_eq!(
+        <FeesAssignCancelled as DomainEvent>::EVENT_TYPE,
+        "finance.fees_assign.cancelled"
+    );
+}

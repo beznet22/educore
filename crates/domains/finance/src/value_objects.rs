@@ -1392,6 +1392,77 @@ impl std::str::FromStr for PaymentMode {
     }
 }
 
+// LifecycleStatus -- Wave 131 (FA I-3 + I-4)
+//
+// The lifecycle of a FeesAssign row. A fresh row is Open;
+// it transitions to Paid (via RecordFeesAssignPaymentCommand
+// when the paid_amount_minor reaches amount_minor) or to
+// Cancelled (via CancelFeesAssignCommand). The state machine
+// is enforced by `can_transition_to`. Terminal states (Paid,
+// Cancelled) cannot transition further -- this is the FA I-4
+// active_status-while-open invariant (when the row is in a
+// terminal state, the dispatcher must set `active_status`
+// to Retired via the standard retire path).
+//
+// FA I-3 cap on cumulative payments is enforced by the
+// aggregate's `record_payment` mutator (returns Conflict
+// when the cap is reached -- the row is in the Paid state).
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LifecycleStatus {
+    Open,
+    Paid,
+    Cancelled,
+}
+
+impl LifecycleStatus {
+    /// Lowercase representation used in event payload + parse.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Open => "open",
+            Self::Paid => "paid",
+            Self::Cancelled => "cancelled",
+        }
+    }
+
+    /// Lenient parse accepting common abbreviations.
+    #[must_use]
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "open" | "o" => Some(Self::Open),
+            "paid" | "p" => Some(Self::Paid),
+            "cancelled" | "canceled" | "c" => Some(Self::Cancelled),
+            _ => None,
+        }
+    }
+
+    /// FA I-4: only Open can transition to Paid or Cancelled.
+    /// Terminal states (Paid, Cancelled) cannot transition.
+    #[must_use]
+    pub const fn can_transition_to(self, to: Self) -> bool {
+        matches!(
+            (self, to),
+            (Self::Open, Self::Paid) | (Self::Open, Self::Cancelled)
+        )
+    }
+}
+
+impl std::fmt::Display for LifecycleStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl std::str::FromStr for LifecycleStatus {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Self::parse(s).ok_or_else(|| format!("unknown LifecycleStatus: {s}"))
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,

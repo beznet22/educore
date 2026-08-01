@@ -34,7 +34,7 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
 use crate::value_objects::{
     validate_discount_name, validate_donor_name, validate_ledger_name, AccountType, Amount,
-    AmountTransferId, ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
+    AmountTransferId, ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId, LifecycleStatus,
     BankStatementId,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId,
     DirectFeesInstallmentChildPaymentId,
@@ -8379,6 +8379,14 @@ pub struct RealFeesAssign {
     pub amount_minor: i64,
     pub currency: Currency,
     pub due_date: chrono::NaiveDate,
+    /// FA I-3: cumulative amount paid against this assignment.
+    /// Initialized to 0 in `fresh()`; bumped by `record_payment`.
+    /// The cap is `amount_minor` -- when `paid_amount_minor`
+    /// reaches `amount_minor`, the lifecycle transitions to Paid.
+    pub paid_amount_minor: i64,
+    /// FA I-3 + FA I-4: lifecycle state machine (Open -> Paid |
+    /// Cancelled). Terminal states cannot transition further.
+    pub lifecycle_status: LifecycleStatus,
     pub version: Version,
     pub etag: Etag,
     pub created_at: Timestamp,
@@ -8419,6 +8427,8 @@ impl RealFeesAssign {
             amount_minor,
             currency,
             due_date,
+            paid_amount_minor: 0,
+            lifecycle_status: LifecycleStatus::Open,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at: at,
@@ -8433,6 +8443,97 @@ impl RealFeesAssign {
 
     pub fn is_active(&self) -> bool {
         self.active_status == ActiveStatus::Active
+    }
+
+    /// Remaining balance owed against this assignment.
+    /// Returns 0 once the assignment is fully paid (or for any
+    /// terminal lifecycle state).
+    #[must_use]
+    pub fn balance_minor(&self) -> i64 {
+        (self.amount_minor - self.paid_amount_minor).max(0)
+    }
+
+    /// FA I-4 state machine predicate. Only Open can transition
+    /// to Paid or Cancelled. Terminal states (Paid, Cancelled)
+    /// cannot transition further.
+    #[must_use]
+    pub fn can_transition(&self, to: LifecycleStatus) -> bool {
+        self.lifecycle_status.can_transition_to(to)
+    }
+
+    /// FA I-3: record a payment against this assignment. The
+    /// cumulative `paid_amount_minor` is monotonically non-
+    /// decreasing and capped at `amount_minor`. Returns Conflict
+    /// on any of: (a) the payment amount is <= 0; (b) the
+    /// payment would push `paid_amount_minor` over
+    /// `amount_minor`; (c) the lifecycle is not Open. When the
+    /// cumulative reaches the cap, the lifecycle transitions to
+    /// Paid (FA I-4) and the row no longer accepts payments.
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn record_payment(
+        &mut self,
+        amount_minor: i64,
+        actor: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if amount_minor <= 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesAssign payment amount must be > 0 (FA I-3)",
+            ));
+        }
+        if !self.can_transition(LifecycleStatus::Paid) {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "FeesAssign cannot accept payment in state {:?} (FA I-4)",
+                self.lifecycle_status
+            )));
+        }
+        let new_total = self.paid_amount_minor.saturating_add(amount_minor);
+        if new_total > self.amount_minor {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "FeesAssign payment would exceed cap: paid={} amount={} (FA I-3)",
+                new_total, self.amount_minor
+            )));
+        }
+        self.paid_amount_minor = new_total;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.last_event_id = Some(event_id);
+        self.version = self.version.next();
+        if self.paid_amount_minor == self.amount_minor {
+            self.lifecycle_status = LifecycleStatus::Paid;
+        }
+        Ok(())
+    }
+
+    /// FA I-4: cancel an Open assignment. Returns Conflict if
+    /// the lifecycle is not Open. No state change if any
+    /// payments have already been recorded (the dispatcher must
+    /// reverse those payments first).
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn cancel(
+        &mut self,
+        actor: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if !self.can_transition(LifecycleStatus::Cancelled) {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "FeesAssign cannot be cancelled from state {:?} (FA I-4)",
+                self.lifecycle_status
+            )));
+        }
+        if self.paid_amount_minor > 0 {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesAssign cannot be cancelled: payments already recorded (FA I-4)",
+            ));
+        }
+        self.lifecycle_status = LifecycleStatus::Cancelled;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.last_event_id = Some(event_id);
+        self.version = self.version.next();
+        Ok(())
     }
 
     pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {

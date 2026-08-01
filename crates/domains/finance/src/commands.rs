@@ -643,6 +643,51 @@ impl ReadFeesAssignCommand {
         vec![Capability::FinanceFeesAssignRead]
     }
 }
+// -- Wave 131 -- FeesAssign state machine extensions --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordFeesAssignPaymentCommand {
+    pub tenant: TenantContext,
+    pub fees_assign_id: FeesAssignId,
+    pub amount_minor: i64,
+}
+
+impl RecordFeesAssignPaymentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignUpdate]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CancelFeesAssignCommand {
+    pub tenant: TenantContext,
+    pub fees_assign_id: FeesAssignId,
+}
+
+impl CancelFeesAssignCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignClose]
+    }
+}
+
+pub const FINANCE_FEES_ASSIGN_RECORD_PAYMENT_COMMAND_TYPE: &str =
+    "finance.fees_assign.record_payment";
+pub const FINANCE_FEES_ASSIGN_CANCEL_COMMAND_TYPE: &str = "finance.fees_assign.cancel";
+
+impl RecordFeesAssignPaymentCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FEES_ASSIGN_RECORD_PAYMENT_COMMAND_TYPE;
+}
+
+impl CancelFeesAssignCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_ASSIGN_CANCEL_COMMAND_TYPE;
+}
 // -- FeesInstallment --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

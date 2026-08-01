@@ -85,7 +85,7 @@ use crate::commands::{
     ReadFmFeesGroupCommand,
     ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
-    ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand, CreateDirectFeesInstallmentCommand, ReadDirectFeesInstallmentCommand, RetireDirectFeesInstallmentCommand, RetireFeesAssignDiscountCommand, CreateFeesAssignCommand, ReadFeesAssignCommand, RetireFeesAssignCommand,
+    ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand, CreateDirectFeesInstallmentCommand, ReadDirectFeesInstallmentCommand, RetireDirectFeesInstallmentCommand, RetireFeesAssignDiscountCommand, CreateFeesAssignCommand, ReadFeesAssignCommand, RetireFeesAssignCommand, RecordFeesAssignPaymentCommand, CancelFeesAssignCommand,
     CreateFeesInstallmentCommand, ReadFeesInstallmentCommand, RetireFeesInstallmentCommand,
     ApproveFmFeesInvoiceCommand, RejectFmFeesInvoiceCommand,
     RetireFmFeesTransactionCommand,
@@ -133,6 +133,7 @@ use crate::events::{
     FmFeesInvoiceApproved, FmFeesInvoiceRejected,
     FmFeesTypeCreated, FmFeesTypeRetired,
     BankPaymentSlipCreated, BankPaymentSlipApproved, BankPaymentSlipRejected, BankPaymentSlipRetired,
+    FeesAssignPaymentRecorded, FeesAssignCancelled,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
     WalletTransactionApprovalRejected,
@@ -150,7 +151,7 @@ use crate::value_objects::{
     FeesInvoiceId, FeesPaymentId,
     FeesGroupId, FeesInstallmentCreditId, FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesTypeKind, IncomeHeadId, InvoiceSettingId,
-    PaymentMode,
+    LifecycleStatus, PaymentMode,
     FeesAssignId, FeesDiscountId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, FeesInstallmentId, PaymentMethodKind, QuestionBankFeeId, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
@@ -1913,6 +1914,71 @@ where
     );
 
     Ok((agg, event))
+}
+
+// -- Wave 131 -- RealFeesAssign state machine service functions --
+
+/// FA I-3: record a payment against a `RealFeesAssign`. Transitions
+/// the lifecycle Open -> Paid if the cumulative reaches the cap.
+/// Returns Conflict on any of: (a) non-positive payment; (b) cap
+/// exceeded; (c) non-Open lifecycle state (FA I-4).
+#[allow(clippy::needless_pass_by_value)]
+pub fn record_fees_assign_payment<C, G>(
+    mut agg: RealFeesAssign,
+    cmd: RecordFeesAssignPaymentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesAssign, FeesAssignPaymentRecorded)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation = cmd.tenant.correlation_id;
+    agg.record_payment(cmd.amount_minor, cmd.tenant.actor_id, at, event_id)?;
+    let evt = FeesAssignPaymentRecorded::new(
+        cmd.fees_assign_id,
+        cmd.amount_minor,
+        agg.paid_amount_minor,
+        agg.lifecycle_status,
+        cmd.tenant.actor_id,
+        event_id,
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok((agg, evt))
+}
+
+/// FA I-4: cancel an Open `RealFeesAssign`. Returns Conflict if
+/// the lifecycle is not Open or if any payments have already been
+/// recorded.
+#[allow(clippy::needless_pass_by_value)]
+pub fn cancel_fees_assign<C, G>(
+    mut agg: RealFeesAssign,
+    cmd: CancelFeesAssignCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesAssign, FeesAssignCancelled)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation = cmd.tenant.correlation_id;
+    agg.cancel(cmd.tenant.actor_id, at, event_id)?;
+    let evt = FeesAssignCancelled::new(
+        cmd.fees_assign_id,
+        agg.lifecycle_status,
+        cmd.tenant.actor_id,
+        event_id,
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok((agg, evt))
 }
 
 // Wave 96 DirectFeesInstallmentChildPayment service functions appended below at the end of the file (before #[cfg(test)]).

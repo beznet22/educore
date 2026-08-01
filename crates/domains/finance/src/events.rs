@@ -26,7 +26,7 @@ use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
     AccountType, AmountTransferId, ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
-    BankStatementId, FmFeesTypeKind, PaymentMode, StatementType,
+    BankStatementId, FmFeesTypeKind, LifecycleStatus, PaymentMode, StatementType,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
     DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId, FeesInstallmentCreditId, FeesInvoiceSettingId,
@@ -9127,6 +9127,127 @@ impl DomainEvent for BankPaymentSlipRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.bank_payment_slip_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// -- Wave 131 -- FeesAssignPaymentRecorded (FA I-3) --
+//
+// Emitted when a payment is recorded against a FeesAssign.
+// Carries the FA I-3 invariant values: cumulative
+// `paid_amount_minor` + the new `lifecycle_status` (which may
+// have transitioned from Open to Paid if the cumulative
+// reached the cap).
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesAssignPaymentRecorded {
+    pub fees_assign_id: FeesAssignId,
+    pub amount_minor: i64,
+    pub paid_amount_minor: i64,
+    pub lifecycle_status: LifecycleStatus,
+    pub recorded_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesAssignPaymentRecorded {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_assign_id: FeesAssignId,
+        amount_minor: i64,
+        paid_amount_minor: i64,
+        lifecycle_status: LifecycleStatus,
+        recorded_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_assign_id,
+            amount_minor,
+            paid_amount_minor,
+            lifecycle_status,
+            recorded_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesAssignPaymentRecorded {
+    const EVENT_TYPE: &'static str = "finance.fees_assign.payment_recorded";
+    const AGGREGATE_TYPE: &'static str = "fees_assign";
+    const SCHEMA_VERSION: u32 = 1;
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_assign_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_assign_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// -- Wave 131 -- FeesAssignCancelled (FA I-4) --
+//
+// Emitted when an Open FeesAssign is cancelled. Carries the
+// new lifecycle_status (Cancelled) + the actor who cancelled.
+// Only valid from the Open state -- terminal states cannot be
+// cancelled.
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesAssignCancelled {
+    pub fees_assign_id: FeesAssignId,
+    pub lifecycle_status: LifecycleStatus,
+    pub cancelled_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesAssignCancelled {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_assign_id: FeesAssignId,
+        lifecycle_status: LifecycleStatus,
+        cancelled_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_assign_id,
+            lifecycle_status,
+            cancelled_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesAssignCancelled {
+    const EVENT_TYPE: &'static str = "finance.fees_assign.cancelled";
+    const AGGREGATE_TYPE: &'static str = "fees_assign";
+    const SCHEMA_VERSION: u32 = 1;
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_assign_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_assign_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at
