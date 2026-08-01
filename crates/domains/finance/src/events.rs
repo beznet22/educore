@@ -7310,6 +7310,140 @@ impl DomainEvent for FeesInstallmentAssignDiscountRetired {
 }
 
 
+// -- Wave 106 — PaymentMethod (cash / bank / cheque / card / mobile wallet / gateway) --
+//
+// PM I-1: method unique within school. Both `PaymentMethodCreated`
+// (which carries the name + kind + description downstream) and
+// `PaymentMethodRetired` (which is a tombstone preserving the
+// (school_id, name) scope-key tuple for legal-record retention)
+// are emitted by `create_payment_method` / `retire_payment_method`
+// service functions.
+
+/// Emitted when a `PaymentMethod` is first created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PaymentMethodCreated {
+    /// Aggregate identity.
+    pub payment_method_id: PaymentMethodId,
+    /// Display name (PM I-1 — scope-key; dispatcher-enforced
+    /// uniqueness via (school_id, name) tuple).
+    pub name: String,
+    /// Payment kind (cash / bank / cheque / card / mobile wallet
+    /// / gateway).
+    pub kind: PaymentMethodKind,
+    /// Optional human-readable description.
+    pub description: Option<String>,
+    /// Created-by user.
+    pub created_by: UserId,
+    /// Standard event footer: event id.
+    pub event_id: EventId,
+    /// Standard event footer: correlation id.
+    pub correlation_id: CorrelationId,
+    /// Standard event footer: occurred-at timestamp.
+    pub occurred_at: Timestamp,
+}
+
+impl PaymentMethodCreated {
+    /// Construct a new `PaymentMethodCreated` event.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        payment_method_id: PaymentMethodId,
+        name: String,
+        kind: PaymentMethodKind,
+        description: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            payment_method_id,
+            name,
+            kind,
+            description,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for PaymentMethodCreated {
+    const EVENT_TYPE: &'static str = "finance.payment_method.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "payment_method";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.payment_method_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.payment_method_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `PaymentMethod` is retired (tombstone;
+/// preserves `name` + `kind` in audit footer for legal-record
+/// retention). The `name` is NOT carried on the event (it is
+/// preserved in the aggregate's audit footer + the
+/// `(school_id, name)` scope-key tuple survives via the
+/// `payment_method_id.school_id()` accessor).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PaymentMethodRetired {
+    /// Aggregate identity.
+    pub payment_method_id: PaymentMethodId,
+    /// Retired-by user.
+    pub retired_by: UserId,
+    /// Standard event footer: event id.
+    pub event_id: EventId,
+    /// Standard event footer: correlation id.
+    pub correlation_id: CorrelationId,
+    /// Standard event footer: occurred-at timestamp.
+    pub occurred_at: Timestamp,
+}
+
+impl PaymentMethodRetired {
+    /// Construct a new `PaymentMethodRetired` event.
+    pub fn new(
+        payment_method_id: PaymentMethodId,
+        retired_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            payment_method_id,
+            retired_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for PaymentMethodRetired {
+    const EVENT_TYPE: &'static str = "finance.payment_method.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "payment_method";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.payment_method_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.payment_method_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,

@@ -941,9 +941,16 @@ impl DeleteDirectFeesReminderCommand {
 }
 // -- PaymentMethod --
 
+/// Stable command type identifier for [`RetirePaymentMethodCommand`].
+/// (FINANCE_PAYMENT_METHOD_CREATE/UPDATE/DELETE/READ_COMMAND_TYPE
+/// are already declared earlier in this file as part of the
+/// pre-existing Phase 7 PaymentMethod command set.)
+pub const FINANCE_PAYMENT_METHOD_RETIRE_COMMAND_TYPE: &str = "finance.payment_method.retire";
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreatePaymentMethodCommand {
     pub tenant: TenantContext,
+    pub payment_method_id: PaymentMethodId,
     pub name: String,
     pub kind: PaymentMethodKind,
     pub description: Option<String>,
@@ -951,6 +958,20 @@ pub struct CreatePaymentMethodCommand {
 
 
 impl CreatePaymentMethodCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinancePaymentMethodCreate]
+    }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetirePaymentMethodCommand {
+    pub tenant: TenantContext,
+    pub payment_method_id: PaymentMethodId,
+}
+
+
+impl RetirePaymentMethodCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {

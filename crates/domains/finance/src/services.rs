@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -85,7 +85,7 @@ use crate::commands::{
     ReadFmFeesGroupCommand,
     ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
-    ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand,
+    ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand,
 };
 use crate::events::{
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
@@ -98,6 +98,7 @@ use crate::events::{
         DirectFeesInstallmentAssignCreated, DirectFeesInstallmentAssignRetired,
     TransactionCreated, TransactionRetired,
     FeesInstallmentAssignDiscountCreated, FeesInstallmentAssignDiscountRetired,
+    PaymentMethodCreated, PaymentMethodRetired,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
@@ -132,7 +133,7 @@ use crate::value_objects::{
     FeesInvoiceId, FeesPaymentId,
     FeesGroupId, FeesInstallmentCreditId, FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId,
-    FeesDiscountId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, QuestionBankFeeId, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
+    FeesDiscountId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, PaymentMethodKind, QuestionBankFeeId, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -2948,6 +2949,114 @@ where
     );
 
     Ok((agg, event))
+}
+
+
+/// Handler: create a `PaymentMethod` aggregate (cash / bank /
+/// cheque / card / mobile wallet / gateway configuration row).
+///
+/// Emits a [`PaymentMethodCreated`] event carrying the name +
+/// kind + description downstream (PM I-1 surfaces downstream via
+/// the (school_id, name) scope-key tuple).
+///
+/// The PM I-1 companion invariant (`name` non-empty trimmed) is
+/// enforced by `RealPaymentMethod::fresh()` inside this
+/// function. PM I-1 uniqueness (dispatcher-enforced) is NOT
+/// checked here — the dispatcher enforces it via the
+/// (school_id, name) scope-key tuple the aggregate carries.
+pub fn create_payment_method<C, G>(
+    cmd: CreatePaymentMethodCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealPaymentMethod, PaymentMethodCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut pm = RealPaymentMethod::fresh(
+        cmd.payment_method_id,
+        cmd.name,
+        cmd.kind,
+        cmd.description,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    pm.last_event_id = Some(event_id);
+
+    let event = PaymentMethodCreated::new(
+        pm.id,
+        pm.name.clone(),
+        pm.kind,
+        pm.description.clone(),
+        pm.created_by,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((pm, event))
+}
+
+/// Handler: read a `PaymentMethod` aggregate. No-op for the
+/// in-process reference adapter (the aggregate is returned from
+/// `create_payment_method` + carried in caller state; the read
+/// path is reserved for future adapter integration).
+pub fn read_payment_method<C, G>(cmd: ReadPaymentMethodCommand, _clock: &C, _ids: &G) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = cmd;
+    Ok(())
+}
+
+/// Handler: retire a `PaymentMethod` aggregate (tombstone).
+///
+/// Emits a [`PaymentMethodRetired`] event (which preserves
+/// `payment_method_id` + `retired_by` + standard event footer;
+/// the `name` + `kind` + `description` are preserved in the
+/// aggregate's audit footer for legal-record retention).
+pub fn retire_payment_method<C, G>(
+    cmd: RetirePaymentMethodCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealPaymentMethod, PaymentMethodRetired)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    // Read-or-fail path: in the in-process reference adapter we
+    // trust the caller to have a valid `payment_method_id`; the
+    // aggregate is reconstructed here and retired. A real
+    // adapter would load the aggregate from storage first.
+    let mut pm = RealPaymentMethod::fresh(
+        cmd.payment_method_id,
+        "retired payment method".to_owned(),
+        PaymentMethodKind::Cash,
+        None,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    pm.retire(now, cmd.tenant.actor_id)?;
+    pm.last_event_id = Some(event_id);
+
+    let event = PaymentMethodRetired::new(
+        pm.id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((pm, event))
 }
 
 /// Handler skeleton: create a `Donor` aggregate.

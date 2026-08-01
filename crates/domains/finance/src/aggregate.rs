@@ -1935,6 +1935,140 @@ impl RealIncomeHead {
     }
 }
 
+// -- Wave 106 — RealPaymentMethod (cash / bank / cheque / card / mobile wallet / gateway) --
+//
+// PM I-1: method unique within school (the (school_id, name)
+// scope-key tuple pins a PaymentMethod to a single name within
+// the school — a school cannot have two PaymentMethods named
+// "Tuition Cash" with the same name; uniqueness is enforced by
+// the dispatcher since the aggregate carries the tuple as a
+// required field).
+//
+// PM I-2 (companion, NOT in this drop): gateway_id required for
+// gateway-backed PaymentMethods — not enforced at fresh()
+// because PaymentMethodKind already constrains the variant set;
+// see services.rs:1116+ where gateway-backed payment paths check
+// payment_method_id is Some.
+//
+// PM I-3 (companion, NOT in this drop): account_id compatible —
+// not enforced at fresh() because compatibility is enforced by
+// the dispatcher's transaction composition logic.
+//
+// Companion invariants enforced at fresh():
+//   * `name` must be non-empty after trimming whitespace.
+//   * `kind` must be a valid PaymentMethodKind variant.
+
+/// The [`PaymentMethod`] aggregate — a school's payment
+/// instrument configuration (cash / bank / cheque / card /
+/// mobile wallet / gateway).
+///
+/// `RealPaymentMethod` carries a (school_id, name) scope-key
+/// tuple that the dispatcher uses to enforce uniqueness
+/// (PM I-1). The aggregate is otherwise append-only on `name`
+/// and `kind`: corrections require retire + create-new. This
+/// mirrors the accounting reality that payment methods are
+/// configuration rows that should not change silently.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealPaymentMethod {
+    /// Aggregate identity.
+    pub id: PaymentMethodId,
+    /// School anchor (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// Display name (PM I-1 — scope-key; must be unique within
+    /// the school per the dispatcher-enforced uniqueness
+    /// invariant).
+    pub name: String,
+    /// Payment kind (cash / bank / cheque / card / mobile wallet
+    /// / gateway). Drives downstream transaction validation.
+    pub kind: PaymentMethodKind,
+    /// Optional human-readable description (e.g. "Primary bank
+    /// account for tuition payments").
+    pub description: Option<String>,
+    /// Standard audit footer: optimistic concurrency version.
+    pub version: Version,
+    /// Standard audit footer: etag.
+    pub etag: Etag,
+    /// Standard audit footer: created timestamp.
+    pub created_at: Timestamp,
+    /// Standard audit footer: last updated timestamp.
+    pub updated_at: Timestamp,
+    /// Standard audit footer: created-by user.
+    pub created_by: UserId,
+    /// Standard audit footer: last updated-by user.
+    pub updated_by: UserId,
+    /// Standard audit footer: active status.
+    pub active_status: ActiveStatus,
+    /// Standard audit footer: last emitted event id.
+    pub last_event_id: Option<EventId>,
+    /// Standard audit footer: request correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealPaymentMethod {
+    /// Construct a fresh `RealPaymentMethod` aggregate.
+    ///
+    /// Enforces PM I-1 companion invariants:
+    /// `name` non-empty after trimming whitespace. PM I-1
+    /// uniqueness (dispatcher-enforced) is NOT checked here —
+    /// the dispatcher enforces it via the (school_id, name)
+    /// scope-key tuple the aggregate carries.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: PaymentMethodId,
+        name: String,
+        kind: PaymentMethodKind,
+        description: Option<String>,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // PM I-1 companion: name non-empty trimmed.
+        if name.trim().is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "PaymentMethod name must be non-empty after trimming",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            name,
+            kind,
+            description,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    /// Whether the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    /// Retire the aggregate (tombstone; preserves `name` + `kind`
+    /// + `description` in the audit footer for legal-record
+    /// retention).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "PaymentMethod is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
 // =============================================================================
 // RealFmFeesGroup — Wave 66 (per-aggregate wave pattern from Wave 65)
 // =============================================================================

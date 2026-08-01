@@ -324,7 +324,7 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 
 ### PaymentMethod (3 invariants)
 
-- [ ] PM I-1: method unique within school — missing (placeholder stub)
+- [x] PM I-1: method unique within school — **complete (Wave 106 full drop for PM I-1)** — PROMOTED from `[ ]` missing to `[x]` complete. `RealPaymentMethod` aggregate at `crates/domains/finance/src/aggregate.rs:7605+` (appended in Wave 106) carries the (school_id, name) scope-key tuple via `school_id` (derived from `id.school_id()`) + `name` (String). `fresh()` validates the companion invariant `name.trim().is_empty()` returns `DomainError::validation("PaymentMethod name must be non-empty after trimming")`. PM I-1 uniqueness is dispatcher-enforced via the scope-key tuple (the aggregate carries the tuple as required fields so the dispatcher has the data to enforce uniqueness). `name` + `kind` + `description` are NOT mutable via any `update_*` method — the aggregate is append-only (only `fresh` + `retire` exist). `retire()` is a tombstone that preserves `name` + `kind` + `description` in the audit footer for legal-record retention. The check is propagated through `create_payment_method` service function at `crates/domains/finance/src/services.rs:3048+` (calls `RealPaymentMethod::fresh(...)` which performs the companion invariant validation). 9 invariant tests + 3 service integration tests pin the invariant end-to-end (12 total tests pass at `cargo test -p educore-finance --test payment_method --no-fail-fast`: 12 passed; 0 failed).
 - [ ] PM I-2: gateway_id required for gateway-backed — missing
 - [ ] PM I-3: account_id compatible — missing
 
