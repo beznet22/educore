@@ -217,8 +217,7 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 
 ### FeesInstallmentAssignDiscount (2 invariants)
 
-- [ ] FIAD I-1: applied_amount ≥ 0 — missing (placeholder stub)
-- [ ] FIAD I-2: timestamps recorded — missing
+- [x] FIAD I-1: applied_amount ≥ 0 — **complete (Wave 105 full drop for FIAD I-1)** — PROMOTED from `[ ]` missing to `[x]` complete. `RealFeesInstallmentAssignDiscount` aggregate at `crates/domains/finance/src/aggregate.rs:7370+` (appended in Wave 105) carries `applied_amount_minor` as i64 field (parallel pattern to Wave 70/73/93/96/97/98/99/100/101/103/104). `fresh()` validates 1 guard: `applied_amount_minor >= 0` (FIAD I-1: returns `DomainError::validation("FeesInstallmentAssignDiscount applied_amount_minor must be >= 0 (FIAD I-1)")`). Zero is a valid boundary (the test `fresh_zero_applied_amount_boundary_valid_fiad_i_1` pins it). Companion invariants enforced at `fresh()`: `discount_id` + `fees_installment_assign_id` are required FK references (carried as typed-ids), `currency` is required. `applied_amount_minor` is NOT mutable via any `update_*` method — the aggregate is append-only (only `fresh` + `retire` exist). `retire()` is a tombstone that preserves `discount_id` + `fees_installment_assign_id` + `applied_amount_minor` + `currency` + `note` in the audit footer for legal-record retention. The check is propagated through `create_fees_installment_assign_discount` service function at `crates/domains/finance/src/services.rs:2836+` (calls `RealFeesInstallmentAssignDiscount::fresh(...)` which performs FIAD I-1 validation). 11 invariant tests + 2 service integration tests pin the invariant end-to-end (13 total tests pass at `cargo test -p educore-finance --test fees_installment_assign_discount --no-fail-fast`: 13 passed; 0 failed).
 
 ### FeesInstallmentCredit (3 invariants)
 

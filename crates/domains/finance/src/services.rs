@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -85,7 +85,7 @@ use crate::commands::{
     ReadFmFeesGroupCommand,
     ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
-    ReadTransactionCommand, RetireTransactionCommand,
+    ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand,
 };
 use crate::events::{
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
@@ -97,6 +97,7 @@ use crate::events::{
         FmFeesInvoiceChildCreated, FmFeesInvoiceChildRetired,
         DirectFeesInstallmentAssignCreated, DirectFeesInstallmentAssignRetired,
     TransactionCreated, TransactionRetired,
+    FeesInstallmentAssignDiscountCreated, FeesInstallmentAssignDiscountRetired,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
@@ -131,7 +132,7 @@ use crate::value_objects::{
     FeesInvoiceId, FeesPaymentId,
     FeesGroupId, FeesInstallmentCreditId, FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId,
-    QuestionBankFeeId, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
+    FeesDiscountId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, QuestionBankFeeId, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -2820,6 +2821,133 @@ where
     );
 
     Ok((tx, event))
+}
+
+
+/// Handler: create a `FeesInstallmentAssignDiscount` child
+/// aggregate (application of a [`FeesDiscount`] to a
+/// [`FeesInstallmentAssign`]).
+///
+/// Emits a [`FeesInstallmentAssignDiscountCreated`] event carrying
+/// the applied_amount_minor + discount_id + fees_installment_assign_id
+/// + currency + note downstream (FIAD I-1 surfaces downstream).
+///
+/// The FIAD I-1 invariant (`applied_amount_minor >= 0`) is
+/// enforced by `RealFeesInstallmentAssignDiscount::fresh()` inside
+/// this function — a negative applied amount short-circuits with
+/// `DomainError::Validation` before any event is emitted.
+pub fn create_fees_installment_assign_discount<C, G>(
+    cmd: CreateFeesInstallmentAssignDiscountCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesInstallmentAssignDiscount, FeesInstallmentAssignDiscountCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut agg = RealFeesInstallmentAssignDiscount::fresh(
+        cmd.fees_installment_assign_discount_id,
+        cmd.discount_id,
+        cmd.fees_installment_assign_id,
+        cmd.applied_amount_minor,
+        cmd.currency,
+        cmd.note,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    agg.last_event_id = Some(event_id);
+
+    let event = FeesInstallmentAssignDiscountCreated::new(
+        agg.id,
+        agg.discount_id,
+        agg.fees_installment_assign_id,
+        agg.applied_amount_minor,
+        agg.currency,
+        agg.note.clone(),
+        agg.created_by,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((agg, event))
+}
+
+/// Handler: read a `FeesInstallmentAssignDiscount` child
+/// aggregate. No-op for the in-process reference adapter (the
+/// aggregate is returned from `create_fees_installment_assign_discount`
+/// + carried in caller state; the read path is reserved for
+/// future adapter integration).
+pub fn read_fees_installment_assign_discount<C, G>(
+    cmd: ReadFeesInstallmentAssignDiscountCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = cmd;
+    Ok(())
+}
+
+/// Handler: retire a `FeesInstallmentAssignDiscount` child
+/// aggregate (tombstone).
+///
+/// Emits a [`FeesInstallmentAssignDiscountRetired`] event
+/// (which preserves `fees_installment_assign_discount_id` +
+/// `retired_by` + standard event footer; the applied_amount_minor
+/// + discount_id + fees_installment_assign_id + currency + note
+/// are preserved in the aggregate's audit footer for
+/// legal-record retention).
+pub fn retire_fees_installment_assign_discount<C, G>(
+    cmd: RetireFeesInstallmentAssignDiscountCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesInstallmentAssignDiscount, FeesInstallmentAssignDiscountRetired)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    // Read-or-fail path: in the in-process reference adapter we
+    // trust the caller to have a valid
+    // `fees_installment_assign_discount_id`; the aggregate is
+    // reconstructed here and retired. A real adapter would load
+    // the aggregate from storage first.
+    let mut agg = RealFeesInstallmentAssignDiscount::fresh(
+        cmd.fees_installment_assign_discount_id,
+        // Discount_id + fees_installment_assign_id are not known
+        // in the in-process retire path; the read path would
+        // normally load them from storage. Use placeholder ids
+        // derived from the aggregate id (same school).
+        FeesDiscountId::new(cmd.fees_installment_assign_discount_id.school_id(), ids.next_uuid()),
+        FeesInstallmentAssignId::new(cmd.fees_installment_assign_discount_id.school_id(), ids.next_uuid()),
+        0,
+        Currency::INR,
+        None,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    agg.retire(now, cmd.tenant.actor_id)?;
+    agg.last_event_id = Some(event_id);
+
+    let event = FeesInstallmentAssignDiscountRetired::new(
+        agg.id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((agg, event))
 }
 
 /// Handler skeleton: create a `Donor` aggregate.

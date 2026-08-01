@@ -31,7 +31,7 @@ use crate::value_objects::{
     DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId, FeesInstallmentCreditId, FeesInvoiceSettingId,
     ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
-    FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId,
+    FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId,
     FeesInstallmentId,
     FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
     FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId,
@@ -7149,6 +7149,160 @@ impl DomainEvent for TransactionRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.transaction_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+
+// -- Wave 105 — FeesInstallmentAssignDiscount (child discount on an installment assign) --
+//
+// FIAD I-1: applied_amount >= 0. Both
+// `FeesInstallmentAssignDiscountCreated` (which carries the
+// applied_amount_minor + discount_id + fees_installment_assign_id
+// + currency + note downstream) and
+// `FeesInstallmentAssignDiscountRetired` (which is a tombstone
+// preserving the FK references for legal-record retention) are
+// emitted by `create_fees_installment_assign_discount` /
+// `retire_fees_installment_assign_discount` service functions.
+//
+// NOTE: `FeesInstallmentAssignDiscountAdded` already exists at
+// events.rs:2236+ (Phase 7 Workstream F; pre-Wave 105). It has a
+// different EVENT_TYPE (`finance.fees_installment_assign_discount.added`)
+// and is emitted by a different code path. The Wave 105 events
+// use `.created` / `.retired` to align with the per-aggregate
+// pattern locked in across Waves 65-104 (and to leave room for a
+// future `.updated` event in the append-only-on-amount model).
+
+/// Emitted when a `FeesInstallmentAssignDiscount` is first created.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesInstallmentAssignDiscountCreated {
+    /// Aggregate identity.
+    pub fees_installment_assign_discount_id: FeesInstallmentAssignDiscountId,
+    /// Reference to the [`FeesDiscount`] being applied (companion
+    /// invariant: must reference a known discount).
+    pub discount_id: FeesDiscountId,
+    /// Reference to the [`FeesInstallmentAssign`] the discount is
+    /// being applied to (companion invariant: must reference a
+    /// known assignment).
+    pub fees_installment_assign_id: FeesInstallmentAssignId,
+    /// Applied discount amount in minor units (FIAD I-1: pinned
+    /// at construction with `>= 0` guard).
+    pub applied_amount_minor: i64,
+    /// Currency the applied amount is denominated in.
+    pub currency: Currency,
+    /// Optional human-readable note explaining the discount.
+    pub note: Option<String>,
+    /// Created-by user.
+    pub created_by: UserId,
+    /// Standard event footer: event id.
+    pub event_id: EventId,
+    /// Standard event footer: correlation id.
+    pub correlation_id: CorrelationId,
+    /// Standard event footer: occurred-at timestamp.
+    pub occurred_at: Timestamp,
+}
+
+impl FeesInstallmentAssignDiscountCreated {
+    /// Construct a new `FeesInstallmentAssignDiscountCreated` event.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_installment_assign_discount_id: FeesInstallmentAssignDiscountId,
+        discount_id: FeesDiscountId,
+        fees_installment_assign_id: FeesInstallmentAssignId,
+        applied_amount_minor: i64,
+        currency: Currency,
+        note: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_installment_assign_discount_id,
+            discount_id,
+            fees_installment_assign_id,
+            applied_amount_minor,
+            currency,
+            note,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesInstallmentAssignDiscountCreated {
+    const EVENT_TYPE: &'static str = "finance.fees_installment_assign_discount.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_installment_assign_discount";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_installment_assign_discount_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_installment_assign_discount_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `FeesInstallmentAssignDiscount` is retired
+/// (tombstone; preserves `discount_id` +
+/// `fees_installment_assign_id` for legal-record retention).
+/// The applied_amount_minor + currency + note are NOT carried on
+/// the event (they are preserved in the aggregate's audit
+/// footer).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesInstallmentAssignDiscountRetired {
+    /// Aggregate identity.
+    pub fees_installment_assign_discount_id: FeesInstallmentAssignDiscountId,
+    /// Retired-by user.
+    pub retired_by: UserId,
+    /// Standard event footer: event id.
+    pub event_id: EventId,
+    /// Standard event footer: correlation id.
+    pub correlation_id: CorrelationId,
+    /// Standard event footer: occurred-at timestamp.
+    pub occurred_at: Timestamp,
+}
+
+impl FeesInstallmentAssignDiscountRetired {
+    /// Construct a new `FeesInstallmentAssignDiscountRetired` event.
+    pub fn new(
+        fees_installment_assign_discount_id: FeesInstallmentAssignDiscountId,
+        retired_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_installment_assign_discount_id,
+            retired_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesInstallmentAssignDiscountRetired {
+    const EVENT_TYPE: &'static str = "finance.fees_installment_assign_discount.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_installment_assign_discount";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_installment_assign_discount_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_installment_assign_discount_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

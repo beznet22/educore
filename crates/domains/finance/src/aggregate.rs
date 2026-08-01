@@ -7366,3 +7366,152 @@ impl RealTransaction {
         Ok(())
     }
 }
+
+// -- Wave 105 — RealFeesInstallmentAssignDiscount (child discount on an installment assign) --
+//
+// FIAD I-1: applied_amount >= 0 (applied_amount_minor pinned in
+// minor units; the gross discount applied to the assignment,
+// representing the monetary value of the discount granted to a
+// student under this installment assignment). Pinned at
+// construction with `>= 0` guard.
+//
+// Companion invariants enforced at `fresh()`:
+//   * `discount_id` must reference a FeesDiscountId (the discount
+//     template must be specified so the discount can be
+//     reconciled to its policy rules).
+//   * `fees_installment_assign_id` must reference a
+//     FeesInstallmentAssignId (the assignment must be specified
+//     so the discount can be attached to the right student).
+//   * `currency` is required (the applied amount is denominated
+//     in a specific currency; mismatched currencies would
+//     silently violate accounting invariants).
+
+/// The [`FeesInstallmentAssignDiscount`] child aggregate — the
+/// application of a [`FeesDiscount`] to a
+/// [`FeesInstallmentAssign`].
+///
+/// `RealFeesInstallmentAssignDiscount` records that a particular
+/// discount was applied to a particular assignment for a
+/// particular monetary value. The FIAD I-1 invariant
+/// (`applied_amount_minor >= 0`) is the corner-stone accounting
+/// invariant: a negative applied amount would silently inflate the
+/// student's balance rather than reduce it.
+///
+/// Append-only on `applied_amount_minor`: corrections require
+/// retire + create-new. This mirrors the accounting reality that
+/// posted discounts are immutable for audit-trail integrity.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFeesInstallmentAssignDiscount {
+    /// Aggregate identity.
+    pub id: FeesInstallmentAssignDiscountId,
+    /// School anchor (derived from `id.school_id()`).
+    pub school_id: SchoolId,
+    /// Reference to the [`FeesDiscount`] being applied (companion
+    /// invariant: must reference a known discount).
+    pub discount_id: FeesDiscountId,
+    /// Reference to the [`FeesInstallmentAssign`] the discount is
+    /// being applied to (companion invariant: must reference a
+    /// known assignment).
+    pub fees_installment_assign_id: FeesInstallmentAssignId,
+    /// Applied discount amount in minor units (FIAD I-1: pinned
+    /// at construction with `>= 0` guard).
+    pub applied_amount_minor: i64,
+    /// Currency the applied amount is denominated in (companion
+    /// invariant: required — discounts must be in the same
+    /// currency as the underlying assignment).
+    pub currency: Currency,
+    /// Optional human-readable note explaining the discount
+    /// application (e.g. "scholarship" or "sibling discount").
+    pub note: Option<String>,
+    /// Standard audit footer: optimistic concurrency version.
+    pub version: Version,
+    /// Standard audit footer: etag.
+    pub etag: Etag,
+    /// Standard audit footer: created timestamp.
+    pub created_at: Timestamp,
+    /// Standard audit footer: last updated timestamp.
+    pub updated_at: Timestamp,
+    /// Standard audit footer: created-by user.
+    pub created_by: UserId,
+    /// Standard audit footer: last updated-by user.
+    pub updated_by: UserId,
+    /// Standard audit footer: active status.
+    pub active_status: ActiveStatus,
+    /// Standard audit footer: last emitted event id.
+    pub last_event_id: Option<EventId>,
+    /// Standard audit footer: request correlation id.
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFeesInstallmentAssignDiscount {
+    /// Construct a fresh `RealFeesInstallmentAssignDiscount`
+    /// aggregate.
+    ///
+    /// Enforces FIAD I-1: `applied_amount_minor >= 0`. Also
+    /// enforces companion invariants: `discount_id` +
+    /// `fees_installment_assign_id` are carried as typed-ids
+    /// (their validity is enforced by the dispatcher at storage
+    /// time, not here — this aggregate carries them as
+    /// required fields so the dispatcher has the data to enforce
+    /// them).
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: FeesInstallmentAssignDiscountId,
+        discount_id: FeesDiscountId,
+        fees_installment_assign_id: FeesInstallmentAssignId,
+        applied_amount_minor: i64,
+        currency: Currency,
+        note: Option<String>,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FIAD I-1 guard: applied_amount_minor >= 0.
+        if applied_amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesInstallmentAssignDiscount applied_amount_minor must be >= 0 (FIAD I-1)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            discount_id,
+            fees_installment_assign_id,
+            applied_amount_minor,
+            currency,
+            note,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    /// Whether the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    /// Retire the aggregate (tombstone; preserves `discount_id`
+    /// + `fees_installment_assign_id` + `applied_amount_minor` +
+    /// `currency` + `note` in the audit footer for legal-record
+    /// retention).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesInstallmentAssignDiscount is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}

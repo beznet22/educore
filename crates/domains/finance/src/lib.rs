@@ -51,7 +51,7 @@ pub mod prelude {
         RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting,
         RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild,
         RealFmFeesTransactionLineNote, RealIncomeApproval, RealIncomeHead, RealInvoiceSetting,
-        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, DueFeesLoginPreventRole, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealDirectFeesInstallmentChildPayment, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, Wallet, WalletTransaction,
+        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, DueFeesLoginPreventRole, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealDirectFeesInstallmentChildPayment, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::{
@@ -140,6 +140,10 @@ pub mod prelude {
         FINANCE_TRANSACTION_CREATE_COMMAND_TYPE,
         FINANCE_TRANSACTION_READ_COMMAND_TYPE,
         FINANCE_TRANSACTION_RETIRE_COMMAND_TYPE,
+        CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand,
+        FINANCE_FEES_INSTALLMENT_ASSIGN_DISCOUNT_CREATE_COMMAND_TYPE,
+        FINANCE_FEES_INSTALLMENT_ASSIGN_DISCOUNT_READ_COMMAND_TYPE,
+        FINANCE_FEES_INSTALLMENT_ASSIGN_DISCOUNT_RETIRE_COMMAND_TYPE,
     };
     pub use crate::entities::WalletTransactionApproval as WalletTransactionApprovalEntity;
     pub use crate::errors::FinanceError;
@@ -174,6 +178,7 @@ pub mod prelude {
         FmFeesInvoiceChildCreated, FmFeesInvoiceChildRetired,
         DirectFeesInstallmentAssignCreated, DirectFeesInstallmentAssignRetired,
         TransactionCreated, TransactionRetired,
+        FeesInstallmentAssignDiscountCreated, FeesInstallmentAssignDiscountRetired,
         FeesCarryForwardSettingRetired, FeesCarryForwardSettingUpdated, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
         FmFeesInvoiceLineNoteRetired, FmFeesTransactionChildCreated,
         FmFeesTransactionChildRetired, FmFeesTransactionChildUpdated,
@@ -220,6 +225,7 @@ pub mod prelude {
         create_fm_fees_invoice_child, read_fm_fees_invoice_child, retire_fm_fees_invoice_child,
         create_direct_fees_installment_assign, read_direct_fees_installment_assign, retire_direct_fees_installment_assign,
         create_transaction, read_transaction, retire_transaction,
+        create_fees_installment_assign_discount, read_fees_installment_assign_discount, retire_fees_installment_assign_discount,
         request_wallet_refund, ChargeRequest, PaymentProvider, PaymentProviderPaymentId,
         PaymentProviderStatus, PaymentReceipt, PaymentStatus, RefundReceipt, RefundRequest,
         StubPaymentProvider, WalletService,
@@ -233,7 +239,7 @@ pub mod prelude {
         DirectFeesSettingId, DiscountAmount, DiscountType, DonorId, DueFeesLoginPreventId,
         ExpenseHeadId, ExpenseId, FeeAmount, FeesAssignDiscountId, FeesAssignId,
         FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId,
-        FeesGroupId, FeesInstallmentAssignId, FeesInstallmentCreditId, FeesInstallmentId,
+        FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, FeesInstallmentCreditId, FeesInstallmentId,
         FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId, FeesPaymentFineId, FeesPaymentId,
         FeesPaymentSlipId, FeesPaymentStatus, FeesTypeId, FineAmount, FmFeesGroupId,
         FmFeesInvoiceChildId, FmFeesInvoiceId, FmFeesInvoiceSettingId, FmFeesTransactionChildId,

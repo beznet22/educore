@@ -34,7 +34,7 @@ use crate::value_objects::{
     DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
     FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId,
-    FeesGroupId, FeesInstallmentAssignId, FeesInstallmentCreditId, FeesInstallmentId,
+    FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, FeesInstallmentCreditId, FeesInstallmentId,
     FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId, FeesPaymentId, FeesPaymentSlipId,
     FeesTypeId, FmFeesGroupId, FmFeesInvoiceChildId, FmFeesInvoiceId, FmFeesInvoiceSettingId,
     FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId, FmFeesWeaverId, GatewayMode,
@@ -3522,6 +3522,72 @@ impl RetireTransactionCommand {
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceInvoiceCreate]
+    }
+}
+
+// -- Wave 105 — FeesInstallmentAssignDiscount (child discount on an installment assign) --
+//
+// FIAD I-1: applied_amount >= 0. The Create command carries
+// `applied_amount_minor` (FIAD I-1 guard: pinned at construction
+// with `>= 0` guard) + `discount_id` + `fees_installment_assign_id`
+// (companion invariants: FK references) + `currency` (companion
+// invariant: required) + `note` (optional).
+
+/// Stable command type identifier for [`CreateFeesInstallmentAssignDiscountCommand`].
+pub const FINANCE_FEES_INSTALLMENT_ASSIGN_DISCOUNT_CREATE_COMMAND_TYPE: &str =
+    "finance.fees_installment_assign_discount.create";
+/// Stable command type identifier for [`ReadFeesInstallmentAssignDiscountCommand`].
+pub const FINANCE_FEES_INSTALLMENT_ASSIGN_DISCOUNT_READ_COMMAND_TYPE: &str =
+    "finance.fees_installment_assign_discount.read";
+/// Stable command type identifier for [`RetireFeesInstallmentAssignDiscountCommand`].
+pub const FINANCE_FEES_INSTALLMENT_ASSIGN_DISCOUNT_RETIRE_COMMAND_TYPE: &str =
+    "finance.fees_installment_assign_discount.retire";
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFeesInstallmentAssignDiscountCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_assign_discount_id: FeesInstallmentAssignDiscountId,
+    pub discount_id: FeesDiscountId,
+    pub fees_installment_assign_id: FeesInstallmentAssignId,
+    pub applied_amount_minor: i64,
+    pub currency: Currency,
+    pub note: Option<String>,
+}
+
+
+impl CreateFeesInstallmentAssignDiscountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesDiscountCreate]
+    }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFeesInstallmentAssignDiscountCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_assign_discount_id: FeesInstallmentAssignDiscountId,
+}
+
+
+impl ReadFeesInstallmentAssignDiscountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesDiscountRead]
+    }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFeesInstallmentAssignDiscountCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_assign_discount_id: FeesInstallmentAssignDiscountId,
+}
+
+
+impl RetireFeesInstallmentAssignDiscountCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesDiscountCreate]
     }
 }
 // -- Donor (Phase 7 Workstream D) --
