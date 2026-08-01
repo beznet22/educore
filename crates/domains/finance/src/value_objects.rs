@@ -1327,6 +1327,71 @@ impl std::str::FromStr for FmFeesTypeKind {
     }
 }
 
+// =============================================================================
+// PaymentMode — Wave 130 (per-aggregate wave pattern from Waves 65–129)
+// =============================================================================
+//
+// Per v3 Part 2 + checklist § BankPaymentSlip: BP I-1 (payment_mode
+// ∈ {Bank, Cheque}). Category enum used by [`RealBankPaymentSlip`]
+// to classify the payment medium. The discriminator is required at
+// construction (no default; the caller must explicitly select one
+// of the two media).
+//
+// Used as a `payment_mode: PaymentMode` field on the aggregate +
+// downstream on events. Strict exhaustive matching is enforced by
+// the Rust type system (no wildcard arms permitted in service /
+// event-handler code).
+
+/// The payment medium of a `RealBankPaymentSlip` aggregate.
+///
+/// BP I-1: every BankPaymentSlip must belong to exactly one of
+/// these two media. The enum is closed (no `Other` variant) to
+/// prevent the dispatcher from silently inserting unknown media.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize,
+)]
+pub enum PaymentMode {
+    /// Bank transfer / NEFT / RTGS / IMPS.
+    Bank,
+    /// Cheque (physical or scanned).
+    Cheque,
+}
+
+impl PaymentMode {
+    /// Canonical lowercase string representation for serialization.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Bank => "bank",
+            Self::Cheque => "cheque",
+        }
+    }
+
+    /// Parses a string back into the enum. Returns `None` if the
+    /// string does not match any known medium.
+    #[must_use]
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "bank" | "bk" => Some(Self::Bank),
+            "cheque" | "cq" => Some(Self::Cheque),
+            _ => None,
+        }
+    }
+}
+
+impl std::fmt::Display for PaymentMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl std::str::FromStr for PaymentMode {
+    type Err = String;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Self::parse(s).ok_or_else(|| format!("unknown payment mode: {s}"))
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,

@@ -37,7 +37,7 @@ use crate::value_objects::{
     FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, FeesInstallmentCreditId, FeesInstallmentId,
     FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId, FeesPaymentId, FeesPaymentSlipId,
     FeesTypeId, FmFeesGroupId, FmFeesInvoiceChildId, FmFeesInvoiceId, FmFeesInvoiceSettingId,
-    FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, GatewayMode,
+    FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, GatewayMode, PaymentMode,
     IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId,
     PaymentMethodId, PaymentMethodKind, PayrollPaymentId, PreventReason, ProductPurchaseId,
     SalaryTemplateId, StatementType, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId,
@@ -3211,6 +3211,97 @@ impl RetireFmFeesTypeCommand {
 pub const FINANCE_FM_FEES_TYPE_CREATE_COMMAND_TYPE: &str = "finance.fm_fees_type.create";
 pub const FINANCE_FM_FEES_TYPE_READ_COMMAND_TYPE: &str = "finance.fm_fees_type.read";
 pub const FINANCE_FM_FEES_TYPE_RETIRE_COMMAND_TYPE: &str = "finance.fm_fees_type.retire";
+
+// -- BankPaymentSlip (Wave 130 — RealBankPaymentSlip) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateBankPaymentSlipCommand {
+    pub tenant: TenantContext,
+    pub bank_payment_slip_id: BankPaymentSlipId,
+    pub amount_minor: i64,
+    pub payment_mode: PaymentMode,
+    pub bank_account_id: BankAccountId,
+    pub payer_name: String,
+}
+
+impl CreateBankPaymentSlipCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankSlipGenerate]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadBankPaymentSlipCommand {
+    pub tenant: TenantContext,
+    pub bank_payment_slip_id: BankPaymentSlipId,
+}
+
+impl ReadBankPaymentSlipCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankSlipRead]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireBankPaymentSlipCommand {
+    pub tenant: TenantContext,
+    pub bank_payment_slip_id: BankPaymentSlipId,
+}
+
+impl RetireBankPaymentSlipCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankClose]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ApproveBankPaymentSlipCommand {
+    pub tenant: TenantContext,
+    pub bank_payment_slip_id: BankPaymentSlipId,
+}
+
+impl ApproveBankPaymentSlipCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankSlipApprove]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RejectBankPaymentSlipCommand {
+    pub tenant: TenantContext,
+    pub bank_payment_slip_id: BankPaymentSlipId,
+    pub reject_note: String,
+}
+
+impl RejectBankPaymentSlipCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankSlipReject]
+    }
+}
+
+// -- BankPaymentSlip COMMAND_TYPE constants (Wave 130) --
+
+pub const FINANCE_BANK_PAYMENT_SLIP_CREATE_COMMAND_TYPE: &str =
+    "finance.bank_payment_slip.create";
+pub const FINANCE_BANK_PAYMENT_SLIP_READ_COMMAND_TYPE: &str =
+    "finance.bank_payment_slip.read";
+pub const FINANCE_BANK_PAYMENT_SLIP_RETIRE_COMMAND_TYPE: &str =
+    "finance.bank_payment_slip.retire";
+pub const FINANCE_BANK_PAYMENT_SLIP_APPROVE_COMMAND_TYPE: &str =
+    "finance.bank_payment_slip.approve";
+pub const FINANCE_BANK_PAYMENT_SLIP_REJECT_COMMAND_TYPE: &str =
+    "finance.bank_payment_slip.reject";
+
 // -- FmFeesInvoice (Wave 100 — RealFmFeesInvoice) --
 
 /// COMMAND_TYPE discriminator for `CreateFmFeesInvoiceCommand`.

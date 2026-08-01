@@ -26,7 +26,7 @@ use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
     AccountType, AmountTransferId, ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
-    BankStatementId, FmFeesTypeKind, StatementType,
+    BankStatementId, FmFeesTypeKind, PaymentMode, StatementType,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
     DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId, FeesInstallmentCreditId, FeesInvoiceSettingId,
@@ -8893,6 +8893,240 @@ impl DomainEvent for FmFeesTypeRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.fm_fees_type_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// RealBankPaymentSlip events — Wave 130 (per-aggregate wave pattern
+// from Waves 65–129)
+// =============================================================================
+//
+// Per v3 Part 2 + checklist § BankPaymentSlip: 3 invariants dropped
+// in Wave 130:
+//   - BP I-1: payment_mode ∈ {Bank, Cheque} (carried on Created)
+//   - BP I-2: approve_status ∈ {pending, approved, rejected}
+//              (carried on Created + Approved + Rejected)
+//   - BP I-4: cannot reject after approval (state-machine guard;
+//              tested via conflict error on double-approve +
+//              reject-after-approve)
+// BP I-3 (approved slips promote to BankStatement + FeesPayment) is
+// dispatcher-enforced (requires storage-adapter transactional
+// creation of the 2 downstream aggregates); the aggregate does not
+// have the visibility to enforce it.
+
+/// Emitted when a new `RealBankPaymentSlip` row is appended.
+/// Carries the BP I-1 (`payment_mode ∈ {Bank, Cheque}`) + BP I-2
+/// (initial `Pending` state) invariant values.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankPaymentSlipCreated {
+    pub bank_payment_slip_id: BankPaymentSlipId,
+    pub amount_minor: i64,
+    pub payment_mode: PaymentMode,
+    pub bank_account_id: BankAccountId,
+    pub payer_name: String,
+    pub status: ApprovalStatus,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankPaymentSlipCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        bank_payment_slip_id: BankPaymentSlipId,
+        amount_minor: i64,
+        payment_mode: PaymentMode,
+        bank_account_id: BankAccountId,
+        payer_name: String,
+        status: ApprovalStatus,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_payment_slip_id,
+            amount_minor,
+            payment_mode,
+            bank_account_id,
+            payer_name,
+            status,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankPaymentSlipCreated {
+    const EVENT_TYPE: &'static str = "finance.bank_payment_slip.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_payment_slip";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_payment_slip_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_payment_slip_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealBankPaymentSlip` transitions from
+/// `Pending` to `Approved`. Carries the approver, the approval
+/// timestamp, and the canonical `status`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankPaymentSlipApproved {
+    pub bank_payment_slip_id: BankPaymentSlipId,
+    pub approved_by: UserId,
+    pub status: ApprovalStatus,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankPaymentSlipApproved {
+    pub fn new(
+        bank_payment_slip_id: BankPaymentSlipId,
+        approved_by: UserId,
+        status: ApprovalStatus,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_payment_slip_id,
+            approved_by,
+            status,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankPaymentSlipApproved {
+    const EVENT_TYPE: &'static str = "finance.bank_payment_slip.approved";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_payment_slip";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_payment_slip_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_payment_slip_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealBankPaymentSlip` transitions from
+/// `Pending` to `Rejected`. Carries the rejecter, the rejection
+/// timestamp, the rejection note, and the canonical `status`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankPaymentSlipRejected {
+    pub bank_payment_slip_id: BankPaymentSlipId,
+    pub rejected_by: UserId,
+    pub status: ApprovalStatus,
+    pub reject_note: String,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankPaymentSlipRejected {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        bank_payment_slip_id: BankPaymentSlipId,
+        rejected_by: UserId,
+        status: ApprovalStatus,
+        reject_note: String,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_payment_slip_id,
+            rejected_by,
+            status,
+            reject_note,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankPaymentSlipRejected {
+    const EVENT_TYPE: &'static str = "finance.bank_payment_slip.rejected";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_payment_slip";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_payment_slip_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_payment_slip_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealBankPaymentSlip` row is retired (tombstone).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BankPaymentSlipRetired {
+    pub bank_payment_slip_id: BankPaymentSlipId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl BankPaymentSlipRetired {
+    pub fn new(
+        bank_payment_slip_id: BankPaymentSlipId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            bank_payment_slip_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for BankPaymentSlipRetired {
+    const EVENT_TYPE: &'static str = "finance.bank_payment_slip.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "bank_payment_slip";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.bank_payment_slip_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.bank_payment_slip_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

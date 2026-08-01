@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFeesCarryForward, RealFeesMaster, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, RealFmFeesTransaction, RealFeesInstallment, RealFmFeesType, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, RealFmFeesTransaction, RealFeesInstallment, RealFmFeesType, RealBankPaymentSlip, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -90,6 +90,8 @@ use crate::commands::{
     ApproveFmFeesInvoiceCommand, RejectFmFeesInvoiceCommand,
     RetireFmFeesTransactionCommand,
     RetireFmFeesTypeCommand,
+    CreateBankPaymentSlipCommand, ReadBankPaymentSlipCommand, RetireBankPaymentSlipCommand,
+    ApproveBankPaymentSlipCommand, RejectBankPaymentSlipCommand,
     ApproveFmFeesTransactionCommand,
     RejectFmFeesTransactionCommand,
 };
@@ -130,6 +132,7 @@ use crate::events::{
     FeesInstallmentCreated, FeesInstallmentRetired,
     FmFeesInvoiceApproved, FmFeesInvoiceRejected,
     FmFeesTypeCreated, FmFeesTypeRetired,
+    BankPaymentSlipCreated, BankPaymentSlipApproved, BankPaymentSlipRejected, BankPaymentSlipRetired,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
     WalletTransactionApprovalRejected,
@@ -147,6 +150,7 @@ use crate::value_objects::{
     FeesInvoiceId, FeesPaymentId,
     FeesGroupId, FeesInstallmentCreditId, FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesTypeKind, IncomeHeadId, InvoiceSettingId,
+    PaymentMode,
     FeesAssignId, FeesDiscountId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, FeesInstallmentId, PaymentMethodKind, QuestionBankFeeId, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
@@ -2817,6 +2821,155 @@ where
     );
     let _ = ids;
     Ok(evt)
+}
+
+/// Service function: create a `RealBankPaymentSlip` aggregate.
+/// Per v3 Part 2 + checklist § BankPaymentSlip: enforces the
+/// companion invariants (amount_minor >= 0 + payer_name non-empty
+/// after trim) via `RealBankPaymentSlip::fresh`. BP I-1
+/// (payment_mode) is enforced by the closed enum at type-system
+/// level.
+#[allow(clippy::needless_pass_by_value)]
+pub fn create_bank_payment_slip<C, G>(
+    cmd: CreateBankPaymentSlipCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealBankPaymentSlip, BankPaymentSlipCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let tenant = cmd.tenant.clone();
+    let at = clock.now();
+    let correlation = tenant.correlation_id;
+    let payer_for_event = cmd.payer_name.clone();
+    let agg = RealBankPaymentSlip::fresh(
+        cmd.bank_payment_slip_id,
+        cmd.amount_minor,
+        cmd.payment_mode,
+        cmd.bank_account_id,
+        cmd.payer_name,
+        tenant.actor_id,
+        at,
+        correlation,
+    )?;
+    let evt = BankPaymentSlipCreated::new(
+        cmd.bank_payment_slip_id,
+        agg.amount_minor,
+        agg.payment_mode,
+        agg.bank_account_id,
+        payer_for_event,
+        agg.status,
+        tenant.actor_id,
+        ids.next_event_id(),
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok((agg, evt))
+}
+
+/// Service function: read a `RealBankPaymentSlip` aggregate.
+/// The in-process reference adapter does not have a backing store;
+/// dispatcher validates existence before calling this.
+#[allow(clippy::needless_pass_by_value)]
+pub fn read_bank_payment_slip<C, G>(
+    cmd: ReadBankPaymentSlipCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Service function: retire a `RealBankPaymentSlip` aggregate
+/// (tombstone).
+#[allow(clippy::needless_pass_by_value)]
+pub fn retire_bank_payment_slip<C, G>(
+    cmd: RetireBankPaymentSlipCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<BankPaymentSlipRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let correlation = cmd.tenant.correlation_id;
+    let evt = BankPaymentSlipRetired::new(
+        cmd.bank_payment_slip_id,
+        cmd.tenant.actor_id,
+        ids.next_event_id(),
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok(evt)
+}
+
+/// Service function: approve a `RealBankPaymentSlip` (BP I-2
+/// Pending -> Approved; BP I-4 cannot reject after approval is also
+/// enforced by the same can_transition guard).
+#[allow(clippy::needless_pass_by_value)]
+pub fn approve_bank_payment_slip<C, G>(
+    mut agg: RealBankPaymentSlip,
+    cmd: ApproveBankPaymentSlipCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealBankPaymentSlip, BankPaymentSlipApproved)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation = cmd.tenant.correlation_id;
+    agg.approve(cmd.tenant.actor_id, at, event_id)?;
+    let evt = BankPaymentSlipApproved::new(
+        cmd.bank_payment_slip_id,
+        cmd.tenant.actor_id,
+        agg.status,
+        event_id,
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok((agg, evt))
+}
+
+/// Service function: reject a `RealBankPaymentSlip` (BP I-2
+/// Pending -> Rejected; BP I-4 enforced via can_transition).
+#[allow(clippy::needless_pass_by_value)]
+pub fn reject_bank_payment_slip<C, G>(
+    mut agg: RealBankPaymentSlip,
+    cmd: RejectBankPaymentSlipCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealBankPaymentSlip, BankPaymentSlipRejected)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation = cmd.tenant.correlation_id;
+    let note_clone = cmd.reject_note.clone();
+    agg.reject(cmd.tenant.actor_id, cmd.reject_note, at, event_id)?;
+    let evt = BankPaymentSlipRejected::new(
+        cmd.bank_payment_slip_id,
+        cmd.tenant.actor_id,
+        agg.status,
+        note_clone,
+        event_id,
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok((agg, evt))
 }
 
 // Wave 100 FmFeesInvoice service functions appended below at the end of the file (before #[cfg(test)]).

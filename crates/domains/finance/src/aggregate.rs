@@ -47,6 +47,7 @@ use crate::value_objects::{
     FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, FmInvoiceType,
     IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, Money, PaymentGatewaySettingId,
+    PaymentMode,
     PaymentMethodId, PaymentMethodKind, PayrollEarnDeducId, PayrollGenerateId,
     PayrollPaymentApprovalId, PayrollPaymentId, ProductPurchaseId, QuestionBankFeeId,
     SalaryTemplateId, StatementType, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
@@ -974,6 +975,9 @@ finance_aggregate_stub! {
 }
 finance_aggregate_stub! {
     /// BankPaymentSlip (Phase 7 Workstream H).
+    /// Real aggregate: RealBankPaymentSlip (Wave 130). The stub is
+    /// kept only to avoid breaking downstream code that referenced
+    /// `BankPaymentSlip` as a type name during Phase 7.
     pub struct BankPaymentSlip { _id: () }
 }
 finance_aggregate_stub! {
@@ -9005,6 +9009,188 @@ impl RealFmFeesType {
         if self.active_status == ActiveStatus::Retired {
             return Err(educore_core::error::DomainError::conflict(
                 "FmFeesType is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
+// RealBankPaymentSlip — Wave 130 (per-aggregate wave pattern
+// from Waves 65–129)
+// =============================================================================
+//
+// Per v3 Part 2 + checklist § BankPaymentSlip: 3 invariants
+// dropped in Wave 130:
+//   - BP I-1: payment_mode ∈ {Bank, Cheque} (PaymentMode enum)
+//   - BP I-2: approve_status ∈ {pending, approved, rejected}
+//              (shared ApprovalStatus enum; Pending -> Approved |
+//              Rejected state machine)
+//   - BP I-4: cannot reject after approval (state-machine
+//              enforcement via can_transition)
+// BP I-3 (approved slips promote to BankStatement + FeesPayment)
+// is dispatcher-enforced (requires the storage adapter to create
+// the 2 downstream aggregates in the same transaction); see the
+// Wave 130 checklist entry.
+//
+// The aggregate is append-only on the immutable fields (amount_minor,
+// payment_mode, bank_account_id, payer_name) -- only `fresh` + `retire`
+// set them. The state machine fields (status + approval/rejection
+// metadata) are mutable via `approve()` + `reject()`.
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealBankPaymentSlip {
+    pub id: BankPaymentSlipId,
+    pub school_id: SchoolId,
+    pub amount_minor: i64,
+    pub payment_mode: PaymentMode,
+    pub bank_account_id: BankAccountId,
+    pub payer_name: String,
+    pub status: ApprovalStatus,
+    pub approved_by: Option<UserId>,
+    pub approved_at: Option<Timestamp>,
+    pub rejected_by: Option<UserId>,
+    pub rejected_at: Option<Timestamp>,
+    pub reject_note: Option<String>,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealBankPaymentSlip {
+    /// Constructs a new `RealBankPaymentSlip` in the `Pending`
+    /// approval state. Enforces BP I-1 (payment_mode is one of the
+    /// closed enum variants, enforced at type-system level) +
+    /// companion invariant (amount_minor >= 0 + payer_name
+    /// non-empty after trim).
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: BankPaymentSlipId,
+        amount_minor: i64,
+        payment_mode: PaymentMode,
+        bank_account_id: BankAccountId,
+        payer_name: String,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // Companion invariant: amount_minor >= 0.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "BankPaymentSlip amount_minor must be >= 0",
+            ));
+        }
+        // Companion invariant: payer_name non-empty after trim.
+        let payer_trimmed = payer_name.trim().to_string();
+        if payer_trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "BankPaymentSlip payer_name must be non-empty after trim",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            amount_minor,
+            payment_mode,
+            bank_account_id,
+            payer_name: payer_trimmed,
+            status: ApprovalStatus::Pending,
+            approved_by: None,
+            approved_at: None,
+            rejected_by: None,
+            rejected_at: None,
+            reject_note: None,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    /// Returns `true` if the state machine permits the
+    /// `from -> to` transition (BP I-4).
+    #[must_use]
+    pub fn can_transition(&self, to: ApprovalStatus) -> bool {
+        self.status.can_transition_to(to)
+    }
+
+    /// Approve the slip (BP I-2 Pending -> Approved).
+    /// Returns `Err` if the state machine does not permit the
+    /// transition (BP I-4: cannot reject after approval is also
+    /// enforced by the same can_transition guard).
+    pub fn approve(
+        &mut self,
+        approver: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if !self.can_transition(ApprovalStatus::Approved) {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "BankPaymentSlip is in state {:?}, cannot transition to Approved (BP I-4)",
+                self.status
+            )));
+        }
+        self.status = ApprovalStatus::Approved;
+        self.approved_by = Some(approver);
+        self.approved_at = Some(at);
+        self.updated_at = at;
+        self.updated_by = approver;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        Ok(())
+    }
+
+    /// Reject the slip (BP I-2 Pending -> Rejected).
+    /// Returns `Err` if the state machine does not permit the
+    /// transition (BP I-4: cannot reject after approval).
+    pub fn reject(
+        &mut self,
+        rejecter: UserId,
+        note: String,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if !self.can_transition(ApprovalStatus::Rejected) {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "BankPaymentSlip is in state {:?}, cannot transition to Rejected (BP I-4)",
+                self.status
+            )));
+        }
+        self.status = ApprovalStatus::Rejected;
+        self.rejected_by = Some(rejecter);
+        self.rejected_at = Some(at);
+        self.reject_note = Some(note);
+        self.updated_at = at;
+        self.updated_by = rejecter;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        Ok(())
+    }
+
+    /// Retire the aggregate (tombstone).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "BankPaymentSlip is already retired",
             ));
         }
         self.active_status = ActiveStatus::Retired;
