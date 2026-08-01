@@ -3278,6 +3278,7 @@ where
         cmd.amount_minor,
         cmd.currency,
         cmd.due_date,
+        cmd.percentage_minor,
         cmd.tenant.actor_id,
         now,
         cmd.tenant.correlation_id,
@@ -3291,6 +3292,7 @@ where
         agg.amount_minor,
         agg.currency,
         agg.due_date,
+        agg.percentage_minor,
         agg.created_by,
         event_id,
         cmd.tenant.correlation_id,
@@ -3332,6 +3334,7 @@ where
         0,
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        0, // placeholder percentage_minor for retire path
         cmd.tenant.actor_id,
         now,
         cmd.tenant.correlation_id,

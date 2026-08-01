@@ -7938,6 +7938,13 @@ pub struct RealDirectFeesInstallment {
     pub amount_minor: i64,
     pub currency: Currency,
     pub due_date: chrono::NaiveDate,
+    /// DFI I-3: percentage of the gross amount this installment
+    /// represents (in minor units of 1/100000 of a percent, i.e.
+    /// 100_000 = 100%). Pinned at construction with `>= 0` and
+    /// `<= 100_000` guards. The dispatcher enforces the cross-row
+    /// sum-of-percentages invariant (<= 100_000 across all
+    /// installments for a given (school_id, fees_master_id)).
+    pub percentage_minor: i64,
     pub version: Version,
     pub etag: Etag,
     pub created_at: Timestamp,
@@ -7958,6 +7965,7 @@ impl RealDirectFeesInstallment {
         amount_minor: i64,
         currency: Currency,
         due_date: chrono::NaiveDate,
+        percentage_minor: i64,
         actor: UserId,
         at: Timestamp,
         correlation: CorrelationId,
@@ -7974,6 +7982,12 @@ impl RealDirectFeesInstallment {
                 "DirectFeesInstallment name must be non-empty after trimming",
             ));
         }
+        // DFI I-3: percentage_minor in [0, 100_000].
+        if percentage_minor < 0 || percentage_minor > 100_000 {
+            return Err(educore_core::error::DomainError::validation(
+                "DirectFeesInstallment percentage_minor must be in [0, 100000] (DFI I-3)",
+            ));
+        }
         Ok(Self {
             school_id: id.school_id(),
             id,
@@ -7982,6 +7996,7 @@ impl RealDirectFeesInstallment {
             amount_minor,
             currency,
             due_date,
+            percentage_minor,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at: at,
