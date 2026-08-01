@@ -2069,6 +2069,89 @@ impl RealPaymentMethod {
     }
 }
 
+// -- Wave 107 -- RealFeesInstallmentAssign (per-(fees_assign, installment) linkage) --
+//
+// FIA I-1: unique per (fees_assign, installment) -- the scope-key
+// tuple (fees_assign_id, fees_installment_id) pins a
+// FeesInstallmentAssign to a single (assignment, installment
+// plan) pair. Uniqueness is enforced by the dispatcher (the
+// aggregate carries the tuple as required fields so the
+// dispatcher has the data to enforce it).
+//
+// Companion invariants enforced at fresh():
+//   * due_date is a valid chrono::NaiveDate (always valid by
+//     construction; the type system guarantees from_ymd_opt
+//     returns None for invalid dates which would have rejected
+//     at command construction time).
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFeesInstallmentAssign {
+    pub id: FeesInstallmentAssignId,
+    pub school_id: SchoolId,
+    pub fees_assign_id: FeesAssignId,
+    pub fees_installment_id: FeesInstallmentId,
+    pub due_date: chrono::NaiveDate,
+    pub note: Option<String>,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFeesInstallmentAssign {
+    pub fn fresh(
+        id: FeesInstallmentAssignId,
+        fees_assign_id: FeesAssignId,
+        fees_installment_id: FeesInstallmentId,
+        due_date: chrono::NaiveDate,
+        note: Option<String>,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            fees_assign_id,
+            fees_installment_id,
+            due_date,
+            note,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesInstallmentAssign is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
 // =============================================================================
 // RealFmFeesGroup — Wave 66 (per-aggregate wave pattern from Wave 65)
 // =============================================================================

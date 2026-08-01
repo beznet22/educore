@@ -978,6 +978,56 @@ impl RetirePaymentMethodCommand {
         vec![Capability::FinancePaymentMethodCreate]
     }
 }
+
+
+// -- Wave 107 -- FeesInstallmentAssign (per-(fees_assign, installment) linkage) --
+
+pub const FINANCE_FEES_INSTALLMENT_ASSIGN_CREATE_COMMAND_TYPE: &str = "finance.fees_installment_assign.create";
+pub const FINANCE_FEES_INSTALLMENT_ASSIGN_READ_COMMAND_TYPE: &str = "finance.fees_installment_assign.read";
+pub const FINANCE_FEES_INSTALLMENT_ASSIGN_RETIRE_COMMAND_TYPE: &str = "finance.fees_installment_assign.retire";
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFeesInstallmentAssignCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_assign_id: FeesInstallmentAssignId,
+    pub fees_assign_id: FeesAssignId,
+    pub fees_installment_id: FeesInstallmentId,
+    pub due_date: chrono::NaiveDate,
+    pub note: Option<String>,
+}
+
+impl CreateFeesInstallmentAssignCommand {
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignCreate]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFeesInstallmentAssignCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_assign_id: FeesInstallmentAssignId,
+}
+
+impl ReadFeesInstallmentAssignCommand {
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignRead]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFeesInstallmentAssignCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_assign_id: FeesInstallmentAssignId,
+}
+
+impl RetireFeesInstallmentAssignCommand {
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignCreate]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdatePaymentMethodCommand {
     pub tenant: TenantContext,

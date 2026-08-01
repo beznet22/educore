@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -85,7 +85,7 @@ use crate::commands::{
     ReadFmFeesGroupCommand,
     ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
-    ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand,
+    ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand,
 };
 use crate::events::{
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
@@ -99,6 +99,7 @@ use crate::events::{
     TransactionCreated, TransactionRetired,
     FeesInstallmentAssignDiscountCreated, FeesInstallmentAssignDiscountRetired,
     PaymentMethodCreated, PaymentMethodRetired,
+    FeesInstallmentAssignCreated, FeesInstallmentAssignRetired,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
@@ -133,7 +134,7 @@ use crate::value_objects::{
     FeesInvoiceId, FeesPaymentId,
     FeesGroupId, FeesInstallmentCreditId, FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, IncomeHeadId, InvoiceSettingId,
-    FeesDiscountId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, PaymentMethodKind, QuestionBankFeeId, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
+    FeesAssignId, FeesDiscountId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, FeesInstallmentId, PaymentMethodKind, QuestionBankFeeId, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -3057,6 +3058,95 @@ where
     );
 
     Ok((pm, event))
+}
+
+
+pub fn create_fees_installment_assign<C, G>(
+    cmd: CreateFeesInstallmentAssignCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesInstallmentAssign, FeesInstallmentAssignCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut agg = RealFeesInstallmentAssign::fresh(
+        cmd.fees_installment_assign_id,
+        cmd.fees_assign_id,
+        cmd.fees_installment_id,
+        cmd.due_date,
+        cmd.note,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    agg.last_event_id = Some(event_id);
+
+    let event = FeesInstallmentAssignCreated::new(
+        agg.id,
+        agg.fees_assign_id,
+        agg.fees_installment_id,
+        agg.due_date,
+        agg.note.clone(),
+        agg.created_by,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((agg, event))
+}
+
+pub fn read_fees_installment_assign<C, G>(
+    cmd: ReadFeesInstallmentAssignCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = cmd;
+    Ok(())
+}
+
+pub fn retire_fees_installment_assign<C, G>(
+    cmd: RetireFeesInstallmentAssignCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesInstallmentAssign, FeesInstallmentAssignRetired)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut agg = RealFeesInstallmentAssign::fresh(
+        cmd.fees_installment_assign_id,
+        FeesAssignId::new(cmd.fees_installment_assign_id.school_id(), ids.next_uuid()),
+        FeesInstallmentId::new(cmd.fees_installment_assign_id.school_id(), ids.next_uuid()),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        None,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    agg.retire(now, cmd.tenant.actor_id)?;
+    agg.last_event_id = Some(event_id);
+
+    let event = FeesInstallmentAssignRetired::new(
+        agg.id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((agg, event))
 }
 
 /// Handler skeleton: create a `Donor` aggregate.

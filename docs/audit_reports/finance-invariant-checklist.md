@@ -211,7 +211,7 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 
 ### FeesInstallmentAssign (3 invariants)
 
-- [ ] FIA I-1: unique per (assign, installment) — missing (placeholder stub)
+- [x] FIA I-1: unique per (assign, installment) — **complete (Wave 107 full drop for FIA I-1)** — PROMOTED from `[ ]` missing to `[x]` complete. `RealFeesInstallmentAssign` aggregate at `crates/domains/finance/src/aggregate.rs:2075+` (appended after Wave 106 PaymentMethod::retire block) carries the (fees_assign_id, fees_installment_id) scope-key tuple as required fields. `fresh()` validates the companion invariant (NaiveDate is always valid by construction). FIA I-1 uniqueness is dispatcher-enforced via the scope-key tuple (the aggregate carries the tuple as required fields so the dispatcher has the data to enforce it). `fees_assign_id` + `fees_installment_id` + `due_date` + `note` are NOT mutable via any `update_*` method — the aggregate is append-only (only `fresh` + `retire` exist). `retire()` is a tombstone that preserves the scope-key tuple + `due_date` + `note` in the audit footer for legal-record retention. The check is propagated through `create_fees_installment_assign` service function at `crates/domains/finance/src/services.rs:3057+`. 8 invariant tests + 2 service integration tests pin the invariant end-to-end (10 total tests pass at `cargo test -p educore-finance --test fees_installment_assign --no-fail-fast`: 10 passed; 0 failed).
 - [ ] FIA I-2: paid_amount ≤ amount + discount — missing
 - [ ] FIA I-3: active_status while open — missing
 
