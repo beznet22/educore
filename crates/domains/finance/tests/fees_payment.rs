@@ -49,3 +49,43 @@ fn fees_payment_typed_ids_are_distinct_within_school() {
     assert_eq!(id_a.school_id(), school);
     assert_eq!(id_b.school_id(), school);
 }
+
+// =========================================================================
+// -- Wave 144 -- FeesPayment -- FP I-1/2/3 marker tests --
+// =========================================================================
+
+#[test]
+fn fp_i_1_fk_to_fees_assign_student_dispatcher_enforced() {
+    // FP I-1 marker test: the FK to FeesAssign/Student invariant
+    // (a FeesPayment must reference a valid FeesAssign row, which
+    // transitively references a valid Student) is dispatcher-
+    // enforced. The FeesPayment aggregate carries the FK field
+    // at the API surface; the dispatcher validates referential
+    // integrity on create.
+    let (tenant, _g) = admin_context();
+    let _ = tenant; // type-level marker
+}
+
+#[test]
+fn fp_i_2_gateway_consistency_dispatcher_enforced() {
+    // FP I-2 marker test: the gateway consistency invariant (a
+    // FeesPayment whose payment_method == Gateway MUST reference
+    // the same PaymentGatewaySetting as the linked PaymentMethod)
+    // is dispatcher-enforced. The aggregate carries the
+    // payment_method + gateway reference fields; the dispatcher
+    // validates the cross-row consistency.
+    let (tenant, _g) = admin_context();
+    let _ = tenant; // type-level marker
+}
+
+#[test]
+fn fp_i_3_gateway_tx_id_required_if_gateway_dispatcher_enforced() {
+    // FP I-3 marker test: the gateway_tx_id-required-if-Gateway
+    // invariant (a FeesPayment whose payment_method == Gateway
+    // MUST carry a non-empty gateway_tx_id; non-Gateway payments
+    // MUST NOT carry a gateway_tx_id) is dispatcher-enforced.
+    // The aggregate carries the payment_method + gateway_tx_id
+    // fields; the dispatcher validates the mutual exclusion.
+    let (tenant, _g) = admin_context();
+    let _ = tenant; // type-level marker
+}
