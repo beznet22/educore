@@ -8168,6 +8168,101 @@ impl RealFeesAssignDiscount {
 }
 
 
+// -- Wave 119 -- RealFeesAssign (per-(student, fee_master, year) linkage) --
+//
+// FA I-5: unique per (student, fee_master, year). The scope-key
+// tuple (student_id, fees_master_id, academic_year_id) pins a
+// FeesAssign to a single (student, fee_master, academic_year)
+// triple within a school. Uniqueness is dispatcher-enforced
+// (the aggregate carries the tuple as required fields so the
+// dispatcher has the data to enforce it).
+//
+// Companion invariants enforced at fresh():
+//   * amount_minor >= 0 (FA I-1 -- the FeeAmount VO enforces
+//     the upper bound; the aggregate enforces the lower
+//     bound + carries the field as required).
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFeesAssign {
+    pub id: FeesAssignId,
+    pub school_id: SchoolId,
+    pub student_id: educore_academic::StudentId,
+    pub fees_master_id: FeesMasterId,
+    pub academic_year_id: educore_academic::AcademicYearId,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub due_date: chrono::NaiveDate,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFeesAssign {
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: FeesAssignId,
+        student_id: educore_academic::StudentId,
+        fees_master_id: FeesMasterId,
+        academic_year_id: educore_academic::AcademicYearId,
+        amount_minor: i64,
+        currency: Currency,
+        due_date: chrono::NaiveDate,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FA I-1: amount_minor >= 0.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesAssign amount_minor must be >= 0 (FA I-1)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            student_id,
+            fees_master_id,
+            academic_year_id,
+            amount_minor,
+            currency,
+            due_date,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesAssign is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+
 // -- Wave 113 -- RealFeesCarryForward (end-of-year balance roll-over) --
 //
 // FCF I-3: unique per (school, student, academic). The scope-key

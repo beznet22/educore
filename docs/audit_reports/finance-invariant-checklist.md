@@ -170,7 +170,7 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 
 - [~] FAD I-1: applied_amount ≥ 0 && unapplied ≥ 0 — partial (VO)
 - [~] FAD I-2: applied + unapplied constant — partial (no mutator)
-- [ ] FAD I-3: timestamp recorded — missing
+- [x] FAD I-3: timestamp recorded — **complete (Wave 118 full drop for FAD I-3)** — PROMOTED from `[ ]` missing to `[x]` complete. `RealFeesAssignDiscount` aggregate at `crates/domains/finance/src/aggregate.rs:8503+` (appended in Wave 118 after Wave 116 DirectFeesInstallment::retire block) carries the standard audit footer: `created_at: Timestamp` + `updated_at: Timestamp` + `last_event_id: Option<EventId>` + `correlation_id: CorrelationId`. `fresh()` populates `created_at` and `updated_at` with the caller-supplied `at: Timestamp` parameter. The `has_recorded_timestamps()` helper method returns `true` after `fresh()` succeeds (test `fresh_full_payload_records_timestamps_fad_i_3` pins `created_at == updated_at == now`). The event-level `occurred_at: Timestamp` flows downstream on `FeesAssignDiscountCreated` (events.rs:7900+) + `FeesAssignDiscountRetired` (events.rs:7983+) + propagates through `create_fees_assign_discount` + `retire_fees_assign_discount` service functions. `retire()` advances `updated_at` to the caller-supplied `at` timestamp (test `retire_flips_active_status_to_retired_fad_i_3` pins this). 9 invariant tests + 3 service integration tests pin the invariant end-to-end (12 total tests pass at `cargo test -p educore-finance --test fees_assign_discount --no-fail-fast`: 12 passed; 0 failed).
 
 ### FeesCarryForward (3 invariants)
 

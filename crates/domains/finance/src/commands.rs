@@ -108,6 +108,7 @@ pub const FINANCE_FEES_DISCOUNT_READ_COMMAND_TYPE: &str = "finance.fees_discount
 pub const FINANCE_FEES_ASSIGN_CREATE_COMMAND_TYPE: &str = "finance.fees_assign.create";
 pub const FINANCE_FEES_ASSIGN_UPDATE_COMMAND_TYPE: &str = "finance.fees_assign.update";
 pub const FINANCE_FEES_ASSIGN_DELETE_COMMAND_TYPE: &str = "finance.fees_assign.delete";
+pub const FINANCE_FEES_ASSIGN_RETIRE_COMMAND_TYPE: &str = "finance.fees_assign.retire";
 
 // -- FeesInstallment (split-by-installment plans) --
 
@@ -582,8 +583,10 @@ impl ReadFeesDiscountCommand {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFeesAssignCommand {
     pub tenant: TenantContext,
+    pub fees_assign_id: FeesAssignId,
     pub student_id: educore_academic::StudentId,
     pub fees_master_id: FeesMasterId,
+    pub academic_year_id: educore_academic::AcademicYearId,
     pub amount_minor: i64,
     pub currency: Currency,
     pub due_date: NaiveDate,
@@ -625,6 +628,19 @@ impl DeleteFeesAssignCommand {
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesAssignClose]
+    }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFeesAssignCommand {
+    pub tenant: TenantContext,
+    pub fees_assign_id: FeesAssignId,
+}
+
+impl ReadFeesAssignCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignRead]
     }
 }
 // -- FeesInstallment --
@@ -4035,6 +4051,21 @@ pub struct CloseFeesAssignCommand {
 
 impl CloseFeesAssignCommand {
     /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignClose]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFeesAssignCommand {
+    pub tenant: TenantContext,
+    pub fees_assign_id: FeesAssignId,
+}
+
+impl RetireFeesAssignCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_ASSIGN_RETIRE_COMMAND_TYPE;
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesAssignClose]

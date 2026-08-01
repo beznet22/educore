@@ -8181,7 +8181,127 @@ impl DomainEvent for FeesAssignDiscountRetired {
     }
 }
 
+
+// -- Wave 119 -- FeesAssign (per-(student, fee_master, year) linkage) --
+//
+// FA I-5: unique per (student, fee_master, year). Both
+// FeesAssignCreated (carrying the scope-key tuple +
+// amount_minor + currency + due_date downstream) and
+// FeesAssignRetired (tombstone preserving the scope-key
+// tuple for legal-record retention) are emitted by
+// create_fees_assign / retire_fees_assign service functions.
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesAssignCreated {
+    pub fees_assign_id: FeesAssignId,
+    pub student_id: educore_academic::StudentId,
+    pub fees_master_id: FeesMasterId,
+    pub academic_year_id: educore_academic::AcademicYearId,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub due_date: NaiveDate,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesAssignCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_assign_id: FeesAssignId,
+        student_id: educore_academic::StudentId,
+        fees_master_id: FeesMasterId,
+        academic_year_id: educore_academic::AcademicYearId,
+        amount_minor: i64,
+        currency: Currency,
+        due_date: NaiveDate,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_assign_id,
+            student_id,
+            fees_master_id,
+            academic_year_id,
+            amount_minor,
+            currency,
+            due_date,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesAssignCreated {
+    const EVENT_TYPE: &'static str = "finance.fees_assign.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_assign";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_assign_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_assign_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesAssignRetired {
+    pub fees_assign_id: FeesAssignId,
+    pub retired_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesAssignRetired {
+    pub fn new(
+        fees_assign_id: FeesAssignId,
+        retired_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_assign_id,
+            retired_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesAssignRetired {
+    const EVENT_TYPE: &'static str = "finance.fees_assign.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_assign";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_assign_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_assign_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 #[cfg(test)]
+#[allow(t)]
 #[allow(t)]
 #[allow(est)]
 #[allow(
