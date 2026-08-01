@@ -2962,10 +2962,21 @@ impl CarryForwardFeesBalanceCommand {
 
 // -- FeesAssignDiscount (Phase 7 Workstream F) --
 
+/// Stable command type identifier for [`CreateFeesAssignDiscountCommand`].
+pub const FINANCE_FEES_ASSIGN_DISCOUNT_CREATE_COMMAND_TYPE: &str = "finance.fees_assign_discount.create";
+/// Stable command type identifier for [`RetireFeesAssignDiscountCommand`].
+pub const FINANCE_FEES_ASSIGN_DISCOUNT_RETIRE_COMMAND_TYPE: &str = "finance.fees_assign_discount.retire";
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFeesAssignDiscountCommand {
     pub tenant: TenantContext,
     pub fees_assign_discount_id: FeesAssignDiscountId,
+    pub fees_assign_id: FeesAssignId,
+    pub discount_id: FeesDiscountId,
+    pub applied_amount_minor: i64, // FAD I-1
+    pub unapplied_amount_minor: i64, // FAD I-1
+    pub currency: Currency,
+    pub note: Option<String>,
 }
 
 
@@ -4000,6 +4011,19 @@ impl UpdateFeesAssignDiscountCommand {
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesAssignUpdate]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFeesAssignDiscountCommand {
+    pub tenant: TenantContext,
+    pub fees_assign_discount_id: FeesAssignDiscountId,
+}
+
+impl RetireFeesAssignDiscountCommand {
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesAssignCreate]
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

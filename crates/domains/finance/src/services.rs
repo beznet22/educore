@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFeesCarryForward, RealFeesMaster, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -85,7 +85,7 @@ use crate::commands::{
     ReadFmFeesGroupCommand,
     ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
-    ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand, CreateDirectFeesInstallmentCommand, ReadDirectFeesInstallmentCommand, RetireDirectFeesInstallmentCommand,
+    ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand, CreateDirectFeesInstallmentCommand, ReadDirectFeesInstallmentCommand, RetireDirectFeesInstallmentCommand, RetireFeesAssignDiscountCommand,
 };
 use crate::events::{
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
@@ -101,7 +101,7 @@ use crate::events::{
     PaymentMethodCreated, PaymentMethodRetired,
     FeesInstallmentAssignCreated, FeesInstallmentAssignRetired,
     AmountTransferCreated, AmountTransferRetired,
-    DirectFeesInstallmentCreated, DirectFeesInstallmentRetired,
+    DirectFeesInstallmentCreated, DirectFeesInstallmentRetired, FeesAssignDiscountCreated, FeesAssignDiscountRetired,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
     ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated, FeesCarryForwardCreated, FeesCarryForwardRetired, FeesMasterCreated, FeesMasterRetired,
@@ -1687,36 +1687,122 @@ impl DoubleEntryService {
 // `Ok(())` to the typed event-emission path once it lands.
 // =============================================================================
 
-/// Handler skeleton: create a `FeesAssignDiscount` aggregate.
-/// Full implementation lands in Phase 7 Workstream F.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
+/// Handler: create a `FeesAssignDiscount` aggregate (per-
+/// (fees_assign, discount) linkage).
+///
+/// Emits a [`FeesAssignDiscountCreated`] event carrying the
+/// scope-key + applied_amount_minor + unapplied_amount_minor +
+/// currency + note + the event-level `occurred_at` timestamp
+/// downstream (FAD I-3: timestamp recorded).
+///
+/// The FAD I-1 companion validations (`applied_amount_minor >= 0`
+/// + `unapplied_amount_minor >= 0`) are enforced by
+/// `RealFeesAssignDiscount::fresh()` inside this function.
 pub fn create_fees_assign_discount<C, G>(
     cmd: CreateFeesAssignDiscountCommand,
     clock: &C,
     ids: &G,
+) -> Result<(RealFeesAssignDiscount, FeesAssignDiscountCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut agg = RealFeesAssignDiscount::fresh(
+        cmd.fees_assign_discount_id,
+        cmd.fees_assign_id,
+        cmd.discount_id,
+        cmd.applied_amount_minor,
+        cmd.unapplied_amount_minor,
+        cmd.currency,
+        cmd.note,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    agg.last_event_id = Some(event_id);
+
+    let event = FeesAssignDiscountCreated::new(
+        agg.id,
+        agg.fees_assign_id,
+        agg.discount_id,
+        agg.applied_amount_minor,
+        agg.unapplied_amount_minor,
+        agg.currency,
+        agg.note.clone(),
+        agg.created_by,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((agg, event))
+}
+
+/// Handler: read a `FeesAssignDiscount` aggregate. No-op for
+/// the in-process reference adapter (the aggregate is returned
+/// from `create_fees_assign_discount` + carried in caller state;
+/// the read path is reserved for future adapter integration).
+pub fn read_fees_assign_discount<C, G>(
+    cmd: ReadFeesAssignDiscountCommand,
+    _clock: &C,
+    _ids: &G,
 ) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let _ = (cmd, clock, ids);
+    let _ = cmd;
     Ok(())
 }
 
-/// Handler skeleton: read a `FeesAssignDiscount` aggregate.
-/// Full implementation lands in Phase 7 Workstream F.
-#[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_fees_assign_discount<C, G>(
-    cmd: ReadFeesAssignDiscountCommand,
+/// Handler: retire a `FeesAssignDiscount` aggregate (tombstone).
+///
+/// Emits a [`FeesAssignDiscountRetired`] event (which preserves
+/// `fees_assign_discount_id` + `retired_by` + standard event
+/// footer including the event-level `occurred_at` timestamp
+/// (FAD I-3); the `fees_assign_id` + `discount_id` +
+/// `applied_amount_minor` + `unapplied_amount_minor` + `currency`
+/// + `note` are preserved in the aggregate's audit footer for
+/// legal-record retention).
+pub fn retire_fees_assign_discount<C, G>(
+    cmd: RetireFeesAssignDiscountCommand,
     clock: &C,
     ids: &G,
-) -> Result<()>
+) -> Result<(RealFeesAssignDiscount, FeesAssignDiscountRetired)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
 {
-    let _ = (cmd, clock, ids);
-    Ok(())
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut agg = RealFeesAssignDiscount::fresh(
+        cmd.fees_assign_discount_id,
+        FeesAssignId::new(cmd.fees_assign_discount_id.school_id(), ids.next_uuid()),
+        FeesDiscountId::new(cmd.fees_assign_discount_id.school_id(), ids.next_uuid()),
+        0,
+        0,
+        Currency::INR,
+        None,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    agg.retire(now, cmd.tenant.actor_id)?;
+    agg.last_event_id = Some(event_id);
+
+    let event = FeesAssignDiscountRetired::new(
+        agg.id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((agg, event))
 }
 
 // Wave 96 DirectFeesInstallmentChildPayment service functions appended below at the end of the file (before #[cfg(test)]).

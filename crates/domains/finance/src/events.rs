@@ -2127,13 +2127,18 @@ finance_event_stub! {
     aggregate_id: FeesAssignId,
 }
 
-finance_event_stub! {
-    /// Emitted when a `FeesAssignDiscount` row is assigned to a student.
-    pub struct FeesDiscountAssigned;
-    event_type: "finance.fees_assign_discount.assigned",
-    aggregate_type: "fees_assign_discount",
-    aggregate_id: FeesAssignDiscountId,
-}
+// -- Wave 118 -- FeesAssignDiscount (Phase 7 finance_event_stub! for
+// FeesDiscountAssigned deleted and replaced with a full struct
+// below -- see aggregate.rs:RealFeesAssignDiscount).
+//
+// FAD I-3: timestamp recorded. Both FeesAssignDiscountCreated
+// (carrying the scope-key + applied_amount_minor +
+// unapplied_amount_minor + currency + note + the event-level
+// occurred_at timestamp downstream) and FeesAssignDiscountRetired
+// (tombstone preserving the scope-key for legal-record retention
+// + the event-level occurred_at timestamp) are emitted by
+// create_fees_assign_discount / retire_fees_assign_discount
+// service functions.
 
 finance_event_stub! {
     /// Emitted when a `FeesInstallment` is created for a `FeesMaster`.
@@ -8064,7 +8069,120 @@ impl DomainEvent for FeesMasterRetired {
     }
 }
 
+
+// -- Wave 118 -- FeesAssignDiscount (Phase 7 stub replaced) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesAssignDiscountCreated {
+    pub fees_assign_discount_id: FeesAssignDiscountId,
+    pub fees_assign_id: FeesAssignId,
+    pub discount_id: FeesDiscountId,
+    pub applied_amount_minor: i64,
+    pub unapplied_amount_minor: i64,
+    pub currency: Currency,
+    pub note: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesAssignDiscountCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_assign_discount_id: FeesAssignDiscountId,
+        fees_assign_id: FeesAssignId,
+        discount_id: FeesDiscountId,
+        applied_amount_minor: i64,
+        unapplied_amount_minor: i64,
+        currency: Currency,
+        note: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_assign_discount_id,
+            fees_assign_id,
+            discount_id,
+            applied_amount_minor,
+            unapplied_amount_minor,
+            currency,
+            note,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesAssignDiscountCreated {
+    const EVENT_TYPE: &'static str = "finance.fees_assign_discount.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_assign_discount";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_assign_discount_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_assign_discount_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesAssignDiscountRetired {
+    pub fees_assign_discount_id: FeesAssignDiscountId,
+    pub retired_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesAssignDiscountRetired {
+    pub fn new(
+        fees_assign_discount_id: FeesAssignDiscountId,
+        retired_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_assign_discount_id,
+            retired_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesAssignDiscountRetired {
+    const EVENT_TYPE: &'static str = "finance.fees_assign_discount.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_assign_discount";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_assign_discount_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_assign_discount_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 #[cfg(test)]
+#[allow(t)]
 #[allow(est)]
 #[allow(
     clippy::unwrap_used,

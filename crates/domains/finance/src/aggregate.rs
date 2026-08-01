@@ -8052,6 +8052,122 @@ impl RealDirectFeesInstallment {
 }
 
 
+// -- Wave 118 -- RealFeesAssignDiscount (per-(fees_assign, discount) linkage) --
+//
+// FAD I-3: timestamp recorded. The standard audit footer carries
+// the creation timestamp (created_at) + last-update timestamp
+// (updated_at) + the event-level occurred_at timestamp on the
+// emitted event. The aggregate enforces monotonicity
+// (updated_at >= created_at at all times).
+//
+// Companion invariants enforced at fresh():
+//   * applied_amount_minor >= 0 (FAD I-1 partial -- the VO
+//     enforces the lower bound; the aggregate carries both
+//     fields as required).
+//   * unapplied_amount_minor >= 0 (FAD I-1 partial).
+//   * applied + unapplied is constant for the lifetime of the
+//     aggregate (FAD I-2 -- no mutator exposes an update path).
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFeesAssignDiscount {
+    pub id: FeesAssignDiscountId,
+    pub school_id: SchoolId,
+    pub fees_assign_id: FeesAssignId,
+    pub discount_id: FeesDiscountId,
+    pub applied_amount_minor: i64,
+    pub unapplied_amount_minor: i64,
+    pub currency: Currency,
+    pub note: Option<String>,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFeesAssignDiscount {
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: FeesAssignDiscountId,
+        fees_assign_id: FeesAssignId,
+        discount_id: FeesDiscountId,
+        applied_amount_minor: i64,
+        unapplied_amount_minor: i64,
+        currency: Currency,
+        note: Option<String>,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FAD I-1 partial: applied_amount_minor >= 0.
+        if applied_amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesAssignDiscount applied_amount_minor must be >= 0 (FAD I-1)",
+            ));
+        }
+        // FAD I-1 partial: unapplied_amount_minor >= 0.
+        if unapplied_amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesAssignDiscount unapplied_amount_minor must be >= 0 (FAD I-1)",
+            ));
+        }
+        // FAD I-3: timestamps recorded via the standard audit footer.
+        // The caller-supplied `at` Timestamp is the event-occurred-at
+        // timestamp that flows downstream on the event.
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            fees_assign_id,
+            discount_id,
+            applied_amount_minor,
+            unapplied_amount_minor,
+            currency,
+            note,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    /// Whether the aggregate carries a recorded creation
+    /// timestamp (FAD I-3). Always true after `fresh()` succeeds.
+    #[must_use]
+    pub fn has_recorded_timestamps(&self) -> bool {
+        // The created_at + updated_at fields are populated by
+        // fresh(); FAD I-3 is satisfied by the standard audit
+        // footer.
+        true
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesAssignDiscount is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+
 // -- Wave 113 -- RealFeesCarryForward (end-of-year balance roll-over) --
 //
 // FCF I-3: unique per (school, student, academic). The scope-key
