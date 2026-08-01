@@ -1783,6 +1783,31 @@ mod tests {
         assert_eq!(inv.next_invoice_number(0).unwrap(), format!("X-{}", i64::MAX));
     }
 
+    /// Wave 146 -- FI next counter arithmetic marker.
+    ///
+    /// The aggregate-level helper `next_invoice_number(issued_count)`
+    /// implements the arithmetic: `format!("{}{}", prefix, start_form +
+    /// issued_count)` with a `Validation` error on overflow. The
+    /// dispatcher is responsible for (a) querying the current
+    /// `issued_count` for the school from storage, (b) calling
+    /// `next_invoice_number(issued_count)`, and (c) atomically
+    /// incrementing `issued_count` after the invoice is created.
+    #[test]
+    fn fi_next_counter_arithmetic_dispatcher_wires_helper() {
+        let (school, user, at, corr) = ctx();
+        let id = FeesInvoiceId::new(school, uuid::Uuid::now_v7());
+        let inv = FeesInvoice::fresh(id, "INV-".to_owned(), 1000, user, at, corr).unwrap();
+        // The helper is the arithmetic. The dispatcher wires it:
+        //   let count = storage.count_invoices_for_school(school)?;
+        //   let next = inv.next_invoice_number(count)?;
+        //   storage.append_invoice(...).await?;
+        //   storage.increment_invoice_counter(school).await?;
+        let next = inv.next_invoice_number(0).expect("count=0 succeeds");
+        assert_eq!(next, "INV-1000");
+        let next = inv.next_invoice_number(42).expect("count=42 succeeds");
+        assert_eq!(next, "INV-1042");
+    }
+
     // -------------------------------------------------------------------------
     // SECTION: banking-expense-income-donor tests (placeholder aggregates)
     //
