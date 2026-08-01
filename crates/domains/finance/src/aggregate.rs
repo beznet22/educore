@@ -7945,6 +7945,17 @@ pub struct RealDirectFeesInstallment {
     /// sum-of-percentages invariant (<= 100_000 across all
     /// installments for a given (school_id, fees_master_id)).
     pub percentage_minor: i64,
+    /// DFI I-4: window start date (the earliest date this
+    /// installment window covers). Optional -- when None, no
+    /// window restriction applies.
+    pub window_start: Option<chrono::NaiveDate>,
+    /// DFI I-4: window end date (the latest date this installment
+    /// window covers). Companion invariant: window_end >=
+    /// window_start. Optional -- when None, no window restriction
+    /// applies. The dispatcher enforces cross-row non-overlap
+    /// (sum of all installment windows for a given (school_id,
+    /// fees_master_id) must not overlap).
+    pub window_end: Option<chrono::NaiveDate>,
     pub version: Version,
     pub etag: Etag,
     pub created_at: Timestamp,
@@ -7966,6 +7977,8 @@ impl RealDirectFeesInstallment {
         currency: Currency,
         due_date: chrono::NaiveDate,
         percentage_minor: i64,
+        window_start: Option<chrono::NaiveDate>,
+        window_end: Option<chrono::NaiveDate>,
         actor: UserId,
         at: Timestamp,
         correlation: CorrelationId,
@@ -7988,6 +8001,15 @@ impl RealDirectFeesInstallment {
                 "DirectFeesInstallment percentage_minor must be in [0, 100000] (DFI I-3)",
             ));
         }
+        // DFI I-4 companion: when both window_start + window_end
+        // are Some, window_end >= window_start.
+        if let (Some(start), Some(end)) = (window_start, window_end) {
+            if end < start {
+                return Err(educore_core::error::DomainError::validation(
+                    "DirectFeesInstallment window_end must be >= window_start when both are present (DFI I-4)",
+                ));
+            }
+        }
         Ok(Self {
             school_id: id.school_id(),
             id,
@@ -7997,6 +8019,8 @@ impl RealDirectFeesInstallment {
             currency,
             due_date,
             percentage_minor,
+            window_start,
+            window_end,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at: at,

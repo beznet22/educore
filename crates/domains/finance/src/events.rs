@@ -7720,6 +7720,8 @@ pub struct DirectFeesInstallmentCreated {
     pub currency: Currency,
     pub due_date: NaiveDate,
     pub percentage_minor: i64, // DFI I-3
+    pub window_start: Option<NaiveDate>, // DFI I-4
+    pub window_end: Option<NaiveDate>, // DFI I-4
     pub created_by: UserId,
     pub event_id: EventId,
     pub correlation_id: CorrelationId,
@@ -7736,6 +7738,8 @@ impl DirectFeesInstallmentCreated {
         currency: Currency,
         due_date: NaiveDate,
         percentage_minor: i64,
+        window_start: Option<NaiveDate>,
+        window_end: Option<NaiveDate>,
         created_by: UserId,
         event_id: EventId,
         correlation_id: CorrelationId,
@@ -7749,6 +7753,8 @@ impl DirectFeesInstallmentCreated {
             currency,
             due_date,
             percentage_minor,
+            window_start,
+            window_end,
             created_by,
             event_id,
             correlation_id,

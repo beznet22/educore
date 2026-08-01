@@ -690,6 +690,8 @@ pub struct CreateDirectFeesInstallmentCommand {
     pub currency: Currency,
     pub due_date: NaiveDate,
     pub percentage_minor: i64, // DFI I-3
+    pub window_start: Option<NaiveDate>, // DFI I-4
+    pub window_end: Option<NaiveDate>, // DFI I-4
 }
 
 

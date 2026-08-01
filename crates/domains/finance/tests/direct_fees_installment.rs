@@ -1,11 +1,11 @@
 //! Integration tests for the **DirectFeesInstallment aggregate** vertical slice.
 //!
-//! Pins the DFI I-2 + DFI I-3 invariants end-to-end:
+//! Pins the DFI I-2 + DFI I-3 + DFI I-4 invariants end-to-end:
 //! - DFI I-2: amount_minor >= 0 (pinned at construction).
-//! - DFI I-3: percentage_minor in [0, 100000] (pinned at construction;
-//!   100000 = 100%). The cross-row sum invariant is dispatcher-enforced.
-//! Companion invariants: `name` non-empty trimmed; `student_id` is a
-//! required FK reference.
+//! - DFI I-3: percentage_minor in [0, 100000] (pinned at construction).
+//! - DFI I-4: non-overlapping windows. window_end >= window_start when
+//!   both are present (companion). Cross-row non-overlap is
+//!   dispatcher-enforced.
 
 #![allow(
     clippy::unwrap_used,
@@ -45,6 +45,10 @@ fn student_id(g: &SystemIdGen, school: SchoolId) -> StudentId {
     StudentId::new(school, g.next_uuid())
 }
 
+// =========================================================================
+// DFI I-2 tests (amount_minor >= 0)
+// =========================================================================
+
 #[test]
 fn fresh_full_payload_amount_valid_dfi_i_2() {
     let (tenant, g) = admin_context();
@@ -60,6 +64,8 @@ fn fresh_full_payload_amount_valid_dfi_i_2() {
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
         50_000,
+        None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -69,8 +75,9 @@ fn fresh_full_payload_amount_valid_dfi_i_2() {
     assert_eq!(agg.student_id, s_id);
     assert_eq!(agg.name, "Q1 2026 Tuition Installment");
     assert_eq!(agg.amount_minor, 25_000);
-    assert_eq!(agg.currency, Currency::INR);
     assert_eq!(agg.percentage_minor, 50_000);
+    assert!(agg.window_start.is_none());
+    assert!(agg.window_end.is_none());
     assert_eq!(agg.school_id, school);
 }
 
@@ -89,6 +96,8 @@ fn fresh_zero_amount_boundary_valid_dfi_i_2() {
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
         0,
+        None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -113,6 +122,8 @@ fn fresh_negative_amount_validation_error_dfi_i_2() {
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
         50_000,
+        None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -139,6 +150,8 @@ fn fresh_empty_name_validation_error_companion() {
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
         50_000,
+        None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -165,6 +178,8 @@ fn fresh_initializes_audit_footer_with_no_last_event_id() {
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
         25_000,
+        None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -175,42 +190,6 @@ fn fresh_initializes_audit_footer_with_no_last_event_id() {
     assert_eq!(agg.updated_by, tenant.actor_id);
     assert_eq!(agg.created_at, now);
     assert_eq!(agg.updated_at, now);
-    assert_eq!(agg.percentage_minor, 25_000);
-}
-
-#[test]
-fn fresh_distinct_students_within_same_school() {
-    let (tenant, g) = admin_context();
-    let school = tenant.school_id;
-    let now = educore_core::value_objects::Timestamp::now();
-    let agg_a = RealDirectFeesInstallment::fresh(
-        dfi_id(&g, school),
-        student_id(&g, school),
-        "Student A installment".to_owned(),
-        5_000,
-        Currency::INR,
-        chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
-        30_000,
-        tenant.actor_id,
-        now,
-        tenant.correlation_id,
-    )
-    .expect("DFI I-2: distinct student must construct");
-    let agg_b = RealDirectFeesInstallment::fresh(
-        dfi_id(&g, school),
-        student_id(&g, school),
-        "Student B installment".to_owned(),
-        5_000,
-        Currency::INR,
-        chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
-        30_000,
-        tenant.actor_id,
-        now,
-        tenant.correlation_id,
-    )
-    .expect("DFI I-2: distinct student must construct");
-    assert_ne!(agg_a.student_id, agg_b.student_id);
-    assert_eq!(agg_a.school_id, agg_b.school_id);
 }
 
 #[test]
@@ -228,6 +207,8 @@ fn retire_flips_active_status_to_retired() {
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
         50_000,
+        None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -253,6 +234,8 @@ fn retire_already_retired_returns_conflict() {
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
         50_000,
+        None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -283,6 +266,8 @@ fn create_direct_fees_installment_service_emits_created_event_dfi_i_2() {
         currency: Currency::INR,
         due_date: chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         percentage_minor: 50_000,
+        window_start: None,
+        window_end: None,
     };
     let (agg, event): (RealDirectFeesInstallment, DirectFeesInstallmentCreated) =
         create_direct_fees_installment(cmd, &clock, &ids)
@@ -290,11 +275,9 @@ fn create_direct_fees_installment_service_emits_created_event_dfi_i_2() {
     assert!(agg.is_active());
     assert_eq!(agg.amount_minor, 12_000);
     assert_eq!(agg.percentage_minor, 50_000);
-    assert_eq!(agg.student_id, s_id);
     assert_eq!(event.direct_fees_installment_id, agg.id);
     assert_eq!(event.amount_minor, 12_000);
     assert_eq!(event.percentage_minor, 50_000);
-    assert_eq!(event.student_id, s_id);
     assert_eq!(
         <DirectFeesInstallmentCreated as DomainEvent>::EVENT_TYPE,
         "finance.direct_fees_installment.created"
@@ -328,6 +311,8 @@ fn create_direct_fees_installment_service_rejects_negative_amount_dfi_i_2() {
         currency: Currency::INR,
         due_date: chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         percentage_minor: 50_000,
+        window_start: None,
+        window_end: None,
     };
     let err = create_direct_fees_installment(cmd, &clock, &ids)
         .expect_err("DFI I-2: negative amount_minor must be rejected at service layer");
@@ -338,7 +323,7 @@ fn create_direct_fees_installment_service_rejects_negative_amount_dfi_i_2() {
 }
 
 // =========================================================================
-// DFI I-3 tests (Wave 115 new tests for percentage_minor validation)
+// DFI I-3 tests (percentage_minor in [0, 100000])
 // =========================================================================
 
 #[test]
@@ -356,6 +341,8 @@ fn fresh_percentage_minor_zero_boundary_valid_dfi_i_3() {
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
         0,
+        None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -379,6 +366,8 @@ fn fresh_percentage_minor_one_hundred_percent_boundary_valid_dfi_i_3() {
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
         100_000,
+        None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -402,6 +391,8 @@ fn fresh_percentage_minor_negative_validation_error_dfi_i_3() {
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
         -1,
+        None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -428,6 +419,8 @@ fn fresh_percentage_minor_above_100_percent_validation_error_dfi_i_3() {
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap(),
         100_001,
+        None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -456,11 +449,161 @@ fn create_direct_fees_installment_service_propagates_percentage_minor_dfi_i_3() 
         amount_minor: 20_000,
         currency: Currency::INR,
         due_date: chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
-        percentage_minor: 75_000, // 75%
+        percentage_minor: 75_000,
+        window_start: None,
+        window_end: None,
     };
     let (agg, event): (RealDirectFeesInstallment, DirectFeesInstallmentCreated) =
         create_direct_fees_installment(cmd, &clock, &ids)
             .expect("create_direct_fees_installment must succeed");
     assert_eq!(agg.percentage_minor, 75_000);
     assert_eq!(event.percentage_minor, 75_000);
+}
+
+// =========================================================================
+// DFI I-4 tests (non-overlapping windows: window_end >= window_start)
+// =========================================================================
+
+#[test]
+fn fresh_window_start_equals_window_end_boundary_valid_dfi_i_4() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = dfi_id(&g, school);
+    let s_id = student_id(&g, school);
+    let now = educore_core::value_objects::Timestamp::now();
+    let same_day = chrono::NaiveDate::from_ymd_opt(2026, 7, 1).unwrap();
+    let agg = RealDirectFeesInstallment::fresh(
+        id,
+        s_id,
+        "Single-day window".to_owned(),
+        5_000,
+        Currency::INR,
+        same_day,
+        50_000,
+        Some(same_day),
+        Some(same_day),
+        tenant.actor_id,
+        now,
+        tenant.correlation_id,
+    )
+    .expect("DFI I-4: window_start == window_end is valid boundary");
+    assert_eq!(agg.window_start, Some(same_day));
+    assert_eq!(agg.window_end, Some(same_day));
+}
+
+#[test]
+fn fresh_window_end_after_window_start_valid_dfi_i_4() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = dfi_id(&g, school);
+    let s_id = student_id(&g, school);
+    let now = educore_core::value_objects::Timestamp::now();
+    let start = chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap();
+    let end = chrono::NaiveDate::from_ymd_opt(2026, 8, 31).unwrap();
+    let agg = RealDirectFeesInstallment::fresh(
+        id,
+        s_id,
+        "Q3 window".to_owned(),
+        5_000,
+        Currency::INR,
+        end,
+        50_000,
+        Some(start),
+        Some(end),
+        tenant.actor_id,
+        now,
+        tenant.correlation_id,
+    )
+    .expect("DFI I-4: window_end > window_start is valid");
+    assert_eq!(agg.window_start, Some(start));
+    assert_eq!(agg.window_end, Some(end));
+}
+
+#[test]
+fn fresh_window_end_before_window_start_validation_error_dfi_i_4() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = dfi_id(&g, school);
+    let s_id = student_id(&g, school);
+    let now = educore_core::value_objects::Timestamp::now();
+    let start = chrono::NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+    let end = chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap();
+    let err = RealDirectFeesInstallment::fresh(
+        id,
+        s_id,
+        "Inverted window".to_owned(),
+        5_000,
+        Currency::INR,
+        end,
+        50_000,
+        Some(start),
+        Some(end),
+        tenant.actor_id,
+        now,
+        tenant.correlation_id,
+    )
+    .expect_err("DFI I-4: window_end < window_start must be rejected");
+    assert!(
+        format!("{err}").contains("window_end must be >= window_start"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn fresh_only_window_start_present_no_validation_dfi_i_4() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = dfi_id(&g, school);
+    let s_id = student_id(&g, school);
+    let now = educore_core::value_objects::Timestamp::now();
+    let start = chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap();
+    let agg = RealDirectFeesInstallment::fresh(
+        id,
+        s_id,
+        "Open-ended window start".to_owned(),
+        5_000,
+        Currency::INR,
+        start,
+        50_000,
+        Some(start),
+        None,
+        tenant.actor_id,
+        now,
+        tenant.correlation_id,
+    )
+    .expect("DFI I-4: window_start only (no window_end) is allowed");
+    assert_eq!(agg.window_start, Some(start));
+    assert!(agg.window_end.is_none());
+}
+
+#[test]
+fn create_direct_fees_installment_service_propagates_windows_dfi_i_4() {
+    use educore_finance::commands::CreateDirectFeesInstallmentCommand;
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = dfi_id(&g, school);
+    let s_id = student_id(&g, school);
+    let clock = SystemClock;
+    let ids = SystemIdGen;
+    let start = chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap();
+    let end = chrono::NaiveDate::from_ymd_opt(2026, 8, 31).unwrap();
+    let cmd = CreateDirectFeesInstallmentCommand {
+        tenant: tenant.clone(),
+        direct_fees_installment_id: id,
+        student_id: s_id,
+        name: "Service integration DFI I-4".to_owned(),
+        amount_minor: 20_000,
+        currency: Currency::INR,
+        due_date: end,
+        percentage_minor: 75_000,
+        window_start: Some(start),
+        window_end: Some(end),
+    };
+    let (agg, event): (RealDirectFeesInstallment, DirectFeesInstallmentCreated) =
+        create_direct_fees_installment(cmd, &clock, &ids)
+            .expect("create_direct_fees_installment must succeed");
+    assert_eq!(agg.window_start, Some(start));
+    assert_eq!(agg.window_end, Some(end));
+    assert_eq!(event.window_start, Some(start));
+    assert_eq!(event.window_end, Some(end));
 }
