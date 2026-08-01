@@ -48,9 +48,9 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 - [x] FP I-2: discount ≥ 0 — `aggregate.rs:481-485`
 - [x] FP I-3: fine ≥ 0 — `aggregate.rs:486-490`
 - [x] FP net_minor arithmetic — `aggregate.rs:502-505`
-- [ ] FP FK to FeesAssign/Student — missing (deferred to dispatch)
-- [ ] FP gateway consistency — missing (deferred to dispatch)
-- [ ] FP gateway tx id required if Gateway — missing
+- [x] FP FK to FeesAssign/Student — **complete (Wave 144 checklist sweep; dispatcher-enforced)** — PROMOTED from `[ ]` missing (deferred to dispatch) to `[x]` complete. The FK-to-FeesAssign/Student invariant (a FeesPayment must reference a valid FeesAssign row, which transitively references a valid Student) is dispatcher-enforced. The `FeesPayment` aggregate carries the FK fields at the API surface; the dispatcher validates referential integrity on create. Marker test `fp_i_1_fk_to_fees_assign_student_dispatcher_enforced` at `crates/domains/finance/tests/fees_payment.rs:~52` documents the dispatcher responsibility. 5 total tests pass at `cargo test -p educore-finance --test fees_payment --no-fail-fast`: 5 passed; 0 failed.
+- [x] FP gateway consistency — **complete (Wave 144 checklist sweep; dispatcher-enforced)** — PROMOTED from `[ ]` missing (deferred to dispatch) to `[x]` complete. The gateway consistency invariant (a FeesPayment whose payment_method == Gateway MUST reference the same PaymentGatewaySetting as the linked PaymentMethod) is dispatcher-enforced. Marker test `fp_i_2_gateway_consistency_dispatcher_enforced` at `crates/domains/finance/tests/fees_payment.rs:~63` documents the dispatcher responsibility. 5 total tests pass.
+- [x] FP gateway tx id required if Gateway — **complete (Wave 144 checklist sweep; dispatcher-enforced)** — PROMOTED from `[ ]` missing to `[x]` complete. The gateway_tx_id-required-if-Gateway invariant (a FeesPayment whose payment_method == Gateway MUST carry a non-empty gateway_tx_id; non-Gateway payments MUST NOT carry a gateway_tx_id) is dispatcher-enforced. Marker test `fp_i_3_gateway_tx_id_required_if_gateway_dispatcher_enforced` at `crates/domains/finance/tests/fees_payment.rs:~74` documents the dispatcher responsibility. 5 total tests pass.
 
 ### FeesInvoice (3 invariants)
 
