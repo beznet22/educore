@@ -58,6 +58,8 @@ fn fresh_full_payload_amount_valid_ffi_i_1() {
         15_000,
         Some(2_000),
         Some("Q1 tuition".to_string()),
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -83,6 +85,8 @@ fn fresh_negative_amount_validation_error_ffi_i_1() {
         -1,
         None,
         None,
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -110,6 +114,8 @@ fn fresh_zero_amount_is_valid_ffi_i_1() {
         0,
         None,
         None,
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -132,6 +138,8 @@ fn fresh_negative_discount_validation_error() {
         1_000,
         Some(-1),
         None,
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -151,6 +159,8 @@ fn fresh_empty_invoice_number_validation_error() {
         1_000,
         None,
         None,
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -170,6 +180,8 @@ fn fresh_empty_payer_reference_validation_error() {
         1_000,
         None,
         None,
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -189,6 +201,8 @@ fn fresh_invoice_number_is_trimmed() {
         1_000,
         None,
         None,
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -211,6 +225,8 @@ fn fresh_initializes_audit_footer() {
         5_000,
         None,
         None,
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -237,6 +253,8 @@ fn retire_flips_active_status_to_retired() {
         5_000,
         None,
         None,
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -262,6 +280,8 @@ fn retire_already_retired_returns_conflict() {
         5_000,
         None,
         None,
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -271,6 +291,82 @@ fn retire_already_retired_returns_conflict() {
         .expect("first retire should succeed");
     let result = row.retire(Timestamp::now(), tenant.actor_id);
     assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+// ---- FFI I-2: due_date >= invoice_date ----
+
+#[test]
+fn fresh_due_date_equals_invoice_date_boundary_valid_ffi_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = fm_fees_invoice_id(&g, school);
+    let row = RealFmFeesInvoice::fresh(
+        id,
+        "INV-001".to_string(),
+        "student-A".to_string(),
+        1_000,
+        None,
+        None,
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap(),
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("FFI I-2: due_date == invoice_date is the valid boundary");
+    assert_eq!(row.invoice_date, chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap());
+    assert_eq!(row.due_date, chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap());
+}
+
+#[test]
+fn fresh_due_date_after_invoice_date_valid_ffi_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = fm_fees_invoice_id(&g, school);
+    let row = RealFmFeesInvoice::fresh(
+        id,
+        "INV-001".to_string(),
+        "student-A".to_string(),
+        1_000,
+        None,
+        None,
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 9, 30).unwrap(),
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("FFI I-2: due_date > invoice_date is valid");
+    assert!(row.due_date > row.invoice_date);
+}
+
+#[test]
+fn fresh_due_date_before_invoice_date_validation_error_ffi_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = fm_fees_invoice_id(&g, school);
+    let result = RealFmFeesInvoice::fresh(
+        id,
+        "INV-001".to_string(),
+        "student-A".to_string(),
+        1_000,
+        None,
+        None,
+        chrono::NaiveDate::from_ymd_opt(2026, 9, 30).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap(),
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    );
+    match result {
+        Err(DomainError::Validation(msg)) => {
+            assert!(
+                msg.contains("due_date must be >= invoice_date") && msg.contains("FFI I-2"),
+                "unexpected error message: {msg}"
+            );
+        }
+        other => panic!("expected Validation error, got {other:?}"),
+    }
 }
 
 // ---- service integration ----
@@ -292,6 +388,8 @@ fn create_fm_fees_invoice_service_emits_created_event_ffi_i_1() {
         amount_minor: 15_000,
         discount_minor: Some(2_000),
         note: Some("Q1 tuition".to_string()),
+        invoice_date: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        due_date: chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
     };
     let evt: FmFeesInvoiceCreated =
         create_fm_fees_invoice(cmd, &clock, &g).expect("service should succeed");

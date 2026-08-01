@@ -3083,6 +3083,8 @@ pub struct CreateFmFeesInvoiceCommand {
     pub amount_minor: i64, // FFI I-1
     pub discount_minor: Option<i64>,
     pub note: Option<String>,
+    pub invoice_date: NaiveDate,
+    pub due_date: NaiveDate,
 }
 
 impl CreateFmFeesInvoiceCommand {

@@ -7219,6 +7219,11 @@ pub struct RealFmFeesInvoice {
     pub discount_minor: Option<i64>,
     /// Optional note (e.g. payment instructions).
     pub note: Option<String>,
+    /// Invoice date (the date the invoice was issued; FFI I-2
+    /// companion: the due_date must be >= invoice_date).
+    pub invoice_date: chrono::NaiveDate,
+    /// Due date (FFI I-2: must be >= invoice_date).
+    pub due_date: chrono::NaiveDate,
     /// Standard audit footer: optimistic concurrency version.
     pub version: Version,
     /// Standard audit footer: etag.
@@ -7251,6 +7256,8 @@ impl RealFmFeesInvoice {
         amount_minor: i64,
         discount_minor: Option<i64>,
         note: Option<String>,
+        invoice_date: chrono::NaiveDate,
+        due_date: chrono::NaiveDate,
         actor: UserId,
         at: Timestamp,
         correlation: CorrelationId,
@@ -7275,6 +7282,12 @@ impl RealFmFeesInvoice {
                 "FmFeesInvoice invoice_number must be non-empty after trim",
             ));
         }
+        // FFI I-2: due_date >= invoice_date.
+        if due_date < invoice_date {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoice due_date must be >= invoice_date (FFI I-2)",
+            ));
+        }
         let payer_trimmed = payer_reference.trim().to_string();
         if payer_trimmed.is_empty() {
             return Err(educore_core::error::DomainError::validation(
@@ -7289,6 +7302,8 @@ impl RealFmFeesInvoice {
             amount_minor,
             discount_minor,
             note,
+            invoice_date,
+            due_date,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at: at,
