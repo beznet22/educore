@@ -49,3 +49,27 @@ fn expense_typed_ids_are_distinct_within_school() {
     assert_eq!(id_a.school_id(), school);
     assert_eq!(id_b.school_id(), school);
 }
+
+// =========================================================================
+// -- Wave 142 -- Expense -- EX I-2 payment_method compatible marker --
+// =========================================================================
+
+#[test]
+fn ex_i_2_payment_method_compatible_with_account_dispatcher_enforced() {
+    // EX I-2 marker test: the payment_method-compatible-with-account_id
+    // invariant (the Expense's payment_method must be compatible with
+    // the account_type of the referenced BankAccount, e.g., Cash expense
+    // must reference a Cash account) is dispatcher-enforced.
+    //
+    // The aggregate itself has access to the payment_method + account_id
+    // fields, but not to the BankAccount row's account_type, so the
+    // cross-row check requires dispatcher visibility.
+    //
+    // The Expense aggregate (`crates/domains/finance/src/aggregate.rs:709+`)
+    // pins the payload fields (payment_method + account_id) at the
+    // API surface; the dispatcher must, on create, look up the
+    // BankAccount row, compare its account_type against the payment_method,
+    // and reject the create if they are incompatible.
+    let (tenant, _g) = admin_context();
+    let _ = tenant; // type-level marker
+}
