@@ -37,7 +37,7 @@ use crate::value_objects::{
     FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId,
     FmFeesTypeId, FmFeesWeaverId,
     FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
-    IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId, ProductPurchaseId, FmFeesInvoiceChildId,
+    IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId, ProductPurchaseId, FmFeesInvoiceChildId,
     PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, SalaryTemplateId, WalletId,
     WalletTransactionApprovalId, WalletTransactionId, WalletTxType, TransactionId,
 };
@@ -7362,6 +7362,8 @@ pub struct PaymentMethodCreated {
     /// Payment kind (cash / bank / cheque / card / mobile wallet
     /// / gateway).
     pub kind: PaymentMethodKind,
+    /// PM I-2: gateway id when kind == Gateway; None otherwise.
+    pub gateway_id: Option<PaymentGatewaySettingId>,
     /// Optional human-readable description.
     pub description: Option<String>,
     /// Created-by user.
@@ -7381,6 +7383,7 @@ impl PaymentMethodCreated {
         payment_method_id: PaymentMethodId,
         name: String,
         kind: PaymentMethodKind,
+        gateway_id: Option<PaymentGatewaySettingId>,
         description: Option<String>,
         created_by: UserId,
         event_id: EventId,
@@ -7391,6 +7394,7 @@ impl PaymentMethodCreated {
             payment_method_id,
             name,
             kind,
+            gateway_id,
             description,
             created_by,
             event_id,

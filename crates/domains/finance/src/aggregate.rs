@@ -1991,6 +1991,11 @@ pub struct RealPaymentMethod {
     /// Payment kind (cash / bank / cheque / card / mobile wallet
     /// / gateway). Drives downstream transaction validation.
     pub kind: PaymentMethodKind,
+    /// PM I-2: required when `kind == Gateway` (the gateway
+    /// that backs this method). Must be None for non-gateway
+    /// kinds. Pinned at construction in `fresh()` (returns
+    /// `DomainError::validation` on mismatch).
+    pub gateway_id: Option<PaymentGatewaySettingId>,
     /// Optional human-readable description (e.g. "Primary bank
     /// account for tuition payments").
     pub description: Option<String>,
@@ -2022,11 +2027,17 @@ impl RealPaymentMethod {
     /// uniqueness (dispatcher-enforced) is NOT checked here —
     /// the dispatcher enforces it via the (school_id, name)
     /// scope-key tuple the aggregate carries.
+    ///
+    /// Enforces PM I-2: `gateway_id` is required iff
+    /// `kind == PaymentMethodKind::Gateway`. Cash / Bank /
+    /// Cheque / Card / Mobile kinds must NOT carry a gateway_id
+    /// (a non-gateway payment method cannot reference a gateway).
     #[allow(clippy::too_many_arguments)]
     pub fn fresh(
         id: PaymentMethodId,
         name: String,
         kind: PaymentMethodKind,
+        gateway_id: Option<PaymentGatewaySettingId>,
         description: Option<String>,
         actor: UserId,
         at: Timestamp,
@@ -2038,11 +2049,26 @@ impl RealPaymentMethod {
                 "PaymentMethod name must be non-empty after trimming",
             ));
         }
+        // PM I-2: gateway_id required iff kind == Gateway.
+        match (&kind, &gateway_id) {
+            (PaymentMethodKind::Gateway, None) => {
+                return Err(educore_core::error::DomainError::validation(
+                    "PaymentMethod kind=Gateway requires gateway_id (PM I-2)",
+                ));
+            }
+            (kind, Some(_)) if *kind != PaymentMethodKind::Gateway => {
+                return Err(educore_core::error::DomainError::validation(format!(
+                    "PaymentMethod kind={kind:?} cannot have gateway_id (PM I-2)"
+                )));
+            }
+            _ => {}
+        }
         Ok(Self {
             school_id: id.school_id(),
             id,
             name,
             kind,
+            gateway_id,
             description,
             version: Version::initial(),
             etag: fresh_etag(),

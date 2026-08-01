@@ -1095,6 +1095,8 @@ pub struct CreatePaymentMethodCommand {
     pub payment_method_id: PaymentMethodId,
     pub name: String,
     pub kind: PaymentMethodKind,
+    /// PM I-2: required iff `kind == Gateway`.
+    pub gateway_id: Option<PaymentGatewaySettingId>,
     pub description: Option<String>,
 }
 

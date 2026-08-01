@@ -51,6 +51,7 @@ fn fresh_full_payload_valid_pm_i_1_companion() {
         id,
         "Tuition Cash".to_owned(),
         PaymentMethodKind::Cash,
+        None,
         Some("Primary cash receipt method".to_owned()),
         tenant.actor_id,
         now,
@@ -76,6 +77,7 @@ fn fresh_distinct_names_within_same_school_pm_i_1() {
         "Tuition Cash".to_owned(),
         PaymentMethodKind::Cash,
         None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -85,6 +87,7 @@ fn fresh_distinct_names_within_same_school_pm_i_1() {
         id_b,
         "Tuition Bank".to_owned(),
         PaymentMethodKind::Bank,
+        None,
         None,
         tenant.actor_id,
         now,
@@ -106,6 +109,7 @@ fn fresh_same_name_across_different_schools_pm_i_1() {
         "Tuition Cash".to_owned(),
         PaymentMethodKind::Cash,
         None,
+        None,
         tenant_a.actor_id,
         now,
         tenant_a.correlation_id,
@@ -115,6 +119,7 @@ fn fresh_same_name_across_different_schools_pm_i_1() {
         pm_id(&g_b, tenant_b.school_id),
         "Tuition Cash".to_owned(),
         PaymentMethodKind::Cash,
+        None,
         None,
         tenant_b.actor_id,
         now,
@@ -134,6 +139,7 @@ fn fresh_whitespace_only_name_validation_error_companion() {
         id,
         "   \t  ".to_owned(),
         PaymentMethodKind::Cash,
+        None,
         None,
         tenant.actor_id,
         now,
@@ -156,6 +162,7 @@ fn fresh_empty_name_validation_error_companion() {
         String::new(),
         PaymentMethodKind::Cash,
         None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -176,6 +183,7 @@ fn fresh_initializes_audit_footer_with_no_last_event_id() {
         id,
         "Audit footer check".to_owned(),
         PaymentMethodKind::Bank,
+        None,
         None,
         tenant.actor_id,
         now,
@@ -205,10 +213,17 @@ fn fresh_supports_all_payment_method_kinds() {
     .into_iter()
     .enumerate()
     {
+        // PM I-2: gateway_id required iff kind == Gateway.
+        let gateway_id = if kind == PaymentMethodKind::Gateway {
+            Some(educore_finance::prelude::PaymentGatewaySettingId::new(school, g.next_uuid()))
+        } else {
+            None
+        };
         let pm = RealPaymentMethod::fresh(
             pm_id(&g, school),
             format!("method_{i}"),
             kind,
+            gateway_id,
             None,
             tenant.actor_id,
             now,
@@ -216,6 +231,7 @@ fn fresh_supports_all_payment_method_kinds() {
         )
         .expect("PM I-1: all PaymentMethodKind variants must construct");
         assert_eq!(pm.kind, kind);
+        assert_eq!(pm.gateway_id, gateway_id);
     }
 }
 
@@ -228,6 +244,7 @@ fn retire_flips_active_status_to_retired() {
         id,
         "Will be retired".to_owned(),
         PaymentMethodKind::Cash,
+        None,
         None,
         tenant.actor_id,
         now,
@@ -248,6 +265,7 @@ fn retire_already_retired_returns_conflict() {
         id,
         "Double-retire attempt".to_owned(),
         PaymentMethodKind::Cash,
+        None,
         None,
         tenant.actor_id,
         now,
@@ -272,6 +290,7 @@ fn create_payment_method_service_emits_created_event_pm_i_1() {
         payment_method_id: id,
         name: "Service integration cash".to_owned(),
         kind: PaymentMethodKind::Cash,
+        gateway_id: None,
         description: Some("Cash method for service integration test".to_owned()),
     };
     let (pm, event): (RealPaymentMethod, PaymentMethodCreated) =
@@ -310,6 +329,7 @@ fn create_payment_method_service_rejects_empty_name_companion() {
         payment_method_id: id,
         name: String::new(),
         kind: PaymentMethodKind::Cash,
+        gateway_id: None,
         description: None,
     };
     let err = create_payment_method(cmd, &clock, &ids)
@@ -347,4 +367,129 @@ fn retire_payment_method_service_emits_retired_event_pm_i_1() {
     );
     assert_eq!(<PaymentMethodRetired as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(event.school_id(), school);
+}
+
+// =========================================================================
+// -- Wave 135 -- RealPaymentMethod -- PM I-2 gateway_id enforcement --
+// =========================================================================
+
+#[test]
+fn fresh_gateway_requires_gateway_id_pm_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = pm_id(&g, school);
+    let err = RealPaymentMethod::fresh(
+        id,
+        "Online Gateway".to_owned(),
+        PaymentMethodKind::Gateway,
+        None,
+        None,
+        tenant.actor_id,
+        educore_core::value_objects::Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect_err("PM I-2: kind=Gateway without gateway_id must be rejected");
+    assert!(
+        format!("{err}").contains("Gateway requires gateway_id"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn fresh_gateway_with_gateway_id_succeeds_pm_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = pm_id(&g, school);
+    let gw_id = educore_finance::prelude::PaymentGatewaySettingId::new(school, g.next_uuid());
+    let pm = RealPaymentMethod::fresh(
+        id,
+        "Online Gateway".to_owned(),
+        PaymentMethodKind::Gateway,
+        Some(gw_id),
+        None,
+        tenant.actor_id,
+        educore_core::value_objects::Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("PM I-2: Gateway kind with gateway_id must construct");
+    assert_eq!(pm.gateway_id, Some(gw_id));
+    assert_eq!(pm.kind, PaymentMethodKind::Gateway);
+}
+
+#[test]
+fn fresh_cash_with_gateway_id_rejected_pm_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = pm_id(&g, school);
+    let gw_id = educore_finance::prelude::PaymentGatewaySettingId::new(school, g.next_uuid());
+    let err = RealPaymentMethod::fresh(
+        id,
+        "Cash Method".to_owned(),
+        PaymentMethodKind::Cash,
+        Some(gw_id),
+        None,
+        tenant.actor_id,
+        educore_core::value_objects::Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect_err("PM I-2: kind=Cash with gateway_id must be rejected");
+    assert!(
+        format!("{err}").contains("cannot have gateway_id"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn fresh_bank_cheque_card_mobile_gateway_id_none_succeeds_pm_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let now = educore_core::value_objects::Timestamp::now();
+    for (i, kind) in [
+        PaymentMethodKind::Bank,
+        PaymentMethodKind::Cheque,
+        PaymentMethodKind::Card,
+        PaymentMethodKind::Mobile,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let pm = RealPaymentMethod::fresh(
+            pm_id(&g, school),
+            format!("non_gateway_{i}"),
+            kind,
+            None,
+            None,
+            tenant.actor_id,
+            now,
+            tenant.correlation_id,
+        )
+        .expect("PM I-2: non-gateway kinds must succeed with gateway_id=None");
+        assert_eq!(pm.gateway_id, None);
+        assert_eq!(pm.kind, kind);
+    }
+}
+
+#[test]
+fn create_gateway_payment_method_service_emits_event_with_gateway_id_pm_i_2() {
+    use educore_finance::commands::CreatePaymentMethodCommand;
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = pm_id(&g, school);
+    let gw_id = educore_finance::prelude::PaymentGatewaySettingId::new(school, g.next_uuid());
+    let clock = SystemClock;
+    let ids = SystemIdGen;
+    let cmd = CreatePaymentMethodCommand {
+        tenant: tenant.clone(),
+        payment_method_id: id,
+        name: "Razorpay gateway".to_owned(),
+        kind: PaymentMethodKind::Gateway,
+        gateway_id: Some(gw_id),
+        description: Some("Razorpay integration".to_owned()),
+    };
+    let (pm, event): (RealPaymentMethod, PaymentMethodCreated) =
+        create_payment_method(cmd, &clock, &ids).expect("create must succeed");
+    assert_eq!(pm.gateway_id, Some(gw_id));
+    assert_eq!(event.gateway_id, Some(gw_id));
+    assert_eq!(pm.kind, PaymentMethodKind::Gateway);
+    assert_eq!(event.kind, PaymentMethodKind::Gateway);
 }
