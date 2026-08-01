@@ -1173,6 +1173,50 @@ impl RetireFeesInstallmentAssignCommand {
         vec![Capability::FinanceFeesAssignCreate]
     }
 }
+// -- Wave 132 -- FeesInstallmentAssign state machine extensions --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CloseFeesInstallmentAssignCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_assign_id: FeesInstallmentAssignId,
+}
+
+impl CloseFeesInstallmentAssignCommand {
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInstallmentAssign]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CancelFeesInstallmentAssignCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_assign_id: FeesInstallmentAssignId,
+}
+
+impl CancelFeesInstallmentAssignCommand {
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInstallmentAssign]
+    }
+}
+
+pub const FINANCE_FEES_INSTALLMENT_ASSIGN_CLOSE_COMMAND_TYPE: &str =
+    "finance.fees_installment_assign.close";
+pub const FINANCE_FEES_INSTALLMENT_ASSIGN_CANCEL_COMMAND_TYPE: &str =
+    "finance.fees_installment_assign.cancel";
+
+impl CloseFeesInstallmentAssignCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FEES_INSTALLMENT_ASSIGN_CLOSE_COMMAND_TYPE;
+}
+
+impl CancelFeesInstallmentAssignCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FEES_INSTALLMENT_ASSIGN_CANCEL_COMMAND_TYPE;
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdatePaymentMethodCommand {
     pub tenant: TenantContext,

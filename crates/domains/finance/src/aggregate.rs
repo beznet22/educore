@@ -2088,6 +2088,17 @@ impl RealPaymentMethod {
 // aggregate carries the tuple as required fields so the
 // dispatcher has the data to enforce it).
 //
+// FIA I-3 (Wave 132): active_status true while open balance --
+// the aggregate carries a `lifecycle_status` field
+// (LifecycleStatus enum) initialized to Open. The mutators
+// `close()` and `cancel()` transition the lifecycle to
+// terminal states (Closed or Cancelled respectively). When
+// the lifecycle is terminal, the dispatcher is expected to
+// also call `retire()` to flip active_status -- the two are
+// decoupled by design so the audit footer + retire timestamp
+// remain semantically distinct from the lifecycle terminal
+// transition.
+//
 // Companion invariants enforced at fresh():
 //   * due_date is a valid chrono::NaiveDate (always valid by
 //     construction; the type system guarantees from_ymd_opt
@@ -2116,6 +2127,14 @@ pub struct RealFeesInstallmentAssign {
     /// (you can't pay more than the (amount + discount) cap).
     pub paid_amount_minor: i64,
     pub note: Option<String>,
+    /// FIA I-3: lifecycle state machine. Initialized to Open in
+    /// `fresh()`. Transitions: Open -> Paid | Closed | Cancelled,
+    /// Paid -> Closed. Terminal states cannot transition further.
+    pub lifecycle_status: LifecycleStatus,
+    /// FIA I-3: balance owed (amount + discount - paid). Always
+    /// non-negative. Returns 0 when lifecycle is terminal.
+    #[serde(skip)]
+    pub balance_minor: i64,
     pub version: Version,
     pub etag: Etag,
     pub created_at: Timestamp,
@@ -2165,6 +2184,7 @@ impl RealFeesInstallmentAssign {
                 "FeesInstallmentAssign paid_amount_minor must be <= amount_minor + discount_minor (FIA I-2)",
             ));
         }
+        let initial_balance = (amount_minor + discount_minor - paid_amount_minor).max(0);
         Ok(Self {
             school_id: id.school_id(),
             id,
@@ -2175,6 +2195,8 @@ impl RealFeesInstallmentAssign {
             discount_minor,
             paid_amount_minor,
             note,
+            lifecycle_status: LifecycleStatus::Open,
+            balance_minor: initial_balance,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at: at,
@@ -2189,6 +2211,83 @@ impl RealFeesInstallmentAssign {
 
     pub fn is_active(&self) -> bool {
         self.active_status == ActiveStatus::Active
+    }
+
+    /// FIA I-3: remaining balance owed against this installment
+    /// assignment. Returns 0 once the row is in a terminal
+    /// lifecycle state (Paid | Closed | Cancelled).
+    #[must_use]
+    pub fn current_balance_minor(&self) -> i64 {
+        if matches!(self.lifecycle_status, LifecycleStatus::Paid | LifecycleStatus::Closed | LifecycleStatus::Cancelled) {
+            return 0;
+        }
+        (self.amount_minor + self.discount_minor - self.paid_amount_minor).max(0)
+    }
+
+    /// FIA I-3 state machine predicate. Only Open can transition
+    /// to Paid | Closed | Cancelled; Paid can transition to
+    /// Closed. Closed + Cancelled are terminal.
+    #[must_use]
+    pub fn can_transition(&self, to: LifecycleStatus) -> bool {
+        self.lifecycle_status.can_transition_to(to)
+    }
+
+    /// FIA I-3: close the installment assignment. Valid from
+    /// both Open (admin closes before due date) and Paid (admin
+    /// closes after full payment, e.g., end of academic year).
+    /// Returns Conflict on Closed or Cancelled (terminal states
+    /// cannot be re-closed).
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn close(
+        &mut self,
+        actor: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if !self.can_transition(LifecycleStatus::Closed) {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "FeesInstallmentAssign cannot be closed from state {:?} (FIA I-3)",
+                self.lifecycle_status
+            )));
+        }
+        self.lifecycle_status = LifecycleStatus::Closed;
+        self.balance_minor = 0;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.last_event_id = Some(event_id);
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// FIA I-3: cancel the installment assignment. Only valid
+    /// from Open (no payments recorded). Returns Conflict on
+    /// any other state, including Paid (the dispatcher must
+    /// reverse payments first).
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn cancel(
+        &mut self,
+        actor: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if !self.can_transition(LifecycleStatus::Cancelled) {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "FeesInstallmentAssign cannot be cancelled from state {:?} (FIA I-3)",
+                self.lifecycle_status
+            )));
+        }
+        if self.paid_amount_minor > 0 {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesInstallmentAssign cannot be cancelled: payments already recorded (FIA I-3)",
+            ));
+        }
+        self.lifecycle_status = LifecycleStatus::Cancelled;
+        self.balance_minor = 0;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.last_event_id = Some(event_id);
+        self.version = self.version.next();
+        Ok(())
     }
 
     pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {

@@ -1392,27 +1392,35 @@ impl std::str::FromStr for PaymentMode {
     }
 }
 
-// LifecycleStatus -- Wave 131 (FA I-3 + I-4)
+// LifecycleStatus -- Wave 131 (FA I-3 + I-4) + Wave 132 (FIA I-3)
 //
-// The lifecycle of a FeesAssign row. A fresh row is Open;
-// it transitions to Paid (via RecordFeesAssignPaymentCommand
-// when the paid_amount_minor reaches amount_minor) or to
-// Cancelled (via CancelFeesAssignCommand). The state machine
-// is enforced by `can_transition_to`. Terminal states (Paid,
-// Cancelled) cannot transition further -- this is the FA I-4
-// active_status-while-open invariant (when the row is in a
-// terminal state, the dispatcher must set `active_status`
-// to Retired via the standard retire path).
+// The lifecycle of a FeesAssign / FeesInstallmentAssign row. A
+// fresh row is Open; it transitions to:
 //
-// FA I-3 cap on cumulative payments is enforced by the
-// aggregate's `record_payment` mutator (returns Conflict
-// when the cap is reached -- the row is in the Paid state).
+//   * Paid: via record_payment when the cumulative paid_amount
+//     reaches the cap (FA I-3 + FIA I-2).
+//   * Closed: via close() -- admin action that closes the row
+//     regardless of whether the balance is zero. Used for FIA
+//     I-3 to mark an installment as done (e.g., end of academic
+//     year, due date passed). Both Open and Paid rows can be
+//     Closed.
+//   * Cancelled: via cancel() -- admin action that reverses an
+//     installment/assignment (only valid before any payments).
+//
+// The state machine is enforced by `can_transition_to`. Terminal
+// states (Paid + Closed + Cancelled) cannot transition further.
+// FIA I-3 active_status-while-open: a row with lifecycle_status
+// != Open is in a terminal state and can be retired by the
+// dispatcher (the close() + cancel() mutators do NOT retire
+// the row themselves -- they only flip lifecycle_status; the
+// dispatcher calls retire() separately).
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LifecycleStatus {
     Open,
     Paid,
+    Closed,
     Cancelled,
 }
 
@@ -1423,6 +1431,7 @@ impl LifecycleStatus {
         match self {
             Self::Open => "open",
             Self::Paid => "paid",
+            Self::Closed => "closed",
             Self::Cancelled => "cancelled",
         }
     }
@@ -1433,18 +1442,27 @@ impl LifecycleStatus {
         match s.trim().to_ascii_lowercase().as_str() {
             "open" | "o" => Some(Self::Open),
             "paid" | "p" => Some(Self::Paid),
+            "closed" | "cl" => Some(Self::Closed),
             "cancelled" | "canceled" | "c" => Some(Self::Cancelled),
             _ => None,
         }
     }
 
-    /// FA I-4: only Open can transition to Paid or Cancelled.
-    /// Terminal states (Paid, Cancelled) cannot transition.
+    /// State machine transitions:
+    ///   * Open -> Paid (record_payment when cumulative reaches cap)
+    ///   * Open -> Closed (close() -- admin action)
+    ///   * Open -> Cancelled (cancel() -- admin action, no payments)
+    ///   * Paid -> Closed (close() -- admin action, e.g. end of year)
+    ///
+    /// Terminal states (Closed, Cancelled) cannot transition.
     #[must_use]
     pub const fn can_transition_to(self, to: Self) -> bool {
         matches!(
             (self, to),
-            (Self::Open, Self::Paid) | (Self::Open, Self::Cancelled)
+            (Self::Open, Self::Paid)
+                | (Self::Open, Self::Closed)
+                | (Self::Open, Self::Cancelled)
+                | (Self::Paid, Self::Closed)
         )
     }
 }

@@ -85,7 +85,7 @@ use crate::commands::{
     ReadFmFeesGroupCommand,
     ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
-    ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand, CreateDirectFeesInstallmentCommand, ReadDirectFeesInstallmentCommand, RetireDirectFeesInstallmentCommand, RetireFeesAssignDiscountCommand, CreateFeesAssignCommand, ReadFeesAssignCommand, RetireFeesAssignCommand, RecordFeesAssignPaymentCommand, CancelFeesAssignCommand,
+    ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CloseFeesInstallmentAssignCommand, CancelFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand, CreateDirectFeesInstallmentCommand, ReadDirectFeesInstallmentCommand, RetireDirectFeesInstallmentCommand, RetireFeesAssignDiscountCommand, CreateFeesAssignCommand, ReadFeesAssignCommand, RetireFeesAssignCommand, RecordFeesAssignPaymentCommand, CancelFeesAssignCommand,
     CreateFeesInstallmentCommand, ReadFeesInstallmentCommand, RetireFeesInstallmentCommand,
     ApproveFmFeesInvoiceCommand, RejectFmFeesInvoiceCommand,
     RetireFmFeesTransactionCommand,
@@ -134,6 +134,7 @@ use crate::events::{
     FmFeesTypeCreated, FmFeesTypeRetired,
     BankPaymentSlipCreated, BankPaymentSlipApproved, BankPaymentSlipRejected, BankPaymentSlipRetired,
     FeesAssignPaymentRecorded, FeesAssignCancelled,
+    FeesInstallmentAssignClosed, FeesInstallmentAssignCancelled,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
     WalletTransactionApprovalRejected,
@@ -3897,6 +3898,71 @@ where
     );
 
     Ok((agg, event))
+}
+
+// -- Wave 132 -- RealFeesInstallmentAssign state machine service functions --
+
+/// FIA I-3: close a `RealFeesInstallmentAssign` row. Valid from
+/// both Open and Paid lifecycle states (the admin can close a
+/// row before the due date or after full payment, e.g., end of
+/// academic year). Returns Conflict on Closed or Cancelled
+/// (terminal states cannot be re-closed).
+#[allow(clippy::needless_pass_by_value)]
+pub fn close_fees_installment_assign<C, G>(
+    mut agg: RealFeesInstallmentAssign,
+    cmd: CloseFeesInstallmentAssignCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesInstallmentAssign, FeesInstallmentAssignClosed)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation = cmd.tenant.correlation_id;
+    agg.close(cmd.tenant.actor_id, at, event_id)?;
+    let evt = FeesInstallmentAssignClosed::new(
+        cmd.fees_installment_assign_id,
+        agg.lifecycle_status,
+        cmd.tenant.actor_id,
+        event_id,
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok((agg, evt))
+}
+
+/// FIA I-3: cancel a `RealFeesInstallmentAssign` row. Only valid
+/// from Open (no payments recorded). Returns Conflict on any
+/// other state, including Paid (the dispatcher must reverse
+/// payments first).
+#[allow(clippy::needless_pass_by_value)]
+pub fn cancel_fees_installment_assign<C, G>(
+    mut agg: RealFeesInstallmentAssign,
+    cmd: CancelFeesInstallmentAssignCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesInstallmentAssign, FeesInstallmentAssignCancelled)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation = cmd.tenant.correlation_id;
+    agg.cancel(cmd.tenant.actor_id, at, event_id)?;
+    let evt = FeesInstallmentAssignCancelled::new(
+        cmd.fees_installment_assign_id,
+        agg.lifecycle_status,
+        cmd.tenant.actor_id,
+        event_id,
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok((agg, evt))
 }
 
 

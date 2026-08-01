@@ -9254,6 +9254,119 @@ impl DomainEvent for FeesAssignCancelled {
     }
 }
 
+// -- Wave 132 -- FeesInstallmentAssignClosed (FIA I-3) --
+//
+// Emitted when a FeesInstallmentAssign is closed (lifecycle
+// Open -> Closed or Paid -> Closed). Carries the new
+// lifecycle_status (Closed) + the actor who closed.
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesInstallmentAssignClosed {
+    pub fees_installment_assign_id: FeesInstallmentAssignId,
+    pub lifecycle_status: LifecycleStatus,
+    pub closed_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesInstallmentAssignClosed {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_installment_assign_id: FeesInstallmentAssignId,
+        lifecycle_status: LifecycleStatus,
+        closed_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_installment_assign_id,
+            lifecycle_status,
+            closed_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesInstallmentAssignClosed {
+    const EVENT_TYPE: &'static str = "finance.fees_installment_assign.closed";
+    const AGGREGATE_TYPE: &'static str = "fees_installment_assign";
+    const SCHEMA_VERSION: u32 = 1;
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_installment_assign_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_installment_assign_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// -- Wave 132 -- FeesInstallmentAssignCancelled (FIA I-3) --
+//
+// Emitted when a FeesInstallmentAssign is cancelled (lifecycle
+// Open -> Cancelled). Only valid from Open (no payments
+// recorded). Carries the new lifecycle_status (Cancelled) +
+// the actor who cancelled.
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesInstallmentAssignCancelled {
+    pub fees_installment_assign_id: FeesInstallmentAssignId,
+    pub lifecycle_status: LifecycleStatus,
+    pub cancelled_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesInstallmentAssignCancelled {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_installment_assign_id: FeesInstallmentAssignId,
+        lifecycle_status: LifecycleStatus,
+        cancelled_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_installment_assign_id,
+            lifecycle_status,
+            cancelled_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesInstallmentAssignCancelled {
+    const EVENT_TYPE: &'static str = "finance.fees_installment_assign.cancelled";
+    const AGGREGATE_TYPE: &'static str = "fees_installment_assign";
+    const SCHEMA_VERSION: u32 = 1;
+
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_installment_assign_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_installment_assign_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 #[cfg(test)]
 #[allow(t)]
 #[allow(t)]

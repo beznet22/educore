@@ -478,3 +478,245 @@ fn create_fees_installment_assign_service_propagates_payment_fields_fia_i_2() {
     assert_eq!(event.discount_minor, 10_000);
     assert_eq!(event.paid_amount_minor, 25_000);
 }
+
+// ====================================================================
+// -- Wave 132 -- FIA I-3 state machine extension tests --
+// ====================================================================
+
+use educore_core::error::DomainError;
+use educore_core::ids::UserId;
+use educore_core::value_objects::Timestamp;
+use educore_finance::commands::{
+    CancelFeesInstallmentAssignCommand, CloseFeesInstallmentAssignCommand,
+};
+use educore_finance::events::{FeesInstallmentAssignCancelled, FeesInstallmentAssignClosed};
+use educore_finance::services::{cancel_fees_installment_assign, close_fees_installment_assign};
+use educore_finance::value_objects::LifecycleStatus;
+
+fn build_fia(actor: UserId, amount: i64, paid: i64) -> RealFeesInstallmentAssign {
+    let (_tenant, g) = admin_context();
+    let school = _tenant.school_id;
+    RealFeesInstallmentAssign::fresh(
+        FeesInstallmentAssignId::new(school, g.next_uuid()),
+        FeesAssignId::new(school, g.next_uuid()),
+        FeesInstallmentId::new(school, g.next_uuid()),
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+        amount,
+        0,
+        paid,
+        None,
+        actor,
+        Timestamp::now(),
+        _tenant.correlation_id,
+    )
+    .expect("fresh should succeed")
+}
+
+// ---- LifecycleStatus Closed variant + transitions ----
+
+#[test]
+fn lifecycle_status_closed_round_trip_fia_i_3() {
+    assert_eq!(LifecycleStatus::Closed.as_str(), "closed");
+    assert_eq!(LifecycleStatus::parse("closed"), Some(LifecycleStatus::Closed));
+    assert_eq!(LifecycleStatus::parse("cl"), Some(LifecycleStatus::Closed));
+}
+
+#[test]
+fn lifecycle_status_can_transition_paid_to_closed_fia_i_3() {
+    assert!(LifecycleStatus::Paid.can_transition_to(LifecycleStatus::Closed));
+    assert!(!LifecycleStatus::Closed.can_transition_to(LifecycleStatus::Paid));
+    assert!(!LifecycleStatus::Closed.can_transition_to(LifecycleStatus::Open));
+    assert!(!LifecycleStatus::Cancelled.can_transition_to(LifecycleStatus::Closed));
+}
+
+// ---- fresh initializes lifecycle_status ----
+
+#[test]
+fn fresh_initializes_lifecycle_open_balance_correct_fia_i_3() {
+    let (tenant, _g) = admin_context();
+    let agg = build_fia(tenant.actor_id, 10_000, 0);
+    assert_eq!(agg.lifecycle_status, LifecycleStatus::Open);
+    assert_eq!(agg.balance_minor, 10_000);
+    assert_eq!(agg.current_balance_minor(), 10_000);
+}
+
+#[test]
+fn fresh_with_partial_paid_balance_partial_fia_i_3() {
+    let (tenant, _g) = admin_context();
+    let agg = build_fia(tenant.actor_id, 10_000, 4_000);
+    assert_eq!(agg.lifecycle_status, LifecycleStatus::Open);
+    assert_eq!(agg.current_balance_minor(), 6_000);
+}
+
+// ---- close mutator ----
+
+#[test]
+fn close_open_transitions_to_closed_fia_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_fia(actor, 10_000, 0);
+    agg.close(actor, Timestamp::now(), _g.next_event_id())
+        .expect("close should succeed");
+    assert_eq!(agg.lifecycle_status, LifecycleStatus::Closed);
+    assert_eq!(agg.current_balance_minor(), 0);
+}
+
+#[test]
+fn close_paid_transitions_to_closed_fia_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_fia(actor, 10_000, 10_000);
+    agg.close(actor, Timestamp::now(), _g.next_event_id())
+        .expect("close should succeed");
+    assert_eq!(agg.lifecycle_status, LifecycleStatus::Closed);
+}
+
+#[test]
+fn double_close_returns_conflict_fia_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_fia(actor, 10_000, 0);
+    agg.close(actor, Timestamp::now(), _g.next_event_id())
+        .expect("first close");
+    let result = agg.close(actor, Timestamp::now(), _g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+// ---- cancel mutator ----
+
+#[test]
+fn cancel_open_no_payments_transitions_to_cancelled_fia_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_fia(actor, 10_000, 0);
+    agg.cancel(actor, Timestamp::now(), _g.next_event_id())
+        .expect("cancel should succeed");
+    assert_eq!(agg.lifecycle_status, LifecycleStatus::Cancelled);
+}
+
+#[test]
+fn cancel_after_payment_returns_conflict_fia_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_fia(actor, 10_000, 3_000);
+    let result = agg.cancel(actor, Timestamp::now(), _g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+#[test]
+fn cancel_after_close_returns_conflict_fia_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_fia(actor, 10_000, 0);
+    agg.close(actor, Timestamp::now(), _g.next_event_id())
+        .expect("close");
+    let result = agg.cancel(actor, Timestamp::now(), _g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+#[test]
+fn double_cancel_returns_conflict_fia_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_fia(actor, 10_000, 0);
+    agg.cancel(actor, Timestamp::now(), _g.next_event_id())
+        .expect("first cancel");
+    let result = agg.cancel(actor, Timestamp::now(), _g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+// ---- retire after terminal state ----
+
+#[test]
+fn retire_after_close_succeeds_fia_i_3() {
+    let (tenant, _g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut agg = build_fia(actor, 10_000, 0);
+    agg.close(actor, Timestamp::now(), _g.next_event_id())
+        .expect("close");
+    agg.retire(Timestamp::now(), actor)
+        .expect("retire after close should succeed (FIA I-3 active_status decoupled)");
+    assert!(!agg.is_active());
+}
+
+// ---- service integration ----
+
+#[test]
+fn close_service_emits_event_fia_i_3() {
+    let clock = educore_core::clock::SystemClock;
+    let g = SystemIdGen;
+    let (tenant, _g) = admin_context();
+    let school = tenant.school_id;
+    let actor = tenant.actor_id;
+    let agg = RealFeesInstallmentAssign::fresh(
+        FeesInstallmentAssignId::new(school, g.next_uuid()),
+        FeesAssignId::new(school, g.next_uuid()),
+        FeesInstallmentId::new(school, g.next_uuid()),
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+        10_000,
+        0,
+        0,
+        None,
+        actor,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("fresh");
+    let id = agg.id;
+    let cmd = CloseFeesInstallmentAssignCommand {
+        tenant,
+        fees_installment_assign_id: id,
+    };
+    let (updated, evt): (RealFeesInstallmentAssign, FeesInstallmentAssignClosed) =
+        close_fees_installment_assign(agg, cmd, &clock, &g)
+            .expect("service should succeed");
+    assert_eq!(updated.lifecycle_status, LifecycleStatus::Closed);
+    assert_eq!(evt.lifecycle_status, LifecycleStatus::Closed);
+    assert_eq!(evt.closed_by, actor);
+    assert_eq!(
+        <FeesInstallmentAssignClosed as DomainEvent>::EVENT_TYPE,
+        "finance.fees_installment_assign.closed"
+    );
+    assert_eq!(
+        <FeesInstallmentAssignClosed as DomainEvent>::AGGREGATE_TYPE,
+        "fees_installment_assign"
+    );
+}
+
+#[test]
+fn cancel_service_emits_event_fia_i_3() {
+    let clock = educore_core::clock::SystemClock;
+    let g = SystemIdGen;
+    let (tenant, _g) = admin_context();
+    let school = tenant.school_id;
+    let actor = tenant.actor_id;
+    let agg = RealFeesInstallmentAssign::fresh(
+        FeesInstallmentAssignId::new(school, g.next_uuid()),
+        FeesAssignId::new(school, g.next_uuid()),
+        FeesInstallmentId::new(school, g.next_uuid()),
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+        10_000,
+        0,
+        0,
+        None,
+        actor,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("fresh");
+    let id = agg.id;
+    let cmd = CancelFeesInstallmentAssignCommand {
+        tenant,
+        fees_installment_assign_id: id,
+    };
+    let (updated, evt): (RealFeesInstallmentAssign, FeesInstallmentAssignCancelled) =
+        cancel_fees_installment_assign(agg, cmd, &clock, &g)
+            .expect("service should succeed");
+    assert_eq!(updated.lifecycle_status, LifecycleStatus::Cancelled);
+    assert_eq!(evt.cancelled_by, actor);
+    assert_eq!(evt.lifecycle_status, LifecycleStatus::Cancelled);
+    assert_eq!(
+        <FeesInstallmentAssignCancelled as DomainEvent>::EVENT_TYPE,
+        "finance.fees_installment_assign.cancelled"
+    );
+}
