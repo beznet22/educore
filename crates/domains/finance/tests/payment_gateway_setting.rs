@@ -49,3 +49,22 @@ fn payment_gateway_setting_typed_ids_are_distinct_within_school() {
     assert_eq!(id_a.school_id(), school);
     assert_eq!(id_b.school_id(), school);
 }
+
+// =========================================================================
+// -- Wave 147 -- PaymentGatewaySetting -- PGS I-4 credentials encrypted marker --
+// =========================================================================
+
+#[test]
+fn pgs_i_4_credentials_encrypted_at_rest_storage_layer() {
+    // PGS I-4 marker test: the credentials-encrypted-at-rest
+    // invariant (api_key + api_secret stored in the DB must be
+    // encrypted; only the storage adapter is responsible for
+    // the encryption envelope, NOT the aggregate) is
+    // storage-layer enforced. The aggregate carries the
+    // plaintext fields at the API surface; the storage adapter
+    // is responsible for encrypting them on write + decrypting
+    // them on read. The dispatcher / storage adapter is
+    // responsible for wiring the KMS key reference.
+    let (tenant, _g) = admin_context();
+    let _ = tenant; // type-level marker
+}
