@@ -2140,13 +2140,13 @@ finance_event_stub! {
 // create_fees_assign_discount / retire_fees_assign_discount
 // service functions.
 
-finance_event_stub! {
-    /// Emitted when a `FeesInstallment` is created for a `FeesMaster`.
-    pub struct FeesInstallmentCreated;
-    event_type: "finance.fees_installment.created",
-    aggregate_type: "fees_installment",
-    aggregate_id: FeesInstallmentId,
-}
+// Wave 126: pre-existing finance_event_stub! for FeesInstallmentCreated
+// was deleted and replaced with a full struct below (see aggregate.rs:RealFeesInstallment).
+// FIv I-1 + FIv I-2: percentage ∈ [0, 100] + amount_minor >= 0. Both
+// FeesInstallmentCreated (carrying the percentage + amount_minor + due_date
+// downstream) and FeesInstallmentRetired (tombstone preserving the
+// identity for legal-record retention) are emitted by
+// create_fees_installment / retire_fees_installment service functions.
 
 finance_event_stub! {
     /// Emitted when a `FeesPayment` is reversed (e.g. duplicate / wrong
@@ -8533,6 +8533,135 @@ impl DomainEvent for FmFeesTransactionRejected {
     }
     fn school_id(&self) -> SchoolId {
         self.fm_fees_transaction_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// RealFeesInstallment events — Wave 126 (per-aggregate wave pattern
+// from Waves 65–125)
+// =============================================================================
+//
+// Per v3 Part 2 + checklist § FeesInstallment: 2 invariants dropped
+// in Wave 126:
+//   - FIv I-1: percentage ∈ [0, 100]
+//   - FIv I-2: amount_minor ≥ 0
+// Child of [`RealFeesMaster`] (one master can have many installments).
+// The `fees_master_id` is a required FK field on the struct + the event.
+
+/// Emitted when a new `RealFeesInstallment` row is appended.
+/// Carries the FIv I-1 (`percentage ∈ [0, 100]`) + FIv I-2
+/// (`amount_minor >= 0`) invariant values.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesInstallmentCreated {
+    pub fees_installment_id: FeesInstallmentId,
+    pub fees_master_id: FeesMasterId,
+    pub name: String,
+    pub due_date: NaiveDate,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub percentage: i64, // FIv I-1
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesInstallmentCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_installment_id: FeesInstallmentId,
+        fees_master_id: FeesMasterId,
+        name: String,
+        due_date: NaiveDate,
+        amount_minor: i64,
+        currency: Currency,
+        percentage: i64,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_installment_id,
+            fees_master_id,
+            name,
+            due_date,
+            amount_minor,
+            currency,
+            percentage,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesInstallmentCreated {
+    const EVENT_TYPE: &'static str = "finance.fees_installment.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_installment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_installment_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_installment_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFeesInstallment` row is retired (tombstone).
+/// Preserves the identity for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesInstallmentRetired {
+    pub fees_installment_id: FeesInstallmentId,
+    pub fees_master_id: FeesMasterId,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesInstallmentRetired {
+    pub fn new(
+        fees_installment_id: FeesInstallmentId,
+        fees_master_id: FeesMasterId,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_installment_id,
+            fees_master_id,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesInstallmentRetired {
+    const EVENT_TYPE: &'static str = "finance.fees_installment.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_installment";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_installment_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_installment_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

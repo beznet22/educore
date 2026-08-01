@@ -8716,3 +8716,109 @@ impl RealFmFeesTransaction {
         Ok(())
     }
 }
+
+// =============================================================================
+// RealFeesInstallment — Wave 126 (per-aggregate wave pattern
+// from Waves 65–125)
+// =============================================================================
+//
+// Per v3 Part 2 + checklist § FeesInstallment: 2 invariants dropped
+// in Wave 126:
+//   - FIv I-1: percentage ∈ [0, 100] (percentage of the parent master fee
+//               due on this installment's due_date)
+//   - FIv I-2: amount_minor ≥ 0 (numeric money invariant)
+// Child of [`RealFeesMaster`] (one master can have many installments; the
+// `fees_master_id` is a required FK field on the struct).
+//
+// The aggregate is append-only: `fresh()` + `retire()` only. The
+// `amount_minor` + `percentage` + `due_date` + `name` fields are NOT
+// mutable -- the pre-existing `UpdateFeesInstallmentCommand` is preserved
+// as a Phase 7 skeleton not wired through `RealFeesInstallment`.
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFeesInstallment {
+    pub id: FeesInstallmentId,
+    pub school_id: SchoolId,
+    pub fees_master_id: FeesMasterId,
+    pub name: String,
+    pub due_date: chrono::NaiveDate,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub percentage: i64,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFeesInstallment {
+    /// Constructs a new `RealFeesInstallment`. Enforces FIv I-1
+    /// (`percentage ∈ [0, 100]`) + FIv I-2 (`amount_minor >= 0`).
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: FeesInstallmentId,
+        fees_master_id: FeesMasterId,
+        name: String,
+        due_date: chrono::NaiveDate,
+        amount_minor: i64,
+        currency: Currency,
+        percentage: i64,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FIv I-1: percentage ∈ [0, 100].
+        if percentage < 0 || percentage > 100 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesInstallment percentage must be in [0, 100] (FIv I-1)",
+            ));
+        }
+        // FIv I-2: amount_minor >= 0.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesInstallment amount_minor must be >= 0 (FIv I-2)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            fees_master_id,
+            name,
+            due_date,
+            amount_minor,
+            currency,
+            percentage,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesInstallment is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}

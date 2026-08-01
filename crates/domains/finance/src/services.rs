@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFeesCarryForward, RealFeesMaster, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, RealFmFeesTransaction, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, RealFmFeesTransaction, RealFeesInstallment, Wallet, WalletTransaction,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -86,6 +86,7 @@ use crate::commands::{
     ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
     ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand, CreateDirectFeesInstallmentCommand, ReadDirectFeesInstallmentCommand, RetireDirectFeesInstallmentCommand, RetireFeesAssignDiscountCommand, CreateFeesAssignCommand, ReadFeesAssignCommand, RetireFeesAssignCommand,
+    CreateFeesInstallmentCommand, ReadFeesInstallmentCommand, RetireFeesInstallmentCommand,
     RetireFmFeesTransactionCommand,
     ApproveFmFeesTransactionCommand,
     RejectFmFeesTransactionCommand,
@@ -124,6 +125,7 @@ use crate::events::{
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     FmFeesTransactionCreated, FmFeesTransactionRetired,
     FmFeesTransactionApproved, FmFeesTransactionRejected,
+    FeesInstallmentCreated, FeesInstallmentRetired,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
     WalletTransactionApprovalRejected,
@@ -2832,6 +2834,97 @@ where
     let correlation = cmd.tenant.correlation_id;
     let evt = FmFeesTransactionRetired::new(
         cmd.fm_fees_transaction_id,
+        cmd.tenant.actor_id,
+        ids.next_event_id(),
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok(evt)
+}
+
+/// Service function: create a `RealFeesInstallment` aggregate.
+/// Per v3 Part 2 + checklist § FeesInstallment: enforces FIv I-1
+/// (`percentage ∈ [0, 100]`) + FIv I-2 (`amount_minor >= 0`)
+/// via `RealFeesInstallment::fresh`.
+#[allow(clippy::needless_pass_by_value)]
+pub fn create_fees_installment<C, G>(
+    cmd: CreateFeesInstallmentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesInstallment, FeesInstallmentCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let tenant = cmd.tenant.clone();
+    let at = clock.now();
+    let correlation = tenant.correlation_id;
+    let name_for_event = cmd.name.clone();
+    let agg = RealFeesInstallment::fresh(
+        cmd.fees_installment_id,
+        cmd.fees_master_id,
+        cmd.name,
+        cmd.due_date,
+        cmd.amount_minor,
+        cmd.currency,
+        cmd.percentage,
+        tenant.actor_id,
+        at,
+        correlation,
+    )?;
+    let evt = FeesInstallmentCreated::new(
+        cmd.fees_installment_id,
+        cmd.fees_master_id,
+        name_for_event,
+        cmd.due_date,
+        cmd.amount_minor,
+        cmd.currency,
+        cmd.percentage,
+        tenant.actor_id,
+        ids.next_event_id(),
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok((agg, evt))
+}
+
+/// Service function: read a `RealFeesInstallment` aggregate.
+/// The in-process reference adapter does not have a backing store;
+/// dispatcher validates existence before calling this.
+#[allow(clippy::needless_pass_by_value)]
+pub fn read_fees_installment<C, G>(
+    cmd: ReadFeesInstallmentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = (cmd, clock, ids);
+    Ok(())
+}
+
+/// Service function: retire a `RealFeesInstallment` aggregate
+/// (tombstone). The caller supplies the existing aggregate state via
+/// the dispatcher; this function only emits the retirement event.
+#[allow(clippy::needless_pass_by_value)]
+pub fn retire_fees_installment<C, G>(
+    cmd: RetireFeesInstallmentCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<FeesInstallmentRetired>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let correlation = cmd.tenant.correlation_id;
+    let evt = FeesInstallmentRetired::new(
+        cmd.fees_installment_id,
+        cmd.fees_master_id,
         cmd.tenant.actor_id,
         ids.next_event_id(),
         correlation,

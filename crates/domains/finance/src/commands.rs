@@ -648,11 +648,13 @@ impl ReadFeesAssignCommand {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFeesInstallmentCommand {
     pub tenant: TenantContext,
+    pub fees_installment_id: FeesInstallmentId,
     pub fees_master_id: FeesMasterId,
     pub name: String,
     pub due_date: NaiveDate,
     pub amount_minor: i64,
     pub currency: Currency,
+    pub percentage: i64, // FIv I-1: integer percentage 0..=100
 }
 
 
@@ -694,6 +696,43 @@ impl DeleteFeesInstallmentCommand {
         vec![Capability::FinanceFeesInstallmentDelete]
     }
 }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReadFeesInstallmentCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_id: FeesInstallmentId,
+}
+
+
+impl ReadFeesInstallmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInstallmentRead]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFeesInstallmentCommand {
+    pub tenant: TenantContext,
+    pub fees_installment_id: FeesInstallmentId,
+    pub fees_master_id: FeesMasterId,
+}
+
+impl RetireFeesInstallmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInstallmentDelete]
+    }
+}
+
+// -- FeesInstallment COMMAND_TYPE constants (Wave 126) --
+
+pub const FINANCE_FEES_INSTALLMENT_RETIRE_COMMAND_TYPE: &str =
+    "finance.fees_installment.retire";
+// CREATE / UPDATE / DELETE COMMAND_TYPE constants already exist
+// elsewhere in this file; only RETIRE is new in Wave 126.
+
 // -- DirectFeesInstallment --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
