@@ -3240,6 +3240,8 @@ pub struct CreateFmFeesInvoiceChildCommand {
     pub sub_total_minor: i64, // FFIChild I-2
     pub weaver_minor: i64, // FFIChild I-2
     pub fine_minor: i64, // FFIChild I-2
+    pub paid_amount_minor: i64, // FFIChild I-3
+    pub service_charge_minor: i64, // FFIChild I-3
 }
 
 impl CreateFmFeesInvoiceChildCommand {

@@ -67,6 +67,8 @@ fn fresh_full_payload_amount_valid_ffi_child_i_1() {
         12_000, // sub_total_minor = amount + weaver + fine (FFIChild I-2)
         0,      // weaver_minor
         0,      // fine_minor
+                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -91,6 +93,8 @@ fn fresh_negative_amount_validation_error_ffi_child_i_1() {
         -1, // sub_total_minor
         0,
         0,
+                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -110,6 +114,8 @@ fn fresh_zero_amount_boundary_valid_ffi_child_i_1() {
         0, // sub_total_minor
         0,
         0,
+                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -133,6 +139,8 @@ fn fresh_sub_total_equals_sum_with_weaver_and_fine_valid_ffi_child_i_2() {
         12_500, // sub_total_minor = 10_000 + 1_500 + 1_000
         1_500,  // weaver_minor
         1_000,  // fine_minor
+                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -156,6 +164,8 @@ fn fresh_sub_total_mismatch_validation_error_ffi_child_i_2() {
         11_000, // sub_total_minor: should be 12_500
         1_500,
         1_000,
+                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -184,6 +194,8 @@ fn fresh_negative_weaver_validation_error_ffi_child_i_2() {
         10_000, // sub_total would be 10_000 + -1000 + 0 = 9_000 (but weaver is invalid)
         -1_000,
         0,
+                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -211,6 +223,8 @@ fn fresh_negative_fine_validation_error_ffi_child_i_2() {
         10_000, // sub_total would be 10_000 + 0 + -500 = 9_500 (but fine is invalid)
         0,
         -500,
+                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -240,6 +254,8 @@ fn fresh_initializes_audit_footer() {
         5_000,
         0,
         0,
+                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -263,6 +279,8 @@ fn retire_flips_active_status_to_retired() {
         5_000,
         0,
         0,
+                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -295,6 +313,8 @@ fn create_fm_fees_invoice_child_service_emits_created_event_ffi_child_i_2() {
         sub_total_minor: 12_500,
         weaver_minor: 1_500,
         fine_minor: 1_000,
+        paid_amount_minor: 0,
+        service_charge_minor: 0,
     };
     let evt: FmFeesInvoiceChildCreated = create_fm_fees_invoice_child(cmd, &clock, &g)
         .expect("service should succeed");
@@ -335,9 +355,123 @@ fn create_fm_fees_invoice_child_service_rejects_sub_total_mismatch_ffi_child_i_2
         sub_total_minor: 11_000, // mismatch: should be 10_000 + 1_500 + 1_000 = 12_500
         weaver_minor: 1_500,
         fine_minor: 1_000,
+        paid_amount_minor: 0,
+        service_charge_minor: 0,
     };
     let result = create_fm_fees_invoice_child(cmd, &clock, &g);
     assert!(matches!(result, Err(DomainError::Validation(_))));
+}
+
+// =========================================================================
+// FFIChild I-3 tests (Wave 121 new tests for paid_amount +
+// service_charge payment tracking)
+// =========================================================================
+
+#[test]
+fn fresh_paid_amount_zero_boundary_valid_ffi_child_i_3() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let row = RealFmFeesInvoiceChild::fresh(
+        fm_fees_invoice_child_id(&g, school),
+        fm_fees_invoice_id(&g, school),
+        "Unpaid row".to_string(),
+        5_000,
+        5_000,
+        0,
+        0,
+        0, // paid_amount_minor
+        0, // service_charge_minor
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("FFIChild I-3: zero paid_amount is valid boundary");
+    assert_eq!(row.paid_amount_minor, 0);
+    assert_eq!(row.service_charge_minor, 0);
+}
+
+#[test]
+fn fresh_paid_equals_cap_with_service_charge_boundary_valid_ffi_child_i_3() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    // sub_total = 12_000, service_charge = 3_000, cap = 15_000; paid = 15_000 is valid boundary
+    let row = RealFmFeesInvoiceChild::fresh(
+        fm_fees_invoice_child_id(&g, school),
+        fm_fees_invoice_id(&g, school),
+        "Paid in full".to_string(),
+        10_000,
+        12_000,
+        1_500,
+        500,
+        15_000, // paid = sub_total + service_charge
+        3_000,
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("FFIChild I-3: paid == sub_total + service_charge is valid boundary");
+    assert_eq!(row.paid_amount_minor, 15_000);
+    assert_eq!(row.service_charge_minor, 3_000);
+}
+
+#[test]
+fn fresh_negative_paid_amount_validation_error_ffi_child_i_3() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let result = RealFmFeesInvoiceChild::fresh(
+        fm_fees_invoice_child_id(&g, school),
+        fm_fees_invoice_id(&g, school),
+        "Negative paid".to_string(),
+        5_000,
+        5_000,
+        0,
+        0,
+        -1, // paid_amount_minor
+        0,
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    );
+    match result {
+        Err(DomainError::Validation(msg)) => {
+            assert!(
+                msg.contains("paid_amount_minor must be >= 0") && msg.contains("FFIChild I-3"),
+                "unexpected error message: {msg}"
+            );
+        }
+        other => panic!("expected Validation error, got {other:?}"),
+    }
+}
+
+#[test]
+fn fresh_paid_exceeds_cap_validation_error_ffi_child_i_3() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    // sub_total = 10_000, service_charge = 2_000, cap = 12_000; paid = 13_000 must be rejected
+    let result = RealFmFeesInvoiceChild::fresh(
+        fm_fees_invoice_child_id(&g, school),
+        fm_fees_invoice_id(&g, school),
+        "Overpayment".to_string(),
+        10_000,
+        10_000,
+        0,
+        0,
+        13_000, // paid > cap
+        2_000,
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    );
+    match result {
+        Err(DomainError::Validation(msg)) => {
+            assert!(
+                msg.contains("paid_amount_minor must be <= sub_total_minor + service_charge_minor")
+                    && msg.contains("FFIChild I-3"),
+                "unexpected error message: {msg}"
+            );
+        }
+        other => panic!("expected Validation error, got {other:?}"),
+    }
 }
 
 #[test]

@@ -7376,6 +7376,15 @@ pub struct RealFmFeesInvoiceChild {
     /// FFIChild I-2: fine amount (in minor units). Optional
     /// additive component to the subtotal.
     pub fine_minor: i64,
+    /// FFIChild I-3: cumulative paid amount in minor units.
+    /// Pinned at construction with `>= 0` guard. Companion
+    /// invariant: `paid_amount_minor <= sub_total_minor +
+    /// service_charge_minor` (you can't pay more than the
+    /// (sub_total + service_charge) cap).
+    pub paid_amount_minor: i64,
+    /// FFIChild I-3: service charge amount in minor units.
+    /// Optional additive component to the payment cap.
+    pub service_charge_minor: i64,
     /// Standard audit footer: optimistic concurrency version.
     pub version: Version,
     /// Standard audit footer: etag.
@@ -7409,6 +7418,8 @@ impl RealFmFeesInvoiceChild {
         sub_total_minor: i64,
         weaver_minor: i64,
         fine_minor: i64,
+        paid_amount_minor: i64,
+        service_charge_minor: i64,
         actor: UserId,
         at: Timestamp,
         correlation: CorrelationId,
@@ -7444,6 +7455,24 @@ impl RealFmFeesInvoiceChild {
                 "FmFeesInvoiceChild sub_total_minor must equal amount_minor + weaver_minor + fine_minor (FFIChild I-2)",
             ));
         }
+        // FFIChild I-3: paid_amount_minor >= 0.
+        if paid_amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceChild paid_amount_minor must be >= 0 (FFIChild I-3)",
+            ));
+        }
+        // FFIChild I-3 companion: service_charge_minor >= 0.
+        if service_charge_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceChild service_charge_minor must be >= 0 (FFIChild I-3)",
+            ));
+        }
+        // FFIChild I-3 guard: paid_amount_minor <= sub_total_minor + service_charge_minor.
+        if paid_amount_minor > sub_total_minor + service_charge_minor {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesInvoiceChild paid_amount_minor must be <= sub_total_minor + service_charge_minor (FFIChild I-3)",
+            ));
+        }
         let description_trimmed = description.trim().to_string();
         if description_trimmed.is_empty() {
             return Err(educore_core::error::DomainError::validation(
@@ -7459,6 +7488,8 @@ impl RealFmFeesInvoiceChild {
             sub_total_minor,
             weaver_minor,
             fine_minor,
+            paid_amount_minor,
+            service_charge_minor,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at: at,
