@@ -25,7 +25,7 @@ use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
-    AccountType, AmountTransferId, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
+    AccountType, AmountTransferId, ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
     BankStatementId, StatementType,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
     DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
@@ -8413,6 +8413,116 @@ impl FmFeesTransactionRetired {
 
 impl DomainEvent for FmFeesTransactionRetired {
     const EVENT_TYPE: &'static str = "finance.fm_fees_transaction.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_transaction";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_transaction_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_transaction_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// RealFmFeesTransaction state-machine events — Wave 125 (FFT I-3)
+// =============================================================================
+
+/// Emitted when a `RealFmFeesTransaction` transitions from
+/// `Pending` to `Approved`. Carries the approver, the approval
+/// timestamp, and the canonical `status` for downstream indexing.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesTransactionApproved {
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+    pub approved_by: UserId,
+    pub status: ApprovalStatus,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesTransactionApproved {
+    pub fn new(
+        fm_fees_transaction_id: FmFeesTransactionId,
+        approved_by: UserId,
+        status: ApprovalStatus,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_transaction_id,
+            approved_by,
+            status,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesTransactionApproved {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_transaction.approved";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_transaction";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_transaction_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_transaction_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesTransaction` transitions from
+/// `Pending` to `Rejected`. Carries the rejecter, the rejection
+/// timestamp, the rejection note, and the canonical `status`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesTransactionRejected {
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+    pub rejected_by: UserId,
+    pub status: ApprovalStatus,
+    pub reject_note: String,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesTransactionRejected {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fm_fees_transaction_id: FmFeesTransactionId,
+        rejected_by: UserId,
+        status: ApprovalStatus,
+        reject_note: String,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_transaction_id,
+            rejected_by,
+            status,
+            reject_note,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesTransactionRejected {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_transaction.rejected";
     const SCHEMA_VERSION: u32 = 1;
     const AGGREGATE_TYPE: &'static str = "fm_fees_transaction";
     fn event_id(&self) -> EventId {

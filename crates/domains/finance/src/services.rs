@@ -87,6 +87,8 @@ use crate::commands::{
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
     ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand, CreateDirectFeesInstallmentCommand, ReadDirectFeesInstallmentCommand, RetireDirectFeesInstallmentCommand, RetireFeesAssignDiscountCommand, CreateFeesAssignCommand, ReadFeesAssignCommand, RetireFeesAssignCommand,
     RetireFmFeesTransactionCommand,
+    ApproveFmFeesTransactionCommand,
+    RejectFmFeesTransactionCommand,
 };
 use crate::events::{
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
@@ -121,6 +123,7 @@ use crate::events::{
     FeesInstallmentCreditCreated, FeesInstallmentCreditRetired,
     FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
     FmFeesTransactionCreated, FmFeesTransactionRetired,
+    FmFeesTransactionApproved, FmFeesTransactionRejected,
     IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
     WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
     WalletTransactionApprovalRejected,
@@ -2836,6 +2839,69 @@ where
     );
     let _ = ids;
     Ok(evt)
+}
+
+/// Service function: approve a `RealFmFeesTransaction` (FFT I-3
+/// state transition: Pending -> Approved). The dispatcher loads the
+/// current aggregate state and passes it in; this function calls
+/// `approve()` on the aggregate and emits the corresponding event.
+#[allow(clippy::needless_pass_by_value)]
+pub fn approve_fm_fees_transaction<C, G>(
+    mut agg: RealFmFeesTransaction,
+    cmd: ApproveFmFeesTransactionCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFmFeesTransaction, FmFeesTransactionApproved)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation = cmd.tenant.correlation_id;
+    agg.approve(cmd.tenant.actor_id, at, event_id)?;
+    let evt = FmFeesTransactionApproved::new(
+        cmd.fm_fees_transaction_id,
+        cmd.tenant.actor_id,
+        agg.status,
+        event_id,
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok((agg, evt))
+}
+
+/// Service function: reject a `RealFmFeesTransaction` (FFT I-3
+/// state transition: Pending -> Rejected). The dispatcher loads the
+/// current aggregate state and passes it in; this function calls
+/// `reject()` on the aggregate and emits the corresponding event.
+#[allow(clippy::needless_pass_by_value)]
+pub fn reject_fm_fees_transaction<C, G>(
+    mut agg: RealFmFeesTransaction,
+    cmd: RejectFmFeesTransactionCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFmFeesTransaction, FmFeesTransactionRejected)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation = cmd.tenant.correlation_id;
+    agg.reject(cmd.tenant.actor_id, cmd.reject_note.clone(), at, event_id)?;
+    let evt = FmFeesTransactionRejected::new(
+        cmd.fm_fees_transaction_id,
+        cmd.tenant.actor_id,
+        agg.status,
+        cmd.reject_note,
+        event_id,
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok((agg, evt))
 }
 
 /// Service function: append a new child row under an existing

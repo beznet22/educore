@@ -3440,6 +3440,40 @@ pub const FINANCE_FM_FEES_TRANSACTION_READ_COMMAND_TYPE: &str =
     "finance.fm_fees_transaction.read";
 pub const FINANCE_FM_FEES_TRANSACTION_RETIRE_COMMAND_TYPE: &str =
     "finance.fm_fees_transaction.retire";
+pub const FINANCE_FM_FEES_TRANSACTION_APPROVE_COMMAND_TYPE: &str =
+    "finance.fm_fees_transaction.approve";
+pub const FINANCE_FM_FEES_TRANSACTION_REJECT_COMMAND_TYPE: &str =
+    "finance.fm_fees_transaction.reject";
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ApproveFmFeesTransactionCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+}
+
+impl ApproveFmFeesTransactionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RejectFmFeesTransactionCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_transaction_id: FmFeesTransactionId,
+    pub reject_note: String,
+}
+
+impl RejectFmFeesTransactionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceRead]
+    }
+}
+
 // -- FmFeesTransactionChild (Phase 7 Workstream G) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

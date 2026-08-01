@@ -8552,21 +8552,24 @@ impl RealFeesMaster {
 
 // =============================================================================
 // RealFmFeesTransaction — Wave 124 (per-aggregate wave pattern
-// from Waves 65–123)
+// from Waves 65–123) + Wave 125 FFT I-3 state machine extension
 // =============================================================================
 //
-// Per v3 Part 2 F32 + checklist § FmFeesTransaction: 1 invariant
-// dropped in Wave 124:
-//   - FFT I-2: total_paid_amount_minor ≥ 0 (numeric money invariant)
+// Per v3 Part 2 F32 + checklist § FmFeesTransaction: 2 invariants
+// dropped across Waves 124-125:
+//   - FFT I-2: total_paid_amount_minor ≥ 0 (numeric money invariant; Wave 124)
+//   - FFT I-3: state machine (Pending -> Approved | Rejected; Wave 125)
 // Parent aggregate for [`RealFmFeesTransactionChild`] +
 // [`RealFmFeesTransactionLineNote`] (one transaction can have many
 // child rows and many line-note rows; the children carry their
 // `fm_fees_transaction_id` as a required FK field).
 //
-// The aggregate is append-only: `fresh()` + `retire()` only. The
-// `total_paid_amount_minor` field is NOT mutable — any change to the
-// cumulative paid total must be effected via appending a
-// `RealFmFeesTransactionChild` row (which the dispatcher sums back
+// The aggregate is append-only on `total_paid_amount_minor` +
+// `transaction_date` + `description` (only `fresh` sets them; no
+// update mutator exists). The state machine fields (`status` +
+// approval/rejection metadata) are mutable via `approve()` + `reject()`.
+// Any change to the cumulative paid total must be effected via appending
+// a `RealFmFeesTransactionChild` row (which the dispatcher sums back
 // into `total_paid_amount_minor` on the parent transaction).
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -8576,6 +8579,12 @@ pub struct RealFmFeesTransaction {
     pub total_paid_amount_minor: i64,
     pub transaction_date: chrono::NaiveDate,
     pub description: Option<String>,
+    pub status: ApprovalStatus,
+    pub approved_by: Option<UserId>,
+    pub approved_at: Option<Timestamp>,
+    pub rejected_by: Option<UserId>,
+    pub rejected_at: Option<Timestamp>,
+    pub reject_note: Option<String>,
     pub version: Version,
     pub etag: Etag,
     pub created_at: Timestamp,
@@ -8588,11 +8597,12 @@ pub struct RealFmFeesTransaction {
 }
 
 impl RealFmFeesTransaction {
-    /// Constructs a new `RealFmFeesTransaction`. Enforces FFT I-2:
-    /// `total_paid_amount_minor >= 0`. The transaction_date is required
-    /// (no default — the caller must supply a valid calendar date).
-    /// The description is optional free-form text (max 2000 chars
-    /// recommended at the UI layer, not enforced here).
+    /// Constructs a new `RealFmFeesTransaction` in the `Pending`
+    /// approval state. Enforces FFT I-2 (`total_paid_amount_minor >= 0`).
+    /// The transaction_date is required (no default — the caller must
+    /// supply a valid calendar date). The description is optional
+    /// free-form text (max 2000 chars recommended at the UI layer,
+    /// not enforced here).
     #[allow(clippy::too_many_arguments)]
     pub fn fresh(
         id: FmFeesTransactionId,
@@ -8615,6 +8625,12 @@ impl RealFmFeesTransaction {
             total_paid_amount_minor,
             transaction_date,
             description,
+            status: ApprovalStatus::Pending,
+            approved_by: None,
+            approved_at: None,
+            rejected_by: None,
+            rejected_at: None,
+            reject_note: None,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at: at,
@@ -8629,6 +8645,62 @@ impl RealFmFeesTransaction {
 
     pub fn is_active(&self) -> bool {
         self.active_status == ActiveStatus::Active
+    }
+
+    /// Returns `true` if the state machine permits the
+    /// `from -> to` transition (FFT I-3).
+    pub fn can_transition(&self, to: ApprovalStatus) -> bool {
+        self.status.can_transition_to(to)
+    }
+
+    /// Approves the transaction. Returns `Err` if the state machine
+    /// does not permit the transition (FFT I-3).
+    pub fn approve(
+        &mut self,
+        approver: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if !self.can_transition(ApprovalStatus::Approved) {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "FmFeesTransaction is in state {:?}, cannot transition to Approved (FFT I-3)",
+                self.status
+            )));
+        }
+        self.status = ApprovalStatus::Approved;
+        self.approved_by = Some(approver);
+        self.approved_at = Some(at);
+        self.updated_at = at;
+        self.updated_by = approver;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        Ok(())
+    }
+
+    /// Rejects the transaction. Returns `Err` if the state machine
+    /// does not permit the transition (FFT I-3).
+    pub fn reject(
+        &mut self,
+        rejecter: UserId,
+        note: String,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if !self.can_transition(ApprovalStatus::Rejected) {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "FmFeesTransaction is in state {:?}, cannot transition to Rejected (FFT I-3)",
+                self.status
+            )));
+        }
+        self.status = ApprovalStatus::Rejected;
+        self.rejected_by = Some(rejecter);
+        self.rejected_at = Some(at);
+        self.reject_note = Some(note);
+        self.updated_at = at;
+        self.updated_by = rejecter;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        Ok(())
     }
 
     pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {

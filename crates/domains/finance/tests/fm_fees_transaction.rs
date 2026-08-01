@@ -1,7 +1,10 @@
-//! Behavioural tests for `RealFmFeesTransaction` (Wave 124 full drop).
+//! Behavioural tests for `RealFmFeesTransaction` (Wave 124 full drop +
+//! Wave 125 FFT I-3 state machine extension).
 //!
-//! Pins FFT I-2 (`total_paid_amount_minor >= 0`) end-to-end via the
-//! aggregate surface, the service functions, and the emitted events.
+//! Pins FFT I-2 (`total_paid_amount_minor >= 0`) + FFT I-3
+//! (Pending -> Approved | Rejected state machine) end-to-end via
+//! the aggregate surface, the service functions, and the emitted
+//! events.
 
 #![allow(
     clippy::unwrap_used,
@@ -17,9 +20,13 @@ use educore_core::ids::SchoolId;
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::{Timestamp, Version};
 use educore_events::domain_event::DomainEvent;
-use educore_finance::events::{FmFeesTransactionCreated, FmFeesTransactionRetired};
+use educore_finance::events::{
+    FmFeesTransactionApproved, FmFeesTransactionCreated, FmFeesTransactionRejected,
+    FmFeesTransactionRetired,
+};
 use educore_finance::prelude::*;
 use educore_finance::value_objects::FmFeesTransactionId;
+use educore_finance::value_objects::ApprovalStatus;
 
 fn admin_context() -> (TenantContext, SystemIdGen) {
     let g = SystemIdGen;
@@ -225,6 +232,138 @@ fn retire_already_retired_returns_conflict() {
     assert!(matches!(result, Err(DomainError::Conflict(_))));
 }
 
+// =============================================================================
+// FFT I-3: state machine tests (Wave 125 new tests)
+// =============================================================================
+
+#[test]
+fn fresh_initial_status_is_pending_fft_i_3() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = fft_id(&g, school);
+    let row = RealFmFeesTransaction::fresh(
+        id,
+        5_000,
+        txn_date(),
+        None,
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("fresh should succeed");
+    assert_eq!(row.status, ApprovalStatus::Pending);
+    assert_eq!(row.approved_by, None);
+    assert_eq!(row.approved_at, None);
+    assert_eq!(row.rejected_by, None);
+    assert_eq!(row.rejected_at, None);
+    assert_eq!(row.reject_note, None);
+}
+
+#[test]
+fn approve_transitions_pending_to_approved_fft_i_3() {
+    let clock = SystemClock;
+    let g = SystemIdGen;
+    let school = g.next_school_id();
+    let actor = g.next_user_id();
+    let corr = g.next_correlation_id();
+    let tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
+    let id = fft_id(&g, school);
+    let mut row = RealFmFeesTransaction::fresh(
+        id,
+        5_000,
+        txn_date(),
+        None,
+        actor,
+        Timestamp::now(),
+        corr,
+    )
+    .expect("fresh should succeed");
+    assert_eq!(row.status, ApprovalStatus::Pending);
+    let event_id = g.next_event_id();
+    let at = Timestamp::now();
+    row.approve(actor, at, event_id).expect("approve should succeed");
+    assert_eq!(row.status, ApprovalStatus::Approved);
+    assert_eq!(row.approved_by, Some(actor));
+    assert_eq!(row.approved_at, Some(at));
+    assert_eq!(row.last_event_id, Some(event_id));
+}
+
+#[test]
+fn reject_transitions_pending_to_rejected_fft_i_3() {
+    let g = SystemIdGen;
+    let school = g.next_school_id();
+    let actor = g.next_user_id();
+    let corr = g.next_correlation_id();
+    let id = fft_id(&g, school);
+    let mut row = RealFmFeesTransaction::fresh(
+        id,
+        5_000,
+        txn_date(),
+        None,
+        actor,
+        Timestamp::now(),
+        corr,
+    )
+    .expect("fresh should succeed");
+    assert_eq!(row.status, ApprovalStatus::Pending);
+    let event_id = g.next_event_id();
+    let at = Timestamp::now();
+    let note = "Insufficient documentation".to_string();
+    row.reject(actor, note.clone(), at, event_id)
+        .expect("reject should succeed");
+    assert_eq!(row.status, ApprovalStatus::Rejected);
+    assert_eq!(row.rejected_by, Some(actor));
+    assert_eq!(row.rejected_at, Some(at));
+    assert_eq!(row.reject_note, Some(note));
+    assert_eq!(row.last_event_id, Some(event_id));
+}
+
+#[test]
+fn double_approve_returns_conflict_fft_i_3() {
+    let g = SystemIdGen;
+    let school = g.next_school_id();
+    let actor = g.next_user_id();
+    let corr = g.next_correlation_id();
+    let id = fft_id(&g, school);
+    let mut row = RealFmFeesTransaction::fresh(
+        id,
+        5_000,
+        txn_date(),
+        None,
+        actor,
+        Timestamp::now(),
+        corr,
+    )
+    .expect("fresh should succeed");
+    row.approve(actor, Timestamp::now(), g.next_event_id())
+        .expect("first approve should succeed");
+    let result = row.approve(actor, Timestamp::now(), g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+#[test]
+fn reject_after_approve_returns_conflict_fft_i_3() {
+    let g = SystemIdGen;
+    let school = g.next_school_id();
+    let actor = g.next_user_id();
+    let corr = g.next_correlation_id();
+    let id = fft_id(&g, school);
+    let mut row = RealFmFeesTransaction::fresh(
+        id,
+        5_000,
+        txn_date(),
+        None,
+        actor,
+        Timestamp::now(),
+        corr,
+    )
+    .expect("fresh should succeed");
+    row.approve(actor, Timestamp::now(), g.next_event_id())
+        .expect("first approve should succeed");
+    let result = row.reject(actor, "too late".to_string(), Timestamp::now(), g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
 // ---- service integration ----
 
 #[test]
@@ -303,6 +442,75 @@ fn retire_fm_fees_transaction_service_emits_retired_event() {
     assert_eq!(
         <FmFeesTransactionRetired as DomainEvent>::AGGREGATE_TYPE,
         "fm_fees_transaction"
+    );
+}
+
+#[test]
+fn approve_fm_fees_transaction_service_emits_approved_event_fft_i_3() {
+    let clock = SystemClock;
+    let g = SystemIdGen;
+    let school = g.next_school_id();
+    let actor = g.next_user_id();
+    let corr = g.next_correlation_id();
+    let tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
+    let id = fft_id(&g, school);
+    let agg = RealFmFeesTransaction::fresh(
+        id,
+        5_000,
+        txn_date(),
+        None,
+        actor,
+        Timestamp::now(),
+        corr,
+    )
+    .expect("fresh should succeed");
+    let cmd = ApproveFmFeesTransactionCommand {
+        tenant,
+        fm_fees_transaction_id: id,
+    };
+    let (updated, evt): (RealFmFeesTransaction, FmFeesTransactionApproved) =
+        approve_fm_fees_transaction(agg, cmd, &clock, &g).expect("approve service should succeed");
+    assert_eq!(updated.status, ApprovalStatus::Approved);
+    assert_eq!(evt.approved_by, actor);
+    assert_eq!(evt.status, ApprovalStatus::Approved);
+    assert_eq!(
+        <FmFeesTransactionApproved as DomainEvent>::EVENT_TYPE,
+        "finance.fm_fees_transaction.approved"
+    );
+}
+
+#[test]
+fn reject_fm_fees_transaction_service_emits_rejected_event_fft_i_3() {
+    let clock = SystemClock;
+    let g = SystemIdGen;
+    let school = g.next_school_id();
+    let actor = g.next_user_id();
+    let corr = g.next_correlation_id();
+    let tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
+    let id = fft_id(&g, school);
+    let agg = RealFmFeesTransaction::fresh(
+        id,
+        5_000,
+        txn_date(),
+        None,
+        actor,
+        Timestamp::now(),
+        corr,
+    )
+    .expect("fresh should succeed");
+    let cmd = RejectFmFeesTransactionCommand {
+        tenant,
+        fm_fees_transaction_id: id,
+        reject_note: "Insufficient funds".to_string(),
+    };
+    let (updated, evt): (RealFmFeesTransaction, FmFeesTransactionRejected) =
+        reject_fm_fees_transaction(agg, cmd, &clock, &g).expect("reject service should succeed");
+    assert_eq!(updated.status, ApprovalStatus::Rejected);
+    assert_eq!(evt.rejected_by, actor);
+    assert_eq!(evt.reject_note, "Insufficient funds");
+    assert_eq!(
+        <FmFeesTransactionRejected as DomainEvent>::EVENT_TYPE,
+        "finance.fm_fees_transaction.rejected"
     );
 }
 
