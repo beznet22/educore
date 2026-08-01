@@ -2300,11 +2300,16 @@ impl ConfigureDueFeesBlockSettingCommand {
         vec![Capability::FinanceDueFeesBlock]
     }
 }
-// -- AmountTransfer (inter-account cash movement) --
+// -- Wave 108 -- AmountTransfer (inter-account cash movement) --
+
+pub const FINANCE_AMOUNT_TRANSFER_CREATE_COMMAND_TYPE: &str = "finance.amount_transfer.create";
+pub const FINANCE_AMOUNT_TRANSFER_READ_COMMAND_TYPE: &str = "finance.amount_transfer.read";
+pub const FINANCE_AMOUNT_TRANSFER_RETIRE_COMMAND_TYPE: &str = "finance.amount_transfer.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateAmountTransferCommand {
     pub tenant: TenantContext,
+    pub amount_transfer_id: AmountTransferId,
     pub from_account_id: BankAccountId,
     pub to_account_id: BankAccountId,
     pub amount_minor: i64,
@@ -2315,10 +2320,22 @@ pub struct CreateAmountTransferCommand {
 
 
 impl CreateAmountTransferCommand {
-    /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
-        vec![Capability::FinanceInvoiceRead]
+        vec![Capability::FinanceBankTransfer]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireAmountTransferCommand {
+    pub tenant: TenantContext,
+    pub amount_transfer_id: AmountTransferId,
+}
+
+impl RetireAmountTransferCommand {
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceBankTransfer]
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

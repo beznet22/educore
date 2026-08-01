@@ -51,7 +51,7 @@ pub mod prelude {
         RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting,
         RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild,
         RealFmFeesTransactionLineNote, RealIncomeApproval, RealIncomeHead, RealInvoiceSetting,
-        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, DueFeesLoginPreventRole, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealDirectFeesInstallmentChildPayment, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, Wallet, WalletTransaction,
+        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, DueFeesLoginPreventRole, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealDirectFeesInstallmentChildPayment, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, Wallet, WalletTransaction,
     };
     // Reference / child aggregates
     pub use crate::entities::{
@@ -141,7 +141,7 @@ pub mod prelude {
         FINANCE_TRANSACTION_READ_COMMAND_TYPE,
         FINANCE_TRANSACTION_RETIRE_COMMAND_TYPE,
         CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand,
-        CreatePaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand,
+        CreatePaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand,
         FINANCE_FEES_INSTALLMENT_ASSIGN_DISCOUNT_CREATE_COMMAND_TYPE,
         FINANCE_FEES_INSTALLMENT_ASSIGN_DISCOUNT_READ_COMMAND_TYPE,
         FINANCE_FEES_INSTALLMENT_ASSIGN_DISCOUNT_RETIRE_COMMAND_TYPE,
@@ -151,6 +151,9 @@ pub mod prelude {
         FINANCE_FEES_INSTALLMENT_ASSIGN_CREATE_COMMAND_TYPE,
         FINANCE_FEES_INSTALLMENT_ASSIGN_READ_COMMAND_TYPE,
         FINANCE_FEES_INSTALLMENT_ASSIGN_RETIRE_COMMAND_TYPE,
+        FINANCE_AMOUNT_TRANSFER_CREATE_COMMAND_TYPE,
+        FINANCE_AMOUNT_TRANSFER_READ_COMMAND_TYPE,
+        FINANCE_AMOUNT_TRANSFER_RETIRE_COMMAND_TYPE,
     };
     pub use crate::entities::WalletTransactionApproval as WalletTransactionApprovalEntity;
     pub use crate::errors::FinanceError;
@@ -188,6 +191,7 @@ pub mod prelude {
         FeesInstallmentAssignDiscountCreated, FeesInstallmentAssignDiscountRetired,
         PaymentMethodCreated, PaymentMethodRetired,
         FeesInstallmentAssignCreated, FeesInstallmentAssignRetired,
+        AmountTransferCreated, AmountTransferRetired,
         FeesCarryForwardSettingRetired, FeesCarryForwardSettingUpdated, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
         FmFeesInvoiceLineNoteRetired, FmFeesTransactionChildCreated,
         FmFeesTransactionChildRetired, FmFeesTransactionChildUpdated,
@@ -237,13 +241,14 @@ pub mod prelude {
         create_fees_installment_assign_discount, read_fees_installment_assign_discount, retire_fees_installment_assign_discount,
         create_payment_method, read_payment_method, retire_payment_method,
         create_fees_installment_assign, read_fees_installment_assign, retire_fees_installment_assign,
+        create_amount_transfer, read_amount_transfer, retire_amount_transfer,
         request_wallet_refund, ChargeRequest, PaymentProvider, PaymentProviderPaymentId,
         PaymentProviderStatus, PaymentReceipt, PaymentStatus, RefundReceipt, RefundRequest,
         StubPaymentProvider, WalletService,
     };
     pub use crate::value_objects::{
         validate_bank_account_number, validate_discount_name, validate_donor_name,
-        validate_ifsc_code, validate_ledger_name, validate_percentage, AccountType, Amount,
+        validate_ifsc_code, validate_ledger_name, validate_percentage, AccountType, Amount, AmountTransferId,
         ApprovalStatus, Balance, BalanceType, BankAccountId, BankMode, BankPaymentSlipId,
         ChartOfAccountId, Currency, DirectFeesInstallmentAssignId,
         DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId,

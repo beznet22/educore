@@ -34,7 +34,7 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
 use crate::value_objects::{
     validate_discount_name, validate_donor_name, validate_ledger_name, AccountType, Amount,
-    ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
+    AmountTransferId, ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
     BankStatementId,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId,
     DirectFeesInstallmentChildPaymentId,
@@ -2268,6 +2268,111 @@ impl RealFmFeesGroup {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "FmFeesGroup is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
+// Wave 108 — RealAmountTransfer (inter-account cash movement)
+//
+// AT I-2: debit source + credit destination. An AmountTransfer
+// records a movement of money from one bank account (the
+// debit source = from_account_id) to another bank account (the
+// credit destination = to_account_id) for a specific amount in
+// a specific currency on a specific date.
+//
+// The (from_account_id, to_account_id) scope-key tuple pins the
+// transfer to a specific (source, destination) pair. The
+// aggregate enforces 2 companion invariants:
+//   * from_account_id != to_account_id (cannot transfer to the
+//     same account; a no-op transfer must be a separate code
+//     path)
+//   * amount_minor >= 0 (a negative transfer is a reversal, which
+//     requires a separate reversal flow, not a fresh transfer)
+// =============================================================================
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealAmountTransfer {
+    pub id: AmountTransferId,
+    pub school_id: SchoolId,
+    pub from_account_id: BankAccountId,
+    pub to_account_id: BankAccountId,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub transfer_date: chrono::NaiveDate,
+    pub note: Option<String>,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealAmountTransfer {
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: AmountTransferId,
+        from_account_id: BankAccountId,
+        to_account_id: BankAccountId,
+        amount_minor: i64,
+        currency: Currency,
+        transfer_date: chrono::NaiveDate,
+        note: Option<String>,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // Companion: cannot transfer to the same account.
+        if from_account_id == to_account_id {
+            return Err(educore_core::error::DomainError::validation(
+                "AmountTransfer from_account_id must differ from to_account_id (AT I-2 companion)",
+            ));
+        }
+        // Companion: amount_minor >= 0.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "AmountTransfer amount_minor must be >= 0 (AT I-2 companion)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            from_account_id,
+            to_account_id,
+            amount_minor,
+            currency,
+            transfer_date,
+            note,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "AmountTransfer is already retired",
             ));
         }
         self.active_status = ActiveStatus::Retired;

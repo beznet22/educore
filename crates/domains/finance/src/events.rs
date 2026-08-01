@@ -25,7 +25,7 @@ use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
-    AccountType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
+    AccountType, AmountTransferId, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
     BankStatementId, StatementType,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
     DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
@@ -7551,6 +7551,118 @@ impl DomainEvent for FeesInstallmentAssignRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.fees_installment_assign_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+
+// -- Wave 108 -- AmountTransfer (inter-account cash movement) --
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AmountTransferCreated {
+    pub amount_transfer_id: AmountTransferId,
+    pub from_account_id: BankAccountId,
+    pub to_account_id: BankAccountId,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub transfer_date: chrono::NaiveDate,
+    pub note: Option<String>,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl AmountTransferCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        amount_transfer_id: AmountTransferId,
+        from_account_id: BankAccountId,
+        to_account_id: BankAccountId,
+        amount_minor: i64,
+        currency: Currency,
+        transfer_date: chrono::NaiveDate,
+        note: Option<String>,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            amount_transfer_id,
+            from_account_id,
+            to_account_id,
+            amount_minor,
+            currency,
+            transfer_date,
+            note,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for AmountTransferCreated {
+    const EVENT_TYPE: &'static str = "finance.amount_transfer.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "amount_transfer";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.amount_transfer_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.amount_transfer_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AmountTransferRetired {
+    pub amount_transfer_id: AmountTransferId,
+    pub retired_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl AmountTransferRetired {
+    pub fn new(
+        amount_transfer_id: AmountTransferId,
+        retired_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            amount_transfer_id,
+            retired_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for AmountTransferRetired {
+    const EVENT_TYPE: &'static str = "finance.amount_transfer.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "amount_transfer";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.amount_transfer_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.amount_transfer_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at
