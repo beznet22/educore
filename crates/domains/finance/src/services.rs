@@ -35,7 +35,7 @@ use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
-    RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFmFeesGroup, RealIncomeApproval,
+    RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFeesCarryForward, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
     RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, Wallet, WalletTransaction,
 };
@@ -72,7 +72,7 @@ use crate::commands::{
     CreateFeesInstallmentCreditCommand, ReadFeesInstallmentCreditCommand, RetireFeesInstallmentCreditCommand,
     CreateFmFeesInvoiceSettingCommand, ReadFmFeesInvoiceSettingCommand, UpdateFmFeesInvoiceSettingCommand, RetireFmFeesInvoiceSettingCommand,
     CreateFmFeesWeaverCommand, ReadFmFeesWeaverCommand, RetireFmFeesWeaverCommand,
-    CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand,
+    CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand, CreateFeesCarryForwardCommand, ReadFeesCarryForwardCommand, RetireFeesCarryForwardCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
     CreateFmFeesGroupCommand,
@@ -104,7 +104,7 @@ use crate::events::{
     DirectFeesInstallmentCreated, DirectFeesInstallmentRetired,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
-    ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated,
+    ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated, FeesCarryForwardCreated, FeesCarryForwardRetired,
     FmFeesGroupCreated, FmFeesInvoiceSettingCreated, FmFeesInvoiceSettingUpdated, FmFeesInvoiceSettingRetired, FmFeesWeaverCreated, FmFeesWeaverRetired, IncomeApprovalApproved, IncomeApprovalCreated, IncomeApprovalRejected,
     PayrollPaymentApprovalApproved, PayrollPaymentApprovalCreated, PayrollPaymentApprovalRejected,
     SalaryTemplateCreated, BankPaymentSlipAuditCreated, BankPaymentSlipAuditRetired,
@@ -3340,6 +3340,98 @@ where
     agg.last_event_id = Some(event_id);
 
     let event = DirectFeesInstallmentRetired::new(
+        agg.id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((agg, event))
+}
+
+
+pub fn create_fees_carry_forward<C, G>(
+    cmd: CreateFeesCarryForwardCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesCarryForward, FeesCarryForwardCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut agg = RealFeesCarryForward::fresh(
+        cmd.fees_carry_forward_id,
+        cmd.student_id,
+        cmd.academic_year_id,
+        cmd.balance_minor,
+        cmd.balance_type,
+        cmd.currency,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    agg.last_event_id = Some(event_id);
+
+    let event = FeesCarryForwardCreated::new(
+        agg.id,
+        agg.student_id,
+        agg.academic_year_id,
+        agg.balance_minor,
+        agg.balance_type,
+        agg.currency,
+        agg.created_by,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((agg, event))
+}
+
+pub fn read_fees_carry_forward<C, G>(
+    cmd: ReadFeesCarryForwardCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = cmd;
+    Ok(())
+}
+
+pub fn retire_fees_carry_forward<C, G>(
+    cmd: RetireFeesCarryForwardCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesCarryForward, FeesCarryForwardRetired)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut agg = RealFeesCarryForward::fresh(
+        cmd.fees_carry_forward_id,
+        educore_academic::StudentId::new(cmd.fees_carry_forward_id.school_id(), ids.next_uuid()),
+        educore_academic::AcademicYearId::new(cmd.fees_carry_forward_id.school_id(), ids.next_uuid()),
+        0,
+        BalanceType::Debit,
+        Currency::INR,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    agg.retire(now, cmd.tenant.actor_id)?;
+    agg.last_event_id = Some(event_id);
+
+    let event = FeesCarryForwardRetired::new(
         agg.id,
         cmd.tenant.actor_id,
         event_id,

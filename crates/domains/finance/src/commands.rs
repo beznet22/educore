@@ -28,7 +28,7 @@ use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
 
 use crate::value_objects::{
-    AccountType, AmountTransferId, BankAccountId, BankMode, BankPaymentSlipId, BankPaymentSlipAuditId, BankStatementId,
+    AccountType, AmountTransferId, BalanceType, BankAccountId, BankMode, BankPaymentSlipId, BankPaymentSlipAuditId, BankStatementId,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId,
     DirectFeesInstallmentChildPaymentId,
     DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
@@ -2172,6 +2172,43 @@ pub struct ConfigureFeesCarryForwardCommand {
 
 impl ConfigureFeesCarryForwardCommand {
     /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesCarryForwardConfigure]
+    }
+}
+
+
+// -- Wave 113 -- FeesCarryForward (greenfield commands) --
+
+pub const FINANCE_FEES_CARRY_FORWARD_CREATE_COMMAND_TYPE: &str = "finance.fees_carry_forward.create";
+pub const FINANCE_FEES_CARRY_FORWARD_RETIRE_COMMAND_TYPE: &str = "finance.fees_carry_forward.retire";
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateFeesCarryForwardCommand {
+    pub tenant: TenantContext,
+    pub fees_carry_forward_id: FeesCarryForwardId,
+    pub student_id: educore_academic::StudentId,
+    pub academic_year_id: educore_academic::AcademicYearId,
+    pub balance_minor: i64,
+    pub balance_type: BalanceType,
+    pub currency: Currency,
+}
+
+impl CreateFeesCarryForwardCommand {
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesCarryForwardConfigure]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFeesCarryForwardCommand {
+    pub tenant: TenantContext,
+    pub fees_carry_forward_id: FeesCarryForwardId,
+}
+
+impl RetireFeesCarryForwardCommand {
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesCarryForwardConfigure]

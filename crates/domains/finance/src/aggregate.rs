@@ -8011,3 +8011,96 @@ impl RealDirectFeesInstallment {
         Ok(())
     }
 }
+
+
+// -- Wave 113 -- RealFeesCarryForward (end-of-year balance roll-over) --
+//
+// FCF I-3: unique per (school, student, academic). The scope-key
+// tuple (school_id, student_id, academic_year_id) pins a
+// FeesCarryForward to a single student-academic-year pair.
+// Uniqueness is dispatcher-enforced (the aggregate carries the
+// tuple as required fields so the dispatcher has the data to
+// enforce it).
+//
+// Companion invariants enforced at fresh():
+//   * balance_minor >= 0 (FCF I-1 -- pinned at construction).
+//   * balance_type is a valid BalanceType variant (FCF I-2 --
+//     the enum enforces variant validity at the type system
+//     level; this aggregate carries it as required field).
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFeesCarryForward {
+    pub id: FeesCarryForwardId,
+    pub school_id: SchoolId,
+    pub student_id: educore_academic::StudentId,
+    pub academic_year_id: educore_academic::AcademicYearId,
+    pub balance_minor: i64,
+    pub balance_type: BalanceType,
+    pub currency: Currency,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFeesCarryForward {
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: FeesCarryForwardId,
+        student_id: educore_academic::StudentId,
+        academic_year_id: educore_academic::AcademicYearId,
+        balance_minor: i64,
+        balance_type: BalanceType,
+        currency: Currency,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FCF I-1 companion: balance_minor >= 0.
+        if balance_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesCarryForward balance_minor must be >= 0 (FCF I-1)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            student_id,
+            academic_year_id,
+            balance_minor,
+            balance_type,
+            currency,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesCarryForward is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}

@@ -25,7 +25,7 @@ use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
-    AccountType, AmountTransferId, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
+    AccountType, AmountTransferId, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
     BankStatementId, StatementType,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
     DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
@@ -7808,6 +7808,123 @@ impl DomainEvent for DirectFeesInstallmentRetired {
     }
     fn school_id(&self) -> SchoolId {
         self.direct_fees_installment_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+
+// -- Wave 113 -- FeesCarryForward (end-of-year balance roll-over) --
+//
+// FCF I-3: unique per (school, student, academic). Both
+// FeesCarryForwardCreated (carrying the scope-key tuple +
+// balance_minor + balance_type + currency downstream) and
+// FeesCarryForwardRetired (tombstone preserving the scope-key
+// tuple for legal-record retention) are emitted by
+// create_fees_carry_forward / retire_fees_carry_forward
+// service functions.
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesCarryForwardCreated {
+    pub fees_carry_forward_id: FeesCarryForwardId,
+    pub student_id: educore_academic::StudentId,
+    pub academic_year_id: educore_academic::AcademicYearId,
+    pub balance_minor: i64,
+    pub balance_type: BalanceType,
+    pub currency: Currency,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesCarryForwardCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_carry_forward_id: FeesCarryForwardId,
+        student_id: educore_academic::StudentId,
+        academic_year_id: educore_academic::AcademicYearId,
+        balance_minor: i64,
+        balance_type: BalanceType,
+        currency: Currency,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_carry_forward_id,
+            student_id,
+            academic_year_id,
+            balance_minor,
+            balance_type,
+            currency,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesCarryForwardCreated {
+    const EVENT_TYPE: &'static str = "finance.fees_carry_forward.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_carry_forward";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_carry_forward_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_carry_forward_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesCarryForwardRetired {
+    pub fees_carry_forward_id: FeesCarryForwardId,
+    pub retired_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesCarryForwardRetired {
+    pub fn new(
+        fees_carry_forward_id: FeesCarryForwardId,
+        retired_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_carry_forward_id,
+            retired_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesCarryForwardRetired {
+    const EVENT_TYPE: &'static str = "finance.fees_carry_forward.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_carry_forward";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_carry_forward_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_carry_forward_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at
