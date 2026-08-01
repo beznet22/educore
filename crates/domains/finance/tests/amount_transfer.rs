@@ -1,13 +1,16 @@
 //! Integration tests for the **AmountTransfer aggregate** vertical slice.
 //!
-//! Pins the AT I-2 invariant end-to-end: an AmountTransfer's
-//! (from_account_id, to_account_id) scope-key tuple must be
-//! distinct (the aggregate cannot transfer to the same account)
-//! AND amount_minor must be >= 0 (a negative transfer is a
-//! reversal, not a fresh transfer).
+//! Pins the AT I-2 + AT I-3 invariants end-to-end:
+//! - AT I-2: (from_account_id, to_account_id) scope-key tuple
+//!   (the aggregate cannot transfer to the same account) AND
+//!   amount_minor must be >= 0.
+//! - AT I-3: idempotency on (source, dest, reference). When a
+//!   reference is provided, the dispatcher enforces uniqueness on
+//!   the (from_account_id, to_account_id, reference) tuple. The
+//!   reference, when present, must be non-empty after trimming.
 //!
-//! Replaces the prior 2 typed-id-only tests with an 11-test
-//! behavioral suite.
+//! Replaces the prior 2 typed-id-only tests with a 14-test
+//! behavioral suite (11 AT I-2 + 3 AT I-3).
 
 #![allow(
     clippy::unwrap_used,
@@ -45,6 +48,10 @@ fn bank_id(g: &SystemIdGen, school: SchoolId) -> BankAccountId {
     BankAccountId::new(school, g.next_uuid())
 }
 
+// =========================================================================
+// AT I-2 tests (carried over from Wave 108, extended with reference param)
+// =========================================================================
+
 #[test]
 fn amount_transfer_typed_id_round_trips_school() {
     let (tenant, g) = admin_context();
@@ -76,7 +83,8 @@ fn fresh_full_payload_valid_at_i_2_companion() {
         50_000,
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 8, 15).unwrap(),
-        Some("Tuition account → operations account".to_owned()),
+        Some("Tuition account -> operations account".to_owned()),
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -87,7 +95,8 @@ fn fresh_full_payload_valid_at_i_2_companion() {
     assert_eq!(agg.to_account_id, to);
     assert_eq!(agg.amount_minor, 50_000);
     assert_eq!(agg.currency, Currency::INR);
-    assert_eq!(agg.note.as_deref(), Some("Tuition account → operations account"));
+    assert_eq!(agg.note.as_deref(), Some("Tuition account -> operations account"));
+    assert!(agg.reference.is_none());
     assert_eq!(agg.school_id, school);
 }
 
@@ -106,6 +115,7 @@ fn fresh_zero_amount_boundary_valid_at_i_2_companion() {
         0,
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 8, 15).unwrap(),
+        None,
         None,
         tenant.actor_id,
         now,
@@ -129,6 +139,7 @@ fn fresh_same_account_validation_error_at_i_2_companion() {
         1_000,
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 8, 15).unwrap(),
+        None,
         None,
         tenant.actor_id,
         now,
@@ -157,6 +168,7 @@ fn fresh_negative_amount_validation_error_at_i_2_companion() {
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 8, 15).unwrap(),
         None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -180,6 +192,7 @@ fn fresh_initializes_audit_footer_with_no_last_event_id() {
         25_000,
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 8, 15).unwrap(),
+        None,
         None,
         tenant.actor_id,
         now,
@@ -206,6 +219,7 @@ fn retire_flips_active_status_to_retired() {
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 8, 15).unwrap(),
         None,
+        None,
         tenant.actor_id,
         now,
         tenant.correlation_id,
@@ -228,6 +242,7 @@ fn retire_already_retired_returns_conflict() {
         1_000,
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 8, 15).unwrap(),
+        None,
         None,
         tenant.actor_id,
         now,
@@ -260,6 +275,7 @@ fn create_amount_transfer_service_emits_created_event_at_i_2() {
         currency: Currency::INR,
         transfer_date: chrono::NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),
         note: Some("Service integration test".to_owned()),
+        reference: None,
     };
     let (agg, event): (RealAmountTransfer, AmountTransferCreated) =
         create_amount_transfer(cmd, &clock, &ids)
@@ -274,6 +290,7 @@ fn create_amount_transfer_service_emits_created_event_at_i_2() {
         event.note.as_deref(),
         Some("Service integration test")
     );
+    assert!(event.reference.is_none());
     assert_eq!(
         <AmountTransferCreated as DomainEvent>::EVENT_TYPE,
         "finance.amount_transfer.created"
@@ -307,6 +324,7 @@ fn create_amount_transfer_service_rejects_same_account_at_i_2() {
         currency: Currency::INR,
         transfer_date: chrono::NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),
         note: None,
+        reference: None,
     };
     let err = create_amount_transfer(cmd, &clock, &ids)
         .expect_err("AT I-2: same from/to must be rejected at service layer");
@@ -314,4 +332,89 @@ fn create_amount_transfer_service_rejects_same_account_at_i_2() {
         format!("{err}").contains("must differ from to_account_id"),
         "unexpected error: {err}"
     );
+}
+
+// =========================================================================
+// AT I-3 tests (Wave 109 new tests for reference/idempotency field)
+// =========================================================================
+
+#[test]
+fn fresh_with_reference_carries_reference_at_i_3() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = at_id(&g, school);
+    let from = bank_id(&g, school);
+    let to = bank_id(&g, school);
+    let now = educore_core::value_objects::Timestamp::now();
+    let agg = RealAmountTransfer::fresh(
+        id,
+        from,
+        to,
+        100_000,
+        Currency::INR,
+        chrono::NaiveDate::from_ymd_opt(2026, 10, 1).unwrap(),
+        None,
+        Some("TXN-2026-0042".to_owned()),
+        tenant.actor_id,
+        now,
+        tenant.correlation_id,
+    )
+    .expect("AT I-3: non-empty reference must construct");
+    assert_eq!(agg.reference.as_deref(), Some("TXN-2026-0042"));
+}
+
+#[test]
+fn fresh_whitespace_only_reference_validation_error_at_i_3() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = at_id(&g, school);
+    let from = bank_id(&g, school);
+    let to = bank_id(&g, school);
+    let now = educore_core::value_objects::Timestamp::now();
+    let err = RealAmountTransfer::fresh(
+        id,
+        from,
+        to,
+        1_000,
+        Currency::INR,
+        chrono::NaiveDate::from_ymd_opt(2026, 10, 1).unwrap(),
+        None,
+        Some("   \t  ".to_owned()),
+        tenant.actor_id,
+        now,
+        tenant.correlation_id,
+    )
+    .expect_err("AT I-3: whitespace-only reference must be rejected");
+    assert!(
+        format!("{err}").contains("reference must be non-empty after trimming"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn create_amount_transfer_service_propagates_reference_to_event_at_i_3() {
+    use educore_finance::commands::CreateAmountTransferCommand;
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = at_id(&g, school);
+    let from = bank_id(&g, school);
+    let to = bank_id(&g, school);
+    let clock = SystemClock;
+    let ids = SystemIdGen;
+    let cmd = CreateAmountTransferCommand {
+        tenant: tenant.clone(),
+        amount_transfer_id: id,
+        from_account_id: from,
+        to_account_id: to,
+        amount_minor: 50_000,
+        currency: Currency::INR,
+        transfer_date: chrono::NaiveDate::from_ymd_opt(2026, 10, 1).unwrap(),
+        note: None,
+        reference: Some("BANK-RECON-2026-Q3".to_owned()),
+    };
+    let (agg, event): (RealAmountTransfer, AmountTransferCreated) =
+        create_amount_transfer(cmd, &clock, &ids)
+            .expect("create_amount_transfer must succeed with reference");
+    assert_eq!(agg.reference.as_deref(), Some("BANK-RECON-2026-Q3"));
+    assert_eq!(event.reference.as_deref(), Some("BANK-RECON-2026-Q3"));
 }

@@ -7569,6 +7569,10 @@ pub struct AmountTransferCreated {
     pub currency: Currency,
     pub transfer_date: chrono::NaiveDate,
     pub note: Option<String>,
+    /// AT I-3: optional idempotency reference carried on the
+    /// event for downstream consumers (audit trail + idempotency
+    /// check reconciliation).
+    pub reference: Option<String>,
     pub created_by: UserId,
     pub event_id: EventId,
     pub correlation_id: CorrelationId,
@@ -7585,6 +7589,7 @@ impl AmountTransferCreated {
         currency: Currency,
         transfer_date: chrono::NaiveDate,
         note: Option<String>,
+        reference: Option<String>,
         created_by: UserId,
         event_id: EventId,
         correlation_id: CorrelationId,
@@ -7598,6 +7603,7 @@ impl AmountTransferCreated {
             currency,
             transfer_date,
             note,
+            reference,
             created_by,
             event_id,
             correlation_id,

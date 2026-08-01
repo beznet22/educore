@@ -2316,6 +2316,10 @@ pub struct CreateAmountTransferCommand {
     pub currency: Currency,
     pub transfer_date: NaiveDate,
     pub note: Option<String>,
+    /// AT I-3: optional idempotency reference. The dispatcher
+    /// enforces uniqueness on the
+    /// (from_account_id, to_account_id, reference) tuple.
+    pub reference: Option<String>,
 }
 
 

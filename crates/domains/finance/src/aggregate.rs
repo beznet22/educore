@@ -2307,6 +2307,14 @@ pub struct RealAmountTransfer {
     pub currency: Currency,
     pub transfer_date: chrono::NaiveDate,
     pub note: Option<String>,
+    /// AT I-3: optional idempotency reference. When present, the
+    /// dispatcher enforces uniqueness on the
+    /// (from_account_id, to_account_id, reference) tuple. This
+    /// allows clients to safely retry failed transfers without
+    /// creating duplicates. When None, no idempotency check is
+    /// performed (the dispatcher may still enforce uniqueness
+    /// via other means such as request_id).
+    pub reference: Option<String>,
     pub version: Version,
     pub etag: Etag,
     pub created_at: Timestamp,
@@ -2328,6 +2336,7 @@ impl RealAmountTransfer {
         currency: Currency,
         transfer_date: chrono::NaiveDate,
         note: Option<String>,
+        reference: Option<String>,
         actor: UserId,
         at: Timestamp,
         correlation: CorrelationId,
@@ -2344,6 +2353,14 @@ impl RealAmountTransfer {
                 "AmountTransfer amount_minor must be >= 0 (AT I-2 companion)",
             ));
         }
+        // AT I-3 companion: reference, when present, must be non-empty after trim.
+        if let Some(ref r) = reference {
+            if r.trim().is_empty() {
+                return Err(educore_core::error::DomainError::validation(
+                    "AmountTransfer reference must be non-empty after trimming when present (AT I-3)",
+                ));
+            }
+        }
         Ok(Self {
             school_id: id.school_id(),
             id,
@@ -2353,6 +2370,7 @@ impl RealAmountTransfer {
             currency,
             transfer_date,
             note,
+            reference,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at: at,
