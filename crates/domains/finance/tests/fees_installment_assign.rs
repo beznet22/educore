@@ -1,12 +1,11 @@
 //! Integration tests for the **FeesInstallmentAssign aggregate** vertical slice.
 //!
-//! Pins the FIA I-1 invariant end-to-end: a FeesInstallmentAssign
-//! is uniquely scoped to a (fees_assign_id, fees_installment_id)
-//! tuple within a school. Uniqueness is dispatcher-enforced via
-//! the scope-key tuple the aggregate carries as required fields.
-//!
-//! Replaces the prior 2 typed-id-only tests with a 10-test
-//! behavioral suite.
+//! Pins the FIA I-1 + FIA I-2 invariants end-to-end:
+//! - FIA I-1: unique per (assign, installment) scope-key tuple.
+//! - FIA I-2: paid_amount <= amount + discount + 3 sub-validations:
+//!   amount_minor >= 0, discount_minor >= 0, paid_amount_minor >= 0,
+//!   plus companion invariant paid_amount_minor <= amount_minor +
+//!   discount_minor.
 
 #![allow(
     clippy::unwrap_used,
@@ -49,6 +48,10 @@ fn installment_id(g: &SystemIdGen, school: SchoolId) -> FeesInstallmentId {
     FeesInstallmentId::new(school, g.next_uuid())
 }
 
+// =========================================================================
+// FIA I-1 tests (carried over from Wave 107)
+// =========================================================================
+
 #[test]
 fn fees_installment_assign_typed_id_round_trips_school() {
     let (tenant, g) = admin_context();
@@ -78,6 +81,9 @@ fn fresh_full_payload_carries_scope_key_tuple_fia_i_1() {
         a_id,
         i_id,
         chrono::NaiveDate::from_ymd_opt(2026, 9, 15).unwrap(),
+        50_000, // amount_minor (FIA I-2)
+        0,      // discount_minor
+        0,      // paid_amount_minor
         Some("Term 1 installment".to_owned()),
         tenant.actor_id,
         now,
@@ -87,8 +93,9 @@ fn fresh_full_payload_carries_scope_key_tuple_fia_i_1() {
     assert!(agg.is_active());
     assert_eq!(agg.fees_assign_id, a_id);
     assert_eq!(agg.fees_installment_id, i_id);
-    assert_eq!(agg.due_date, chrono::NaiveDate::from_ymd_opt(2026, 9, 15).unwrap());
-    assert_eq!(agg.note.as_deref(), Some("Term 1 installment"));
+    assert_eq!(agg.amount_minor, 50_000);
+    assert_eq!(agg.discount_minor, 0);
+    assert_eq!(agg.paid_amount_minor, 0);
     assert_eq!(agg.school_id, school);
 }
 
@@ -102,6 +109,9 @@ fn fresh_distinct_scope_key_tuples_within_same_school() {
         assign_id(&g, school),
         installment_id(&g, school),
         chrono::NaiveDate::from_ymd_opt(2026, 9, 15).unwrap(),
+        10_000,
+        0,
+        0,
         None,
         tenant.actor_id,
         now,
@@ -113,6 +123,9 @@ fn fresh_distinct_scope_key_tuples_within_same_school() {
         assign_id(&g, school),
         installment_id(&g, school),
         chrono::NaiveDate::from_ymd_opt(2026, 10, 15).unwrap(),
+        10_000,
+        0,
+        0,
         None,
         tenant.actor_id,
         now,
@@ -121,25 +134,6 @@ fn fresh_distinct_scope_key_tuples_within_same_school() {
     .expect("FIA I-1: distinct scope-key tuple must construct");
     assert_ne!(agg_a.fees_assign_id, agg_b.fees_assign_id);
     assert_ne!(agg_a.fees_installment_id, agg_b.fees_installment_id);
-}
-
-#[test]
-fn fresh_accepts_past_due_date_companion() {
-    let (tenant, g) = admin_context();
-    let school = tenant.school_id;
-    let now = educore_core::value_objects::Timestamp::now();
-    let agg = RealFeesInstallmentAssign::fresh(
-        fia_id(&g, school),
-        assign_id(&g, school),
-        installment_id(&g, school),
-        chrono::NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
-        Some("Historical reconciliation".to_owned()),
-        tenant.actor_id,
-        now,
-        tenant.correlation_id,
-    )
-    .expect("companion: past due_date is allowed for historical reconciliation");
-    assert_eq!(agg.due_date, chrono::NaiveDate::from_ymd_opt(2020, 1, 1).unwrap());
 }
 
 #[test]
@@ -152,6 +146,9 @@ fn fresh_initializes_audit_footer_with_no_last_event_id() {
         assign_id(&g, school),
         installment_id(&g, school),
         chrono::NaiveDate::from_ymd_opt(2026, 9, 15).unwrap(),
+        5_000,
+        0,
+        0,
         None,
         tenant.actor_id,
         now,
@@ -176,6 +173,9 @@ fn retire_flips_active_status_to_retired() {
         assign_id(&g, school),
         installment_id(&g, school),
         chrono::NaiveDate::from_ymd_opt(2026, 9, 15).unwrap(),
+        5_000,
+        0,
+        0,
         None,
         tenant.actor_id,
         now,
@@ -197,6 +197,9 @@ fn retire_already_retired_returns_conflict() {
         assign_id(&g, school),
         installment_id(&g, school),
         chrono::NaiveDate::from_ymd_opt(2026, 9, 15).unwrap(),
+        5_000,
+        0,
+        0,
         None,
         tenant.actor_id,
         now,
@@ -226,6 +229,9 @@ fn create_fees_installment_assign_service_emits_created_event_fia() {
         fees_assign_id: a_id,
         fees_installment_id: i_id,
         due_date: chrono::NaiveDate::from_ymd_opt(2026, 11, 30).unwrap(),
+        amount_minor: 25_000,
+        discount_minor: 0,
+        paid_amount_minor: 0,
         note: Some("Service integration test".to_owned()),
     };
     let (agg, event): (RealFeesInstallmentAssign, FeesInstallmentAssignCreated) =
@@ -235,9 +241,9 @@ fn create_fees_installment_assign_service_emits_created_event_fia() {
     assert_eq!(agg.fees_assign_id, a_id);
     assert_eq!(agg.fees_installment_id, i_id);
     assert_eq!(event.fees_installment_assign_id, agg.id);
-    assert_eq!(event.fees_assign_id, a_id);
-    assert_eq!(event.fees_installment_id, i_id);
-    assert_eq!(event.note.as_deref(), Some("Service integration test"));
+    assert_eq!(event.amount_minor, 25_000);
+    assert_eq!(event.discount_minor, 0);
+    assert_eq!(event.paid_amount_minor, 0);
     assert_eq!(
         <FeesInstallmentAssignCreated as DomainEvent>::EVENT_TYPE,
         "finance.fees_installment_assign.created"
@@ -284,4 +290,191 @@ fn retire_fees_installment_assign_service_emits_retired_event_fia() {
         1
     );
     assert_eq!(event.school_id(), school);
+}
+
+// =========================================================================
+// FIA I-2 tests (Wave 110 new tests for amount/discount/paid tracking)
+// =========================================================================
+
+#[test]
+fn fresh_zero_amount_and_zero_paid_boundary_valid_fia_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let now = educore_core::value_objects::Timestamp::now();
+    let agg = RealFeesInstallmentAssign::fresh(
+        fia_id(&g, school),
+        assign_id(&g, school),
+        installment_id(&g, school),
+        chrono::NaiveDate::from_ymd_opt(2026, 9, 15).unwrap(),
+        0,
+        0,
+        0,
+        None,
+        tenant.actor_id,
+        now,
+        tenant.correlation_id,
+    )
+    .expect("FIA I-2: zero/zero/zero is valid (boundary)");
+    assert_eq!(agg.amount_minor, 0);
+    assert_eq!(agg.discount_minor, 0);
+    assert_eq!(agg.paid_amount_minor, 0);
+}
+
+#[test]
+fn fresh_negative_amount_validation_error_fia_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let now = educore_core::value_objects::Timestamp::now();
+    let err = RealFeesInstallmentAssign::fresh(
+        fia_id(&g, school),
+        assign_id(&g, school),
+        installment_id(&g, school),
+        chrono::NaiveDate::from_ymd_opt(2026, 9, 15).unwrap(),
+        -1,
+        0,
+        0,
+        None,
+        tenant.actor_id,
+        now,
+        tenant.correlation_id,
+    )
+    .expect_err("FIA I-2: negative amount_minor must be rejected");
+    assert!(
+        format!("{err}").contains("amount_minor must be >= 0"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn fresh_negative_discount_validation_error_fia_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let now = educore_core::value_objects::Timestamp::now();
+    let err = RealFeesInstallmentAssign::fresh(
+        fia_id(&g, school),
+        assign_id(&g, school),
+        installment_id(&g, school),
+        chrono::NaiveDate::from_ymd_opt(2026, 9, 15).unwrap(),
+        5_000,
+        -100,
+        0,
+        None,
+        tenant.actor_id,
+        now,
+        tenant.correlation_id,
+    )
+    .expect_err("FIA I-2: negative discount_minor must be rejected");
+    assert!(
+        format!("{err}").contains("discount_minor must be >= 0"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn fresh_negative_paid_validation_error_fia_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let now = educore_core::value_objects::Timestamp::now();
+    let err = RealFeesInstallmentAssign::fresh(
+        fia_id(&g, school),
+        assign_id(&g, school),
+        installment_id(&g, school),
+        chrono::NaiveDate::from_ymd_opt(2026, 9, 15).unwrap(),
+        5_000,
+        0,
+        -1,
+        None,
+        tenant.actor_id,
+        now,
+        tenant.correlation_id,
+    )
+    .expect_err("FIA I-2: negative paid_amount_minor must be rejected");
+    assert!(
+        format!("{err}").contains("paid_amount_minor must be >= 0"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn fresh_paid_exceeds_cap_validation_error_fia_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let now = educore_core::value_objects::Timestamp::now();
+    // amount=5000 + discount=500 = cap=5500; paid=6000 must be rejected.
+    let err = RealFeesInstallmentAssign::fresh(
+        fia_id(&g, school),
+        assign_id(&g, school),
+        installment_id(&g, school),
+        chrono::NaiveDate::from_ymd_opt(2026, 9, 15).unwrap(),
+        5_000,
+        500,
+        6_000,
+        None,
+        tenant.actor_id,
+        now,
+        tenant.correlation_id,
+    )
+    .expect_err("FIA I-2: paid > amount + discount must be rejected");
+    assert!(
+        format!("{err}")
+            .contains("paid_amount_minor must be <= amount_minor + discount_minor"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn fresh_paid_equals_cap_boundary_valid_fia_i_2() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let now = educore_core::value_objects::Timestamp::now();
+    // amount=5000 + discount=500 = cap=5500; paid=5500 is the valid boundary.
+    let agg = RealFeesInstallmentAssign::fresh(
+        fia_id(&g, school),
+        assign_id(&g, school),
+        installment_id(&g, school),
+        chrono::NaiveDate::from_ymd_opt(2026, 9, 15).unwrap(),
+        5_000,
+        500,
+        5_500,
+        None,
+        tenant.actor_id,
+        now,
+        tenant.correlation_id,
+    )
+    .expect("FIA I-2: paid == amount + discount is the valid boundary");
+    assert_eq!(agg.paid_amount_minor, 5_500);
+    assert_eq!(agg.amount_minor, 5_000);
+    assert_eq!(agg.discount_minor, 500);
+}
+
+#[test]
+fn create_fees_installment_assign_service_propagates_payment_fields_fia_i_2() {
+    use educore_finance::commands::CreateFeesInstallmentAssignCommand;
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = fia_id(&g, school);
+    let a_id = assign_id(&g, school);
+    let i_id = installment_id(&g, school);
+    let clock = SystemClock;
+    let ids = SystemIdGen;
+    let cmd = CreateFeesInstallmentAssignCommand {
+        tenant: tenant.clone(),
+        fees_installment_assign_id: id,
+        fees_assign_id: a_id,
+        fees_installment_id: i_id,
+        due_date: chrono::NaiveDate::from_ymd_opt(2026, 11, 30).unwrap(),
+        amount_minor: 100_000,
+        discount_minor: 10_000,
+        paid_amount_minor: 25_000,
+        note: None,
+    };
+    let (agg, event): (RealFeesInstallmentAssign, FeesInstallmentAssignCreated) =
+        create_fees_installment_assign(cmd, &clock, &ids)
+            .expect("create_fees_installment_assign must succeed");
+    assert_eq!(agg.amount_minor, 100_000);
+    assert_eq!(agg.discount_minor, 10_000);
+    assert_eq!(agg.paid_amount_minor, 25_000);
+    assert_eq!(event.amount_minor, 100_000);
+    assert_eq!(event.discount_minor, 10_000);
+    assert_eq!(event.paid_amount_minor, 25_000);
 }

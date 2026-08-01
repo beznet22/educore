@@ -993,6 +993,9 @@ pub struct CreateFeesInstallmentAssignCommand {
     pub fees_assign_id: FeesAssignId,
     pub fees_installment_id: FeesInstallmentId,
     pub due_date: chrono::NaiveDate,
+    pub amount_minor: i64,
+    pub discount_minor: i64,
+    pub paid_amount_minor: i64,
     pub note: Option<String>,
 }
 

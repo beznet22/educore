@@ -2091,6 +2091,20 @@ pub struct RealFeesInstallmentAssign {
     pub fees_assign_id: FeesAssignId,
     pub fees_installment_id: FeesInstallmentId,
     pub due_date: chrono::NaiveDate,
+    /// FIA I-2: gross amount in minor units (the installment amount
+    /// before any discount or payment). Pinned at construction
+    /// with `>= 0` guard.
+    pub amount_minor: i64,
+    /// FIA I-2: discount amount in minor units (applied to the
+    /// installment amount before payments). Optional — default
+    /// 0. When present, must be `>= 0`.
+    pub discount_minor: i64,
+    /// FIA I-2: paid amount in minor units (cumulative payments
+    /// received against this installment assignment). Pinned at
+    /// construction with `>= 0` guard. Companion invariant:
+    /// `paid_amount_minor <= amount_minor + discount_minor`
+    /// (you can't pay more than the (amount + discount) cap).
+    pub paid_amount_minor: i64,
     pub note: Option<String>,
     pub version: Version,
     pub etag: Etag,
@@ -2109,17 +2123,47 @@ impl RealFeesInstallmentAssign {
         fees_assign_id: FeesAssignId,
         fees_installment_id: FeesInstallmentId,
         due_date: chrono::NaiveDate,
+        amount_minor: i64,
+        discount_minor: i64,
+        paid_amount_minor: i64,
         note: Option<String>,
         actor: UserId,
         at: Timestamp,
         correlation: CorrelationId,
     ) -> educore_core::error::Result<Self> {
+        // FIA I-2 guard 1: amount_minor >= 0.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesInstallmentAssign amount_minor must be >= 0 (FIA I-2)",
+            ));
+        }
+        // FIA I-2 guard 2: discount_minor >= 0.
+        if discount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesInstallmentAssign discount_minor must be >= 0 (FIA I-2)",
+            ));
+        }
+        // FIA I-2 guard 3: paid_amount_minor >= 0.
+        if paid_amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesInstallmentAssign paid_amount_minor must be >= 0 (FIA I-2)",
+            ));
+        }
+        // FIA I-2 companion: paid_amount_minor <= amount_minor + discount_minor.
+        if paid_amount_minor > amount_minor + discount_minor {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesInstallmentAssign paid_amount_minor must be <= amount_minor + discount_minor (FIA I-2)",
+            ));
+        }
         Ok(Self {
             school_id: id.school_id(),
             id,
             fees_assign_id,
             fees_installment_id,
             due_date,
+            amount_minor,
+            discount_minor,
+            paid_amount_minor,
             note,
             version: Version::initial(),
             etag: fresh_etag(),
