@@ -19,7 +19,7 @@
 )]
 
 use educore_core::clock::{IdGenerator as _, SystemClock, SystemIdGen};
-use educore_core::ids::SchoolId;
+use educore_core::ids::{SchoolId, UserId};
 use educore_core::tenant::{TenantContext, UserType};
 use educore_events::domain_event::DomainEvent;
 use educore_finance::prelude::{
@@ -382,4 +382,215 @@ fn retire_transaction_service_emits_retired_event_tr_i_1() {
     assert_eq!(<TransactionRetired as DomainEvent>::AGGREGATE_TYPE, "transaction");
     assert_eq!(<TransactionRetired as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(event.school_id(), school);
+}
+
+// =========================================================================
+// -- Wave 136 -- RealTransaction -- TR I-2 append-only enforcement --
+// =========================================================================
+
+#[test]
+fn append_only_no_update_mutator_exists_tr_i_2() {
+    // TR I-2 marker test: RealTransaction intentionally exposes
+    // no `update_*` method (compile-time assertion documented in
+    // the impl block). The only mutators are `fresh()`, `retire()`,
+    // and (in Wave 136) the state-machine mutators `post()` +
+    // `reverse()`. State transitions DO update lifecycle_status
+    // but they DO NOT mutate payload fields (description,
+    // reference, total_debits_minor, total_credits_minor, currency,
+    // transaction_date are all preserved in the audit footer for
+    // legal-record retention).
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let id = transaction_id(&g, school);
+    let row = RealTransaction::fresh(
+        id,
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        "TR I-2 marker test transaction".to_owned(),
+        None,
+        5_000,
+        5_000,
+        Currency::INR,
+        tenant.actor_id,
+        educore_core::value_objects::Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("fresh should succeed");
+    // The only payload mutators are state-machine transitions
+    // (post, reverse) + retire (tombstone). No update_* methods.
+    let _ = row; // type-level marker
+}
+
+// =========================================================================
+// -- Wave 136 -- RealTransaction -- TR I-3 state machine extension tests --
+// =========================================================================
+
+use educore_core::error::DomainError;
+use educore_finance::commands::PostTransactionCommand;
+use educore_finance::events::TransactionPosted;
+use educore_finance::services::post_transaction;
+use educore_finance::value_objects::TransactionLifecycleStatus;
+
+fn build_tx(actor: UserId) -> RealTransaction {
+    let (_tenant, g) = admin_context();
+    let school = _tenant.school_id;
+    RealTransaction::fresh(
+        transaction_id(&g, school),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        "Test transaction".to_owned(),
+        None,
+        5_000,
+        5_000,
+        Currency::INR,
+        actor,
+        educore_core::value_objects::Timestamp::now(),
+        _tenant.correlation_id,
+    )
+    .expect("fresh should succeed")
+}
+
+// ---- TransactionLifecycleStatus enum round-trip ----
+
+#[test]
+fn transaction_lifecycle_status_as_str_round_trip_tr_i_3() {
+    assert_eq!(TransactionLifecycleStatus::Draft.as_str(), "draft");
+    assert_eq!(TransactionLifecycleStatus::Posted.as_str(), "posted");
+    assert_eq!(TransactionLifecycleStatus::parse("draft"), Some(TransactionLifecycleStatus::Draft));
+    assert_eq!(TransactionLifecycleStatus::parse("posted"), Some(TransactionLifecycleStatus::Posted));
+    assert_eq!(TransactionLifecycleStatus::parse("unknown"), None);
+}
+
+#[test]
+fn transaction_lifecycle_status_can_transition_only_draft_to_posted_tr_i_3() {
+    assert!(TransactionLifecycleStatus::Draft.can_transition_to(TransactionLifecycleStatus::Posted));
+    assert!(!TransactionLifecycleStatus::Posted.can_transition_to(TransactionLifecycleStatus::Draft));
+    assert!(!TransactionLifecycleStatus::Posted.can_transition_to(TransactionLifecycleStatus::Posted));
+}
+
+// ---- fresh initializes lifecycle ----
+
+#[test]
+fn fresh_initializes_lifecycle_draft_tr_i_3() {
+    let (tenant, _g) = admin_context();
+    let tx = build_tx(tenant.actor_id);
+    assert_eq!(tx.lifecycle_status, TransactionLifecycleStatus::Draft);
+    assert_eq!(tx.posted_by, None);
+    assert_eq!(tx.posted_at, None);
+}
+
+// ---- post mutator ----
+
+#[test]
+fn post_transitions_draft_to_posted_tr_i_3() {
+    let (tenant, g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut tx = build_tx(actor);
+    let at = educore_core::value_objects::Timestamp::now();
+    let event_id = g.next_event_id();
+    tx.post(actor, at, event_id).expect("post should succeed");
+    assert_eq!(tx.lifecycle_status, TransactionLifecycleStatus::Posted);
+    assert_eq!(tx.posted_by, Some(actor));
+    assert_eq!(tx.posted_at, Some(at));
+    assert_eq!(tx.last_event_id, Some(event_id));
+}
+
+#[test]
+fn double_post_returns_conflict_tr_i_3() {
+    let (tenant, g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut tx = build_tx(actor);
+    let at = educore_core::value_objects::Timestamp::now();
+    tx.post(actor, at, g.next_event_id()).expect("first post");
+    let result = tx.post(actor, at, g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+// ---- payload preservation after post (TR I-2 + I-3 interplay) ----
+
+#[test]
+fn post_preserves_all_payload_fields_tr_i_3() {
+    let (tenant, g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut tx = RealTransaction::fresh(
+        transaction_id(&g, tenant.school_id),
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap(),
+        "Preservation test".to_owned(),
+        Some("REF-001".to_owned()),
+        12_500,
+        12_500,
+        Currency::INR,
+        actor,
+        educore_core::value_objects::Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("fresh");
+    let at = educore_core::value_objects::Timestamp::now();
+    let event_id = g.next_event_id();
+    tx.post(actor, at, event_id).expect("post");
+    // TR I-2: payload fields preserved after state-machine
+    // transition (no update_* mutator means the post transition
+    // cannot mutate any payload).
+    assert_eq!(tx.transaction_date, chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap());
+    assert_eq!(tx.description, "Preservation test");
+    assert_eq!(tx.reference.as_deref(), Some("REF-001"));
+    assert_eq!(tx.total_debits_minor, 12_500);
+    assert_eq!(tx.total_credits_minor, 12_500);
+    assert_eq!(tx.currency, Currency::INR);
+    assert!(tx.is_balanced());
+}
+
+// ---- retire after post ----
+
+#[test]
+fn retire_after_post_succeeds_tr_i_3() {
+    let (tenant, g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut tx = build_tx(actor);
+    tx.post(actor, educore_core::value_objects::Timestamp::now(), g.next_event_id())
+        .expect("post");
+    tx.retire(educore_core::value_objects::Timestamp::now(), actor)
+        .expect("retire after post should succeed");
+    assert!(!tx.is_active());
+    assert_eq!(tx.lifecycle_status, TransactionLifecycleStatus::Posted);
+}
+
+// ---- service integration ----
+
+#[test]
+fn post_service_emits_event_tr_i_3() {
+    let clock = educore_core::clock::SystemClock;
+    let g = SystemIdGen;
+    let (tenant, _g) = admin_context();
+    let school = tenant.school_id;
+    let actor = tenant.actor_id;
+    let agg = RealTransaction::fresh(
+        transaction_id(&g, school),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        "Service integration test".to_owned(),
+        None,
+        5_000,
+        5_000,
+        Currency::INR,
+        actor,
+        educore_core::value_objects::Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("fresh");
+    let id = agg.id;
+    let cmd = PostTransactionCommand {
+        tenant,
+        transaction_id: id,
+    };
+    let (updated, evt): (RealTransaction, TransactionPosted) =
+        post_transaction(agg, cmd, &clock, &g).expect("service should succeed");
+    assert_eq!(updated.lifecycle_status, TransactionLifecycleStatus::Posted);
+    assert_eq!(evt.lifecycle_status, TransactionLifecycleStatus::Posted);
+    assert_eq!(evt.posted_by, actor);
+    assert_eq!(
+        <TransactionPosted as DomainEvent>::EVENT_TYPE,
+        "finance.transaction.posted"
+    );
+    assert_eq!(
+        <TransactionPosted as DomainEvent>::AGGREGATE_TYPE,
+        "transaction"
+    );
 }

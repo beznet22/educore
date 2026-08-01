@@ -4083,6 +4083,27 @@ impl RetireTransactionCommand {
         vec![Capability::FinanceInvoiceCreate]
     }
 }
+// -- Wave 136 -- Transaction state machine extensions --
+
+/// Stable command type identifier for [`PostTransactionCommand`].
+pub const FINANCE_TRANSACTION_POST_COMMAND_TYPE: &str = "finance.transaction.post";
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PostTransactionCommand {
+    pub tenant: TenantContext,
+    pub transaction_id: TransactionId,
+}
+
+impl PostTransactionCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceUpdate]
+    }
+
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str = FINANCE_TRANSACTION_POST_COMMAND_TYPE;
+}
 
 // -- Wave 105 — FeesInstallmentAssignDiscount (child discount on an installment assign) --
 //

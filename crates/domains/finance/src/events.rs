@@ -26,7 +26,7 @@ use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
     AccountType, AmountTransferId, ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
-    BankStatementId, FmFeesTypeKind, LifecycleStatus, PaymentMode, StatementType,
+    BankStatementId, FmFeesTypeKind, LifecycleStatus, PaymentMode, StatementType, TransactionLifecycleStatus,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
     DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId, FeesInstallmentCreditId, FeesInvoiceSettingId,
@@ -7171,6 +7171,64 @@ impl TransactionRetired {
 
 impl DomainEvent for TransactionRetired {
     const EVENT_TYPE: &'static str = "finance.transaction.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "transaction";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.transaction_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.transaction_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// -- Wave 136 -- TransactionPosted (TR I-3) --
+//
+// Emitted when a RealTransaction is posted (Draft -> Posted).
+// Carries the new lifecycle_status (Posted) + the actor who
+// posted + the posted_at timestamp. After this event, the
+// aggregate is in a terminal state and cannot transition
+// further; reversal is dispatcher-implemented as a new
+// compensating transaction.
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TransactionPosted {
+    pub transaction_id: TransactionId,
+    pub lifecycle_status: TransactionLifecycleStatus,
+    pub posted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl TransactionPosted {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        transaction_id: TransactionId,
+        lifecycle_status: TransactionLifecycleStatus,
+        posted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            transaction_id,
+            lifecycle_status,
+            posted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for TransactionPosted {
+    const EVENT_TYPE: &'static str = "finance.transaction.posted";
     const SCHEMA_VERSION: u32 = 1;
     const AGGREGATE_TYPE: &'static str = "transaction";
     fn event_id(&self) -> EventId {

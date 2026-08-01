@@ -47,7 +47,7 @@ use crate::value_objects::{
     FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, FmInvoiceType,
     IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, Money, PaymentGatewaySettingId,
-    PaymentMode,
+    PaymentMode, TransactionLifecycleStatus,
     PaymentMethodId, PaymentMethodKind, PayrollEarnDeducId, PayrollGenerateId,
     PayrollPaymentApprovalId, PayrollPaymentId, ProductPurchaseId, QuestionBankFeeId,
     SalaryTemplateId, StatementType, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
@@ -7956,6 +7956,20 @@ pub struct RealTransaction {
     /// Currency the totals are denominated in (TR I-1 companion:
     /// required — debits + credits must be in the same currency).
     pub currency: Currency,
+    /// TR I-3: lifecycle state machine (Draft -> Posted). Initialized
+    /// to Draft in `fresh()`; transitions to Posted via `post()`.
+    /// Posted is terminal -- the aggregate is then locked from
+    /// further state transitions. Reversal of a Posted transaction
+    /// is dispatcher-implemented: a new compensating transaction
+    /// is created with negated debit + credit amounts and a
+    /// reference back to the original transaction id (the canonical
+    /// double-entry accounting pattern for cancellations, which
+    /// preserves the append-only contract TR I-2).
+    pub lifecycle_status: TransactionLifecycleStatus,
+    /// TR I-3: posted_by + posted_at audit footer (who + when
+    /// the transaction was committed to the ledger).
+    pub posted_by: Option<UserId>,
+    pub posted_at: Option<Timestamp>,
     /// Standard audit footer: optimistic concurrency version.
     pub version: Version,
     /// Standard audit footer: etag.
@@ -8031,6 +8045,9 @@ impl RealTransaction {
             total_debits_minor,
             total_credits_minor,
             currency,
+            lifecycle_status: TransactionLifecycleStatus::Draft,
+            posted_by: None,
+            posted_at: None,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at: at,
@@ -8073,6 +8090,41 @@ impl RealTransaction {
         self.active_status = ActiveStatus::Retired;
         self.updated_at = at;
         self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// TR I-3 state machine predicate. Only Draft can transition
+    /// to Posted; Posted is terminal.
+    #[must_use]
+    pub fn can_transition(&self, to: TransactionLifecycleStatus) -> bool {
+        self.lifecycle_status.can_transition_to(to)
+    }
+
+    /// TR I-3: post the transaction (commit it to the ledger).
+    /// Transitions Draft -> Posted. Returns Conflict on already-
+    /// Posted (terminal state cannot be re-posted). On success,
+    /// bumps version + sets posted_by + posted_at + advances
+    /// updated_at + last_event_id.
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn post(
+        &mut self,
+        actor: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if !self.can_transition(TransactionLifecycleStatus::Posted) {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "Transaction cannot be posted from state {:?} (TR I-3)",
+                self.lifecycle_status
+            )));
+        }
+        self.lifecycle_status = TransactionLifecycleStatus::Posted;
+        self.posted_by = Some(actor);
+        self.posted_at = Some(at);
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.last_event_id = Some(event_id);
         self.version = self.version.next();
         Ok(())
     }

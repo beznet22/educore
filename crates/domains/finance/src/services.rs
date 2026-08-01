@@ -85,7 +85,7 @@ use crate::commands::{
     ReadFmFeesGroupCommand,
     ReadFmFeesTransactionChildCommand,
     ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
-    ReadTransactionCommand, RetireTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CloseFeesInstallmentAssignCommand, CancelFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand, CreateDirectFeesInstallmentCommand, ReadDirectFeesInstallmentCommand, RetireDirectFeesInstallmentCommand, RetireFeesAssignDiscountCommand, CreateFeesAssignCommand, ReadFeesAssignCommand, RetireFeesAssignCommand, RecordFeesAssignPaymentCommand, CancelFeesAssignCommand,
+    ReadTransactionCommand, RetireTransactionCommand, PostTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CloseFeesInstallmentAssignCommand, CancelFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand, CreateDirectFeesInstallmentCommand, ReadDirectFeesInstallmentCommand, RetireDirectFeesInstallmentCommand, RetireFeesAssignDiscountCommand, CreateFeesAssignCommand, ReadFeesAssignCommand, RetireFeesAssignCommand, RecordFeesAssignPaymentCommand, CancelFeesAssignCommand,
     CreateFeesInstallmentCommand, ReadFeesInstallmentCommand, RetireFeesInstallmentCommand,
     ApproveFmFeesInvoiceCommand, RejectFmFeesInvoiceCommand,
     RetireFmFeesTransactionCommand,
@@ -104,7 +104,7 @@ use crate::events::{
         FmFeesInvoiceCreated, FmFeesInvoiceRetired,
         FmFeesInvoiceChildCreated, FmFeesInvoiceChildRetired,
         DirectFeesInstallmentAssignCreated, DirectFeesInstallmentAssignRetired,
-    TransactionCreated, TransactionRetired,
+    TransactionCreated, TransactionRetired, TransactionPosted,
     FeesInstallmentAssignDiscountCreated, FeesInstallmentAssignDiscountRetired,
     PaymentMethodCreated, PaymentMethodRetired,
     FeesInstallmentAssignCreated, FeesInstallmentAssignRetired,
@@ -3565,6 +3565,40 @@ where
     );
 
     Ok((tx, event))
+}
+
+// -- Wave 136 -- RealTransaction state machine service functions --
+
+/// TR I-3: post a `RealTransaction` (Draft -> Posted). Returns
+/// Conflict on already-Posted (terminal state cannot be re-posted).
+/// Reversal of a Posted transaction is dispatcher-implemented as a
+/// new compensating transaction (the canonical double-entry pattern,
+/// which preserves the TR I-2 append-only contract).
+#[allow(clippy::needless_pass_by_value)]
+pub fn post_transaction<C, G>(
+    mut agg: RealTransaction,
+    cmd: PostTransactionCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealTransaction, TransactionPosted)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation = cmd.tenant.correlation_id;
+    agg.post(cmd.tenant.actor_id, at, event_id)?;
+    let evt = TransactionPosted::new(
+        cmd.transaction_id,
+        agg.lifecycle_status,
+        cmd.tenant.actor_id,
+        event_id,
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok((agg, evt))
 }
 
 
