@@ -8668,6 +8668,116 @@ impl DomainEvent for FeesInstallmentRetired {
     }
 }
 
+// =============================================================================
+// RealFmFeesInvoice state-machine events — Wave 127 (FFI I-3)
+// =============================================================================
+
+/// Emitted when a `RealFmFeesInvoice` transitions from
+/// `Pending` to `Approved`. Carries the approver, the approval
+/// timestamp, and the canonical `status` for downstream indexing.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesInvoiceApproved {
+    pub fm_fees_invoice_id: FmFeesInvoiceId,
+    pub approved_by: UserId,
+    pub status: ApprovalStatus,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesInvoiceApproved {
+    pub fn new(
+        fm_fees_invoice_id: FmFeesInvoiceId,
+        approved_by: UserId,
+        status: ApprovalStatus,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_invoice_id,
+            approved_by,
+            status,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesInvoiceApproved {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_invoice.approved";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_invoice";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_invoice_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_invoice_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesInvoice` transitions from
+/// `Pending` to `Rejected`. Carries the rejecter, the rejection
+/// timestamp, the rejection note, and the canonical `status`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesInvoiceRejected {
+    pub fm_fees_invoice_id: FmFeesInvoiceId,
+    pub rejected_by: UserId,
+    pub status: ApprovalStatus,
+    pub reject_note: String,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesInvoiceRejected {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fm_fees_invoice_id: FmFeesInvoiceId,
+        rejected_by: UserId,
+        status: ApprovalStatus,
+        reject_note: String,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_invoice_id,
+            rejected_by,
+            status,
+            reject_note,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesInvoiceRejected {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_invoice.rejected";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_invoice";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_invoice_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_invoice_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 #[cfg(test)]
 #[allow(t)]
 #[allow(t)]

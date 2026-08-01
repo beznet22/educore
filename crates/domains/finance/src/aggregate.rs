@@ -7219,9 +7219,14 @@ impl RealProductPurchase {
 ///
 /// FFI I-1: amount >= 0 (amount_minor pinned in minor units).
 /// FFI I-2: due_date >= invoice_date (companion date invariant).
-/// FFI I-3: state machine (Created -> Issued -> Paid/Overdue/Cancelled)
-///   — FFI I-3 deferred until the dispatcher + payment-receipt wiring
-///   exists in a later phase.
+/// FFI I-3: state machine (Pending -> Approved | Rejected) (Wave 127).
+///   Wave 100 deferred FFI I-3 until the dispatcher +
+///   payment-receipt wiring existed; Wave 127 lands the
+///   Pending -> Approved | Rejected subset using the canonical
+///   ApprovalStatus enum (Pending -> Approved / Pending -> Rejected
+///   only; no Issued/Paid/Overdue/Cancelled transitions yet --
+///   those require payment-receipt wiring that lands in a later
+///   phase).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RealFmFeesInvoice {
     /// Aggregate identity.
@@ -7245,6 +7250,21 @@ pub struct RealFmFeesInvoice {
     pub invoice_date: chrono::NaiveDate,
     /// Due date (FFI I-2: must be >= invoice_date).
     pub due_date: chrono::NaiveDate,
+    /// Approval status (FFI I-3). Initialized to `Pending` in
+    /// `fresh()`; transitions to `Approved` or `Rejected` via the
+    /// `approve()` / `reject()` mutators. The transition set is
+    /// enforced by `ApprovalStatus::can_transition_to`.
+    pub status: ApprovalStatus,
+    /// Approver (set on `Approved`; FFI I-3).
+    pub approved_by: Option<UserId>,
+    /// Approval time (set on `Approved`; FFI I-3).
+    pub approved_at: Option<Timestamp>,
+    /// Rejecter (set on `Rejected`; FFI I-3).
+    pub rejected_by: Option<UserId>,
+    /// Rejection time (set on `Rejected`; FFI I-3).
+    pub rejected_at: Option<Timestamp>,
+    /// Rejection note (set on `Rejected`; FFI I-3).
+    pub reject_note: Option<String>,
     /// Standard audit footer: optimistic concurrency version.
     pub version: Version,
     /// Standard audit footer: etag.
@@ -7268,7 +7288,9 @@ pub struct RealFmFeesInvoice {
 impl RealFmFeesInvoice {
     /// Construct a fresh `RealFmFeesInvoice` aggregate.
     ///
-    /// Enforces FFI I-1 (`amount_minor >= 0`) at construction.
+    /// Enforces FFI I-1 (`amount_minor >= 0`) + FFI I-2 (`due_date >=
+    /// invoice_date`) at construction. Initializes FFI I-3 status to
+    /// `ApprovalStatus::Pending`.
     #[allow(clippy::too_many_arguments)]
     pub fn fresh(
         id: FmFeesInvoiceId,
@@ -7325,6 +7347,12 @@ impl RealFmFeesInvoice {
             note,
             invoice_date,
             due_date,
+            status: ApprovalStatus::Pending,
+            approved_by: None,
+            approved_at: None,
+            rejected_by: None,
+            rejected_at: None,
+            reject_note: None,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at: at,
@@ -7341,6 +7369,65 @@ impl RealFmFeesInvoice {
     #[must_use]
     pub fn is_active(&self) -> bool {
         self.active_status == ActiveStatus::Active
+    }
+
+    /// Returns `true` if the state machine permits the `from -> to`
+    /// transition (FFI I-3).
+    #[must_use]
+    pub fn can_transition(&self, to: ApprovalStatus) -> bool {
+        self.status.can_transition_to(to)
+    }
+
+    /// Approve the invoice (FFI I-3 Pending -> Approved).
+    /// Returns `Err` if the state machine does not permit the
+    /// transition.
+    pub fn approve(
+        &mut self,
+        approver: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if !self.can_transition(ApprovalStatus::Approved) {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "FmFeesInvoice is in state {:?}, cannot transition to Approved (FFI I-3)",
+                self.status
+            )));
+        }
+        self.status = ApprovalStatus::Approved;
+        self.approved_by = Some(approver);
+        self.approved_at = Some(at);
+        self.updated_at = at;
+        self.updated_by = approver;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        Ok(())
+    }
+
+    /// Reject the invoice (FFI I-3 Pending -> Rejected).
+    /// Returns `Err` if the state machine does not permit the
+    /// transition.
+    pub fn reject(
+        &mut self,
+        rejecter: UserId,
+        note: String,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if !self.can_transition(ApprovalStatus::Rejected) {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "FmFeesInvoice is in state {:?}, cannot transition to Rejected (FFI I-3)",
+                self.status
+            )));
+        }
+        self.status = ApprovalStatus::Rejected;
+        self.rejected_by = Some(rejecter);
+        self.rejected_at = Some(at);
+        self.reject_note = Some(note);
+        self.updated_at = at;
+        self.updated_by = rejecter;
+        self.version = self.version.next();
+        self.last_event_id = Some(event_id);
+        Ok(())
     }
 
     /// Retire the aggregate (tombstone; preserves `invoice_number` +

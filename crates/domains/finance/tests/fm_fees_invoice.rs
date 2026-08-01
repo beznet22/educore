@@ -1,7 +1,10 @@
-//! Behavioural tests for `RealFmFeesInvoice` (Wave 100).
+//! Behavioural tests for `RealFmFeesInvoice` (Wave 100 + Wave 127
+//! FFI I-3 state machine extension).
 //!
-//! Pins FFI I-1 (`amount_minor >= 0`) end-to-end via the aggregate
-//! surface, the service functions, and the emitted events.
+//! Pins FFI I-1 (`amount_minor >= 0`) + FFI I-2 (`due_date >=
+//! invoice_date`) + FFI I-3 (Pending -> Approved | Rejected state
+//! machine) end-to-end via the aggregate surface, the service
+//! functions, and the emitted events.
 
 #![allow(
     clippy::unwrap_used,
@@ -13,9 +16,12 @@
 
 use educore_core::clock::{IdGenerator as _, SystemClock, SystemIdGen};
 use educore_core::error::DomainError;
-use educore_core::ids::SchoolId;
+use educore_core::ids::{CorrelationId, SchoolId};
 use educore_core::tenant::{TenantContext, UserType};
-use educore_finance::events::{FmFeesInvoiceCreated, FmFeesInvoiceRetired};
+use educore_finance::events::{
+    FmFeesInvoiceApproved, FmFeesInvoiceCreated, FmFeesInvoiceRejected, FmFeesInvoiceRetired,
+};
+use educore_finance::value_objects::ApprovalStatus;
 use educore_finance::prelude::*;
 use educore_finance::value_objects::FmFeesInvoiceId;
 
@@ -32,6 +38,14 @@ fn admin_context() -> (TenantContext, SystemIdGen) {
 
 fn fm_fees_invoice_id(g: &SystemIdGen, school: SchoolId) -> FmFeesInvoiceId {
     FmFeesInvoiceId::new(school, g.next_uuid())
+}
+
+fn invoice_date() -> chrono::NaiveDate {
+    chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("valid date")
+}
+
+fn due_date() -> chrono::NaiveDate {
+    chrono::NaiveDate::from_ymd_opt(2026, 12, 31).expect("valid date")
 }
 
 // ---- typed-id smoke ----
@@ -432,5 +446,163 @@ fn retire_fm_fees_invoice_service_emits_retired_event() {
     assert_eq!(
         <FmFeesInvoiceRetired as DomainEvent>::EVENT_TYPE,
         "finance.fm_fees_invoice.retired"
+    );
+}
+
+// =============================================================================
+// FFI I-3: state machine tests (Wave 127)
+// =============================================================================
+
+fn make_invoice_for_state_machine(
+    g: &SystemIdGen,
+    actor: UserId,
+    corr: CorrelationId,
+    school: SchoolId,
+) -> RealFmFeesInvoice {
+    let id = fm_fees_invoice_id(g, school);
+    RealFmFeesInvoice::fresh(
+        id,
+        "INV-001".to_string(),
+        "STU-001".to_string(),
+        10_000,
+        None,
+        None,
+        invoice_date(),
+        due_date(),
+        actor,
+        Timestamp::now(),
+        corr,
+    )
+    .expect("fresh should succeed")
+}
+
+#[test]
+fn fresh_initial_status_is_pending_ffi_i_3() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let row = make_invoice_for_state_machine(&g, tenant.actor_id, tenant.correlation_id, school);
+    assert_eq!(row.status, ApprovalStatus::Pending);
+    assert_eq!(row.approved_by, None);
+    assert_eq!(row.approved_at, None);
+    assert_eq!(row.rejected_by, None);
+    assert_eq!(row.rejected_at, None);
+    assert_eq!(row.reject_note, None);
+}
+
+#[test]
+fn approve_transitions_pending_to_approved_ffi_i_3() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let mut row = make_invoice_for_state_machine(&g, tenant.actor_id, tenant.correlation_id, school);
+    assert_eq!(row.status, ApprovalStatus::Pending);
+    let event_id = g.next_event_id();
+    let at = Timestamp::now();
+    row.approve(tenant.actor_id, at, event_id).expect("approve should succeed");
+    assert_eq!(row.status, ApprovalStatus::Approved);
+    assert_eq!(row.approved_by, Some(tenant.actor_id));
+    assert_eq!(row.approved_at, Some(at));
+    assert_eq!(row.last_event_id, Some(event_id));
+}
+
+#[test]
+fn reject_transitions_pending_to_rejected_ffi_i_3() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let mut row = make_invoice_for_state_machine(&g, tenant.actor_id, tenant.correlation_id, school);
+    let event_id = g.next_event_id();
+    let at = Timestamp::now();
+    let note = "Missing receipt".to_string();
+    row.reject(tenant.actor_id, note.clone(), at, event_id)
+        .expect("reject should succeed");
+    assert_eq!(row.status, ApprovalStatus::Rejected);
+    assert_eq!(row.rejected_by, Some(tenant.actor_id));
+    assert_eq!(row.rejected_at, Some(at));
+    assert_eq!(row.reject_note, Some(note));
+    assert_eq!(row.last_event_id, Some(event_id));
+}
+
+#[test]
+fn double_approve_returns_conflict_ffi_i_3() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let mut row = make_invoice_for_state_machine(&g, tenant.actor_id, tenant.correlation_id, school);
+    row.approve(tenant.actor_id, Timestamp::now(), g.next_event_id())
+        .expect("first approve should succeed");
+    let result = row.approve(tenant.actor_id, Timestamp::now(), g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+#[test]
+fn reject_after_approve_returns_conflict_ffi_i_3() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let mut row = make_invoice_for_state_machine(&g, tenant.actor_id, tenant.correlation_id, school);
+    row.approve(tenant.actor_id, Timestamp::now(), g.next_event_id())
+        .expect("first approve should succeed");
+    let result = row.reject(
+        tenant.actor_id,
+        "too late".to_string(),
+        Timestamp::now(),
+        g.next_event_id(),
+    );
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+#[test]
+fn approve_fm_fees_invoice_service_emits_approved_event_ffi_i_3() {
+    let clock = SystemClock;
+    let g = SystemIdGen;
+    let school = g.next_school_id();
+    let actor = g.next_user_id();
+    let corr = g.next_correlation_id();
+    let tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
+    let agg = make_invoice_for_state_machine(&g, actor, corr, school);
+    let id = agg.id;
+    let cmd = ApproveFmFeesInvoiceCommand {
+        tenant,
+        fm_fees_invoice_id: id,
+    };
+    let (updated, evt): (RealFmFeesInvoice, FmFeesInvoiceApproved) =
+        approve_fm_fees_invoice(agg, cmd, &clock, &g).expect("approve service should succeed");
+    assert_eq!(updated.status, ApprovalStatus::Approved);
+    assert_eq!(evt.approved_by, actor);
+    assert_eq!(evt.status, ApprovalStatus::Approved);
+    assert_eq!(
+        <FmFeesInvoiceApproved as DomainEvent>::EVENT_TYPE,
+        "finance.fm_fees_invoice.approved"
+    );
+    assert_eq!(
+        <FmFeesInvoiceApproved as DomainEvent>::AGGREGATE_TYPE,
+        "fm_fees_invoice"
+    );
+}
+
+#[test]
+fn reject_fm_fees_invoice_service_emits_rejected_event_ffi_i_3() {
+    let clock = SystemClock;
+    let g = SystemIdGen;
+    let school = g.next_school_id();
+    let actor = g.next_user_id();
+    let corr = g.next_correlation_id();
+    let tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
+    let agg = make_invoice_for_state_machine(&g, actor, corr, school);
+    let id = agg.id;
+    let cmd = RejectFmFeesInvoiceCommand {
+        tenant,
+        fm_fees_invoice_id: id,
+        reject_note: "Wrong amount".to_string(),
+    };
+    let (updated, evt): (RealFmFeesInvoice, FmFeesInvoiceRejected) =
+        reject_fm_fees_invoice(agg, cmd, &clock, &g).expect("reject service should succeed");
+    assert_eq!(updated.status, ApprovalStatus::Rejected);
+    assert_eq!(evt.rejected_by, actor);
+    assert_eq!(evt.reject_note, "Wrong amount");
+    assert_eq!(
+        <FmFeesInvoiceRejected as DomainEvent>::EVENT_TYPE,
+        "finance.fm_fees_invoice.rejected"
+    );
+    assert_eq!(
+        <FmFeesInvoiceRejected as DomainEvent>::AGGREGATE_TYPE,
+        "fm_fees_invoice"
     );
 }

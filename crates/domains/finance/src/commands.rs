@@ -3259,6 +3259,49 @@ impl RetireFmFeesInvoiceCommand {
         vec![Capability::FinanceFeesInvoiceConfigure]
     }
 }
+
+/// COMMAND_TYPE discriminator for `ApproveFmFeesInvoiceCommand` (Wave 127).
+pub const FINANCE_FM_FEES_INVOICE_APPROVE_COMMAND_TYPE: &str =
+    "finance.fm_fees_invoice.approve";
+
+/// COMMAND_TYPE discriminator for `RejectFmFeesInvoiceCommand` (Wave 127).
+pub const FINANCE_FM_FEES_INVOICE_REJECT_COMMAND_TYPE: &str =
+    "finance.fm_fees_invoice.reject";
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ApproveFmFeesInvoiceCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_invoice_id: FmFeesInvoiceId,
+}
+
+impl ApproveFmFeesInvoiceCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_INVOICE_APPROVE_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceConfigure]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RejectFmFeesInvoiceCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_invoice_id: FmFeesInvoiceId,
+    pub reject_note: String,
+}
+
+impl RejectFmFeesInvoiceCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_FM_FEES_INVOICE_REJECT_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesInvoiceConfigure]
+    }
+}
 // -- FmFeesInvoiceChild (Wave 101 — RealFmFeesInvoiceChild) --
 
 /// COMMAND_TYPE discriminator for `CreateFmFeesInvoiceChildCommand`.
