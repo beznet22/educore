@@ -1538,6 +1538,69 @@ impl std::str::FromStr for TransactionLifecycleStatus {
     }
 }
 
+// ProductPurchaseLifecycleStatus -- Wave 137 (PPr I-3)
+//
+// The lifecycle of a RealProductPurchase row. A fresh row is
+// Draft (the purchase has been ordered but not yet received);
+// it transitions to Received (via RecordProductPurchaseReceiptCommand
+// when the goods arrive) or to Cancelled (via CancelProductPurchaseCommand,
+// only valid before receipt). Received and Cancelled are both
+// terminal states.
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProductPurchaseLifecycleStatus {
+    Draft,
+    Received,
+    Cancelled,
+}
+
+impl ProductPurchaseLifecycleStatus {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Draft => "draft",
+            Self::Received => "received",
+            Self::Cancelled => "cancelled",
+        }
+    }
+
+    #[must_use]
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "draft" | "d" => Some(Self::Draft),
+            "received" | "r" => Some(Self::Received),
+            "cancelled" | "canceled" | "c" => Some(Self::Cancelled),
+            _ => None,
+        }
+    }
+
+    /// PPr I-3: only Draft can transition to Received or
+    /// Cancelled. Terminal states (Received, Cancelled)
+    /// cannot transition further.
+    #[must_use]
+    pub const fn can_transition_to(self, to: Self) -> bool {
+        matches!(
+            (self, to),
+            (Self::Draft, Self::Received) | (Self::Draft, Self::Cancelled)
+        )
+    }
+}
+
+impl std::fmt::Display for ProductPurchaseLifecycleStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl std::str::FromStr for ProductPurchaseLifecycleStatus {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Self::parse(s).ok_or_else(|| format!("unknown ProductPurchaseLifecycleStatus: {s}"))
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,

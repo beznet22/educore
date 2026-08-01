@@ -26,7 +26,7 @@ use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
     AccountType, AmountTransferId, ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
-    BankStatementId, FmFeesTypeKind, LifecycleStatus, PaymentMode, StatementType, TransactionLifecycleStatus,
+    BankStatementId, FmFeesTypeKind, LifecycleStatus, PaymentMode, ProductPurchaseLifecycleStatus, StatementType, TransactionLifecycleStatus,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
     DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId, FeesInstallmentCreditId, FeesInvoiceSettingId,
@@ -6657,6 +6657,119 @@ impl ProductPurchaseRetired {
 
 impl DomainEvent for ProductPurchaseRetired {
     const EVENT_TYPE: &'static str = "finance.product_purchase.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "product_purchase";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.product_purchase_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.product_purchase_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// -- Wave 137 -- ProductPurchaseReceived (PPr I-3) --
+//
+// Emitted when a RealProductPurchase is received (Draft ->
+// Received). Carries the new lifecycle_status (Received) +
+// the receiving actor + the received_at timestamp.
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProductPurchaseReceived {
+    pub product_purchase_id: ProductPurchaseId,
+    pub lifecycle_status: ProductPurchaseLifecycleStatus,
+    pub received_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ProductPurchaseReceived {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        product_purchase_id: ProductPurchaseId,
+        lifecycle_status: ProductPurchaseLifecycleStatus,
+        received_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            product_purchase_id,
+            lifecycle_status,
+            received_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ProductPurchaseReceived {
+    const EVENT_TYPE: &'static str = "finance.product_purchase.received";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "product_purchase";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.product_purchase_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.product_purchase_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// -- Wave 137 -- ProductPurchaseCancelled (PPr I-3) --
+//
+// Emitted when a RealProductPurchase is cancelled (Draft ->
+// Cancelled). Carries the new lifecycle_status (Cancelled) +
+// the cancelling actor + the cancel reason.
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProductPurchaseCancelled {
+    pub product_purchase_id: ProductPurchaseId,
+    pub lifecycle_status: ProductPurchaseLifecycleStatus,
+    pub cancelled_by: UserId,
+    pub cancel_reason: String,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl ProductPurchaseCancelled {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        product_purchase_id: ProductPurchaseId,
+        lifecycle_status: ProductPurchaseLifecycleStatus,
+        cancelled_by: UserId,
+        cancel_reason: String,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            product_purchase_id,
+            lifecycle_status,
+            cancelled_by,
+            cancel_reason,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for ProductPurchaseCancelled {
+    const EVENT_TYPE: &'static str = "finance.product_purchase.cancelled";
     const SCHEMA_VERSION: u32 = 1;
     const AGGREGATE_TYPE: &'static str = "product_purchase";
     fn event_id(&self) -> EventId {

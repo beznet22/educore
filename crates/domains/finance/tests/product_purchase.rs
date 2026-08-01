@@ -325,3 +325,249 @@ fn retire_product_purchase_service_emits_retired_event() {
         "finance.product_purchase.retired"
     );
 }
+
+// ====================================================================
+// -- Wave 137 -- PPr I-2 (supplier_reference) + PPr I-3 (state machine) --
+// ====================================================================
+
+use educore_core::ids::UserId;
+use educore_core::value_objects::Timestamp;
+use educore_finance::commands::{
+    CancelProductPurchaseCommand, RecordProductPurchaseReceiptCommand,
+};
+use educore_finance::events::{ProductPurchaseCancelled, ProductPurchaseReceived};
+use educore_finance::services::{cancel_product_purchase, record_product_purchase_receipt};
+use educore_finance::value_objects::ProductPurchaseLifecycleStatus;
+
+fn build_pp(actor: UserId, supplier_reference: Option<String>) -> RealProductPurchase {
+    let (_tenant, g) = admin_context();
+    let school = _tenant.school_id;
+    RealProductPurchase::fresh(
+        product_purchase_id(&g, school),
+        "Test product".to_owned(),
+        5,
+        5_000,
+        supplier_reference,
+        actor,
+        Timestamp::now(),
+        _tenant.correlation_id,
+    )
+    .expect("fresh should succeed")
+}
+
+// ---- PPr I-2: supplier_reference non-empty after trim when Some ----
+
+#[test]
+fn fresh_empty_supplier_reference_validation_error_ppr_i_2() {
+    let (tenant, _g) = admin_context();
+    let err = RealProductPurchase::fresh(
+        product_purchase_id(&_g, tenant.school_id),
+        "Test product".to_owned(),
+        5,
+        5_000,
+        Some("   ".to_owned()),
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect_err("PPr I-2: whitespace supplier_reference must be rejected");
+    assert!(
+        format!("{err}").contains("supplier_reference must be non-empty after trim"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn fresh_supplier_reference_is_trimmed_ppr_i_2() {
+    let (tenant, g) = admin_context();
+    let pp = RealProductPurchase::fresh(
+        product_purchase_id(&g, tenant.school_id),
+        "Test product".to_owned(),
+        5,
+        5_000,
+        Some("  ACME-SUPPLIER-001  ".to_owned()),
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("PPr I-2: whitespace-padded supplier_reference must succeed and be trimmed");
+    assert_eq!(pp.supplier_reference.as_deref(), Some("ACME-SUPPLIER-001"));
+}
+
+#[test]
+fn fresh_none_supplier_reference_succeeds_ppr_i_2() {
+    let (tenant, _g) = admin_context();
+    let pp = build_pp(tenant.actor_id, None);
+    assert_eq!(pp.supplier_reference, None);
+}
+
+// ---- ProductPurchaseLifecycleStatus enum round-trip ----
+
+#[test]
+fn ppr_lifecycle_status_as_str_round_trip_ppr_i_3() {
+    assert_eq!(ProductPurchaseLifecycleStatus::Draft.as_str(), "draft");
+    assert_eq!(ProductPurchaseLifecycleStatus::Received.as_str(), "received");
+    assert_eq!(ProductPurchaseLifecycleStatus::Cancelled.as_str(), "cancelled");
+    assert_eq!(ProductPurchaseLifecycleStatus::parse("draft"), Some(ProductPurchaseLifecycleStatus::Draft));
+    assert_eq!(ProductPurchaseLifecycleStatus::parse("received"), Some(ProductPurchaseLifecycleStatus::Received));
+    assert_eq!(ProductPurchaseLifecycleStatus::parse("cancelled"), Some(ProductPurchaseLifecycleStatus::Cancelled));
+    assert_eq!(ProductPurchaseLifecycleStatus::parse("unknown"), None);
+}
+
+#[test]
+fn ppr_lifecycle_can_transition_only_from_draft_ppr_i_3() {
+    assert!(ProductPurchaseLifecycleStatus::Draft.can_transition_to(ProductPurchaseLifecycleStatus::Received));
+    assert!(ProductPurchaseLifecycleStatus::Draft.can_transition_to(ProductPurchaseLifecycleStatus::Cancelled));
+    assert!(!ProductPurchaseLifecycleStatus::Received.can_transition_to(ProductPurchaseLifecycleStatus::Draft));
+    assert!(!ProductPurchaseLifecycleStatus::Received.can_transition_to(ProductPurchaseLifecycleStatus::Cancelled));
+    assert!(!ProductPurchaseLifecycleStatus::Cancelled.can_transition_to(ProductPurchaseLifecycleStatus::Draft));
+    assert!(!ProductPurchaseLifecycleStatus::Cancelled.can_transition_to(ProductPurchaseLifecycleStatus::Received));
+}
+
+// ---- fresh initializes lifecycle + audit footer ----
+
+#[test]
+fn fresh_initializes_lifecycle_draft_ppr_i_3() {
+    let (tenant, _g) = admin_context();
+    let pp = build_pp(tenant.actor_id, None);
+    assert_eq!(pp.lifecycle_status, ProductPurchaseLifecycleStatus::Draft);
+    assert_eq!(pp.received_by, None);
+    assert_eq!(pp.received_at, None);
+    assert_eq!(pp.cancelled_by, None);
+    assert_eq!(pp.cancelled_at, None);
+    assert_eq!(pp.cancel_reason, None);
+}
+
+// ---- record_receipt mutator ----
+
+#[test]
+fn record_receipt_transitions_draft_to_received_ppr_i_3() {
+    let (tenant, g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut pp = build_pp(actor, Some("ACME".to_owned()));
+    let at = Timestamp::now();
+    let event_id = g.next_event_id();
+    pp.record_receipt(actor, at, event_id).expect("record_receipt should succeed");
+    assert_eq!(pp.lifecycle_status, ProductPurchaseLifecycleStatus::Received);
+    assert_eq!(pp.received_by, Some(actor));
+    assert_eq!(pp.received_at, Some(at));
+    assert_eq!(pp.last_event_id, Some(event_id));
+}
+
+#[test]
+fn double_record_receipt_returns_conflict_ppr_i_3() {
+    let (tenant, g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut pp = build_pp(actor, None);
+    pp.record_receipt(actor, Timestamp::now(), g.next_event_id()).expect("first receipt");
+    let result = pp.record_receipt(actor, Timestamp::now(), g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+// ---- cancel mutator ----
+
+#[test]
+fn cancel_draft_transitions_to_cancelled_ppr_i_3() {
+    let (tenant, g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut pp = build_pp(actor, Some("ACME".to_owned()));
+    let at = Timestamp::now();
+    let event_id = g.next_event_id();
+    pp.cancel(actor, "Vendor out of stock".to_owned(), at, event_id)
+        .expect("cancel should succeed");
+    assert_eq!(pp.lifecycle_status, ProductPurchaseLifecycleStatus::Cancelled);
+    assert_eq!(pp.cancelled_by, Some(actor));
+    assert_eq!(pp.cancelled_at, Some(at));
+    assert_eq!(pp.cancel_reason.as_deref(), Some("Vendor out of stock"));
+}
+
+#[test]
+fn cancel_after_receipt_returns_conflict_ppr_i_3() {
+    let (tenant, g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut pp = build_pp(actor, None);
+    pp.record_receipt(actor, Timestamp::now(), g.next_event_id()).expect("receipt");
+    let result = pp.cancel(actor, "too late".to_owned(), Timestamp::now(), g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Conflict(_))));
+}
+
+#[test]
+fn cancel_empty_reason_validation_error_ppr_i_3() {
+    let (tenant, g) = admin_context();
+    let actor = tenant.actor_id;
+    let mut pp = build_pp(actor, None);
+    let result = pp.cancel(actor, "   ".to_owned(), Timestamp::now(), g.next_event_id());
+    assert!(matches!(result, Err(DomainError::Validation(_))));
+}
+
+// ---- service integration ----
+
+#[test]
+fn record_receipt_service_emits_event_ppr_i_3() {
+    let clock = educore_core::clock::SystemClock;
+    let g = SystemIdGen;
+    let (tenant, _g) = admin_context();
+    let school = tenant.school_id;
+    let actor = tenant.actor_id;
+    let agg = RealProductPurchase::fresh(
+        product_purchase_id(&g, school),
+        "Service test product".to_owned(),
+        5,
+        5_000,
+        Some("ACME".to_owned()),
+        actor,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("fresh");
+    let id = agg.id;
+    let cmd = RecordProductPurchaseReceiptCommand {
+        tenant,
+        product_purchase_id: id,
+    };
+    let (updated, evt): (RealProductPurchase, ProductPurchaseReceived) =
+        record_product_purchase_receipt(agg, cmd, &clock, &g)
+            .expect("service should succeed");
+    assert_eq!(updated.lifecycle_status, ProductPurchaseLifecycleStatus::Received);
+    assert_eq!(evt.received_by, actor);
+    assert_eq!(evt.lifecycle_status, ProductPurchaseLifecycleStatus::Received);
+    assert_eq!(
+        <ProductPurchaseReceived as DomainEvent>::EVENT_TYPE,
+        "finance.product_purchase.received"
+    );
+}
+
+#[test]
+fn cancel_service_emits_event_ppr_i_3() {
+    let clock = educore_core::clock::SystemClock;
+    let g = SystemIdGen;
+    let (tenant, _g) = admin_context();
+    let school = tenant.school_id;
+    let actor = tenant.actor_id;
+    let agg = RealProductPurchase::fresh(
+        product_purchase_id(&g, school),
+        "Cancel service test product".to_owned(),
+        5,
+        5_000,
+        None,
+        actor,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("fresh");
+    let id = agg.id;
+    let cmd = CancelProductPurchaseCommand {
+        tenant,
+        product_purchase_id: id,
+        cancel_reason: "Out of stock".to_owned(),
+    };
+    let (updated, evt): (RealProductPurchase, ProductPurchaseCancelled) =
+        cancel_product_purchase(agg, cmd, &clock, &g).expect("service should succeed");
+    assert_eq!(updated.lifecycle_status, ProductPurchaseLifecycleStatus::Cancelled);
+    assert_eq!(evt.cancelled_by, actor);
+    assert_eq!(evt.cancel_reason, "Out of stock");
+    assert_eq!(
+        <ProductPurchaseCancelled as DomainEvent>::EVENT_TYPE,
+        "finance.product_purchase.cancelled"
+    );
+}

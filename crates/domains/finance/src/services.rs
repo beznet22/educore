@@ -56,7 +56,7 @@ use crate::commands::{
     CreateDirectFeesSettingCommand, CreateDonorCommand, CreateExpenseApprovalCommand, CreateFeesAssignDiscountCommand,
     CreateIncomeApprovalCommand, CreateIncomeCommand, ReadIncomeCommand, RetireIncomeCommand,
     CreateInventoryPaymentCommand, ReadInventoryPaymentCommand, RetireInventoryPaymentCommand,
-    CreateProductPurchaseCommand, ReadProductPurchaseCommand, RetireProductPurchaseCommand,
+    CreateProductPurchaseCommand, ReadProductPurchaseCommand, RetireProductPurchaseCommand, RecordProductPurchaseReceiptCommand, CancelProductPurchaseCommand,
     CreateFmFeesInvoiceCommand, ReadFmFeesInvoiceCommand, RetireFmFeesInvoiceCommand,
     CreateFmFeesInvoiceChildCommand, ReadFmFeesInvoiceChildCommand, RetireFmFeesInvoiceChildCommand,
     CreateDirectFeesInstallmentAssignCommand, ReadDirectFeesInstallmentAssignCommand, RetireDirectFeesInstallmentAssignCommand,
@@ -100,7 +100,7 @@ use crate::events::{
     DirectFeesInstallmentChildPaymentCreated, DirectFeesInstallmentChildPaymentRetired,
         IncomeCreated, IncomeRetired,
         InventoryPaymentCreated, InventoryPaymentRetired,
-        ProductPurchaseCreated, ProductPurchaseRetired,
+        ProductPurchaseCreated, ProductPurchaseRetired, ProductPurchaseReceived, ProductPurchaseCancelled,
         FmFeesInvoiceCreated, FmFeesInvoiceRetired,
         FmFeesInvoiceChildCreated, FmFeesInvoiceChildRetired,
         DirectFeesInstallmentAssignCreated, DirectFeesInstallmentAssignRetired,
@@ -6434,6 +6434,69 @@ where
         cmd.tenant.correlation_id,
         at,
     ))
+}
+
+// -- Wave 137 -- RealProductPurchase state machine service functions --
+
+/// PPr I-3: record receipt of a `RealProductPurchase` (Draft -> Received).
+/// Returns Conflict on terminal-state lifecycle.
+#[allow(clippy::needless_pass_by_value)]
+pub fn record_product_purchase_receipt<C, G>(
+    mut agg: RealProductPurchase,
+    cmd: RecordProductPurchaseReceiptCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealProductPurchase, ProductPurchaseReceived)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation = cmd.tenant.correlation_id;
+    agg.record_receipt(cmd.tenant.actor_id, at, event_id)?;
+    let evt = ProductPurchaseReceived::new(
+        cmd.product_purchase_id,
+        agg.lifecycle_status,
+        cmd.tenant.actor_id,
+        event_id,
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok((agg, evt))
+}
+
+/// PPr I-3: cancel a `RealProductPurchase` (Draft -> Cancelled).
+/// Returns Conflict on terminal-state lifecycle. Cancel reason
+/// is required (non-empty after trim).
+#[allow(clippy::needless_pass_by_value)]
+pub fn cancel_product_purchase<C, G>(
+    mut agg: RealProductPurchase,
+    cmd: CancelProductPurchaseCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealProductPurchase, ProductPurchaseCancelled)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let at = clock.now();
+    let event_id = ids.next_event_id();
+    let correlation = cmd.tenant.correlation_id;
+    let reason_clone = cmd.cancel_reason.clone();
+    agg.cancel(cmd.tenant.actor_id, cmd.cancel_reason, at, event_id)?;
+    let evt = ProductPurchaseCancelled::new(
+        cmd.product_purchase_id,
+        agg.lifecycle_status,
+        cmd.tenant.actor_id,
+        reason_clone,
+        event_id,
+        correlation,
+        at,
+    );
+    let _ = ids;
+    Ok((agg, evt))
 }
 
 // ===================================================================

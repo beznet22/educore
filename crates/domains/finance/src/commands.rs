@@ -4272,6 +4272,50 @@ impl RetireProductPurchaseCommand {
         vec![Capability::FinanceInvoiceRead]
     }
 }
+// -- Wave 137 -- ProductPurchase state machine extensions --
+
+/// COMMAND_TYPE discriminator for `RecordProductPurchaseReceiptCommand`.
+pub const FINANCE_PRODUCT_PURCHASE_RECORD_RECEIPT_COMMAND_TYPE: &str =
+    "finance.product_purchase.record_receipt";
+
+/// COMMAND_TYPE discriminator for `CancelProductPurchaseCommand`.
+pub const FINANCE_PRODUCT_PURCHASE_CANCEL_COMMAND_TYPE: &str =
+    "finance.product_purchase.cancel";
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecordProductPurchaseReceiptCommand {
+    pub tenant: TenantContext,
+    pub product_purchase_id: ProductPurchaseId,
+}
+
+impl RecordProductPurchaseReceiptCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_PRODUCT_PURCHASE_RECORD_RECEIPT_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceUpdate]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CancelProductPurchaseCommand {
+    pub tenant: TenantContext,
+    pub product_purchase_id: ProductPurchaseId,
+    pub cancel_reason: String,
+}
+
+impl CancelProductPurchaseCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str =
+        FINANCE_PRODUCT_PURCHASE_CANCEL_COMMAND_TYPE;
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceInvoiceUpdate]
+    }
+}
 // -- InventoryPayment (Wave 98 — RealInventoryPayment) --
 
 /// COMMAND_TYPE discriminator for `CreateInventoryPaymentCommand`.

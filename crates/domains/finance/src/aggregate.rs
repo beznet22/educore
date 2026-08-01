@@ -47,7 +47,7 @@ use crate::value_objects::{
     FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId,
     FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, FmInvoiceType,
     IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, Money, PaymentGatewaySettingId,
-    PaymentMode, TransactionLifecycleStatus,
+    PaymentMode, ProductPurchaseLifecycleStatus, TransactionLifecycleStatus,
     PaymentMethodId, PaymentMethodKind, PayrollEarnDeducId, PayrollGenerateId,
     PayrollPaymentApprovalId, PayrollPaymentId, ProductPurchaseId, QuestionBankFeeId,
     SalaryTemplateId, StatementType, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
@@ -7242,8 +7242,23 @@ pub struct RealProductPurchase {
     /// `>= 0` guard).
     pub amount_minor: i64,
     /// Optional supplier reference (could link to InventoryPayment in
-    /// future; PPr I-2/I-3 deferred).
+    /// future; PPr I-2: when Some, the value must be non-empty after
+    /// trimming whitespace).
     pub supplier_reference: Option<String>,
+    /// PPr I-3: lifecycle state machine (Draft -> Received |
+    /// Cancelled). Initialized to Draft in `fresh()`; transitions
+    /// to Received or Cancelled via `record_receipt()` / `cancel()`.
+    /// Received and Cancelled are both terminal states.
+    pub lifecycle_status: ProductPurchaseLifecycleStatus,
+    /// PPr I-3: received_by + received_at audit footer (who + when
+    /// the goods were received).
+    pub received_by: Option<UserId>,
+    pub received_at: Option<Timestamp>,
+    /// PPr I-3: cancelled_by + cancelled_at + cancel_reason audit
+    /// footer.
+    pub cancelled_by: Option<UserId>,
+    pub cancelled_at: Option<Timestamp>,
+    pub cancel_reason: Option<String>,
     /// Standard audit footer: optimistic concurrency version.
     pub version: Version,
     /// Standard audit footer: etag.
@@ -7267,7 +7282,10 @@ pub struct RealProductPurchase {
 impl RealProductPurchase {
     /// Construct a fresh `RealProductPurchase` aggregate.
     ///
-    /// Enforces PPr I-1 (`amount_minor >= 0`) at construction.
+    /// Enforces PPr I-1 (`amount_minor >= 0`) + PPr I-2
+    /// (`supplier_reference` non-empty after trim when Some) at
+    /// construction. Also enforces companion invariants:
+    /// `quantity > 0` + `product_name` non-empty after trim.
     #[allow(clippy::too_many_arguments)]
     pub fn fresh(
         id: ProductPurchaseId,
@@ -7297,13 +7315,32 @@ impl RealProductPurchase {
                 "ProductPurchase product_name must be non-empty after trim",
             ));
         }
+        // PPr I-2: supplier_reference non-empty after trim when Some.
+        let supplier_reference_trimmed = match supplier_reference {
+            Some(s) => {
+                let trimmed = s.trim().to_string();
+                if trimmed.is_empty() {
+                    return Err(educore_core::error::DomainError::validation(
+                        "ProductPurchase supplier_reference must be non-empty after trim (PPr I-2)",
+                    ));
+                }
+                Some(trimmed)
+            }
+            None => None,
+        };
         Ok(Self {
             school_id: id.school_id(),
             id,
             product_name: product_name_trimmed,
             quantity,
             amount_minor,
-            supplier_reference,
+            supplier_reference: supplier_reference_trimmed,
+            lifecycle_status: ProductPurchaseLifecycleStatus::Draft,
+            received_by: None,
+            received_at: None,
+            cancelled_by: None,
+            cancelled_at: None,
+            cancel_reason: None,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at: at,
@@ -7334,6 +7371,73 @@ impl RealProductPurchase {
         self.active_status = ActiveStatus::Retired;
         self.updated_at = at;
         self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// PPr I-3 state machine predicate. Only Draft can transition
+    /// to Received or Cancelled; Received + Cancelled are terminal.
+    #[must_use]
+    pub fn can_transition(&self, to: ProductPurchaseLifecycleStatus) -> bool {
+        self.lifecycle_status.can_transition_to(to)
+    }
+
+    /// PPr I-3: record receipt of the purchased goods. Transitions
+    /// Draft -> Received. Returns Conflict on terminal-state
+    /// lifecycle (Received + Cancelled cannot be re-received).
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn record_receipt(
+        &mut self,
+        actor: UserId,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if !self.can_transition(ProductPurchaseLifecycleStatus::Received) {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "ProductPurchase cannot record receipt from state {:?} (PPr I-3)",
+                self.lifecycle_status
+            )));
+        }
+        self.lifecycle_status = ProductPurchaseLifecycleStatus::Received;
+        self.received_by = Some(actor);
+        self.received_at = Some(at);
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.last_event_id = Some(event_id);
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// PPr I-3: cancel a Draft purchase (the goods were never
+    /// received). Returns Conflict on terminal-state lifecycle
+    /// (Received + Cancelled cannot be re-cancelled).
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn cancel(
+        &mut self,
+        actor: UserId,
+        reason: String,
+        at: Timestamp,
+        event_id: EventId,
+    ) -> educore_core::error::Result<()> {
+        if !self.can_transition(ProductPurchaseLifecycleStatus::Cancelled) {
+            return Err(educore_core::error::DomainError::conflict(format!(
+                "ProductPurchase cannot be cancelled from state {:?} (PPr I-3)",
+                self.lifecycle_status
+            )));
+        }
+        let reason_trimmed = reason.trim().to_string();
+        if reason_trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "ProductPurchase cancel reason must be non-empty after trim (PPr I-3)",
+            ));
+        }
+        self.lifecycle_status = ProductPurchaseLifecycleStatus::Cancelled;
+        self.cancelled_by = Some(actor);
+        self.cancelled_at = Some(at);
+        self.cancel_reason = Some(reason_trimmed);
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.last_event_id = Some(event_id);
         self.version = self.version.next();
         Ok(())
     }
