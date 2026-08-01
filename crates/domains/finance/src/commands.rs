@@ -94,6 +94,7 @@ pub const FINANCE_FEES_MASTER_CREATE_COMMAND_TYPE: &str = "finance.fees_master.c
 pub const FINANCE_FEES_MASTER_UPDATE_COMMAND_TYPE: &str = "finance.fees_master.update";
 pub const FINANCE_FEES_MASTER_DELETE_COMMAND_TYPE: &str = "finance.fees_master.delete";
 pub const FINANCE_FEES_MASTER_READ_COMMAND_TYPE: &str = "finance.fees_master.read";
+pub const FINANCE_FEES_MASTER_RETIRE_COMMAND_TYPE: &str = "finance.fees_master.retire";
 
 // -- FeesDiscount (the discount catalogue) --
 
@@ -432,11 +433,13 @@ impl ReadFeesTypeCommand {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFeesMasterCommand {
     pub tenant: TenantContext,
+    pub fees_master_id: FeesMasterId,
     pub fees_group_id: FeesGroupId,
     pub class_id: crate::value_objects::ClassId,
-    pub amount_minor: i64,
+    pub amount_minor: i64, // FM I-1
     pub currency: Currency,
     pub due_date: NaiveDate,
+    pub name: String,
 }
 
 
@@ -472,6 +475,21 @@ pub struct DeleteFeesMasterCommand {
 
 impl DeleteFeesMasterCommand {
     /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesMasterDelete]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFeesMasterCommand {
+    pub tenant: TenantContext,
+    pub fees_master_id: FeesMasterId,
+}
+
+impl RetireFeesMasterCommand {
+    /// The command-type discriminator.
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_MASTER_RETIRE_COMMAND_TYPE;
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
         vec![Capability::FinanceFeesMasterDelete]

@@ -2100,13 +2100,16 @@ finance_event_stub! {
     aggregate_id: FeesTypeId,
 }
 
-finance_event_stub! {
-    /// Emitted when a new `FeesMaster` aggregate is created.
-    pub struct FeesMasterCreated;
-    event_type: "finance.fees_master.created",
-    aggregate_type: "fees_master",
-    aggregate_id: FeesMasterId,
-}
+// -- Wave 114 -- FeesMaster (Phase 7 finance_event_stub! for
+// FeesMasterCreated deleted and replaced with a full struct below
+// -- see aggregate.rs:FeesMaster).
+
+// FM I-2: unique per (school, name, group). Both
+// FeesMasterCreated (carrying the scope-key tuple +
+// amount_minor + currency + due_date downstream) and
+// FeesMasterRetired (tombstone preserving the scope-key tuple
+// for legal-record retention) are emitted by
+// create_fees_master / retire_fees_master service functions.
 
 finance_event_stub! {
     /// Emitted when a `FeesMaster` is assigned to a class (or class+section).
@@ -7931,7 +7934,129 @@ impl DomainEvent for FeesCarryForwardRetired {
     }
 }
 
+
+// -- Wave 114 -- FeesMaster (Phase 7 finance_event_stub! for
+// FeesMasterCreated deleted at events.rs:2104 and replaced with
+// the full struct definitions below).
+//
+// FM I-2: unique per (school, name, group). Both
+// FeesMasterCreated (carrying the scope-key tuple + amount_minor
+// + currency + due_date downstream) and FeesMasterRetired
+// (tombstone preserving the scope-key tuple for legal-record
+// retention) are emitted by create_fees_master /
+// retire_fees_master service functions.
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesMasterCreated {
+    pub fees_master_id: FeesMasterId,
+    pub name: String,
+    pub fees_group_id: FeesGroupId,
+    pub class_id: crate::value_objects::ClassId,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub due_date: NaiveDate,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesMasterCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fees_master_id: FeesMasterId,
+        name: String,
+        fees_group_id: FeesGroupId,
+        class_id: crate::value_objects::ClassId,
+        amount_minor: i64,
+        currency: Currency,
+        due_date: NaiveDate,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_master_id,
+            name,
+            fees_group_id,
+            class_id,
+            amount_minor,
+            currency,
+            due_date,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesMasterCreated {
+    const EVENT_TYPE: &'static str = "finance.fees_master.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_master";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_master_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_master_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FeesMasterRetired {
+    pub fees_master_id: FeesMasterId,
+    pub retired_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FeesMasterRetired {
+    pub fn new(
+        fees_master_id: FeesMasterId,
+        retired_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fees_master_id,
+            retired_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FeesMasterRetired {
+    const EVENT_TYPE: &'static str = "finance.fees_master.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fees_master";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fees_master_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fees_master_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 #[cfg(test)]
+#[allow(est)]
 #[allow(
     clippy::unwrap_used,
     clippy::expect_used,

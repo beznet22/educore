@@ -8104,3 +8104,105 @@ impl RealFeesCarryForward {
         Ok(())
     }
 }
+
+
+// -- Wave 114 -- RealFeesMaster (per-(school, name, group) fee master) --
+//
+// FM I-2: unique per (school, name, group). The scope-key tuple
+// (school_id, name, fees_group_id) pins a FeesMaster to a
+// single (name, group) pair within a school. Uniqueness is
+// dispatcher-enforced (the aggregate carries the tuple as
+// required fields so the dispatcher has the data to enforce
+// it).
+//
+// Companion invariants enforced at fresh():
+//   * amount_minor >= 0 (FM I-1 -- pinned at construction).
+//   * name.trim().is_empty() must be false (a fee master
+//     without a name cannot be reconciled).
+//   * currency is required (companion invariant).
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFeesMaster {
+    pub id: FeesMasterId,
+    pub school_id: SchoolId,
+    pub name: String,
+    pub fees_group_id: FeesGroupId,
+    pub class_id: crate::value_objects::ClassId,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub due_date: chrono::NaiveDate,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFeesMaster {
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: FeesMasterId,
+        name: String,
+        fees_group_id: FeesGroupId,
+        class_id: crate::value_objects::ClassId,
+        amount_minor: i64,
+        currency: Currency,
+        due_date: chrono::NaiveDate,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FM I-1: amount_minor >= 0.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesMaster amount_minor must be >= 0 (FM I-1)",
+            ));
+        }
+        // Companion: name non-empty trimmed.
+        if name.trim().is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesMaster name must be non-empty after trimming",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            name,
+            fees_group_id,
+            class_id,
+            amount_minor,
+            currency,
+            due_date,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FeesMaster is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}

@@ -35,7 +35,7 @@ use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
-    RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFeesCarryForward, RealFmFeesGroup, RealIncomeApproval,
+    RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFeesCarryForward, RealFeesMaster, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
     RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, Wallet, WalletTransaction,
 };
@@ -72,7 +72,7 @@ use crate::commands::{
     CreateFeesInstallmentCreditCommand, ReadFeesInstallmentCreditCommand, RetireFeesInstallmentCreditCommand,
     CreateFmFeesInvoiceSettingCommand, ReadFmFeesInvoiceSettingCommand, UpdateFmFeesInvoiceSettingCommand, RetireFmFeesInvoiceSettingCommand,
     CreateFmFeesWeaverCommand, ReadFmFeesWeaverCommand, RetireFmFeesWeaverCommand,
-    CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand, CreateFeesCarryForwardCommand, ReadFeesCarryForwardCommand, RetireFeesCarryForwardCommand,
+    CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand, CreateFeesCarryForwardCommand, ReadFeesCarryForwardCommand, RetireFeesCarryForwardCommand, CreateFeesMasterCommand, ReadFeesMasterCommand, RetireFeesMasterCommand,
     CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
     CreateFmFeesGroupCommand,
@@ -104,7 +104,7 @@ use crate::events::{
     DirectFeesInstallmentCreated, DirectFeesInstallmentRetired,
     DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
     ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
-    ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated, FeesCarryForwardCreated, FeesCarryForwardRetired,
+    ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated, FeesCarryForwardCreated, FeesCarryForwardRetired, FeesMasterCreated, FeesMasterRetired,
     FmFeesGroupCreated, FmFeesInvoiceSettingCreated, FmFeesInvoiceSettingUpdated, FmFeesInvoiceSettingRetired, FmFeesWeaverCreated, FmFeesWeaverRetired, IncomeApprovalApproved, IncomeApprovalCreated, IncomeApprovalRejected,
     PayrollPaymentApprovalApproved, PayrollPaymentApprovalCreated, PayrollPaymentApprovalRejected,
     SalaryTemplateCreated, BankPaymentSlipAuditCreated, BankPaymentSlipAuditRetired,
@@ -3432,6 +3432,101 @@ where
     agg.last_event_id = Some(event_id);
 
     let event = FeesCarryForwardRetired::new(
+        agg.id,
+        cmd.tenant.actor_id,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((agg, event))
+}
+
+
+pub fn create_fees_master<C, G>(
+    cmd: CreateFeesMasterCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesMaster, FeesMasterCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut agg = RealFeesMaster::fresh(
+        cmd.fees_master_id,
+        cmd.name,
+        cmd.fees_group_id,
+        cmd.class_id,
+        cmd.amount_minor,
+        cmd.currency,
+        cmd.due_date,
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    agg.last_event_id = Some(event_id);
+
+    let event = FeesMasterCreated::new(
+        agg.id,
+        agg.name.clone(),
+        agg.fees_group_id,
+        agg.class_id,
+        agg.amount_minor,
+        agg.currency,
+        agg.due_date,
+        agg.created_by,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    );
+
+    Ok((agg, event))
+}
+
+pub fn read_fees_master<C, G>(
+    cmd: ReadFeesMasterCommand,
+    _clock: &C,
+    _ids: &G,
+) -> Result<()>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let _ = cmd;
+    Ok(())
+}
+
+pub fn retire_fees_master<C, G>(
+    cmd: RetireFeesMasterCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealFeesMaster, FeesMasterRetired)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    let mut agg = RealFeesMaster::fresh(
+        cmd.fees_master_id,
+        "retired fee master".to_owned(),
+        FeesGroupId::new(cmd.fees_master_id.school_id(), ids.next_uuid()),
+        crate::value_objects::ClassId::new(cmd.fees_master_id.school_id(), ids.next_uuid()),
+        0,
+        Currency::INR,
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        cmd.tenant.actor_id,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    agg.retire(now, cmd.tenant.actor_id)?;
+    agg.last_event_id = Some(event_id);
+
+    let event = FeesMasterRetired::new(
         agg.id,
         cmd.tenant.actor_id,
         event_id,
