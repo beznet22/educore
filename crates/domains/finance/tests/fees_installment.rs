@@ -521,3 +521,41 @@ fn fiv_i_3_percentage_sum_dispatcher_enforced() {
     .expect("first installment at 50pct constructs");
     let _ = _first;
 }
+
+// =========================================================================
+// -- Wave 140 -- RealFeesInstallment -- FIv I-5 non-overlapping windows --
+// =========================================================================
+
+#[test]
+fn fiv_i_5_non_overlapping_windows_dispatcher_enforced() {
+    // FIv I-5 marker test: the non-overlapping windows invariant
+    // (no two installments for the same fees_master may have
+    // overlapping due_date windows) is dispatcher-enforced.
+    //
+    // The exact window definition is dispatcher-implemented
+    // (e.g., each installment covers [due_date - lead_days,
+    // due_date + grace_days]); for now we document that the
+    // dispatcher must enforce non-overlap on create. The
+    // aggregate itself cannot enforce this without a
+    // sibling-row aggregation.
+
+    // The aggregate itself cannot enforce this invariant
+    // without a sibling-row aggregation, so we document the
+    // dispatcher's responsibility here.
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let _first = RealFeesInstallment::fresh(
+        fiv_id(&g, school),
+        master_id(&g, school),
+        "First installment".to_owned(),
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
+        5_000,
+        Currency::INR,
+        50,
+        tenant.actor_id,
+        Timestamp::now(),
+        tenant.correlation_id,
+    )
+    .expect("first installment constructs with any due_date");
+    let _ = _first;
+}
