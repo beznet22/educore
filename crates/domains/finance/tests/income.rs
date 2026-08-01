@@ -130,6 +130,7 @@ fn fresh_initializes_audit_footer() {
     let school = tenant.school_id;
     let id = income_id(&g, school);
     let head = income_head_id(&g, school);
+    let before = Timestamp::now();
     let row = RealIncome::fresh(
         id,
         head,
@@ -140,11 +141,18 @@ fn fresh_initializes_audit_footer() {
         tenant.correlation_id,
     )
     .expect("fresh should succeed");
+    let after = Timestamp::now();
     assert_eq!(row.version, Version::initial());
     assert!(row.is_active());
     assert_eq!(row.created_by, tenant.actor_id);
     assert_eq!(row.updated_by, tenant.actor_id);
     assert_eq!(row.last_event_id, None);
+    // IN I-3: created_at + updated_at both initialized at
+    // construction. They are equal to each other and fall in
+    // the [before, after] wall-clock window.
+    assert_eq!(row.created_at, row.updated_at);
+    assert!(row.created_at >= before);
+    assert!(row.created_at <= after);
 }
 
 // ---- retire ----
