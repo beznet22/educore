@@ -37,7 +37,7 @@ use crate::value_objects::{
     FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, FeesInstallmentCreditId, FeesInstallmentId,
     FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId, FeesPaymentId, FeesPaymentSlipId,
     FeesTypeId, FmFeesGroupId, FmFeesInvoiceChildId, FmFeesInvoiceId, FmFeesInvoiceSettingId,
-    FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId, FmFeesWeaverId, GatewayMode,
+    FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, GatewayMode,
     IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId,
     PaymentMethodId, PaymentMethodKind, PayrollPaymentId, PreventReason, ProductPurchaseId,
     SalaryTemplateId, StatementType, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId,
@@ -3164,6 +3164,9 @@ impl ReadFmFeesGroupCommand {
 pub struct CreateFmFeesTypeCommand {
     pub tenant: TenantContext,
     pub fm_fees_type_id: FmFeesTypeId,
+    pub name: String,
+    pub type_kind: FmFeesTypeKind,
+    pub amount_minor: i64,
 }
 
 
@@ -3188,6 +3191,26 @@ impl ReadFmFeesTypeCommand {
         vec![Capability::FinanceFeesTypeRead]
     }
 }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RetireFmFeesTypeCommand {
+    pub tenant: TenantContext,
+    pub fm_fees_type_id: FmFeesTypeId,
+    pub name: String,
+}
+
+impl RetireFmFeesTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::FinanceFeesTypeDelete]
+    }
+}
+
+// -- FmFeesType COMMAND_TYPE constants (Wave 129) --
+
+pub const FINANCE_FM_FEES_TYPE_CREATE_COMMAND_TYPE: &str = "finance.fm_fees_type.create";
+pub const FINANCE_FM_FEES_TYPE_READ_COMMAND_TYPE: &str = "finance.fm_fees_type.read";
+pub const FINANCE_FM_FEES_TYPE_RETIRE_COMMAND_TYPE: &str = "finance.fm_fees_type.retire";
 // -- FmFeesInvoice (Wave 100 — RealFmFeesInvoice) --
 
 /// COMMAND_TYPE discriminator for `CreateFmFeesInvoiceCommand`.

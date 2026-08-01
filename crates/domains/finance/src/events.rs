@@ -26,7 +26,7 @@ use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
     AccountType, AmountTransferId, ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
-    BankStatementId, StatementType,
+    BankStatementId, FmFeesTypeKind, StatementType,
     ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
     DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
     DueFeesLoginPreventId, FeesInstallmentCreditId, FeesInvoiceSettingId,
@@ -35,7 +35,7 @@ use crate::value_objects::{
     FeesInstallmentId,
     FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
     FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId,
-    FmFeesWeaverId,
+    FmFeesTypeId, FmFeesWeaverId,
     FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
     IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId, ProductPurchaseId, FmFeesInvoiceChildId,
     PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, SalaryTemplateId, WalletId,
@@ -8772,6 +8772,127 @@ impl DomainEvent for FmFeesInvoiceRejected {
     }
     fn school_id(&self) -> SchoolId {
         self.fm_fees_invoice_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+// =============================================================================
+// RealFmFeesType events — Wave 129 (per-aggregate wave pattern
+// from Waves 65–128)
+// =============================================================================
+//
+// Per v3 Part 2 + checklist § FmFeesType: 3 invariants dropped in
+// Wave 129:
+//   - FFT I-1: type ∈ {Fee, Discount, Fine} (carried on Created)
+//   - FFT I-2: amount_minor ≥ 0 (carried on Created)
+//   - FFT I-3: unique per (school, name) (dispatcher-enforced via
+//              the (school_id, name) scope-key tuple)
+
+/// Emitted when a new `RealFmFeesType` row is appended. Carries the
+/// FFT I-1 (`type_kind`) + FFT I-2 (`amount_minor >= 0`) invariant
+/// values.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesTypeCreated {
+    pub fm_fees_type_id: FmFeesTypeId,
+    pub name: String,
+    pub type_kind: FmFeesTypeKind,
+    pub amount_minor: i64,
+    pub created_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesTypeCreated {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fm_fees_type_id: FmFeesTypeId,
+        name: String,
+        type_kind: FmFeesTypeKind,
+        amount_minor: i64,
+        created_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_type_id,
+            name,
+            type_kind,
+            amount_minor,
+            created_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesTypeCreated {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_type.created";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_type";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_type_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_type_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+/// Emitted when a `RealFmFeesType` row is retired (tombstone).
+/// Preserves the identity for legal-record retention.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FmFeesTypeRetired {
+    pub fm_fees_type_id: FmFeesTypeId,
+    pub name: String,
+    pub deleted_by: UserId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl FmFeesTypeRetired {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        fm_fees_type_id: FmFeesTypeId,
+        name: String,
+        deleted_by: UserId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            fm_fees_type_id,
+            name,
+            deleted_by,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for FmFeesTypeRetired {
+    const EVENT_TYPE: &'static str = "finance.fm_fees_type.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "fm_fees_type";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.fm_fees_type_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.fm_fees_type_id.school_id()
     }
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at

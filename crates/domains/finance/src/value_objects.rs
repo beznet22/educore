@@ -1258,6 +1258,75 @@ pub fn validate_percentage(pct: f32) -> Result<()> {
     Ok(())
 }
 
+// =============================================================================
+// FmFeesTypeKind — Wave 129 (per-aggregate wave pattern from Waves 65–128)
+// =============================================================================
+//
+// Per v3 Part 2 + checklist § FmFeesType: FFT I-1 (type ∈ {Fee, Discount, Fine}).
+// Category enum used by [`RealFmFeesType`] to classify the type of
+// fee/invoice item. The discriminator is required at construction
+// (no default; the caller must explicitly select one of the three
+// categories).
+//
+// Used as a `type: FmFeesTypeKind` field on the aggregate +
+// downstream on events. Strict exhaustive matching is enforced by
+// the Rust type system (no wildcard arms permitted in service /
+// event-handler code).
+
+/// The category of a `RealFmFeesType` aggregate.
+///
+/// FFT I-1: every FmFeesType must belong to exactly one of these
+/// three categories. The enum is closed (no `Other` variant) to
+/// prevent the dispatcher from silently inserting unknown types.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize,
+)]
+pub enum FmFeesTypeKind {
+    /// A standard fee (e.g. tuition, transport).
+    Fee,
+    /// A discount applied to a fee (e.g. sibling discount, scholarship).
+    Discount,
+    /// A fine / penalty (e.g. late-payment fine).
+    Fine,
+}
+
+impl FmFeesTypeKind {
+    /// Canonical lowercase string representation for serialization.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Fee => "fee",
+            Self::Discount => "discount",
+            Self::Fine => "fine",
+        }
+    }
+
+    /// Parses a string back into the enum. Returns `None` if the
+    /// string does not match any known category.
+    #[must_use]
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "fee" => Some(Self::Fee),
+            "discount" => Some(Self::Discount),
+            "fine" => Some(Self::Fine),
+            _ => None,
+        }
+    }
+}
+
+impl std::fmt::Display for FmFeesTypeKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl std::str::FromStr for FmFeesTypeKind {
+    type Err = String;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Self::parse(s).ok_or_else(|| format!("unknown fm fees type kind: {s}"))
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,

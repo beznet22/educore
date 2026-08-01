@@ -45,7 +45,7 @@ use crate::value_objects::{
     FeesInstallmentCreditId, FeesInstallmentId, FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId,
     FeesPaymentId, FeesPaymentStatus, FeesTypeId, FineAmount, FmFeesGroupId, FmFeesInvoiceChildId,
     FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId,
-    FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesWeaverId, FmInvoiceType,
+    FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, FmInvoiceType,
     IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, Money, PaymentGatewaySettingId,
     PaymentMethodId, PaymentMethodKind, PayrollEarnDeducId, PayrollGenerateId,
     PayrollPaymentApprovalId, PayrollPaymentId, ProductPurchaseId, QuestionBankFeeId,
@@ -924,6 +924,9 @@ finance_aggregate_stub! {
 }
 finance_aggregate_stub! {
     /// FmFeesType (Phase 7 Workstream G).
+    /// Real aggregate: RealFmFeesType (Wave 129). The stub is kept
+    /// only to avoid breaking downstream code that referenced
+    /// `FmFeesType` as a type name during Phase 7.
     pub struct FmFeesType { _id: () }
 }
 finance_aggregate_stub! {
@@ -8900,6 +8903,108 @@ impl RealFeesInstallment {
         if self.active_status == ActiveStatus::Retired {
             return Err(educore_core::error::DomainError::conflict(
                 "FeesInstallment is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
+
+// =============================================================================
+// RealFmFeesType — Wave 129 (per-aggregate wave pattern from Waves 65–128)
+// =============================================================================
+//
+// Per v3 Part 2 + checklist § FmFeesType: 3 invariants dropped in Wave 129:
+//   - FFT I-1: type ∈ {Fee, Discount, Fine} (FmFeesTypeKind enum)
+//   - FFT I-2: amount_minor ≥ 0 (numeric money invariant)
+//   - FFT I-3: unique per (school, name) (dispatcher-enforced via
+//              the (school_id, name) scope-key tuple)
+//
+// The aggregate is append-only: `fresh()` + `retire()` only. The
+// `name` + `type` + `amount_minor` fields are NOT mutable -- changing
+// any of them requires retire + create-new. The pre-existing
+// `UpdateFmFeesTypeCommand` (if any) is preserved as a Phase 7
+// skeleton not wired through `RealFmFeesType`.
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealFmFeesType {
+    pub id: FmFeesTypeId,
+    pub school_id: SchoolId,
+    pub name: String,
+    pub type_kind: FmFeesTypeKind,
+    pub amount_minor: i64,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealFmFeesType {
+    /// Constructs a new `RealFmFeesType`. Enforces FFT I-1 (type is
+    /// one of the closed enum variants) + FFT I-2 (`amount_minor >= 0`).
+    /// FFT I-3 (unique per (school, name)) is dispatcher-enforced via
+    /// the (school_id, name) scope-key tuple that the aggregate carries
+    /// as required fields.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: FmFeesTypeId,
+        name: String,
+        type_kind: FmFeesTypeKind,
+        amount_minor: i64,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        // FFT I-2: amount_minor >= 0.
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesType amount_minor must be >= 0 (FFT I-2)",
+            ));
+        }
+        // Companion invariant: name non-empty after trim.
+        let name_trimmed = name.trim().to_string();
+        if name_trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "FmFeesType name must be non-empty after trim (FFT I-3 companion)",
+            ));
+        }
+        // FFT I-1: type_kind is enforced by the type system (closed
+        // enum). No runtime guard needed; the closed enum prevents
+        // constructing an `Other` variant.
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            name: name_trimmed,
+            type_kind,
+            amount_minor,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active_status == ActiveStatus::Active
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "FmFeesType is already retired",
             ));
         }
         self.active_status = ActiveStatus::Retired;
