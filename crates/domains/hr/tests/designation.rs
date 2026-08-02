@@ -34,9 +34,13 @@ use educore_core::clock::{SystemIdGen, TestClock};
 use educore_core::error::DomainError;
 use educore_core::ids::SchoolId;
 use educore_core::tenant::{TenantContext, UserType};
+use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 use educore_hr::prelude::*;
-use educore_hr::services::ReferenceDataUniquenessChecker;
+use educore_hr::services::{
+    DesignationReferenceChecker, ReferenceDataUniquenessChecker,
+};
+use educore_hr::value_objects::DesignationId;
 
 // =============================================================================
 // Fixtures
@@ -67,6 +71,36 @@ impl ReferenceDataUniquenessChecker for NoOpRefUniqueness {
     }
     fn leave_type_name_exists(&self, _school: SchoolId, _name: &str) -> bool {
         false
+    }
+}
+
+/// `ReferenceDataUniquenessChecker` mock that reports every
+/// designation title as already-existing. Used to pin the
+/// duplicate-title rejection path (spec Designation#1).
+struct DuplicateTitleUniqueness;
+impl ReferenceDataUniquenessChecker for DuplicateTitleUniqueness {
+    fn department_name_exists(&self, _school: SchoolId, _name: &str) -> bool {
+        false
+    }
+    fn designation_title_exists(&self, _school: SchoolId, _title: &str) -> bool {
+        true
+    }
+    fn leave_type_name_exists(&self, _school: SchoolId, _name: &str) -> bool {
+        false
+    }
+}
+
+/// Configurable `DesignationReferenceChecker` mock.
+struct FakeDesignationRefs {
+    staff: bool,
+}
+impl DesignationReferenceChecker for FakeDesignationRefs {
+    fn has_assigned_staff(
+        &self,
+        _school: SchoolId,
+        _designation_id: DesignationId,
+    ) -> bool {
+        self.staff
     }
 }
 
@@ -158,4 +192,173 @@ fn create_designation_rejects_empty_title() {
         matches!(err, DomainError::Validation(_)),
         "expected Validation, got {err:?}"
     );
+}
+
+// =============================================================================
+// Wave 174 — Spec invariant Designation#1 (title unique)
+// =============================================================================
+
+/// Spec Designation#1: "A `Designation` is uniquely named within
+/// a school." Pinned via the `DuplicateTitleUniqueness` mock that
+/// reports every title as already-existing. The service must
+/// reject with `DomainError::Conflict`.
+#[test]
+fn create_designation_rejects_duplicate_title_via_uniqueness_checker() {
+    let tenant = admin_context();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let err = create_designation(
+        tenant,
+        "Principal".to_owned(),
+        None,
+        &clock,
+        &ids,
+        &DuplicateTitleUniqueness,
+    )
+    .expect_err("duplicate title must fail uniqueness check");
+    assert!(
+        matches!(err, DomainError::Conflict(_)),
+        "expected Conflict, got {err:?}"
+    );
+}
+
+// =============================================================================
+// Wave 174 — Spec invariants Designation#2 + Designation#3
+// (delete guards)
+// =============================================================================
+
+/// Helper: build a deletable (non-system-defined) designation
+/// for delete-path tests. Skips the uniqueness check.
+fn fresh_designation_for_delete(
+    tenant: &TenantContext,
+    clock: &TestClock,
+    ids: &SystemIdGen,
+) -> Designation {
+    let (desig, _event) = create_designation(
+        tenant.clone(),
+        "Principal".to_owned(),
+        None,
+        clock,
+        ids,
+        &NoOpRefUniqueness,
+    )
+    .expect("create designation");
+    desig
+}
+
+/// Spec Designation#2 happy path: a designation with no
+/// assigned Staff can be soft-deleted. The mutator flips
+/// `active_status = Retired` and the service emits a
+/// `DesignationDeleted` event with the correct `EVENT_TYPE`.
+#[test]
+fn delete_designation_happy_path_when_no_references() {
+    let tenant = admin_context();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let mut desig = fresh_designation_for_delete(&tenant, &clock, &ids);
+    assert!(desig.active_status.is_active());
+
+    let cmd = DeleteDesignationCommand {
+        tenant: tenant.clone(),
+        designation_id: desig.id,
+        reason: "decommissioning".to_owned(),
+    };
+    let refs = FakeDesignationRefs { staff: false };
+    let event = delete_designation(&mut desig, cmd, &clock, &ids, &refs)
+        .expect("clean delete must succeed");
+    assert_eq!(
+        <DesignationDeleted as DomainEvent>::EVENT_TYPE,
+        "hr.designation.deleted"
+    );
+    assert_eq!(event.designation_id, desig.id);
+    assert!(!desig.active_status.is_active());
+}
+
+/// Spec Designation#2 rejection: designation with an assigned
+/// Staff row cannot be hard-deleted. The mutator returns
+/// `DomainError::Conflict` and does not mutate the aggregate.
+#[test]
+fn delete_designation_rejects_when_staff_assigned() {
+    let tenant = admin_context();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let mut desig = fresh_designation_for_delete(&tenant, &clock, &ids);
+    let original_active = desig.active_status;
+
+    let cmd = DeleteDesignationCommand {
+        tenant: tenant.clone(),
+        designation_id: desig.id,
+        reason: "rejected".to_owned(),
+    };
+    let refs = FakeDesignationRefs { staff: true };
+    let err = delete_designation(&mut desig, cmd, &clock, &ids, &refs)
+        .expect_err("Staff-assigned delete must fail");
+    assert!(
+        matches!(err, DomainError::Conflict(_)),
+        "expected Conflict, got {err:?}"
+    );
+    assert_eq!(desig.active_status, original_active);
+}
+
+/// Spec Designation#3: system-defined designations are
+/// immutable. The service rejects the delete with
+/// `DomainError::Validation` BEFORE the cross-aggregate
+/// reference check runs (cheaper guard first).
+#[test]
+fn delete_designation_rejects_system_defined() {
+    let tenant = admin_context();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let mut desig = fresh_designation_for_delete(&tenant, &clock, &ids);
+    desig.is_system_defined = true;
+    let original_active = desig.active_status;
+
+    let cmd = DeleteDesignationCommand {
+        tenant: tenant.clone(),
+        designation_id: desig.id,
+        reason: "cannot delete system designation".to_owned(),
+    };
+    let refs = FakeDesignationRefs { staff: false };
+    let err = delete_designation(&mut desig, cmd, &clock, &ids, &refs)
+        .expect_err("system-defined delete must fail");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+    assert_eq!(desig.active_status, original_active);
+}
+
+/// `Designation::ensure_deletable` direct unit test.
+#[test]
+fn designation_ensure_deletable_rejects_system_defined() {
+    let tenant = admin_context();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let mut desig = fresh_designation_for_delete(&tenant, &clock, &ids);
+    assert!(desig.ensure_deletable().is_ok());
+    desig.is_system_defined = true;
+    let err = desig.ensure_deletable().unwrap_err();
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+/// `Designation::soft_delete` direct unit test: with a clean
+/// reference checker, the mutator flips `active_status =
+/// Retired` and updates the audit footer (`updated_at`,
+/// `updated_by`).
+#[test]
+fn designation_soft_delete_flips_active_status_and_audit_footer() {
+    let tenant = admin_context();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let mut desig = fresh_designation_for_delete(&tenant, &clock, &ids);
+    let now = Timestamp::now();
+    let refs = FakeDesignationRefs { staff: false };
+    desig.soft_delete(&refs, now, tenant.actor_id)
+        .expect("clean soft-delete must succeed");
+    assert!(!desig.active_status.is_active());
+    assert_eq!(desig.updated_by, tenant.actor_id);
 }

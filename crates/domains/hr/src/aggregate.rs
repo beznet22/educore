@@ -524,6 +524,49 @@ impl Designation {
             correlation_id,
         }
     }
+
+    /// Spec invariant Designation#3: "A `Designation` with
+    /// `is_system_defined` set is a system-defined designation
+    /// and cannot be deleted." Returns [`DomainError::validation`]
+    /// when the designation is system-defined.
+    pub fn ensure_deletable(&self) -> Result<()> {
+        if self.is_system_defined {
+            return Err(DomainError::validation(format!(
+                "designation {} is system-defined and cannot be deleted",
+                self.id
+            )));
+        }
+        Ok(())
+    }
+
+    /// Spec invariant Designation#2: "A `Designation` cannot be
+    /// deleted while any `Staff` references it."
+    ///
+    /// The mutator delegates the cross-aggregate reference check to
+    /// a [`DesignationReferenceChecker`] port (defined in
+    /// `crates/domains/hr/src/services.rs`). On a clean check, the
+    /// mutator flips `active_status` to `Retired` (soft-delete; the
+    /// `DesignationDeleted` event captures the lifecycle transition
+    /// for downstream consumers). The FSM `status` field is left
+    /// unchanged so the audit history is preserved.
+    pub fn soft_delete(
+        &mut self,
+        refs: &dyn crate::services::DesignationReferenceChecker,
+        at: Timestamp,
+        by: UserId,
+    ) -> Result<()> {
+        self.ensure_deletable()?;
+        if refs.has_assigned_staff(self.school_id, self.id) {
+            return Err(DomainError::conflict(format!(
+                "cannot delete designation {}: staff members reference it",
+                self.id
+            )));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = by;
+        Ok(())
+    }
 }
 
 // =============================================================================

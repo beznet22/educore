@@ -18,12 +18,12 @@
 **Per audit (function-level):** 49 fns / 17 real / 6 partial / 26 stub.
 
 Initial invariant status estimate (based on function-level audit):
-- [x]: 22 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants + Wave 172: 4 PayrollGenerate invariants + Wave 173: 3 Department invariants — I-1 name unique, I-2 cannot delete while Staff references, I-3 is_system_defined immutable — bringing the **Staff `[x]` count to 8 of 8 spec invariants**, **PayrollGenerate `[x]` count to 6 of 6 spec invariants**, and **Department `[x]` count to 3 of 3 spec invariants**)
+- [x]: 25 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants + Wave 172: 4 PayrollGenerate invariants + Wave 173: 3 Department invariants + Wave 174: 3 Designation invariants — I-1 title unique, I-2 cannot delete while Staff references, I-3 is_system_defined immutable — bringing the **Staff `[x]` count to 8 of 8 spec invariants**, **PayrollGenerate `[x]` count to 6 of 6 spec invariants**, **Department `[x]` count to 3 of 3 spec invariants**, and **Designation `[x]` count to 3 of 3 spec invariants**)
 - [~]: 0
-- [ ]: 85 (remaining; targeted by the next per-aggregate wave pipeline — the other 40 HR aggregates beyond Staff, PayrollGenerate, and Department)
+- [ ]: 82 (remaining; targeted by the next per-aggregate wave pipeline — the other 39 HR aggregates beyond Staff, PayrollGenerate, Department, and Designation)
 - [N/A]: 0
 
-**Summary updated at session end (commit pending, Wave 173).** The previous `TBD/TBD/TBD` tally
+**Summary updated at session end (commit pending, Wave 174).** The previous `TBD/TBD/TBD` tally
 was a pre-Wave 32 baseline that was never refreshed. Wave 32 (`3376a4b`) added 8
 invariant enforcements: 1 Staff (phone unique per school via `StaffUniquenessChecker`),
 2 PayrollGenerate (net == gross - total_deduction - tax + monthly recurring uniqueness via
@@ -51,7 +51,13 @@ invariants `[x]`): I-1 name unique (`DuplicateNameUniqueness` mock test pins the
 `create_department` rejection path), I-2 cannot delete while Staff references (new
 `DepartmentReferenceChecker` port + `Department::soft_delete` mutator + `delete_department`
 service), I-3 is_system_defined immutable (new `Department::ensure_deletable` mutator +
-service-layer guard). The 85 remaining `[ ]` invariants are the next per-aggregate
+service-layer guard). **Wave 174 added 3 more invariant enforcements on
+the Designation aggregate**, completing the full Designation sweep (3 of 3 spec
+invariants `[x]`): I-1 title unique (`DuplicateTitleUniqueness` mock test pins the
+`create_designation` rejection path), I-2 cannot delete while Staff references (new
+`DesignationReferenceChecker` port + `Designation::soft_delete` mutator + `delete_designation`
+service), I-3 is_system_defined immutable (new `Designation::ensure_deletable` mutator +
+service-layer guard). The 82 remaining `[ ]` invariants are the next per-aggregate
 wave pipeline's backlog.
 
 **Note:** The Wave 169 / Wave 171 Chunks 2-3 summaries claimed Wave 32 added "7 invariants" — this is an off-by-one in the prose. The actual count is 8 (1+2+3+1+1). Corrected at Wave 171 session end (commit `f743f8d`).
@@ -99,9 +105,9 @@ wave pipeline's backlog.
 - [x] I-3: is_system_defined cannot delete (Wave 173 / spec #3: "`Department::ensure_deletable` mutator in `crates/domains/hr/src/aggregate.rs` returns `DomainError::Validation` when `is_system_defined == true`; `delete_department` service calls it as the first guard before the cross-aggregate reference check; 4 new behavioral tests in `crates/domains/hr/tests/department.rs` cover the rejection path. NOTE: the original checklist row title said 'Cannot delete while staff assigned' which is spec #2's concern — flipped under the spec-faithful interpretation.)
 
 ### Designation (3 invariants)
-- [ ] I-1: name unique per school
-- [ ] I-2: tenant anchor
-- [ ] I-3: cannot delete while staff assigned
+- [x] I-1: name unique per school (spec #1: "`ReferenceDataUniquenessChecker::designation_title_exists` port in `crates/domains/hr/src/services.rs:884`; `create_designation` rejects duplicates with `DomainError::Conflict` at `services.rs`; existing tests `create_designation_returns_aggregate_and_event` + `create_designation_rejects_empty_title` in `crates/domains/hr/tests/designation.rs` exercise the unique-title path; added test `create_designation_rejects_duplicate_title_via_uniqueness_checker` in Wave 174 to pin the contract via a fake checker.)
+- [x] I-2: cannot delete while Staff assigned (Wave 174 / spec #2: "`DesignationReferenceChecker::has_assigned_staff` port in `crates/domains/hr/src/services.rs`; `Designation::soft_delete(refs, at, by)` mutator in `crates/domains/hr/src/aggregate.rs` delegates the cross-aggregate check to the port and returns `DomainError::Conflict` if any active Staff row references this designation; `delete_designation` service function + `DeleteDesignationCommand` wire the guard end-to-end; 4 new behavioral tests in `crates/domains/hr/tests/designation.rs` covering happy-path delete + 3 rejection paths (Staff-assigned / system-defined + 2 mutator-direct unit tests). NOTE: the original checklist row title said 'Tenant anchor' which is a structural typed-id property, not a spec invariant — flipped under the spec-faithful interpretation.)
+- [x] I-3: is_system_defined cannot delete (Wave 174 / spec #3: "`Designation::ensure_deletable` mutator in `crates/domains/hr/src/aggregate.rs` returns `DomainError::Validation` when `is_system_defined == true`; `delete_designation` service calls it as the first guard before the cross-aggregate reference check; 4 new behavioral tests in `crates/domains/hr/tests/designation.rs` cover the rejection path. NOTE: the original checklist row title said 'Cannot delete while staff assigned' which is spec #2's concern — flipped under the spec-faithful interpretation.)
 
 ### LeaveDeductionInfo (3 invariants)
 - [ ] I-1: deduction_amount ≥ 0
@@ -370,6 +376,37 @@ the checklist uses different numbering and different semantics than the spec.
 4. **Designation rows have the identical drift pattern** (same spec wording, same
    checklist mismatch). They will be flipped under the spec-faithful interpretation in
    Wave 174.
+
+## Spec Reconciliation (Wave 174)
+
+**Added:** 2026-08-02 (commit pending).
+**Issue:** Wave 174 audited the **Designation** checklist rows against the spec at
+`docs/specs/hr/aggregates.md`. The drift pattern is identical to Wave 173's Department
+finding — the checklist uses different numbering and different semantics than the spec.
+
+### Drift map — Designation (3 invariants)
+
+| Spec # | Spec wording (`docs/specs/hr/aggregates.md`) | Checklist row | Notes |
+|---|---|---|---|
+| 1 | "A `Designation` is uniquely named within a school." | I-1: name unique per school | ✅ Matches. |
+| 2 | "A `Designation` cannot be deleted while any `Staff` references it." | I-2: tenant anchor | **Major drift.** Spec is a deletion guard; checklist row is a structural typed-id property. |
+| 3 | "A `Designation` with `is_system_defined` set is a system-defined designation and cannot be deleted." | I-3: cannot delete while staff assigned | **Major drift.** Spec is the `is_system_defined` immutable guard; checklist row is spec #2's concern. |
+
+### Resolution (Wave 174)
+
+1. **Designation I-1 row stays as-is** (name unique is correctly named and enforced).
+2. **Designation I-2 flipped to `[x]` under the spec-faithful interpretation**: the
+   tenant anchor is a structural typed-id property (not a spec invariant), so the row is
+   marked `[x]` with the evidence pointing at the spec #2 "cannot delete while Staff
+   references" guard (`DesignationReferenceChecker` port + `Designation::soft_delete`
+   mutator + `delete_designation` service).
+3. **Designation I-3 flipped to `[x]` under the spec-faithful interpretation**: the
+   "cannot delete while staff assigned" is spec #2's concern, so the row is marked `[x]`
+   with the evidence pointing at the spec #3 `is_system_defined` immutable guard
+   (`Designation::ensure_deletable` mutator + service-layer guard).
+4. **LeaveType rows are expected to have a similar drift pattern** (the LeaveType
+   spec uses similar "cannot delete while referenced" + "is_system_defined immutable"
+   language). They will be flipped under the spec-faithful interpretation in Wave 175.
 
 ## Implementation Order (suggested batches)
 

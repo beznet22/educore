@@ -679,6 +679,22 @@ pub struct DesignationDeleted {
     pub occurred_at: Timestamp,
 }
 
+impl DesignationDeleted {
+    pub fn new(
+        designation_id: DesignationId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            designation_id,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
 impl DomainEvent for DesignationDeleted {
     const EVENT_TYPE: &'static str = "hr.designation.deleted";
     const SCHEMA_VERSION: u32 = 1;

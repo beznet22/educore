@@ -43,19 +43,20 @@ use crate::commands::{
     CreateStaffAddressCommand, CreateStaffAttendanceImportBatchCommand,
     CreateStaffBankDetailCommand, CreateStaffDocumentCommand, CreateStaffDrivingLicenseCommand,
     CreateStaffProfilePhotoCommand, CreateStaffRegistrationFieldOptionCommand,
-    CreateStaffSocialLinkCommand, DeleteDepartmentCommand, RecordLeaveRequestApprovalCommand,
-    RecordPayrollGenerateAuditCommand, RecordStaffAttendancePunchCommand,
-    RecordStaffImportResolutionCommand, RecordStaffLeaveHistoryCommand,
-    RecordStaffPayrollHistoryCommand, RefreshStaffLeaveBalanceCommand, RefreshStaffTimelineCommand,
+    CreateStaffSocialLinkCommand, DeleteDepartmentCommand, DeleteDesignationCommand,
+    RecordLeaveRequestApprovalCommand, RecordPayrollGenerateAuditCommand,
+    RecordStaffAttendancePunchCommand, RecordStaffImportResolutionCommand,
+    RecordStaffLeaveHistoryCommand, RecordStaffPayrollHistoryCommand,
+    RefreshStaffLeaveBalanceCommand, RefreshStaffTimelineCommand,
     SetHourlyRateOverrideCommand, SetStaffCustomFieldCommand,
 };
 use educore_events::domain_event::DomainEvent;
 
 use crate::events::{
     AssignClassTeacherScopeAdded, BulkImportJobRecorded, DepartmentCreated, DepartmentDeleted,
-    DepartmentHeadRecorded, DesignationGradeRecorded, HourlyRateOverrideSet, LeaveApproved,
-    LeaveDefineAdjustmentApplied, LeaveRequestApprovalRecorded, LeaveRequestAttachmentRegistered,
-    LeaveRequested,
+    DepartmentHeadRecorded, DesignationDeleted, DesignationGradeRecorded, HourlyRateOverrideSet,
+    LeaveApproved, LeaveDefineAdjustmentApplied, LeaveRequestApprovalRecorded,
+    LeaveRequestAttachmentRegistered, LeaveRequested,
     PayrollGenerateAuditAppended, PayrollGenerated, PayrollPaymentLinkCreated, StaffAddressAdded,
     StaffAttendanceImportBatchRecorded, StaffAttendancePunchCaptured, StaffBankDetailUpserted,
     StaffCustomFieldSet, StaffDeleted, StaffDocumentRegistered, StaffDrivingLicenseRegistered,
@@ -420,6 +421,56 @@ where
     let event =
         crate::events::DesignationCreated::new(id, title, event_id, tenant.correlation_id, now);
     Ok((desig, event))
+}
+
+/// Soft-deletes a designation (spec invariants Designation#2 +
+/// Designation#3).
+///
+/// 1. Calls [`Designation::ensure_deletable`] which rejects
+///    `is_system_defined` designations (spec invariant #3).
+/// 2. Checks `DesignationReferenceChecker` for active Staff
+///    references. If any are found, returns
+///    [`DomainError::conflict`] and does not mutate the
+///    aggregate.
+/// 3. Calls [`Designation::soft_delete`] which flips
+///    `active_status = Retired` (preserving the row for audit
+///    purposes per spec invariants #2 + #3).
+/// 4. Returns a [`DesignationDeleted`] event.
+///
+/// The dispatcher loads the existing `Designation` aggregate by
+/// `cmd.designation_id` and passes it as `&mut desig` so the
+/// mutator runs on the loaded state (mirrors the `delete_department`
+/// pattern).
+pub fn delete_designation<C, G>(
+    desig: &mut Designation,
+    cmd: DeleteDesignationCommand,
+    clock: &C,
+    ids: &G,
+    reference: &dyn DesignationReferenceChecker,
+) -> Result<DesignationDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    // Ensure the aggregate is deletable (spec invariant #3).
+    desig.ensure_deletable()?;
+
+    // Cross-aggregate reference checks (spec invariant #2).
+    if reference.has_assigned_staff(desig.school_id, desig.id) {
+        return Err(DomainError::conflict(format!(
+            "cannot delete designation {}: staff members reference it",
+            desig.id
+        )));
+    }
+
+    desig.soft_delete(reference, now, cmd.tenant.actor_id)?;
+    desig.last_event_id = Some(event_id);
+
+    let event = DesignationDeleted::new(desig.id, event_id, cmd.tenant.correlation_id, now);
+    Ok(event)
 }
 
 /// Builds a [`LeaveType`] aggregate.
@@ -961,6 +1012,23 @@ pub trait DepartmentReferenceChecker: Send + Sync {
         &self,
         school: SchoolId,
         department_id: crate::value_objects::DepartmentId,
+    ) -> bool;
+}
+
+/// Per-school `Designation` reference checks. Implements spec
+/// invariant Designation#2: "A `Designation` cannot be deleted
+/// while any `Staff` references it."
+///
+/// The port returns `true` if a reference exists; the service
+/// then short-circuits with
+/// [`DomainError::conflict`](educore_core::error::DomainError::conflict).
+pub trait DesignationReferenceChecker: Send + Sync {
+    /// Returns `true` if any active `Staff` row has this
+    /// designation set as their `designation_id`.
+    fn has_assigned_staff(
+        &self,
+        school: SchoolId,
+        designation_id: crate::value_objects::DesignationId,
     ) -> bool;
 }
 
