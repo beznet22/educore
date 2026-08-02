@@ -37,7 +37,7 @@ use crate::value_objects::{
     FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, FeesInstallmentCreditId, FeesInstallmentId,
     FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId, FeesPaymentId, FeesPaymentSlipId,
     FeesTypeId, FmFeesGroupId, FmFeesInvoiceChildId, FmFeesInvoiceId, FmFeesInvoiceSettingId,
-    FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, GatewayMode, PaymentMode,
+    FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, GatewayMode, GatewayChargeType, PaymentMode,
     IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId,
     PaymentMethodId, PaymentMethodKind, PayrollPaymentId, PreventReason, ProductPurchaseId,
     SalaryTemplateId, StatementType, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId,
@@ -1287,11 +1287,18 @@ impl CreatePaymentGatewayCommand {
 pub struct UpdatePaymentGatewayCommand {
     pub tenant: TenantContext,
     pub payment_gateway_setting_id: PaymentGatewaySettingId,
-    pub name: Option<String>,
-    pub api_key: Option<String>,
-    pub api_secret: Option<String>,
-    pub mode: Option<GatewayMode>,
     pub description: Option<String>,
+    pub gateway_username: Option<String>,
+    pub gateway_password: Option<String>,
+    pub gateway_signature: Option<String>,
+    pub gateway_client_id: Option<String>,
+    pub gateway_secret_key: Option<String>,
+    pub gateway_secret_word: Option<String>,
+    pub gateway_publisher_key: Option<String>,
+    pub gateway_private_key: Option<String>,
+    pub mode: Option<GatewayMode>,
+    pub service_charge_minor: Option<i64>,
+    pub service_charge_type: Option<GatewayChargeType>,
 }
 
 
@@ -4818,6 +4825,19 @@ impl ConfigureInvoiceSettingsCommand {
 pub struct ConfigurePaymentGatewayCommand {
     pub tenant: TenantContext,
     pub payment_gateway_setting_id: PaymentGatewaySettingId,
+    pub name: String,
+    pub description: Option<String>,
+    pub gateway_username: Option<String>,
+    pub gateway_password: Option<String>,
+    pub gateway_signature: Option<String>,
+    pub gateway_client_id: Option<String>,
+    pub gateway_secret_key: Option<String>,
+    pub gateway_secret_word: Option<String>,
+    pub gateway_publisher_key: Option<String>,
+    pub gateway_private_key: Option<String>,
+    pub mode: GatewayMode,
+    pub service_charge_minor: i64,
+    pub service_charge_type: GatewayChargeType,
 }
 
 

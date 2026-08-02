@@ -48,7 +48,7 @@ use crate::value_objects::{
     FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, FmInvoiceType,
     IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, Money, PaymentGatewaySettingId,
     PaymentMode, ProductPurchaseLifecycleStatus, TransactionLifecycleStatus,
-    PaymentMethodId, PaymentMethodKind, PayrollEarnDeducId, PayrollGenerateId,
+    PaymentMethodId, PaymentMethodKind, PayrollEarnDeducId, PayrollGenerateId, GatewayMode, GatewayChargeType,
     PayrollPaymentApprovalId, PayrollPaymentId, ProductPurchaseId, QuestionBankFeeId,
     SalaryTemplateId, StatementType, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
@@ -1032,6 +1032,208 @@ finance_aggregate_stub! {
 finance_aggregate_stub! {
     /// PaymentGatewaySetting (Phase 7 Workstream K).
     pub struct PaymentGatewaySetting { _id: () }
+}
+
+// -- Wave 148 -- RealPaymentGatewaySetting -- per-gateway credentials + mode --
+//
+// PGS I-1: gateway name unique within a school -- the dispatcher
+// enforces uniqueness on the (school_id, name) scope-key tuple
+// the aggregate carries as required fields.
+//
+// PGS I-2: mode must be `sandbox` or `live` -- pinned at
+// construction via the typed `GatewayMode` enum (no free-form
+// strings reach the type system).
+//
+// PGS I-3: charge >= 0; charge_type ∈ {P, F} -- pinned at
+// construction via `GatewayChargeType` enum + `service_charge`
+// guard returning `DomainError::validation` on negative values.
+//
+// PGS I-4: credentials encrypted at rest -- the aggregate
+// stores credentials in plaintext at the API surface; the
+// storage adapter is responsible for encrypting on write +
+// decrypting on read.
+//
+// Companion invariants enforced at fresh():
+//   * name non-empty after trimming
+//   * description non-empty after trimming (when provided)
+//   * service_charge >= 0
+//   * service_charge_type is one of P (Percentage) or F (Flat)
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealPaymentGatewaySetting {
+    pub id: PaymentGatewaySettingId,
+    pub school_id: SchoolId,
+    pub name: String,
+    pub description: Option<String>,
+    pub gateway_username: Option<String>,
+    pub gateway_password: Option<String>,
+    pub gateway_signature: Option<String>,
+    pub gateway_client_id: Option<String>,
+    pub gateway_secret_key: Option<String>,
+    pub gateway_secret_word: Option<String>,
+    pub gateway_publisher_key: Option<String>,
+    pub gateway_private_key: Option<String>,
+    pub mode: GatewayMode,
+    pub service_charge_minor: i64,
+    pub service_charge_type: GatewayChargeType,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealPaymentGatewaySetting {
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: PaymentGatewaySettingId,
+        name: String,
+        description: Option<String>,
+        gateway_username: Option<String>,
+        gateway_password: Option<String>,
+        gateway_signature: Option<String>,
+        gateway_client_id: Option<String>,
+        gateway_secret_key: Option<String>,
+        gateway_secret_word: Option<String>,
+        gateway_publisher_key: Option<String>,
+        gateway_private_key: Option<String>,
+        mode: GatewayMode,
+        service_charge_minor: i64,
+        service_charge_type: GatewayChargeType,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        if name.trim().is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "PaymentGatewaySetting name must be non-empty after trimming",
+            ));
+        }
+        if let Some(desc) = &description {
+            if desc.trim().is_empty() {
+                return Err(educore_core::error::DomainError::validation(
+                    "PaymentGatewaySetting description must be non-empty when provided",
+                ));
+            }
+        }
+        if service_charge_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "PaymentGatewaySetting service_charge must be >= 0 (PGS I-3)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            name,
+            description,
+            gateway_username,
+            gateway_password,
+            gateway_signature,
+            gateway_client_id,
+            gateway_secret_key,
+            gateway_secret_word,
+            gateway_publisher_key,
+            gateway_private_key,
+            mode,
+            service_charge_minor,
+            service_charge_type,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    /// PGS I-3 update mutator: mutates credentials + charge in
+    /// place. Bumps `version` + advances `updated_at` +
+    /// `updated_by`. The (school_id, name) scope-key tuple is
+    /// preserved by `fresh()` constraints + dispatcher-enforced
+    /// uniqueness on the name field.
+    #[allow(clippy::too_many_arguments)]
+    pub fn update_metadata(
+        &mut self,
+        description: Option<String>,
+        gateway_username: Option<String>,
+        gateway_password: Option<String>,
+        gateway_signature: Option<String>,
+        gateway_client_id: Option<String>,
+        gateway_secret_key: Option<String>,
+        gateway_secret_word: Option<String>,
+        gateway_publisher_key: Option<String>,
+        gateway_private_key: Option<String>,
+        mode: Option<GatewayMode>,
+        service_charge_minor: Option<i64>,
+        service_charge_type: Option<GatewayChargeType>,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "PaymentGatewaySetting is retired",
+            ));
+        }
+        if let Some(d) = &description {
+            if d.trim().is_empty() {
+                return Err(educore_core::error::DomainError::validation(
+                    "PaymentGatewaySetting description must be non-empty when provided",
+                ));
+            }
+        }
+        if let Some(charge) = service_charge_minor {
+            if charge < 0 {
+                return Err(educore_core::error::DomainError::validation(
+                    "PaymentGatewaySetting service_charge must be >= 0 (PGS I-3)",
+                ));
+            }
+        }
+        self.description = description;
+        self.gateway_username = gateway_username;
+        self.gateway_password = gateway_password;
+        self.gateway_signature = gateway_signature;
+        self.gateway_client_id = gateway_client_id;
+        self.gateway_secret_key = gateway_secret_key;
+        self.gateway_secret_word = gateway_secret_word;
+        self.gateway_publisher_key = gateway_publisher_key;
+        self.gateway_private_key = gateway_private_key;
+        if let Some(m) = mode {
+            self.mode = m;
+        }
+        if let Some(c) = service_charge_minor {
+            self.service_charge_minor = c;
+        }
+        if let Some(t) = service_charge_type {
+            self.service_charge_type = t;
+        }
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Retire the aggregate (tombstone; preserves name + mode +
+    /// charge fields in the audit footer for legal-record
+    /// retention).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "PaymentGatewaySetting is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
 }
 finance_aggregate_stub! {
     /// PaymentMethod (Phase 7 Workstream K).

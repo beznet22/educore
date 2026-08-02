@@ -37,7 +37,7 @@ use crate::value_objects::{
     FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId,
     FmFeesTypeId, FmFeesWeaverId,
     FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
-    IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId, ProductPurchaseId, FmFeesInvoiceChildId,
+    IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId, ProductPurchaseId, FmFeesInvoiceChildId, GatewayMode, GatewayChargeType,
     PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, SalaryTemplateId, WalletId,
     WalletTransactionApprovalId, WalletTransactionId, WalletTxType, TransactionId,
 };
@@ -9634,5 +9634,128 @@ mod tests {
             "finance.expense.recorded"
         );
         assert_eq!(<ExpenseRecorded as DomainEvent>::AGGREGATE_TYPE, "expense");
+    }
+}
+
+// =============================================================================
+// -- Wave 148 -- PaymentGatewaySetting events
+// =============================================================================
+
+/// Emitted when a `PaymentGatewaySetting` aggregate is configured.
+///
+/// Carries the full credential + charge payload so downstream
+/// projections can store credentials (encrypted at rest by the
+/// storage adapter per PGS I-4) and gateway-config audit logs
+/// without re-reading the aggregate.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PaymentGatewayConfigured {
+    pub payment_gateway_setting_id: PaymentGatewaySettingId,
+    pub school_id: SchoolId,
+    pub name: String,
+    pub description: Option<String>,
+    pub gateway_username: Option<String>,
+    pub gateway_password: Option<String>,
+    pub gateway_signature: Option<String>,
+    pub gateway_client_id: Option<String>,
+    pub gateway_secret_key: Option<String>,
+    pub gateway_secret_word: Option<String>,
+    pub gateway_publisher_key: Option<String>,
+    pub gateway_private_key: Option<String>,
+    pub mode: GatewayMode,
+    pub service_charge_minor: i64,
+    pub service_charge_type: GatewayChargeType,
+    pub event_id: EventId,
+    pub created_by: UserId,
+    pub created_at: Timestamp,
+    pub correlation_id: CorrelationId,
+}
+
+impl DomainEvent for PaymentGatewayConfigured {
+    const EVENT_TYPE: &'static str = "finance.payment_gateway_setting.configured";
+    const AGGREGATE_TYPE: &'static str = "payment_gateway_setting";
+    const SCHEMA_VERSION: u32 = 1;
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.payment_gateway_setting_id.as_uuid()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.created_at
+    }
+}
+
+/// Emitted when a `PaymentGatewaySetting` aggregate's mutable
+/// fields are updated.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PaymentGatewayUpdated {
+    pub payment_gateway_setting_id: PaymentGatewaySettingId,
+    pub school_id: SchoolId,
+    pub description: Option<String>,
+    pub gateway_username: Option<String>,
+    pub gateway_password: Option<String>,
+    pub gateway_signature: Option<String>,
+    pub gateway_client_id: Option<String>,
+    pub gateway_secret_key: Option<String>,
+    pub gateway_secret_word: Option<String>,
+    pub gateway_publisher_key: Option<String>,
+    pub gateway_private_key: Option<String>,
+    pub mode: Option<GatewayMode>,
+    pub service_charge_minor: Option<i64>,
+    pub service_charge_type: Option<GatewayChargeType>,
+    pub event_id: EventId,
+    pub updated_by: UserId,
+    pub updated_at: Timestamp,
+    pub correlation_id: CorrelationId,
+}
+
+impl DomainEvent for PaymentGatewayUpdated {
+    const EVENT_TYPE: &'static str = "finance.payment_gateway_setting.updated";
+    const AGGREGATE_TYPE: &'static str = "payment_gateway_setting";
+    const SCHEMA_VERSION: u32 = 1;
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.payment_gateway_setting_id.as_uuid()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.updated_at
+    }
+}
+
+/// Emitted when a `PaymentGatewaySetting` aggregate is retired
+/// (tombstone).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PaymentGatewayDisabled {
+    pub payment_gateway_setting_id: PaymentGatewaySettingId,
+    pub school_id: SchoolId,
+    pub event_id: EventId,
+    pub disabled_by: UserId,
+    pub disabled_at: Timestamp,
+    pub correlation_id: CorrelationId,
+}
+
+impl DomainEvent for PaymentGatewayDisabled {
+    const EVENT_TYPE: &'static str = "finance.payment_gateway_setting.disabled";
+    const AGGREGATE_TYPE: &'static str = "payment_gateway_setting";
+    const SCHEMA_VERSION: u32 = 1;
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.payment_gateway_setting_id.as_uuid()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.disabled_at
     }
 }

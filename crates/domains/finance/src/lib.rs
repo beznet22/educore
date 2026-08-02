@@ -51,7 +51,7 @@ pub mod prelude {
         RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFeesCarryForward, RealFeesMaster,
         RealFmFeesGroup, RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild,
         RealFmFeesTransactionLineNote, RealIncomeApproval, RealIncomeHead, RealInvoiceSetting,
-        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, DueFeesLoginPreventRole, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealDirectFeesInstallmentChildPayment, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, RealFmFeesTransaction, RealFeesInstallment, RealFmFeesType, RealBankPaymentSlip, Wallet, WalletTransaction,
+        RealBankPaymentSlipAudit, RealBankStatement, RealBankAccount, RealQuestionBankFee, RealSalaryTemplate, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, DueFeesLoginPreventRole, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealDirectFeesInstallmentChildPayment, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, RealFmFeesTransaction, RealFeesInstallment, RealFmFeesType, RealBankPaymentSlip, Wallet, WalletTransaction, RealPaymentGatewaySetting,
     };
     // Reference / child aggregates
     pub use crate::entities::{
@@ -157,6 +157,7 @@ pub mod prelude {
         FINANCE_TRANSACTION_RETIRE_COMMAND_TYPE,
         CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand,
         CreatePaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand,
+        ConfigurePaymentGatewayCommand, UpdatePaymentGatewayCommand,
         CreateDirectFeesInstallmentCommand, RetireDirectFeesInstallmentCommand, CreateFeesAssignDiscountCommand, RetireFeesAssignDiscountCommand, CreateFeesAssignCommand, ReadFeesAssignCommand, RetireFeesAssignCommand,
         FINANCE_FEES_INSTALLMENT_ASSIGN_DISCOUNT_CREATE_COMMAND_TYPE,
         FINANCE_FEES_INSTALLMENT_ASSIGN_DISCOUNT_READ_COMMAND_TYPE,
@@ -208,6 +209,7 @@ pub mod prelude {
         FeesInstallmentAssignDiscountCreated, FeesInstallmentAssignDiscountRetired,
         PaymentMethodCreated, PaymentMethodRetired,
         FeesInstallmentAssignCreated, FeesInstallmentAssignRetired,
+        PaymentGatewayConfigured, PaymentGatewayUpdated, PaymentGatewayDisabled,
         AmountTransferCreated, AmountTransferRetired,
         DirectFeesInstallmentCreated, DirectFeesInstallmentRetired, FeesAssignDiscountCreated, FeesAssignDiscountRetired, FeesAssignCreated, FeesAssignRetired,
         FeesCarryForwardSettingRetired, FeesCarryForwardSettingUpdated, FmFeesGroupCreated, FmFeesInvoiceLineNoteCreated,
@@ -299,7 +301,7 @@ pub mod prelude {
         FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId, FeesPaymentFineId, FeesPaymentId,
         FeesPaymentSlipId, FeesPaymentStatus, FeesTypeId, FineAmount, FmFeesGroupId,
         FmFeesInvoiceChildId, FmFeesInvoiceId, FmFeesInvoiceSettingId, FmFeesTransactionChildId,
-        FmFeesTransactionId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, FmInvoiceType, GatewayMode,
+        FmFeesTransactionId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, FmInvoiceType, GatewayMode, GatewayChargeType,
         LifecycleStatus, PaymentMode, ProductPurchaseLifecycleStatus, TransactionLifecycleStatus,
         IncomeHeadId, IncomeId, InvoiceSettingId, Money, PaymentGatewaySettingId, PaymentMethodId,
         PaymentMethodKind, PayrollPaymentId, PreventReason, ProductPurchaseId, QuestionBankFeeId,

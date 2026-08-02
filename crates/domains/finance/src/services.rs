@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFeesCarryForward, RealFeesMaster, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, RealFmFeesTransaction, RealFeesInstallment, RealFmFeesType, RealBankPaymentSlip, Wallet, WalletTransaction,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, RealFmFeesTransaction, RealFeesInstallment, RealFmFeesType, RealBankPaymentSlip, Wallet, WalletTransaction, RealPaymentGatewaySetting,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -77,6 +77,7 @@ use crate::commands::{
     CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
     CreateFmFeesGroupCommand,
     CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
+    ConfigurePaymentGatewayCommand, UpdatePaymentGatewayCommand,
     CreateIncomeHeadCommand,
     CreateInvoiceSettingCommand, CreateQuestionBankFeeCommand,
     CreateTransactionCommand,
@@ -107,6 +108,7 @@ use crate::events::{
     TransactionCreated, TransactionRetired, TransactionPosted,
     FeesInstallmentAssignDiscountCreated, FeesInstallmentAssignDiscountRetired,
     PaymentMethodCreated, PaymentMethodRetired,
+    PaymentGatewayConfigured, PaymentGatewayUpdated, PaymentGatewayDisabled,
     FeesInstallmentAssignCreated, FeesInstallmentAssignRetired,
     AmountTransferCreated, AmountTransferRetired,
     DirectFeesInstallmentCreated, DirectFeesInstallmentRetired, FeesAssignDiscountCreated, FeesAssignDiscountRetired, FeesAssignCreated, FeesAssignRetired,
@@ -7257,4 +7259,166 @@ mod tests {
         assert_eq!(applied.template_name, "Standard Teacher");
         Ok(())
     }
+}
+
+// ===================================================================
+// Wave 148 -- RealPaymentGatewaySetting service functions
+// ===================================================================
+
+/// Service function: configure a new `RealPaymentGatewaySetting`
+/// aggregate.
+///
+/// Enforces PGS I-3 (charge >= 0) at construction. Emits
+/// `PaymentGatewayConfigured` downstream.
+#[allow(clippy::too_many_arguments)]
+pub fn configure_payment_gateway<C, G>(
+    cmd: ConfigurePaymentGatewayCommand,
+    _clock: &C,
+    ids: &G,
+) -> educore_core::error::Result<(RealPaymentGatewaySetting, PaymentGatewayConfigured)>
+where
+    C: educore_core::clock::Clock,
+    G: Fn() -> educore_core::ids::EventId,
+{
+    let school_id = cmd.payment_gateway_setting_id.school_id();
+    let mut agg = RealPaymentGatewaySetting::fresh(
+        cmd.payment_gateway_setting_id,
+        cmd.name,
+        cmd.description,
+        cmd.gateway_username,
+        cmd.gateway_password,
+        cmd.gateway_signature,
+        cmd.gateway_client_id,
+        cmd.gateway_secret_key,
+        cmd.gateway_secret_word,
+        cmd.gateway_publisher_key,
+        cmd.gateway_private_key,
+        cmd.mode,
+        cmd.service_charge_minor,
+        cmd.service_charge_type,
+        cmd.tenant.actor_id,
+        educore_core::value_objects::Timestamp::now(),
+        cmd.tenant.correlation_id,
+    )?;
+    let event_id = ids();
+    let created_by = agg.created_by;
+    let created_at = agg.created_at;
+    let correlation_id = agg.correlation_id;
+    agg.last_event_id = Some(event_id);
+    let event = PaymentGatewayConfigured {
+        payment_gateway_setting_id: agg.id,
+        school_id,
+        name: agg.name.clone(),
+        description: agg.description.clone(),
+        gateway_username: agg.gateway_username.clone(),
+        gateway_password: agg.gateway_password.clone(),
+        gateway_signature: agg.gateway_signature.clone(),
+        gateway_client_id: agg.gateway_client_id.clone(),
+        gateway_secret_key: agg.gateway_secret_key.clone(),
+        gateway_secret_word: agg.gateway_secret_word.clone(),
+        gateway_publisher_key: agg.gateway_publisher_key.clone(),
+        gateway_private_key: agg.gateway_private_key.clone(),
+        mode: agg.mode,
+        service_charge_minor: agg.service_charge_minor,
+        service_charge_type: agg.service_charge_type,
+        event_id,
+        created_by,
+        created_at,
+        correlation_id,
+    };
+    Ok((agg, event))
+}
+
+/// Service function: update a `RealPaymentGatewaySetting` mutable
+/// fields.
+///
+/// Enforces PGS I-3 (charge >= 0) on update. Emits
+/// `PaymentGatewayUpdated` downstream.
+#[allow(clippy::too_many_arguments)]
+pub fn update_payment_gateway<C, G>(
+    mut agg: RealPaymentGatewaySetting,
+    cmd: UpdatePaymentGatewayCommand,
+    _clock: &C,
+    ids: &G,
+) -> educore_core::error::Result<(RealPaymentGatewaySetting, PaymentGatewayUpdated)>
+where
+    C: educore_core::clock::Clock,
+    G: Fn() -> educore_core::ids::EventId,
+{
+    agg.update_metadata(
+        cmd.description,
+        cmd.gateway_username,
+        cmd.gateway_password,
+        cmd.gateway_signature,
+        cmd.gateway_client_id,
+        cmd.gateway_secret_key,
+        cmd.gateway_secret_word,
+        cmd.gateway_publisher_key,
+        cmd.gateway_private_key,
+        cmd.mode,
+        cmd.service_charge_minor,
+        cmd.service_charge_type,
+        educore_core::value_objects::Timestamp::now(),
+        cmd.tenant.actor_id,
+    )?;
+    let event_id = ids();
+    let updated_by = agg.updated_by;
+    let updated_at = agg.updated_at;
+    let correlation_id = agg.correlation_id;
+    agg.last_event_id = Some(event_id);
+    let event = PaymentGatewayUpdated {
+        payment_gateway_setting_id: agg.id,
+        school_id: agg.school_id,
+        description: agg.description.clone(),
+        gateway_username: agg.gateway_username.clone(),
+        gateway_password: agg.gateway_password.clone(),
+        gateway_signature: agg.gateway_signature.clone(),
+        gateway_client_id: agg.gateway_client_id.clone(),
+        gateway_secret_key: agg.gateway_secret_key.clone(),
+        gateway_secret_word: agg.gateway_secret_word.clone(),
+        gateway_publisher_key: agg.gateway_publisher_key.clone(),
+        gateway_private_key: agg.gateway_private_key.clone(),
+        mode: Some(agg.mode),
+        service_charge_minor: Some(agg.service_charge_minor),
+        service_charge_type: Some(agg.service_charge_type),
+        event_id,
+        updated_by,
+        updated_at,
+        correlation_id,
+    };
+    Ok((agg, event))
+}
+
+/// Service function: retire a `RealPaymentGatewaySetting` (tombstone).
+///
+/// Returns Conflict on already-retired. Emits `PaymentGatewayDisabled`
+/// downstream.
+pub fn disable_payment_gateway<C, G>(
+    mut agg: RealPaymentGatewaySetting,
+    tenant: educore_core::tenant::TenantContext,
+    _clock: &C,
+    ids: &G,
+) -> educore_core::error::Result<(RealPaymentGatewaySetting, PaymentGatewayDisabled)>
+where
+    C: educore_core::clock::Clock,
+    G: Fn() -> educore_core::ids::EventId,
+{
+    agg.retire(
+        educore_core::value_objects::Timestamp::now(),
+        tenant.actor_id,
+    )?;
+    let event_id = ids();
+    let disabled_at = agg.updated_at;
+    let disabled_by = agg.updated_by;
+    let correlation_id = agg.correlation_id;
+    agg.last_event_id = Some(event_id);
+    let event = PaymentGatewayDisabled {
+        payment_gateway_setting_id: agg.id,
+        school_id: agg.school_id,
+        event_id,
+        disabled_by,
+        disabled_at,
+        correlation_id,
+    };
+    Ok((agg, event))
 }

@@ -870,6 +870,38 @@ impl GatewayMode {
     }
 }
 
+/// Payment-gateway service-charge type. Pinned by PGS I-3:
+/// `P` means the charge is a percentage of the transaction;
+/// `F` means the charge is a flat amount in minor currency units.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum GatewayChargeType {
+    /// Percentage of the transaction (e.g. 2.5 = 2.5%).
+    #[default]
+    Percentage,
+    /// Flat amount in minor currency units (e.g. 500 = 5.00).
+    Flat,
+}
+
+impl GatewayChargeType {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Percentage => "P",
+            Self::Flat => "F",
+        }
+    }
+
+    pub fn parse(s: &str) -> Result<Self> {
+        match s {
+            "P" => Ok(Self::Percentage),
+            "F" => Ok(Self::Flat),
+            other => Err(DomainError::validation(format!(
+                "unknown gateway charge type: {other:?} (expected P or F)"
+            ))),
+        }
+    }
+}
+
 /// Account type for a `BankAccount` (or cash drawer).
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AccountType {
