@@ -725,10 +725,10 @@ impl ApprovalStatus {
     /// happy paths. `Approved` and `Rejected` are terminal.
     #[must_use]
     pub const fn can_transition_to(self, to: Self) -> bool {
-        match (self, to) {
-            (Self::Pending, Self::Approved) | (Self::Pending, Self::Rejected) => true,
-            _ => false,
-        }
+        matches!(
+            (self, to),
+            (Self::Pending, Self::Approved) | (Self::Pending, Self::Rejected)
+        )
     }
 }
 
