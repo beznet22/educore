@@ -225,6 +225,46 @@ The 100 remaining `[ ]` invariants are the next per-aggregate wave pipeline's ba
 - [ ] I-1: append-only log
 - [ ] I-2: timestamp monotonic
 
+## Spec Reconciliation (Wave 171)
+
+**Added:** 2026-08-02 (commit `13e5fe4`).
+**Issue:** The checklist's Staff aggregate row (I-1 through I-8) does not faithfully
+reflect the **spec** at `docs/specs/hr/aggregates.md` § Staff. The two lists enumerate
+the same aggregate but use **different numbering and different semantics**.
+
+### Drift map (spec invariant → checklist row)
+
+| Spec # | Spec wording (`docs/specs/hr/aggregates.md`) | Checklist row | Notes |
+|---|---|---|---|
+| 1 | "A `Staff` belongs to exactly one `Department` and one `Designation` at a time." | I-1: Tenant anchor from SchoolId | **Mismatch.** Spec is about Dept/Designation ownership; checklist is about tenant scoping. |
+| 2 | "A `Staff` has exactly one `UserId` binding." | _no row_ | **Missing in checklist.** Structurally enforced by `user_id: UserId` field. |
+| 3 | "A `Staff` is unique by `staff_no` within a school." | I-2: Staff ID unique per school | **Mismatch.** Spec = `staff_no`; checklist = generic "Staff ID". |
+| 4 | "A `Staff` is unique by `email` within a school (when provided)." | I-3: Email unique per school | ✅ Matches. |
+| 5 | "A `Staff` is unique by `mobile` within a school (when provided)." | I-4: Phone unique per school | ✅ Matches (mobile ≈ phone). |
+| 6 | "`Status` transitions: `Active → Suspended → {Reinstated, Resigned, Terminated, Retired}`." | I-6: Status FSM (Active → {Suspended, Resigned, Terminated}) | **Mismatch.** Checklist omits `Reinstated` and `Retired` variants. |
+| 7 | "A `Staff` cannot be hard-deleted while active `AssignClassTeacher`, `LeaveRequest`, or `PayrollGenerate` references it." | I-7: Cannot resign while has open payroll | **Mismatch.** Spec = no-hard-delete constraint; checklist = action-blocking constraint. |
+| 8 | "`casual_leave`, `medical_leave`, `maternity_leave` fields are non-negative integer day counts." | _no row_ | **Missing in checklist.** Type-enforced as `f32`; defense-in-depth via `validate_non_negative_quota` added in Wave 171. |
+
+### Resolution (Wave 171)
+
+1. **Spec is the source of truth** per AGENTS.md § Spec folder layout and ADR-001 (DDD aggregate
+   invariants are spec-defined). The checklist wording was a pre-Wave 32 artifact.
+2. **Wave 171 will flip the Staff rows using the checklist numbering (I-1 through I-8) but
+   cite the spec invariant number in the evidence line.** This keeps the existing checklist
+   structure intact for downstream tooling while making the spec ↔ checklist mapping explicit
+   in every flipped row.
+3. **Spec #2 (UserId binding) and spec #8 (leave quotas non-negative) are out-of-scope
+   renames for Wave 171.** They are covered by behavioral tests (spec #2 by the user_id
+   field assertion; spec #8 by `validate_non_negative_quota`) but the checklist rows will
+   remain under their existing numbering. A follow-up wave should rename the rows to align
+   with the spec.
+
+### Cross-aggregate carry-forward
+
+The same drift pattern likely affects the Department, Designation, LeaveType, and other
+aggregate rows in this checklist. They were not audited in Wave 171 (out of scope) but
+should be verified in a dedicated reconciliation pass before they are flipped to `[x]`.
+
 ## Implementation Order (suggested batches)
 
 - **Batch 1:** Staff (8) + Department (3) + Designation (3) — 14 invariants (most foundational)
