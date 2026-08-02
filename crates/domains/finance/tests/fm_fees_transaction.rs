@@ -260,12 +260,12 @@ fn fresh_initial_status_is_pending_fft_i_3() {
 
 #[test]
 fn approve_transitions_pending_to_approved_fft_i_3() {
-    let clock = SystemClock;
+    let _clock = SystemClock;
     let g = SystemIdGen;
     let school = g.next_school_id();
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
-    let tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
+    let _tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
     let id = fft_id(&g, school);
     let mut row =
         RealFmFeesTransaction::fresh(id, 5_000, txn_date(), None, actor, Timestamp::now(), corr)

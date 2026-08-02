@@ -68,13 +68,13 @@ fn wallet_transaction_id(g: &SystemIdGen, school: SchoolId) -> WalletTransaction
     WalletTransactionId::new(school, g.next_uuid())
 }
 
-fn fresh_approval(g: &SystemIdGen, school: SchoolId) -> WalletTransactionApproval {
+fn fresh_approval(g: &SystemIdGen, _school: SchoolId) -> WalletTransactionApproval {
     fresh_approval_with_tx(g, school, wallet_transaction_id(g, school))
 }
 
 fn fresh_approval_with_tx(
     g: &SystemIdGen,
-    school: SchoolId,
+    _school: SchoolId,
     tx_id: WalletTransactionId,
 ) -> WalletTransactionApproval {
     let actor = g.next_user_id();

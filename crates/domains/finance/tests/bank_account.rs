@@ -43,7 +43,7 @@ fn admin_context() -> (TenantContext, SystemIdGen) {
 fn make_open_cmd(
     tenant: TenantContext,
     id: BankAccountId,
-    g: &SystemIdGen,
+    _g: &SystemIdGen,
 ) -> OpenBankAccountCommand {
     OpenBankAccountCommand {
         tenant,

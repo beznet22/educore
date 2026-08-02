@@ -80,7 +80,7 @@ fn payroll_payment_approval_id(g: &SystemIdGen, school: SchoolId) -> PayrollPaym
 
 fn make_payroll_payment_approval(
     g: &SystemIdGen,
-    school: SchoolId,
+    _school: SchoolId,
     payroll_payment: PayrollPaymentId,
 ) -> PayrollPaymentApproval {
     let actor = g.next_user_id();

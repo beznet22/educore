@@ -21,7 +21,7 @@ use educore_core::ids::SchoolId;
 use educore_core::tenant::{TenantContext, UserType};
 use educore_events::domain_event::DomainEvent;
 use educore_finance::prelude::{
-    create_direct_fees_installment, retire_direct_fees_installment, Currency,
+    create_direct_fees_installment, Currency,
     DirectFeesInstallmentCreated, DirectFeesInstallmentId,
     RealDirectFeesInstallment,
 };

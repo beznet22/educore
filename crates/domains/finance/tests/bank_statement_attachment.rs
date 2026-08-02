@@ -67,7 +67,7 @@ fn file_reference(g: &SystemIdGen) -> Uuid {
 
 fn make_bank_statement_attachment(
     g: &SystemIdGen,
-    school: SchoolId,
+    _school: SchoolId,
     statement: BankStatementId,
     file_ref: Uuid,
 ) -> BankStatementAttachment {

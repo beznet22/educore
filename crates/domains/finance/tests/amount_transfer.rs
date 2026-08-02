@@ -25,8 +25,8 @@ use educore_core::ids::SchoolId;
 use educore_core::tenant::{TenantContext, UserType};
 use educore_events::domain_event::DomainEvent;
 use educore_finance::prelude::{
-    create_amount_transfer, retire_amount_transfer, AmountTransferCreated, AmountTransferId,
-    AmountTransferRetired, BankAccountId, Currency, RealAmountTransfer,
+    create_amount_transfer, AmountTransferCreated, AmountTransferId,
+    BankAccountId, Currency, RealAmountTransfer,
 };
 
 fn admin_context() -> (TenantContext, SystemIdGen) {
