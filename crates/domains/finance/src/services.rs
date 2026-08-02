@@ -4857,9 +4857,24 @@ impl HourlyRateService {
         if raw <= 0.0 {
             return 0;
         }
-        // Truncate toward zero; the dispatcher rounds to the
-        // nearest minor unit at the journal layer.
-        raw as i64
+        // Wave 160: explicit truncation via f64::trunc() +
+        // saturation at i64::MAX / i64::MIN to handle the
+        // f64 -> i64 range conversion safely. f64 has no
+        // TryFrom<i64> implementation in stdlib, so the `as`
+        // cast is the only way to convert -- we clamp first
+        // to keep the cast within i64 range. The dispatcher
+        // rounds to the nearest minor unit at the journal
+        // layer.
+        let truncated = raw.trunc();
+        if truncated >= i64::MAX as f64 {
+            i64::MAX
+        } else if truncated <= i64::MIN as f64 {
+            i64::MIN
+        } else {
+            #[allow(clippy::cast_possible_truncation)]
+            let result = truncated as i64;
+            result
+        }
     }
 
     /// Returns the effective rate for a staff member on a given

@@ -494,14 +494,21 @@ impl FeesInvoice {
     /// `"INV-1007"`). Wraps `start_form + issued_count` in a
     /// `Validation` error if the addition overflows `i64`.
     pub fn next_invoice_number(&self, issued_count: u64) -> educore_core::error::Result<String> {
-        let next = self
-            .start_form
-            .checked_add(issued_count as i64)
-            .ok_or_else(|| {
-                educore_core::error::DomainError::validation(
-                    "invoice number overflow: start_form + issued_count exceeds i64::MAX",
-                )
-            })?;
+        // Wave 160: convert u64 -> i64 via try_into to avoid
+        // the clippy::cast_possible_wrap lint. issued_count is a
+        // count of issued invoices; values > i64::MAX are
+        // unrealistic for any school in the forseeable future,
+        // so we map them to a Validation error.
+        let issued_count_i64: i64 = issued_count.try_into().map_err(|_| {
+            educore_core::error::DomainError::validation(
+                "invoice number overflow: issued_count exceeds i64::MAX",
+            )
+        })?;
+        let next = self.start_form.checked_add(issued_count_i64).ok_or_else(|| {
+            educore_core::error::DomainError::validation(
+                "invoice number overflow: start_form + issued_count exceeds i64::MAX",
+            )
+        })?;
         Ok(format!("{}{}", self.prefix, next))
     }
 }
