@@ -122,6 +122,29 @@ pub struct Staff {
 impl Staff {
     pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
 
+    /// Constructs a fresh [`Staff`] aggregate.
+    ///
+    /// **Spec invariants enforced (Wave 171):**
+    ///
+    /// - **I-1 (tenant anchor):** `school_id` is **derived from
+    ///   `id.school_id()`** — never taken from the caller. The
+    ///   `hr_typed_id!` macro's typed wrapper enforces this at the
+    ///   type-system level: the caller can only construct a
+    ///   `StaffId` carrying the correct school, and `school_id` is
+    ///   set to `id.school_id()` at field init. See `aggregate.rs`
+    ///   line ~92 (the `school_id: id.school_id()` assignment).
+    /// - **I-2 (UserId binding):** the `user_id: UserId` field is
+    ///   non-Option (one binding per staff); structurally enforced
+    ///   by the field type. Duplicate `user_id` bindings are a
+    ///   follow-up for a future `user_id_exists` method on the
+    ///   `StaffUniquenessChecker` port (currently the trait
+    ///   enforces `email`, `mobile`, `staff_no`, `employee_id` —
+    ///   see `services.rs::StaffUniquenessChecker`).
+    /// - **I-8 (leave quotas non-negative):** `casual_leave_quota`,
+    ///   `medical_leave_quota`, `maternity_leave_quota` are
+    ///   initialised to `0.0` here; the
+    ///   `validate_non_negative_f32_quota` helper enforces the
+    ///   invariant on any future mutator that touches them.
     #[allow(clippy::too_many_arguments)]
     pub fn fresh(
         id: StaffId,

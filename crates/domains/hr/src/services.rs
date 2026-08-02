@@ -103,6 +103,8 @@ where
         crate::value_objects::validate_phone(mobile)?;
     }
     crate::value_objects::validate_date_of_birth(cmd.date_of_birth)?;
+    // Spec invariant #5: joining date <= today.
+    crate::value_objects::validate_joining_date_not_future(cmd.date_of_joining)?;
 
     // Uniqueness (spec invariants Staff#3, #4, #5, employee_id is spec-additional)
     if let Some(email) = &cmd.email {

@@ -35,11 +35,11 @@ The 100 remaining `[ ]` invariants are the next per-aggregate wave pipeline's ba
 ## Per-aggregate Status (compact)
 
 ### Staff (8 invariants — highest count)
-- [ ] I-1: Tenant anchor from SchoolId
-- [ ] I-2: Staff ID unique per school
-- [ ] I-3: Email unique per school
+- [x] I-1: Tenant anchor from SchoolId (Wave 171 / spec #1: structurally enforced via `hr_typed_id!` macro — `Staff::fresh` sets `school_id: id.school_id()` at `crates/domains/hr/src/aggregate.rs` field init line ~92; behavioral test `staff_tenant_anchor_matches_typed_id` in `crates/domains/hr/tests/staff.rs` asserts `staff.school_id == staff.id.school_id() == tenant.school_id`)
+- [x] I-2: Staff ID unique per school (Wave 171 / spec #3: `StaffUniquenessChecker::staff_no_exists` port in `crates/domains/hr/src/services.rs:782`; `hire_staff` rejects duplicates with `DomainError::Conflict` at `services.rs`; tests `hire_staff_rejects_duplicate_staff_no` + `hire_staff_accepts_unique_staff_no` in `crates/domains/hr/tests/staff.rs`)
+- [x] I-3: Email unique per school (Wave 171 / spec #4: `StaffUniquenessChecker::email_exists` port in `crates/domains/hr/src/services.rs:780`; `hire_staff` rejects duplicates with `DomainError::Conflict`; tests `hire_staff_rejects_duplicate_email` + `hire_staff_accepts_unique_email` in `crates/domains/hr/tests/staff.rs`)
 - [x] I-4: Phone unique per school (Wave 32: `mobile_exists` added to `StaffUniquenessChecker`; wired into `hire_staff` at `services.rs`; stub impls updated in `services.rs`/`workflows.rs`/`storage-parity hr_integration.rs`)
-- [ ] I-5: Joining date ≤ current date
+- [x] I-5: Joining date ≤ current date (Wave 171 / spec #5: `validate_joining_date_not_future` helper added at `crates/domains/hr/src/value_objects.rs`; wired into `hire_staff` at `services.rs`; tests `hire_staff_rejects_future_joining_date` + `hire_staff_accepts_today_as_joining_date` in `crates/domains/hr/tests/staff.rs`)
 - [ ] I-6: Status state machine (Active → {Suspended, Resigned, Terminated})
 - [ ] I-7: Cannot resign while has open payroll
 - [ ] I-8: Soft-delete preserves history

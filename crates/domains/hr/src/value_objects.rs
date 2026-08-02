@@ -347,6 +347,30 @@ impl StaffStatus {
     pub const fn is_terminal(self) -> bool {
         matches!(self, Self::Resigned | Self::Terminated | Self::Retired)
     }
+
+    /// Returns `true` if the state machine permits the
+    /// `from → to` transition per spec invariant #6:
+    ///
+    /// - `Active → Suspended` (suspend)
+    /// - `Suspended → {Active, Resigned, Terminated, Retired}`
+    ///   (`Active` = reinstate; the others are terminal jumps)
+    /// - `Active → {Resigned, Terminated, Retired}` (direct exit)
+    /// - `Resigned`, `Terminated`, `Retired` are terminal
+    ///   (no outbound transitions).
+    #[must_use]
+    pub const fn can_transition_to(self, to: Self) -> bool {
+        matches!(
+            (self, to),
+            (Self::Active, Self::Suspended)
+                | (Self::Active, Self::Resigned)
+                | (Self::Active, Self::Terminated)
+                | (Self::Active, Self::Retired)
+                | (Self::Suspended, Self::Active)
+                | (Self::Suspended, Self::Resigned)
+                | (Self::Suspended, Self::Terminated)
+                | (Self::Suspended, Self::Retired)
+        )
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -882,6 +906,42 @@ pub fn validate_date_of_birth(dob: NaiveDate) -> Result<()> {
     if !(18..=80).contains(&age) {
         return Err(DomainError::validation(format!(
             "staff age must be 18..=80 years, got {age}"
+        )));
+    }
+    Ok(())
+}
+
+/// Validates that a staff joining date is **not in the future**
+/// (spec invariant #5: "A `Staff`'s `date_of_joining` must be
+/// `<=` the current date"). A joining date in the future is
+/// nonsensical — the staff has not yet joined.
+///
+/// Returns [`DomainError::validation`] when the date is after
+/// "today" (UTC); passes any date in the past or today.
+#[must_use]
+pub fn validate_joining_date_not_future(joining_date: NaiveDate) -> Result<()> {
+    let now = chrono::Utc::now().date_naive();
+    if joining_date > now {
+        return Err(DomainError::validation(format!(
+            "staff joining date {joining_date} is in the future (today is {now})"
+        )));
+    }
+    Ok(())
+}
+
+/// Validates that a staff leave-quota field is **non-negative**
+/// (spec invariant #8: "The `casual_leave`, `medical_leave`,
+/// and `maternity_leave` fields are non-negative integer day
+/// counts"). The struct stores them as `f32` so the compiler
+/// cannot enforce this at the type level; the validator is the
+/// defensive guard called from [`crate::aggregate::Staff::fresh`].
+///
+/// Returns [`DomainError::validation`] when `value < 0.0`.
+#[must_use]
+pub fn validate_non_negative_f32_quota(name: &str, value: f32) -> Result<()> {
+    if value < 0.0 {
+        return Err(DomainError::validation(format!(
+            "staff {name} quota must be >= 0.0, got {value}"
         )));
     }
     Ok(())
