@@ -5740,12 +5740,19 @@ impl RealFeesDiscount {
     /// description). Scope-key fields (fees_master_id +
     /// academic_year_id) are NOT mutable here — FD I-3 + FD I-4
     /// require retire + create-new for scope changes.
+    ///
+    /// FD I-1 (Wave 157): the 3 value-type fields use
+    /// triple-nested `Option<Option<T>>` semantics. `None` =
+    /// don't touch, `Some(None)` = clear, `Some(Some(v))` = set.
     pub fn update_metadata(
         &mut self,
         name: String,
         discount_code: String,
         discount_type: DiscountType,
         description: Option<String>,
+        amount_minor: Option<Option<i64>>,
+        percentage_basis_points: Option<Option<u32>>,
+        currency: Option<Option<Currency>>,
         at: Timestamp,
         actor: UserId,
     ) -> educore_core::error::Result<()> {
@@ -5772,6 +5779,24 @@ impl RealFeesDiscount {
         self.description = description
             .map(|d| d.trim().to_owned())
             .filter(|d| !d.is_empty());
+        // FD I-1: apply the triple-nested updates, then
+        // re-validate the resulting state.
+        let new_amount = match amount_minor {
+            None => self.amount_minor,
+            Some(v) => v,
+        };
+        let new_bps = match percentage_basis_points {
+            None => self.percentage_basis_points,
+            Some(v) => v,
+        };
+        let new_currency = match currency {
+            None => self.currency,
+            Some(v) => v,
+        };
+        Self::validate_value_fields(new_amount, new_bps, new_currency)?;
+        self.amount_minor = new_amount;
+        self.percentage_basis_points = new_bps;
+        self.currency = new_currency;
         self.updated_at = at;
         self.updated_by = actor;
         self.version = self.version.next();

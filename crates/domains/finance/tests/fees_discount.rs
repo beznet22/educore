@@ -261,6 +261,9 @@ fn update_metadata_updates_name_type_and_preserves_scope_keys() {
         "REV".to_owned(),
         DiscountType::Year,
         Some("revised description".to_owned()),
+        None,
+        None,
+        None,
         later,
         g.next_user_id(),
     )
@@ -288,6 +291,9 @@ fn update_metadata_rejects_on_retired() {
             "Revised".to_owned(),
             "REV".to_owned(),
             DiscountType::Year,
+            None,
+            None,
+            None,
             None,
             later,
             g.next_user_id(),
@@ -600,4 +606,127 @@ fn fd_i_1_scope_only_with_no_value_fields_is_valid() {
     assert_eq!(row.amount_minor, None);
     assert_eq!(row.percentage_basis_points, None);
     assert_eq!(row.value_kind(), None);
+}
+
+// =========================================================================
+// -- Wave 157 -- RealFeesDiscount::update_metadata value-type guards --
+// =========================================================================
+
+#[test]
+fn fd_i_1_update_metadata_can_set_amount() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let mut row = RealFeesDiscount::fresh(
+        fees_discount_id(&g, school),
+        fees_master_id(&g, school),
+        academic_year_id(&g, school),
+        "Upd Amount".to_owned(),
+        "UPA".to_owned(),
+        DiscountType::Once,
+        None,
+        None,
+        None,
+        None,
+        tenant.actor_id,
+        SystemClock.now(),
+        educore_core::ids::CorrelationId(g.next_uuid()),
+    )
+    .expect("scope-only fresh");
+    assert_eq!(row.value_kind(), None);
+    // Set amount_minor to 1500 via Some(Some(1500)).
+    row.update_metadata(
+        "Upd Amount".to_owned(),
+        "UPA".to_owned(),
+        DiscountType::Once,
+        None,
+        Some(Some(1500)),
+        None,
+        Some(Some(educore_finance::prelude::Currency::INR)),
+        SystemClock.now(),
+        g.next_user_id(),
+    )
+    .expect("set amount via triple-nested Some(Some)");
+    assert_eq!(row.amount_minor, Some(1500));
+    assert_eq!(row.percentage_basis_points, None);
+    assert_eq!(row.currency, Some(educore_finance::prelude::Currency::INR));
+    assert_eq!(row.value_kind(), Some("amount"));
+}
+
+#[test]
+fn fd_i_1_update_metadata_can_clear_via_some_none() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let mut row = RealFeesDiscount::fresh(
+        fees_discount_id(&g, school),
+        fees_master_id(&g, school),
+        academic_year_id(&g, school),
+        "Upd Clear".to_owned(),
+        "UPC".to_owned(),
+        DiscountType::Once,
+        None,
+        Some(2000),
+        None,
+        Some(educore_finance::prelude::Currency::INR),
+        tenant.actor_id,
+        SystemClock.now(),
+        educore_core::ids::CorrelationId(g.next_uuid()),
+    )
+    .expect("flat-amount fresh");
+    assert_eq!(row.value_kind(), Some("amount"));
+    // Clear all 3 value fields via Some(None).
+    row.update_metadata(
+        "Upd Clear".to_owned(),
+        "UPC".to_owned(),
+        DiscountType::Once,
+        None,
+        Some(None),
+        Some(None),
+        Some(None),
+        SystemClock.now(),
+        g.next_user_id(),
+    )
+    .expect("clear via Some(None)");
+    assert_eq!(row.amount_minor, None);
+    assert_eq!(row.percentage_basis_points, None);
+    assert_eq!(row.currency, None);
+    assert_eq!(row.value_kind(), None);
+}
+
+#[test]
+fn fd_i_1_update_metadata_rejects_invalid_negative_amount() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let mut row = RealFeesDiscount::fresh(
+        fees_discount_id(&g, school),
+        fees_master_id(&g, school),
+        academic_year_id(&g, school),
+        "Upd Neg".to_owned(),
+        "UPN".to_owned(),
+        DiscountType::Once,
+        None,
+        None,
+        None,
+        None,
+        tenant.actor_id,
+        SystemClock.now(),
+        educore_core::ids::CorrelationId(g.next_uuid()),
+    )
+    .expect("scope-only fresh");
+    let err = row
+        .update_metadata(
+            "Upd Neg".to_owned(),
+            "UPN".to_owned(),
+            DiscountType::Once,
+            None,
+            Some(Some(-1)),
+            None,
+            Some(Some(educore_finance::prelude::Currency::INR)),
+            SystemClock.now(),
+            g.next_user_id(),
+        )
+        .unwrap_err();
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
 }
