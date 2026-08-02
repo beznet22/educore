@@ -1,7 +1,7 @@
 # Graph Report - smscore  (2026-08-02)
 
 ## Corpus Check
-- 621 files · ~2,216,072 words
+- 621 files · ~2,220,701 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
