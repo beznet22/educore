@@ -18,10 +18,19 @@
 **Per audit (function-level):** 49 fns / 17 real / 6 partial / 26 stub.
 
 Initial invariant status estimate (based on function-level audit):
-- [x]: TBD (Phase 1 baseline; will refine after deep audit)
-- [~]: TBD
-- [ ]: TBD
+- [x]: 7 (Wave 32: Staff I-4, PayrollGenerate I-2/I-5, LeaveRequest I-1/I-2/I-4, LeaveDefine I-3, HourlyRate I-1)
+- [~]: 0
+- [ ]: 100 (remaining; targeted by the next per-aggregate wave pipeline)
 - [N/A]: 0
+
+**Summary updated at session end (commit `d2a9e45`).** The previous `TBD/TBD/TBD` tally
+was a pre-Wave 32 baseline that was never refreshed. Wave 32 (`3376a4b`) added 7
+invariant enforcements: 1 Staff (phone unique per school via `StaffUniquenessChecker`),
+2 PayrollGenerate (net == gross - total_deduction - tax + monthly recurring uniqueness via
+`PayrollUniquenessChecker`), 3 LeaveRequest (date ordering + balance check + no-overlap via
+`LeaveAccrualChecker`), 1 LeaveDefine (carry_forward cap via `LeaveDefine::fresh` now
+returning `Result<Self>`), 1 HourlyRate (rate >= 0 via `HourlyRateManagementService::validate_rate`).
+The 100 remaining `[ ]` invariants are the next per-aggregate wave pipeline's backlog.
 
 ## Per-aggregate Status (compact)
 
