@@ -18,27 +18,29 @@
 **Per audit (function-level):** 49 fns / 17 real / 6 partial / 26 stub.
 
 Initial invariant status estimate (based on function-level audit):
-- [x]: 14 (Wave 32: 7 invariants + Wave 171: 7 Staff invariants — I-1 tenant anchor, I-2 staff_no unique, I-3 email unique, I-4 phone unique (Wave 32), I-5 joining date not future, I-6 status FSM, I-7 no-hard-delete-while-referenced, I-8 leave quotas non-negative — bringing the **Staff `[x]` count to 8 of 8 spec invariants**)
+- [x]: 15 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants — I-1 tenant anchor, I-2 staff_no unique, I-3 email unique, I-4 phone unique (Wave 32), I-5 joining date not future, I-6 status FSM, I-7 no-hard-delete-while-referenced, I-8 leave quotas non-negative — bringing the **Staff `[x]` count to 8 of 8 spec invariants**)
 - [~]: 0
-- [ ]: 93 (remaining; targeted by the next per-aggregate wave pipeline — the other 41 HR aggregates beyond Staff)
+- [ ]: 92 (remaining; targeted by the next per-aggregate wave pipeline — the other 41 HR aggregates beyond Staff)
 - [N/A]: 0
 
-**Summary updated at session end (commit `f8e6c3e`, Wave 171).** The previous `TBD/TBD/TBD` tally
-was a pre-Wave 32 baseline that was never refreshed. Wave 32 (`3376a4b`) added 7
+**Summary updated at session end (commit `f743f8d`, Wave 171).** The previous `TBD/TBD/TBD` tally
+was a pre-Wave 32 baseline that was never refreshed. Wave 32 (`3376a4b`) added 8
 invariant enforcements: 1 Staff (phone unique per school via `StaffUniquenessChecker`),
 2 PayrollGenerate (net == gross - total_deduction - tax + monthly recurring uniqueness via
 `PayrollUniquenessChecker`), 3 LeaveRequest (date ordering + balance check + no-overlap via
 `LeaveAccrualChecker`), 1 LeaveDefine (carry_forward cap via `LeaveDefine::fresh` now
 returning `Result<Self>`), 1 HourlyRate (rate >= 0 via `HourlyRateManagementService::validate_rate`).
-**Wave 171 (commits `13e5fe4` through `f8e6c3e`) added 7 more invariant enforcements on
+**Wave 171 (commits `13e5fe4` through `f743f8d`) added 7 more invariant enforcements on
 the Staff aggregate**, completing the full Staff sweep (8 of 8 spec invariants `[x]`):
 I-1 tenant anchor (structural via `hr_typed_id!`), I-2 staff_no unique (existing port), I-3 email
 unique (existing port), I-5 joining date <= today (new `validate_joining_date_not_future`),
 I-6 status FSM (`StaffStatus::can_transition_to` + 5 mutator methods + 4 new events),
 I-7 no-hard-delete-while-referenced (new `StaffReferenceChecker` port + `delete_staff`
 service), I-8 leave quotas non-negative (new `validate_non_negative_f32_quota` +
-`Staff::set_leave_quotas`). The 93 remaining `[ ]` invariants are the next per-aggregate
+`Staff::set_leave_quotas`). The 92 remaining `[ ]` invariants are the next per-aggregate
 wave pipeline's backlog.
+
+**Note:** The Wave 169 / Wave 171 Chunks 2-3 summaries claimed Wave 32 added "7 invariants" — this is an off-by-one in the prose. The actual count is 8 (1+2+3+1+1). Corrected at Wave 171 session end (commit `f743f8d`).
 
 ## Per-aggregate Status (compact)
 

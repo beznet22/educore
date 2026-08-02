@@ -4,6 +4,8 @@
 **For:** The next session agent. **Zero prior context assumed.**
 **Companion:** [`17-final-reconciliation-audit.md`](17-final-reconciliation-audit.md) — full gap analysis; this doc is the operational entry point.
 
+> **Supersession note (Wave 171):** This doc was superseded by [`19-session-handoff.md`](19-session-handoff.md) on 2026-08-02 (commit `f743f8d`). The Wave 169 tally claim ("Wave 32 added 7 invariants") was an off-by-one error — the actual count was 8 (1 Staff + 2 PayrollGenerate + 3 LeaveRequest + 1 LeaveDefine + 1 HourlyRate). The corrected tally (15 `[x]` / 92 `[ ]`) is in the Wave 171 doc. All 17 `docs/handoff/PHASE-X-HANDOFF.md` references in this doc are also stale — they point at retired files; see `19-session-handoff.md` for the replacement pattern.
+
 ---
 
 ## 0. TL;DR (read this first)

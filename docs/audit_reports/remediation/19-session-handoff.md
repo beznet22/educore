@@ -22,7 +22,7 @@
 
 **What's left:**
 
-1. **HR domain — 41 aggregates still need real implementation.** The HR crate has 42 placeholder-stub aggregates; only Staff (8 invariants) is fully done. **93 `[ ]` invariants remain** across the other 41 aggregates. The next waves should continue the per-aggregate pattern on the highest-count aggregates: PayrollGenerate (6), LeaveRequest (2 remaining: I-3, I-5), Department (3), Designation (3), LeaveDefine (2 remaining), LeaveType (3), PayrollEarnDeduc (2 remaining), SalaryTemplate (4), etc.
+1. **HR domain — 41 aggregates still need real implementation.** The HR crate has 42 placeholder-stub aggregates; only Staff (8 invariants) is fully done. **92 `[ ]` invariants remain** across the other 41 aggregates. The next waves should continue the per-aggregate pattern on the highest-count aggregates: PayrollGenerate (6), LeaveRequest (2 remaining: I-3, I-5), Department (3), Designation (3), LeaveDefine (2 remaining), LeaveType (3), PayrollEarnDeduc (2 remaining), SalaryTemplate (4), etc.
 2. **Finance domain — ~30 placeholder stubs remain.** Continue the per-aggregate wave pipeline.
 3. **2 stale checklist rows** likely need normalization across the other 41 HR aggregate entries (the same spec↔checklist drift pattern likely recurs).
 4. **0/509 dispatcher wrappers** — still the #1 production gap; deferred to post-wave sessions.
@@ -62,8 +62,8 @@ No new ADRs in Wave 171. The decisions made during the wave were all per-aggrega
 
 **Cumulative HR invariant tally:**
 
-- Before Wave 171: 7 `[x]` / 0 `[~]` / 100 `[ ]` / 0 `[N/A]` (Wave 32 baseline)
-- After Wave 171: **14 `[x]` / 0 `[~]` / 93 `[ ]` / 0 `[N/A]`**
+- Before Wave 171: 8 `[x]` / 0 `[~]` / 99 `[ ]` / 0 `[N/A]` (Wave 32 baseline — 1 Staff + 2 PayrollGenerate + 3 LeaveRequest + 1 LeaveDefine + 1 HourlyRate)
+- After Wave 171: **15 `[x]` / 0 `[~]` / 92 `[ ]` / 0 `[N/A]`**
 - **Staff aggregate: 8 of 8 spec invariants `[x]`** (the only HR aggregate fully done)
 
 **Commit range:**
@@ -77,18 +77,19 @@ No new ADRs in Wave 171. The decisions made during the wave were all per-aggrega
 | `f8e6c3e` | 5 | Wave 171 (Chunk 5): HR Staff I-7 + I-8 (delete_staff + leave quotas, 9 new tests, 1 new port trait) |
 | (this) | 6 | Wave 171 (Chunk 6): docs + handoff (12 progress-tracker link fixes, HR workspace row update, this doc) |
 
-**HR test count progression:**
+**HR test count progression (educore-hr crate only — verified at commit `13e5fe4` via `git worktree`):**
 
 | Checkpoint | HR tests passing | Notes |
 |---|---|---|
-| Pre-Wave 169 baseline | 553 (per `PHASE-6-HANDOFF.md`) | |
-| After Wave 169 (audit) | unchanged | audit session |
-| After Wave 171 Chunk 1 | unchanged | cleanup commit, no code |
-| After Wave 171 Chunk 2 | unchanged | docs only |
-| After Wave 171 Chunk 3 | 115 | +8 tests in `tests/staff.rs` |
-| After Wave 171 Chunk 4 | 125 | +10 tests (FSM transitions) |
-| After Wave 171 Chunk 5 | **134** | +9 tests (delete + quota) |
+| Pre-Wave-171-code baseline (commit `13e5fe4`) | **107** | staff.rs didn't exist yet; 36+ placeholder test files |
+| After Wave 171 Chunk 1 | 107 | cleanup commit, no code |
+| After Wave 171 Chunk 2 | 107 | docs only |
+| After Wave 171 Chunk 3 | 115 | +8 tests in `tests/staff.rs` (I-1, I-2, I-3, I-5) |
+| After Wave 171 Chunk 4 | 125 | +10 tests (FSM transitions I-6) |
+| After Wave 171 Chunk 5 | **134** | +9 tests (I-7 delete + I-8 quota) |
 | After Wave 171 Chunk 6 | 134 | docs only |
+
+**Note:** Wave 169's audit-session handoff (`18-session-handoff.md`) cited a workspace-wide count of 553 tests at the `PHASE-6-HANDOFF.md` close-out — that number is correct for the *workspace*, not the educore-hr crate specifically. The educore-hr baseline (107) was verified by checking out `13e5fe4` in a temp worktree and running `cargo test -p educore-hr --tests`.
 
 **New public API surface in Wave 171:**
 
@@ -109,7 +110,7 @@ No new ADRs in Wave 171. The decisions made during the wave were all per-aggrega
 
 **State after Wave 171:** 42 aggregates scaffolded. **Staff (8/8 invariants `[x]`, 27 tests)** is fully done. **41 other aggregates** have only placeholder-stub implementations.
 
-**The 93 remaining `[ ]` invariants grouped by highest-count aggregates:**
+**The 92 remaining `[ ]` invariants grouped by highest-count aggregates:**
 
 | Aggregate | Invariants `[ ]` | Notes |
 |---|---|---|
@@ -212,7 +213,7 @@ In priority order (do top to bottom):
 
 ### 7.2 Files Modified
 
-- `docs/audit_reports/hr-invariant-checklist.md` — added "Spec Reconciliation (Wave 171)" section (~40 lines) + flipped 7 Staff rows from `[ ]` to `[x]` with full file:line evidence + updated Summary tally from 7 to 14 `[x]`
+- `docs/audit_reports/hr-invariant-checklist.md` — added "Spec Reconciliation (Wave 171)" section (~40 lines) + flipped 7 Staff rows from `[ ]` to `[x]` with full file:line evidence + updated Summary tally from 8 to 15 `[x]`
 - `docs/progress-tracker.md` — 12 `docs/handoff/PHASE-X-HANDOFF.md` references replaced with `docs/audit_reports/remediation/18-session-handoff.md` + updated the `educore-hr` workspace row to `Yes/Yes/Yes` with full evidence
 - `crates/domains/hr/src/value_objects.rs` — added `StaffStatus::can_transition_to` FSM helper, `validate_joining_date_not_future`, `validate_non_negative_f32_quota`
 - `crates/domains/hr/src/aggregate.rs` — added 7 new mutator methods on `Staff` (`suspend`, `reinstate`, `resign`, `terminate`, `retire`, `soft_delete`, `set_leave_quotas`) + extended `Staff::fresh` doc comment with spec invariants
