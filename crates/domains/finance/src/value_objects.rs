@@ -992,13 +992,25 @@ impl StatementType {
     }
 }
 
-/// Discount type (once-per-master vs once-per-year).
+/// Discount SCOPE type (FD I-3 + FD I-4).
+///
+/// This enum encodes SCOPE semantics — when a discount
+/// applies (once-per-master-per-student vs
+/// once-per-student-per-year-across-all-masters).
+///
+/// The VALUE-type fields (amount_minor + percentage_basis_points
+/// + currency) are carried separately on the `RealFeesDiscount`
+/// aggregate (added in Wave 155). The `DiscountType` enum is
+/// intentionally scope-only; the value type is an independent
+/// axis (a Once-scope discount can have a flat amount OR a
+/// percentage OR be scope-only with the value supplied per-
+/// application via `RealFeesAssignDiscount::applied_amount_minor`).
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum DiscountType {
-    /// Apply once per fees master per student.
+    /// Apply once per fees master per student (FD I-3).
     #[default]
     Once,
-    /// Apply once per student per year across all masters.
+    /// Apply once per student per year across all masters (FD I-4).
     Year,
 }
 
