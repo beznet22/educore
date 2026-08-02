@@ -5569,6 +5569,21 @@ pub struct RealFeesDiscount {
     pub discount_type: DiscountType,
     /// Optional free-form description.
     pub description: Option<String>,
+    /// FD I-1 (Wave 155): value-type fields. The aggregate
+    /// carries `amount_minor` + `percentage_basis_points` +
+    /// `currency` as 3 OPTIONAL fields. The `validate()` helper
+    /// enforces that **exactly one** of the three is `Some`:
+    ///   - `amount_minor`: flat discount in minor units (>= 0)
+    ///   - `percentage_basis_points`: percentage discount
+    ///     (basis points; 1% = 100 bps; 100% = 10000 bps; range
+    ///     0..=10000)
+    ///   - `currency`: required when `amount_minor` is `Some`
+    /// The dispatcher / storage layer enforces the exactly-one
+    /// rule + the FD I-1 amount >= 0 guard + the 0..=10000 range
+    /// for percentage.
+    pub amount_minor: Option<i64>,
+    pub percentage_basis_points: Option<u32>,
+    pub currency: Option<Currency>,
     /// The audit footer (10 fields, per `AGENTS.md`).
     pub version: Version,
     pub etag: Etag,
@@ -5594,6 +5609,9 @@ impl RealFeesDiscount {
         discount_code: String,
         discount_type: DiscountType,
         description: Option<String>,
+        amount_minor: Option<i64>,
+        percentage_basis_points: Option<u32>,
+        currency: Option<Currency>,
         created_by: UserId,
         created_at: Timestamp,
         correlation_id: CorrelationId,
@@ -5610,6 +5628,16 @@ impl RealFeesDiscount {
                 "FeesDiscount discount_code must be non-empty after trim",
             ));
         }
+        // FD I-1 (Wave 155): value-type guard. Exactly one of
+        // amount_minor / percentage_basis_points must be Some;
+        // amount_minor must be >= 0 when present;
+        // percentage_basis_points must be <= 10000 when present;
+        // currency is required when amount_minor is Some.
+        Self::validate_value_fields(
+            amount_minor,
+            percentage_basis_points,
+            currency,
+        )?;
         Ok(Self {
             school_id: id.school_id(),
             id,
@@ -5621,6 +5649,9 @@ impl RealFeesDiscount {
             description: description
                 .map(|d| d.trim().to_owned())
                 .filter(|d| !d.is_empty()),
+            amount_minor,
+            percentage_basis_points,
+            currency,
             version: Version::initial(),
             etag: fresh_etag(),
             created_at,
@@ -5631,6 +5662,72 @@ impl RealFeesDiscount {
             last_event_id: None,
             correlation_id,
         })
+    }
+
+    /// FD I-1 (Wave 155): value-type validation. Exactly one of
+    /// the value fields must be Some (so the discount has a
+    /// concrete value). Amount must be >= 0; percentage must be
+    /// in 0..=10000 basis points (0%..=100%). Currency is
+    /// required when amount_minor is Some (because flat-amount
+    /// discounts have a currency; percentage discounts do not).
+    /// When ALL three are None (the legacy scope-only catalogue
+    /// entry), this is valid — the value is supplied by the
+    /// linked `RealFeesAssignDiscount` row via its
+    /// `applied_amount_minor` field.
+    fn validate_value_fields(
+        amount_minor: Option<i64>,
+        percentage_basis_points: Option<u32>,
+        currency: Option<Currency>,
+    ) -> educore_core::error::Result<()> {
+        // FD I-1: amount >= 0.
+        if let Some(amt) = amount_minor {
+            if amt < 0 {
+                return Err(educore_core::error::DomainError::validation(
+                    "FeesDiscount amount_minor must be >= 0 (FD I-1)",
+                ));
+            }
+        }
+        // FD I-1: percentage basis points <= 10000 (100%).
+        if let Some(bps) = percentage_basis_points {
+            if bps > 10_000 {
+                return Err(educore_core::error::DomainError::validation(
+                    "FeesDiscount percentage_basis_points must be in 0..=10000 (FD I-1)",
+                ));
+            }
+        }
+        // Exactly-one rule (when value fields are provided).
+        let provided_count = [
+            amount_minor.is_some(),
+            percentage_basis_points.is_some(),
+        ]
+        .iter()
+        .filter(|x| **x)
+        .count();
+        if provided_count > 1 {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesDiscount: amount_minor and percentage_basis_points are mutually exclusive (FD I-1)",
+            ));
+        }
+        // Currency required when amount_minor is Some.
+        if amount_minor.is_some() && currency.is_none() {
+            return Err(educore_core::error::DomainError::validation(
+                "FeesDiscount: currency is required when amount_minor is Some (FD I-1)",
+            ));
+        }
+        Ok(())
+    }
+
+    /// Returns the value-kind discriminator for this discount.
+    /// One of `Some("amount")` / `Some("percentage")` /
+    /// `None` (scope-only, value supplied by
+    /// `RealFeesAssignDiscount`).
+    #[must_use]
+    pub const fn value_kind(&self) -> Option<&'static str> {
+        match (self.amount_minor, self.percentage_basis_points) {
+            (Some(_), None) => Some("amount"),
+            (None, Some(_)) => Some("percentage"),
+            _ => None,
+        }
     }
 
     /// Returns `true` if the discount catalogue entry is active.

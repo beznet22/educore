@@ -523,6 +523,13 @@ pub struct CreateFeesDiscountCommand {
     pub discount_code: String,
     pub discount_type: DiscountType,
     pub description: Option<String>,
+    /// FD I-1 (Wave 155): value-type fields. Optional; when all
+    /// 3 are None, the discount is a scope-only catalogue entry
+    /// whose value is supplied per-application via
+    /// `RealFeesAssignDiscount::applied_amount_minor`.
+    pub amount_minor: Option<i64>,
+    pub percentage_basis_points: Option<u32>,
+    pub currency: Option<Currency>,
 }
 
 
@@ -541,6 +548,9 @@ pub struct UpdateFeesDiscountCommand {
     pub discount_code: Option<String>,
     pub discount_type: Option<DiscountType>,
     pub description: Option<String>,
+    pub amount_minor: Option<Option<i64>>,
+    pub percentage_basis_points: Option<Option<u32>>,
+    pub currency: Option<Option<Currency>>,
 }
 
 

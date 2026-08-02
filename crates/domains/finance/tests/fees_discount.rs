@@ -93,6 +93,9 @@ fn make_fees_discount(
         discount_code.to_owned(),
         discount_type,
         Some("test discount".to_owned()),
+        None,
+        None,
+        None,
         actor,
         now,
         educore_core::ids::CorrelationId(g.next_uuid()),
@@ -168,6 +171,9 @@ fn fresh_trims_name_and_discount_code_and_rejects_empty() {
         "  PAD  ".to_owned(),
         DiscountType::Once,
         None,
+        None,
+        None,
+        None,
         actor,
         now,
         educore_core::ids::CorrelationId(g.next_uuid()),
@@ -183,6 +189,9 @@ fn fresh_trims_name_and_discount_code_and_rejects_empty() {
         "   ".to_owned(),
         "OK".to_owned(),
         DiscountType::Once,
+        None,
+        None,
+        None,
         None,
         actor,
         now,
@@ -201,6 +210,9 @@ fn fresh_trims_name_and_discount_code_and_rejects_empty() {
         "OK".to_owned(),
         "   ".to_owned(),
         DiscountType::Once,
+        None,
+        None,
+        None,
         None,
         actor,
         now,
@@ -349,6 +361,9 @@ fn create_service_produces_aggregate_and_event_with_full_payload() {
         discount_code: "SIB10".to_owned(),
         discount_type: DiscountType::Once,
         description: Some("10% off for siblings".to_owned()),
+        amount_minor: None,
+        percentage_basis_points: None,
+        currency: None,
     };
     let clock = SystemClock;
     let (row, event) = create_fees_discount(cmd, &clock, &g)
@@ -393,6 +408,9 @@ fn create_service_propagates_empty_name_validation() {
         discount_code: "BAD".to_owned(),
         discount_type: DiscountType::Once,
         description: None,
+        amount_minor: None,
+        percentage_basis_points: None,
+        currency: None,
     };
     let clock = SystemClock;
     let err = create_fees_discount(cmd, &clock, &g)
@@ -401,4 +419,185 @@ fn create_service_propagates_empty_name_validation() {
         matches!(err, DomainError::Validation(_)),
         "expected Validation, got {err:?}"
     );
+}
+
+// =========================================================================
+// -- Wave 155 -- RealFeesDiscount -- FD I-1 value-type guards --
+// =========================================================================
+
+#[test]
+fn fd_i_1_amount_minor_zero_is_allowed() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let row = RealFeesDiscount::fresh(
+        fees_discount_id(&g, school),
+        fees_master_id(&g, school),
+        academic_year_id(&g, school),
+        "Flat Zero".to_owned(),
+        "ZERO".to_owned(),
+        DiscountType::Once,
+        None,
+        Some(0),
+        None,
+        Some(educore_finance::prelude::Currency::INR),
+        tenant.actor_id,
+        SystemClock.now(),
+        educore_core::ids::CorrelationId(g.next_uuid()),
+    )
+    .expect("zero amount_minor is valid (FD I-1 boundary)");
+    assert_eq!(row.amount_minor, Some(0));
+    assert_eq!(row.value_kind(), Some("amount"));
+}
+
+#[test]
+fn fd_i_1_amount_minor_negative_is_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let err = RealFeesDiscount::fresh(
+        fees_discount_id(&g, school),
+        fees_master_id(&g, school),
+        academic_year_id(&g, school),
+        "Flat Negative".to_owned(),
+        "NEG".to_owned(),
+        DiscountType::Once,
+        None,
+        Some(-1),
+        None,
+        Some(educore_finance::prelude::Currency::INR),
+        tenant.actor_id,
+        SystemClock.now(),
+        educore_core::ids::CorrelationId(g.next_uuid()),
+    )
+    .unwrap_err();
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+#[test]
+fn fd_i_1_percentage_basis_points_max_is_allowed() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let row = RealFeesDiscount::fresh(
+        fees_discount_id(&g, school),
+        fees_master_id(&g, school),
+        academic_year_id(&g, school),
+        "Full Pct".to_owned(),
+        "FULL".to_owned(),
+        DiscountType::Once,
+        None,
+        None,
+        Some(10_000),
+        None,
+        tenant.actor_id,
+        SystemClock.now(),
+        educore_core::ids::CorrelationId(g.next_uuid()),
+    )
+    .expect("100% bps (10_000) is valid (FD I-1 boundary)");
+    assert_eq!(row.percentage_basis_points, Some(10_000));
+    assert_eq!(row.value_kind(), Some("percentage"));
+}
+
+#[test]
+fn fd_i_1_percentage_basis_points_overflow_is_rejected() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let err = RealFeesDiscount::fresh(
+        fees_discount_id(&g, school),
+        fees_master_id(&g, school),
+        academic_year_id(&g, school),
+        "Over Pct".to_owned(),
+        "OVER".to_owned(),
+        DiscountType::Once,
+        None,
+        None,
+        Some(10_001),
+        None,
+        tenant.actor_id,
+        SystemClock.now(),
+        educore_core::ids::CorrelationId(g.next_uuid()),
+    )
+    .unwrap_err();
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+#[test]
+fn fd_i_1_amount_and_percentage_mutually_exclusive() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let err = RealFeesDiscount::fresh(
+        fees_discount_id(&g, school),
+        fees_master_id(&g, school),
+        academic_year_id(&g, school),
+        "Both".to_owned(),
+        "BOTH".to_owned(),
+        DiscountType::Once,
+        None,
+        Some(500),
+        Some(1_000),
+        Some(educore_finance::prelude::Currency::INR),
+        tenant.actor_id,
+        SystemClock.now(),
+        educore_core::ids::CorrelationId(g.next_uuid()),
+    )
+    .unwrap_err();
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+#[test]
+fn fd_i_1_currency_required_when_amount_is_some() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let err = RealFeesDiscount::fresh(
+        fees_discount_id(&g, school),
+        fees_master_id(&g, school),
+        academic_year_id(&g, school),
+        "No Currency".to_owned(),
+        "NOC".to_owned(),
+        DiscountType::Once,
+        None,
+        Some(500),
+        None,
+        None, // no currency but amount_minor is Some
+        tenant.actor_id,
+        SystemClock.now(),
+        educore_core::ids::CorrelationId(g.next_uuid()),
+    )
+    .unwrap_err();
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+#[test]
+fn fd_i_1_scope_only_with_no_value_fields_is_valid() {
+    let (tenant, g) = admin_context();
+    let school = tenant.school_id;
+    let row = RealFeesDiscount::fresh(
+        fees_discount_id(&g, school),
+        fees_master_id(&g, school),
+        academic_year_id(&g, school),
+        "Scope Only".to_owned(),
+        "SCO".to_owned(),
+        DiscountType::Year,
+        None,
+        None,
+        None,
+        None,
+        tenant.actor_id,
+        SystemClock.now(),
+        educore_core::ids::CorrelationId(g.next_uuid()),
+    )
+    .expect("scope-only catalogue entry is valid; value supplied per-application");
+    assert_eq!(row.amount_minor, None);
+    assert_eq!(row.percentage_basis_points, None);
+    assert_eq!(row.value_kind(), None);
 }
