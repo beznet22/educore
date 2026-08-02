@@ -330,6 +330,45 @@ impl Staff {
         self.updated_at = updated_at;
         Ok(())
     }
+
+    /// Soft-deletes the staff member by flipping
+    /// `active_status` to `Inactive`. The row is preserved
+    /// (spec invariant #7: history is retained).
+    ///
+    /// This is distinct from the FSM `retire()` transition
+    /// (which moves `status` to `Retired`). Soft-delete
+    /// keeps the FSM status untouched.
+    pub fn soft_delete(&mut self, updated_at: Timestamp) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = updated_at;
+    }
+
+    /// Sets the three leave-quota fields
+    /// (`casual_leave_quota`, `medical_leave_quota`,
+    /// `maternity_leave_quota`) atomically with
+    /// non-negative validation (spec invariant #8).
+    ///
+    /// Each quota is validated via
+    /// [`crate::value_objects::validate_non_negative_f32_quota`];
+    /// a single negative value short-circuits with
+    /// [`DomainError::validation`] and no state is changed.
+    #[allow(clippy::too_many_arguments)]
+    pub fn set_leave_quotas(
+        &mut self,
+        casual: f32,
+        medical: f32,
+        maternity: f32,
+        updated_at: Timestamp,
+    ) -> Result<()> {
+        crate::value_objects::validate_non_negative_f32_quota("casual_leave_quota", casual)?;
+        crate::value_objects::validate_non_negative_f32_quota("medical_leave_quota", medical)?;
+        crate::value_objects::validate_non_negative_f32_quota("maternity_leave_quota", maternity)?;
+        self.casual_leave_quota = casual;
+        self.medical_leave_quota = medical;
+        self.maternity_leave_quota = maternity;
+        self.updated_at = updated_at;
+        Ok(())
+    }
 }
 
 // =============================================================================

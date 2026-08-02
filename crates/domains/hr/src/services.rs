@@ -57,14 +57,14 @@ use crate::events::{
     LeaveRequestApprovalRecorded, LeaveRequestAttachmentRegistered, LeaveRequested,
     PayrollGenerateAuditAppended, PayrollGenerated, PayrollPaymentLinkCreated, StaffAddressAdded,
     StaffAttendanceImportBatchRecorded, StaffAttendancePunchCaptured, StaffBankDetailUpserted,
-    StaffCustomFieldSet, StaffDocumentRegistered, StaffDrivingLicenseRegistered,
+    StaffCustomFieldSet, StaffDeleted, StaffDocumentRegistered, StaffDrivingLicenseRegistered,
     StaffImportResolutionRecorded, StaffLeaveBalanceRefreshed, StaffLeaveHistorySnapshotted,
     StaffPayrollHistorySnapshotted, StaffProfilePhotoRegistered, StaffRegistered,
     StaffRegistrationFieldOptionAdded, StaffRoleAssignmentRecorded, StaffSocialLinkAdded,
     StaffTimelineRefreshed,
 };
 use crate::value_objects::{
-    AttendanceType, EarnDeducType, LeaveStatus, PayrollStatus, StaffStatus,
+    AttendanceType, EarnDeducType, LeaveStatus, PayrollStatus, StaffId, StaffStatus,
 };
 
 fn event_id_to_uuid(e: EventId) -> uuid::Uuid {
@@ -195,7 +195,79 @@ pub struct HireStaffCommand {
     pub designation_id: Option<crate::value_objects::DesignationId>,
 }
 
-use crate::value_objects::StaffId;
+/// Command: soft-delete a staff member (the spec's `DeleteStaff`).
+///
+/// **Spec invariant #7 enforcement:** the service function
+/// `delete_staff` calls [`StaffReferenceChecker`] before
+/// flipping `active_status`; a hard-delete is rejected if
+/// the staff has active cross-aggregate references.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct DeleteStaffCommand {
+    pub tenant: TenantContext,
+    pub staff_id: StaffId,
+    pub reason: String,
+}
+
+/// Soft-deletes a staff member (spec invariant #7).
+///
+/// 1. Checks `StaffReferenceChecker` for active
+///    `AssignClassTeacher`, `LeaveRequest`, and open
+///    `PayrollGenerate` references. If any are found,
+///    returns [`DomainError::conflict`] and does not
+///    mutate the aggregate.
+/// 2. Calls [`Staff::soft_delete`] which flips
+///    `active_status = Inactive` (preserving the row for
+///    audit purposes per spec invariant #7).
+/// 3. Returns a [`StaffDeleted`] event.
+///
+/// The dispatcher loads the existing `Staff` aggregate by
+/// `cmd.staff_id` and passes it as `&mut staff` so the
+/// mutator runs on the loaded state (mirrors the
+/// `approve_leave` pattern).
+pub fn delete_staff<C, G>(
+    staff: &mut Staff,
+    cmd: DeleteStaffCommand,
+    clock: &C,
+    ids: &G,
+    reference: &dyn StaffReferenceChecker,
+) -> Result<StaffDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+    let school = cmd.tenant.school_id;
+    let staff_id = cmd.staff_id;
+
+    // Cross-aggregate reference checks (spec #7).
+    if reference.has_active_assign_class_teacher(school, staff_id) {
+        return Err(DomainError::conflict(format!(
+            "cannot delete staff {staff_id}: active AssignClassTeacher references exist"
+        )));
+    }
+    if reference.has_active_leave_request(school, staff_id) {
+        return Err(DomainError::conflict(format!(
+            "cannot delete staff {staff_id}: active LeaveRequest references exist"
+        )));
+    }
+    if reference.has_open_payroll(school, staff_id) {
+        return Err(DomainError::conflict(format!(
+            "cannot delete staff {staff_id}: open PayrollGenerate rows exist"
+        )));
+    }
+
+    staff.soft_delete(now);
+    staff.last_event_id = Some(event_id);
+
+    Ok(StaffDeleted::new(
+        staff_id,
+        cmd.reason,
+        event_id,
+        cmd.tenant.correlation_id,
+        now,
+    ))
+}
 
 // =============================================================================
 // Department / Designation / LeaveType (simple reference-data services)
@@ -783,6 +855,29 @@ pub trait StaffUniquenessChecker: Send + Sync {
     fn mobile_exists(&self, school: SchoolId, mobile: &str) -> bool;
     fn staff_no_exists(&self, school: SchoolId, staff_no: u32) -> bool;
     fn employee_id_exists(&self, school: SchoolId, employee_id: &str) -> bool;
+}
+
+/// Per-school cross-aggregate reference checks for the
+/// [`Staff`](crate::aggregate::Staff) aggregate. The
+/// `delete_staff` service function uses this port to
+/// implement **spec invariant #7**: a `Staff` cannot be
+/// hard-deleted while active `AssignClassTeacher`,
+/// `LeaveRequest`, or `PayrollGenerate` references it.
+///
+/// The port returns `true` if a reference exists; the
+/// service then short-circuits with
+/// [`DomainError::conflict`](educore_core::error::DomainError::conflict).
+pub trait StaffReferenceChecker: Send + Sync {
+    /// Returns `true` if the staff member has any
+    /// non-terminal `AssignClassTeacher` row.
+    fn has_active_assign_class_teacher(&self, school: SchoolId, staff_id: StaffId) -> bool;
+    /// Returns `true` if the staff member has any
+    /// non-terminal `LeaveRequest` row.
+    fn has_active_leave_request(&self, school: SchoolId, staff_id: StaffId) -> bool;
+    /// Returns `true` if the staff member has any
+    /// `PayrollGenerate` row in status `Generated`
+    /// (i.e., not yet paid / closed).
+    fn has_open_payroll(&self, school: SchoolId, staff_id: StaffId) -> bool;
 }
 
 /// Per-school reference-data uniqueness checks.

@@ -36,7 +36,7 @@ use educore_core::tenant::{TenantContext, UserType};
 use educore_events::domain_event::DomainEvent;
 use educore_hr::prelude::*;
 use educore_hr::services::{
-    hire_staff, HireStaffCommand, StaffUniquenessChecker,
+    delete_staff, hire_staff, DeleteStaffCommand, StaffReferenceChecker, StaffUniquenessChecker,
 };
 
 // =============================================================================
@@ -557,4 +557,250 @@ fn full_fsm_chain_active_suspended_active_resigned() {
         .expect("resign");
     assert_eq!(staff.status, StaffStatus::Resigned);
     assert!(staff.is_terminal());
+}
+
+// =============================================================================
+// I-7: Cannot hard-delete while active references exist
+// =============================================================================
+
+/// `StaffReferenceChecker` mock. Each field is `true` to
+/// simulate an existing reference.
+struct StubReferences {
+    has_teacher: bool,
+    has_leave: bool,
+    has_payroll: bool,
+}
+
+impl StubReferences {
+    fn none() -> Self {
+        Self {
+            has_teacher: false,
+            has_leave: false,
+            has_payroll: false,
+        }
+    }
+}
+
+impl StaffReferenceChecker for StubReferences {
+    fn has_active_assign_class_teacher(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _staff_id: StaffId,
+    ) -> bool {
+        self.has_teacher
+    }
+    fn has_active_leave_request(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _staff_id: StaffId,
+    ) -> bool {
+        self.has_leave
+    }
+    fn has_open_payroll(
+        &self,
+        _school: educore_core::ids::SchoolId,
+        _staff_id: StaffId,
+    ) -> bool {
+        self.has_payroll
+    }
+}
+
+/// Spec invariant #7 (happy path): when no active references
+/// exist, `delete_staff` soft-deletes the staff member
+/// (`active_status = Retired`) and returns a `StaffDeleted`
+/// event. The FSM `status` is unchanged (soft-delete is
+/// distinct from the FSM `retire()` transition).
+#[test]
+fn delete_staff_soft_deletes_when_no_references() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant.clone());
+    let school = staff.school_id;
+    let staff_id = staff.id;
+
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let cmd = DeleteStaffCommand {
+        tenant,
+        staff_id,
+        reason: "End of contract".to_owned(),
+    };
+
+    let event = delete_staff(&mut staff, cmd, &clock, &ids, &StubReferences::none())
+        .expect("delete staff");
+
+    assert_eq!(staff.active_status, ActiveStatus::Retired);
+    assert!(!staff.active_status.is_active());
+    // FSM status is untouched.
+    assert_eq!(staff.status, StaffStatus::Active);
+    assert_eq!(event.staff_id, staff_id);
+    assert_eq!(
+        <StaffDeleted as DomainEvent>::EVENT_TYPE,
+        "hr.staff.deleted"
+    );
+    assert_eq!(<StaffDeleted as DomainEvent>::AGGREGATE_TYPE, "staff");
+    assert_eq!(event.school_id(), school);
+    assert_eq!(event.reason, "End of contract");
+}
+
+/// Spec invariant #7 (rejection): cannot delete a staff with
+/// open payroll references.
+#[test]
+fn delete_staff_rejected_by_open_payroll() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant.clone());
+    let cmd = DeleteStaffCommand {
+        tenant,
+        staff_id: staff.id,
+        reason: "x".to_owned(),
+    };
+
+    let refs = StubReferences {
+        has_teacher: false,
+        has_leave: false,
+        has_payroll: true,
+    };
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let err = delete_staff(&mut staff, cmd, &clock, &ids, &refs)
+        .expect_err("open payroll must block delete");
+    assert!(
+        matches!(err, DomainError::Conflict(_)),
+        "expected Conflict, got {err:?}"
+    );
+    // Staff remains active after rejection.
+    assert!(staff.active_status.is_active());
+}
+
+/// Spec invariant #7 (rejection): cannot delete a staff with
+/// active LeaveRequest references.
+#[test]
+fn delete_staff_rejected_by_active_leave_request() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant.clone());
+    let cmd = DeleteStaffCommand {
+        tenant,
+        staff_id: staff.id,
+        reason: "x".to_owned(),
+    };
+
+    let refs = StubReferences {
+        has_teacher: false,
+        has_leave: true,
+        has_payroll: false,
+    };
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let err = delete_staff(&mut staff, cmd, &clock, &ids, &refs)
+        .expect_err("active leave must block delete");
+    assert!(matches!(err, DomainError::Conflict(_)));
+    assert!(staff.active_status.is_active());
+}
+
+/// Spec invariant #7 (rejection): cannot delete a staff with
+/// active AssignClassTeacher references.
+#[test]
+fn delete_staff_rejected_by_active_class_teacher() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant.clone());
+    let cmd = DeleteStaffCommand {
+        tenant,
+        staff_id: staff.id,
+        reason: "x".to_owned(),
+    };
+
+    let refs = StubReferences {
+        has_teacher: true,
+        has_leave: false,
+        has_payroll: false,
+    };
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let err = delete_staff(&mut staff, cmd, &clock, &ids, &refs)
+        .expect_err("active class teacher must block delete");
+    assert!(matches!(err, DomainError::Conflict(_)));
+    assert!(staff.active_status.is_active());
+}
+
+// =============================================================================
+// I-8: Leave quotas non-negative (spec invariant #8)
+// =============================================================================
+
+/// Spec invariant #8 (happy path): `Staff::set_leave_quotas`
+/// accepts non-negative values for casual, medical, and
+/// maternity.
+#[test]
+fn set_leave_quotas_accepts_non_negative() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    let ts = educore_core::value_objects::Timestamp::now();
+
+    staff.set_leave_quotas(12.0, 8.0, 90.0, ts).expect("set quotas");
+
+    assert_eq!(staff.casual_leave_quota, 12.0);
+    assert_eq!(staff.medical_leave_quota, 8.0);
+    assert_eq!(staff.maternity_leave_quota, 90.0);
+}
+
+/// Spec invariant #8 (rejection): a single negative quota
+/// rejects the entire `set_leave_quotas` call and the state
+/// remains unchanged.
+#[test]
+fn set_leave_quotas_rejects_negative_casual() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    let ts = educore_core::value_objects::Timestamp::now();
+    let original_casual = staff.casual_leave_quota;
+
+    let err = staff
+        .set_leave_quotas(-1.0, 8.0, 90.0, ts)
+        .expect_err("negative casual must fail");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+    // State unchanged after rejection.
+    assert_eq!(staff.casual_leave_quota, original_casual);
+}
+
+/// Spec invariant #8 (rejection): medical quota negative.
+#[test]
+fn set_leave_quotas_rejects_negative_medical() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    let ts = educore_core::value_objects::Timestamp::now();
+
+    let err = staff
+        .set_leave_quotas(12.0, -0.5, 90.0, ts)
+        .expect_err("negative medical must fail");
+    assert!(matches!(err, DomainError::Validation(_)));
+}
+
+/// Spec invariant #8 (rejection): maternity quota negative.
+#[test]
+fn set_leave_quotas_rejects_negative_maternity() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    let ts = educore_core::value_objects::Timestamp::now();
+
+    let err = staff
+        .set_leave_quotas(12.0, 8.0, -90.0, ts)
+        .expect_err("negative maternity must fail");
+    assert!(matches!(err, DomainError::Validation(_)));
+}
+
+/// Spec invariant #8 (boundary): zero is non-negative, accepted.
+#[test]
+fn set_leave_quotas_accepts_zero() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    let ts = educore_core::value_objects::Timestamp::now();
+
+    staff.set_leave_quotas(0.0, 0.0, 0.0, ts).expect("zero ok");
+
+    assert_eq!(staff.casual_leave_quota, 0.0);
+    assert_eq!(staff.medical_leave_quota, 0.0);
+    assert_eq!(staff.maternity_leave_quota, 0.0);
 }
