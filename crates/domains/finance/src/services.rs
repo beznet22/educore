@@ -37,7 +37,7 @@ use crate::aggregate::{
     Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
     RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFeesCarryForward, RealFeesMaster, RealFmFeesGroup, RealIncomeApproval,
     RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, RealFmFeesTransaction, RealFeesInstallment, RealFmFeesType, RealBankPaymentSlip, Wallet, WalletTransaction, RealPaymentGatewaySetting,
+    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, RealFmFeesTransaction, RealFeesInstallment, RealFmFeesType, RealBankPaymentSlip, Wallet, WalletTransaction, RealPaymentGatewaySetting, RealPayrollPayment,
 };
 use crate::entities::{
     BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
@@ -78,6 +78,7 @@ use crate::commands::{
     CreateFmFeesGroupCommand,
     CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
     ConfigurePaymentGatewayCommand, UpdatePaymentGatewayCommand,
+    RecordPayrollPaymentCommand,
     CreateIncomeHeadCommand,
     CreateInvoiceSettingCommand, CreateQuestionBankFeeCommand,
     CreateTransactionCommand,
@@ -109,6 +110,7 @@ use crate::events::{
     FeesInstallmentAssignDiscountCreated, FeesInstallmentAssignDiscountRetired,
     PaymentMethodCreated, PaymentMethodRetired,
     PaymentGatewayConfigured, PaymentGatewayUpdated, PaymentGatewayDisabled,
+    PayrollPaymentRecorded, PayrollPaymentRetired,
     FeesInstallmentAssignCreated, FeesInstallmentAssignRetired,
     AmountTransferCreated, AmountTransferRetired,
     DirectFeesInstallmentCreated, DirectFeesInstallmentRetired, FeesAssignDiscountCreated, FeesAssignDiscountRetired, FeesAssignCreated, FeesAssignRetired,
@@ -7418,6 +7420,93 @@ where
         event_id,
         disabled_by,
         disabled_at,
+        correlation_id,
+    };
+    Ok((agg, event))
+}
+
+// ===================================================================
+// Wave 149 -- RealPayrollPayment service functions
+// ===================================================================
+
+/// Service function: record a new `RealPayrollPayment` aggregate.
+///
+/// Enforces PP I-1 companion (amount_minor >= 0) at construction.
+/// Emits `PayrollPaymentRecorded` (full payload) downstream.
+#[allow(clippy::too_many_arguments)]
+pub fn record_payroll_payment<C, G>(
+    cmd: RecordPayrollPaymentCommand,
+    _clock: &C,
+    ids: &G,
+) -> educore_core::error::Result<(RealPayrollPayment, PayrollPaymentRecorded)>
+where
+    C: educore_core::clock::Clock,
+    G: Fn() -> educore_core::ids::EventId,
+{
+    let mut agg = RealPayrollPayment::fresh(
+        cmd.payroll_payment_id,
+        cmd.payroll_generate_id,
+        cmd.amount_minor,
+        cmd.currency,
+        cmd.payment_mode,
+        cmd.payment_method_id,
+        cmd.bank_id,
+        cmd.payment_date,
+        cmd.note,
+        cmd.tenant.actor_id,
+        educore_core::value_objects::Timestamp::now(),
+        cmd.tenant.correlation_id,
+    )?;
+    let event_id = ids();
+    let occurred_at = agg.created_at;
+    let correlation_id = agg.correlation_id;
+    agg.last_event_id = Some(event_id);
+    let event = PayrollPaymentRecorded::full(
+        agg.id,
+        agg.payroll_generate_id,
+        agg.amount_minor,
+        agg.currency,
+        agg.payment_method_id,
+        agg.payment_mode,
+        agg.bank_id,
+        agg.payment_date,
+        agg.note.clone(),
+        event_id,
+        correlation_id,
+        occurred_at,
+    );
+    Ok((agg, event))
+}
+
+/// Service function: retire a `RealPayrollPayment` (tombstone).
+///
+/// Returns Conflict on already-retired. Emits `PayrollPaymentRetired`
+/// downstream.
+pub fn retire_payroll_payment<C, G>(
+    mut agg: RealPayrollPayment,
+    tenant: educore_core::tenant::TenantContext,
+    _clock: &C,
+    ids: &G,
+) -> educore_core::error::Result<(RealPayrollPayment, PayrollPaymentRetired)>
+where
+    C: educore_core::clock::Clock,
+    G: Fn() -> educore_core::ids::EventId,
+{
+    agg.retire(
+        educore_core::value_objects::Timestamp::now(),
+        tenant.actor_id,
+    )?;
+    let event_id = ids();
+    let retired_at = agg.updated_at;
+    let retired_by = agg.updated_by;
+    let correlation_id = agg.correlation_id;
+    agg.last_event_id = Some(event_id);
+    let event = PayrollPaymentRetired {
+        payroll_payment_id: agg.id,
+        school_id: agg.school_id,
+        event_id,
+        retired_by,
+        retired_at,
         correlation_id,
     };
     Ok((agg, event))

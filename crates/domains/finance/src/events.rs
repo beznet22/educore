@@ -569,16 +569,22 @@ impl DomainEvent for ExpenseRecorded {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PayrollPaymentRecorded {
     pub payroll_payment_id: PayrollPaymentId,
+    pub payroll_generate_id: Option<educore_hr::value_objects::PayrollGenerateId>,
     pub amount_minor: i64,
     pub currency: Currency,
     pub payment_method: PaymentMethodKind,
+    pub payment_method_id: Option<PaymentMethodId>,
+    pub payment_mode: Option<PaymentMode>,
     pub bank_id: Option<BankAccountId>,
+    pub payment_date: Option<chrono::NaiveDate>,
+    pub note: Option<String>,
     pub event_id: EventId,
     pub correlation_id: CorrelationId,
     pub occurred_at: Timestamp,
 }
 
 impl PayrollPaymentRecorded {
+    #[allow(clippy::too_many_arguments)]
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         payroll_payment_id: PayrollPaymentId,
@@ -592,10 +598,49 @@ impl PayrollPaymentRecorded {
     ) -> Self {
         Self {
             payroll_payment_id,
+            payroll_generate_id: None,
             amount_minor,
             currency,
             payment_method,
+            payment_method_id: None,
+            payment_mode: None,
             bank_id,
+            payment_date: None,
+            note: None,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+
+    /// Wave 149 constructor: full payload from the new
+    /// `RealPayrollPayment` aggregate.
+    #[allow(clippy::too_many_arguments)]
+    pub fn full(
+        payroll_payment_id: PayrollPaymentId,
+        payroll_generate_id: educore_hr::value_objects::PayrollGenerateId,
+        amount_minor: i64,
+        currency: Currency,
+        payment_method_id: PaymentMethodId,
+        payment_mode: PaymentMode,
+        bank_id: BankAccountId,
+        payment_date: chrono::NaiveDate,
+        note: Option<String>,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            payroll_payment_id,
+            payroll_generate_id: Some(payroll_generate_id),
+            amount_minor,
+            currency,
+            payment_method: PaymentMethodKind::Bank,
+            payment_method_id: Some(payment_method_id),
+            payment_mode: Some(payment_mode),
+            bank_id: Some(bank_id),
+            payment_date: Some(payment_date),
+            note,
             event_id,
             correlation_id,
             occurred_at,
@@ -9757,5 +9802,42 @@ impl DomainEvent for PaymentGatewayDisabled {
     }
     fn occurred_at(&self) -> Timestamp {
         self.disabled_at
+    }
+}
+
+// =============================================================================
+// -- Wave 149 -- PayrollPayment events
+// =============================================================================
+//
+// `PayrollPaymentRecorded` was already added in Wave 79 (see events.rs:570).
+// We only add `PayrollPaymentRetired` here for the new aggregate.
+
+/// Emitted when a `RealPayrollPayment` aggregate is retired
+/// (tombstone).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PayrollPaymentRetired {
+    pub payroll_payment_id: PayrollPaymentId,
+    pub school_id: SchoolId,
+    pub event_id: EventId,
+    pub retired_by: UserId,
+    pub retired_at: Timestamp,
+    pub correlation_id: CorrelationId,
+}
+
+impl DomainEvent for PayrollPaymentRetired {
+    const EVENT_TYPE: &'static str = "finance.payroll_payment.retired";
+    const AGGREGATE_TYPE: &'static str = "payroll_payment";
+    const SCHEMA_VERSION: u32 = 1;
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn school_id(&self) -> SchoolId {
+        self.school_id
+    }
+    fn aggregate_id(&self) -> uuid::Uuid {
+        self.payroll_payment_id.as_uuid()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.retired_at
     }
 }

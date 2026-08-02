@@ -1004,6 +1004,111 @@ finance_aggregate_stub! {
     /// PayrollPayment — finance-side accounting record (Phase 7 Workstream I).
     pub struct PayrollPayment { _id: () }
 }
+
+// -- Wave 149 -- RealPayrollPayment -- finance-side payment record for a payroll --
+//
+// PP I-1: sum of PayrollPayment amounts <= payroll's unpaid
+// net_salary -- dispatcher-enforced (the PayrollGenerate
+// aggregate is HR-authoritative; the finance dispatcher
+// queries the unpaid balance before appending a new payment).
+//
+// PP I-2: payment_method + bank_id compatible -- dispatcher-
+// enforced (cross-row check on the BankAccount's account_type
+// matches the PaymentMethod's kind).
+//
+// PP I-3: creates Expense + BankStatement on approval --
+// dispatcher-enforced (the aggregator creates both rows
+// atomically; either both succeed or both roll back).
+//
+// Companion invariants enforced at fresh():
+//   * amount_minor >= 0
+//   * payment_date is a valid chrono::NaiveDate (always valid
+//     by construction; the type system guarantees
+//     from_ymd_opt returns None for invalid dates which
+//     would have rejected at command construction time).
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealPayrollPayment {
+    pub id: PayrollPaymentId,
+    pub school_id: SchoolId,
+    pub payroll_generate_id: educore_hr::value_objects::PayrollGenerateId,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub payment_mode: PaymentMode,
+    pub payment_method_id: PaymentMethodId,
+    pub bank_id: BankAccountId,
+    pub payment_date: chrono::NaiveDate,
+    pub note: Option<String>,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl RealPayrollPayment {
+    #[allow(clippy::too_many_arguments)]
+    pub fn fresh(
+        id: PayrollPaymentId,
+        payroll_generate_id: educore_hr::value_objects::PayrollGenerateId,
+        amount_minor: i64,
+        currency: Currency,
+        payment_mode: PaymentMode,
+        payment_method_id: PaymentMethodId,
+        bank_id: BankAccountId,
+        payment_date: chrono::NaiveDate,
+        note: Option<String>,
+        actor: UserId,
+        at: Timestamp,
+        correlation: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        if amount_minor < 0 {
+            return Err(educore_core::error::DomainError::validation(
+                "PayrollPayment amount_minor must be >= 0 (PP I-1)",
+            ));
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            payroll_generate_id,
+            amount_minor,
+            currency,
+            payment_mode,
+            payment_method_id,
+            bank_id,
+            payment_date,
+            note,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at: at,
+            updated_at: at,
+            created_by: actor,
+            updated_by: actor,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id: correlation,
+        })
+    }
+
+    /// Retire the aggregate (tombstone; preserves payroll +
+    /// amount + bank fields for legal-record retention).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
+        if self.active_status == ActiveStatus::Retired {
+            return Err(educore_core::error::DomainError::conflict(
+                "PayrollPayment is already retired",
+            ));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+}
 finance_aggregate_stub! {
     /// SalaryTemplate (Phase 7 Workstream I — typed view of HR's
     /// `SalaryTemplate`).

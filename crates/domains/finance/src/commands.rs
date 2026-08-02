@@ -24,6 +24,7 @@ use educore_core::ids::UserId;
 use uuid::Uuid;
 use educore_rbac::value_objects::Capability;
 use educore_academic::{AcademicYearId, StudentId};
+use educore_hr::value_objects::PayrollGenerateId;
 use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
 
@@ -4755,6 +4756,14 @@ impl DeductWalletCreditCommand {
 pub struct RecordPayrollPaymentCommand {
     pub tenant: TenantContext,
     pub payroll_payment_id: PayrollPaymentId,
+    pub payroll_generate_id: educore_hr::value_objects::PayrollGenerateId,
+    pub amount_minor: i64,
+    pub currency: Currency,
+    pub payment_mode: PaymentMode,
+    pub payment_method_id: PaymentMethodId,
+    pub bank_id: BankAccountId,
+    pub payment_date: chrono::NaiveDate,
+    pub note: Option<String>,
 }
 
 
