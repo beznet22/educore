@@ -4431,6 +4431,17 @@ impl DomainEvent for BankStatementCreated {
     fn school_id(&self) -> SchoolId {
         self.bank_statement_id.school_id()
     }
+    // Wave 167: the trait method `occurred_at()` returns the
+    // EVENT emit time (`occurred_at_event`), not the bank-
+    // statement date (`occurred_at`). These are semantically
+    // distinct: `occurred_at` is the date the bank transaction
+    // happened in the real world; `occurred_at_event` is when
+    // the `BankStatementCreated` event was emitted by the
+    // engine. The DomainEvent trait contract is the latter.
+    // Clippy's `wrong_field` heuristic is a false positive
+    // here -- the field name `occurred_at_event` is the
+    // intentional source.
+    #[allow(clippy::misnamed_getters)] // false positive: occurred_at_event is intentional (see comment above)
     fn occurred_at(&self) -> Timestamp {
         self.occurred_at_event
     }
@@ -9584,9 +9595,6 @@ impl DomainEvent for FeesInstallmentAssignCancelled {
 }
 
 #[cfg(test)]
-#[allow(t)]
-#[allow(t)]
-#[allow(est)]
 #[allow(
     clippy::unwrap_used,
     clippy::expect_used,

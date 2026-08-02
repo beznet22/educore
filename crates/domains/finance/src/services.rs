@@ -1127,7 +1127,7 @@ impl WalletService {
 /// Phase 7 ships this signature without a synchronous provider
 /// call so the service is pure (no I/O); the dispatch layer wires
 /// the real `PaymentProvider` adapter.
-#[allow(clippy::too_many_arguments, clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub fn record_payment<C, G>(
     cmd: RecordPaymentCommand,
     clock: &C,
