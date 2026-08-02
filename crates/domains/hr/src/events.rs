@@ -237,6 +237,187 @@ impl DomainEvent for StaffSuspended {
     }
 }
 
+// =============================================================================
+// Staff FSM events (Wave 171 / spec invariant #6)
+// =============================================================================
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffReinstated {
+    pub staff_id: StaffId,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffReinstated {
+    pub fn new(
+        staff_id: StaffId,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            staff_id,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffReinstated {
+    const EVENT_TYPE: &'static str = "hr.staff.reinstated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.staff_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.staff_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffResigned {
+    pub staff_id: StaffId,
+    pub resignation_date: NaiveDate,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffResigned {
+    pub fn new(
+        staff_id: StaffId,
+        resignation_date: NaiveDate,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            staff_id,
+            resignation_date,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffResigned {
+    const EVENT_TYPE: &'static str = "hr.staff.resigned";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.staff_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.staff_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffTerminated {
+    pub staff_id: StaffId,
+    pub termination_date: NaiveDate,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffTerminated {
+    pub fn new(
+        staff_id: StaffId,
+        termination_date: NaiveDate,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            staff_id,
+            termination_date,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffTerminated {
+    const EVENT_TYPE: &'static str = "hr.staff.terminated";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.staff_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.staff_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StaffRetired {
+    pub staff_id: StaffId,
+    pub retirement_date: NaiveDate,
+    pub event_id: EventId,
+    pub correlation_id: CorrelationId,
+    pub occurred_at: Timestamp,
+}
+
+impl StaffRetired {
+    pub fn new(
+        staff_id: StaffId,
+        retirement_date: NaiveDate,
+        event_id: EventId,
+        correlation_id: CorrelationId,
+        occurred_at: Timestamp,
+    ) -> Self {
+        Self {
+            staff_id,
+            retirement_date,
+            event_id,
+            correlation_id,
+            occurred_at,
+        }
+    }
+}
+
+impl DomainEvent for StaffRetired {
+    const EVENT_TYPE: &'static str = "hr.staff.retired";
+    const SCHEMA_VERSION: u32 = 1;
+    const AGGREGATE_TYPE: &'static str = "staff";
+    fn event_id(&self) -> EventId {
+        self.event_id
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.staff_id.as_uuid()
+    }
+    fn school_id(&self) -> SchoolId {
+        self.staff_id.school_id()
+    }
+    fn occurred_at(&self) -> Timestamp {
+        self.occurred_at
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StaffDeleted {
     pub staff_id: StaffId,

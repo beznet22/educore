@@ -231,6 +231,105 @@ impl Staff {
     pub fn is_terminal(&self) -> bool {
         self.status.is_terminal()
     }
+
+    /// Suspends an Active staff member (spec invariant #6).
+    /// Sets `status = Suspended`, records the suspension reason
+    /// and expected return date (if known), and bumps `updated_at`.
+    ///
+    /// The `effective_from` date is captured by the
+    /// [`StaffSuspended`](crate::events::StaffSuspended) event
+    /// in the service layer; the aggregate only stores the
+    /// reason + expected return.
+    ///
+    /// Returns [`DomainError::validation`] if the current
+    /// `status` does not permit `Active → Suspended`.
+    pub fn suspend(
+        &mut self,
+        reason: String,
+        expected_return: Option<NaiveDate>,
+        updated_at: Timestamp,
+    ) -> Result<()> {
+        if !self.status.can_transition_to(StaffStatus::Suspended) {
+            return Err(DomainError::validation(format!(
+                "cannot suspend staff in status {:?} (only Active)",
+                self.status
+            )));
+        }
+        self.status = StaffStatus::Suspended;
+        self.suspension_reason = Some(reason);
+        self.expected_return_date = expected_return;
+        self.updated_at = updated_at;
+        Ok(())
+    }
+
+    /// Reinstates a Suspended staff member back to Active
+    /// (spec invariant #6). Clears the suspension reason +
+    /// expected return date.
+    ///
+    /// Returns [`DomainError::validation`] if the current
+    /// `status` does not permit `Suspended → Active`.
+    pub fn reinstate(&mut self, updated_at: Timestamp) -> Result<()> {
+        if !self.status.can_transition_to(StaffStatus::Active) {
+            return Err(DomainError::validation(format!(
+                "cannot reinstate staff in status {:?} (only Suspended)",
+                self.status
+            )));
+        }
+        self.status = StaffStatus::Active;
+        self.suspension_reason = None;
+        self.expected_return_date = None;
+        self.updated_at = updated_at;
+        Ok(())
+    }
+
+    /// Marks an Active or Suspended staff member as Resigned
+    /// (spec invariant #6). Terminal: the staff cannot
+    /// transition out of `Resigned`.
+    ///
+    /// Returns [`DomainError::validation`] if the current
+    /// `status` does not permit the transition.
+    pub fn resign(&mut self, resignation_date: NaiveDate, updated_at: Timestamp) -> Result<()> {
+        if !self.status.can_transition_to(StaffStatus::Resigned) {
+            return Err(DomainError::validation(format!(
+                "cannot resign staff in status {:?} (only Active or Suspended)",
+                self.status
+            )));
+        }
+        self.status = StaffStatus::Resigned;
+        self.resignation_date = Some(resignation_date);
+        self.updated_at = updated_at;
+        Ok(())
+    }
+
+    /// Marks an Active or Suspended staff member as Terminated
+    /// (spec invariant #6). Terminal.
+    pub fn terminate(&mut self, termination_date: NaiveDate, updated_at: Timestamp) -> Result<()> {
+        if !self.status.can_transition_to(StaffStatus::Terminated) {
+            return Err(DomainError::validation(format!(
+                "cannot terminate staff in status {:?} (only Active or Suspended)",
+                self.status
+            )));
+        }
+        self.status = StaffStatus::Terminated;
+        self.termination_date = Some(termination_date);
+        self.updated_at = updated_at;
+        Ok(())
+    }
+
+    /// Marks an Active or Suspended staff member as Retired
+    /// (spec invariant #6). Terminal.
+    pub fn retire(&mut self, retirement_date: NaiveDate, updated_at: Timestamp) -> Result<()> {
+        if !self.status.can_transition_to(StaffStatus::Retired) {
+            return Err(DomainError::validation(format!(
+                "cannot retire staff in status {:?} (only Active or Suspended)",
+                self.status
+            )));
+        }
+        self.status = StaffStatus::Retired;
+        self.retirement_date = Some(retirement_date);
+        self.updated_at = updated_at;
+        Ok(())
+    }
 }
 
 // =============================================================================

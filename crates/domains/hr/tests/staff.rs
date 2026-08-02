@@ -356,3 +356,205 @@ fn hire_staff_returns_aggregate_and_event() {
     assert_eq!(event.school_id(), school);
     assert_eq!(event.staff_id, staff.id);
 }
+
+// =============================================================================
+// I-6: Status state machine (Active -> {Suspended, Resigned,
+//       Terminated, Retired}; Suspended -> {Active, Resigned,
+//       Terminated, Retired})
+// =============================================================================
+
+/// Helper: build a Staff in Active status with a known
+/// `date_of_joining`. Reused by the FSM tests below.
+fn active_staff(tenant: TenantContext) -> Staff {
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    hire_staff(
+        default_command(tenant),
+        &clock,
+        &ids,
+        &ConflictingUniqueness::none(),
+    )
+    .expect("hire staff")
+    .0
+}
+
+/// Spec invariant #6 (happy path): `Staff::suspend()` from
+/// `Active` succeeds, sets `status = Suspended`, records the
+/// reason + expected return.
+#[test]
+fn suspend_transitions_active_to_suspended() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    let ts = educore_core::value_objects::Timestamp::now();
+
+    staff
+        .suspend(
+            "Misconduct investigation".to_owned(),
+            Some(NaiveDate::from_ymd_opt(2024, 6, 1).expect("date")),
+            ts,
+        )
+        .expect("suspend");
+
+    assert_eq!(staff.status, StaffStatus::Suspended);
+    assert_eq!(staff.suspension_reason.as_deref(), Some("Misconduct investigation"));
+    assert_eq!(
+        staff.expected_return_date,
+        Some(NaiveDate::from_ymd_opt(2024, 6, 1).expect("date"))
+    );
+}
+
+/// Spec invariant #6 (rejection): cannot suspend from a terminal
+/// state. Returns `DomainError::Validation`.
+#[test]
+fn suspend_rejected_from_terminal_state() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    staff.status = StaffStatus::Resigned; // simulate terminal
+    let ts = educore_core::value_objects::Timestamp::now();
+
+    let err = staff
+        .suspend("x".to_owned(), None, ts)
+        .expect_err("cannot suspend from terminal");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+/// Spec invariant #6 (happy path): `Staff::reinstate()` from
+/// `Suspended` returns to `Active`, clears suspension reason.
+#[test]
+fn reinstate_transitions_suspended_to_active() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    let ts = educore_core::value_objects::Timestamp::now();
+    staff.suspend("temp".to_owned(), None, ts).expect("suspend");
+
+    staff.reinstate(ts).expect("reinstate");
+
+    assert_eq!(staff.status, StaffStatus::Active);
+    assert!(staff.suspension_reason.is_none());
+    assert!(staff.expected_return_date.is_none());
+}
+
+/// Spec invariant #6 (rejection): cannot reinstate from Active.
+#[test]
+fn reinstate_rejected_from_active() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    let ts = educore_core::value_objects::Timestamp::now();
+
+    let err = staff.reinstate(ts).expect_err("cannot reinstate from Active");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+/// Spec invariant #6 (happy path): `Staff::resign()` from Active.
+#[test]
+fn resign_transitions_active_to_resigned() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    let ts = educore_core::value_objects::Timestamp::now();
+
+    staff
+        .resign(NaiveDate::from_ymd_opt(2024, 5, 15).expect("date"), ts)
+        .expect("resign");
+
+    assert_eq!(staff.status, StaffStatus::Resigned);
+    assert_eq!(
+        staff.resignation_date,
+        Some(NaiveDate::from_ymd_opt(2024, 5, 15).expect("date"))
+    );
+    assert!(staff.is_terminal());
+}
+
+/// Spec invariant #6 (rejection): terminal states cannot transition.
+#[test]
+fn resign_rejected_from_terminal() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    staff.status = StaffStatus::Terminated;
+    let ts = educore_core::value_objects::Timestamp::now();
+
+    let err = staff
+        .resign(NaiveDate::from_ymd_opt(2024, 5, 15).expect("date"), ts)
+        .expect_err("cannot resign from terminal");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+/// Spec invariant #6 (happy path): `Staff::terminate()`.
+#[test]
+fn terminate_transitions_active_to_terminated() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    let ts = educore_core::value_objects::Timestamp::now();
+
+    staff
+        .terminate(NaiveDate::from_ymd_opt(2024, 4, 1).expect("date"), ts)
+        .expect("terminate");
+
+    assert_eq!(staff.status, StaffStatus::Terminated);
+    assert!(staff.is_terminal());
+}
+
+/// Spec invariant #6 (happy path): `Staff::retire()`.
+#[test]
+fn retire_transitions_active_to_retired() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    let ts = educore_core::value_objects::Timestamp::now();
+
+    staff
+        .retire(NaiveDate::from_ymd_opt(2030, 1, 1).expect("date"), ts)
+        .expect("retire");
+
+    assert_eq!(staff.status, StaffStatus::Retired);
+    assert!(staff.is_terminal());
+}
+
+/// Spec invariant #6 (rejection): terminal-to-terminal rejected.
+#[test]
+fn terminate_rejected_from_terminal() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    staff.status = StaffStatus::Retired;
+    let ts = educore_core::value_objects::Timestamp::now();
+
+    let err = staff
+        .terminate(NaiveDate::from_ymd_opt(2024, 4, 1).expect("date"), ts)
+        .expect_err("cannot terminate from terminal");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+/// Spec invariant #6: full happy-path chain
+/// Active -> Suspended -> Active -> Resigned.
+#[test]
+fn full_fsm_chain_active_suspended_active_resigned() {
+    let (tenant, _school) = admin_context();
+    let mut staff = active_staff(tenant);
+    let ts = educore_core::value_objects::Timestamp::now();
+
+    // Active -> Suspended
+    staff.suspend("temp".to_owned(), None, ts).expect("suspend");
+    assert_eq!(staff.status, StaffStatus::Suspended);
+
+    // Suspended -> Active
+    staff.reinstate(ts).expect("reinstate");
+    assert_eq!(staff.status, StaffStatus::Active);
+    assert!(!staff.is_terminal());
+
+    // Active -> Resigned (terminal)
+    staff
+        .resign(NaiveDate::from_ymd_opt(2024, 12, 31).expect("date"), ts)
+        .expect("resign");
+    assert_eq!(staff.status, StaffStatus::Resigned);
+    assert!(staff.is_terminal());
+}

@@ -40,7 +40,7 @@ The 100 remaining `[ ]` invariants are the next per-aggregate wave pipeline's ba
 - [x] I-3: Email unique per school (Wave 171 / spec #4: `StaffUniquenessChecker::email_exists` port in `crates/domains/hr/src/services.rs:780`; `hire_staff` rejects duplicates with `DomainError::Conflict`; tests `hire_staff_rejects_duplicate_email` + `hire_staff_accepts_unique_email` in `crates/domains/hr/tests/staff.rs`)
 - [x] I-4: Phone unique per school (Wave 32: `mobile_exists` added to `StaffUniquenessChecker`; wired into `hire_staff` at `services.rs`; stub impls updated in `services.rs`/`workflows.rs`/`storage-parity hr_integration.rs`)
 - [x] I-5: Joining date ≤ current date (Wave 171 / spec #5: `validate_joining_date_not_future` helper added at `crates/domains/hr/src/value_objects.rs`; wired into `hire_staff` at `services.rs`; tests `hire_staff_rejects_future_joining_date` + `hire_staff_accepts_today_as_joining_date` in `crates/domains/hr/tests/staff.rs`)
-- [ ] I-6: Status state machine (Active → {Suspended, Resigned, Terminated})
+- [x] I-6: Status state machine (Active → {Suspended, Resigned, Terminated, Retired}) (Wave 171 / spec #6: `StaffStatus::can_transition_to` FSM helper added to `crates/domains/hr/src/value_objects.rs`; `Staff::suspend`/`reinstate`/`resign`/`terminate`/`retire` mutator methods in `crates/domains/hr/src/aggregate.rs` each return `Result` and call the FSM guard; 4 new `Staff*` events (`StaffReinstated`, `StaffResigned`, `StaffTerminated`, `StaffRetired`) added to `crates/domains/hr/src/events.rs`; 10 new behavioral tests in `crates/domains/hr/tests/staff.rs` covering all 5 happy-path transitions + 4 rejection paths + 1 full-chain test)
 - [ ] I-7: Cannot resign while has open payroll
 - [ ] I-8: Soft-delete preserves history
 
