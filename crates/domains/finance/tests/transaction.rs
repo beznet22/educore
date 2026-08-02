@@ -24,7 +24,7 @@ use educore_core::tenant::{TenantContext, UserType};
 use educore_events::domain_event::DomainEvent;
 use educore_finance::prelude::{
     create_transaction, retire_transaction, Currency, RealTransaction, TransactionCreated,
-    TransactionId, TransactionRetired, FINANCE_TRANSACTION_CREATE_COMMAND_TYPE,
+    TransactionId, TransactionRetired,
     FINANCE_TRANSACTION_RETIRE_COMMAND_TYPE,
 };
 
