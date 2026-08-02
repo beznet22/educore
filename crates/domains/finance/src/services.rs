@@ -1888,6 +1888,7 @@ where
     Ok(())
 }
 
+#[allow(clippy::unwrap_used)]
 pub fn retire_fees_assign<C, G>(
     cmd: RetireFeesAssignCommand,
     clock: &C,
@@ -1907,7 +1908,7 @@ where
         educore_academic::AcademicYearId::new(cmd.fees_assign_id.school_id(), ids.next_uuid()),
         0,
         Currency::INR,
-        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("2026-01-01 is a valid date"),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         cmd.tenant.actor_id,
         now,
         cmd.tenant.correlation_id,
@@ -3536,6 +3537,7 @@ where
 /// `transaction_id` + `retired_by` + standard event footer; the
 /// transaction totals + description are preserved in the
 /// aggregate's audit footer for legal-record retention).
+#[allow(clippy::unwrap_used)]
 pub fn retire_transaction<C, G>(
     cmd: RetireTransactionCommand,
     clock: &C,
@@ -3555,7 +3557,7 @@ where
     // would load the aggregate from storage first.
     let mut tx = RealTransaction::fresh(
         cmd.transaction_id,
-        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("2026-01-01 is a valid date"),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         "retired transaction".to_owned(),
         None,
         0,
@@ -3922,6 +3924,7 @@ where
     Ok(())
 }
 
+#[allow(clippy::unwrap_used)]
 pub fn retire_fees_installment_assign<C, G>(
     cmd: RetireFeesInstallmentAssignCommand,
     clock: &C,
@@ -3938,7 +3941,7 @@ where
         cmd.fees_installment_assign_id,
         FeesAssignId::new(cmd.fees_installment_assign_id.school_id(), ids.next_uuid()),
         FeesInstallmentId::new(cmd.fees_installment_assign_id.school_id(), ids.next_uuid()),
-        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("2026-01-01 is a valid date"),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         0,
         0,
         0,
@@ -4084,6 +4087,7 @@ where
     Ok(())
 }
 
+#[allow(clippy::unwrap_used)]
 pub fn retire_amount_transfer<C, G>(
     cmd: RetireAmountTransferCommand,
     clock: &C,
@@ -4102,7 +4106,7 @@ where
         BankAccountId::new(cmd.amount_transfer_id.school_id(), ids.next_uuid()),
         0,
         Currency::INR,
-        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("2026-01-01 is a valid date"),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         None,
         None,
         cmd.tenant.actor_id,
@@ -4183,6 +4187,7 @@ where
     Ok(())
 }
 
+#[allow(clippy::unwrap_used)]
 pub fn retire_direct_fees_installment<C, G>(
     cmd: RetireDirectFeesInstallmentCommand,
     clock: &C,
@@ -4204,7 +4209,7 @@ where
         "retired installment".to_owned(),
         0,
         Currency::INR,
-        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("2026-01-01 is a valid date"),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         0,    // placeholder percentage_minor for retire path
         None, // placeholder window_start for retire path
         None, // placeholder window_end for retire path
@@ -4372,6 +4377,7 @@ where
     Ok(())
 }
 
+#[allow(clippy::unwrap_used)]
 pub fn retire_fees_master<C, G>(
     cmd: RetireFeesMasterCommand,
     clock: &C,
@@ -4391,7 +4397,7 @@ where
         crate::value_objects::ClassId::new(cmd.fees_master_id.school_id(), ids.next_uuid()),
         0,
         Currency::INR,
-        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("2026-01-01 is a valid date"),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         cmd.tenant.actor_id,
         now,
         cmd.tenant.correlation_id,

@@ -11,6 +11,14 @@
 //!   threshold) must be >= 0 at construction + update_metadata.
 //!
 //! Pattern: `admin_context()` fixture + `SystemClock` + `SystemIdGen`.
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::dbg_macro,
+    missing_docs
+)]
+
 
 use educore_core::clock::{Clock, SystemClock, SystemIdGen};
 use educore_core::ids::{CorrelationId, Identifier, UserId};

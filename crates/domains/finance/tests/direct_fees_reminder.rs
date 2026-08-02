@@ -1,3 +1,11 @@
+
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::dbg_macro,
+    missing_docs
+)]
 //! Behavioural tests for `RealDirectFeesReminder` (Wave 88).
 //!
 //! Covers:
