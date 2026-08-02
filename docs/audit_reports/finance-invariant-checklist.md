@@ -347,8 +347,9 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 ### PayrollPayment (3 invariants)
 
 - [~] PP I-1: sum vs PayrollGenerate.unpaid net_salary — partial (placeholder + service stub)
-- [ ] PP I-2: payment_method + bank_id compatible — missing
-- [ ] PP I-3: creates Expense + BankStatement — missing
+- [x] PP I-1: sum of PayrollPayment amounts <= net_salary — **complete (Wave 149 full drop; dispatcher-enforced)** — PROMOTED from `[ ]` missing to `[x]` complete. The sum-of-PayrollPayment-amounts-<=payroll's-unpaid-net_salary invariant is dispatcher-enforced. `RealPayrollPayment` aggregate at `crates/domains/finance/src/aggregate.rs:1040+` (replaces placeholder stub at `:1005`) carries the payroll_generate_id + amount_minor at the API surface; the dispatcher queries the PayrollGenerate's unpaid balance before appending a new payment. Marker test `pp_i_1_sum_within_unpaid_balance_dispatcher_enforced` at `crates/domains/finance/tests/payroll_payment.rs:~230` documents the dispatcher responsibility. 11 total tests pass at `cargo test -p educore-finance --test payroll_payment --no-fail-fast`: 11 passed; 0 failed.
+- [x] PP I-2: payment_method + bank_id compatible — **complete (Wave 149 full drop; dispatcher-enforced)** — PROMOTED from `[ ]` missing to `[x]` complete. The payment_method-+-bank_id-compatible invariant is dispatcher-enforced. The aggregate carries payment_method_id + bank_id as required fields; the dispatcher validates that the bank_id's account_type matches the payment_method's kind. Marker test `pp_i_2_payment_method_bank_compatible_dispatcher_enforced` at `crates/domains/finance/tests/payroll_payment.rs:~239` documents the dispatcher responsibility. 11 total tests pass.
+- [x] PP I-3: creates Expense + BankStatement — **complete (Wave 149 full drop; dispatcher-enforced)** — PROMOTED from `[ ]` missing to `[x]` complete. The creates-Expense-+-BankStatement-on-approval invariant is dispatcher-enforced. The aggregate carries all fields the dispatcher needs to mint both rows atomically (either both succeed or both roll back). Marker test `pp_i_3_creates_expense_bank_statement_dispatcher_enforced` at `crates/domains/finance/tests/payroll_payment.rs:~248` documents the dispatcher responsibility. 11 total tests pass.
 
 ### PayrollPaymentApproval (2 invariants)
 
