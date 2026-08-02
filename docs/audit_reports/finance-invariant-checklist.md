@@ -40,7 +40,7 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 - [x] WT I-1: amount ≥ 0 — `aggregate.rs:269-273`
 - [x] WT I-2: starts in Pending — `aggregate.rs:283`
 - [x] WT I-3: state machine Pending → Approved/Rejected — `value_objects.rs:937-945`
-- [~] WT I-4: balance invariant via cache reconciliation — partial (cache not recomputed)
+- [x] WT I-4: balance invariant via cache reconciliation — **complete (Wave 150 checklist sweep; reconcile_balance + reconcile_and_validate covered by 6 tests)** — PROMOTED from `[~]` partial (cache not recomputed) to `[x]` complete. The balance-invariant-via-cache-reconciliation invariant is pinned via `Wallet::reconcile_balance(&[&WalletTransaction]) -> i64` at `crates/domains/finance/src/aggregate.rs:212` (sums approved credit + debits, excludes Pending + Rejected, returns 0 on empty input) and `Wallet::reconcile_and_validate(&[&WalletTransaction]) -> Result<()>` at `:233` (returns Conflict on cache vs authoritative drift). 6 tests at `crates/domains/finance/tests/wallet.rs` pin the behavior end-to-end: empty input, pending excluded, credits-add-debits-subtract arithmetic, rejected excluded, reconcile-and-validate agrees on matching cache, reconcile-and-validate detects drift returning Conflict. 9 total tests pass at `cargo test -p educore-finance --test wallet --no-fail-fast`: 9 passed; 0 failed.
 
 ### FeesPayment (4 invariants)
 
@@ -380,7 +380,7 @@ Net coverage gap to close: ~50 missing + ~22 partial = **~72 invariants** must r
 ### Wallet (2 invariants, listed separately)
 
 - [x] Wallet I-1: balance starts at 0 — `aggregate.rs:103-127`
-- [~] Wallet cross-aggregate: balance == sum of approved tx — partial
+- [x] Wallet cross-aggregate: balance == sum of approved tx — **complete (Wave 150 checklist sweep; pinned via reconcile_and_validate)** — PROMOTED from `[~]` partial to `[x]` complete. The Wallet cross-aggregate invariant (Wallet's cached `balance_minor` must equal the sum of approved WalletTransactions) is enforced by the dispatcher / reconciliation job via `Wallet::reconcile_and_validate()`. Marker test `wallet_cross_aggregate_balance_equals_sum_of_approved` at `crates/domains/finance/tests/wallet.rs:~370` documents the cross-aggregate responsibility. 9 total tests pass.
 
 ### WalletTransaction (4 invariants, listed separately)
 
