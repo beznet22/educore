@@ -1907,7 +1907,7 @@ where
         educore_academic::AcademicYearId::new(cmd.fees_assign_id.school_id(), ids.next_uuid()),
         0,
         Currency::INR,
-        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("2026-01-01 is a valid date"),
         cmd.tenant.actor_id,
         now,
         cmd.tenant.correlation_id,
@@ -3555,7 +3555,7 @@ where
     // would load the aggregate from storage first.
     let mut tx = RealTransaction::fresh(
         cmd.transaction_id,
-        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("2026-01-01 is a valid date"),
         "retired transaction".to_owned(),
         None,
         0,
@@ -3938,7 +3938,7 @@ where
         cmd.fees_installment_assign_id,
         FeesAssignId::new(cmd.fees_installment_assign_id.school_id(), ids.next_uuid()),
         FeesInstallmentId::new(cmd.fees_installment_assign_id.school_id(), ids.next_uuid()),
-        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("2026-01-01 is a valid date"),
         0,
         0,
         0,
@@ -4102,7 +4102,7 @@ where
         BankAccountId::new(cmd.amount_transfer_id.school_id(), ids.next_uuid()),
         0,
         Currency::INR,
-        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("2026-01-01 is a valid date"),
         None,
         None,
         cmd.tenant.actor_id,
@@ -4204,7 +4204,7 @@ where
         "retired installment".to_owned(),
         0,
         Currency::INR,
-        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("2026-01-01 is a valid date"),
         0,    // placeholder percentage_minor for retire path
         None, // placeholder window_start for retire path
         None, // placeholder window_end for retire path
@@ -4391,7 +4391,7 @@ where
         crate::value_objects::ClassId::new(cmd.fees_master_id.school_id(), ids.next_uuid()),
         0,
         Currency::INR,
-        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("2026-01-01 is a valid date"),
         cmd.tenant.actor_id,
         now,
         cmd.tenant.correlation_id,
