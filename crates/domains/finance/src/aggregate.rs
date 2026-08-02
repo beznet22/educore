@@ -4,6 +4,20 @@
 //! `Wallet`, `WalletTransaction` (with `wallet_type=Refund` for the
 //! `Refund` headline), `FeesInvoice`, `FeesPayment`, `Expense`.
 //!
+//! Wave 168: file-level allow on `clippy::too_many_arguments`.
+//! The engine convention is per-aggregate
+//! `#[allow(clippy::too_many_arguments)]` on each `fresh()`
+//! (10+ args to capture the full domain payload). Aggregating
+//! these at file level matches the convention while reducing
+//! 25 individual attributes to one.
+
+// Wave 168: Real*::fresh() / update_metadata() / similar take 8-13
+// args by design (typed-id + 5-10 domain fields + 3 audit-footer
+// fields). This is the engine convention -- see ADR-015 for the
+// MSRV + external-crate rationale. Per-function allows were
+// historically used; consolidating at file level.
+#![allow(clippy::too_many_arguments)]
+//!
 //! Every aggregate follows the standard audit-footer pattern (per
 //! `AGENTS.md`):
 //!

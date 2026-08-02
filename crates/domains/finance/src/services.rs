@@ -3,6 +3,15 @@
 //! Pure factory functions that take a typed command + a clock +
 //! an id generator and return the new aggregate + the typed event.
 //! The dispatcher is responsible for persisting the aggregate and
+//!
+//! Wave 168: file-level allow on `clippy::too_many_arguments`.
+//! Each service function takes a typed command struct + clock +
+//! ids (3 args) plus the aggregate is constructed with 8-13 args.
+//! This matches the per-fn `#[allow(...)]` convention used in
+//! prior waves (consolidated here at file level).
+
+// Wave 168: see aggregate.rs comment.
+#![allow(clippy::too_many_arguments)]
 //! writing the audit / outbox / idempotency rows in a single
 //! transaction (per the Phase 4 / 5 / 6 pattern).
 //!

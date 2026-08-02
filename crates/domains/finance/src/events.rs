@@ -4,6 +4,15 @@
 //! [`DomainEvent`](::educore_events::domain_event::DomainEvent).
 //! The full set follows the spec at `docs/specs/finance/events.md`.
 //!
+//! Wave 168: file-level allow on `clippy::too_many_arguments`.
+//! Events carry the full aggregate payload + 3 audit-footer
+//! fields + correlation/event-id, which is 8-13 args. This
+//! matches the per-event `#[allow(...)]` convention used in
+//! prior waves (consolidated here at file level).
+
+// Wave 168: see aggregate.rs comment.
+#![allow(clippy::too_many_arguments)]
+//!
 //! Wire form: `finance.<aggregate>.<verb>` (e.g.
 //! `finance.wallet.credited`, `finance.wallet.refund_requested`,
 //! `finance.payroll_payment.recorded`).
