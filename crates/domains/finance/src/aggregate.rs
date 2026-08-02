@@ -7175,7 +7175,7 @@ impl RealFmFeesWeaver {
         correlation: CorrelationId,
     ) -> educore_core::error::Result<Self> {
         // FFW I-1: percentage in [0, 100].
-        if percentage < 0 || percentage > 100 {
+        if !(0..=100).contains(&percentage) {
             return Err(educore_core::error::DomainError::validation(
                 "FmFeesWeaver percentage must be in [0, 100] (FFW I-1)",
             ));
@@ -8809,7 +8809,7 @@ impl RealDirectFeesInstallment {
             ));
         }
         // DFI I-3: percentage_minor in [0, 100_000].
-        if percentage_minor < 0 || percentage_minor > 100_000 {
+        if !(0..=100_000).contains(&percentage_minor) {
             return Err(educore_core::error::DomainError::validation(
                 "DirectFeesInstallment percentage_minor must be in [0, 100000] (DFI I-3)",
             ));
@@ -9590,7 +9590,7 @@ impl RealFeesInstallment {
         correlation: CorrelationId,
     ) -> educore_core::error::Result<Self> {
         // FIv I-1: percentage ∈ [0, 100].
-        if percentage < 0 || percentage > 100 {
+        if !(0..=100).contains(&percentage) {
             return Err(educore_core::error::DomainError::validation(
                 "FeesInstallment percentage must be in [0, 100] (FIv I-1)",
             ));

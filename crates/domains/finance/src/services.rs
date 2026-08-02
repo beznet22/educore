@@ -3483,7 +3483,7 @@ where
 {
     let now = clock.now();
     let event_id = ids.next_event_id();
-    let school = cmd.tenant.school_id;
+    let _school = cmd.tenant.school_id;
 
     let mut tx = RealTransaction::fresh(
         cmd.transaction_id,
@@ -6946,7 +6946,7 @@ mod tests {
 
     #[test]
     fn record_payment_returns_aggregate_and_event() -> educore_core::error::Result<()> {
-        let (school, user, _at, _corr, tenant) = ctx();
+        let (_school, _user, _at, _corr, tenant) = ctx();
         let payment_date = chrono::NaiveDate::from_ymd_opt(2026, 6, 13).ok_or_else(|| {
             DomainError::validation("INVARIANT: 2026-06-13 is a valid calendar date")
         })?;

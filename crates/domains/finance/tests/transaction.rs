@@ -25,7 +25,6 @@ use educore_events::domain_event::DomainEvent;
 use educore_finance::prelude::{
     create_transaction, retire_transaction, Currency, RealTransaction, TransactionCreated,
     TransactionId, TransactionRetired,
-    FINANCE_TRANSACTION_RETIRE_COMMAND_TYPE,
 };
 
 fn admin_context() -> (TenantContext, SystemIdGen) {

@@ -9656,7 +9656,7 @@ mod tests {
         let id = crate::value_objects::ExpenseId::new(school, g.next_uuid());
         let head = ExpenseHeadId::new(school, g.next_uuid());
         let acct = BankAccountId::new(school, g.next_uuid());
-        let ev = ExpenseRecorded::new(
+        let _ev = ExpenseRecorded::new(
             id,
             "Office supplies".to_owned(),
             5000,
