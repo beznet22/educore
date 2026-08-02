@@ -14,9 +14,7 @@ use educore_core::ids::{CorrelationId, Identifier, UserId};
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 use educore_finance::prelude::*;
-use educore_finance::value_objects::{
-    DirectFeesInstallmentId, DirectFeesReminderId,
-};
+use educore_finance::value_objects::{DirectFeesInstallmentId, DirectFeesReminderId};
 
 fn admin_context() -> (TenantContext, SystemIdGen) {
     let g = SystemIdGen;
@@ -121,10 +119,11 @@ fn fresh_negative_days_validation_error_dfr_i_1() {
     let clock = SystemClock;
 
     let err = create_direct_fees_reminder(cmd, &clock, &g).unwrap_err();
-    assert!(matches!(
-        err,
-        educore_core::error::DomainError::Validation(_)
-    ), "expected Validation error, got {:?}", err);
+    assert!(
+        matches!(err, educore_core::error::DomainError::Validation(_)),
+        "expected Validation error, got {:?}",
+        err
+    );
 }
 
 #[test]
@@ -212,10 +211,11 @@ fn update_metadata_negative_days_validation_error_dfr_i_1() {
         note: None,
     };
     let err = update_direct_fees_reminder(update_cmd, &clock, &g, &mut row).unwrap_err();
-    assert!(matches!(
-        err,
-        educore_core::error::DomainError::Validation(_)
-    ), "expected Validation error, got {:?}", err);
+    assert!(
+        matches!(err, educore_core::error::DomainError::Validation(_)),
+        "expected Validation error, got {:?}",
+        err
+    );
 }
 
 #[test]
@@ -246,10 +246,11 @@ fn update_metadata_on_retired_returns_conflict() {
         note: None,
     };
     let err = update_direct_fees_reminder(update_cmd, &clock, &g, &mut row).unwrap_err();
-    assert!(matches!(
-        err,
-        educore_core::error::DomainError::Conflict(_)
-    ), "expected Conflict error, got {:?}", err);
+    assert!(
+        matches!(err, educore_core::error::DomainError::Conflict(_)),
+        "expected Conflict error, got {:?}",
+        err
+    );
 }
 
 // ============================================================================
@@ -321,10 +322,11 @@ fn retire_already_retired_returns_conflict() {
         direct_fees_reminder_id: id,
     };
     let err = retire_direct_fees_reminder(retire_cmd2, &clock, &g, &mut row).unwrap_err();
-    assert!(matches!(
-        err,
-        educore_core::error::DomainError::Conflict(_)
-    ), "expected Conflict error, got {:?}", err);
+    assert!(
+        matches!(err, educore_core::error::DomainError::Conflict(_)),
+        "expected Conflict error, got {:?}",
+        err
+    );
 }
 
 // ============================================================================

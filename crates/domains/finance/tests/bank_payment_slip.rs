@@ -28,8 +28,8 @@ use educore_finance::events::{
     BankPaymentSlipRetired,
 };
 use educore_finance::prelude::*;
-use educore_finance::value_objects::{BankAccountId, BankPaymentSlipId, PaymentMode};
 use educore_finance::value_objects::ApprovalStatus;
+use educore_finance::value_objects::{BankAccountId, BankPaymentSlipId, PaymentMode};
 
 fn admin_context() -> (TenantContext, SystemIdGen) {
     let g = SystemIdGen;
@@ -463,8 +463,7 @@ fn approve_bank_payment_slip_service_emits_approved_event_bp_i_2() {
         bank_payment_slip_id: id,
     };
     let (updated, evt): (RealBankPaymentSlip, BankPaymentSlipApproved) =
-        approve_bank_payment_slip(agg, cmd, &clock, &g)
-            .expect("approve service should succeed");
+        approve_bank_payment_slip(agg, cmd, &clock, &g).expect("approve service should succeed");
     assert_eq!(updated.status, ApprovalStatus::Approved);
     assert_eq!(evt.approved_by, actor);
     assert_eq!(evt.status, ApprovalStatus::Approved);
@@ -500,8 +499,7 @@ fn reject_bank_payment_slip_service_emits_rejected_event_bp_i_2() {
         reject_note: "Wrong amount".to_string(),
     };
     let (updated, evt): (RealBankPaymentSlip, BankPaymentSlipRejected) =
-        reject_bank_payment_slip(agg, cmd, &clock, &g)
-            .expect("reject service should succeed");
+        reject_bank_payment_slip(agg, cmd, &clock, &g).expect("reject service should succeed");
     assert_eq!(updated.status, ApprovalStatus::Rejected);
     assert_eq!(evt.rejected_by, actor);
     assert_eq!(evt.reject_note, "Wrong amount");

@@ -34,130 +34,139 @@ use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 
 use crate::aggregate::{
-    Expense, FeesInvoice, FeesPayment, RealChartOfAccount, RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
-    RealBankPaymentSlipAudit, RealDirectFeesSetting, RealDonor, RealExpenseApproval, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFeesCarryForward, RealFeesMaster, RealFmFeesGroup, RealIncomeApproval,
-    RealFmFeesInvoiceLineNote, RealFmFeesTransactionChild, RealFmFeesTransactionLineNote,
-    RealIncomeHead, RealInvoiceSetting, RealQuestionBankFee, RealSalaryTemplate, RealBankStatement, RealBankAccount, RealFeesDiscount, RealDirectFeesReminder, RealExpenseHead, RealFeesGroup, RealDueFeesLoginPrevent, RealFeesInvoiceSetting, RealFeesInstallmentCredit, FeesInstallmentCreditSource, RealFmFeesInvoiceSetting, RealFmFeesWeaver, RealIncome, RealInventoryPayment, RealProductPurchase, RealFmFeesInvoice, RealFmFeesInvoiceChild, RealDirectFeesInstallmentAssign, RealTransaction, RealFeesInstallmentAssignDiscount, RealPaymentMethod, RealFeesInstallmentAssign, RealAmountTransfer, RealDirectFeesInstallment, RealFeesAssignDiscount, RealFeesAssign, RealFmFeesTransaction, RealFeesInstallment, RealFmFeesType, RealBankPaymentSlip, Wallet, WalletTransaction, RealPaymentGatewaySetting, RealPayrollPayment,
-};
-use crate::entities::{
-    BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval,
+    Expense, FeesInstallmentCreditSource, FeesInvoice, FeesPayment, RealAmountTransfer,
+    RealBankAccount, RealBankPaymentSlip, RealBankPaymentSlipAudit, RealBankStatement,
+    RealChartOfAccount, RealDirectFeesInstallment, RealDirectFeesInstallmentAssign,
+    RealDirectFeesInstallmentAssignChild, RealDirectFeesInstallmentChildPayment,
+    RealDirectFeesReminder, RealDirectFeesSetting, RealDonor, RealDueFeesLoginPrevent,
+    RealExpenseApproval, RealExpenseHead, RealFeesAssign, RealFeesAssignDiscount,
+    RealFeesCarryForward, RealFeesCarryForwardLog, RealFeesCarryForwardSetting, RealFeesDiscount,
+    RealFeesGroup, RealFeesInstallment, RealFeesInstallmentAssign,
+    RealFeesInstallmentAssignDiscount, RealFeesInstallmentCredit, RealFeesInvoiceSetting,
+    RealFeesMaster, RealFmFeesGroup, RealFmFeesInvoice, RealFmFeesInvoiceChild,
+    RealFmFeesInvoiceLineNote, RealFmFeesInvoiceSetting, RealFmFeesTransaction,
+    RealFmFeesTransactionChild, RealFmFeesTransactionLineNote, RealFmFeesType, RealFmFeesWeaver,
+    RealIncome, RealIncomeApproval, RealIncomeHead, RealInventoryPayment, RealInvoiceSetting,
+    RealPaymentGatewaySetting, RealPaymentMethod, RealPayrollPayment, RealProductPurchase,
+    RealQuestionBankFee, RealSalaryTemplate, RealTransaction, Wallet, WalletTransaction,
 };
 use crate::commands::{
-    ApproveExpenseApprovalCommand, ApproveIncomeApprovalCommand, ApprovePayrollPaymentApprovalCommand,
-    CreateBankPaymentSlipAuditCommand,
-    CreateBankStatementAttachmentCommand,
-    CreateBankStatementCommand,
-    CreateFeesDiscountCommand,
-    ApproveWalletTransactionApprovalCommand,
-    CreateChartOfAccountCommand,
-    CreateSalaryTemplateCommand,
-    CreateDirectFeesInstallmentAssignChildCommand, CreateDirectFeesInstallmentChildPaymentCommand,
-    RetireDirectFeesInstallmentChildPaymentCommand,
-    CreateDirectFeesSettingCommand, CreateDonorCommand, CreateExpenseApprovalCommand, CreateFeesAssignDiscountCommand,
-    CreateIncomeApprovalCommand, CreateIncomeCommand, ReadIncomeCommand, RetireIncomeCommand,
-    CreateInventoryPaymentCommand, ReadInventoryPaymentCommand, RetireInventoryPaymentCommand,
-    CreateProductPurchaseCommand, ReadProductPurchaseCommand, RetireProductPurchaseCommand, RecordProductPurchaseReceiptCommand, CancelProductPurchaseCommand,
-    CreateFmFeesInvoiceCommand, ReadFmFeesInvoiceCommand, RetireFmFeesInvoiceCommand,
-    CreateFmFeesInvoiceChildCommand, ReadFmFeesInvoiceChildCommand, RetireFmFeesInvoiceChildCommand,
-    CreateDirectFeesInstallmentAssignCommand, ReadDirectFeesInstallmentAssignCommand, RetireDirectFeesInstallmentAssignCommand,
-    CreatePayrollPaymentApprovalCommand,
-    RejectExpenseApprovalCommand, RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
-    UpdateBankStatementCommand, ReverseBankStatementCommand, RetireBankStatementCommand,
-    OpenBankAccountCommand, UpdateBankAccountCommand, DeleteBankAccountCommand,
-    CreateDirectFeesReminderCommand, UpdateDirectFeesReminderCommand, DeleteDirectFeesReminderCommand,
-    CreateExpenseHeadCommand, UpdateExpenseHeadCommand, DeleteExpenseHeadCommand,
-    CreateFeesGroupCommand, UpdateFeesGroupCommand, DeleteFeesGroupCommand,
-    BlockLoginForDueFeesCommand, UnblockLoginForDueFeesCommand, ReadDueFeesBlockCommand,
-    CreateFeesInvoiceSettingCommand, ReadFeesInvoiceSettingCommand, UpdateFeesInvoiceSettingCommand, DeleteFeesInvoiceSettingCommand,
-    CreateFeesInstallmentCreditCommand, ReadFeesInstallmentCreditCommand, RetireFeesInstallmentCreditCommand,
-    CreateFmFeesInvoiceSettingCommand, ReadFmFeesInvoiceSettingCommand, UpdateFmFeesInvoiceSettingCommand, RetireFmFeesInvoiceSettingCommand,
-    CreateFmFeesWeaverCommand, ReadFmFeesWeaverCommand, RetireFmFeesWeaverCommand,
-    CreateFeesCarryForwardLogCommand, CreateFeesCarryForwardSettingCommand, CreateFeesCarryForwardCommand, ReadFeesCarryForwardCommand, RetireFeesCarryForwardCommand, CreateFeesMasterCommand, ReadFeesMasterCommand, RetireFeesMasterCommand,
-    CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesTransactionLineNoteCommand,
-    CreateWalletTransactionApprovalCommand, RejectWalletTransactionApprovalCommand,
-    CreateFmFeesGroupCommand,
-    CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand, CreateFmFeesTypeCommand,
-    ConfigurePaymentGatewayCommand, UpdatePaymentGatewayCommand,
-    RecordPayrollPaymentCommand,
-    CreateIncomeHeadCommand,
-    CreateInvoiceSettingCommand, CreateQuestionBankFeeCommand,
-    CreateTransactionCommand,
-    ReadDirectFeesInstallmentChildPaymentCommand, ReadDonorCommand,
-    ReadFeesAssignDiscountCommand,
-    ReadFmFeesGroupCommand,
-    ReadFmFeesTransactionChildCommand,
-    ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand,
-    ReadTransactionCommand, RetireTransactionCommand, PostTransactionCommand, CreateFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentAssignDiscountCommand, CreatePaymentMethodCommand, ReadPaymentMethodCommand, RetirePaymentMethodCommand, CreateFeesInstallmentAssignCommand, ReadFeesInstallmentAssignCommand, RetireFeesInstallmentAssignCommand, CloseFeesInstallmentAssignCommand, CancelFeesInstallmentAssignCommand, CreateAmountTransferCommand, ReadAmountTransferCommand, RetireAmountTransferCommand, CreateDirectFeesInstallmentCommand, ReadDirectFeesInstallmentCommand, RetireDirectFeesInstallmentCommand, RetireFeesAssignDiscountCommand, CreateFeesAssignCommand, ReadFeesAssignCommand, RetireFeesAssignCommand, RecordFeesAssignPaymentCommand, CancelFeesAssignCommand,
-    CreateFeesInstallmentCommand, ReadFeesInstallmentCommand, RetireFeesInstallmentCommand,
-    ApproveFmFeesInvoiceCommand, RejectFmFeesInvoiceCommand,
-    RetireFmFeesTransactionCommand,
-    RetireFmFeesTypeCommand,
-    CreateBankPaymentSlipCommand, ReadBankPaymentSlipCommand, RetireBankPaymentSlipCommand,
-    ApproveBankPaymentSlipCommand, RejectBankPaymentSlipCommand,
-    ApproveFmFeesTransactionCommand,
-    RejectFmFeesTransactionCommand,
+    ApproveBankPaymentSlipCommand, ApproveExpenseApprovalCommand, ApproveFmFeesInvoiceCommand,
+    ApproveFmFeesTransactionCommand, ApproveIncomeApprovalCommand,
+    ApprovePayrollPaymentApprovalCommand, ApproveWalletTransactionApprovalCommand,
+    BlockLoginForDueFeesCommand, CancelFeesAssignCommand, CancelFeesInstallmentAssignCommand,
+    CancelProductPurchaseCommand, CloseFeesInstallmentAssignCommand,
+    ConfigurePaymentGatewayCommand, CreateAmountTransferCommand, CreateBankPaymentSlipAuditCommand,
+    CreateBankPaymentSlipCommand, CreateBankStatementAttachmentCommand, CreateBankStatementCommand,
+    CreateChartOfAccountCommand, CreateDirectFeesInstallmentAssignChildCommand,
+    CreateDirectFeesInstallmentAssignCommand, CreateDirectFeesInstallmentChildPaymentCommand,
+    CreateDirectFeesInstallmentCommand, CreateDirectFeesReminderCommand,
+    CreateDirectFeesSettingCommand, CreateDonorCommand, CreateExpenseApprovalCommand,
+    CreateExpenseHeadCommand, CreateFeesAssignCommand, CreateFeesAssignDiscountCommand,
+    CreateFeesCarryForwardCommand, CreateFeesCarryForwardLogCommand,
+    CreateFeesCarryForwardSettingCommand, CreateFeesDiscountCommand, CreateFeesGroupCommand,
+    CreateFeesInstallmentAssignCommand, CreateFeesInstallmentAssignDiscountCommand,
+    CreateFeesInstallmentCommand, CreateFeesInstallmentCreditCommand,
+    CreateFeesInvoiceSettingCommand, CreateFeesMasterCommand, CreateFmFeesGroupCommand,
+    CreateFmFeesInvoiceChildCommand, CreateFmFeesInvoiceCommand,
+    CreateFmFeesInvoiceLineNoteCommand, CreateFmFeesInvoiceSettingCommand,
+    CreateFmFeesTransactionChildCommand, CreateFmFeesTransactionCommand,
+    CreateFmFeesTransactionLineNoteCommand, CreateFmFeesTypeCommand, CreateFmFeesWeaverCommand,
+    CreateIncomeApprovalCommand, CreateIncomeCommand, CreateIncomeHeadCommand,
+    CreateInventoryPaymentCommand, CreateInvoiceSettingCommand, CreatePaymentMethodCommand,
+    CreatePayrollPaymentApprovalCommand, CreateProductPurchaseCommand,
+    CreateQuestionBankFeeCommand, CreateSalaryTemplateCommand, CreateTransactionCommand,
+    CreateWalletTransactionApprovalCommand, DeleteBankAccountCommand,
+    DeleteDirectFeesReminderCommand, DeleteExpenseHeadCommand, DeleteFeesGroupCommand,
+    DeleteFeesInvoiceSettingCommand, OpenBankAccountCommand, PostTransactionCommand,
+    ReadAmountTransferCommand, ReadBankPaymentSlipCommand, ReadDirectFeesInstallmentAssignCommand,
+    ReadDirectFeesInstallmentChildPaymentCommand, ReadDirectFeesInstallmentCommand,
+    ReadDonorCommand, ReadDueFeesBlockCommand, ReadFeesAssignCommand,
+    ReadFeesAssignDiscountCommand, ReadFeesCarryForwardCommand, ReadFeesInstallmentAssignCommand,
+    ReadFeesInstallmentAssignDiscountCommand, ReadFeesInstallmentCommand,
+    ReadFeesInstallmentCreditCommand, ReadFeesInvoiceSettingCommand, ReadFeesMasterCommand,
+    ReadFmFeesGroupCommand, ReadFmFeesInvoiceChildCommand, ReadFmFeesInvoiceCommand,
+    ReadFmFeesInvoiceSettingCommand, ReadFmFeesTransactionChildCommand,
+    ReadFmFeesTransactionCommand, ReadFmFeesTypeCommand, ReadFmFeesWeaverCommand,
+    ReadIncomeCommand, ReadInventoryPaymentCommand, ReadPaymentMethodCommand,
+    ReadProductPurchaseCommand, ReadTransactionCommand, RecordFeesAssignPaymentCommand,
+    RecordPayrollPaymentCommand, RecordProductPurchaseReceiptCommand, RejectBankPaymentSlipCommand,
+    RejectExpenseApprovalCommand, RejectFmFeesInvoiceCommand, RejectFmFeesTransactionCommand,
+    RejectIncomeApprovalCommand, RejectPayrollPaymentApprovalCommand,
+    RejectWalletTransactionApprovalCommand, RetireAmountTransferCommand,
+    RetireBankPaymentSlipCommand, RetireBankStatementCommand,
+    RetireDirectFeesInstallmentAssignCommand, RetireDirectFeesInstallmentChildPaymentCommand,
+    RetireDirectFeesInstallmentCommand, RetireFeesAssignCommand, RetireFeesAssignDiscountCommand,
+    RetireFeesCarryForwardCommand, RetireFeesInstallmentAssignCommand,
+    RetireFeesInstallmentAssignDiscountCommand, RetireFeesInstallmentCommand,
+    RetireFeesInstallmentCreditCommand, RetireFeesMasterCommand, RetireFmFeesInvoiceChildCommand,
+    RetireFmFeesInvoiceCommand, RetireFmFeesInvoiceSettingCommand, RetireFmFeesTransactionCommand,
+    RetireFmFeesTypeCommand, RetireFmFeesWeaverCommand, RetireIncomeCommand,
+    RetireInventoryPaymentCommand, RetirePaymentMethodCommand, RetireProductPurchaseCommand,
+    RetireTransactionCommand, ReverseBankStatementCommand, UnblockLoginForDueFeesCommand,
+    UpdateBankAccountCommand, UpdateBankStatementCommand, UpdateDirectFeesReminderCommand,
+    UpdateExpenseHeadCommand, UpdateFeesGroupCommand, UpdateFeesInvoiceSettingCommand,
+    UpdateFmFeesInvoiceSettingCommand, UpdatePaymentGatewayCommand,
 };
+use crate::entities::{BankStatementAttachment, PayrollPaymentApproval, WalletTransactionApproval};
 use crate::events::{
+    AmountTransferCreated, AmountTransferRetired, BankAccountCreated, BankAccountRetired,
+    BankAccountUpdated, BankPaymentSlipApproved, BankPaymentSlipAuditCreated,
+    BankPaymentSlipAuditRetired, BankPaymentSlipCreated, BankPaymentSlipRejected,
+    BankPaymentSlipRetired, BankStatementAttachmentCreated, BankStatementAttachmentRetired,
+    BankStatementCreated, BankStatementRetired, BankStatementReversed, BankStatementUpdated,
     ChartOfAccountCreated, DirectFeesInstallmentAssignChildAdded,
-    DirectFeesInstallmentChildPaymentCreated, DirectFeesInstallmentChildPaymentRetired,
-        IncomeCreated, IncomeRetired,
-        InventoryPaymentCreated, InventoryPaymentRetired,
-        ProductPurchaseCreated, ProductPurchaseRetired, ProductPurchaseReceived, ProductPurchaseCancelled,
-        FmFeesInvoiceCreated, FmFeesInvoiceRetired,
-        FmFeesInvoiceChildCreated, FmFeesInvoiceChildRetired,
-        DirectFeesInstallmentAssignCreated, DirectFeesInstallmentAssignRetired,
-    TransactionCreated, TransactionRetired, TransactionPosted,
+    DirectFeesInstallmentAssignChildRetired, DirectFeesInstallmentAssignCreated,
+    DirectFeesInstallmentAssignRetired, DirectFeesInstallmentChildPaymentCreated,
+    DirectFeesInstallmentChildPaymentRetired, DirectFeesInstallmentCreated,
+    DirectFeesInstallmentRetired, DirectFeesReminderCreated, DirectFeesReminderRetired,
+    DirectFeesReminderUpdated, DirectFeesSettingCreated, DonorCreated, DueFeesLoginPreventCreated,
+    DueFeesLoginPreventPruned, DueFeesLoginPreventRetired, DueFeesLoginPreventUpdated,
+    ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected, ExpenseHeadCreated,
+    ExpenseHeadRetired, ExpenseHeadUpdated, ExpenseRecorded, FeesAssignCancelled,
+    FeesAssignCreated, FeesAssignDiscountCreated, FeesAssignDiscountRetired,
+    FeesAssignPaymentRecorded, FeesAssignRetired, FeesCarryForwardCreated,
+    FeesCarryForwardLogCreated, FeesCarryForwardRetired, FeesCarryForwardSettingCreated,
+    FeesDiscountCreated, FeesDiscountRetired, FeesDiscountUpdated, FeesGroupCreated,
+    FeesGroupRetired, FeesGroupUpdated, FeesInstallmentAssignCancelled,
+    FeesInstallmentAssignClosed, FeesInstallmentAssignCreated,
     FeesInstallmentAssignDiscountCreated, FeesInstallmentAssignDiscountRetired,
-    PaymentMethodCreated, PaymentMethodRetired,
-    PaymentGatewayConfigured, PaymentGatewayUpdated, PaymentGatewayDisabled,
-    PayrollPaymentRecorded, PayrollPaymentRetired,
-    FeesInstallmentAssignCreated, FeesInstallmentAssignRetired,
-    AmountTransferCreated, AmountTransferRetired,
-    DirectFeesInstallmentCreated, DirectFeesInstallmentRetired, FeesAssignDiscountCreated, FeesAssignDiscountRetired, FeesAssignCreated, FeesAssignRetired,
-    DirectFeesInstallmentAssignChildRetired, DirectFeesSettingCreated, DonorCreated,
-    ExpenseApprovalApproved, ExpenseApprovalCreated, ExpenseApprovalRejected,
-    ExpenseRecorded, FeesCarryForwardLogCreated, FeesCarryForwardSettingCreated, FeesCarryForwardCreated, FeesCarryForwardRetired, FeesMasterCreated, FeesMasterRetired,
-    FmFeesGroupCreated, FmFeesInvoiceSettingCreated, FmFeesInvoiceSettingUpdated, FmFeesInvoiceSettingRetired, FmFeesWeaverCreated, FmFeesWeaverRetired, IncomeApprovalApproved, IncomeApprovalCreated, IncomeApprovalRejected,
-    PayrollPaymentApprovalApproved, PayrollPaymentApprovalCreated, PayrollPaymentApprovalRejected,
-    SalaryTemplateCreated, BankPaymentSlipAuditCreated, BankPaymentSlipAuditRetired,
-    BankStatementAttachmentCreated, BankStatementAttachmentRetired,
-    BankStatementCreated, BankStatementUpdated, BankStatementReversed, BankStatementRetired,
-    FeesDiscountCreated, FeesDiscountRetired, FeesDiscountUpdated,
-    BankAccountCreated, BankAccountUpdated, BankAccountRetired,
-    DirectFeesReminderCreated, DirectFeesReminderUpdated, DirectFeesReminderRetired,
-    ExpenseHeadCreated, ExpenseHeadUpdated, ExpenseHeadRetired,
-    FeesGroupCreated, FeesGroupUpdated, FeesGroupRetired,
-    DueFeesLoginPreventCreated, DueFeesLoginPreventUpdated, DueFeesLoginPreventRetired, DueFeesLoginPreventPruned,
-    FeesInvoiceSettingCreated, FeesInvoiceSettingUpdated, FeesInvoiceSettingRetired,
-    FeesInstallmentCreditCreated, FeesInstallmentCreditRetired,
-    FmFeesInvoiceLineNoteCreated, FmFeesTransactionChildCreated, FmFeesTransactionLineNoteAdded,
-    FmFeesTransactionCreated, FmFeesTransactionRetired,
-    FmFeesTransactionApproved, FmFeesTransactionRejected,
-    FeesInstallmentCreated, FeesInstallmentRetired,
-    FmFeesInvoiceApproved, FmFeesInvoiceRejected,
-    FmFeesTypeCreated, FmFeesTypeRetired,
-    BankPaymentSlipCreated, BankPaymentSlipApproved, BankPaymentSlipRejected, BankPaymentSlipRetired,
-    FeesAssignPaymentRecorded, FeesAssignCancelled,
-    FeesInstallmentAssignClosed, FeesInstallmentAssignCancelled,
-    IncomeHeadCreated, InvoiceNumberingConfigured, InvoiceSettingCreated,
-    WalletTransactionApprovalApproved, WalletTransactionApprovalCreated,
-    WalletTransactionApprovalRejected,
-    PaymentReceived, QuestionBankFeeCreated, WalletCreated, WalletCredited, WalletDebited,
-    WalletRefundRequested, WalletTransactionApproved, WalletTransactionRejected,
+    FeesInstallmentAssignRetired, FeesInstallmentCreated, FeesInstallmentCreditCreated,
+    FeesInstallmentCreditRetired, FeesInstallmentRetired, FeesInvoiceSettingCreated,
+    FeesInvoiceSettingRetired, FeesInvoiceSettingUpdated, FeesMasterCreated, FeesMasterRetired,
+    FmFeesGroupCreated, FmFeesInvoiceApproved, FmFeesInvoiceChildCreated,
+    FmFeesInvoiceChildRetired, FmFeesInvoiceCreated, FmFeesInvoiceLineNoteCreated,
+    FmFeesInvoiceRejected, FmFeesInvoiceRetired, FmFeesInvoiceSettingCreated,
+    FmFeesInvoiceSettingRetired, FmFeesInvoiceSettingUpdated, FmFeesTransactionApproved,
+    FmFeesTransactionChildCreated, FmFeesTransactionCreated, FmFeesTransactionLineNoteAdded,
+    FmFeesTransactionRejected, FmFeesTransactionRetired, FmFeesTypeCreated, FmFeesTypeRetired,
+    FmFeesWeaverCreated, FmFeesWeaverRetired, IncomeApprovalApproved, IncomeApprovalCreated,
+    IncomeApprovalRejected, IncomeCreated, IncomeHeadCreated, IncomeRetired,
+    InventoryPaymentCreated, InventoryPaymentRetired, InvoiceNumberingConfigured,
+    InvoiceSettingCreated, PaymentGatewayConfigured, PaymentGatewayDisabled, PaymentGatewayUpdated,
+    PaymentMethodCreated, PaymentMethodRetired, PaymentReceived, PayrollPaymentApprovalApproved,
+    PayrollPaymentApprovalCreated, PayrollPaymentApprovalRejected, PayrollPaymentRecorded,
+    PayrollPaymentRetired, ProductPurchaseCancelled, ProductPurchaseCreated,
+    ProductPurchaseReceived, ProductPurchaseRetired, QuestionBankFeeCreated, SalaryTemplateCreated,
+    TransactionCreated, TransactionPosted, TransactionRetired, WalletCreated, WalletCredited,
+    WalletDebited, WalletRefundRequested, WalletTransactionApprovalApproved,
+    WalletTransactionApprovalCreated, WalletTransactionApprovalRejected, WalletTransactionApproved,
+    WalletTransactionRejected,
 };
 use crate::value_objects::{
     AccountType, AmountTransferId, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId,
-    BankStatementAttachmentId, BankStatementId, Currency, DiscountType, FeesMasterId, StatementType,
-    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId,
-    DonorId, DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
-    IncomeApprovalId, IncomeId, InventoryPaymentId, ProductPurchaseId,
-    PayrollPaymentApprovalId, PayrollPaymentId,
-    SalaryTemplateId,
-    FeesInvoiceId, FeesPaymentId,
-    FeesGroupId, FeesInstallmentCreditId, FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
-    FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesTypeKind, IncomeHeadId, InvoiceSettingId,
-    LifecycleStatus, PaymentMode,
-    FeesAssignId, FeesDiscountId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, FeesInstallmentId, PaymentMethodKind, QuestionBankFeeId, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
+    BankStatementAttachmentId, BankStatementId, Currency, DirectFeesInstallmentAssignChildId,
+    DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId,
+    DirectFeesSettingId, DiscountType, DonorId, DueFeesLoginPreventId, ExpenseApprovalId,
+    ExpenseHeadId, ExpenseId, FeesAssignId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
+    FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId,
+    FeesInstallmentCreditId, FeesInstallmentId, FeesInvoiceId, FeesMasterId, FeesPaymentId,
+    FmFeesGroupId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesTransactionChildId,
+    FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesTypeKind,
+    IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId,
+    LifecycleStatus, PaymentMethodKind, PaymentMode, PayrollPaymentApprovalId, PayrollPaymentId,
+    ProductPurchaseId, QuestionBankFeeId, SalaryTemplateId, StatementType, TransactionId, WalletId,
+    WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 use crate::value_objects::{ClassId, PreventReason, SectionId};
 
@@ -592,12 +601,7 @@ where
     crate::value_objects::validate_reject_note(trimmed)?;
     let now = clock.now();
     let event_id = ids.next_event_id();
-    approval.reject(
-        cmd.rejecter_user_id,
-        trimmed.to_owned(),
-        now,
-        event_id,
-    )?;
+    approval.reject(cmd.rejecter_user_id, trimmed.to_owned(), now, event_id)?;
     Ok(WalletTransactionApprovalRejected::new(
         cmd.wallet_transaction_approval_id,
         approval.wallet_transaction_id,
@@ -1832,7 +1836,6 @@ where
     Ok((agg, event))
 }
 
-
 pub fn create_fees_assign<C, G>(
     cmd: CreateFeesAssignCommand,
     clock: &C,
@@ -1876,11 +1879,7 @@ where
     Ok((agg, event))
 }
 
-pub fn read_fees_assign<C, G>(
-    cmd: ReadFeesAssignCommand,
-    _clock: &C,
-    _ids: &G,
-) -> Result<()>
+pub fn read_fees_assign<C, G>(cmd: ReadFeesAssignCommand, _clock: &C, _ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -2339,7 +2338,10 @@ pub fn create_fm_fees_transaction_line_note<C, G>(
     cmd: CreateFmFeesTransactionLineNoteCommand,
     clock: &C,
     ids: &G,
-) -> Result<(RealFmFeesTransactionLineNote, FmFeesTransactionLineNoteAdded)>
+) -> Result<(
+    RealFmFeesTransactionLineNote,
+    FmFeesTransactionLineNoteAdded,
+)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -2382,7 +2384,10 @@ pub fn create_direct_fees_installment_assign_child<C, G>(
     cmd: CreateDirectFeesInstallmentAssignChildCommand,
     clock: &C,
     ids: &G,
-) -> Result<(RealDirectFeesInstallmentAssignChild, DirectFeesInstallmentAssignChildAdded)>
+) -> Result<(
+    RealDirectFeesInstallmentAssignChild,
+    DirectFeesInstallmentAssignChildAdded,
+)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -3611,7 +3616,6 @@ where
     Ok((agg, evt))
 }
 
-
 /// Handler: create a `FeesInstallmentAssignDiscount` child
 /// aggregate (application of a [`FeesDiscount`] to a
 /// [`FeesInstallmentAssign`]).
@@ -3628,7 +3632,10 @@ pub fn create_fees_installment_assign_discount<C, G>(
     cmd: CreateFeesInstallmentAssignDiscountCommand,
     clock: &C,
     ids: &G,
-) -> Result<(RealFeesInstallmentAssignDiscount, FeesInstallmentAssignDiscountCreated)>
+) -> Result<(
+    RealFeesInstallmentAssignDiscount,
+    FeesInstallmentAssignDiscountCreated,
+)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -3696,7 +3703,10 @@ pub fn retire_fees_installment_assign_discount<C, G>(
     cmd: RetireFeesInstallmentAssignDiscountCommand,
     clock: &C,
     ids: &G,
-) -> Result<(RealFeesInstallmentAssignDiscount, FeesInstallmentAssignDiscountRetired)>
+) -> Result<(
+    RealFeesInstallmentAssignDiscount,
+    FeesInstallmentAssignDiscountRetired,
+)>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -3715,8 +3725,14 @@ where
         // in the in-process retire path; the read path would
         // normally load them from storage. Use placeholder ids
         // derived from the aggregate id (same school).
-        FeesDiscountId::new(cmd.fees_installment_assign_discount_id.school_id(), ids.next_uuid()),
-        FeesInstallmentAssignId::new(cmd.fees_installment_assign_discount_id.school_id(), ids.next_uuid()),
+        FeesDiscountId::new(
+            cmd.fees_installment_assign_discount_id.school_id(),
+            ids.next_uuid(),
+        ),
+        FeesInstallmentAssignId::new(
+            cmd.fees_installment_assign_discount_id.school_id(),
+            ids.next_uuid(),
+        ),
         0,
         Currency::INR,
         None,
@@ -3737,7 +3753,6 @@ where
 
     Ok((agg, event))
 }
-
 
 /// Handler: create a `PaymentMethod` aggregate (cash / bank /
 /// cheque / card / mobile wallet / gateway configuration row).
@@ -3848,7 +3863,6 @@ where
 
     Ok((pm, event))
 }
-
 
 pub fn create_fees_installment_assign<C, G>(
     cmd: CreateFeesInstallmentAssignCommand,
@@ -4012,7 +4026,6 @@ where
     Ok((agg, evt))
 }
 
-
 pub fn create_amount_transfer<C, G>(
     cmd: CreateAmountTransferCommand,
     clock: &C,
@@ -4110,7 +4123,6 @@ where
     Ok((agg, event))
 }
 
-
 pub fn create_direct_fees_installment<C, G>(
     cmd: CreateDirectFeesInstallmentCommand,
     clock: &C,
@@ -4185,12 +4197,15 @@ where
 
     let mut agg = RealDirectFeesInstallment::fresh(
         cmd.direct_fees_installment_id,
-        educore_academic::StudentId::new(cmd.direct_fees_installment_id.school_id(), ids.next_uuid()),
+        educore_academic::StudentId::new(
+            cmd.direct_fees_installment_id.school_id(),
+            ids.next_uuid(),
+        ),
         "retired installment".to_owned(),
         0,
         Currency::INR,
         chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
-        0, // placeholder percentage_minor for retire path
+        0,    // placeholder percentage_minor for retire path
         None, // placeholder window_start for retire path
         None, // placeholder window_end for retire path
         cmd.tenant.actor_id,
@@ -4210,7 +4225,6 @@ where
 
     Ok((agg, event))
 }
-
 
 pub fn create_fees_carry_forward<C, G>(
     cmd: CreateFeesCarryForwardCommand,
@@ -4281,7 +4295,10 @@ where
     let mut agg = RealFeesCarryForward::fresh(
         cmd.fees_carry_forward_id,
         educore_academic::StudentId::new(cmd.fees_carry_forward_id.school_id(), ids.next_uuid()),
-        educore_academic::AcademicYearId::new(cmd.fees_carry_forward_id.school_id(), ids.next_uuid()),
+        educore_academic::AcademicYearId::new(
+            cmd.fees_carry_forward_id.school_id(),
+            ids.next_uuid(),
+        ),
         0,
         BalanceType::Debit,
         Currency::INR,
@@ -4302,7 +4319,6 @@ where
 
     Ok((agg, event))
 }
-
 
 pub fn create_fees_master<C, G>(
     cmd: CreateFeesMasterCommand,
@@ -4347,11 +4363,7 @@ where
     Ok((agg, event))
 }
 
-pub fn read_fees_master<C, G>(
-    cmd: ReadFeesMasterCommand,
-    _clock: &C,
-    _ids: &G,
-) -> Result<()>
+pub fn read_fees_master<C, G>(cmd: ReadFeesMasterCommand, _clock: &C, _ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -4748,9 +4760,8 @@ impl PayrollDisbursementService {
             payroll_id,
             bank_account,
             currency,
-            entry_count: u32::try_from(entries.len()).map_err(|_| {
-                DomainError::validation("payroll entry count exceeds u32 range")
-            })?,
+            entry_count: u32::try_from(entries.len())
+                .map_err(|_| DomainError::validation("payroll entry count exceeds u32 range"))?,
             total_minor: 0,
         })
     }
@@ -4826,9 +4837,7 @@ impl HourlyRateService {
         effective_from: NaiveDate,
     ) -> Result<HourlyRateRow> {
         if rate_minor < 0 {
-            return Err(DomainError::validation(
-                "hourly rate must be non-negative",
-            ));
+            return Err(DomainError::validation("hourly rate must be non-negative"));
         }
         Ok(HourlyRateRow {
             staff,
@@ -4857,7 +4866,10 @@ impl HourlyRateService {
     /// date from a sorted rate history. The most recent rate
     /// whose `effective_from <= date` wins.
     #[must_use]
-    pub fn get_effective_rate(history: &[HourlyRateRow], date: NaiveDate) -> Option<&HourlyRateRow> {
+    pub fn get_effective_rate(
+        history: &[HourlyRateRow],
+        date: NaiveDate,
+    ) -> Option<&HourlyRateRow> {
         history
             .iter()
             .filter(|r| r.effective_from <= date)
@@ -4928,7 +4940,10 @@ impl SalaryTemplateService {
         staff: crate::value_objects::StaffId,
     ) -> AppliedSalaryTemplate {
         let mut lines: Vec<TemplateLine> = Vec::with_capacity(
-            template.earnings.len().saturating_add(template.deductions.len()),
+            template
+                .earnings
+                .len()
+                .saturating_add(template.deductions.len()),
         );
         for e in &template.earnings {
             lines.push(e.clone());
@@ -5218,13 +5233,7 @@ where
     let new_days = cmd.due_date_before_days.unwrap_or(row.due_date_before_days);
     let new_note = cmd.note;
 
-    row.update_metadata(
-        new_remind_at,
-        new_days,
-        new_note,
-        now,
-        cmd.tenant.actor_id,
-    )?;
+    row.update_metadata(new_remind_at, new_days, new_note, now, cmd.tenant.actor_id)?;
     row.last_event_id = Some(event_id);
 
     let event = DirectFeesReminderUpdated::new(
@@ -5529,9 +5538,9 @@ where
 
     let mut row = RealDueFeesLoginPrevent::fresh(
         cmd.due_fees_login_prevent_id,
-        cmd.academic_year_id, // DFLP I-1 pinned
-        cmd.user_id,          // DFLP I-1 pinned
-        cmd.user_type,        // DFLP I-1 pinned
+        cmd.academic_year_id,          // DFLP I-1 pinned
+        cmd.user_id,                   // DFLP I-1 pinned
+        cmd.user_type,                 // DFLP I-1 pinned
         cmd.outstanding_balance_minor, // pinned at construction
         cmd.reason,
         cmd.tenant.actor_id,
@@ -5812,7 +5821,7 @@ where
 
     let mut row = RealFeesInstallmentCredit::fresh(
         cmd.fees_installment_credit_id,
-        cmd.amount_minor, // FIC I-1 pinned
+        cmd.amount_minor,  // FIC I-1 pinned
         cmd.credit_source, // FIC I-2 type-pinned
         cmd.source_installment_id,
         cmd.description,
@@ -5824,7 +5833,7 @@ where
 
     let event = FeesInstallmentCreditCreated::new(
         cmd.fees_installment_credit_id,
-        row.amount_minor, // FIC I-1 carried downstream
+        row.amount_minor,  // FIC I-1 carried downstream
         row.credit_source, // FIC I-2 carried downstream
         row.source_installment_id,
         row.description.clone(),
@@ -5874,7 +5883,6 @@ where
     );
     Ok(event)
 }
-
 
 // ===================================================================
 // Wave 94 — RealFmFeesInvoiceSetting service functions (per-aggregate wave pattern from Waves 65-93)
@@ -6052,11 +6060,7 @@ where
 /// Currently a no-op stub (read-only aggregate lookup is a dispatcher
 /// concern). Emits nothing.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_fm_fees_weaver<C, G>(
-    cmd: ReadFmFeesWeaverCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn read_fm_fees_weaver<C, G>(cmd: ReadFmFeesWeaverCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -6190,11 +6194,7 @@ where
 /// Enforces IN I-1 (`amount_minor >= 0`) at construction.
 /// Emits `IncomeCreated` downstream.
 #[allow(clippy::too_many_arguments, clippy::needless_pass_by_value)]
-pub fn create_income<C, G>(
-    cmd: CreateIncomeCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<IncomeCreated>
+pub fn create_income<C, G>(cmd: CreateIncomeCommand, clock: &C, ids: &G) -> Result<IncomeCreated>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -6233,11 +6233,7 @@ where
 /// Currently a no-op stub (read-only aggregate lookup is a dispatcher
 /// concern). Emits nothing.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_income<C, G>(
-    cmd: ReadIncomeCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn read_income<C, G>(cmd: ReadIncomeCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -6252,11 +6248,7 @@ where
 /// `description` in the audit footer for legal-record retention.
 /// Emits `IncomeRetired` downstream.
 #[allow(clippy::needless_pass_by_value)]
-pub fn retire_income<C, G>(
-    cmd: RetireIncomeCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<IncomeRetired>
+pub fn retire_income<C, G>(cmd: RetireIncomeCommand, clock: &C, ids: &G) -> Result<IncomeRetired>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -6563,11 +6555,7 @@ where
 /// Currently a no-op stub (read-only aggregate lookup is a dispatcher
 /// concern). Emits nothing.
 #[allow(clippy::needless_pass_by_value, unused_variables)]
-pub fn read_fm_fees_invoice<C, G>(
-    cmd: ReadFmFeesInvoiceCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<()>
+pub fn read_fm_fees_invoice<C, G>(cmd: ReadFmFeesInvoiceCommand, clock: &C, ids: &G) -> Result<()>
 where
     C: Clock + ?Sized,
     G: IdGenerator + ?Sized,
@@ -7213,15 +7201,18 @@ mod tests {
     fn payroll_disbursement_emits_summary() -> educore_core::error::Result<()> {
         let (school, _user, _at, _corr, _tenant) = ctx();
         let g = educore_core::clock::SystemIdGen;
-        let payroll_id =
-            crate::value_objects::PayrollGenerateId::new(school, g.next_uuid());
+        let payroll_id = crate::value_objects::PayrollGenerateId::new(school, g.next_uuid());
         let bank = BankAccountId::new(school, g.next_uuid());
         let entries = vec![
             crate::value_objects::PayrollEarnDeducId::new(school, g.next_uuid()),
             crate::value_objects::PayrollEarnDeducId::new(school, g.next_uuid()),
         ];
-        let summary =
-            PayrollDisbursementService::disburse_payroll(payroll_id, bank, Currency::INR, &entries)?;
+        let summary = PayrollDisbursementService::disburse_payroll(
+            payroll_id,
+            bank,
+            Currency::INR,
+            &entries,
+        )?;
         assert_eq!(summary.entry_count, 2);
         assert_eq!(summary.currency, Currency::INR);
         assert_eq!(summary.bank_account, bank);

@@ -54,12 +54,7 @@ fn chart_of_account_id(g: &SystemIdGen, school: SchoolId) -> ChartOfAccountId {
     ChartOfAccountId::new(school, g.next_uuid())
 }
 
-fn make_account(
-    g: &SystemIdGen,
-    school: SchoolId,
-    code: &str,
-    name: &str,
-) -> RealChartOfAccount {
+fn make_account(g: &SystemIdGen, school: SchoolId, code: &str, name: &str) -> RealChartOfAccount {
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
     let now = SystemClock.now();
@@ -273,7 +268,10 @@ fn update_metadata_with_valid_inputs_bumps_version_and_advances_timestamp() {
     assert_eq!(account.code, "1100-CASH-EQUIV");
     assert_eq!(account.name, "Cash Equivalents");
     assert_eq!(account.account_type, AccountType::Cash);
-    assert_eq!(account.description.as_deref(), Some("Short-term investments"));
+    assert_eq!(
+        account.description.as_deref(),
+        Some("Short-term investments")
+    );
     assert!(account.version > initial_version);
     assert!(account.updated_at > initial_updated_at);
     assert_eq!(account.updated_by, actor);
@@ -299,7 +297,10 @@ fn update_metadata_with_invalid_code_returns_validation_error() {
         matches!(result, Err(DomainError::Validation(_))),
         "lowercase code on update must fail with Validation (COA I-1), got {result:?}"
     );
-    assert_eq!(account.code, initial_code, "code must be unchanged on validation failure");
+    assert_eq!(
+        account.code, initial_code,
+        "code must be unchanged on validation failure"
+    );
 }
 
 #[test]
@@ -381,14 +382,16 @@ fn create_chart_of_account_service_produces_active_aggregate_and_event() {
         description: Some("Petty cash drawer".to_owned()),
     };
     let clock = SystemClock;
-    let (account, event) =
-        create_chart_of_account(cmd, &clock, &g).expect("create succeeds");
+    let (account, event) = create_chart_of_account(cmd, &clock, &g).expect("create succeeds");
 
     // Aggregate side
     assert_eq!(account.code, "1000-CASH");
     assert_eq!(account.name, "Cash");
     assert_eq!(account.account_type, AccountType::Bank);
-    assert!(account.is_active(), "service-created aggregate must be Active");
+    assert!(
+        account.is_active(),
+        "service-created aggregate must be Active"
+    );
     assert_eq!(account.school_id, school);
     assert_eq!(account.last_event_id, Some(event.event_id));
 
@@ -399,7 +402,10 @@ fn create_chart_of_account_service_produces_active_aggregate_and_event() {
     assert_eq!(event.created_by, tenant.actor_id);
     assert_eq!(event.school_id(), tenant.school_id);
     assert_eq!(event.correlation_id, tenant.correlation_id);
-    assert_eq!(ChartOfAccountCreated::EVENT_TYPE, "finance.chart_of_account.created");
+    assert_eq!(
+        ChartOfAccountCreated::EVENT_TYPE,
+        "finance.chart_of_account.created"
+    );
     assert_eq!(ChartOfAccountCreated::AGGREGATE_TYPE, "chart_of_account");
     assert_eq!(ChartOfAccountCreated::SCHEMA_VERSION, 1);
 }

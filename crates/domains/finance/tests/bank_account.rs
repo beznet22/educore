@@ -103,7 +103,10 @@ fn fresh_full_payload_bank_type() {
     assert_eq!(row.branch.as_deref(), Some("Koramangala"));
     assert_eq!(row.opening_balance_minor, 500_000);
     assert_eq!(row.currency, Currency::INR);
-    assert_eq!(row.description.as_deref(), Some("Primary operating account"));
+    assert_eq!(
+        row.description.as_deref(),
+        Some("Primary operating account")
+    );
     assert_eq!(event.bank_account_id, id);
     assert_eq!(event.account_number, "50100123456789");
     assert_eq!(event.account_type, AccountType::Bank);
@@ -138,10 +141,11 @@ fn fresh_empty_account_name_validation_error() {
     let clock = SystemClock;
 
     let err = open_bank_account(cmd, &clock, &g).unwrap_err();
-    assert!(matches!(
-        err,
-        educore_core::error::DomainError::Validation(_)
-    ), "expected Validation error, got {:?}", err);
+    assert!(
+        matches!(err, educore_core::error::DomainError::Validation(_)),
+        "expected Validation error, got {:?}",
+        err
+    );
 }
 
 #[test]
@@ -155,10 +159,11 @@ fn fresh_empty_account_number_validation_error() {
     let clock = SystemClock;
 
     let err = open_bank_account(cmd, &clock, &g).unwrap_err();
-    assert!(matches!(
-        err,
-        educore_core::error::DomainError::Validation(_)
-    ), "expected Validation error, got {:?}", err);
+    assert!(
+        matches!(err, educore_core::error::DomainError::Validation(_)),
+        "expected Validation error, got {:?}",
+        err
+    );
 }
 
 #[test]
@@ -171,10 +176,11 @@ fn fresh_empty_bank_name_validation_error() {
     let clock = SystemClock;
 
     let err = open_bank_account(cmd, &clock, &g).unwrap_err();
-    assert!(matches!(
-        err,
-        educore_core::error::DomainError::Validation(_)
-    ), "expected Validation error, got {:?}", err);
+    assert!(
+        matches!(err, educore_core::error::DomainError::Validation(_)),
+        "expected Validation error, got {:?}",
+        err
+    );
 }
 
 #[test]
@@ -238,7 +244,10 @@ fn update_metadata_mutates_mutable_fields_only() {
     assert_eq!(row.bank_name, "HDFC Bank Ltd");
     assert_eq!(row.ifsc_code.as_deref(), Some("HDFC0000999"));
     assert_eq!(row.branch.as_deref(), Some("Indiranagar"));
-    assert_eq!(row.description.as_deref(), Some("Renamed operating account"));
+    assert_eq!(
+        row.description.as_deref(),
+        Some("Renamed operating account")
+    );
     assert_eq!(event.account_name, "HDFC Operating Account v2");
     assert_eq!(event.bank_name, "HDFC Bank Ltd");
 
@@ -288,10 +297,11 @@ fn update_metadata_on_retired_returns_conflict() {
         description: None,
     };
     let err = update_bank_account(update_cmd, &clock, &g, &mut row).unwrap_err();
-    assert!(matches!(
-        err,
-        educore_core::error::DomainError::Conflict(_)
-    ), "expected Conflict error, got {:?}", err);
+    assert!(
+        matches!(err, educore_core::error::DomainError::Conflict(_)),
+        "expected Conflict error, got {:?}",
+        err
+    );
 }
 
 #[test]
@@ -314,10 +324,11 @@ fn update_metadata_empty_account_name_validation_error() {
         description: None,
     };
     let err = update_bank_account(update_cmd, &clock, &g, &mut row).unwrap_err();
-    assert!(matches!(
-        err,
-        educore_core::error::DomainError::Validation(_)
-    ), "expected Validation error, got {:?}", err);
+    assert!(
+        matches!(err, educore_core::error::DomainError::Validation(_)),
+        "expected Validation error, got {:?}",
+        err
+    );
 }
 
 // ============================================================================
@@ -395,10 +406,11 @@ fn retire_already_retired_returns_conflict() {
         bank_account_id: id,
     };
     let err = retire_bank_account(retire_cmd2, &clock, &g, &mut row).unwrap_err();
-    assert!(matches!(
-        err,
-        educore_core::error::DomainError::Conflict(_)
-    ), "expected Conflict error, got {:?}", err);
+    assert!(
+        matches!(err, educore_core::error::DomainError::Conflict(_)),
+        "expected Conflict error, got {:?}",
+        err
+    );
 }
 
 // ============================================================================

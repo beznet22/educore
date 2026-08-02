@@ -40,12 +40,12 @@
 )]
 
 use educore_academic::AcademicYearId;
-use educore_finance::value_objects::FeesMasterId;
 use educore_core::clock::{Clock as _, IdGenerator as _, SystemClock, SystemIdGen};
 use educore_core::error::DomainError;
 use educore_core::ids::SchoolId;
 use educore_core::tenant::{TenantContext, UserType};
 use educore_events::domain_event::DomainEvent as _;
+use educore_finance::value_objects::FeesMasterId;
 
 use educore_finance::commands::CreateFeesDiscountCommand;
 use educore_finance::events::FeesDiscountCreated;
@@ -372,8 +372,8 @@ fn create_service_produces_aggregate_and_event_with_full_payload() {
         currency: None,
     };
     let clock = SystemClock;
-    let (row, event) = create_fees_discount(cmd, &clock, &g)
-        .expect("create_fees_discount should succeed");
+    let (row, event) =
+        create_fees_discount(cmd, &clock, &g).expect("create_fees_discount should succeed");
     assert_eq!(row.id, id);
     assert_eq!(row.school_id, school);
     assert_eq!(row.fees_master_id, master); // FD I-3

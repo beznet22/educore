@@ -20,30 +20,31 @@
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
-use educore_core::ids::UserId;
-use uuid::Uuid;
-use educore_rbac::value_objects::Capability;
 use educore_academic::{AcademicYearId, StudentId};
-use educore_hr::value_objects::PayrollGenerateId;
+use educore_core::ids::UserId;
 use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
+use educore_hr::value_objects::PayrollGenerateId;
+use educore_rbac::value_objects::Capability;
+use uuid::Uuid;
 
 use crate::value_objects::{
-    AccountType, AmountTransferId, BalanceType, BankAccountId, BankMode, BankPaymentSlipId, BankPaymentSlipAuditId, BankStatementId,
-    ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId,
-    DirectFeesInstallmentChildPaymentId,
-    DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
-    DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
-    FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId,
-    FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, FeesInstallmentCreditId, FeesInstallmentId,
-    FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId, FeesPaymentId, FeesPaymentSlipId,
-    FeesTypeId, FmFeesGroupId, FmFeesInvoiceChildId, FmFeesInvoiceId, FmFeesInvoiceSettingId,
-    FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, GatewayMode, GatewayChargeType, PaymentMode,
-    IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId,
-    PaymentMethodId, PaymentMethodKind, PayrollPaymentId, PreventReason, ProductPurchaseId,
-    SalaryTemplateId, StatementType, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId,
-    DiscountType,
-    WalletTxType,
+    AccountType, AmountTransferId, BalanceType, BankAccountId, BankMode, BankPaymentSlipAuditId,
+    BankPaymentSlipId, BankStatementId, ChartOfAccountId, Currency,
+    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId,
+    DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId,
+    DirectFeesSettingId, DiscountType, DonorId, DueFeesLoginPreventId, ExpenseApprovalId,
+    ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId, FeesCarryForwardId,
+    FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId, FeesGroupId,
+    FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, FeesInstallmentCreditId,
+    FeesInstallmentId, FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId, FeesPaymentId,
+    FeesPaymentSlipId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceChildId, FmFeesInvoiceId,
+    FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId, FmFeesTypeId,
+    FmFeesTypeKind, FmFeesWeaverId, GatewayChargeType, GatewayMode, IncomeApprovalId, IncomeHeadId,
+    IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId, PaymentMethodId,
+    PaymentMethodKind, PaymentMode, PayrollPaymentId, PreventReason, ProductPurchaseId,
+    SalaryTemplateId, StatementType, TransactionId, WalletId, WalletTransactionApprovalId,
+    WalletTransactionId, WalletTxType,
 };
 
 // =============================================================================
@@ -296,12 +297,10 @@ pub struct CreateFeesGroupCommand {
     pub description: Option<String>,
 }
 
-
 impl CreateFeesGroupCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FEES_GROUP_CREATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_GROUP_CREATE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -319,12 +318,10 @@ pub struct UpdateFeesGroupCommand {
     pub description: Option<String>,
 }
 
-
 impl UpdateFeesGroupCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FEES_GROUP_UPDATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_GROUP_UPDATE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -338,12 +335,10 @@ pub struct DeleteFeesGroupCommand {
     pub fees_group_id: FeesGroupId,
 }
 
-
 impl DeleteFeesGroupCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FEES_GROUP_DELETE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_GROUP_DELETE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -356,7 +351,6 @@ pub struct ReadFeesGroupCommand {
     pub tenant: TenantContext,
     pub fees_group_id: FeesGroupId,
 }
-
 
 impl ReadFeesGroupCommand {
     /// The capabilities required to dispatch this command.
@@ -377,7 +371,6 @@ pub struct CreateFeesTypeCommand {
     pub currency: Currency,
 }
 
-
 impl CreateFeesTypeCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -394,7 +387,6 @@ pub struct UpdateFeesTypeCommand {
     pub amount_minor: Option<i64>,
 }
 
-
 impl UpdateFeesTypeCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -408,7 +400,6 @@ pub struct DeleteFeesTypeCommand {
     pub fees_type_id: FeesTypeId,
 }
 
-
 impl DeleteFeesTypeCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -421,7 +412,6 @@ pub struct ReadFeesTypeCommand {
     pub tenant: TenantContext,
     pub fees_type_id: FeesTypeId,
 }
-
 
 impl ReadFeesTypeCommand {
     /// The capabilities required to dispatch this command.
@@ -444,7 +434,6 @@ pub struct CreateFeesMasterCommand {
     pub name: String,
 }
 
-
 impl CreateFeesMasterCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -460,7 +449,6 @@ pub struct UpdateFeesMasterCommand {
     pub due_date: Option<NaiveDate>,
 }
 
-
 impl UpdateFeesMasterCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -473,7 +461,6 @@ pub struct DeleteFeesMasterCommand {
     pub tenant: TenantContext,
     pub fees_master_id: FeesMasterId,
 }
-
 
 impl DeleteFeesMasterCommand {
     /// The capabilities required to dispatch this command.
@@ -503,7 +490,6 @@ pub struct ReadFeesMasterCommand {
     pub fees_master_id: FeesMasterId,
 }
 
-
 impl ReadFeesMasterCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -532,7 +518,6 @@ pub struct CreateFeesDiscountCommand {
     pub currency: Option<Currency>,
 }
 
-
 impl CreateFeesDiscountCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -553,7 +538,6 @@ pub struct UpdateFeesDiscountCommand {
     pub currency: Option<Option<Currency>>,
 }
 
-
 impl UpdateFeesDiscountCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -567,7 +551,6 @@ pub struct DeleteFeesDiscountCommand {
     pub fees_discount_id: FeesDiscountId,
 }
 
-
 impl DeleteFeesDiscountCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -580,7 +563,6 @@ pub struct ReadFeesDiscountCommand {
     pub tenant: TenantContext,
     pub fees_discount_id: FeesDiscountId,
 }
-
 
 impl ReadFeesDiscountCommand {
     /// The capabilities required to dispatch this command.
@@ -603,7 +585,6 @@ pub struct CreateFeesAssignCommand {
     pub due_date: NaiveDate,
 }
 
-
 impl CreateFeesAssignCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -619,7 +600,6 @@ pub struct UpdateFeesAssignCommand {
     pub due_date: Option<NaiveDate>,
 }
 
-
 impl UpdateFeesAssignCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -632,7 +612,6 @@ pub struct DeleteFeesAssignCommand {
     pub tenant: TenantContext,
     pub fees_assign_id: FeesAssignId,
 }
-
 
 impl DeleteFeesAssignCommand {
     /// The capabilities required to dispatch this command.
@@ -691,8 +670,7 @@ pub const FINANCE_FEES_ASSIGN_CANCEL_COMMAND_TYPE: &str = "finance.fees_assign.c
 
 impl RecordFeesAssignPaymentCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FEES_ASSIGN_RECORD_PAYMENT_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_ASSIGN_RECORD_PAYMENT_COMMAND_TYPE;
 }
 
 impl CancelFeesAssignCommand {
@@ -713,7 +691,6 @@ pub struct CreateFeesInstallmentCommand {
     pub percentage: i64, // FIv I-1: integer percentage 0..=100
 }
 
-
 impl CreateFeesInstallmentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -730,7 +707,6 @@ pub struct UpdateFeesInstallmentCommand {
     pub amount_minor: Option<i64>,
 }
 
-
 impl UpdateFeesInstallmentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -744,7 +720,6 @@ pub struct DeleteFeesInstallmentCommand {
     pub fees_installment_id: FeesInstallmentId,
 }
 
-
 impl DeleteFeesInstallmentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -757,7 +732,6 @@ pub struct ReadFeesInstallmentCommand {
     pub tenant: TenantContext,
     pub fees_installment_id: FeesInstallmentId,
 }
-
 
 impl ReadFeesInstallmentCommand {
     /// The capabilities required to dispatch this command.
@@ -784,8 +758,7 @@ impl RetireFeesInstallmentCommand {
 
 // -- FeesInstallment COMMAND_TYPE constants (Wave 126) --
 
-pub const FINANCE_FEES_INSTALLMENT_RETIRE_COMMAND_TYPE: &str =
-    "finance.fees_installment.retire";
+pub const FINANCE_FEES_INSTALLMENT_RETIRE_COMMAND_TYPE: &str = "finance.fees_installment.retire";
 // CREATE / UPDATE / DELETE COMMAND_TYPE constants already exist
 // elsewhere in this file; only RETIRE is new in Wave 126.
 
@@ -800,11 +773,10 @@ pub struct CreateDirectFeesInstallmentCommand {
     pub amount_minor: i64,
     pub currency: Currency,
     pub due_date: NaiveDate,
-    pub percentage_minor: i64, // DFI I-3
+    pub percentage_minor: i64,           // DFI I-3
     pub window_start: Option<NaiveDate>, // DFI I-4
-    pub window_end: Option<NaiveDate>, // DFI I-4
+    pub window_end: Option<NaiveDate>,   // DFI I-4
 }
-
 
 impl CreateDirectFeesInstallmentCommand {
     /// The capabilities required to dispatch this command.
@@ -822,7 +794,6 @@ pub struct UpdateDirectFeesInstallmentCommand {
     pub due_date: Option<NaiveDate>,
 }
 
-
 impl UpdateDirectFeesInstallmentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -836,7 +807,6 @@ pub struct DeleteDirectFeesInstallmentCommand {
     pub direct_fees_installment_id: DirectFeesInstallmentId,
 }
 
-
 impl DeleteDirectFeesInstallmentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -849,7 +819,6 @@ pub struct ReadDirectFeesInstallmentCommand {
     pub tenant: TenantContext,
     pub direct_fees_installment_id: DirectFeesInstallmentId,
 }
-
 
 impl ReadDirectFeesInstallmentCommand {
     /// The capabilities required to dispatch this command.
@@ -880,7 +849,6 @@ pub const FINANCE_DIRECT_FEES_INSTALLMENT_RETIRE_COMMAND_TYPE: &str =
     "finance.direct_fees_installment.retire";
 // -- DirectFeesInstallmentAssign (per-student linkage) --
 
-
 // -- DirectFeesInstallmentAssign (Wave 103 — RealDirectFeesInstallmentAssign) --
 
 /// COMMAND_TYPE discriminator for `CreateDirectFeesInstallmentAssignCommand`.
@@ -901,7 +869,7 @@ pub struct CreateDirectFeesInstallmentAssignCommand {
     pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
     pub student_id: StudentId,
     pub installment_id: DirectFeesInstallmentId,
-    pub amount_minor: i64, // DFIA I-2
+    pub amount_minor: i64,  // DFIA I-2
     pub balance_minor: i64, // DFIA I-3
 }
 
@@ -924,8 +892,7 @@ pub struct ReadDirectFeesInstallmentAssignCommand {
 
 impl ReadDirectFeesInstallmentAssignCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_DIRECT_FEES_INSTALLMENT_ASSIGN_READ_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_DIRECT_FEES_INSTALLMENT_ASSIGN_READ_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -983,7 +950,6 @@ pub struct CreateDirectFeesSettingCommand {
     pub description: Option<String>,
 }
 
-
 impl CreateDirectFeesSettingCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -999,7 +965,6 @@ pub struct UpdateDirectFeesSettingCommand {
     pub description: Option<String>,
 }
 
-
 impl UpdateDirectFeesSettingCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1012,7 +977,6 @@ pub struct DeleteDirectFeesSettingCommand {
     pub tenant: TenantContext,
     pub direct_fees_setting_id: DirectFeesSettingId,
 }
-
 
 impl DeleteDirectFeesSettingCommand {
     /// The capabilities required to dispatch this command.
@@ -1036,12 +1000,10 @@ pub struct CreateDirectFeesReminderCommand {
     pub note: Option<String>,
 }
 
-
 impl CreateDirectFeesReminderCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_DIRECT_FEES_REMINDER_CREATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_DIRECT_FEES_REMINDER_CREATE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1060,12 +1022,10 @@ pub struct UpdateDirectFeesReminderCommand {
     pub note: Option<String>,
 }
 
-
 impl UpdateDirectFeesReminderCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_DIRECT_FEES_REMINDER_UPDATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_DIRECT_FEES_REMINDER_UPDATE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1079,12 +1039,10 @@ pub struct DeleteDirectFeesReminderCommand {
     pub direct_fees_reminder_id: DirectFeesReminderId,
 }
 
-
 impl DeleteDirectFeesReminderCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_DIRECT_FEES_REMINDER_DELETE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_DIRECT_FEES_REMINDER_DELETE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1111,7 +1069,6 @@ pub struct CreatePaymentMethodCommand {
     pub description: Option<String>,
 }
 
-
 impl CreatePaymentMethodCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1125,7 +1082,6 @@ pub struct RetirePaymentMethodCommand {
     pub payment_method_id: PaymentMethodId,
 }
 
-
 impl RetirePaymentMethodCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1134,12 +1090,14 @@ impl RetirePaymentMethodCommand {
     }
 }
 
-
 // -- Wave 107 -- FeesInstallmentAssign (per-(fees_assign, installment) linkage) --
 
-pub const FINANCE_FEES_INSTALLMENT_ASSIGN_CREATE_COMMAND_TYPE: &str = "finance.fees_installment_assign.create";
-pub const FINANCE_FEES_INSTALLMENT_ASSIGN_READ_COMMAND_TYPE: &str = "finance.fees_installment_assign.read";
-pub const FINANCE_FEES_INSTALLMENT_ASSIGN_RETIRE_COMMAND_TYPE: &str = "finance.fees_installment_assign.retire";
+pub const FINANCE_FEES_INSTALLMENT_ASSIGN_CREATE_COMMAND_TYPE: &str =
+    "finance.fees_installment_assign.create";
+pub const FINANCE_FEES_INSTALLMENT_ASSIGN_READ_COMMAND_TYPE: &str =
+    "finance.fees_installment_assign.read";
+pub const FINANCE_FEES_INSTALLMENT_ASSIGN_RETIRE_COMMAND_TYPE: &str =
+    "finance.fees_installment_assign.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFeesInstallmentAssignCommand {
@@ -1221,14 +1179,12 @@ pub const FINANCE_FEES_INSTALLMENT_ASSIGN_CANCEL_COMMAND_TYPE: &str =
 
 impl CloseFeesInstallmentAssignCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FEES_INSTALLMENT_ASSIGN_CLOSE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_INSTALLMENT_ASSIGN_CLOSE_COMMAND_TYPE;
 }
 
 impl CancelFeesInstallmentAssignCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FEES_INSTALLMENT_ASSIGN_CANCEL_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_INSTALLMENT_ASSIGN_CANCEL_COMMAND_TYPE;
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UpdatePaymentMethodCommand {
@@ -1237,7 +1193,6 @@ pub struct UpdatePaymentMethodCommand {
     pub name: Option<String>,
     pub description: Option<String>,
 }
-
 
 impl UpdatePaymentMethodCommand {
     /// The capabilities required to dispatch this command.
@@ -1252,7 +1207,6 @@ pub struct DeletePaymentMethodCommand {
     pub payment_method_id: PaymentMethodId,
 }
 
-
 impl DeletePaymentMethodCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1265,7 +1219,6 @@ pub struct ReadPaymentMethodCommand {
     pub tenant: TenantContext,
     pub payment_method_id: PaymentMethodId,
 }
-
 
 impl ReadPaymentMethodCommand {
     /// The capabilities required to dispatch this command.
@@ -1285,7 +1238,6 @@ pub struct CreatePaymentGatewayCommand {
     pub mode: GatewayMode,
     pub description: Option<String>,
 }
-
 
 impl CreatePaymentGatewayCommand {
     /// The capabilities required to dispatch this command.
@@ -1312,7 +1264,6 @@ pub struct UpdatePaymentGatewayCommand {
     pub service_charge_type: Option<GatewayChargeType>,
 }
 
-
 impl UpdatePaymentGatewayCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1325,7 +1276,6 @@ pub struct DeletePaymentGatewayCommand {
     pub tenant: TenantContext,
     pub payment_gateway_setting_id: PaymentGatewaySettingId,
 }
-
 
 impl DeletePaymentGatewayCommand {
     /// The capabilities required to dispatch this command.
@@ -1346,7 +1296,6 @@ pub struct GenerateInvoiceCommand {
     pub currency: Currency,
 }
 
-
 impl GenerateInvoiceCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1363,7 +1312,6 @@ pub struct UpdateInvoiceCommand {
     pub note: Option<String>,
 }
 
-
 impl UpdateInvoiceCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1378,7 +1326,6 @@ pub struct CancelInvoiceCommand {
     pub reason: String,
 }
 
-
 impl CancelInvoiceCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1391,7 +1338,6 @@ pub struct ReadInvoiceCommand {
     pub tenant: TenantContext,
     pub fees_invoice_id: FeesInvoiceId,
 }
-
 
 impl ReadInvoiceCommand {
     /// The capabilities required to dispatch this command.
@@ -1409,7 +1355,6 @@ pub struct ReversePaymentCommand {
     pub reason: String,
 }
 
-
 impl ReversePaymentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1426,7 +1371,6 @@ pub struct RefundPaymentCommand {
     pub reason: String,
 }
 
-
 impl RefundPaymentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1439,7 +1383,6 @@ pub struct ReadFeesPaymentCommand {
     pub tenant: TenantContext,
     pub fees_payment_id: FeesPaymentId,
 }
-
 
 impl ReadFeesPaymentCommand {
     /// The capabilities required to dispatch this command.
@@ -1462,7 +1405,6 @@ pub struct UpdateExpenseCommand {
     pub description: Option<String>,
 }
 
-
 impl UpdateExpenseCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1475,7 +1417,6 @@ pub struct DeleteExpenseCommand {
     pub tenant: TenantContext,
     pub expense_id: ExpenseId,
 }
-
 
 impl DeleteExpenseCommand {
     /// The capabilities required to dispatch this command.
@@ -1491,7 +1432,6 @@ pub struct ApproveExpenseCommand {
     pub approver_user_id: UserId,
     pub note: Option<String>,
 }
-
 
 impl ApproveExpenseCommand {
     /// The capabilities required to dispatch this command.
@@ -1542,7 +1482,6 @@ pub struct UpdateIncomeCommand {
     pub description: Option<String>,
 }
 
-
 impl UpdateIncomeCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1555,7 +1494,6 @@ pub struct DeleteIncomeCommand {
     pub tenant: TenantContext,
     pub income_id: IncomeId,
 }
-
 
 impl DeleteIncomeCommand {
     /// The command-type discriminator.
@@ -1606,7 +1544,6 @@ pub struct ApproveIncomeCommand {
     pub note: Option<String>,
 }
 
-
 impl ApproveIncomeCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1626,12 +1563,10 @@ pub struct UpdateExpenseHeadCommand {
     pub description: Option<String>,
 }
 
-
 impl UpdateExpenseHeadCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_EXPENSE_HEAD_UPDATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_EXPENSE_HEAD_UPDATE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1645,12 +1580,10 @@ pub struct DeleteExpenseHeadCommand {
     pub expense_head_id: ExpenseHeadId,
 }
 
-
 impl DeleteExpenseHeadCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_EXPENSE_HEAD_DELETE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_EXPENSE_HEAD_DELETE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1667,7 +1600,6 @@ pub struct CreateIncomeHeadCommand {
     pub description: Option<String>,
 }
 
-
 impl CreateIncomeHeadCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1683,7 +1615,6 @@ pub struct UpdateIncomeHeadCommand {
     pub description: Option<String>,
 }
 
-
 impl UpdateIncomeHeadCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1696,7 +1627,6 @@ pub struct DeleteIncomeHeadCommand {
     pub tenant: TenantContext,
     pub income_head_id: IncomeHeadId,
 }
-
 
 impl DeleteIncomeHeadCommand {
     /// The capabilities required to dispatch this command.
@@ -1718,7 +1648,7 @@ pub struct OpenBankAccountCommand {
     pub tenant: TenantContext,
     pub bank_account_id: BankAccountId,
     pub account_name: String,
-    pub account_number: String, // BA I-1 pinned
+    pub account_number: String,    // BA I-1 pinned
     pub account_type: AccountType, // BA I-3 type-pinned
     pub bank_name: String,
     pub ifsc_code: Option<String>,
@@ -1728,12 +1658,10 @@ pub struct OpenBankAccountCommand {
     pub description: Option<String>,
 }
 
-
 impl OpenBankAccountCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_BANK_ACCOUNT_OPEN_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_BANK_ACCOUNT_OPEN_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1753,12 +1681,10 @@ pub struct UpdateBankAccountCommand {
     pub description: Option<String>,
 }
 
-
 impl UpdateBankAccountCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_BANK_ACCOUNT_UPDATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_BANK_ACCOUNT_UPDATE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1772,12 +1698,10 @@ pub struct DeleteBankAccountCommand {
     pub bank_account_id: BankAccountId,
 }
 
-
 impl DeleteBankAccountCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_BANK_ACCOUNT_DELETE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_BANK_ACCOUNT_DELETE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1791,12 +1715,10 @@ pub struct ReadBankAccountCommand {
     pub bank_account_id: BankAccountId,
 }
 
-
 impl ReadBankAccountCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_BANK_ACCOUNT_READ_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_BANK_ACCOUNT_READ_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1811,7 +1733,6 @@ pub struct ReadBankStatementCommand {
     pub tenant: TenantContext,
     pub bank_statement_id: BankStatementId,
 }
-
 
 impl ReadBankStatementCommand {
     /// The capabilities required to dispatch this command.
@@ -1834,7 +1755,6 @@ pub struct GenerateBankSlipCommand {
     pub payee_name: Option<String>,
 }
 
-
 impl GenerateBankSlipCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1852,7 +1772,6 @@ pub struct UpdateBankSlipCommand {
     pub payee_name: Option<String>,
 }
 
-
 impl UpdateBankSlipCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1868,7 +1787,6 @@ pub struct ApproveBankSlipCommand {
     pub note: Option<String>,
 }
 
-
 impl ApproveBankSlipCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1881,7 +1799,6 @@ pub struct ReadBankSlipCommand {
     pub tenant: TenantContext,
     pub bank_payment_slip_id: BankPaymentSlipId,
 }
-
 
 impl ReadBankSlipCommand {
     /// The capabilities required to dispatch this command.
@@ -1899,7 +1816,6 @@ pub struct GeneratePayrollCommand {
     pub note: Option<String>,
 }
 
-
 impl GeneratePayrollCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1914,7 +1830,6 @@ pub struct ApprovePayrollCommand {
     pub approver_user_id: UserId,
     pub note: Option<String>,
 }
-
 
 impl ApprovePayrollCommand {
     /// The capabilities required to dispatch this command.
@@ -1933,7 +1848,6 @@ pub struct PayPayrollCommand {
     pub payment_date: NaiveDate,
 }
 
-
 impl PayPayrollCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1946,7 +1860,6 @@ pub struct ReadPayrollCommand {
     pub tenant: TenantContext,
     pub payroll_generate_id: educore_hr::value_objects::PayrollGenerateId,
 }
-
 
 impl ReadPayrollCommand {
     /// The capabilities required to dispatch this command.
@@ -1965,7 +1878,6 @@ pub struct ApprovePayrollPaymentCommand {
     pub note: Option<String>,
 }
 
-
 impl ApprovePayrollPaymentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1983,7 +1895,6 @@ pub struct PayPayrollPaymentCommand {
     pub payment_date: NaiveDate,
 }
 
-
 impl PayPayrollPaymentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -1996,7 +1907,6 @@ pub struct ReadPayrollPaymentCommand {
     pub tenant: TenantContext,
     pub payroll_payment_id: PayrollPaymentId,
 }
-
 
 impl ReadPayrollPaymentCommand {
     /// The capabilities required to dispatch this command.
@@ -2012,7 +1922,6 @@ pub struct ReadWalletCommand {
     pub tenant: TenantContext,
     pub wallet_id: WalletId,
 }
-
 
 impl ReadWalletCommand {
     /// The capabilities required to dispatch this command.
@@ -2030,7 +1939,6 @@ pub struct ApproveWalletTransactionCommand {
     pub approver_user_id: UserId,
 }
 
-
 impl ApproveWalletTransactionCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2045,7 +1953,6 @@ pub struct RejectWalletTransactionCommand {
     pub rejecter_user_id: UserId,
     pub reason: String,
 }
-
 
 impl RejectWalletTransactionCommand {
     /// The capabilities required to dispatch this command.
@@ -2322,7 +2229,6 @@ pub struct ReadWalletTransactionCommand {
     pub wallet_transaction_id: WalletTransactionId,
 }
 
-
 impl ReadWalletTransactionCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2337,7 +2243,6 @@ pub struct ReadFeesCarryForwardCommand {
     pub tenant: TenantContext,
     pub fees_carry_forward_id: FeesCarryForwardId,
 }
-
 
 impl ReadFeesCarryForwardCommand {
     /// The capabilities required to dispatch this command.
@@ -2354,7 +2259,6 @@ pub struct ConfigureFeesCarryForwardCommand {
     pub description: Option<String>,
 }
 
-
 impl ConfigureFeesCarryForwardCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2363,11 +2267,12 @@ impl ConfigureFeesCarryForwardCommand {
     }
 }
 
-
 // -- Wave 113 -- FeesCarryForward (greenfield commands) --
 
-pub const FINANCE_FEES_CARRY_FORWARD_CREATE_COMMAND_TYPE: &str = "finance.fees_carry_forward.create";
-pub const FINANCE_FEES_CARRY_FORWARD_RETIRE_COMMAND_TYPE: &str = "finance.fees_carry_forward.retire";
+pub const FINANCE_FEES_CARRY_FORWARD_CREATE_COMMAND_TYPE: &str =
+    "finance.fees_carry_forward.create";
+pub const FINANCE_FEES_CARRY_FORWARD_RETIRE_COMMAND_TYPE: &str =
+    "finance.fees_carry_forward.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFeesCarryForwardCommand {
@@ -2482,7 +2387,6 @@ pub struct ReadFeesCarryForwardLogCommand {
     pub fees_carry_forward_log_id: FeesCarryForwardLogId,
 }
 
-
 impl ReadFeesCarryForwardLogCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2499,12 +2403,10 @@ pub struct UnblockLoginForDueFeesCommand {
     pub reason: String,
 }
 
-
 impl UnblockLoginForDueFeesCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_DUE_FEES_UNBLOCK_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_DUE_FEES_UNBLOCK_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2518,12 +2420,10 @@ pub struct ReadDueFeesBlockCommand {
     pub due_fees_login_prevent_id: DueFeesLoginPreventId,
 }
 
-
 impl ReadDueFeesBlockCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_DUE_FEES_READ_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_DUE_FEES_READ_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2537,7 +2437,6 @@ pub struct ConfigureDueFeesBlockSettingCommand {
     pub days_overdue_threshold: i64,
     pub prevent_reason: PreventReason,
 }
-
 
 impl ConfigureDueFeesBlockSettingCommand {
     /// The capabilities required to dispatch this command.
@@ -2568,7 +2467,6 @@ pub struct CreateAmountTransferCommand {
     pub reference: Option<String>,
 }
 
-
 impl CreateAmountTransferCommand {
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -2594,7 +2492,6 @@ pub struct ReadAmountTransferCommand {
     pub amount_transfer_id: AmountTransferId,
 }
 
-
 impl ReadAmountTransferCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2609,7 +2506,6 @@ pub struct ReadChartOfAccountCommand {
     pub tenant: TenantContext,
     pub chart_of_account_id: ChartOfAccountId,
 }
-
 
 impl ReadChartOfAccountCommand {
     /// The capabilities required to dispatch this command.
@@ -2643,7 +2539,6 @@ pub struct CreateQuestionBankFeeCommand {
     pub description: Option<String>,
 }
 
-
 impl ReadInvoiceSettingCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2658,7 +2553,6 @@ pub struct ReadFeesPaymentSlipCommand {
     pub tenant: TenantContext,
     pub fees_payment_slip_id: FeesPaymentSlipId,
 }
-
 
 impl ReadFeesPaymentSlipCommand {
     /// The capabilities required to dispatch this command.
@@ -2680,7 +2574,6 @@ pub struct ReadFeesCollectionReportCommand {
     pub class_id: Option<crate::value_objects::ClassId>,
 }
 
-
 impl ReadFeesCollectionReportCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2694,7 +2587,6 @@ pub struct ReadOutstandingFeesReportCommand {
     pub as_of: NaiveDate,
     pub class_id: Option<crate::value_objects::ClassId>,
 }
-
 
 impl ReadOutstandingFeesReportCommand {
     /// The capabilities required to dispatch this command.
@@ -2711,7 +2603,6 @@ pub struct ReadExpenseReportCommand {
     pub expense_head_id: Option<ExpenseHeadId>,
 }
 
-
 impl ReadExpenseReportCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2726,7 +2617,6 @@ pub struct ReadIncomeReportCommand {
     pub to: NaiveDate,
     pub income_head_id: Option<IncomeHeadId>,
 }
-
 
 impl ReadIncomeReportCommand {
     /// The capabilities required to dispatch this command.
@@ -2743,7 +2633,6 @@ pub struct ReadBankStatementReportCommand {
     pub to: NaiveDate,
 }
 
-
 impl ReadBankStatementReportCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2757,7 +2646,6 @@ pub struct ReadWalletBalanceReportCommand {
     pub from: NaiveDate,
     pub to: NaiveDate,
 }
-
 
 impl ReadWalletBalanceReportCommand {
     /// The capabilities required to dispatch this command.
@@ -2774,7 +2662,6 @@ pub struct ReadPayrollReportCommand {
     pub staff_id: Option<educore_hr::value_objects::StaffId>,
 }
 
-
 impl ReadPayrollReportCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2789,7 +2676,6 @@ pub struct ReadPaymentMethodReportCommand {
     pub to: NaiveDate,
     pub payment_method_id: Option<PaymentMethodId>,
 }
-
 
 impl ReadPaymentMethodReportCommand {
     /// The capabilities required to dispatch this command.
@@ -2806,7 +2692,6 @@ pub struct ReadFeesDiscountReportCommand {
     pub fees_discount_id: Option<FeesDiscountId>,
 }
 
-
 impl ReadFeesDiscountReportCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2821,7 +2706,6 @@ pub struct ReadDueFeesReportCommand {
     pub to: NaiveDate,
     pub class_id: Option<crate::value_objects::ClassId>,
 }
-
 
 impl ReadDueFeesReportCommand {
     /// The capabilities required to dispatch this command.
@@ -2838,7 +2722,6 @@ pub struct ReadClassWiseCollectionReportCommand {
     pub class_id: crate::value_objects::ClassId,
 }
 
-
 impl ReadClassWiseCollectionReportCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2853,7 +2736,6 @@ pub struct ReadDailyCollectionReportCommand {
     pub to: NaiveDate,
 }
 
-
 impl ReadDailyCollectionReportCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2867,7 +2749,6 @@ pub struct ReadMonthlyCollectionReportCommand {
     pub from: NaiveDate,
     pub to: NaiveDate,
 }
-
 
 impl ReadMonthlyCollectionReportCommand {
     /// The capabilities required to dispatch this command.
@@ -2884,7 +2765,6 @@ pub struct ReadHeadWiseExpenseReportCommand {
     pub expense_head_id: ExpenseHeadId,
 }
 
-
 impl ReadHeadWiseExpenseReportCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2900,7 +2780,6 @@ pub struct ReadHeadWiseIncomeReportCommand {
     pub income_head_id: IncomeHeadId,
 }
 
-
 impl ReadHeadWiseIncomeReportCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2914,7 +2793,6 @@ pub struct ReadCashFlowReportCommand {
     pub from: NaiveDate,
     pub to: NaiveDate,
 }
-
 
 impl ReadCashFlowReportCommand {
     /// The capabilities required to dispatch this command.
@@ -2930,7 +2808,6 @@ pub struct ReadProfitLossReportCommand {
     pub to: NaiveDate,
 }
 
-
 impl ReadProfitLossReportCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2943,7 +2820,6 @@ pub struct ReadBalanceSheetReportCommand {
     pub tenant: TenantContext,
     pub as_of: NaiveDate,
 }
-
 
 impl ReadBalanceSheetReportCommand {
     /// The capabilities required to dispatch this command.
@@ -2958,7 +2834,6 @@ pub struct ReadTrialBalanceReportCommand {
     pub from: NaiveDate,
     pub to: NaiveDate,
 }
-
 
 impl ReadTrialBalanceReportCommand {
     /// The capabilities required to dispatch this command.
@@ -2975,7 +2850,6 @@ pub struct ReadLedgerReportCommand {
     pub to: NaiveDate,
 }
 
-
 impl ReadLedgerReportCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -2991,7 +2865,6 @@ pub struct ReadReceiptReportCommand {
     pub fees_payment_id: Option<FeesPaymentId>,
 }
 
-
 impl ReadReceiptReportCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3005,7 +2878,6 @@ pub struct ReadRefundReportCommand {
     pub from: NaiveDate,
     pub to: NaiveDate,
 }
-
 
 impl ReadRefundReportCommand {
     /// The capabilities required to dispatch this command.
@@ -3030,7 +2902,6 @@ pub struct ConfigureFeesGroupCommand {
     pub due_date: NaiveDate,
 }
 
-
 impl ConfigureFeesGroupCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3045,7 +2916,6 @@ pub struct ConfigureFeesTypeCommand {
     pub name: String,
     pub description: Option<String>,
 }
-
 
 impl ConfigureFeesTypeCommand {
     /// The capabilities required to dispatch this command.
@@ -3062,12 +2932,10 @@ pub struct CreateExpenseHeadCommand {
     pub description: Option<String>,
 }
 
-
 impl CreateExpenseHeadCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_EXPENSE_HEAD_CREATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_EXPENSE_HEAD_CREATE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3086,12 +2954,10 @@ pub struct BlockLoginForDueFeesCommand {
     pub reason: String,
 }
 
-
 impl BlockLoginForDueFeesCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_DUE_FEES_BLOCK_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_DUE_FEES_BLOCK_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3106,7 +2972,6 @@ pub struct CarryForwardFeesBalanceCommand {
     pub from: educore_academic::AcademicYearId,
     pub to: educore_academic::AcademicYearId,
 }
-
 
 impl CarryForwardFeesBalanceCommand {
     /// The capabilities required to dispatch this command.
@@ -3127,9 +2992,11 @@ impl CarryForwardFeesBalanceCommand {
 // -- FeesAssignDiscount (Phase 7 Workstream F) --
 
 /// Stable command type identifier for [`CreateFeesAssignDiscountCommand`].
-pub const FINANCE_FEES_ASSIGN_DISCOUNT_CREATE_COMMAND_TYPE: &str = "finance.fees_assign_discount.create";
+pub const FINANCE_FEES_ASSIGN_DISCOUNT_CREATE_COMMAND_TYPE: &str =
+    "finance.fees_assign_discount.create";
 /// Stable command type identifier for [`RetireFeesAssignDiscountCommand`].
-pub const FINANCE_FEES_ASSIGN_DISCOUNT_RETIRE_COMMAND_TYPE: &str = "finance.fees_assign_discount.retire";
+pub const FINANCE_FEES_ASSIGN_DISCOUNT_RETIRE_COMMAND_TYPE: &str =
+    "finance.fees_assign_discount.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFeesAssignDiscountCommand {
@@ -3137,12 +3004,11 @@ pub struct CreateFeesAssignDiscountCommand {
     pub fees_assign_discount_id: FeesAssignDiscountId,
     pub fees_assign_id: FeesAssignId,
     pub discount_id: FeesDiscountId,
-    pub applied_amount_minor: i64, // FAD I-1
+    pub applied_amount_minor: i64,   // FAD I-1
     pub unapplied_amount_minor: i64, // FAD I-1
     pub currency: Currency,
     pub note: Option<String>,
 }
-
 
 impl CreateFeesAssignDiscountCommand {
     /// The capabilities required to dispatch this command.
@@ -3156,7 +3022,6 @@ pub struct ReadFeesAssignDiscountCommand {
     pub tenant: TenantContext,
     pub fees_assign_discount_id: FeesAssignDiscountId,
 }
-
 
 impl ReadFeesAssignDiscountCommand {
     /// The capabilities required to dispatch this command.
@@ -3245,7 +3110,6 @@ pub struct CreateFmFeesGroupCommand {
     pub description: Option<String>,
 }
 
-
 impl CreateFmFeesGroupCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3258,7 +3122,6 @@ pub struct ReadFmFeesGroupCommand {
     pub tenant: TenantContext,
     pub fm_fees_group_id: FmFeesGroupId,
 }
-
 
 impl ReadFmFeesGroupCommand {
     /// The capabilities required to dispatch this command.
@@ -3278,7 +3141,6 @@ pub struct CreateFmFeesTypeCommand {
     pub amount_minor: i64,
 }
 
-
 impl CreateFmFeesTypeCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3291,7 +3153,6 @@ pub struct ReadFmFeesTypeCommand {
     pub tenant: TenantContext,
     pub fm_fees_type_id: FmFeesTypeId,
 }
-
 
 impl ReadFmFeesTypeCommand {
     /// The capabilities required to dispatch this command.
@@ -3400,30 +3261,23 @@ impl RejectBankPaymentSlipCommand {
 
 // -- BankPaymentSlip COMMAND_TYPE constants (Wave 130) --
 
-pub const FINANCE_BANK_PAYMENT_SLIP_CREATE_COMMAND_TYPE: &str =
-    "finance.bank_payment_slip.create";
-pub const FINANCE_BANK_PAYMENT_SLIP_READ_COMMAND_TYPE: &str =
-    "finance.bank_payment_slip.read";
-pub const FINANCE_BANK_PAYMENT_SLIP_RETIRE_COMMAND_TYPE: &str =
-    "finance.bank_payment_slip.retire";
+pub const FINANCE_BANK_PAYMENT_SLIP_CREATE_COMMAND_TYPE: &str = "finance.bank_payment_slip.create";
+pub const FINANCE_BANK_PAYMENT_SLIP_READ_COMMAND_TYPE: &str = "finance.bank_payment_slip.read";
+pub const FINANCE_BANK_PAYMENT_SLIP_RETIRE_COMMAND_TYPE: &str = "finance.bank_payment_slip.retire";
 pub const FINANCE_BANK_PAYMENT_SLIP_APPROVE_COMMAND_TYPE: &str =
     "finance.bank_payment_slip.approve";
-pub const FINANCE_BANK_PAYMENT_SLIP_REJECT_COMMAND_TYPE: &str =
-    "finance.bank_payment_slip.reject";
+pub const FINANCE_BANK_PAYMENT_SLIP_REJECT_COMMAND_TYPE: &str = "finance.bank_payment_slip.reject";
 
 // -- FmFeesInvoice (Wave 100 — RealFmFeesInvoice) --
 
 /// COMMAND_TYPE discriminator for `CreateFmFeesInvoiceCommand`.
-pub const FINANCE_FM_FEES_INVOICE_CREATE_COMMAND_TYPE: &str =
-    "finance.fm_fees_invoice.create";
+pub const FINANCE_FM_FEES_INVOICE_CREATE_COMMAND_TYPE: &str = "finance.fm_fees_invoice.create";
 
 /// COMMAND_TYPE discriminator for `ReadFmFeesInvoiceCommand`.
-pub const FINANCE_FM_FEES_INVOICE_READ_COMMAND_TYPE: &str =
-    "finance.fm_fees_invoice.read";
+pub const FINANCE_FM_FEES_INVOICE_READ_COMMAND_TYPE: &str = "finance.fm_fees_invoice.read";
 
 /// COMMAND_TYPE discriminator for `RetireFmFeesInvoiceCommand`.
-pub const FINANCE_FM_FEES_INVOICE_RETIRE_COMMAND_TYPE: &str =
-    "finance.fm_fees_invoice.retire";
+pub const FINANCE_FM_FEES_INVOICE_RETIRE_COMMAND_TYPE: &str = "finance.fm_fees_invoice.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFmFeesInvoiceCommand {
@@ -3440,8 +3294,7 @@ pub struct CreateFmFeesInvoiceCommand {
 
 impl CreateFmFeesInvoiceCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_INVOICE_CREATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_INVOICE_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3457,8 +3310,7 @@ pub struct ReadFmFeesInvoiceCommand {
 
 impl ReadFmFeesInvoiceCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_INVOICE_READ_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_INVOICE_READ_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3474,8 +3326,7 @@ pub struct RetireFmFeesInvoiceCommand {
 
 impl RetireFmFeesInvoiceCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_INVOICE_RETIRE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_INVOICE_RETIRE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3484,12 +3335,10 @@ impl RetireFmFeesInvoiceCommand {
 }
 
 /// COMMAND_TYPE discriminator for `ApproveFmFeesInvoiceCommand` (Wave 127).
-pub const FINANCE_FM_FEES_INVOICE_APPROVE_COMMAND_TYPE: &str =
-    "finance.fm_fees_invoice.approve";
+pub const FINANCE_FM_FEES_INVOICE_APPROVE_COMMAND_TYPE: &str = "finance.fm_fees_invoice.approve";
 
 /// COMMAND_TYPE discriminator for `RejectFmFeesInvoiceCommand` (Wave 127).
-pub const FINANCE_FM_FEES_INVOICE_REJECT_COMMAND_TYPE: &str =
-    "finance.fm_fees_invoice.reject";
+pub const FINANCE_FM_FEES_INVOICE_REJECT_COMMAND_TYPE: &str = "finance.fm_fees_invoice.reject";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApproveFmFeesInvoiceCommand {
@@ -3499,8 +3348,7 @@ pub struct ApproveFmFeesInvoiceCommand {
 
 impl ApproveFmFeesInvoiceCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_INVOICE_APPROVE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_INVOICE_APPROVE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3517,8 +3365,7 @@ pub struct RejectFmFeesInvoiceCommand {
 
 impl RejectFmFeesInvoiceCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_INVOICE_REJECT_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_INVOICE_REJECT_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3545,18 +3392,17 @@ pub struct CreateFmFeesInvoiceChildCommand {
     pub fm_fees_invoice_child_id: FmFeesInvoiceChildId,
     pub invoice_id: FmFeesInvoiceId,
     pub description: String,
-    pub amount_minor: i64, // FFIChild I-1
-    pub sub_total_minor: i64, // FFIChild I-2
-    pub weaver_minor: i64, // FFIChild I-2
-    pub fine_minor: i64, // FFIChild I-2
-    pub paid_amount_minor: i64, // FFIChild I-3
+    pub amount_minor: i64,         // FFIChild I-1
+    pub sub_total_minor: i64,      // FFIChild I-2
+    pub weaver_minor: i64,         // FFIChild I-2
+    pub fine_minor: i64,           // FFIChild I-2
+    pub paid_amount_minor: i64,    // FFIChild I-3
     pub service_charge_minor: i64, // FFIChild I-3
 }
 
 impl CreateFmFeesInvoiceChildCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_INVOICE_CHILD_CREATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_INVOICE_CHILD_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3572,8 +3418,7 @@ pub struct ReadFmFeesInvoiceChildCommand {
 
 impl ReadFmFeesInvoiceChildCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_INVOICE_CHILD_READ_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_INVOICE_CHILD_READ_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3589,8 +3434,7 @@ pub struct RetireFmFeesInvoiceChildCommand {
 
 impl RetireFmFeesInvoiceChildCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_INVOICE_CHILD_RETIRE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_INVOICE_CHILD_RETIRE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3619,16 +3463,15 @@ pub const FINANCE_FM_FEES_INVOICE_SETTING_RETIRE_COMMAND_TYPE: &str =
 pub struct CreateFmFeesInvoiceSettingCommand {
     pub tenant: TenantContext,
     pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
-    pub prefix: String, // FFIS I-3
-    pub per_th: i64, // FFIS I-1
-    pub due_date: NaiveDate, // FFIS I-2
+    pub prefix: String,            // FFIS I-3
+    pub per_th: i64,               // FFIS I-1
+    pub due_date: NaiveDate,       // FFIS I-2
     pub due_date_offset_days: i64, // FFIS I-2
 }
 
 impl CreateFmFeesInvoiceSettingCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_INVOICE_SETTING_CREATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_INVOICE_SETTING_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3644,8 +3487,7 @@ pub struct ReadFmFeesInvoiceSettingCommand {
 
 impl ReadFmFeesInvoiceSettingCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_INVOICE_SETTING_READ_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_INVOICE_SETTING_READ_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3657,15 +3499,14 @@ impl ReadFmFeesInvoiceSettingCommand {
 pub struct UpdateFmFeesInvoiceSettingCommand {
     pub tenant: TenantContext,
     pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
-    pub per_th: i64, // FFIS I-1 (mutable)
-    pub due_date: NaiveDate, // FFIS I-2 (mutable)
+    pub per_th: i64,               // FFIS I-1 (mutable)
+    pub due_date: NaiveDate,       // FFIS I-2 (mutable)
     pub due_date_offset_days: i64, // FFIS I-2 (mutable)
 }
 
 impl UpdateFmFeesInvoiceSettingCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_INVOICE_SETTING_UPDATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_INVOICE_SETTING_UPDATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3681,8 +3522,7 @@ pub struct RetireFmFeesInvoiceSettingCommand {
 
 impl RetireFmFeesInvoiceSettingCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_INVOICE_SETTING_RETIRE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_INVOICE_SETTING_RETIRE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3700,7 +3540,6 @@ pub struct CreateFmFeesTransactionCommand {
     pub description: Option<String>,
 }
 
-
 impl CreateFmFeesTransactionCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3713,7 +3552,6 @@ pub struct ReadFmFeesTransactionCommand {
     pub tenant: TenantContext,
     pub fm_fees_transaction_id: FmFeesTransactionId,
 }
-
 
 impl ReadFmFeesTransactionCommand {
     /// The capabilities required to dispatch this command.
@@ -3728,7 +3566,6 @@ pub struct RetireFmFeesTransactionCommand {
     pub fm_fees_transaction_id: FmFeesTransactionId,
 }
 
-
 impl RetireFmFeesTransactionCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3741,8 +3578,7 @@ impl RetireFmFeesTransactionCommand {
 
 pub const FINANCE_FM_FEES_TRANSACTION_CREATE_COMMAND_TYPE: &str =
     "finance.fm_fees_transaction.create";
-pub const FINANCE_FM_FEES_TRANSACTION_READ_COMMAND_TYPE: &str =
-    "finance.fm_fees_transaction.read";
+pub const FINANCE_FM_FEES_TRANSACTION_READ_COMMAND_TYPE: &str = "finance.fm_fees_transaction.read";
 pub const FINANCE_FM_FEES_TRANSACTION_RETIRE_COMMAND_TYPE: &str =
     "finance.fm_fees_transaction.retire";
 pub const FINANCE_FM_FEES_TRANSACTION_APPROVE_COMMAND_TYPE: &str =
@@ -3790,7 +3626,6 @@ pub struct CreateFmFeesTransactionChildCommand {
     pub description: Option<String>,
 }
 
-
 impl CreateFmFeesTransactionChildCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3804,7 +3639,6 @@ pub struct ReadFmFeesTransactionChildCommand {
     pub fm_fees_transaction_child_id: FmFeesTransactionChildId,
 }
 
-
 impl ReadFmFeesTransactionChildCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3815,16 +3649,13 @@ impl ReadFmFeesTransactionChildCommand {
 // -- FmFeesWeaver (Wave 95 — RealFmFeesWeaver) --
 
 /// COMMAND_TYPE discriminator for `CreateFmFeesWeaverCommand`.
-pub const FINANCE_FM_FEES_WEAVER_CREATE_COMMAND_TYPE: &str =
-    "finance.fm_fees_weaver.create";
+pub const FINANCE_FM_FEES_WEAVER_CREATE_COMMAND_TYPE: &str = "finance.fm_fees_weaver.create";
 
 /// COMMAND_TYPE discriminator for `ReadFmFeesWeaverCommand`.
-pub const FINANCE_FM_FEES_WEAVER_READ_COMMAND_TYPE: &str =
-    "finance.fm_fees_weaver.read";
+pub const FINANCE_FM_FEES_WEAVER_READ_COMMAND_TYPE: &str = "finance.fm_fees_weaver.read";
 
 /// COMMAND_TYPE discriminator for `RetireFmFeesWeaverCommand`.
-pub const FINANCE_FM_FEES_WEAVER_RETIRE_COMMAND_TYPE: &str =
-    "finance.fm_fees_weaver.retire";
+pub const FINANCE_FM_FEES_WEAVER_RETIRE_COMMAND_TYPE: &str = "finance.fm_fees_weaver.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateFmFeesWeaverCommand {
@@ -3836,8 +3667,7 @@ pub struct CreateFmFeesWeaverCommand {
 
 impl CreateFmFeesWeaverCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_WEAVER_CREATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_WEAVER_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3853,8 +3683,7 @@ pub struct ReadFmFeesWeaverCommand {
 
 impl ReadFmFeesWeaverCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_WEAVER_READ_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_WEAVER_READ_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3870,8 +3699,7 @@ pub struct RetireFmFeesWeaverCommand {
 
 impl RetireFmFeesWeaverCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FM_FEES_WEAVER_RETIRE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FM_FEES_WEAVER_RETIRE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -3885,16 +3713,14 @@ pub struct CreateFeesInvoiceSettingCommand {
     pub tenant: TenantContext,
     pub fees_invoice_setting_id: FeesInvoiceSettingId,
     pub prefix: String, // FISv I-1 pinned
-    pub per_th: i64, // FISv I-2
+    pub per_th: i64,    // FISv I-2
     pub description: Option<String>,
 }
-
 
 impl CreateFeesInvoiceSettingCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FEES_INVOICE_CONFIGURE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_INVOICE_CONFIGURE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3908,12 +3734,10 @@ pub struct ReadFeesInvoiceSettingCommand {
     pub fees_invoice_setting_id: FeesInvoiceSettingId,
 }
 
-
 impl ReadFeesInvoiceSettingCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FEES_INVOICE_READ_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_INVOICE_READ_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3933,12 +3757,10 @@ pub struct UpdateFeesInvoiceSettingCommand {
     pub description: Option<String>,
 }
 
-
 impl UpdateFeesInvoiceSettingCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FEES_INVOICE_UPDATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_INVOICE_UPDATE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3952,12 +3774,10 @@ pub struct DeleteFeesInvoiceSettingCommand {
     pub fees_invoice_setting_id: FeesInvoiceSettingId,
 }
 
-
 impl DeleteFeesInvoiceSettingCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FEES_INVOICE_CANCEL_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_INVOICE_CANCEL_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -3984,12 +3804,10 @@ pub struct CreateFeesInstallmentCreditCommand {
     pub description: Option<String>,
 }
 
-
 impl CreateFeesInstallmentCreditCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FEES_INSTALLMENT_CREDIT_CREATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_INSTALLMENT_CREDIT_CREATE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4003,12 +3821,10 @@ pub struct ReadFeesInstallmentCreditCommand {
     pub fees_installment_credit_id: FeesInstallmentCreditId,
 }
 
-
 impl ReadFeesInstallmentCreditCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FEES_INSTALLMENT_CREDIT_READ_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_INSTALLMENT_CREDIT_READ_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4022,12 +3838,10 @@ pub struct RetireFeesInstallmentCreditCommand {
     pub fees_installment_credit_id: FeesInstallmentCreditId,
 }
 
-
 impl RetireFeesInstallmentCreditCommand {
     /// The command type discriminator for the dispatcher's audit
     /// log / idempotency table.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_FEES_INSTALLMENT_CREDIT_RETIRE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_FEES_INSTALLMENT_CREDIT_RETIRE_COMMAND_TYPE;
 
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4065,7 +3879,6 @@ pub struct CreateTransactionCommand {
     pub currency: Currency,
 }
 
-
 impl CreateTransactionCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4079,7 +3892,6 @@ pub struct ReadTransactionCommand {
     pub transaction_id: TransactionId,
 }
 
-
 impl ReadTransactionCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4092,7 +3904,6 @@ pub struct RetireTransactionCommand {
     pub tenant: TenantContext,
     pub transaction_id: TransactionId,
 }
-
 
 impl RetireTransactionCommand {
     /// The capabilities required to dispatch this command.
@@ -4152,7 +3963,6 @@ pub struct CreateFeesInstallmentAssignDiscountCommand {
     pub note: Option<String>,
 }
 
-
 impl CreateFeesInstallmentAssignDiscountCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4166,7 +3976,6 @@ pub struct ReadFeesInstallmentAssignDiscountCommand {
     pub fees_installment_assign_discount_id: FeesInstallmentAssignDiscountId,
 }
 
-
 impl ReadFeesInstallmentAssignDiscountCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4179,7 +3988,6 @@ pub struct RetireFeesInstallmentAssignDiscountCommand {
     pub tenant: TenantContext,
     pub fees_installment_assign_discount_id: FeesInstallmentAssignDiscountId,
 }
-
 
 impl RetireFeesInstallmentAssignDiscountCommand {
     /// The capabilities required to dispatch this command.
@@ -4200,7 +4008,6 @@ pub struct CreateDonorCommand {
     pub description: Option<String>,
 }
 
-
 impl CreateDonorCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4214,7 +4021,6 @@ pub struct ReadDonorCommand {
     pub donor_id: DonorId,
 }
 
-
 impl ReadDonorCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4225,16 +4031,13 @@ impl ReadDonorCommand {
 // -- ProductPurchase (Wave 99 — RealProductPurchase) --
 
 /// COMMAND_TYPE discriminator for `CreateProductPurchaseCommand`.
-pub const FINANCE_PRODUCT_PURCHASE_CREATE_COMMAND_TYPE: &str =
-    "finance.product_purchase.create";
+pub const FINANCE_PRODUCT_PURCHASE_CREATE_COMMAND_TYPE: &str = "finance.product_purchase.create";
 
 /// COMMAND_TYPE discriminator for `ReadProductPurchaseCommand`.
-pub const FINANCE_PRODUCT_PURCHASE_READ_COMMAND_TYPE: &str =
-    "finance.product_purchase.read";
+pub const FINANCE_PRODUCT_PURCHASE_READ_COMMAND_TYPE: &str = "finance.product_purchase.read";
 
 /// COMMAND_TYPE discriminator for `RetireProductPurchaseCommand`.
-pub const FINANCE_PRODUCT_PURCHASE_RETIRE_COMMAND_TYPE: &str =
-    "finance.product_purchase.retire";
+pub const FINANCE_PRODUCT_PURCHASE_RETIRE_COMMAND_TYPE: &str = "finance.product_purchase.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateProductPurchaseCommand {
@@ -4248,8 +4051,7 @@ pub struct CreateProductPurchaseCommand {
 
 impl CreateProductPurchaseCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_PRODUCT_PURCHASE_CREATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_PRODUCT_PURCHASE_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -4265,8 +4067,7 @@ pub struct ReadProductPurchaseCommand {
 
 impl ReadProductPurchaseCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_PRODUCT_PURCHASE_READ_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_PRODUCT_PURCHASE_READ_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -4282,8 +4083,7 @@ pub struct RetireProductPurchaseCommand {
 
 impl RetireProductPurchaseCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_PRODUCT_PURCHASE_RETIRE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_PRODUCT_PURCHASE_RETIRE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -4297,8 +4097,7 @@ pub const FINANCE_PRODUCT_PURCHASE_RECORD_RECEIPT_COMMAND_TYPE: &str =
     "finance.product_purchase.record_receipt";
 
 /// COMMAND_TYPE discriminator for `CancelProductPurchaseCommand`.
-pub const FINANCE_PRODUCT_PURCHASE_CANCEL_COMMAND_TYPE: &str =
-    "finance.product_purchase.cancel";
+pub const FINANCE_PRODUCT_PURCHASE_CANCEL_COMMAND_TYPE: &str = "finance.product_purchase.cancel";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordProductPurchaseReceiptCommand {
@@ -4308,8 +4107,7 @@ pub struct RecordProductPurchaseReceiptCommand {
 
 impl RecordProductPurchaseReceiptCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_PRODUCT_PURCHASE_RECORD_RECEIPT_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_PRODUCT_PURCHASE_RECORD_RECEIPT_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -4326,8 +4124,7 @@ pub struct CancelProductPurchaseCommand {
 
 impl CancelProductPurchaseCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_PRODUCT_PURCHASE_CANCEL_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_PRODUCT_PURCHASE_CANCEL_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -4337,16 +4134,13 @@ impl CancelProductPurchaseCommand {
 // -- InventoryPayment (Wave 98 — RealInventoryPayment) --
 
 /// COMMAND_TYPE discriminator for `CreateInventoryPaymentCommand`.
-pub const FINANCE_INVENTORY_PAYMENT_CREATE_COMMAND_TYPE: &str =
-    "finance.inventory_payment.create";
+pub const FINANCE_INVENTORY_PAYMENT_CREATE_COMMAND_TYPE: &str = "finance.inventory_payment.create";
 
 /// COMMAND_TYPE discriminator for `ReadInventoryPaymentCommand`.
-pub const FINANCE_INVENTORY_PAYMENT_READ_COMMAND_TYPE: &str =
-    "finance.inventory_payment.read";
+pub const FINANCE_INVENTORY_PAYMENT_READ_COMMAND_TYPE: &str = "finance.inventory_payment.read";
 
 /// COMMAND_TYPE discriminator for `RetireInventoryPaymentCommand`.
-pub const FINANCE_INVENTORY_PAYMENT_RETIRE_COMMAND_TYPE: &str =
-    "finance.inventory_payment.retire";
+pub const FINANCE_INVENTORY_PAYMENT_RETIRE_COMMAND_TYPE: &str = "finance.inventory_payment.retire";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateInventoryPaymentCommand {
@@ -4360,8 +4154,7 @@ pub struct CreateInventoryPaymentCommand {
 
 impl CreateInventoryPaymentCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_INVENTORY_PAYMENT_CREATE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_INVENTORY_PAYMENT_CREATE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -4377,8 +4170,7 @@ pub struct ReadInventoryPaymentCommand {
 
 impl ReadInventoryPaymentCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_INVENTORY_PAYMENT_READ_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_INVENTORY_PAYMENT_READ_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -4394,8 +4186,7 @@ pub struct RetireInventoryPaymentCommand {
 
 impl RetireInventoryPaymentCommand {
     /// The command-type discriminator.
-    pub const COMMAND_TYPE: &'static str =
-        FINANCE_INVENTORY_PAYMENT_RETIRE_COMMAND_TYPE;
+    pub const COMMAND_TYPE: &'static str = FINANCE_INVENTORY_PAYMENT_RETIRE_COMMAND_TYPE;
     /// The capabilities required to dispatch this command.
     #[must_use]
     pub fn required_capabilities() -> Vec<Capability> {
@@ -4418,7 +4209,6 @@ pub struct UpdateFeesMasterAmountCommand {
     pub fees_master_id: FeesMasterId,
 }
 
-
 impl UpdateFeesMasterAmountCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4431,7 +4221,6 @@ pub struct AssignFeesToClassCommand {
     pub tenant: TenantContext,
     pub fees_assign_id: FeesAssignId,
 }
-
 
 impl AssignFeesToClassCommand {
     /// The capabilities required to dispatch this command.
@@ -4446,7 +4235,6 @@ pub struct AssignFeesToStudentCommand {
     pub fees_assign_id: FeesAssignId,
 }
 
-
 impl AssignFeesToStudentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4459,7 +4247,6 @@ pub struct UpdateFeesAssignDiscountCommand {
     pub tenant: TenantContext,
     pub fees_assign_discount_id: FeesAssignDiscountId,
 }
-
 
 impl UpdateFeesAssignDiscountCommand {
     /// The capabilities required to dispatch this command.
@@ -4486,7 +4273,6 @@ pub struct CloseFeesAssignCommand {
     pub tenant: TenantContext,
     pub fees_assign_id: FeesAssignId,
 }
-
 
 impl CloseFeesAssignCommand {
     /// The capabilities required to dispatch this command.
@@ -4516,7 +4302,6 @@ pub struct AssignInstallmentToStudentCommand {
     pub fees_installment_assign_id: FeesInstallmentAssignId,
 }
 
-
 impl AssignInstallmentToStudentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4529,7 +4314,6 @@ pub struct ConfigureInvoiceNumberingCommand {
     pub tenant: TenantContext,
     pub fees_invoice_setting_id: FeesInvoiceSettingId,
 }
-
 
 impl ConfigureInvoiceNumberingCommand {
     /// The capabilities required to dispatch this command.
@@ -4544,7 +4328,6 @@ pub struct PayInvoiceCommand {
     pub fees_assign_id: FeesAssignId,
 }
 
-
 impl PayInvoiceCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4557,7 +4340,6 @@ pub struct PayInstallmentCommand {
     pub tenant: TenantContext,
     pub fees_installment_assign_id: FeesInstallmentAssignId,
 }
-
 
 impl PayInstallmentCommand {
     /// The capabilities required to dispatch this command.
@@ -4572,7 +4354,6 @@ pub struct ConfigureDirectFeesInstallmentCommand {
     pub direct_fees_installment_id: DirectFeesInstallmentId,
 }
 
-
 impl ConfigureDirectFeesInstallmentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4585,7 +4366,6 @@ pub struct AssignDirectInstallmentCommand {
     pub tenant: TenantContext,
     pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
 }
-
 
 impl AssignDirectInstallmentCommand {
     /// The capabilities required to dispatch this command.
@@ -4600,7 +4380,6 @@ pub struct PayDirectInstallmentCommand {
     pub direct_fees_installment_child_payment_id: DirectFeesInstallmentChildPaymentId,
 }
 
-
 impl PayDirectInstallmentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4613,7 +4392,6 @@ pub struct ConfigureDirectFeesCommand {
     pub tenant: TenantContext,
     pub direct_fees_setting_id: DirectFeesSettingId,
 }
-
 
 impl ConfigureDirectFeesCommand {
     /// The capabilities required to dispatch this command.
@@ -4628,7 +4406,6 @@ pub struct ConfigureFeesReminderCommand {
     pub direct_fees_reminder_id: DirectFeesReminderId,
 }
 
-
 impl ConfigureFeesReminderCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4641,7 +4418,6 @@ pub struct RecordBankStatementCommand {
     pub tenant: TenantContext,
     pub bank_statement_id: BankStatementId,
 }
-
 
 impl RecordBankStatementCommand {
     /// The capabilities required to dispatch this command.
@@ -4656,7 +4432,6 @@ pub struct GenerateBankPaymentSlipCommand {
     pub bank_payment_slip_id: BankPaymentSlipId,
 }
 
-
 impl GenerateBankPaymentSlipCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4669,7 +4444,6 @@ pub struct ApproveBankPaymentCommand {
     pub tenant: TenantContext,
     pub bank_payment_slip_id: BankPaymentSlipId,
 }
-
 
 impl ApproveBankPaymentCommand {
     /// The capabilities required to dispatch this command.
@@ -4684,7 +4458,6 @@ pub struct RejectBankPaymentCommand {
     pub bank_payment_slip_id: BankPaymentSlipId,
 }
 
-
 impl RejectBankPaymentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4697,7 +4470,6 @@ pub struct TransferFundsCommand {
     pub tenant: TenantContext,
     pub amount_transfer_id: AmountTransferId,
 }
-
 
 impl TransferFundsCommand {
     /// The capabilities required to dispatch this command.
@@ -4712,7 +4484,6 @@ pub struct RecordExpenseCommand {
     pub expense_id: ExpenseId,
 }
 
-
 impl RecordExpenseCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4725,7 +4496,6 @@ pub struct RecordIncomeCommand {
     pub tenant: TenantContext,
     pub income_id: IncomeId,
 }
-
 
 impl RecordIncomeCommand {
     /// The capabilities required to dispatch this command.
@@ -4740,7 +4510,6 @@ pub struct AddWalletCreditCommand {
     pub wallet_transaction_id: WalletTransactionId,
 }
 
-
 impl AddWalletCreditCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4753,7 +4522,6 @@ pub struct DeductWalletCreditCommand {
     pub tenant: TenantContext,
     pub wallet_transaction_id: WalletTransactionId,
 }
-
 
 impl DeductWalletCreditCommand {
     /// The capabilities required to dispatch this command.
@@ -4776,7 +4544,6 @@ pub struct RecordPayrollPaymentCommand {
     pub note: Option<String>,
 }
 
-
 impl RecordPayrollPaymentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4789,7 +4556,6 @@ pub struct RecordInventoryPaymentCommand {
     pub tenant: TenantContext,
     pub inventory_payment_id: InventoryPaymentId,
 }
-
 
 impl RecordInventoryPaymentCommand {
     /// The capabilities required to dispatch this command.
@@ -4804,7 +4570,6 @@ pub struct RecordProductPurchaseCommand {
     pub product_purchase_id: ProductPurchaseId,
 }
 
-
 impl RecordProductPurchaseCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4818,7 +4583,6 @@ pub struct RecordProductPaymentCommand {
     pub product_purchase_id: ProductPurchaseId,
 }
 
-
 impl RecordProductPaymentCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4831,7 +4595,6 @@ pub struct ConfigureInvoiceSettingsCommand {
     pub tenant: TenantContext,
     pub invoice_setting_id: InvoiceSettingId,
 }
-
 
 impl ConfigureInvoiceSettingsCommand {
     /// The capabilities required to dispatch this command.
@@ -4859,7 +4622,6 @@ pub struct ConfigurePaymentGatewayCommand {
     pub service_charge_type: GatewayChargeType,
 }
 
-
 impl ConfigurePaymentGatewayCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4872,7 +4634,6 @@ pub struct AttachFeesToQuestionBankCommand {
     pub tenant: TenantContext,
     pub fm_fees_weaver_id: FmFeesWeaverId,
 }
-
 
 impl AttachFeesToQuestionBankCommand {
     /// The capabilities required to dispatch this command.
@@ -4891,7 +4652,6 @@ pub struct CreateChartOfAccountCommand {
     pub description: Option<String>,
 }
 
-
 impl CreateChartOfAccountCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -4909,7 +4669,6 @@ pub struct CreateSalaryTemplateCommand {
     pub net_salary_minor: i64,
     pub description: Option<String>,
 }
-
 
 impl CreateSalaryTemplateCommand {
     /// The capabilities required to dispatch this command.
@@ -5135,7 +4894,6 @@ pub struct SetHourlyRateCommand {
     pub tenant: TenantContext,
 }
 
-
 impl SetHourlyRateCommand {
     /// The capabilities required to dispatch this command.
     #[must_use]
@@ -5148,7 +4906,6 @@ pub struct AddFeesInstallmentCreditCommand {
     pub tenant: TenantContext,
     pub fees_installment_credit_id: FeesInstallmentCreditId,
 }
-
 
 impl AddFeesInstallmentCreditCommand {
     /// The capabilities required to dispatch this command.

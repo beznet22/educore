@@ -271,7 +271,10 @@ fn wf_due_fees_login_prevention_block_then_pay_then_unblock() {
     // `blocked=false`.
     let after_payment =
         fin_services::DueFeesLoginPreventionService::is_login_blocked(actor, 0, threshold);
-    assert!(!after_payment.blocked, "after full payment the user must be unblocked");
+    assert!(
+        !after_payment.blocked,
+        "after full payment the user must be unblocked"
+    );
     assert_eq!(after_payment.outstanding_minor, 0);
     assert_eq!(after_payment.reason, PreventReason::OverdueFees);
 
@@ -281,12 +284,8 @@ fn wf_due_fees_login_prevention_block_then_pay_then_unblock() {
     // staff role gate on top of the service's decision.
     // We model the gate directly: the same balance that
     // blocks a parent must not block a staff user.
-    let staff_tenant = TenantContext::for_user(
-        school,
-        actor,
-        g.next_correlation_id(),
-        UserType::Staff,
-    );
+    let staff_tenant =
+        TenantContext::for_user(school, actor, g.next_correlation_id(), UserType::Staff);
     assert_eq!(staff_tenant.user_type, UserType::Staff);
     let staff_decision =
         fin_services::DueFeesLoginPreventionService::is_login_blocked(actor, outstanding, 0);
@@ -295,7 +294,11 @@ fn wf_due_fees_login_prevention_block_then_pay_then_unblock() {
     // threshold), the dispatcher must override to
     // `blocked=false` for staff users per spec.
     let actor_is_staff = matches!(staff_tenant.user_type, UserType::Staff);
-    let effective_blocked = if actor_is_staff { false } else { staff_decision.blocked };
+    let effective_blocked = if actor_is_staff {
+        false
+    } else {
+        staff_decision.blocked
+    };
     assert!(
         !effective_blocked,
         "spec invariant: staff users are never blocked"
@@ -370,11 +373,8 @@ fn wf_bank_reconciliation_multi_line_match_unmatched_and_summary() {
     };
 
     // Step 2: per-line match. Two must match, one must not.
-    let m1 = fin_services::BankReconciliationService::match_transaction(
-        &matched_line,
-        &journal,
-        school,
-    );
+    let m1 =
+        fin_services::BankReconciliationService::match_transaction(&matched_line, &journal, school);
     assert!(m1.matched_row);
     assert_eq!(m1.discrepancy_minor, 0);
     assert_eq!(m1.statement_line_id, "stmt-001");
@@ -527,18 +527,16 @@ fn wf_hourly_rate_history_pay_calculation_and_negative_rejection() {
     let staff = StaffId::new(school, uuid::Uuid::now_v7());
 
     // Step 1: rate v1 effective 2026-01-01.
-    let v1 =
-        fin_services::HourlyRateService::set_hourly_rate(staff, 500, date(2026, 1, 1))
-            .expect("set v1");
+    let v1 = fin_services::HourlyRateService::set_hourly_rate(staff, 500, date(2026, 1, 1))
+        .expect("set v1");
     assert_eq!(v1.rate_minor, 500);
     assert_eq!(v1.effective_from, date(2026, 1, 1));
     assert_eq!(v1.staff, staff);
 
     // Step 2: rate v2 effective 2026-04-01 — does not
     // overwrite v1; both live in the history.
-    let v2 =
-        fin_services::HourlyRateService::set_hourly_rate(staff, 600, date(2026, 4, 1))
-            .expect("set v2");
+    let v2 = fin_services::HourlyRateService::set_hourly_rate(staff, 600, date(2026, 4, 1))
+        .expect("set v2");
     assert_eq!(v2.rate_minor, 600);
     assert_eq!(v2.effective_from, date(2026, 4, 1));
     assert_ne!(v1, v2);
@@ -549,8 +547,7 @@ fn wf_hourly_rate_history_pay_calculation_and_negative_rejection() {
     // whose effective_from <= the queried date.
     let on_march = fin_services::HourlyRateService::get_effective_rate(&history, date(2026, 3, 15));
     assert_eq!(on_march.expect("rate in march").rate_minor, 500);
-    let on_april =
-        fin_services::HourlyRateService::get_effective_rate(&history, date(2026, 4, 1));
+    let on_april = fin_services::HourlyRateService::get_effective_rate(&history, date(2026, 4, 1));
     assert_eq!(on_april.expect("rate in april").rate_minor, 600);
     let on_june = fin_services::HourlyRateService::get_effective_rate(&history, date(2026, 6, 1));
     assert_eq!(on_june.expect("rate in june").rate_minor, 600);
@@ -635,8 +632,7 @@ fn wf_salary_template_create_apply_validate_failure_paths() {
 
     // Step 3: apply_template produces an AppliedSalaryTemplate
     // whose lines = earnings ++ deductions.
-    let applied =
-        fin_services::SalaryTemplateService::apply_template(&template, staff);
+    let applied = fin_services::SalaryTemplateService::apply_template(&template, staff);
     assert_eq!(applied.staff, staff);
     assert_eq!(applied.template_name, "Standard Teacher");
     assert_eq!(applied.currency, Currency::INR);

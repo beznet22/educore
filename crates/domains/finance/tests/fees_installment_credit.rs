@@ -94,7 +94,10 @@ fn fresh_full_payload_overpayment_fic_i_2() {
     assert_eq!(row.amount_minor, 25_000); // FIC I-1
     assert_eq!(row.credit_source, FeesInstallmentCreditSource::Overpayment); // FIC I-2
     assert_eq!(event.amount_minor, 25_000);
-    assert_eq!(event.credit_source, FeesInstallmentCreditSource::Overpayment);
+    assert_eq!(
+        event.credit_source,
+        FeesInstallmentCreditSource::Overpayment
+    );
 }
 
 #[test]
@@ -121,8 +124,14 @@ fn fresh_full_payload_manual_adjustment_fic_i_2() {
     let clock = SystemClock;
 
     let (row, event) = create_fees_installment_credit(cmd, &clock, &g).unwrap();
-    assert_eq!(row.credit_source, FeesInstallmentCreditSource::ManualAdjustment);
-    assert_eq!(event.credit_source, FeesInstallmentCreditSource::ManualAdjustment);
+    assert_eq!(
+        row.credit_source,
+        FeesInstallmentCreditSource::ManualAdjustment
+    );
+    assert_eq!(
+        event.credit_source,
+        FeesInstallmentCreditSource::ManualAdjustment
+    );
 }
 
 #[test]
@@ -305,5 +314,8 @@ fn create_fees_installment_credit_service_event_type_is_finance_fees_installment
     assert_eq!(event.fees_installment_credit_id, id);
     // FIC I-1 + FIC I-2 carried downstream
     assert_eq!(event.amount_minor, 25_000);
-    assert_eq!(event.credit_source, FeesInstallmentCreditSource::Overpayment);
+    assert_eq!(
+        event.credit_source,
+        FeesInstallmentCreditSource::Overpayment
+    );
 }

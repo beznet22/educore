@@ -21,14 +21,13 @@
 use educore_core::clock::{IdGenerator as _, SystemClock, SystemIdGen};
 use educore_core::ids::SchoolId;
 use educore_core::tenant::{TenantContext, UserType};
+use educore_events::domain_event::DomainEvent;
 use educore_finance::commands::RecordPayrollPaymentCommand;
 use educore_finance::events::{PayrollPaymentRecorded, PayrollPaymentRetired};
 use educore_finance::prelude::{
-    BankAccountId, Currency, PaymentMethodId, PaymentMode, PayrollPaymentId,
-    RealPayrollPayment,
+    BankAccountId, Currency, PaymentMethodId, PaymentMode, PayrollPaymentId, RealPayrollPayment,
 };
 use educore_finance::services::{record_payroll_payment, retire_payroll_payment};
-use educore_events::domain_event::DomainEvent;
 use educore_hr::value_objects::PayrollGenerateId;
 
 fn admin_context() -> (TenantContext, SystemIdGen) {
@@ -208,10 +207,7 @@ fn pp_retire_twice_returns_conflict() {
     let (agg2, _): (RealPayrollPayment, PayrollPaymentRetired) =
         retire_payroll_payment(agg, tenant.clone(), &SystemClock, &event_id_gen()).expect("first");
     let err = retire_payroll_payment(agg2, tenant, &SystemClock, &event_id_gen()).unwrap_err();
-    assert!(matches!(
-        err,
-        educore_core::error::DomainError::Conflict(_)
-    ));
+    assert!(matches!(err, educore_core::error::DomainError::Conflict(_)));
 }
 
 #[test]

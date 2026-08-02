@@ -22,8 +22,8 @@ use educore_core::ids::SchoolId;
 use educore_core::tenant::{TenantContext, UserType};
 use educore_events::domain_event::DomainEvent;
 use educore_finance::prelude::{
-    create_fees_master, retire_fees_master, Currency, FeesGroupId, FeesMasterCreated,
-    FeesMasterId, FeesMasterRetired, RealFeesMaster,
+    create_fees_master, retire_fees_master, Currency, FeesGroupId, FeesMasterCreated, FeesMasterId,
+    FeesMasterRetired, RealFeesMaster,
 };
 use educore_finance::value_objects::ClassId;
 
@@ -286,7 +286,10 @@ fn retire_already_retired_returns_conflict() {
     let err = agg
         .retire(now, tenant.actor_id)
         .expect_err("double-retire must conflict");
-    assert!(format!("{err}").contains("already retired"), "unexpected error: {err}");
+    assert!(
+        format!("{err}").contains("already retired"),
+        "unexpected error: {err}"
+    );
 }
 
 // =========================================================================
@@ -328,10 +331,7 @@ fn create_fees_master_service_emits_created_event_fm_i_2() {
         <FeesMasterCreated as DomainEvent>::AGGREGATE_TYPE,
         "fees_master"
     );
-    assert_eq!(
-        <FeesMasterCreated as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<FeesMasterCreated as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(event.school_id(), school);
 }
 
@@ -386,9 +386,6 @@ fn retire_fees_master_service_emits_retired_event_fm() {
         <FeesMasterRetired as DomainEvent>::AGGREGATE_TYPE,
         "fees_master"
     );
-    assert_eq!(
-        <FeesMasterRetired as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<FeesMasterRetired as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(event.school_id(), school);
 }

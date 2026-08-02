@@ -25,8 +25,8 @@ use educore_finance::events::{
     FmFeesTransactionRetired,
 };
 use educore_finance::prelude::*;
-use educore_finance::value_objects::FmFeesTransactionId;
 use educore_finance::value_objects::ApprovalStatus;
+use educore_finance::value_objects::FmFeesTransactionId;
 
 fn admin_context() -> (TenantContext, SystemIdGen) {
     let g = SystemIdGen;
@@ -98,8 +98,7 @@ fn fresh_negative_total_paid_amount_validation_error_fft_i_2() {
     match result {
         Err(DomainError::Validation(msg)) => {
             assert!(
-                msg.contains("total_paid_amount_minor must be >= 0")
-                    && msg.contains("FFT I-2"),
+                msg.contains("total_paid_amount_minor must be >= 0") && msg.contains("FFT I-2"),
                 "unexpected error message: {msg}"
             );
         }
@@ -268,20 +267,14 @@ fn approve_transitions_pending_to_approved_fft_i_3() {
     let corr = g.next_correlation_id();
     let tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
     let id = fft_id(&g, school);
-    let mut row = RealFmFeesTransaction::fresh(
-        id,
-        5_000,
-        txn_date(),
-        None,
-        actor,
-        Timestamp::now(),
-        corr,
-    )
-    .expect("fresh should succeed");
+    let mut row =
+        RealFmFeesTransaction::fresh(id, 5_000, txn_date(), None, actor, Timestamp::now(), corr)
+            .expect("fresh should succeed");
     assert_eq!(row.status, ApprovalStatus::Pending);
     let event_id = g.next_event_id();
     let at = Timestamp::now();
-    row.approve(actor, at, event_id).expect("approve should succeed");
+    row.approve(actor, at, event_id)
+        .expect("approve should succeed");
     assert_eq!(row.status, ApprovalStatus::Approved);
     assert_eq!(row.approved_by, Some(actor));
     assert_eq!(row.approved_at, Some(at));
@@ -295,16 +288,9 @@ fn reject_transitions_pending_to_rejected_fft_i_3() {
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
     let id = fft_id(&g, school);
-    let mut row = RealFmFeesTransaction::fresh(
-        id,
-        5_000,
-        txn_date(),
-        None,
-        actor,
-        Timestamp::now(),
-        corr,
-    )
-    .expect("fresh should succeed");
+    let mut row =
+        RealFmFeesTransaction::fresh(id, 5_000, txn_date(), None, actor, Timestamp::now(), corr)
+            .expect("fresh should succeed");
     assert_eq!(row.status, ApprovalStatus::Pending);
     let event_id = g.next_event_id();
     let at = Timestamp::now();
@@ -325,16 +311,9 @@ fn double_approve_returns_conflict_fft_i_3() {
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
     let id = fft_id(&g, school);
-    let mut row = RealFmFeesTransaction::fresh(
-        id,
-        5_000,
-        txn_date(),
-        None,
-        actor,
-        Timestamp::now(),
-        corr,
-    )
-    .expect("fresh should succeed");
+    let mut row =
+        RealFmFeesTransaction::fresh(id, 5_000, txn_date(), None, actor, Timestamp::now(), corr)
+            .expect("fresh should succeed");
     row.approve(actor, Timestamp::now(), g.next_event_id())
         .expect("first approve should succeed");
     let result = row.approve(actor, Timestamp::now(), g.next_event_id());
@@ -348,19 +327,17 @@ fn reject_after_approve_returns_conflict_fft_i_3() {
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
     let id = fft_id(&g, school);
-    let mut row = RealFmFeesTransaction::fresh(
-        id,
-        5_000,
-        txn_date(),
-        None,
-        actor,
-        Timestamp::now(),
-        corr,
-    )
-    .expect("fresh should succeed");
+    let mut row =
+        RealFmFeesTransaction::fresh(id, 5_000, txn_date(), None, actor, Timestamp::now(), corr)
+            .expect("fresh should succeed");
     row.approve(actor, Timestamp::now(), g.next_event_id())
         .expect("first approve should succeed");
-    let result = row.reject(actor, "too late".to_string(), Timestamp::now(), g.next_event_id());
+    let result = row.reject(
+        actor,
+        "too late".to_string(),
+        Timestamp::now(),
+        g.next_event_id(),
+    );
     assert!(matches!(result, Err(DomainError::Conflict(_))));
 }
 
@@ -394,10 +371,7 @@ fn create_fm_fees_transaction_service_emits_created_event() {
         <FmFeesTransactionCreated as DomainEvent>::AGGREGATE_TYPE,
         "fm_fees_transaction"
     );
-    assert_eq!(
-        <FmFeesTransactionCreated as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<FmFeesTransactionCreated as DomainEvent>::SCHEMA_VERSION, 1);
 }
 
 #[test]
@@ -454,16 +428,9 @@ fn approve_fm_fees_transaction_service_emits_approved_event_fft_i_3() {
     let corr = g.next_correlation_id();
     let tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
     let id = fft_id(&g, school);
-    let agg = RealFmFeesTransaction::fresh(
-        id,
-        5_000,
-        txn_date(),
-        None,
-        actor,
-        Timestamp::now(),
-        corr,
-    )
-    .expect("fresh should succeed");
+    let agg =
+        RealFmFeesTransaction::fresh(id, 5_000, txn_date(), None, actor, Timestamp::now(), corr)
+            .expect("fresh should succeed");
     let cmd = ApproveFmFeesTransactionCommand {
         tenant,
         fm_fees_transaction_id: id,
@@ -488,16 +455,9 @@ fn reject_fm_fees_transaction_service_emits_rejected_event_fft_i_3() {
     let corr = g.next_correlation_id();
     let tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
     let id = fft_id(&g, school);
-    let agg = RealFmFeesTransaction::fresh(
-        id,
-        5_000,
-        txn_date(),
-        None,
-        actor,
-        Timestamp::now(),
-        corr,
-    )
-    .expect("fresh should succeed");
+    let agg =
+        RealFmFeesTransaction::fresh(id, 5_000, txn_date(), None, actor, Timestamp::now(), corr)
+            .expect("fresh should succeed");
     let cmd = RejectFmFeesTransactionCommand {
         tenant,
         fm_fees_transaction_id: id,

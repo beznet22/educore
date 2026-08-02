@@ -20,7 +20,9 @@ use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::Timestamp;
 use educore_core::value_objects::Version;
 use educore_events::domain_event::DomainEvent;
-use educore_finance::events::{DirectFeesInstallmentChildPaymentCreated, DirectFeesInstallmentChildPaymentRetired};
+use educore_finance::events::{
+    DirectFeesInstallmentChildPaymentCreated, DirectFeesInstallmentChildPaymentRetired,
+};
 use educore_finance::prelude::*;
 use educore_finance::value_objects::{
     DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId,

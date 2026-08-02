@@ -145,16 +145,8 @@ fn fresh_negative_threshold_returns_validation() {
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
     let now = SystemClock.now();
-    let err = RealFeesCarryForwardSetting::fresh(
-        id,
-        -1,
-        true,
-        None,
-        actor,
-        now,
-        corr,
-    )
-    .expect_err("negative threshold must be rejected");
+    let err = RealFeesCarryForwardSetting::fresh(id, -1, true, None, actor, now, corr)
+        .expect_err("negative threshold must be rejected");
     assert!(
         matches!(err, DomainError::Validation(_)),
         "expected Validation, got {err:?}"
@@ -197,8 +189,14 @@ fn update_metadata_updates_threshold_enabled_description() {
     let mut row = make_fees_carry_forward_setting(&g, school, 100, true, Some("initial"));
     let original_version = row.version;
     let later = SystemClock.now();
-    row.update_metadata(500, false, Some("revised".to_owned()), later, g.next_user_id())
-        .expect("update");
+    row.update_metadata(
+        500,
+        false,
+        Some("revised".to_owned()),
+        later,
+        g.next_user_id(),
+    )
+    .expect("update");
     assert_eq!(row.threshold_minor, 500);
     assert!(!row.enabled);
     assert_eq!(row.description.as_deref(), Some("revised"));

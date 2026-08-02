@@ -38,7 +38,7 @@ fn make_create_cmd(
         tenant,
         fees_invoice_setting_id: id,
         prefix: "INV".to_owned(), // FISv I-1 pinned \xe2\x80\x94 alphanumeric
-        per_th: 500, // FISv I-2 \xe2\x80\x94 50.0%
+        per_th: 500,              // FISv I-2 \xe2\x80\x94 50.0%
         description: Some("Standard invoice numbering + late fee threshold".to_owned()),
     }
 }
@@ -258,8 +258,7 @@ fn update_metadata_on_retired_returns_conflict() {
         tenant: tenant.clone(),
         fees_invoice_setting_id: id,
     };
-    let _retire_event =
-        retire_fees_invoice_setting(retire_cmd, &clock, &g, &mut row).unwrap();
+    let _retire_event = retire_fees_invoice_setting(retire_cmd, &clock, &g, &mut row).unwrap();
     assert!(!row.is_active());
     assert_eq!(row.active_status, ActiveStatus::Retired);
 

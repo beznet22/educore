@@ -34,23 +34,24 @@ use educore_core::value_objects::{ActiveStatus, Etag, Timestamp, Version};
 
 use crate::value_objects::{
     validate_discount_name, validate_donor_name, validate_ledger_name, AccountType, Amount,
-    AmountTransferId, ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId, LifecycleStatus,
-    BankStatementId,
-    ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId,
-    DirectFeesInstallmentChildPaymentId,
-    DirectFeesInstallmentAssignId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DiscountType, DonorId,
-    DueFeesLoginPreventId, ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId,
-    FeesAssignId, FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId,
-    FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId,
-    FeesInstallmentCreditId, FeesInstallmentId, FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId,
-    FeesPaymentId, FeesPaymentStatus, FeesTypeId, FineAmount, FmFeesGroupId, FmFeesInvoiceChildId,
+    AmountTransferId, ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId,
+    BankPaymentSlipId, BankStatementAttachmentId, BankStatementId, ChartOfAccountId, Currency,
+    DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId,
+    DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId,
+    DirectFeesSettingId, DiscountType, DonorId, DueFeesLoginPreventId, ExpenseApprovalId,
+    ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId, FeesCarryForwardId,
+    FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId, FeesGroupId,
+    FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, FeesInstallmentCreditId,
+    FeesInstallmentId, FeesInvoiceId, FeesInvoiceSettingId, FeesMasterId, FeesPaymentId,
+    FeesPaymentStatus, FeesTypeId, FineAmount, FmFeesGroupId, FmFeesInvoiceChildId,
     FmFeesInvoiceId, FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId,
-    FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, FmInvoiceType,
-    IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId, Money, PaymentGatewaySettingId,
-    PaymentMode, ProductPurchaseLifecycleStatus, TransactionLifecycleStatus,
-    PaymentMethodId, PaymentMethodKind, PayrollEarnDeducId, PayrollGenerateId, GatewayMode, GatewayChargeType,
-    PayrollPaymentApprovalId, PayrollPaymentId, ProductPurchaseId, QuestionBankFeeId,
-    SalaryTemplateId, StatementType, TransactionId, WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
+    FmFeesTransactionId, FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId,
+    FmInvoiceType, GatewayChargeType, GatewayMode, IncomeApprovalId, IncomeHeadId, IncomeId,
+    InventoryPaymentId, InvoiceSettingId, LifecycleStatus, Money, PaymentGatewaySettingId,
+    PaymentMethodId, PaymentMethodKind, PaymentMode, PayrollEarnDeducId, PayrollGenerateId,
+    PayrollPaymentApprovalId, PayrollPaymentId, ProductPurchaseId, ProductPurchaseLifecycleStatus,
+    QuestionBankFeeId, SalaryTemplateId, StatementType, TransactionId, TransactionLifecycleStatus,
+    WalletId, WalletTransactionApprovalId, WalletTransactionId, WalletTxType,
 };
 use educore_core::clock::Clock;
 use educore_core::ids::Identifier;
@@ -493,11 +494,14 @@ impl FeesInvoice {
     /// `"INV-1007"`). Wraps `start_form + issued_count` in a
     /// `Validation` error if the addition overflows `i64`.
     pub fn next_invoice_number(&self, issued_count: u64) -> educore_core::error::Result<String> {
-        let next = self.start_form.checked_add(issued_count as i64).ok_or_else(|| {
-            educore_core::error::DomainError::validation(
-                "invoice number overflow: start_form + issued_count exceeds i64::MAX",
-            )
-        })?;
+        let next = self
+            .start_form
+            .checked_add(issued_count as i64)
+            .ok_or_else(|| {
+                educore_core::error::DomainError::validation(
+                    "invoice number overflow: start_form + issued_count exceeds i64::MAX",
+                )
+            })?;
         Ok(format!("{}{}", self.prefix, next))
     }
 }
@@ -802,13 +806,11 @@ impl Expense {
                 AccountType::Bank,
             ) => {}
             (pm, at) => {
-                return Err(educore_core::error::DomainError::validation(
-                    format!(
-                        "payment_method {pm:?} is not compatible with account_type {at:?}",
-                        pm = pm.as_str(),
-                        at = at.as_str(),
-                    ),
-                ));
+                return Err(educore_core::error::DomainError::validation(format!(
+                    "payment_method {pm:?} is not compatible with account_type {at:?}",
+                    pm = pm.as_str(),
+                    at = at.as_str(),
+                )));
             }
         }
         Ok(Self {
@@ -1626,7 +1628,10 @@ mod tests {
             corr,
         )
         .unwrap_err();
-        assert!(matches!(err, educore_core::error::DomainError::Validation(_)));
+        assert!(matches!(
+            err,
+            educore_core::error::DomainError::Validation(_)
+        ));
 
         // Empty / whitespace reference -> rejected.
         let id2 = FeesPaymentId::new(school, uuid::Uuid::now_v7());
@@ -1647,7 +1652,10 @@ mod tests {
             corr,
         )
         .unwrap_err();
-        assert!(matches!(err2, educore_core::error::DomainError::Validation(_)));
+        assert!(matches!(
+            err2,
+            educore_core::error::DomainError::Validation(_)
+        ));
 
         // Real reference -> accepted and round-trips.
         let id3 = FeesPaymentId::new(school, uuid::Uuid::now_v7());
@@ -1843,7 +1851,7 @@ mod tests {
             Currency::INR,
             head,
             acct,
-            AccountType::Bank, // bank account
+            AccountType::Bank,       // bank account
             PaymentMethodKind::Cash, // but cash method
             date,
             None,
@@ -2015,7 +2023,9 @@ mod tests {
         )
         .unwrap();
         let mut expense = expense;
-        expense.approve(user, at, event_gen.next_event_id()).unwrap();
+        expense
+            .approve(user, at, event_gen.next_event_id())
+            .unwrap();
 
         wallet.apply_credit(1_500, Currency::INR, user, at).unwrap();
         wallet.apply_debit(300, Currency::INR, user, at).unwrap();
@@ -2043,8 +2053,7 @@ mod tests {
             corr,
         )
         .unwrap();
-        let txs_with_pending: Vec<&WalletTransaction> =
-            vec![&deposit, &refund, &expense, &pending];
+        let txs_with_pending: Vec<&WalletTransaction> = vec![&deposit, &refund, &expense, &pending];
         assert_eq!(Wallet::reconcile_balance(&txs_with_pending), 1_200);
     }
 
@@ -2087,7 +2096,10 @@ mod tests {
             educore_core::error::DomainError::Validation(_)
         ));
         // No overflow at zero issued_count.
-        assert_eq!(inv.next_invoice_number(0).unwrap(), format!("X-{}", i64::MAX));
+        assert_eq!(
+            inv.next_invoice_number(0).unwrap(),
+            format!("X-{}", i64::MAX)
+        );
     }
 
     /// Wave 146 -- FI next counter arithmetic marker.
@@ -2259,11 +2271,7 @@ impl RealIncomeHead {
     /// Soft-deletes the income head by flipping `active_status` to
     /// `Retired`. Bumps version, advances `updated_at`, sets
     /// `updated_by`.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "IncomeHead is already retired",
@@ -2576,7 +2584,10 @@ impl RealFeesInstallmentAssign {
     /// lifecycle state (Paid | Closed | Cancelled).
     #[must_use]
     pub fn current_balance_minor(&self) -> i64 {
-        if matches!(self.lifecycle_status, LifecycleStatus::Paid | LifecycleStatus::Closed | LifecycleStatus::Cancelled) {
+        if matches!(
+            self.lifecycle_status,
+            LifecycleStatus::Paid | LifecycleStatus::Closed | LifecycleStatus::Cancelled
+        ) {
             return 0;
         }
         (self.amount_minor + self.discount_minor - self.paid_amount_minor).max(0)
@@ -2771,11 +2782,7 @@ impl RealFmFeesGroup {
     /// Soft-deletes the FM fees group by flipping `active_status` to
     /// `Retired`. Bumps version, advances `updated_at`, sets
     /// `updated_by`.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "FmFeesGroup is already retired",
@@ -3042,11 +3049,7 @@ impl RealInvoiceSetting {
     /// Soft-deletes the invoice setting by flipping `active_status`
     /// to `Retired`. Bumps version, advances `updated_at`, sets
     /// `updated_by`.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "InvoiceSetting is already retired",
@@ -3187,11 +3190,7 @@ impl RealQuestionBankFee {
     /// Soft-deletes the question bank fee by flipping `active_status`
     /// to `Retired`. Bumps version, advances `updated_at`, sets
     /// `updated_by`.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "QuestionBankFee is already retired",
@@ -3365,11 +3364,7 @@ impl RealDirectFeesSetting {
     /// Soft-deletes the direct-fees setting by flipping `active_status`
     /// to `Retired`. Bumps version, advances `updated_at`, sets
     /// `updated_by`.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "DirectFeesSetting is already retired",
@@ -3487,11 +3482,7 @@ impl RealFeesCarryForwardLog {
     /// because the audit footer + the `Retired` status together preserve
     /// the original record; the soft-delete is a tombstone, not a
     /// modification of the carried amount or student/year references.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "FeesCarryForwardLog is already retired",
@@ -3652,11 +3643,7 @@ impl RealFmFeesTransactionChild {
     /// `updated_by`. Preserves FFTC I-1 (the original amount is
     /// preserved in the audit footer) and FFTC I-2 (the parent
     /// reference is immutable, so it remains valid even after retire).
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "FmFeesTransactionChild is already retired",
@@ -3765,11 +3752,7 @@ impl RealFmFeesTransactionLineNote {
     /// together preserve the original record; the soft-delete is a
     /// tombstone, not a modification of the note text or the parent
     /// transaction reference.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "FmFeesTransactionLineNote is already retired",
@@ -3937,11 +3920,7 @@ impl RealChartOfAccount {
     /// exist. This method itself is a tombstone that preserves the
     /// audit trail + original code/name/account_type for legal-record
     /// retention.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "ChartOfAccount is already retired",
@@ -4071,11 +4050,7 @@ impl RealDirectFeesInstallmentAssignChild {
     /// together preserve the original record; the soft-delete is a
     /// tombstone, not a modification of the amount or parent
     /// assignment reference.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "DirectFeesInstallmentAssignChild is already retired",
@@ -4193,11 +4168,7 @@ impl RealFmFeesInvoiceLineNote {
     /// together preserve the original record; the soft-delete is a
     /// tombstone, not a modification of the note text or the parent
     /// invoice reference.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "FmFeesInvoiceLineNote is already retired",
@@ -4287,9 +4258,7 @@ impl RealDonor {
             name: name.trim().to_owned(),
             email: email.trim().to_owned(),
             show_public,
-            phone: phone
-                .map(|p| p.trim().to_owned())
-                .filter(|p| !p.is_empty()),
+            phone: phone.map(|p| p.trim().to_owned()).filter(|p| !p.is_empty()),
             description: description
                 .map(|d| d.trim().to_owned())
                 .filter(|d| !d.is_empty()),
@@ -4331,9 +4300,7 @@ impl RealDonor {
         self.name = name.trim().to_owned();
         self.email = email.trim().to_owned();
         self.show_public = show_public;
-        self.phone = phone
-            .map(|p| p.trim().to_owned())
-            .filter(|p| !p.is_empty());
+        self.phone = phone.map(|p| p.trim().to_owned()).filter(|p| !p.is_empty());
         self.description = description
             .map(|d| d.trim().to_owned())
             .filter(|d| !d.is_empty());
@@ -4346,11 +4313,7 @@ impl RealDonor {
     /// Soft-deletes the donor by flipping `active_status` to
     /// `Retired`. Bumps version, advances `updated_at`, sets
     /// `updated_by`.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "Donor is already retired",
@@ -4519,11 +4482,7 @@ impl RealFeesCarryForwardSetting {
     /// preserved in the audit footer) and FCFA I-1 (the school_id is
     /// immutable, so the per-school scope is preserved even after
     /// retire).
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "FeesCarryForwardSetting is already retired",
@@ -4680,11 +4639,7 @@ impl RealExpenseApproval {
     /// a terminal state. Stamps `decided_by` + `decided_at` on the
     /// aggregate (EA I-2). Bumps version, advances `updated_at`,
     /// sets `updated_by`.
-    pub fn approve(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn approve(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         // EA I-1: only Pending can transition.
         if !self.is_pending() {
             return Err(educore_core::error::DomainError::conflict(
@@ -4876,11 +4831,7 @@ impl RealIncomeApproval {
     /// a terminal state. Stamps `decided_by` + `decided_at` on the
     /// aggregate (IA I-2). Bumps version, advances `updated_at`,
     /// sets `updated_by`.
-    pub fn approve(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn approve(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         // IA I-1: only Pending can transition.
         if !self.is_pending() {
             return Err(educore_core::error::DomainError::conflict(
@@ -5122,11 +5073,7 @@ impl RealSalaryTemplate {
     /// `updated_by`. Preserves ST I-1 (the original gross_salary_minor
     /// is preserved in the audit footer) and ST I-2 (the original
     /// net_salary_minor is preserved in the audit footer).
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "SalaryTemplate is already retired",
@@ -5265,11 +5212,7 @@ impl RealBankPaymentSlipAudit {
     /// the audit footer for legal-record retention. BPA I-1
     /// (append-only) is upheld because `retire()` does NOT mutate
     /// any of those fields; it only flips the active flag.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "BankPaymentSlipAudit is already retired",
@@ -5407,8 +5350,8 @@ impl RealBankStatement {
             school_id: id.school_id(),
             id,
             bank_account_id,
-            statement_type, // BS I-2: typed at compile time
-            amount_minor,   // BS I-1
+            statement_type,      // BS I-2: typed at compile time
+            amount_minor,        // BS I-1
             balance_after_minor, // BS I-3
             currency,
             occurred_at,
@@ -5478,11 +5421,7 @@ impl RealBankStatement {
     /// in the audit footer for legal-record retention. BS I-4
     /// (append-only) is upheld because `retire()` does NOT mutate
     /// any of those fields; it only flips the active flag.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "BankStatement is already retired",
@@ -5633,15 +5572,11 @@ impl RealFeesDiscount {
         // amount_minor must be >= 0 when present;
         // percentage_basis_points must be <= 10000 when present;
         // currency is required when amount_minor is Some.
-        Self::validate_value_fields(
-            amount_minor,
-            percentage_basis_points,
-            currency,
-        )?;
+        Self::validate_value_fields(amount_minor, percentage_basis_points, currency)?;
         Ok(Self {
             school_id: id.school_id(),
             id,
-            fees_master_id, // FD I-3
+            fees_master_id,   // FD I-3
             academic_year_id, // FD I-4
             name: trimmed_name,
             discount_code: trimmed_code,
@@ -5696,13 +5631,10 @@ impl RealFeesDiscount {
             }
         }
         // Exactly-one rule (when value fields are provided).
-        let provided_count = [
-            amount_minor.is_some(),
-            percentage_basis_points.is_some(),
-        ]
-        .iter()
-        .filter(|x| **x)
-        .count();
+        let provided_count = [amount_minor.is_some(), percentage_basis_points.is_some()]
+            .iter()
+            .filter(|x| **x)
+            .count();
         if provided_count > 1 {
             return Err(educore_core::error::DomainError::validation(
                 "FeesDiscount: amount_minor and percentage_basis_points are mutually exclusive (FD I-1)",
@@ -5807,11 +5739,7 @@ impl RealFeesDiscount {
     /// `active_status` to `Retired`. Tombstone — preserves scope-key
     /// fields (fees_master_id + academic_year_id) for legal-record
     /// retention + uniqueness queries.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "FeesDiscount is already retired",
@@ -5824,8 +5752,6 @@ impl RealFeesDiscount {
         Ok(())
     }
 }
-
-
 
 // =============================================================================
 // Wave 87 — RealBankAccount (per-aggregate wave pattern from Waves 65—86)
@@ -5948,7 +5874,7 @@ impl RealBankAccount {
             id,
             account_name: trimmed_name,
             account_number: trimmed_number, // BA I-1 pinned
-            account_type, // BA I-3 type-pinned
+            account_type,                   // BA I-3 type-pinned
             bank_name: trimmed_bank,
             ifsc_code: ifsc_code
                 .map(|s| s.trim().to_owned())
@@ -6047,11 +5973,7 @@ impl RealBankAccount {
     /// opening_balance_minor + account_type + currency in the
     /// audit footer for legal-record retention + uniqueness
     /// queries.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "BankAccount is already retired",
@@ -6150,9 +6072,7 @@ impl RealDirectFeesReminder {
             student_id,
             remind_at,
             due_date_before_days, // DFR I-1 pinned
-            note: note
-                .map(|n| n.trim().to_owned())
-                .filter(|n| !n.is_empty()),
+            note: note.map(|n| n.trim().to_owned()).filter(|n| !n.is_empty()),
             version: Version::initial(),
             etag: fresh_etag(),
             created_at,
@@ -6195,9 +6115,7 @@ impl RealDirectFeesReminder {
         }
         self.remind_at = remind_at;
         self.due_date_before_days = due_date_before_days;
-        self.note = note
-            .map(|n| n.trim().to_owned())
-            .filter(|n| !n.is_empty());
+        self.note = note.map(|n| n.trim().to_owned()).filter(|n| !n.is_empty());
         self.updated_at = at;
         self.updated_by = actor;
         self.version = self.version.next();
@@ -6209,11 +6127,7 @@ impl RealDirectFeesReminder {
     /// (direct_fees_installment_id + student_id + remind_at +
     /// due_date_before_days) in the audit footer for legal-record
     /// retention.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "DirectFeesReminder is already retired",
@@ -6344,11 +6258,7 @@ impl RealExpenseHead {
     /// Soft-deletes the expense head by flipping `active_status`
     /// to `Retired`. Tombstone — preserves `name` in the audit
     /// footer for legal-record retention + uniqueness queries.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "ExpenseHead is already retired",
@@ -6492,11 +6402,7 @@ impl RealFeesGroup {
     /// RealFeesMaster) is deferred — when FeesMaster becomes a
     /// real aggregate, the dispatcher will check for active
     /// FeesMaster references before calling this function.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "FeesGroup is already retired",
@@ -6624,9 +6530,9 @@ impl RealDueFeesLoginPrevent {
         Ok(Self {
             school_id: id.school_id(),
             id,
-            academic_year_id, // DFLP I-1 pinned
-            user_id,          // DFLP I-1 pinned
-            user_type,        // DFLP I-1 pinned
+            academic_year_id,          // DFLP I-1 pinned
+            user_id,                   // DFLP I-1 pinned
+            user_type,                 // DFLP I-1 pinned
             outstanding_balance_minor, // pinned at construction
             reason: trimmed_reason,
             version: Version::initial(),
@@ -6700,11 +6606,7 @@ impl RealDueFeesLoginPrevent {
     /// Manually retires the block (e.g. school admin overrides).
     /// For the auto-prune flow when balance reaches 0, see
     /// [`RealDueFeesLoginPrevent::prune`].
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "DueFeesLoginPrevent is already retired",
@@ -6722,11 +6624,7 @@ impl RealDueFeesLoginPrevent {
     /// (distinct from manual retire's `DueFeesLoginPreventRetired`
     /// event) so the dispatcher / audit log can distinguish
     /// manual retirement from auto-pruning. DFLP I-2.
-    pub fn prune(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn prune(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "DueFeesLoginPrevent is already retired; cannot prune",
@@ -6813,10 +6711,7 @@ impl RealFeesInvoiceSetting {
                 "FeesInvoiceSetting prefix must be non-empty after trim (FISv I-1)",
             ));
         }
-        if !trimmed_prefix
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric())
-        {
+        if !trimmed_prefix.chars().all(|c| c.is_ascii_alphanumeric()) {
             return Err(educore_core::error::DomainError::validation(
                 "FeesInvoiceSetting prefix must be alphanumeric only (FISv I-1)",
             ));
@@ -6888,11 +6783,7 @@ impl RealFeesInvoiceSetting {
     /// `Retired`. Tombstone — preserves `prefix` (FISv I-1) +
     /// `per_th` (FISv I-2) in the audit footer for legal-record
     /// retention.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "FeesInvoiceSetting is already retired",
@@ -7012,7 +6903,7 @@ impl RealFeesInstallmentCredit {
         Ok(Self {
             school_id: id.school_id(),
             id,
-            amount_minor, // FIC I-1 pinned
+            amount_minor,  // FIC I-1 pinned
             credit_source, // FIC I-2 type-pinned
             source_installment_id,
             description: description
@@ -7043,11 +6934,7 @@ impl RealFeesInstallmentCredit {
     /// for legal-record retention. NOTE: FIC I-3 append-only
     /// means there is NO `update_*` method \xe2\x80\x94 the only
     /// way to "modify" a credit row is retire + create-new.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "FeesInstallmentCredit is already retired",
@@ -7060,7 +6947,6 @@ impl RealFeesInstallmentCredit {
         Ok(())
     }
 }
-
 
 // ===================================================================
 // Wave 94 — RealFmFeesInvoiceSetting (per-aggregate wave pattern from Waves 65-93)
@@ -7225,7 +7111,6 @@ impl RealFmFeesInvoiceSetting {
         Ok(())
     }
 }
-
 
 // ===================================================================
 // Wave 95 — RealFmFeesWeaver (per-aggregate wave pattern from Waves 65-94)
@@ -8837,7 +8722,6 @@ impl RealFeesInstallmentAssignDiscount {
     }
 }
 
-
 // -- Wave 111 -- RealDirectFeesInstallment (per-student installment plan) --
 //
 // DFI I-2: amount >= 0 (amount_minor pinned in minor units; the
@@ -8973,7 +8857,6 @@ impl RealDirectFeesInstallment {
     }
 }
 
-
 // -- Wave 118 -- RealFeesAssignDiscount (per-(fees_assign, discount) linkage) --
 //
 // FAD I-3: timestamp recorded. The standard audit footer carries
@@ -9088,7 +8971,6 @@ impl RealFeesAssignDiscount {
         Ok(())
     }
 }
-
 
 // -- Wave 119 -- RealFeesAssign (per-(student, fee_master, year) linkage) --
 //
@@ -9285,7 +9167,6 @@ impl RealFeesAssign {
     }
 }
 
-
 // -- Wave 113 -- RealFeesCarryForward (end-of-year balance roll-over) --
 //
 // FCF I-3: unique per (school, student, academic). The scope-key
@@ -9377,7 +9258,6 @@ impl RealFeesCarryForward {
         Ok(())
     }
 }
-
 
 // -- Wave 114 -- RealFeesMaster (per-(school, name, group) fee master) --
 //

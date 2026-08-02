@@ -65,7 +65,10 @@ fn fresh_full_payload_amount_valid_ppr_i_1() {
     assert_eq!(row.amount_minor, 7_500);
     assert_eq!(row.product_name, "A4 paper ream");
     assert_eq!(row.quantity, 5);
-    assert_eq!(row.supplier_reference.as_deref(), Some("Acme Stationery PO#12345"));
+    assert_eq!(
+        row.supplier_reference.as_deref(),
+        Some("Acme Stationery PO#12345")
+    );
     assert_eq!(row.school_id, school);
     assert!(row.is_active());
 }
@@ -297,10 +300,7 @@ fn create_product_purchase_service_emits_created_event_ppr_i_1() {
         <ProductPurchaseCreated as DomainEvent>::AGGREGATE_TYPE,
         "product_purchase"
     );
-    assert_eq!(
-        <ProductPurchaseCreated as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<ProductPurchaseCreated as DomainEvent>::SCHEMA_VERSION, 1);
 }
 
 #[test]
@@ -406,22 +406,43 @@ fn fresh_none_supplier_reference_succeeds_ppr_i_2() {
 #[test]
 fn ppr_lifecycle_status_as_str_round_trip_ppr_i_3() {
     assert_eq!(ProductPurchaseLifecycleStatus::Draft.as_str(), "draft");
-    assert_eq!(ProductPurchaseLifecycleStatus::Received.as_str(), "received");
-    assert_eq!(ProductPurchaseLifecycleStatus::Cancelled.as_str(), "cancelled");
-    assert_eq!(ProductPurchaseLifecycleStatus::parse("draft"), Some(ProductPurchaseLifecycleStatus::Draft));
-    assert_eq!(ProductPurchaseLifecycleStatus::parse("received"), Some(ProductPurchaseLifecycleStatus::Received));
-    assert_eq!(ProductPurchaseLifecycleStatus::parse("cancelled"), Some(ProductPurchaseLifecycleStatus::Cancelled));
+    assert_eq!(
+        ProductPurchaseLifecycleStatus::Received.as_str(),
+        "received"
+    );
+    assert_eq!(
+        ProductPurchaseLifecycleStatus::Cancelled.as_str(),
+        "cancelled"
+    );
+    assert_eq!(
+        ProductPurchaseLifecycleStatus::parse("draft"),
+        Some(ProductPurchaseLifecycleStatus::Draft)
+    );
+    assert_eq!(
+        ProductPurchaseLifecycleStatus::parse("received"),
+        Some(ProductPurchaseLifecycleStatus::Received)
+    );
+    assert_eq!(
+        ProductPurchaseLifecycleStatus::parse("cancelled"),
+        Some(ProductPurchaseLifecycleStatus::Cancelled)
+    );
     assert_eq!(ProductPurchaseLifecycleStatus::parse("unknown"), None);
 }
 
 #[test]
 fn ppr_lifecycle_can_transition_only_from_draft_ppr_i_3() {
-    assert!(ProductPurchaseLifecycleStatus::Draft.can_transition_to(ProductPurchaseLifecycleStatus::Received));
-    assert!(ProductPurchaseLifecycleStatus::Draft.can_transition_to(ProductPurchaseLifecycleStatus::Cancelled));
-    assert!(!ProductPurchaseLifecycleStatus::Received.can_transition_to(ProductPurchaseLifecycleStatus::Draft));
-    assert!(!ProductPurchaseLifecycleStatus::Received.can_transition_to(ProductPurchaseLifecycleStatus::Cancelled));
-    assert!(!ProductPurchaseLifecycleStatus::Cancelled.can_transition_to(ProductPurchaseLifecycleStatus::Draft));
-    assert!(!ProductPurchaseLifecycleStatus::Cancelled.can_transition_to(ProductPurchaseLifecycleStatus::Received));
+    assert!(ProductPurchaseLifecycleStatus::Draft
+        .can_transition_to(ProductPurchaseLifecycleStatus::Received));
+    assert!(ProductPurchaseLifecycleStatus::Draft
+        .can_transition_to(ProductPurchaseLifecycleStatus::Cancelled));
+    assert!(!ProductPurchaseLifecycleStatus::Received
+        .can_transition_to(ProductPurchaseLifecycleStatus::Draft));
+    assert!(!ProductPurchaseLifecycleStatus::Received
+        .can_transition_to(ProductPurchaseLifecycleStatus::Cancelled));
+    assert!(!ProductPurchaseLifecycleStatus::Cancelled
+        .can_transition_to(ProductPurchaseLifecycleStatus::Draft));
+    assert!(!ProductPurchaseLifecycleStatus::Cancelled
+        .can_transition_to(ProductPurchaseLifecycleStatus::Received));
 }
 
 // ---- fresh initializes lifecycle + audit footer ----
@@ -447,8 +468,12 @@ fn record_receipt_transitions_draft_to_received_ppr_i_3() {
     let mut pp = build_pp(actor, Some("ACME".to_owned()));
     let at = Timestamp::now();
     let event_id = g.next_event_id();
-    pp.record_receipt(actor, at, event_id).expect("record_receipt should succeed");
-    assert_eq!(pp.lifecycle_status, ProductPurchaseLifecycleStatus::Received);
+    pp.record_receipt(actor, at, event_id)
+        .expect("record_receipt should succeed");
+    assert_eq!(
+        pp.lifecycle_status,
+        ProductPurchaseLifecycleStatus::Received
+    );
     assert_eq!(pp.received_by, Some(actor));
     assert_eq!(pp.received_at, Some(at));
     assert_eq!(pp.last_event_id, Some(event_id));
@@ -459,7 +484,8 @@ fn double_record_receipt_returns_conflict_ppr_i_3() {
     let (tenant, g) = admin_context();
     let actor = tenant.actor_id;
     let mut pp = build_pp(actor, None);
-    pp.record_receipt(actor, Timestamp::now(), g.next_event_id()).expect("first receipt");
+    pp.record_receipt(actor, Timestamp::now(), g.next_event_id())
+        .expect("first receipt");
     let result = pp.record_receipt(actor, Timestamp::now(), g.next_event_id());
     assert!(matches!(result, Err(DomainError::Conflict(_))));
 }
@@ -475,7 +501,10 @@ fn cancel_draft_transitions_to_cancelled_ppr_i_3() {
     let event_id = g.next_event_id();
     pp.cancel(actor, "Vendor out of stock".to_owned(), at, event_id)
         .expect("cancel should succeed");
-    assert_eq!(pp.lifecycle_status, ProductPurchaseLifecycleStatus::Cancelled);
+    assert_eq!(
+        pp.lifecycle_status,
+        ProductPurchaseLifecycleStatus::Cancelled
+    );
     assert_eq!(pp.cancelled_by, Some(actor));
     assert_eq!(pp.cancelled_at, Some(at));
     assert_eq!(pp.cancel_reason.as_deref(), Some("Vendor out of stock"));
@@ -486,8 +515,14 @@ fn cancel_after_receipt_returns_conflict_ppr_i_3() {
     let (tenant, g) = admin_context();
     let actor = tenant.actor_id;
     let mut pp = build_pp(actor, None);
-    pp.record_receipt(actor, Timestamp::now(), g.next_event_id()).expect("receipt");
-    let result = pp.cancel(actor, "too late".to_owned(), Timestamp::now(), g.next_event_id());
+    pp.record_receipt(actor, Timestamp::now(), g.next_event_id())
+        .expect("receipt");
+    let result = pp.cancel(
+        actor,
+        "too late".to_owned(),
+        Timestamp::now(),
+        g.next_event_id(),
+    );
     assert!(matches!(result, Err(DomainError::Conflict(_))));
 }
 
@@ -526,11 +561,16 @@ fn record_receipt_service_emits_event_ppr_i_3() {
         product_purchase_id: id,
     };
     let (updated, evt): (RealProductPurchase, ProductPurchaseReceived) =
-        record_product_purchase_receipt(agg, cmd, &clock, &g)
-            .expect("service should succeed");
-    assert_eq!(updated.lifecycle_status, ProductPurchaseLifecycleStatus::Received);
+        record_product_purchase_receipt(agg, cmd, &clock, &g).expect("service should succeed");
+    assert_eq!(
+        updated.lifecycle_status,
+        ProductPurchaseLifecycleStatus::Received
+    );
     assert_eq!(evt.received_by, actor);
-    assert_eq!(evt.lifecycle_status, ProductPurchaseLifecycleStatus::Received);
+    assert_eq!(
+        evt.lifecycle_status,
+        ProductPurchaseLifecycleStatus::Received
+    );
     assert_eq!(
         <ProductPurchaseReceived as DomainEvent>::EVENT_TYPE,
         "finance.product_purchase.received"
@@ -563,7 +603,10 @@ fn cancel_service_emits_event_ppr_i_3() {
     };
     let (updated, evt): (RealProductPurchase, ProductPurchaseCancelled) =
         cancel_product_purchase(agg, cmd, &clock, &g).expect("service should succeed");
-    assert_eq!(updated.lifecycle_status, ProductPurchaseLifecycleStatus::Cancelled);
+    assert_eq!(
+        updated.lifecycle_status,
+        ProductPurchaseLifecycleStatus::Cancelled
+    );
     assert_eq!(evt.cancelled_by, actor);
     assert_eq!(evt.cancel_reason, "Out of stock");
     assert_eq!(

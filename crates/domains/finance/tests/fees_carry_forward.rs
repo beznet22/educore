@@ -24,8 +24,7 @@ use educore_core::tenant::{TenantContext, UserType};
 use educore_events::domain_event::DomainEvent;
 use educore_finance::prelude::{
     create_fees_carry_forward, retire_fees_carry_forward, BalanceType, Currency,
-    FeesCarryForwardCreated, FeesCarryForwardId, FeesCarryForwardRetired,
-    RealFeesCarryForward,
+    FeesCarryForwardCreated, FeesCarryForwardId, FeesCarryForwardRetired, RealFeesCarryForward,
 };
 
 fn admin_context() -> (TenantContext, SystemIdGen) {
@@ -265,7 +264,10 @@ fn retire_already_retired_returns_conflict() {
     let err = agg
         .retire(now, tenant.actor_id)
         .expect_err("double-retire must conflict");
-    assert!(format!("{err}").contains("already retired"), "unexpected error: {err}");
+    assert!(
+        format!("{err}").contains("already retired"),
+        "unexpected error: {err}"
+    );
 }
 
 // =========================================================================
@@ -307,10 +309,7 @@ fn create_fees_carry_forward_service_emits_created_event_fcf_i_3() {
         <FeesCarryForwardCreated as DomainEvent>::AGGREGATE_TYPE,
         "fees_carry_forward"
     );
-    assert_eq!(
-        <FeesCarryForwardCreated as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<FeesCarryForwardCreated as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(event.school_id(), school);
 }
 
@@ -367,9 +366,6 @@ fn retire_fees_carry_forward_service_emits_retired_event_fcf() {
         <FeesCarryForwardRetired as DomainEvent>::AGGREGATE_TYPE,
         "fees_carry_forward"
     );
-    assert_eq!(
-        <FeesCarryForwardRetired as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<FeesCarryForwardRetired as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(event.school_id(), school);
 }

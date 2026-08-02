@@ -26,10 +26,7 @@ fn admin_context() -> (TenantContext, SystemIdGen) {
     )
 }
 
-fn make_create_cmd(
-    tenant: TenantContext,
-    id: ExpenseHeadId,
-) -> CreateExpenseHeadCommand {
+fn make_create_cmd(tenant: TenantContext, id: ExpenseHeadId) -> CreateExpenseHeadCommand {
     CreateExpenseHeadCommand {
         tenant,
         expense_head_id: id,
@@ -79,7 +76,10 @@ fn fresh_full_payload() {
     assert_eq!(row.id, id);
     assert_eq!(row.school_id, school);
     assert_eq!(row.name, "Office Supplies"); // EH I-1 pinned
-    assert_eq!(row.description.as_deref(), Some("General office supplies and stationery"));
+    assert_eq!(
+        row.description.as_deref(),
+        Some("General office supplies and stationery")
+    );
     assert_eq!(event.expense_head_id, id);
     assert_eq!(event.name, "Office Supplies");
     assert_eq!(

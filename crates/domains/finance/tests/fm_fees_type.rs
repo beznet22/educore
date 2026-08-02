@@ -219,8 +219,7 @@ fn fresh_empty_name_validation_error_fft_i_3_companion() {
     match result {
         Err(DomainError::Validation(msg)) => {
             assert!(
-                msg.contains("name must be non-empty after trim")
-                    && msg.contains("FFT I-3"),
+                msg.contains("name must be non-empty after trim") && msg.contains("FFT I-3"),
                 "unexpected error message: {msg}"
             );
         }
@@ -347,10 +346,7 @@ fn create_fm_fees_type_service_emits_created_event() {
         <FmFeesTypeCreated as DomainEvent>::AGGREGATE_TYPE,
         "fm_fees_type"
     );
-    assert_eq!(
-        <FmFeesTypeCreated as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<FmFeesTypeCreated as DomainEvent>::SCHEMA_VERSION, 1);
 }
 
 #[test]

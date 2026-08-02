@@ -259,10 +259,7 @@ fn create_inventory_payment_service_emits_created_event_in_i_1() {
         <InventoryPaymentCreated as DomainEvent>::AGGREGATE_TYPE,
         "inventory_payment"
     );
-    assert_eq!(
-        <InventoryPaymentCreated as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<InventoryPaymentCreated as DomainEvent>::SCHEMA_VERSION, 1);
 }
 
 #[test]

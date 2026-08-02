@@ -21,8 +21,8 @@ use educore_core::tenant::{TenantContext, UserType};
 use educore_finance::events::{
     FmFeesInvoiceApproved, FmFeesInvoiceCreated, FmFeesInvoiceRejected, FmFeesInvoiceRetired,
 };
-use educore_finance::value_objects::ApprovalStatus;
 use educore_finance::prelude::*;
+use educore_finance::value_objects::ApprovalStatus;
 use educore_finance::value_objects::FmFeesInvoiceId;
 
 fn admin_context() -> (TenantContext, SystemIdGen) {
@@ -72,7 +72,7 @@ fn fresh_full_payload_amount_valid_ffi_i_1() {
         15_000,
         Some(2_000),
         Some("Q1 tuition".to_string()),
-                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
@@ -99,7 +99,7 @@ fn fresh_negative_amount_validation_error_ffi_i_1() {
         -1,
         None,
         None,
-                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
@@ -128,7 +128,7 @@ fn fresh_zero_amount_is_valid_ffi_i_1() {
         0,
         None,
         None,
-                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
@@ -152,7 +152,7 @@ fn fresh_negative_discount_validation_error() {
         1_000,
         Some(-1),
         None,
-                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
@@ -173,7 +173,7 @@ fn fresh_empty_invoice_number_validation_error() {
         1_000,
         None,
         None,
-                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
@@ -194,7 +194,7 @@ fn fresh_empty_payer_reference_validation_error() {
         1_000,
         None,
         None,
-                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
@@ -215,7 +215,7 @@ fn fresh_invoice_number_is_trimmed() {
         1_000,
         None,
         None,
-                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
@@ -239,7 +239,7 @@ fn fresh_initializes_audit_footer() {
         5_000,
         None,
         None,
-                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
@@ -267,7 +267,7 @@ fn retire_flips_active_status_to_retired() {
         5_000,
         None,
         None,
-                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
@@ -294,7 +294,7 @@ fn retire_already_retired_returns_conflict() {
         5_000,
         None,
         None,
-                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         tenant.actor_id,
         Timestamp::now(),
@@ -328,8 +328,14 @@ fn fresh_due_date_equals_invoice_date_boundary_valid_ffi_i_2() {
         tenant.correlation_id,
     )
     .expect("FFI I-2: due_date == invoice_date is the valid boundary");
-    assert_eq!(row.invoice_date, chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap());
-    assert_eq!(row.due_date, chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap());
+    assert_eq!(
+        row.invoice_date,
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap()
+    );
+    assert_eq!(
+        row.due_date,
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap()
+    );
 }
 
 #[test]
@@ -420,10 +426,7 @@ fn create_fm_fees_invoice_service_emits_created_event_ffi_i_1() {
         <FmFeesInvoiceCreated as DomainEvent>::AGGREGATE_TYPE,
         "fm_fees_invoice"
     );
-    assert_eq!(
-        <FmFeesInvoiceCreated as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<FmFeesInvoiceCreated as DomainEvent>::SCHEMA_VERSION, 1);
 }
 
 #[test]
@@ -493,11 +496,13 @@ fn fresh_initial_status_is_pending_ffi_i_3() {
 fn approve_transitions_pending_to_approved_ffi_i_3() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let mut row = make_invoice_for_state_machine(&g, tenant.actor_id, tenant.correlation_id, school);
+    let mut row =
+        make_invoice_for_state_machine(&g, tenant.actor_id, tenant.correlation_id, school);
     assert_eq!(row.status, ApprovalStatus::Pending);
     let event_id = g.next_event_id();
     let at = Timestamp::now();
-    row.approve(tenant.actor_id, at, event_id).expect("approve should succeed");
+    row.approve(tenant.actor_id, at, event_id)
+        .expect("approve should succeed");
     assert_eq!(row.status, ApprovalStatus::Approved);
     assert_eq!(row.approved_by, Some(tenant.actor_id));
     assert_eq!(row.approved_at, Some(at));
@@ -508,7 +513,8 @@ fn approve_transitions_pending_to_approved_ffi_i_3() {
 fn reject_transitions_pending_to_rejected_ffi_i_3() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let mut row = make_invoice_for_state_machine(&g, tenant.actor_id, tenant.correlation_id, school);
+    let mut row =
+        make_invoice_for_state_machine(&g, tenant.actor_id, tenant.correlation_id, school);
     let event_id = g.next_event_id();
     let at = Timestamp::now();
     let note = "Missing receipt".to_string();
@@ -525,7 +531,8 @@ fn reject_transitions_pending_to_rejected_ffi_i_3() {
 fn double_approve_returns_conflict_ffi_i_3() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let mut row = make_invoice_for_state_machine(&g, tenant.actor_id, tenant.correlation_id, school);
+    let mut row =
+        make_invoice_for_state_machine(&g, tenant.actor_id, tenant.correlation_id, school);
     row.approve(tenant.actor_id, Timestamp::now(), g.next_event_id())
         .expect("first approve should succeed");
     let result = row.approve(tenant.actor_id, Timestamp::now(), g.next_event_id());
@@ -536,7 +543,8 @@ fn double_approve_returns_conflict_ffi_i_3() {
 fn reject_after_approve_returns_conflict_ffi_i_3() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let mut row = make_invoice_for_state_machine(&g, tenant.actor_id, tenant.correlation_id, school);
+    let mut row =
+        make_invoice_for_state_machine(&g, tenant.actor_id, tenant.correlation_id, school);
     row.approve(tenant.actor_id, Timestamp::now(), g.next_event_id())
         .expect("first approve should succeed");
     let result = row.reject(

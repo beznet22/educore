@@ -342,11 +342,7 @@ impl PayrollPaymentApproval {
     /// Stamps `approver_id` + `approved_at` on the aggregate
     /// (PPA I-2). Bumps version, advances `updated_at`, sets
     /// `updated_by`.
-    pub fn approve(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn approve(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         // PPA I-1: only Pending can transition.
         if !self.is_pending() {
             return Err(educore_core::error::DomainError::conflict(
@@ -542,11 +538,7 @@ impl BankStatementAttachment {
     /// BankStatement delete) is upheld because the
     /// `bank_statement_id` reference is preserved in the audit
     /// footer even after retire.
-    pub fn retire(
-        &mut self,
-        at: Timestamp,
-        actor: UserId,
-    ) -> educore_core::error::Result<()> {
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) -> educore_core::error::Result<()> {
         if !self.is_active() {
             return Err(educore_core::error::DomainError::conflict(
                 "BankStatementAttachment is already retired",

@@ -199,7 +199,10 @@ fn fresh_initializes_audit_footer_with_no_last_event_id() {
         tenant.correlation_id,
     )
     .expect("FIAD I-1: positive applied_amount_minor must construct");
-    assert!(agg.last_event_id.is_none(), "fresh() must start with no last_event_id");
+    assert!(
+        agg.last_event_id.is_none(),
+        "fresh() must start with no last_event_id"
+    );
     assert_eq!(agg.created_by, tenant.actor_id);
     assert_eq!(agg.updated_by, tenant.actor_id);
     assert_eq!(agg.created_at, now);
@@ -276,8 +279,13 @@ fn retire_already_retired_returns_conflict() {
     )
     .expect("FIAD I-1: positive applied_amount_minor must construct");
     agg.retire(now, tenant.actor_id).expect("first retire");
-    let err = agg.retire(now, tenant.actor_id).expect_err("double-retire must conflict");
-    assert!(format!("{err}").contains("already retired"), "unexpected error: {err}");
+    let err = agg
+        .retire(now, tenant.actor_id)
+        .expect_err("double-retire must conflict");
+    assert!(
+        format!("{err}").contains("already retired"),
+        "unexpected error: {err}"
+    );
 }
 
 #[test]
@@ -299,9 +307,11 @@ fn create_fees_installment_assign_discount_service_emits_created_event_fiad() {
         currency: Currency::INR,
         note: Some("Service integration — merit award".to_owned()),
     };
-    let (agg, event): (RealFeesInstallmentAssignDiscount, FeesInstallmentAssignDiscountCreated) =
-        create_fees_installment_assign_discount(cmd, &clock, &ids)
-            .expect("create_fees_installment_assign_discount must succeed");
+    let (agg, event): (
+        RealFeesInstallmentAssignDiscount,
+        FeesInstallmentAssignDiscountCreated,
+    ) = create_fees_installment_assign_discount(cmd, &clock, &ids)
+        .expect("create_fees_installment_assign_discount must succeed");
     assert!(agg.is_active());
     assert_eq!(agg.applied_amount_minor, 7_500);
     assert_eq!(agg.discount_id, d_id);
@@ -310,7 +320,10 @@ fn create_fees_installment_assign_discount_service_emits_created_event_fiad() {
     assert_eq!(event.applied_amount_minor, 7_500);
     assert_eq!(event.discount_id, d_id);
     assert_eq!(event.fees_installment_assign_id, a_id);
-    assert_eq!(event.note.as_deref(), Some("Service integration — merit award"));
+    assert_eq!(
+        event.note.as_deref(),
+        Some("Service integration — merit award")
+    );
     assert_eq!(
         <FeesInstallmentAssignDiscountCreated as DomainEvent>::EVENT_TYPE,
         "finance.fees_installment_assign_discount.created"
@@ -365,9 +378,11 @@ fn retire_fees_installment_assign_discount_service_emits_retired_event_fiad() {
         tenant: tenant.clone(),
         fees_installment_assign_discount_id: id,
     };
-    let (agg, event): (RealFeesInstallmentAssignDiscount, FeesInstallmentAssignDiscountRetired) =
-        retire_fees_installment_assign_discount(cmd, &clock, &ids)
-            .expect("retire_fees_installment_assign_discount must succeed");
+    let (agg, event): (
+        RealFeesInstallmentAssignDiscount,
+        FeesInstallmentAssignDiscountRetired,
+    ) = retire_fees_installment_assign_discount(cmd, &clock, &ids)
+        .expect("retire_fees_installment_assign_discount must succeed");
     assert!(!agg.is_active());
     assert_eq!(event.fees_installment_assign_discount_id, agg.id);
     assert_eq!(event.retired_by, tenant.actor_id);

@@ -98,7 +98,7 @@ fn fresh_negative_amount_validation_error_dfia_i_2() {
         id,
         student,
         installment,
-        -1,    // DFIA I-2 violation
+        -1, // DFIA I-2 violation
         0,
         tenant.actor_id,
         Timestamp::now(),
@@ -127,7 +127,7 @@ fn fresh_negative_balance_validation_error_dfia_i_3() {
         student,
         installment,
         15_000,
-        -1,    // DFIA I-3 violation
+        -1, // DFIA I-3 violation
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -316,8 +316,7 @@ fn create_direct_fees_installment_assign_service_emits_created_event_dfia() {
         balance_minor: 15_000,
     };
     let evt: DirectFeesInstallmentAssignCreated =
-        create_direct_fees_installment_assign(cmd, &clock, &g)
-            .expect("service should succeed");
+        create_direct_fees_installment_assign(cmd, &clock, &g).expect("service should succeed");
     assert_eq!(evt.amount_minor, 15_000);
     assert_eq!(evt.balance_minor, 15_000);
     assert_eq!(evt.student_id, student);
@@ -351,8 +350,7 @@ fn retire_direct_fees_installment_assign_service_emits_retired_event() {
         direct_fees_installment_assign_id: id,
     };
     let evt: DirectFeesInstallmentAssignRetired =
-        retire_direct_fees_installment_assign(cmd, &clock, &g)
-            .expect("service should succeed");
+        retire_direct_fees_installment_assign(cmd, &clock, &g).expect("service should succeed");
     assert_eq!(evt.direct_fees_installment_assign_id, id);
     assert_eq!(evt.deleted_by, actor);
     assert_eq!(

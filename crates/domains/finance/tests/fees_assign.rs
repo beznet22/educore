@@ -251,7 +251,10 @@ fn retire_already_retired_returns_conflict() {
     let err = agg
         .retire(now, tenant.actor_id)
         .expect_err("double-retire must conflict");
-    assert!(format!("{err}").contains("already retired"), "unexpected error: {err}");
+    assert!(
+        format!("{err}").contains("already retired"),
+        "unexpected error: {err}"
+    );
 }
 
 #[test]
@@ -291,10 +294,7 @@ fn create_fees_assign_service_emits_created_event_fa_i_5() {
         <FeesAssignCreated as DomainEvent>::AGGREGATE_TYPE,
         "fees_assign"
     );
-    assert_eq!(
-        <FeesAssignCreated as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<FeesAssignCreated as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(event.school_id(), school);
 }
 
@@ -347,10 +347,7 @@ fn retire_fees_assign_service_emits_retired_event_fa() {
         <FeesAssignRetired as DomainEvent>::AGGREGATE_TYPE,
         "fees_assign"
     );
-    assert_eq!(
-        <FeesAssignRetired as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<FeesAssignRetired as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(event.school_id(), school);
 }
 
@@ -393,7 +390,10 @@ fn lifecycle_status_as_str_round_trip() {
     assert_eq!(LifecycleStatus::Cancelled.as_str(), "cancelled");
     assert_eq!(LifecycleStatus::parse("open"), Some(LifecycleStatus::Open));
     assert_eq!(LifecycleStatus::parse("paid"), Some(LifecycleStatus::Paid));
-    assert_eq!(LifecycleStatus::parse("cancelled"), Some(LifecycleStatus::Cancelled));
+    assert_eq!(
+        LifecycleStatus::parse("cancelled"),
+        Some(LifecycleStatus::Cancelled)
+    );
     assert_eq!(LifecycleStatus::parse("unknown"), None);
 }
 
@@ -574,8 +574,7 @@ fn record_payment_service_emits_event_fa_i_3() {
         amount_minor: 10_000,
     };
     let (updated, evt): (RealFeesAssign, FeesAssignPaymentRecorded) =
-        record_fees_assign_payment(agg, cmd, &clock, &g)
-            .expect("service should succeed");
+        record_fees_assign_payment(agg, cmd, &clock, &g).expect("service should succeed");
     assert_eq!(updated.lifecycle_status, LifecycleStatus::Paid);
     assert_eq!(evt.amount_minor, 10_000);
     assert_eq!(evt.paid_amount_minor, 10_000);

@@ -253,8 +253,7 @@ fn create_fees_carry_forward_log_service_produces_active_aggregate_and_event() {
         description: Some("Roll over from AY 2024-25".to_owned()),
     };
     let clock = SystemClock;
-    let (row, event) =
-        create_fees_carry_forward_log(cmd, &clock, &g).expect("create succeeds");
+    let (row, event) = create_fees_carry_forward_log(cmd, &clock, &g).expect("create succeeds");
 
     // Aggregate side
     assert_eq!(row.student_id, student);

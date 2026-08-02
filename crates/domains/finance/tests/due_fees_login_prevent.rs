@@ -44,10 +44,10 @@ fn make_block_cmd(
     BlockLoginForDueFeesCommand {
         tenant,
         due_fees_login_prevent_id: id,
-        academic_year_id, // DFLP I-1 pinned
-        user_id,          // DFLP I-1 pinned
+        academic_year_id,                            // DFLP I-1 pinned
+        user_id,                                     // DFLP I-1 pinned
         user_type: DueFeesLoginPreventRole::Student, // DFLP I-1 pinned
-        outstanding_balance_minor: 50_000, // \xe2\x82\xb9500.00 (DFLP I-2: must be > 0)
+        outstanding_balance_minor: 50_000,           // \xe2\x82\xb9500.00 (DFLP I-2: must be > 0)
         reason: "Tuition overdue Q3 2026".to_owned(),
     }
 }
@@ -275,8 +275,7 @@ fn update_metadata_on_retired_returns_conflict() {
         due_fees_login_prevent_id: id,
         reason: "manual retire".to_owned(),
     };
-    let _retire_event =
-        retire_due_fees_login_prevent(retire_cmd, &clock, &g, &mut row).unwrap();
+    let _retire_event = retire_due_fees_login_prevent(retire_cmd, &clock, &g, &mut row).unwrap();
     assert!(!row.is_active());
 
     // Now try to update_metadata on retired row
@@ -496,8 +495,7 @@ fn manual_retire_emits_retired_event_type_not_pruned() {
         due_fees_login_prevent_id: id_a,
         reason: "manual".to_owned(),
     };
-    let _retired_event =
-        retire_due_fees_login_prevent(retire_cmd, &clock, &g, &mut row_a).unwrap();
+    let _retired_event = retire_due_fees_login_prevent(retire_cmd, &clock, &g, &mut row_a).unwrap();
 
     let prune_cmd = UnblockLoginForDueFeesCommand {
         tenant: tenant.clone(),

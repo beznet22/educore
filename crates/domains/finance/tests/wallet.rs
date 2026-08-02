@@ -193,11 +193,17 @@ fn wallet_create_with_invalid_currency_returns_validation_error() {
 // -- Wave 150 -- Wallet::reconcile_balance + reconcile_and_validate --
 // =========================================================================
 
-fn wallet_id_fixture(g: &SystemIdGen, school: educore_core::ids::SchoolId) -> educore_finance::prelude::WalletId {
+fn wallet_id_fixture(
+    g: &SystemIdGen,
+    school: educore_core::ids::SchoolId,
+) -> educore_finance::prelude::WalletId {
     educore_finance::prelude::WalletId::new(school, g.next_uuid())
 }
 
-fn wallet_txn_id_fixture(g: &SystemIdGen, school: educore_core::ids::SchoolId) -> educore_finance::prelude::WalletTransactionId {
+fn wallet_txn_id_fixture(
+    g: &SystemIdGen,
+    school: educore_core::ids::SchoolId,
+) -> educore_finance::prelude::WalletTransactionId {
     educore_finance::prelude::WalletTransactionId::new(school, g.next_uuid())
 }
 
@@ -262,8 +268,12 @@ fn wt_i_4_reconcile_balance_pending_txns_excluded() {
     let (tenant, g) = admin_context();
     let wallet_id = wallet_id_fixture(&g, tenant.school_id);
     let mut txn = make_pending_credit_txn(&g, tenant.school_id, wallet_id, tenant.actor_id, 1000);
-    txn.approve(tenant.actor_id, educore_core::value_objects::Timestamp::now(), g.next_event_id())
-        .expect("approve credit");
+    txn.approve(
+        tenant.actor_id,
+        educore_core::value_objects::Timestamp::now(),
+        g.next_event_id(),
+    )
+    .expect("approve credit");
     let mut pending = make_pending_debit_txn(&g, tenant.school_id, wallet_id, tenant.actor_id, 500);
     // Do NOT approve the pending debit; it must be excluded.
     let _ = &mut pending;
@@ -278,19 +288,34 @@ fn wt_i_4_reconcile_balance_pending_txns_excluded() {
 fn wt_i_4_reconcile_balance_credits_add_debits_subtract() {
     let (tenant, g) = admin_context();
     let wallet_id = wallet_id_fixture(&g, tenant.school_id);
-    let mut credit1 = make_pending_credit_txn(&g, tenant.school_id, wallet_id, tenant.actor_id, 5000);
+    let mut credit1 =
+        make_pending_credit_txn(&g, tenant.school_id, wallet_id, tenant.actor_id, 5000);
     credit1
-        .approve(tenant.actor_id, educore_core::value_objects::Timestamp::now(), g.next_event_id())
+        .approve(
+            tenant.actor_id,
+            educore_core::value_objects::Timestamp::now(),
+            g.next_event_id(),
+        )
         .expect("approve credit1");
-    let mut credit2 = make_pending_credit_txn(&g, tenant.school_id, wallet_id, tenant.actor_id, 2500);
+    let mut credit2 =
+        make_pending_credit_txn(&g, tenant.school_id, wallet_id, tenant.actor_id, 2500);
     credit2
-        .approve(tenant.actor_id, educore_core::value_objects::Timestamp::now(), g.next_event_id())
+        .approve(
+            tenant.actor_id,
+            educore_core::value_objects::Timestamp::now(),
+            g.next_event_id(),
+        )
         .expect("approve credit2");
     let mut debit1 = make_pending_debit_txn(&g, tenant.school_id, wallet_id, tenant.actor_id, 1500);
     debit1
-        .approve(tenant.actor_id, educore_core::value_objects::Timestamp::now(), g.next_event_id())
+        .approve(
+            tenant.actor_id,
+            educore_core::value_objects::Timestamp::now(),
+            g.next_event_id(),
+        )
         .expect("approve debit1");
-    let result = educore_finance::prelude::Wallet::reconcile_balance(&[&credit1, &credit2, &debit1]);
+    let result =
+        educore_finance::prelude::Wallet::reconcile_balance(&[&credit1, &credit2, &debit1]);
     assert_eq!(result, 6000, "5000 + 2500 - 1500 = 6000");
 }
 
@@ -299,8 +324,13 @@ fn wt_i_4_reconcile_balance_rejected_txns_excluded() {
     let (tenant, g) = admin_context();
     let wallet_id = wallet_id_fixture(&g, tenant.school_id);
     let mut txn = make_pending_credit_txn(&g, tenant.school_id, wallet_id, tenant.actor_id, 2000);
-    txn.reject(tenant.actor_id, String::new(), educore_core::value_objects::Timestamp::now(), g.next_event_id())
-        .expect("reject credit");
+    txn.reject(
+        tenant.actor_id,
+        String::new(),
+        educore_core::value_objects::Timestamp::now(),
+        g.next_event_id(),
+    )
+    .expect("reject credit");
     let result = educore_finance::prelude::Wallet::reconcile_balance(&[&txn]);
     assert_eq!(result, 0, "rejected credit excluded");
 }
@@ -326,9 +356,14 @@ fn wt_i_4_reconcile_and_validate_agrees_with_cache() {
             educore_core::value_objects::Timestamp::now(),
         )
         .expect("apply credit");
-    let mut credit_tx = make_pending_credit_txn(&g, tenant.school_id, wallet_id, tenant.actor_id, 3000);
+    let mut credit_tx =
+        make_pending_credit_txn(&g, tenant.school_id, wallet_id, tenant.actor_id, 3000);
     credit_tx
-        .approve(tenant.actor_id, educore_core::value_objects::Timestamp::now(), g.next_event_id())
+        .approve(
+            tenant.actor_id,
+            educore_core::value_objects::Timestamp::now(),
+            g.next_event_id(),
+        )
         .expect("approve credit");
     wallet
         .reconcile_and_validate(&[&credit_tx])
@@ -356,9 +391,14 @@ fn wt_i_4_reconcile_and_validate_detects_drift() {
             educore_core::value_objects::Timestamp::now(),
         )
         .expect("apply credit");
-    let mut credit_tx = make_pending_credit_txn(&g, tenant.school_id, wallet_id, tenant.actor_id, 3000);
+    let mut credit_tx =
+        make_pending_credit_txn(&g, tenant.school_id, wallet_id, tenant.actor_id, 3000);
     credit_tx
-        .approve(tenant.actor_id, educore_core::value_objects::Timestamp::now(), g.next_event_id())
+        .approve(
+            tenant.actor_id,
+            educore_core::value_objects::Timestamp::now(),
+            g.next_event_id(),
+        )
         .expect("approve credit");
     let err = wallet.reconcile_and_validate(&[&credit_tx]).unwrap_err();
     assert!(

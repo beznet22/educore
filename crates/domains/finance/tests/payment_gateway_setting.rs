@@ -18,15 +18,15 @@
 use educore_core::clock::{IdGenerator as _, SystemClock, SystemIdGen};
 use educore_core::ids::SchoolId;
 use educore_core::tenant::{TenantContext, UserType};
+use educore_events::domain_event::DomainEvent;
 use educore_finance::prelude::{
     ConfigurePaymentGatewayCommand, GatewayChargeType, GatewayMode, PaymentGatewayConfigured,
-    PaymentGatewayDisabled, PaymentGatewaySettingId, PaymentGatewayUpdated, RealPaymentGatewaySetting,
-    UpdatePaymentGatewayCommand,
+    PaymentGatewayDisabled, PaymentGatewaySettingId, PaymentGatewayUpdated,
+    RealPaymentGatewaySetting, UpdatePaymentGatewayCommand,
 };
 use educore_finance::services::{
     configure_payment_gateway, disable_payment_gateway, update_payment_gateway,
 };
-use educore_events::domain_event::DomainEvent;
 
 fn admin_context() -> (TenantContext, SystemIdGen) {
     let g = SystemIdGen;
@@ -139,7 +139,10 @@ fn pgs_i_3_charge_negative_is_rejected() {
     let mut cmd = make_configure_cmd(tenant, id, "Razorpay");
     cmd.service_charge_minor = -1;
     let err = configure_payment_gateway(cmd, &SystemClock, &event_id_gen()).unwrap_err();
-    assert!(matches!(err, educore_core::error::DomainError::Validation(_)));
+    assert!(matches!(
+        err,
+        educore_core::error::DomainError::Validation(_)
+    ));
 }
 
 #[test]
@@ -232,7 +235,10 @@ fn pgs_update_metadata_negative_charge_is_rejected() {
         service_charge_type: None,
     };
     let err = update_payment_gateway(agg, update_cmd, &SystemClock, &event_id_gen()).unwrap_err();
-    assert!(matches!(err, educore_core::error::DomainError::Validation(_)));
+    assert!(matches!(
+        err,
+        educore_core::error::DomainError::Validation(_)
+    ));
 }
 
 #[test]
@@ -264,10 +270,7 @@ fn pgs_retire_twice_returns_conflict() {
         disable_payment_gateway(agg, tenant.clone(), &SystemClock, &event_id_gen())
             .expect("first retire");
     let err = disable_payment_gateway(agg2, tenant, &SystemClock, &event_id_gen()).unwrap_err();
-    assert!(matches!(
-        err,
-        educore_core::error::DomainError::Conflict(_)
-    ));
+    assert!(matches!(err, educore_core::error::DomainError::Conflict(_)));
 }
 
 #[test]
@@ -297,10 +300,7 @@ fn pgs_update_on_retired_returns_conflict() {
         service_charge_type: None,
     };
     let err = update_payment_gateway(agg2, update_cmd, &SystemClock, &event_id_gen()).unwrap_err();
-    assert!(matches!(
-        err,
-        educore_core::error::DomainError::Conflict(_)
-    ));
+    assert!(matches!(err, educore_core::error::DomainError::Conflict(_)));
 }
 
 #[test]

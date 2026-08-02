@@ -1322,9 +1322,7 @@ pub fn validate_percentage(pct: f32) -> Result<()> {
 /// FFT I-1: every FmFeesType must belong to exactly one of these
 /// three categories. The enum is closed (no `Other` variant) to
 /// prevent the dispatcher from silently inserting unknown types.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum FmFeesTypeKind {
     /// A standard fee (e.g. tuition, transport).
     Fee,
@@ -1391,9 +1389,7 @@ impl std::str::FromStr for FmFeesTypeKind {
 /// BP I-1: every BankPaymentSlip must belong to exactly one of
 /// these two media. The enum is closed (no `Other` variant) to
 /// prevent the dispatcher from silently inserting unknown media.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PaymentMode {
     /// Bank transfer / NEFT / RTGS / IMPS.
     Bank,

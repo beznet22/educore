@@ -51,8 +51,7 @@ use educore_finance::commands::{
 };
 use educore_finance::entities::PayrollPaymentApproval;
 use educore_finance::events::{
-    PayrollPaymentApprovalApproved, PayrollPaymentApprovalCreated,
-    PayrollPaymentApprovalRejected,
+    PayrollPaymentApprovalApproved, PayrollPaymentApprovalCreated, PayrollPaymentApprovalRejected,
 };
 use educore_finance::services::{
     approve_payroll_payment_approval, create_payroll_payment_approval,
@@ -222,8 +221,12 @@ fn reject_transitions_pending_to_rejected_with_reason() {
     let mut row = make_payroll_payment_approval(&g, school, payroll_payment);
     let rejecter = g.next_user_id();
     let now = SystemClock.now();
-    row.reject(Some("payroll run closed for the month".to_owned()), now, rejecter)
-        .expect("reject");
+    row.reject(
+        Some("payroll run closed for the month".to_owned()),
+        now,
+        rejecter,
+    )
+    .expect("reject");
     assert!(row.is_rejected());
     assert!(!row.is_pending());
     assert_eq!(row.rejecter_id, Some(rejecter)); // PPA I-2
@@ -398,9 +401,15 @@ fn reject_service_transitions_and_emits_event_with_reason() {
     let event = reject_payroll_payment_approval(cmd, &clock, &g, &mut row)
         .expect("reject_payroll_payment_approval should succeed");
     assert!(row.is_rejected());
-    assert_eq!(row.rejection_reason.as_deref(), Some("duplicate payroll run"));
+    assert_eq!(
+        row.rejection_reason.as_deref(),
+        Some("duplicate payroll run")
+    );
     assert_eq!(row.last_event_id, Some(event.event_id));
-    assert_eq!(event.rejection_reason.as_deref(), Some("duplicate payroll run"));
+    assert_eq!(
+        event.rejection_reason.as_deref(),
+        Some("duplicate payroll run")
+    );
     assert_eq!(
         <PayrollPaymentApprovalRejected as educore_events::domain_event::DomainEvent>::EVENT_TYPE,
         "finance.payroll_payment_approval.rejected"

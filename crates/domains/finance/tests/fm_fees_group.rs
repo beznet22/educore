@@ -169,9 +169,8 @@ fn update_metadata_with_valid_name_bumps_version_and_advances_timestamp() {
     let initial_updated_at = group.updated_at;
 
     // Advance the clock by one second past initial_updated_at.
-    let advanced = Timestamp::from_datetime(
-        initial_updated_at.as_datetime() + chrono::Duration::seconds(1),
-    );
+    let advanced =
+        Timestamp::from_datetime(initial_updated_at.as_datetime() + chrono::Duration::seconds(1));
     let actor = g.next_user_id();
 
     group
@@ -265,7 +264,10 @@ fn create_fm_fees_group_service_produces_active_aggregate_and_event() {
     // Aggregate side
     assert_eq!(group.name, "Lab Fees FM");
     assert_eq!(group.description.as_deref(), Some("Laboratory fees group"));
-    assert!(group.is_active(), "service-created aggregate must be Active");
+    assert!(
+        group.is_active(),
+        "service-created aggregate must be Active"
+    );
     assert_eq!(group.school_id, tenant.school_id);
     assert_eq!(group.last_event_id, Some(event.event_id));
 
@@ -276,7 +278,10 @@ fn create_fm_fees_group_service_produces_active_aggregate_and_event() {
     assert_eq!(event.created_by, tenant.actor_id);
     assert_eq!(event.school_id(), tenant.school_id);
     assert_eq!(event.correlation_id, tenant.correlation_id);
-    assert_eq!(FmFeesGroupCreated::EVENT_TYPE, "finance.fm_fees_group.created");
+    assert_eq!(
+        FmFeesGroupCreated::EVENT_TYPE,
+        "finance.fm_fees_group.created"
+    );
     assert_eq!(FmFeesGroupCreated::AGGREGATE_TYPE, "fm_fees_group");
     assert_eq!(FmFeesGroupCreated::SCHEMA_VERSION, 1);
 }

@@ -186,9 +186,8 @@ fn timestamps_monotonic_returns_true_after_retire_with_advanced_timestamp() {
     let school = tenant.school_id;
     let mut child = make_child(&g, school, 100);
     let created_at = child.created_at;
-    let advanced = Timestamp::from_datetime(
-        created_at.as_datetime() + chrono::Duration::seconds(10),
-    );
+    let advanced =
+        Timestamp::from_datetime(created_at.as_datetime() + chrono::Duration::seconds(10));
     let actor = g.next_user_id();
     child.retire(advanced, actor).expect("retire succeeds");
     assert!(
@@ -210,9 +209,7 @@ fn retire_with_stale_timestamp_clamps_forward_to_preserve_monotonicity() {
     let school = tenant.school_id;
     let mut child = make_child(&g, school, 100);
     let created_at = child.created_at;
-    let stale = Timestamp::from_datetime(
-        created_at.as_datetime() - chrono::Duration::seconds(5),
-    );
+    let stale = Timestamp::from_datetime(created_at.as_datetime() - chrono::Duration::seconds(5));
     let actor = g.next_user_id();
     child.retire(stale, actor).expect("retire succeeds");
     assert!(
@@ -260,8 +257,8 @@ fn fresh_produces_append_only_aggregate_with_only_fresh_is_active_retire_surface
     assert!(child.is_active());
     assert!(child.timestamps_monotonic());
     let _ = child.amount_minor; // last accessible field
-    // No update_* invocation is possible — the API simply does not
-    // expose one. This is the practical append-only guarantee.
+                                // No update_* invocation is possible — the API simply does not
+                                // expose one. This is the practical append-only guarantee.
 }
 
 #[test]

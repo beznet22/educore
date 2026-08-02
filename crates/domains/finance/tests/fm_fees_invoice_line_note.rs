@@ -273,8 +273,7 @@ fn create_fm_fees_invoice_line_note_service_produces_active_aggregate_and_event(
         note: "Approved by headmaster on 2026-07-01.".to_owned(),
     };
     let clock = SystemClock;
-    let (note, event) =
-        create_fm_fees_invoice_line_note(cmd, &clock, &g).expect("create succeeds");
+    let (note, event) = create_fm_fees_invoice_line_note(cmd, &clock, &g).expect("create succeeds");
 
     // Aggregate side
     assert_eq!(note.fm_fees_invoice_id, invoice_id);

@@ -67,8 +67,8 @@ fn fresh_full_payload_amount_valid_ffi_child_i_1() {
         12_000, // sub_total_minor = amount + weaver + fine (FFIChild I-2)
         0,      // weaver_minor
         0,      // fine_minor
-                0, // placeholder paid_amount_minor (FFIChild I-3)
-        0, // placeholder service_charge_minor (FFIChild I-3)
+        0,      // placeholder paid_amount_minor (FFIChild I-3)
+        0,      // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -93,7 +93,7 @@ fn fresh_negative_amount_validation_error_ffi_child_i_1() {
         -1, // sub_total_minor
         0,
         0,
-                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder paid_amount_minor (FFIChild I-3)
         0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
@@ -114,7 +114,7 @@ fn fresh_zero_amount_boundary_valid_ffi_child_i_1() {
         0, // sub_total_minor
         0,
         0,
-                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder paid_amount_minor (FFIChild I-3)
         0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
@@ -139,8 +139,8 @@ fn fresh_sub_total_equals_sum_with_weaver_and_fine_valid_ffi_child_i_2() {
         12_500, // sub_total_minor = 10_000 + 1_500 + 1_000
         1_500,  // weaver_minor
         1_000,  // fine_minor
-                0, // placeholder paid_amount_minor (FFIChild I-3)
-        0, // placeholder service_charge_minor (FFIChild I-3)
+        0,      // placeholder paid_amount_minor (FFIChild I-3)
+        0,      // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
         tenant.correlation_id,
@@ -164,7 +164,7 @@ fn fresh_sub_total_mismatch_validation_error_ffi_child_i_2() {
         11_000, // sub_total_minor: should be 12_500
         1_500,
         1_000,
-                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder paid_amount_minor (FFIChild I-3)
         0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
@@ -194,7 +194,7 @@ fn fresh_negative_weaver_validation_error_ffi_child_i_2() {
         10_000, // sub_total would be 10_000 + -1000 + 0 = 9_000 (but weaver is invalid)
         -1_000,
         0,
-                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder paid_amount_minor (FFIChild I-3)
         0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
@@ -223,7 +223,7 @@ fn fresh_negative_fine_validation_error_ffi_child_i_2() {
         10_000, // sub_total would be 10_000 + 0 + -500 = 9_500 (but fine is invalid)
         0,
         -500,
-                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder paid_amount_minor (FFIChild I-3)
         0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
@@ -254,7 +254,7 @@ fn fresh_initializes_audit_footer() {
         5_000,
         0,
         0,
-                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder paid_amount_minor (FFIChild I-3)
         0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
@@ -279,7 +279,7 @@ fn retire_flips_active_status_to_retired() {
         5_000,
         0,
         0,
-                0, // placeholder paid_amount_minor (FFIChild I-3)
+        0, // placeholder paid_amount_minor (FFIChild I-3)
         0, // placeholder service_charge_minor (FFIChild I-3)
         tenant.actor_id,
         Timestamp::now(),
@@ -316,8 +316,8 @@ fn create_fm_fees_invoice_child_service_emits_created_event_ffi_child_i_2() {
         paid_amount_minor: 0,
         service_charge_minor: 0,
     };
-    let evt: FmFeesInvoiceChildCreated = create_fm_fees_invoice_child(cmd, &clock, &g)
-        .expect("service should succeed");
+    let evt: FmFeesInvoiceChildCreated =
+        create_fm_fees_invoice_child(cmd, &clock, &g).expect("service should succeed");
     assert_eq!(evt.amount_minor, 10_000);
     assert_eq!(evt.sub_total_minor, 12_500);
     assert_eq!(evt.weaver_minor, 1_500);
@@ -486,8 +486,8 @@ fn retire_fm_fees_invoice_child_service_emits_retired_event() {
         tenant,
         fm_fees_invoice_child_id: fm_fees_invoice_child_id(&g, school),
     };
-    let evt: FmFeesInvoiceChildRetired = retire_fm_fees_invoice_child(cmd, &clock, &g)
-        .expect("service should succeed");
+    let evt: FmFeesInvoiceChildRetired =
+        retire_fm_fees_invoice_child(cmd, &clock, &g).expect("service should succeed");
     assert_eq!(evt.deleted_by, actor);
     assert_eq!(
         <FmFeesInvoiceChildRetired as DomainEvent>::EVENT_TYPE,

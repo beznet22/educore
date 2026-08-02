@@ -110,8 +110,19 @@ fn fresh_with_show_public_false_produces_active_aggregate() {
     let school = tenant.school_id;
     // DO I-1: `show_public` is a boolean (always satisfied by Rust's
     // bool type). Pin both branches explicitly.
-    let donor = make_donor(&g, school, "Anonymous Patron", "anon@example.org", false, None, None);
-    assert!(!donor.show_public, "DO I-1: show_public is a bool, set false");
+    let donor = make_donor(
+        &g,
+        school,
+        "Anonymous Patron",
+        "anon@example.org",
+        false,
+        None,
+        None,
+    );
+    assert!(
+        !donor.show_public,
+        "DO I-1: show_public is a bool, set false"
+    );
     assert!(donor.is_active());
     assert!(donor.phone.is_none());
     assert!(donor.description.is_none());
@@ -121,7 +132,15 @@ fn fresh_with_show_public_false_produces_active_aggregate() {
 fn fresh_trims_whitespace_in_name_and_email() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let donor = make_donor(&g, school, "  Grace Hopper  ", "  grace@navy.mil  ", true, None, None);
+    let donor = make_donor(
+        &g,
+        school,
+        "  Grace Hopper  ",
+        "  grace@navy.mil  ",
+        true,
+        None,
+        None,
+    );
     assert_eq!(donor.name, "Grace Hopper");
     assert_eq!(donor.email, "grace@navy.mil");
 }
@@ -233,7 +252,15 @@ fn fresh_with_email_over_200_chars_returns_validation_error() {
 fn update_metadata_with_empty_email_returns_validation_error() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let mut donor = make_donor(&g, school, "Ada Lovelace", "ada@example.org", true, None, None);
+    let mut donor = make_donor(
+        &g,
+        school,
+        "Ada Lovelace",
+        "ada@example.org",
+        true,
+        None,
+        None,
+    );
     let initial_version = donor.version;
     let initial_updated_at = donor.updated_at;
     let actor = g.next_user_id();
@@ -260,7 +287,15 @@ fn update_metadata_with_empty_email_returns_validation_error() {
 fn update_metadata_with_email_missing_at_sign_returns_validation_error() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let mut donor = make_donor(&g, school, "Ada Lovelace", "ada@example.org", true, None, None);
+    let mut donor = make_donor(
+        &g,
+        school,
+        "Ada Lovelace",
+        "ada@example.org",
+        true,
+        None,
+        None,
+    );
     let initial_version = donor.version;
     let actor = g.next_user_id();
     let now = SystemClock.now();
@@ -285,26 +320,34 @@ fn update_metadata_with_email_missing_at_sign_returns_validation_error() {
 fn update_metadata_with_valid_inputs_bumps_version_and_advances_timestamp() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let mut donor = make_donor(&g, school, "Ada Lovelace", "ada@example.org", true, None, None);
+    let mut donor = make_donor(
+        &g,
+        school,
+        "Ada Lovelace",
+        "ada@example.org",
+        true,
+        None,
+        None,
+    );
     let initial_version = donor.version;
     let initial_updated_at = donor.updated_at;
 
     // Advance the clock by one second past initial_updated_at.
-    let advanced = Timestamp::from_datetime(
-        initial_updated_at.as_datetime() + chrono::Duration::seconds(1),
-    );
+    let advanced =
+        Timestamp::from_datetime(initial_updated_at.as_datetime() + chrono::Duration::seconds(1));
     let actor = g.next_user_id();
 
-    donor.update_metadata(
-        "Ada King, Countess of Lovelace".to_owned(),
-        "ada.lovelace@example.org".to_owned(),
-        false,
-        Some("+44-20-7946-9999".to_owned()),
-        Some("Updated profile".to_owned()),
-        advanced,
-        actor,
-    )
-    .expect("valid update");
+    donor
+        .update_metadata(
+            "Ada King, Countess of Lovelace".to_owned(),
+            "ada.lovelace@example.org".to_owned(),
+            false,
+            Some("+44-20-7946-9999".to_owned()),
+            Some("Updated profile".to_owned()),
+            advanced,
+            actor,
+        )
+        .expect("valid update");
 
     assert_eq!(donor.name, "Ada King, Countess of Lovelace");
     assert_eq!(donor.email, "ada.lovelace@example.org");
@@ -339,16 +382,17 @@ fn update_metadata_with_empty_phone_clears_phone() {
     );
     let actor = g.next_user_id();
     let now = SystemClock.now();
-    donor.update_metadata(
-        "Ada Lovelace".to_owned(),
-        "ada@example.org".to_owned(),
-        true,
-        None,
-        None,
-        now,
-        actor,
-    )
-    .expect("valid update");
+    donor
+        .update_metadata(
+            "Ada Lovelace".to_owned(),
+            "ada@example.org".to_owned(),
+            true,
+            None,
+            None,
+            now,
+            actor,
+        )
+        .expect("valid update");
     assert!(donor.phone.is_none());
 }
 
@@ -360,7 +404,15 @@ fn update_metadata_with_empty_phone_clears_phone() {
 fn retire_on_active_flips_is_active_to_false_and_bumps_version() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let mut donor = make_donor(&g, school, "Ada Lovelace", "ada@example.org", true, None, None);
+    let mut donor = make_donor(
+        &g,
+        school,
+        "Ada Lovelace",
+        "ada@example.org",
+        true,
+        None,
+        None,
+    );
     let initial_version = donor.version;
     let actor = g.next_user_id();
     let now = SystemClock.now();
@@ -376,7 +428,15 @@ fn retire_on_active_flips_is_active_to_false_and_bumps_version() {
 fn retire_on_already_retired_returns_conflict_error() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let mut donor = make_donor(&g, school, "Ada Lovelace", "ada@example.org", true, None, None);
+    let mut donor = make_donor(
+        &g,
+        school,
+        "Ada Lovelace",
+        "ada@example.org",
+        true,
+        None,
+        None,
+    );
     let actor = g.next_user_id();
     let now = SystemClock.now();
 
@@ -412,7 +472,10 @@ fn create_donor_service_produces_active_aggregate_and_event() {
     assert!(donor.show_public, "DO I-1: show_public is a bool");
     assert_eq!(donor.phone.as_deref(), Some("+44-20-7946-0958"));
     assert_eq!(donor.description.as_deref(), Some("Mathematical patron"));
-    assert!(donor.is_active(), "service-created aggregate must be Active");
+    assert!(
+        donor.is_active(),
+        "service-created aggregate must be Active"
+    );
     assert_eq!(donor.school_id, tenant.school_id);
     assert_eq!(donor.last_event_id, Some(event.event_id));
 

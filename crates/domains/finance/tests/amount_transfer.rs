@@ -95,7 +95,10 @@ fn fresh_full_payload_valid_at_i_2_companion() {
     assert_eq!(agg.to_account_id, to);
     assert_eq!(agg.amount_minor, 50_000);
     assert_eq!(agg.currency, Currency::INR);
-    assert_eq!(agg.note.as_deref(), Some("Tuition account -> operations account"));
+    assert_eq!(
+        agg.note.as_deref(),
+        Some("Tuition account -> operations account")
+    );
     assert!(agg.reference.is_none());
     assert_eq!(agg.school_id, school);
 }
@@ -253,7 +256,10 @@ fn retire_already_retired_returns_conflict() {
     let err = agg
         .retire(now, tenant.actor_id)
         .expect_err("double-retire must conflict");
-    assert!(format!("{err}").contains("already retired"), "unexpected error: {err}");
+    assert!(
+        format!("{err}").contains("already retired"),
+        "unexpected error: {err}"
+    );
 }
 
 #[test]
@@ -278,18 +284,14 @@ fn create_amount_transfer_service_emits_created_event_at_i_2() {
         reference: None,
     };
     let (agg, event): (RealAmountTransfer, AmountTransferCreated) =
-        create_amount_transfer(cmd, &clock, &ids)
-            .expect("create_amount_transfer must succeed");
+        create_amount_transfer(cmd, &clock, &ids).expect("create_amount_transfer must succeed");
     assert!(agg.is_active());
     assert_eq!(agg.amount_minor, 75_000);
     assert_eq!(event.amount_transfer_id, agg.id);
     assert_eq!(event.from_account_id, from);
     assert_eq!(event.to_account_id, to);
     assert_eq!(event.amount_minor, 75_000);
-    assert_eq!(
-        event.note.as_deref(),
-        Some("Service integration test")
-    );
+    assert_eq!(event.note.as_deref(), Some("Service integration test"));
     assert!(event.reference.is_none());
     assert_eq!(
         <AmountTransferCreated as DomainEvent>::EVENT_TYPE,
@@ -299,10 +301,7 @@ fn create_amount_transfer_service_emits_created_event_at_i_2() {
         <AmountTransferCreated as DomainEvent>::AGGREGATE_TYPE,
         "amount_transfer"
     );
-    assert_eq!(
-        <AmountTransferCreated as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<AmountTransferCreated as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(event.school_id(), school);
 }
 

@@ -247,9 +247,11 @@ fn retire_income_service_emits_retired_event() {
     let corr = g.next_correlation_id();
     let tenant = TenantContext::for_user(school, actor, corr, UserType::SchoolAdmin);
     let id = income_id(&g, school);
-    let cmd = RetireIncomeCommand { tenant, income_id: id };
-    let evt: IncomeRetired =
-        retire_income(cmd, &clock, &g).expect("service should succeed");
+    let cmd = RetireIncomeCommand {
+        tenant,
+        income_id: id,
+    };
+    let evt: IncomeRetired = retire_income(cmd, &clock, &g).expect("service should succeed");
     assert_eq!(evt.income_id, id);
     assert_eq!(evt.deleted_by, actor);
     assert_eq!(

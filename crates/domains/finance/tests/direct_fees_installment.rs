@@ -245,7 +245,10 @@ fn retire_already_retired_returns_conflict() {
     let err = agg
         .retire(now, tenant.actor_id)
         .expect_err("double-retire must conflict");
-    assert!(format!("{err}").contains("already retired"), "unexpected error: {err}");
+    assert!(
+        format!("{err}").contains("already retired"),
+        "unexpected error: {err}"
+    );
 }
 
 #[test]

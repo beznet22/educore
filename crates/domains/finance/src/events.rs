@@ -25,21 +25,24 @@ use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 
 use crate::value_objects::{
-    AccountType, AmountTransferId, ApprovalStatus, BalanceType, BankAccountId, BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId,
-    BankStatementId, FmFeesTypeKind, LifecycleStatus, PaymentMode, ProductPurchaseLifecycleStatus, StatementType, TransactionLifecycleStatus,
-    ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId, DiscountType,
-    DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId, DirectFeesSettingId, DonorId,
-    DueFeesLoginPreventId, FeesInstallmentCreditId, FeesInvoiceSettingId,
-    ExpenseApprovalId, ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId,
-    FeesCarryForwardId, FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId, FeesGroupId, FeesInstallmentAssignDiscountId, FeesInstallmentAssignId,
-    FeesInstallmentId,
-    FeesMasterId, FeesPaymentId, FeesTypeId, FmFeesGroupId, FmFeesInvoiceId,
-    FmFeesInvoiceLineNoteId, FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId,
-    FmFeesTypeId, FmFeesWeaverId,
-    FmFeesTransactionLineNoteId, IncomeApprovalId, IncomeHeadId,
-    IncomeId, InventoryPaymentId, InvoiceSettingId, PaymentGatewaySettingId, PaymentMethodId, PaymentMethodKind, PayrollGenerateId, ProductPurchaseId, FmFeesInvoiceChildId, GatewayMode, GatewayChargeType,
-    PayrollPaymentApprovalId, PayrollPaymentId, QuestionBankFeeId, SalaryTemplateId, WalletId,
-    WalletTransactionApprovalId, WalletTransactionId, WalletTxType, TransactionId,
+    AccountType, AmountTransferId, ApprovalStatus, BalanceType, BankAccountId,
+    BankPaymentSlipAuditId, BankPaymentSlipId, BankStatementAttachmentId, BankStatementId,
+    ChartOfAccountId, Currency, DirectFeesInstallmentAssignChildId, DirectFeesInstallmentAssignId,
+    DirectFeesInstallmentChildPaymentId, DirectFeesInstallmentId, DirectFeesReminderId,
+    DirectFeesSettingId, DiscountType, DonorId, DueFeesLoginPreventId, ExpenseApprovalId,
+    ExpenseHeadId, ExpenseId, FeesAssignDiscountId, FeesAssignId, FeesCarryForwardId,
+    FeesCarryForwardLogId, FeesCarryForwardSettingId, FeesDiscountId, FeesGroupId,
+    FeesInstallmentAssignDiscountId, FeesInstallmentAssignId, FeesInstallmentCreditId,
+    FeesInstallmentId, FeesInvoiceSettingId, FeesMasterId, FeesPaymentId, FeesTypeId,
+    FmFeesGroupId, FmFeesInvoiceChildId, FmFeesInvoiceId, FmFeesInvoiceLineNoteId,
+    FmFeesInvoiceSettingId, FmFeesTransactionChildId, FmFeesTransactionId,
+    FmFeesTransactionLineNoteId, FmFeesTypeId, FmFeesTypeKind, FmFeesWeaverId, GatewayChargeType,
+    GatewayMode, IncomeApprovalId, IncomeHeadId, IncomeId, InventoryPaymentId, InvoiceSettingId,
+    LifecycleStatus, PaymentGatewaySettingId, PaymentMethodId, PaymentMethodKind, PaymentMode,
+    PayrollGenerateId, PayrollPaymentApprovalId, PayrollPaymentId, ProductPurchaseId,
+    ProductPurchaseLifecycleStatus, QuestionBankFeeId, SalaryTemplateId, StatementType,
+    TransactionId, TransactionLifecycleStatus, WalletId, WalletTransactionApprovalId,
+    WalletTransactionId, WalletTxType,
 };
 
 use educore_academic::{AcademicYearId, ClassId, SectionId, StudentId};
@@ -4654,7 +4657,7 @@ impl FeesDiscountCreated {
     ) -> Self {
         Self {
             fees_discount_id,
-            fees_master_id, // FD I-3
+            fees_master_id,   // FD I-3
             academic_year_id, // FD I-4
             name,
             discount_code,
@@ -4810,7 +4813,7 @@ impl DomainEvent for FeesDiscountRetired {
 pub struct BankAccountCreated {
     pub bank_account_id: BankAccountId,
     pub account_name: String,
-    pub account_number: String, // BA I-1 pinned
+    pub account_number: String,    // BA I-1 pinned
     pub account_type: AccountType, // BA I-3 type-pinned
     pub bank_name: String,
     pub ifsc_code: Option<String>,
@@ -5718,7 +5721,7 @@ impl DomainEvent for DueFeesLoginPreventPruned {
 pub struct FeesInvoiceSettingCreated {
     pub fees_invoice_setting_id: FeesInvoiceSettingId,
     pub prefix: String, // FISv I-1 pinned
-    pub per_th: i64, // FISv I-2
+    pub per_th: i64,    // FISv I-2
     pub description: Option<String>,
     pub created_by: UserId,
     pub event_id: EventId,
@@ -5990,8 +5993,6 @@ impl DomainEvent for FeesInstallmentCreditRetired {
     }
 }
 
-
-
 // ===================================================================
 // Wave 94 — RealFmFeesInvoiceSetting events (per-aggregate wave pattern from Waves 65-93)
 // ===================================================================
@@ -6004,9 +6005,9 @@ impl DomainEvent for FeesInstallmentCreditRetired {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FmFeesInvoiceSettingCreated {
     pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
-    pub prefix: String, // FFIS I-3 pinned
-    pub per_th: i64, // FFIS I-1
-    pub due_date: NaiveDate, // FFIS I-2
+    pub prefix: String,            // FFIS I-3 pinned
+    pub per_th: i64,               // FFIS I-1
+    pub due_date: NaiveDate,       // FFIS I-2
     pub due_date_offset_days: i64, // FFIS I-2
     pub created_by: UserId,
     pub event_id: EventId,
@@ -6068,8 +6069,8 @@ impl DomainEvent for FmFeesInvoiceSettingCreated {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FmFeesInvoiceSettingUpdated {
     pub fm_fees_invoice_setting_id: FmFeesInvoiceSettingId,
-    pub per_th: i64, // FFIS I-1 (mutable)
-    pub due_date: NaiveDate, // FFIS I-2 (mutable)
+    pub per_th: i64,               // FFIS I-1 (mutable)
+    pub due_date: NaiveDate,       // FFIS I-2 (mutable)
     pub due_date_offset_days: i64, // FFIS I-2 (mutable)
     pub updated_by: UserId,
     pub event_id: EventId,
@@ -6168,8 +6169,6 @@ impl DomainEvent for FmFeesInvoiceSettingRetired {
         self.occurred_at
     }
 }
-
-
 
 // ===================================================================
 // Wave 95 — RealFmFeesWeaver events (per-aggregate wave pattern from Waves 65-94)
@@ -6323,8 +6322,7 @@ impl DirectFeesInstallmentChildPaymentCreated {
 }
 
 impl DomainEvent for DirectFeesInstallmentChildPaymentCreated {
-    const EVENT_TYPE: &'static str =
-        "finance.direct_fees_installment_child_payment.created";
+    const EVENT_TYPE: &'static str = "finance.direct_fees_installment_child_payment.created";
     const SCHEMA_VERSION: u32 = 1;
     const AGGREGATE_TYPE: &'static str = "direct_fees_installment_child_payment";
     fn event_id(&self) -> EventId {
@@ -6374,8 +6372,7 @@ impl DirectFeesInstallmentChildPaymentRetired {
 }
 
 impl DomainEvent for DirectFeesInstallmentChildPaymentRetired {
-    const EVENT_TYPE: &'static str =
-        "finance.direct_fees_installment_child_payment.retired";
+    const EVENT_TYPE: &'static str = "finance.direct_fees_installment_child_payment.retired";
     const SCHEMA_VERSION: u32 = 1;
     const AGGREGATE_TYPE: &'static str = "direct_fees_installment_child_payment";
     fn event_id(&self) -> EventId {
@@ -6977,11 +6974,11 @@ pub struct FmFeesInvoiceChildCreated {
     pub fm_fees_invoice_child_id: FmFeesInvoiceChildId,
     pub invoice_id: FmFeesInvoiceId,
     pub description: String,
-    pub amount_minor: i64, // FFIChild I-1
-    pub sub_total_minor: i64, // FFIChild I-2
-    pub weaver_minor: i64, // FFIChild I-2
-    pub fine_minor: i64, // FFIChild I-2
-    pub paid_amount_minor: i64, // FFIChild I-3
+    pub amount_minor: i64,         // FFIChild I-1
+    pub sub_total_minor: i64,      // FFIChild I-2
+    pub weaver_minor: i64,         // FFIChild I-2
+    pub fine_minor: i64,           // FFIChild I-2
+    pub paid_amount_minor: i64,    // FFIChild I-3
     pub service_charge_minor: i64, // FFIChild I-3
     pub created_by: UserId,
     pub event_id: EventId,
@@ -7103,8 +7100,8 @@ pub struct DirectFeesInstallmentAssignCreated {
     pub direct_fees_installment_assign_id: DirectFeesInstallmentAssignId,
     pub student_id: StudentId,
     pub installment_id: DirectFeesInstallmentId,
-    pub amount_minor: i64,   // DFIA I-2
-    pub balance_minor: i64,  // DFIA I-3
+    pub amount_minor: i64,  // DFIA I-2
+    pub balance_minor: i64, // DFIA I-3
     pub created_by: UserId,
     pub event_id: EventId,
     pub correlation_id: CorrelationId,
@@ -7204,7 +7201,6 @@ impl DomainEvent for DirectFeesInstallmentAssignRetired {
         self.occurred_at
     }
 }
-
 
 // -- Wave 104 — Transaction (double-entry journal line) --
 //
@@ -7413,7 +7409,6 @@ impl DomainEvent for TransactionPosted {
     }
 }
 
-
 // -- Wave 105 — FeesInstallmentAssignDiscount (child discount on an installment assign) --
 //
 // FIAD I-1: applied_amount >= 0. Both
@@ -7567,7 +7562,6 @@ impl DomainEvent for FeesInstallmentAssignDiscountRetired {
     }
 }
 
-
 // -- Wave 106 — PaymentMethod (cash / bank / cheque / card / mobile wallet / gateway) --
 //
 // PM I-1: method unique within school. Both `PaymentMethodCreated`
@@ -7705,7 +7699,6 @@ impl DomainEvent for PaymentMethodRetired {
     }
 }
 
-
 // -- Wave 107 -- FeesInstallmentAssign (per-(fees_assign, installment) linkage) --
 //
 // FIA I-1: unique per (fees_assign, installment). Both
@@ -7828,7 +7821,6 @@ impl DomainEvent for FeesInstallmentAssignRetired {
     }
 }
 
-
 // -- Wave 108 -- AmountTransfer (inter-account cash movement) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -7946,8 +7938,6 @@ impl DomainEvent for AmountTransferRetired {
     }
 }
 
-
-
 // -- Wave 111 -- DirectFeesInstallment (Phase 7 stub replaced) --
 //
 // DFI I-2: amount >= 0. Both DirectFeesInstallmentCreated (carrying
@@ -7969,9 +7959,9 @@ pub struct DirectFeesInstallmentCreated {
     pub amount_minor: i64,
     pub currency: Currency,
     pub due_date: NaiveDate,
-    pub percentage_minor: i64, // DFI I-3
+    pub percentage_minor: i64,           // DFI I-3
     pub window_start: Option<NaiveDate>, // DFI I-4
-    pub window_end: Option<NaiveDate>, // DFI I-4
+    pub window_end: Option<NaiveDate>,   // DFI I-4
     pub created_by: UserId,
     pub event_id: EventId,
     pub correlation_id: CorrelationId,
@@ -8075,7 +8065,6 @@ impl DomainEvent for DirectFeesInstallmentRetired {
         self.occurred_at
     }
 }
-
 
 // -- Wave 113 -- FeesCarryForward (end-of-year balance roll-over) --
 //
@@ -8192,7 +8181,6 @@ impl DomainEvent for FeesCarryForwardRetired {
         self.occurred_at
     }
 }
-
 
 // -- Wave 114 -- FeesMaster (Phase 7 finance_event_stub! for
 // FeesMasterCreated deleted at events.rs:2104 and replaced with
@@ -8314,7 +8302,6 @@ impl DomainEvent for FeesMasterRetired {
     }
 }
 
-
 // -- Wave 118 -- FeesAssignDiscount (Phase 7 stub replaced) --
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -8425,7 +8412,6 @@ impl DomainEvent for FeesAssignDiscountRetired {
         self.occurred_at
     }
 }
-
 
 // -- Wave 119 -- FeesAssign (per-(student, fee_master, year) linkage) --
 //

@@ -247,7 +247,10 @@ fn reject_transitions_pending_to_rejected_with_reason() {
     assert!(!row.is_pending());
     assert_eq!(row.decided_by, Some(decider)); // EA I-2
     assert_eq!(row.decided_at, Some(now)); // EA I-2
-    assert_eq!(row.reject_reason.as_deref(), Some("insufficient documentation"));
+    assert_eq!(
+        row.reject_reason.as_deref(),
+        Some("insufficient documentation")
+    );
 }
 
 #[test]
@@ -313,8 +316,8 @@ fn create_service_produces_aggregate_and_created_event() {
         requested_by: g.next_user_id(),
     };
     let clock = SystemClock;
-    let (row, event) = create_expense_approval(cmd, &clock, &g)
-        .expect("create_expense_approval should succeed");
+    let (row, event) =
+        create_expense_approval(cmd, &clock, &g).expect("create_expense_approval should succeed");
     assert_eq!(row.id, id);
     assert_eq!(row.expense_id, expense);
     assert!(row.is_pending());

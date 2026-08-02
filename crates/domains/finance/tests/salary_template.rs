@@ -407,8 +407,8 @@ fn create_service_produces_aggregate_and_created_event() {
         description: Some("base + housing".to_owned()),
     };
     let clock = SystemClock;
-    let (row, event) = create_salary_template(cmd, &clock, &g)
-        .expect("create_salary_template should succeed");
+    let (row, event) =
+        create_salary_template(cmd, &clock, &g).expect("create_salary_template should succeed");
     assert_eq!(row.id, id);
     assert_eq!(row.school_id, school);
     assert_eq!(row.name, "Senior Teacher");

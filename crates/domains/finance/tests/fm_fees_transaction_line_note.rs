@@ -107,15 +107,8 @@ fn fm_fees_transaction_line_note_typed_ids_are_distinct_within_school() {
 fn fresh_with_non_empty_note_produces_active_aggregate() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let note = make_note(
-        &g,
-        school,
-        "Refund processed via original payment method.",
-    );
-    assert_eq!(
-        note.note,
-        "Refund processed via original payment method."
-    );
+    let note = make_note(&g, school, "Refund processed via original payment method.");
+    assert_eq!(note.note, "Refund processed via original payment method.");
     assert!(note.is_active(), "fresh aggregate must be Active");
     assert_eq!(note.school_id, school);
 }
@@ -222,8 +215,8 @@ fn fresh_produces_an_append_only_aggregate_with_only_fresh_is_active_retire_surf
     let note = make_note(&g, school, "Test surface contract.");
     assert!(note.is_active());
     let _ = note.note; // last accessible field
-    // No update_* invocation is possible — the API simply does not
-    // expose one. This is the practical append-only guarantee.
+                       // No update_* invocation is possible — the API simply does not
+                       // expose one. This is the practical append-only guarantee.
 }
 
 // ---------------------------------------------------------------------------
@@ -280,8 +273,8 @@ fn create_fm_fees_transaction_line_note_service_produces_active_aggregate_and_ev
         note: "Transaction voided per parent request.".to_owned(),
     };
     let clock = SystemClock;
-    let (note, event) = create_fm_fees_transaction_line_note(cmd, &clock, &g)
-        .expect("create succeeds");
+    let (note, event) =
+        create_fm_fees_transaction_line_note(cmd, &clock, &g).expect("create succeeds");
 
     // Aggregate side
     assert_eq!(note.fm_fees_transaction_id, tx_id);

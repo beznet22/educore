@@ -29,10 +29,7 @@ fn admin_context() -> (TenantContext, SystemIdGen) {
     )
 }
 
-fn make_create_cmd(
-    tenant: TenantContext,
-    id: FeesGroupId,
-) -> CreateFeesGroupCommand {
+fn make_create_cmd(tenant: TenantContext, id: FeesGroupId) -> CreateFeesGroupCommand {
     CreateFeesGroupCommand {
         tenant,
         fees_group_id: id,

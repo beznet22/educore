@@ -158,8 +158,7 @@ fn fresh_negative_percentage_validation_error_fiv_i_1() {
     match result {
         Err(DomainError::Validation(msg)) => {
             assert!(
-                msg.contains("percentage must be in [0, 100]")
-                    && msg.contains("FIv I-1"),
+                msg.contains("percentage must be in [0, 100]") && msg.contains("FIv I-1"),
                 "unexpected error message: {msg}"
             );
         }
@@ -187,8 +186,7 @@ fn fresh_percentage_over_100_validation_error_fiv_i_1() {
     match result {
         Err(DomainError::Validation(msg)) => {
             assert!(
-                msg.contains("percentage must be in [0, 100]")
-                    && msg.contains("FIv I-1"),
+                msg.contains("percentage must be in [0, 100]") && msg.contains("FIv I-1"),
                 "unexpected error message: {msg}"
             );
         }
@@ -352,10 +350,7 @@ fn create_fees_installment_service_emits_created_event() {
         <FeesInstallmentCreated as DomainEvent>::AGGREGATE_TYPE,
         "fees_installment"
     );
-    assert_eq!(
-        <FeesInstallmentCreated as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<FeesInstallmentCreated as DomainEvent>::SCHEMA_VERSION, 1);
 }
 
 #[test]

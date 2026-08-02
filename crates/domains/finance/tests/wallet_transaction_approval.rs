@@ -57,7 +57,10 @@ fn admin_context() -> (TenantContext, SystemIdGen) {
     )
 }
 
-fn wallet_transaction_approval_id(g: &SystemIdGen, school: SchoolId) -> WalletTransactionApprovalId {
+fn wallet_transaction_approval_id(
+    g: &SystemIdGen,
+    school: SchoolId,
+) -> WalletTransactionApprovalId {
     WalletTransactionApprovalId::new(school, g.next_uuid())
 }
 
@@ -148,14 +151,22 @@ fn approve_transitions_pending_to_approved_with_full_audit_footer() {
     let now = SystemClock.now();
     let event_id = g.next_event_id();
 
-    approval.approve(actor, now, event_id).expect("approve succeeds");
+    approval
+        .approve(actor, now, event_id)
+        .expect("approve succeeds");
     assert!(!approval.is_pending(), "approve must clear pending");
     assert!(approval.is_approved(), "approve must set approved");
     assert!(!approval.is_rejected(), "approve must NOT set rejected");
     assert_eq!(approval.approver_id, Some(actor));
     assert_eq!(approval.approved_at, Some(now));
-    assert!(approval.rejected_at.is_none(), "approve must NOT set rejected_at");
-    assert!(approval.reject_note.is_none(), "approve must NOT set reject_note");
+    assert!(
+        approval.rejected_at.is_none(),
+        "approve must NOT set rejected_at"
+    );
+    assert!(
+        approval.reject_note.is_none(),
+        "approve must NOT set reject_note"
+    );
     assert!(approval.version > initial_version, "version must advance");
     assert_eq!(approval.updated_by, actor);
     assert_eq!(approval.last_event_id, Some(event_id));
@@ -169,7 +180,9 @@ fn approve_on_already_approved_returns_conflict() {
     let actor = g.next_user_id();
     let now = SystemClock.now();
     let event_id = g.next_event_id();
-    approval.approve(actor, now, event_id).expect("first approve succeeds");
+    approval
+        .approve(actor, now, event_id)
+        .expect("first approve succeeds");
     let result = approval.approve(actor, now, g.next_event_id());
     assert!(
         matches!(result, Err(DomainError::Conflict(_))),
@@ -185,7 +198,12 @@ fn approve_on_already_rejected_returns_conflict() {
     let rejecter = g.next_user_id();
     let now = SystemClock.now();
     approval
-        .reject(rejecter, "Denied per policy".to_owned(), now, g.next_event_id())
+        .reject(
+            rejecter,
+            "Denied per policy".to_owned(),
+            now,
+            g.next_event_id(),
+        )
         .expect("first reject succeeds");
     let approver = g.next_user_id();
     let later = educore_core::value_objects::Timestamp::from_datetime(
@@ -208,15 +226,26 @@ fn reject_transitions_pending_to_rejected_with_required_note() {
     let now = SystemClock.now();
     let event_id = g.next_event_id();
     approval
-        .reject(rejecter, "Insufficient documentation".to_owned(), now, event_id)
+        .reject(
+            rejecter,
+            "Insufficient documentation".to_owned(),
+            now,
+            event_id,
+        )
         .expect("reject succeeds");
     assert!(!approval.is_pending(), "reject must clear pending");
     assert!(!approval.is_approved(), "reject must NOT set approved");
     assert!(approval.is_rejected(), "reject must set rejected");
     assert_eq!(approval.rejecter_id, Some(rejecter));
     assert_eq!(approval.rejected_at, Some(now));
-    assert_eq!(approval.reject_note.as_deref(), Some("Insufficient documentation"));
-    assert!(approval.approved_at.is_none(), "reject must NOT set approved_at");
+    assert_eq!(
+        approval.reject_note.as_deref(),
+        Some("Insufficient documentation")
+    );
+    assert!(
+        approval.approved_at.is_none(),
+        "reject must NOT set approved_at"
+    );
     assert!(approval.version > initial_version, "version must advance");
     assert_eq!(approval.updated_by, rejecter);
     assert_eq!(approval.last_event_id, Some(event_id));
@@ -232,7 +261,12 @@ fn reject_on_already_rejected_returns_conflict() {
     approval
         .reject(rejecter, "Denied".to_owned(), now, g.next_event_id())
         .expect("first reject succeeds");
-    let result = approval.reject(rejecter, "Second attempt".to_owned(), now, g.next_event_id());
+    let result = approval.reject(
+        rejecter,
+        "Second attempt".to_owned(),
+        now,
+        g.next_event_id(),
+    );
     assert!(
         matches!(result, Err(DomainError::Conflict(_))),
         "second reject must fail with Conflict, got {result:?}"
@@ -246,7 +280,9 @@ fn reject_on_already_approved_returns_conflict() {
     let mut approval = fresh_approval(&g, school);
     let approver = g.next_user_id();
     let now = SystemClock.now();
-    approval.approve(approver, now, g.next_event_id()).expect("first approve succeeds");
+    approval
+        .approve(approver, now, g.next_event_id())
+        .expect("first approve succeeds");
     let rejecter = g.next_user_id();
     let later = educore_core::value_objects::Timestamp::from_datetime(
         now.as_datetime() + chrono::Duration::seconds(1),
@@ -439,7 +475,10 @@ fn reject_wallet_transaction_approval_service_propagates_validation_for_empty_no
         matches!(result, Err(DomainError::Validation(_))),
         "whitespace-only reason must propagate Validation (WTA I-2), got {result:?}"
     );
-    assert!(approval.is_pending(), "rejected validation must not transition state");
+    assert!(
+        approval.is_pending(),
+        "rejected validation must not transition state"
+    );
 }
 
 #[test]

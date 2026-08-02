@@ -58,11 +58,7 @@ fn fm_fees_transaction_id(g: &SystemIdGen, school: SchoolId) -> FmFeesTransactio
     FmFeesTransactionId::new(school, g.next_uuid())
 }
 
-fn make_child(
-    g: &SystemIdGen,
-    school: SchoolId,
-    amount_minor: i64,
-) -> RealFmFeesTransactionChild {
+fn make_child(g: &SystemIdGen, school: SchoolId, amount_minor: i64) -> RealFmFeesTransactionChild {
     let actor = g.next_user_id();
     let corr = g.next_correlation_id();
     let now = SystemClock.now();
@@ -234,12 +230,7 @@ fn update_metadata_with_valid_amount_bumps_version_and_advances_timestamp() {
     );
 
     child
-        .update_metadata(
-            75_000,
-            Some("Revised line".to_owned()),
-            advanced,
-            actor,
-        )
+        .update_metadata(75_000, Some("Revised line".to_owned()), advanced, actor)
         .expect("valid update");
 
     assert_eq!(child.amount_minor, 75_000);
@@ -344,7 +335,10 @@ fn create_fm_fees_transaction_child_service_produces_active_aggregate_and_event(
     // Aggregate side
     assert_eq!(child.amount_minor, 50_000);
     assert_eq!(child.fm_fees_transaction_id, parent_id);
-    assert!(child.is_active(), "service-created aggregate must be Active");
+    assert!(
+        child.is_active(),
+        "service-created aggregate must be Active"
+    );
     assert_eq!(child.school_id, school);
     assert_eq!(child.last_event_id, Some(event.event_id));
 

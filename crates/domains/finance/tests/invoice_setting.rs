@@ -99,7 +99,10 @@ fn fresh_accepts_prefix_at_max_length() {
     let school = tenant.school_id;
     let max = "A".repeat(RealInvoiceSetting::MAX_PREFIX_LEN);
     let setting = make_invoice_setting(&g, school, &max, 0);
-    assert_eq!(setting.prefix.chars().count(), RealInvoiceSetting::MAX_PREFIX_LEN);
+    assert_eq!(
+        setting.prefix.chars().count(),
+        RealInvoiceSetting::MAX_PREFIX_LEN
+    );
 }
 
 #[test]
@@ -258,9 +261,8 @@ fn update_config_with_valid_prefix_bumps_version_and_advances_timestamp() {
     let initial_updated_at = setting.updated_at;
 
     // Advance the clock by one second past initial_updated_at.
-    let advanced = Timestamp::from_datetime(
-        initial_updated_at.as_datetime() + chrono::Duration::seconds(1),
-    );
+    let advanced =
+        Timestamp::from_datetime(initial_updated_at.as_datetime() + chrono::Duration::seconds(1));
     let actor = g.next_user_id();
 
     setting
@@ -331,13 +333,15 @@ fn create_invoice_setting_service_produces_active_aggregate_and_event() {
         start_form: 1000,
     };
     let clock = SystemClock;
-    let (setting, event) =
-        create_invoice_setting(cmd, &clock, &g).expect("create succeeds");
+    let (setting, event) = create_invoice_setting(cmd, &clock, &g).expect("create succeeds");
 
     // Aggregate side
     assert_eq!(setting.prefix, "INV-");
     assert_eq!(setting.start_form, 1000);
-    assert!(setting.is_active(), "service-created aggregate must be Active");
+    assert!(
+        setting.is_active(),
+        "service-created aggregate must be Active"
+    );
     assert_eq!(setting.school_id, tenant.school_id);
     assert_eq!(setting.last_event_id, Some(event.event_id));
 

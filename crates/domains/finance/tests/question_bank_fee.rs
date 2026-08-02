@@ -95,7 +95,10 @@ fn fresh_with_zero_amount_produces_active_aggregate() {
     let school = tenant.school_id;
     let fee = make_question_bank_fee(&g, school, "Free sample", 0, None);
     assert_eq!(fee.amount_minor, 0);
-    assert!(fee.is_active(), "zero amount is allowed (>= 0), aggregate must be Active");
+    assert!(
+        fee.is_active(),
+        "zero amount is allowed (>= 0), aggregate must be Active"
+    );
     assert!(fee.description.is_none());
 }
 
@@ -224,9 +227,8 @@ fn update_metadata_with_valid_inputs_bumps_version_and_advances_timestamp() {
     let initial_updated_at = fee.updated_at;
 
     // Advance the clock by one second past initial_updated_at.
-    let advanced = Timestamp::from_datetime(
-        initial_updated_at.as_datetime() + chrono::Duration::seconds(1),
-    );
+    let advanced =
+        Timestamp::from_datetime(initial_updated_at.as_datetime() + chrono::Duration::seconds(1));
     let actor = g.next_user_id();
 
     fee.update_metadata(
@@ -316,8 +318,7 @@ fn create_question_bank_fee_service_produces_active_aggregate_and_event() {
         description: Some("Per paper re-marking".to_owned()),
     };
     let clock = SystemClock;
-    let (fee, event) =
-        create_question_bank_fee(cmd, &clock, &g).expect("create succeeds");
+    let (fee, event) = create_question_bank_fee(cmd, &clock, &g).expect("create succeeds");
 
     // Aggregate side
     assert_eq!(fee.name, "Re-marking fee");
@@ -331,10 +332,7 @@ fn create_question_bank_fee_service_produces_active_aggregate_and_event() {
     assert_eq!(event.question_bank_fee_id, fee.id);
     assert_eq!(event.name, "Re-marking fee");
     assert_eq!(event.amount_minor, 5000);
-    assert_eq!(
-        event.description.as_deref(),
-        Some("Per paper re-marking")
-    );
+    assert_eq!(event.description.as_deref(), Some("Per paper re-marking"));
     assert_eq!(event.created_by, tenant.actor_id);
     assert_eq!(event.school_id(), tenant.school_id);
     assert_eq!(event.correlation_id, tenant.correlation_id);

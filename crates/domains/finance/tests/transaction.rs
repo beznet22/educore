@@ -24,7 +24,7 @@ use educore_core::tenant::{TenantContext, UserType};
 use educore_events::domain_event::DomainEvent;
 use educore_finance::prelude::{
     create_transaction, retire_transaction, Currency, RealTransaction, TransactionCreated,
-    TransactionRetired, TransactionId, FINANCE_TRANSACTION_CREATE_COMMAND_TYPE,
+    TransactionId, TransactionRetired, FINANCE_TRANSACTION_CREATE_COMMAND_TYPE,
     FINANCE_TRANSACTION_RETIRE_COMMAND_TYPE,
 };
 
@@ -250,7 +250,10 @@ fn fresh_initializes_audit_footer_with_no_last_event_id() {
         tenant.correlation_id,
     )
     .expect("balanced journal entry");
-    assert!(tx.last_event_id.is_none(), "fresh() must start with no last_event_id");
+    assert!(
+        tx.last_event_id.is_none(),
+        "fresh() must start with no last_event_id"
+    );
     assert_eq!(tx.created_by, tenant.actor_id);
     assert_eq!(tx.updated_by, tenant.actor_id);
     assert_eq!(tx.created_at, now);
@@ -321,8 +324,13 @@ fn retire_already_retired_returns_conflict() {
     )
     .expect("balanced entry");
     tx.retire(now, tenant.actor_id).expect("first retire");
-    let err = tx.retire(now, tenant.actor_id).expect_err("double-retire must conflict");
-    assert!(format!("{err}").contains("already retired"), "unexpected error: {err}");
+    let err = tx
+        .retire(now, tenant.actor_id)
+        .expect_err("double-retire must conflict");
+    assert!(
+        format!("{err}").contains("already retired"),
+        "unexpected error: {err}"
+    );
 }
 
 #[test]
@@ -355,8 +363,14 @@ fn create_transaction_service_emits_created_event_with_tr_i_1_payload() {
     assert_eq!(event.total_credits_minor, 12_500);
     assert_eq!(event.description, "Service integration — Q3 FY26");
     assert_eq!(event.reference.as_deref(), Some("SVC-INV-001"));
-    assert_eq!(<TransactionCreated as DomainEvent>::EVENT_TYPE, "finance.transaction.created");
-    assert_eq!(<TransactionCreated as DomainEvent>::AGGREGATE_TYPE, "transaction");
+    assert_eq!(
+        <TransactionCreated as DomainEvent>::EVENT_TYPE,
+        "finance.transaction.created"
+    );
+    assert_eq!(
+        <TransactionCreated as DomainEvent>::AGGREGATE_TYPE,
+        "transaction"
+    );
     assert_eq!(<TransactionCreated as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(event.school_id(), school);
 }
@@ -378,8 +392,14 @@ fn retire_transaction_service_emits_retired_event_tr_i_1() {
     assert!(!tx.is_active());
     assert_eq!(event.transaction_id, tx.id);
     assert_eq!(event.retired_by, tenant.actor_id);
-    assert_eq!(<TransactionRetired as DomainEvent>::EVENT_TYPE, "finance.transaction.retired");
-    assert_eq!(<TransactionRetired as DomainEvent>::AGGREGATE_TYPE, "transaction");
+    assert_eq!(
+        <TransactionRetired as DomainEvent>::EVENT_TYPE,
+        "finance.transaction.retired"
+    );
+    assert_eq!(
+        <TransactionRetired as DomainEvent>::AGGREGATE_TYPE,
+        "transaction"
+    );
     assert_eq!(<TransactionRetired as DomainEvent>::SCHEMA_VERSION, 1);
     assert_eq!(event.school_id(), school);
 }
@@ -454,16 +474,26 @@ fn build_tx(actor: UserId) -> RealTransaction {
 fn transaction_lifecycle_status_as_str_round_trip_tr_i_3() {
     assert_eq!(TransactionLifecycleStatus::Draft.as_str(), "draft");
     assert_eq!(TransactionLifecycleStatus::Posted.as_str(), "posted");
-    assert_eq!(TransactionLifecycleStatus::parse("draft"), Some(TransactionLifecycleStatus::Draft));
-    assert_eq!(TransactionLifecycleStatus::parse("posted"), Some(TransactionLifecycleStatus::Posted));
+    assert_eq!(
+        TransactionLifecycleStatus::parse("draft"),
+        Some(TransactionLifecycleStatus::Draft)
+    );
+    assert_eq!(
+        TransactionLifecycleStatus::parse("posted"),
+        Some(TransactionLifecycleStatus::Posted)
+    );
     assert_eq!(TransactionLifecycleStatus::parse("unknown"), None);
 }
 
 #[test]
 fn transaction_lifecycle_status_can_transition_only_draft_to_posted_tr_i_3() {
     assert!(TransactionLifecycleStatus::Draft.can_transition_to(TransactionLifecycleStatus::Posted));
-    assert!(!TransactionLifecycleStatus::Posted.can_transition_to(TransactionLifecycleStatus::Draft));
-    assert!(!TransactionLifecycleStatus::Posted.can_transition_to(TransactionLifecycleStatus::Posted));
+    assert!(
+        !TransactionLifecycleStatus::Posted.can_transition_to(TransactionLifecycleStatus::Draft)
+    );
+    assert!(
+        !TransactionLifecycleStatus::Posted.can_transition_to(TransactionLifecycleStatus::Posted)
+    );
 }
 
 // ---- fresh initializes lifecycle ----
@@ -529,7 +559,10 @@ fn post_preserves_all_payload_fields_tr_i_3() {
     // TR I-2: payload fields preserved after state-machine
     // transition (no update_* mutator means the post transition
     // cannot mutate any payload).
-    assert_eq!(tx.transaction_date, chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap());
+    assert_eq!(
+        tx.transaction_date,
+        chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap()
+    );
     assert_eq!(tx.description, "Preservation test");
     assert_eq!(tx.reference.as_deref(), Some("REF-001"));
     assert_eq!(tx.total_debits_minor, 12_500);
@@ -545,8 +578,12 @@ fn retire_after_post_succeeds_tr_i_3() {
     let (tenant, g) = admin_context();
     let actor = tenant.actor_id;
     let mut tx = build_tx(actor);
-    tx.post(actor, educore_core::value_objects::Timestamp::now(), g.next_event_id())
-        .expect("post");
+    tx.post(
+        actor,
+        educore_core::value_objects::Timestamp::now(),
+        g.next_event_id(),
+    )
+    .expect("post");
     tx.retire(educore_core::value_objects::Timestamp::now(), actor)
         .expect("retire after post should succeed");
     assert!(!tx.is_active());

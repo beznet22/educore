@@ -274,14 +274,8 @@ fn update_metadata_mutates_per_th_and_due_date_offset_fic_i_1_i_2() {
     )
     .expect("fresh should succeed");
     let new_due = NaiveDate::from_ymd_opt(2027, 1, 31).expect("valid date");
-    row.update_metadata(
-        5000,
-        new_due,
-        45,
-        Timestamp::now(),
-        tenant.actor_id,
-    )
-    .expect("update_metadata should succeed");
+    row.update_metadata(5000, new_due, 45, Timestamp::now(), tenant.actor_id)
+        .expect("update_metadata should succeed");
     assert_eq!(row.per_th, 5000);
     assert_eq!(row.due_date, new_due);
     assert_eq!(row.due_date_offset_days, 45);
@@ -305,13 +299,7 @@ fn update_metadata_re_validates_fic_i_1() {
         tenant.correlation_id,
     )
     .expect("fresh should succeed");
-    let result = row.update_metadata(
-        -1,
-        sample_due_date(),
-        30,
-        Timestamp::now(),
-        tenant.actor_id,
-    );
+    let result = row.update_metadata(-1, sample_due_date(), 30, Timestamp::now(), tenant.actor_id);
     assert!(matches!(result, Err(DomainError::Validation(_))));
 }
 

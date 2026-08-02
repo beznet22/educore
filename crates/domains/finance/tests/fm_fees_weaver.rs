@@ -275,10 +275,7 @@ fn create_fm_fees_weaver_service_emits_created_event_ffic_i_1() {
         <FmFeesWeaverCreated as DomainEvent>::AGGREGATE_TYPE,
         "fm_fees_weaver"
     );
-    assert_eq!(
-        <FmFeesWeaverCreated as DomainEvent>::SCHEMA_VERSION,
-        1
-    );
+    assert_eq!(<FmFeesWeaverCreated as DomainEvent>::SCHEMA_VERSION, 1);
 }
 
 #[test]

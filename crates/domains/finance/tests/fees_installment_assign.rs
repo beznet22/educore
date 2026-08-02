@@ -210,7 +210,10 @@ fn retire_already_retired_returns_conflict() {
     let err = agg
         .retire(now, tenant.actor_id)
         .expect_err("double-retire must conflict");
-    assert!(format!("{err}").contains("already retired"), "unexpected error: {err}");
+    assert!(
+        format!("{err}").contains("already retired"),
+        "unexpected error: {err}"
+    );
 }
 
 #[test]
@@ -416,8 +419,7 @@ fn fresh_paid_exceeds_cap_validation_error_fia_i_2() {
     )
     .expect_err("FIA I-2: paid > amount + discount must be rejected");
     assert!(
-        format!("{err}")
-            .contains("paid_amount_minor must be <= amount_minor + discount_minor"),
+        format!("{err}").contains("paid_amount_minor must be <= amount_minor + discount_minor"),
         "unexpected error: {err}"
     );
 }
@@ -517,7 +519,10 @@ fn build_fia(actor: UserId, amount: i64, paid: i64) -> RealFeesInstallmentAssign
 #[test]
 fn lifecycle_status_closed_round_trip_fia_i_3() {
     assert_eq!(LifecycleStatus::Closed.as_str(), "closed");
-    assert_eq!(LifecycleStatus::parse("closed"), Some(LifecycleStatus::Closed));
+    assert_eq!(
+        LifecycleStatus::parse("closed"),
+        Some(LifecycleStatus::Closed)
+    );
     assert_eq!(LifecycleStatus::parse("cl"), Some(LifecycleStatus::Closed));
 }
 
@@ -668,8 +673,7 @@ fn close_service_emits_event_fia_i_3() {
         fees_installment_assign_id: id,
     };
     let (updated, evt): (RealFeesInstallmentAssign, FeesInstallmentAssignClosed) =
-        close_fees_installment_assign(agg, cmd, &clock, &g)
-            .expect("service should succeed");
+        close_fees_installment_assign(agg, cmd, &clock, &g).expect("service should succeed");
     assert_eq!(updated.lifecycle_status, LifecycleStatus::Closed);
     assert_eq!(evt.lifecycle_status, LifecycleStatus::Closed);
     assert_eq!(evt.closed_by, actor);
@@ -710,8 +714,7 @@ fn cancel_service_emits_event_fia_i_3() {
         fees_installment_assign_id: id,
     };
     let (updated, evt): (RealFeesInstallmentAssign, FeesInstallmentAssignCancelled) =
-        cancel_fees_installment_assign(agg, cmd, &clock, &g)
-            .expect("service should succeed");
+        cancel_fees_installment_assign(agg, cmd, &clock, &g).expect("service should succeed");
     assert_eq!(updated.lifecycle_status, LifecycleStatus::Cancelled);
     assert_eq!(evt.cancelled_by, actor);
     assert_eq!(evt.lifecycle_status, LifecycleStatus::Cancelled);

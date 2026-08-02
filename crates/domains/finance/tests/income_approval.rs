@@ -69,11 +69,7 @@ fn income_id(g: &SystemIdGen, school: SchoolId) -> IncomeId {
     IncomeId::new(school, g.next_uuid())
 }
 
-fn make_income_approval(
-    g: &SystemIdGen,
-    school: SchoolId,
-    income: IncomeId,
-) -> RealIncomeApproval {
+fn make_income_approval(g: &SystemIdGen, school: SchoolId, income: IncomeId) -> RealIncomeApproval {
     let actor = g.next_user_id();
     let now = SystemClock.now();
     RealIncomeApproval::fresh(
@@ -315,8 +311,8 @@ fn create_service_produces_aggregate_and_created_event() {
         requested_by: g.next_user_id(),
     };
     let clock = SystemClock;
-    let (row, event) = create_income_approval(cmd, &clock, &g)
-        .expect("create_income_approval should succeed");
+    let (row, event) =
+        create_income_approval(cmd, &clock, &g).expect("create_income_approval should succeed");
     assert_eq!(row.id, id);
     assert_eq!(row.income_id, income);
     assert!(row.is_pending());
@@ -351,8 +347,8 @@ fn create_service_propagates_cross_school_validation() {
         requested_by: g.next_user_id(),
     };
     let clock = SystemClock;
-    let err = create_income_approval(cmd, &clock, &g)
-        .expect_err("cross-school income must be rejected");
+    let err =
+        create_income_approval(cmd, &clock, &g).expect_err("cross-school income must be rejected");
     assert!(
         matches!(err, DomainError::Validation(_)),
         "expected Validation, got {err:?}"

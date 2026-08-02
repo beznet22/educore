@@ -115,7 +115,15 @@ fn fresh_with_disabled_and_zero_values_produces_active_aggregate() {
 fn fresh_accepts_due_date_at_max_day() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
-    let setting = make_direct_fees_setting(&g, school, true, 7, 3, RealDirectFeesSetting::MAX_DUE_DAY, None);
+    let setting = make_direct_fees_setting(
+        &g,
+        school,
+        true,
+        7,
+        3,
+        RealDirectFeesSetting::MAX_DUE_DAY,
+        None,
+    );
     assert_eq!(
         setting.due_date_from_sem,
         RealDirectFeesSetting::MAX_DUE_DAY
@@ -288,9 +296,8 @@ fn update_config_with_valid_inputs_bumps_version_and_advances_timestamp() {
     let initial_updated_at = setting.updated_at;
 
     // Advance the clock by one second past initial_updated_at.
-    let advanced = Timestamp::from_datetime(
-        initial_updated_at.as_datetime() + chrono::Duration::seconds(1),
-    );
+    let advanced =
+        Timestamp::from_datetime(initial_updated_at.as_datetime() + chrono::Duration::seconds(1));
     let actor = g.next_user_id();
 
     setting
@@ -380,8 +387,7 @@ fn create_direct_fees_setting_service_produces_active_aggregate_and_event() {
         description: Some("Standard".to_owned()),
     };
     let clock = SystemClock;
-    let (setting, event) =
-        create_direct_fees_setting(cmd, &clock, &g).expect("create succeeds");
+    let (setting, event) = create_direct_fees_setting(cmd, &clock, &g).expect("create succeeds");
 
     // Aggregate side
     assert!(setting.enabled);
@@ -389,7 +395,10 @@ fn create_direct_fees_setting_service_produces_active_aggregate_and_event() {
     assert_eq!(setting.no_installment, 3);
     assert_eq!(setting.due_date_from_sem, 15);
     assert_eq!(setting.description.as_deref(), Some("Standard"));
-    assert!(setting.is_active(), "service-created aggregate must be Active");
+    assert!(
+        setting.is_active(),
+        "service-created aggregate must be Active"
+    );
     assert_eq!(setting.school_id, tenant.school_id);
     assert_eq!(setting.last_event_id, Some(event.event_id));
 

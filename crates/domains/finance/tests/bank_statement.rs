@@ -44,7 +44,7 @@ use educore_finance::commands::{
     UpdateBankStatementCommand,
 };
 use educore_finance::events::{
-    BankStatementCreated, BankStatementReversed, BankStatementRetired, BankStatementUpdated,
+    BankStatementCreated, BankStatementRetired, BankStatementReversed, BankStatementUpdated,
 };
 use educore_finance::prelude::RealBankStatement;
 use educore_finance::services::{
@@ -388,8 +388,8 @@ fn create_service_produces_aggregate_and_created_event() {
         description: Some("monthly fees".to_owned()),
     };
     let clock = SystemClock;
-    let (row, event) = create_bank_statement(cmd, &clock, &g)
-        .expect("create_bank_statement should succeed");
+    let (row, event) =
+        create_bank_statement(cmd, &clock, &g).expect("create_bank_statement should succeed");
     assert_eq!(row.id, id);
     assert_eq!(row.bank_account_id, bank);
     assert_eq!(row.statement_type, StatementType::Income);
@@ -522,8 +522,8 @@ fn reverse_service_emits_reversed_event_without_mutating_original() {
         reverse_row_id: reverse_id,
     };
     let clock = SystemClock;
-    let event = reverse_bank_statement(cmd, &clock, &g)
-        .expect("reverse_bank_statement should succeed");
+    let event =
+        reverse_bank_statement(cmd, &clock, &g).expect("reverse_bank_statement should succeed");
     assert_eq!(event.bank_statement_id, original_id);
     assert_eq!(event.reverse_row_id, reverse_id);
     assert_eq!(

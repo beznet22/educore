@@ -61,7 +61,10 @@ fn fresh_full_payload_valid_pm_i_1_companion() {
     assert!(pm.is_active());
     assert_eq!(pm.name, "Tuition Cash");
     assert_eq!(pm.kind, PaymentMethodKind::Cash);
-    assert_eq!(pm.description.as_deref(), Some("Primary cash receipt method"));
+    assert_eq!(
+        pm.description.as_deref(),
+        Some("Primary cash receipt method")
+    );
     assert_eq!(pm.school_id, school);
 }
 
@@ -190,7 +193,10 @@ fn fresh_initializes_audit_footer_with_no_last_event_id() {
         tenant.correlation_id,
     )
     .expect("PM I-1: non-empty name must construct");
-    assert!(pm.last_event_id.is_none(), "fresh() must start with no last_event_id");
+    assert!(
+        pm.last_event_id.is_none(),
+        "fresh() must start with no last_event_id"
+    );
     assert_eq!(pm.created_by, tenant.actor_id);
     assert_eq!(pm.updated_by, tenant.actor_id);
     assert_eq!(pm.created_at, now);
@@ -215,7 +221,10 @@ fn fresh_supports_all_payment_method_kinds() {
     {
         // PM I-2: gateway_id required iff kind == Gateway.
         let gateway_id = if kind == PaymentMethodKind::Gateway {
-            Some(educore_finance::prelude::PaymentGatewaySettingId::new(school, g.next_uuid()))
+            Some(educore_finance::prelude::PaymentGatewaySettingId::new(
+                school,
+                g.next_uuid(),
+            ))
         } else {
             None
         };
@@ -273,8 +282,13 @@ fn retire_already_retired_returns_conflict() {
     )
     .expect("PM I-1: non-empty name must construct");
     pm.retire(now, tenant.actor_id).expect("first retire");
-    let err = pm.retire(now, tenant.actor_id).expect_err("double-retire must conflict");
-    assert!(format!("{err}").contains("already retired"), "unexpected error: {err}");
+    let err = pm
+        .retire(now, tenant.actor_id)
+        .expect_err("double-retire must conflict");
+    assert!(
+        format!("{err}").contains("already retired"),
+        "unexpected error: {err}"
+    );
 }
 
 #[test]

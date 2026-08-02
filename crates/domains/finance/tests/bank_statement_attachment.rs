@@ -42,9 +42,7 @@ use uuid::Uuid;
 
 use educore_finance::commands::CreateBankStatementAttachmentCommand;
 use educore_finance::entities::BankStatementAttachment;
-use educore_finance::events::{
-    BankStatementAttachmentCreated, BankStatementAttachmentRetired,
-};
+use educore_finance::events::{BankStatementAttachmentCreated, BankStatementAttachmentRetired};
 use educore_finance::services::create_bank_statement_attachment;
 use educore_finance::value_objects::BankStatementId;
 
@@ -296,8 +294,8 @@ fn service_function_preserves_audit_footer_fields() {
         description: None,
     };
     let clock = SystemClock;
-    let (row, _event) = create_bank_statement_attachment(cmd, &clock, &g)
-        .expect("service should succeed");
+    let (row, _event) =
+        create_bank_statement_attachment(cmd, &clock, &g).expect("service should succeed");
     assert_eq!(row.created_at, row.updated_at);
     assert_eq!(row.created_by, row.updated_by);
     assert_eq!(row.uploaded_by, uploader);

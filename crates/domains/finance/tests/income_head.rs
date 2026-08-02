@@ -190,9 +190,8 @@ fn update_metadata_with_valid_name_bumps_version_and_advances_timestamp() {
     let initial_updated_at = head.updated_at;
 
     // Advance the clock by one second past initial_updated_at.
-    let advanced = Timestamp::from_datetime(
-        initial_updated_at.as_datetime() + chrono::Duration::seconds(1),
-    );
+    let advanced =
+        Timestamp::from_datetime(initial_updated_at.as_datetime() + chrono::Duration::seconds(1));
     let actor = g.next_user_id();
 
     head.update_metadata(
@@ -291,10 +290,7 @@ fn create_income_head_service_produces_active_aggregate_and_event() {
     // Event side
     assert_eq!(event.income_head_id, head.id);
     assert_eq!(event.name, "Sales");
-    assert_eq!(
-        event.description.as_deref(),
-        Some("Product sales income")
-    );
+    assert_eq!(event.description.as_deref(), Some("Product sales income"));
     assert_eq!(event.created_by, tenant.actor_id);
     assert_eq!(event.school_id(), tenant.school_id);
     assert_eq!(event.correlation_id, tenant.correlation_id);
