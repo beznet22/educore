@@ -422,6 +422,55 @@ impl Department {
             correlation_id,
         }
     }
+
+    /// Spec invariant Department#3: "A `Department` with
+    /// `is_system_defined` set is a system-defined department and
+    /// cannot be deleted." Returns [`DomainError::validation`] when
+    /// the department is system-defined.
+    pub fn ensure_deletable(&self) -> Result<()> {
+        if self.is_system_defined {
+            return Err(DomainError::validation(format!(
+                "department {} is system-defined and cannot be deleted",
+                self.id
+            )));
+        }
+        Ok(())
+    }
+
+    /// Spec invariant Department#2: "A `Department` cannot be deleted
+    /// while any `Staff` references it."
+    ///
+    /// The mutator delegates the cross-aggregate reference check to
+    /// a [`DepartmentReferenceChecker`] port (defined in
+    /// `crates/domains/hr/src/services.rs`). On a clean check, the
+    /// mutator flips `active_status` to `Retired` (soft-delete; the
+    /// `DepartmentDeleted` event captures the lifecycle transition
+    /// for downstream consumers). The FSM `status` field is left
+    /// unchanged so the audit history is preserved.
+    pub fn soft_delete(
+        &mut self,
+        refs: &dyn crate::services::DepartmentReferenceChecker,
+        at: Timestamp,
+        by: UserId,
+    ) -> Result<()> {
+        self.ensure_deletable()?;
+        if refs.has_assigned_staff(self.school_id, self.id) {
+            return Err(DomainError::conflict(format!(
+                "cannot delete department {}: staff members are assigned",
+                self.id
+            )));
+        }
+        if refs.has_department_head(self.school_id, self.id) {
+            return Err(DomainError::conflict(format!(
+                "cannot delete department {}: a DepartmentHead row references it",
+                self.id
+            )));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = by;
+        Ok(())
+    }
 }
 
 // =============================================================================

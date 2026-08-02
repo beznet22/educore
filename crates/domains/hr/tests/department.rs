@@ -34,9 +34,11 @@ use educore_core::clock::{SystemIdGen, TestClock};
 use educore_core::error::DomainError;
 use educore_core::ids::SchoolId;
 use educore_core::tenant::{TenantContext, UserType};
+use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 use educore_hr::prelude::*;
-use educore_hr::services::ReferenceDataUniquenessChecker;
+use educore_hr::services::{DepartmentReferenceChecker, ReferenceDataUniquenessChecker};
+use educore_hr::value_objects::DepartmentId;
 
 // =============================================================================
 // Fixtures
@@ -67,6 +69,45 @@ impl ReferenceDataUniquenessChecker for NoOpRefUniqueness {
     }
     fn leave_type_name_exists(&self, _school: SchoolId, _name: &str) -> bool {
         false
+    }
+}
+
+/// `ReferenceDataUniquenessChecker` mock that reports the
+/// supplied name as already-existing. Used to pin the
+/// duplicate-name rejection path (spec Department#1).
+struct DuplicateNameUniqueness;
+impl ReferenceDataUniquenessChecker for DuplicateNameUniqueness {
+    fn department_name_exists(&self, _school: SchoolId, _name: &str) -> bool {
+        true
+    }
+    fn designation_title_exists(&self, _school: SchoolId, _title: &str) -> bool {
+        false
+    }
+    fn leave_type_name_exists(&self, _school: SchoolId, _name: &str) -> bool {
+        false
+    }
+}
+
+/// Configurable `DepartmentReferenceChecker` mock. Each test
+/// sets `staff` / `head` to the desired boolean state.
+struct FakeDeptRefs {
+    staff: bool,
+    head: bool,
+}
+impl DepartmentReferenceChecker for FakeDeptRefs {
+    fn has_assigned_staff(
+        &self,
+        _school: SchoolId,
+        _department_id: DepartmentId,
+    ) -> bool {
+        self.staff
+    }
+    fn has_department_head(
+        &self,
+        _school: SchoolId,
+        _department_id: DepartmentId,
+    ) -> bool {
+        self.head
     }
 }
 
@@ -158,4 +199,208 @@ fn create_department_rejects_empty_name() {
         matches!(err, DomainError::Validation(_)),
         "expected Validation, got {err:?}"
     );
+}
+
+// =============================================================================
+// Wave 173 — Spec invariant Department#1 (name unique)
+// =============================================================================
+
+/// Spec Department#1: "A `Department` is uniquely named within
+/// a school." Pinned via the `DuplicateNameUniqueness` mock that
+/// reports every name as already-existing. The service must
+/// reject with `DomainError::Conflict` (not Validation — this is
+/// a uniqueness conflict, not a malformed input).
+#[test]
+fn create_department_rejects_duplicate_name_via_uniqueness_checker() {
+    let tenant = admin_context();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+
+    let err = create_department(
+        tenant,
+        "Mathematics".to_owned(),
+        None,
+        &clock,
+        &ids,
+        &DuplicateNameUniqueness,
+    )
+    .expect_err("duplicate name must fail uniqueness check");
+    assert!(
+        matches!(err, DomainError::Conflict(_)),
+        "expected Conflict, got {err:?}"
+    );
+}
+
+// =============================================================================
+// Wave 173 — Spec invariant Department#2 + Department#3
+// (delete guards)
+// =============================================================================
+
+/// Helper: build a deletable (non-system-defined) department
+/// for delete-path tests. Mirrors the service-layer pattern
+/// but skips the uniqueness check (we use `NoOpRefUniqueness`).
+fn fresh_department_for_delete(
+    tenant: &TenantContext,
+    clock: &TestClock,
+    ids: &SystemIdGen,
+) -> Department {
+    let (dept, _event) = create_department(
+        tenant.clone(),
+        "Mathematics".to_owned(),
+        None,
+        clock,
+        ids,
+        &NoOpRefUniqueness,
+    )
+    .expect("create department");
+    dept
+}
+
+/// Spec Department#2 happy path: a department with no
+/// assigned Staff and no DepartmentHead row can be
+/// soft-deleted. The mutator flips `active_status = Retired`
+/// and the service emits a `DepartmentDeleted` event with the
+/// correct `EVENT_TYPE`.
+#[test]
+fn delete_department_happy_path_when_no_references() {
+    let tenant = admin_context();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let mut dept = fresh_department_for_delete(&tenant, &clock, &ids);
+    assert!(dept.active_status.is_active());
+
+    let cmd = DeleteDepartmentCommand {
+        tenant: tenant.clone(),
+        department_id: dept.id,
+        reason: "decommissioning".to_owned(),
+    };
+    let refs = FakeDeptRefs { staff: false, head: false };
+    let event = delete_department(&mut dept, cmd, &clock, &ids, &refs)
+        .expect("clean delete must succeed");
+    assert_eq!(
+        <DepartmentDeleted as DomainEvent>::EVENT_TYPE,
+        "hr.department.deleted"
+    );
+    assert_eq!(event.department_id, dept.id);
+    assert!(!dept.active_status.is_active());
+}
+
+/// Spec Department#2 rejection: department with an assigned
+/// Staff row cannot be hard-deleted. The mutator returns
+/// `DomainError::Conflict` and does not mutate the aggregate.
+#[test]
+fn delete_department_rejects_when_staff_assigned() {
+    let tenant = admin_context();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let mut dept = fresh_department_for_delete(&tenant, &clock, &ids);
+    let original_active = dept.active_status;
+
+    let cmd = DeleteDepartmentCommand {
+        tenant: tenant.clone(),
+        department_id: dept.id,
+        reason: "rejected".to_owned(),
+    };
+    let refs = FakeDeptRefs { staff: true, head: false };
+    let err = delete_department(&mut dept, cmd, &clock, &ids, &refs)
+        .expect_err("Staff-assigned delete must fail");
+    assert!(
+        matches!(err, DomainError::Conflict(_)),
+        "expected Conflict, got {err:?}"
+    );
+    // Aggregate must be unchanged after the rejection.
+    assert_eq!(dept.active_status, original_active);
+}
+
+/// Spec Department#2 secondary check: even with no Staff
+/// assigned, a department with a DepartmentHead row cannot be
+/// hard-deleted. Same Conflict error class.
+#[test]
+fn delete_department_rejects_when_department_head_references() {
+    let tenant = admin_context();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let mut dept = fresh_department_for_delete(&tenant, &clock, &ids);
+    let original_active = dept.active_status;
+
+    let cmd = DeleteDepartmentCommand {
+        tenant: tenant.clone(),
+        department_id: dept.id,
+        reason: "rejected".to_owned(),
+    };
+    let refs = FakeDeptRefs { staff: false, head: true };
+    let err = delete_department(&mut dept, cmd, &clock, &ids, &refs)
+        .expect_err("DepartmentHead-referenced delete must fail");
+    assert!(
+        matches!(err, DomainError::Conflict(_)),
+        "expected Conflict, got {err:?}"
+    );
+    assert_eq!(dept.active_status, original_active);
+}
+
+/// Spec Department#3: system-defined departments are
+/// immutable. The service rejects the delete with
+/// `DomainError::Validation` BEFORE the cross-aggregate
+/// reference check runs (cheaper guard first).
+#[test]
+fn delete_department_rejects_system_defined() {
+    let tenant = admin_context();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let mut dept = fresh_department_for_delete(&tenant, &clock, &ids);
+    dept.is_system_defined = true;
+    let original_active = dept.active_status;
+
+    let cmd = DeleteDepartmentCommand {
+        tenant: tenant.clone(),
+        department_id: dept.id,
+        reason: "cannot delete system dept".to_owned(),
+    };
+    // Even with a clean reference checker, the system-defined
+    // guard must reject.
+    let refs = FakeDeptRefs { staff: false, head: false };
+    let err = delete_department(&mut dept, cmd, &clock, &ids, &refs)
+        .expect_err("system-defined delete must fail");
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+    assert_eq!(dept.active_status, original_active);
+}
+
+/// `Department::ensure_deletable` direct unit test: a
+/// non-system-defined department passes the guard; a
+/// system-defined one fails with Validation. Bypasses the
+/// service layer to pin the mutator in isolation.
+#[test]
+fn department_ensure_deletable_rejects_system_defined() {
+    let tenant = admin_context();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let mut dept = fresh_department_for_delete(&tenant, &clock, &ids);
+    assert!(dept.ensure_deletable().is_ok());
+    dept.is_system_defined = true;
+    let err = dept.ensure_deletable().unwrap_err();
+    assert!(
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
+    );
+}
+
+/// `Department::soft_delete` direct unit test: with a clean
+/// reference checker, the mutator flips `active_status =
+/// Retired` and updates the audit footer (`updated_at`,
+/// `updated_by`).
+#[test]
+fn department_soft_delete_flips_active_status_and_audit_footer() {
+    let tenant = admin_context();
+    let clock = TestClock::new();
+    let ids = SystemIdGen;
+    let mut dept = fresh_department_for_delete(&tenant, &clock, &ids);
+    let now = Timestamp::now();
+    let refs = FakeDeptRefs { staff: false, head: false };
+    dept.soft_delete(&refs, now, tenant.actor_id)
+        .expect("clean soft-delete must succeed");
+    assert!(!dept.active_status.is_active());
+    assert_eq!(dept.updated_by, tenant.actor_id);
 }

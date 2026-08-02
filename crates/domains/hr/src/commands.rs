@@ -352,6 +352,22 @@ impl CreateDepartmentCommand {
         vec![Capability::HrDepartmentCreate]
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeleteDepartmentCommand {
+    pub tenant: TenantContext,
+    pub department_id: DepartmentId,
+    pub reason: String,
+}
+
+
+impl DeleteDepartmentCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrDepartmentDelete]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateDesignationCommand {
     pub tenant: TenantContext,

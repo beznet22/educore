@@ -54,7 +54,8 @@ pub mod prelude {
         ChangeStaffDepartmentCommand, ChangeStaffDesignationCommand, ChangeStaffRoleCommand,
         CreateDepartmentCommand, CreateDesignationCommand, CreateLeaveTypeCommand,
         CreateSalaryTemplateCommand, CreateStaffRegistrationFieldCommand, DefineLeavePolicyCommand,
-        DeleteAssignClassTeacherCommand, DeleteStaffCommand, HireStaffCommand,
+        DeleteAssignClassTeacherCommand, DeleteDepartmentCommand, DeleteStaffCommand,
+        HireStaffCommand,
         ImportStaffBulkCommand, MarkPayrollPaidCommand, MarkStaffAttendanceCommand,
         RejectLeaveCommand, RequestLeaveCommand, RunPayrollCommand, SetHourlyRateCommand,
         StaffImportRow, SuspendStaffCommand, HR_ASSIGN_CLASS_TEACHER_COMMAND_TYPE,
@@ -106,10 +107,10 @@ pub mod prelude {
         StaffRegistrationFieldRepository, StaffRepository,
     };
     pub use crate::services::{
-        approve_leave, create_department, create_designation, create_leave_type, hire_staff,
-        request_leave, run_payroll, InMemoryPayrollPolicy, LeaveAccrualChecker,
-        LeaveAccrualService, PayrollPolicy, PayrollUniquenessChecker,
-        ReferenceDataUniquenessChecker, StaffUniquenessChecker,
+        approve_leave, create_department, create_designation, create_leave_type,
+        delete_department, hire_staff, request_leave, run_payroll, InMemoryPayrollPolicy,
+        DepartmentReferenceChecker, LeaveAccrualChecker, LeaveAccrualService, PayrollPolicy,
+        PayrollUniquenessChecker, ReferenceDataUniquenessChecker, StaffUniquenessChecker,
     };
     pub use crate::value_objects::{
         validate_address, validate_date_of_birth, validate_email, validate_leave_reason,

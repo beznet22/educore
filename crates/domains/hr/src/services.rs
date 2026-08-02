@@ -43,7 +43,7 @@ use crate::commands::{
     CreateStaffAddressCommand, CreateStaffAttendanceImportBatchCommand,
     CreateStaffBankDetailCommand, CreateStaffDocumentCommand, CreateStaffDrivingLicenseCommand,
     CreateStaffProfilePhotoCommand, CreateStaffRegistrationFieldOptionCommand,
-    CreateStaffSocialLinkCommand, RecordLeaveRequestApprovalCommand,
+    CreateStaffSocialLinkCommand, DeleteDepartmentCommand, RecordLeaveRequestApprovalCommand,
     RecordPayrollGenerateAuditCommand, RecordStaffAttendancePunchCommand,
     RecordStaffImportResolutionCommand, RecordStaffLeaveHistoryCommand,
     RecordStaffPayrollHistoryCommand, RefreshStaffLeaveBalanceCommand, RefreshStaffTimelineCommand,
@@ -52,9 +52,10 @@ use crate::commands::{
 use educore_events::domain_event::DomainEvent;
 
 use crate::events::{
-    AssignClassTeacherScopeAdded, BulkImportJobRecorded, DepartmentCreated, DepartmentHeadRecorded,
-    DesignationGradeRecorded, HourlyRateOverrideSet, LeaveApproved, LeaveDefineAdjustmentApplied,
-    LeaveRequestApprovalRecorded, LeaveRequestAttachmentRegistered, LeaveRequested,
+    AssignClassTeacherScopeAdded, BulkImportJobRecorded, DepartmentCreated, DepartmentDeleted,
+    DepartmentHeadRecorded, DesignationGradeRecorded, HourlyRateOverrideSet, LeaveApproved,
+    LeaveDefineAdjustmentApplied, LeaveRequestApprovalRecorded, LeaveRequestAttachmentRegistered,
+    LeaveRequested,
     PayrollGenerateAuditAppended, PayrollGenerated, PayrollPaymentLinkCreated, StaffAddressAdded,
     StaffAttendanceImportBatchRecorded, StaffAttendancePunchCaptured, StaffBankDetailUpserted,
     StaffCustomFieldSet, StaffDeleted, StaffDocumentRegistered, StaffDrivingLicenseRegistered,
@@ -315,6 +316,62 @@ where
 
     let event = DepartmentCreated::new(id, name, event_id, tenant.correlation_id, now);
     Ok((dept, event))
+}
+
+/// Soft-deletes a department (spec invariants Department#2 +
+/// Department#3).
+///
+/// 1. Checks `DepartmentReferenceChecker` for active Staff
+///    references and DepartmentHead rows. If any are found,
+///    returns [`DomainError::conflict`] and does not mutate
+///    the aggregate.
+/// 2. Calls [`Department::ensure_deletable`] which rejects
+///    `is_system_defined` departments (spec invariant #3).
+/// 3. Calls [`Department::soft_delete`] which flips
+///    `active_status = Retired` (preserving the row for audit
+///    purposes per spec invariants #2 + #3).
+/// 4. Returns a [`DepartmentDeleted`] event.
+///
+/// The dispatcher loads the existing `Department` aggregate by
+/// `cmd.department_id` and passes it as `&mut dept` so the
+/// mutator runs on the loaded state (mirrors the `delete_staff`
+/// pattern).
+pub fn delete_department<C, G>(
+    dept: &mut Department,
+    cmd: DeleteDepartmentCommand,
+    clock: &C,
+    ids: &G,
+    reference: &dyn DepartmentReferenceChecker,
+) -> Result<DepartmentDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    // Ensure the aggregate is deletable (spec invariant #3).
+    dept.ensure_deletable()?;
+
+    // Cross-aggregate reference checks (spec invariant #2).
+    if reference.has_assigned_staff(dept.school_id, dept.id) {
+        return Err(DomainError::conflict(format!(
+            "cannot delete department {}: staff members are assigned",
+            dept.id
+        )));
+    }
+    if reference.has_department_head(dept.school_id, dept.id) {
+        return Err(DomainError::conflict(format!(
+            "cannot delete department {}: a DepartmentHead row references it",
+            dept.id
+        )));
+    }
+
+    dept.soft_delete(reference, now, cmd.tenant.actor_id)?;
+    dept.last_event_id = Some(event_id);
+
+    let event = DepartmentDeleted::new(dept.id, event_id, cmd.tenant.correlation_id, now);
+    Ok(event)
 }
 
 /// Builds a [`Designation`] aggregate.
@@ -878,6 +935,33 @@ pub trait StaffReferenceChecker: Send + Sync {
     /// `PayrollGenerate` row in status `Generated`
     /// (i.e., not yet paid / closed).
     fn has_open_payroll(&self, school: SchoolId, staff_id: StaffId) -> bool;
+}
+
+/// Per-school `Department` reference checks. Implements spec
+/// invariant Department#2: "A `Department` cannot be deleted while
+/// any `Staff` references it." (The spec also covers
+/// `DepartmentHead` rows, which reference a department.)
+///
+/// The port returns `true` if a reference exists; the service
+/// then short-circuits with
+/// [`DomainError::conflict`](educore_core::error::DomainError::conflict).
+pub trait DepartmentReferenceChecker: Send + Sync {
+    /// Returns `true` if any active `Staff` row has this
+    /// department set as their `department_id`.
+    fn has_assigned_staff(
+        &self,
+        school: SchoolId,
+        department_id: crate::value_objects::DepartmentId,
+    ) -> bool;
+    /// Returns `true` if any `DepartmentHead` row references
+    /// this department (spec invariant Department#2 cross-check:
+    /// even if no active Staff row references it, a department
+    /// with a DepartmentHead row cannot be hard-deleted).
+    fn has_department_head(
+        &self,
+        school: SchoolId,
+        department_id: crate::value_objects::DepartmentId,
+    ) -> bool;
 }
 
 /// Per-school reference-data uniqueness checks.

@@ -18,12 +18,12 @@
 **Per audit (function-level):** 49 fns / 17 real / 6 partial / 26 stub.
 
 Initial invariant status estimate (based on function-level audit):
-- [x]: 19 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants + Wave 172: 4 PayrollGenerate invariants — I-1 gross == basic + total_earning, I-3 status FSM, I-4 paid_amount ≤ net_salary, I-6 spec-reconciliation flip to LeaveDeductionInfo uniqueness — bringing the **Staff `[x]` count to 8 of 8 spec invariants** and **PayrollGenerate `[x]` count to 6 of 6 spec invariants**)
+- [x]: 22 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants + Wave 172: 4 PayrollGenerate invariants + Wave 173: 3 Department invariants — I-1 name unique, I-2 cannot delete while Staff references, I-3 is_system_defined immutable — bringing the **Staff `[x]` count to 8 of 8 spec invariants**, **PayrollGenerate `[x]` count to 6 of 6 spec invariants**, and **Department `[x]` count to 3 of 3 spec invariants**)
 - [~]: 0
-- [ ]: 88 (remaining; targeted by the next per-aggregate wave pipeline — the other 41 HR aggregates beyond Staff and PayrollGenerate)
+- [ ]: 85 (remaining; targeted by the next per-aggregate wave pipeline — the other 40 HR aggregates beyond Staff, PayrollGenerate, and Department)
 - [N/A]: 0
 
-**Summary updated at session end (commit pending, Wave 172).** The previous `TBD/TBD/TBD` tally
+**Summary updated at session end (commit pending, Wave 173).** The previous `TBD/TBD/TBD` tally
 was a pre-Wave 32 baseline that was never refreshed. Wave 32 (`3376a4b`) added 8
 invariant enforcements: 1 Staff (phone unique per school via `StaffUniquenessChecker`),
 2 PayrollGenerate (net == gross - total_deduction - tax + monthly recurring uniqueness via
@@ -37,7 +37,7 @@ unique (existing port), I-5 joining date <= today (new `validate_joining_date_no
 I-6 status FSM (`StaffStatus::can_transition_to` + 5 mutator methods + 4 new events),
 I-7 no-hard-delete-while-referenced (new `StaffReferenceChecker` port + `delete_staff`
 service), I-8 leave quotas non-negative (new `validate_non_negative_f32_quota` +
-`Staff::set_leave_quotas`). **Wave 172 (commit pending) added 4 more invariant enforcements on
+`Staff::set_leave_quotas`). **Wave 172 added 4 more invariant enforcements on
 the PayrollGenerate aggregate**, completing the full PayrollGenerate sweep (6 of 6 spec
 invariants `[x]`): I-1 gross == basic + total_earning (`validate_gross_salary` epsilon-aware
 helper + `update_amounts` mutator), I-3 status FSM (`PayrollStatus::can_transition_to` +
@@ -45,7 +45,13 @@ helper + `update_amounts` mutator), I-3 status FSM (`PayrollStatus::can_transiti
 (`validate_paid_amount` two-check helper + `record_payment` + `mark_paid` wired), I-6
 spec-reconciliation flip (the spec #6 LeaveDeductionInfo uniqueness is enforced by the
 typed-id construction `LeaveDeductionInfoId(SchoolId, Uuid)` with `(school, staff, payroll)`
-composite key). The 88 remaining `[ ]` invariants are the next per-aggregate
+composite key). **Wave 173 added 3 more invariant enforcements on
+the Department aggregate**, completing the full Department sweep (3 of 3 spec
+invariants `[x]`): I-1 name unique (`DuplicateNameUniqueness` mock test pins the
+`create_department` rejection path), I-2 cannot delete while Staff references (new
+`DepartmentReferenceChecker` port + `Department::soft_delete` mutator + `delete_department`
+service), I-3 is_system_defined immutable (new `Department::ensure_deletable` mutator +
+service-layer guard). The 85 remaining `[ ]` invariants are the next per-aggregate
 wave pipeline's backlog.
 
 **Note:** The Wave 169 / Wave 171 Chunks 2-3 summaries claimed Wave 32 added "7 invariants" — this is an off-by-one in the prose. The actual count is 8 (1+2+3+1+1). Corrected at Wave 171 session end (commit `f743f8d`).
@@ -88,9 +94,9 @@ wave pipeline's backlog.
 - [x] I-3: carry_forward cap (Wave 32: `LeaveDefine::fresh` now returns `Result<Self>` and asserts `days <= total_days`. No callers existed yet so no migration was needed.)
 
 ### Department (3 invariants)
-- [ ] I-1: name unique per school
-- [ ] I-2: tenant anchor
-- [ ] I-3: cannot delete while staff assigned
+- [x] I-1: name unique per school (spec #1: "`ReferenceDataUniquenessChecker::department_name_exists` port in `crates/domains/hr/src/services.rs:884`; `create_department` rejects duplicates with `DomainError::Conflict` at `services.rs`; existing tests `create_department_returns_aggregate_and_event` + `create_department_rejects_empty_name` in `crates/domains/hr/tests/department.rs` exercise the unique-name path; added test `create_department_rejects_duplicate_name_via_uniqueness_checker` in Wave 173 to pin the contract via a fake checker.)
+- [x] I-2: cannot delete while Staff assigned (Wave 173 / spec #2: "`DepartmentReferenceChecker::has_assigned_staff` port in `crates/domains/hr/src/services.rs:947`; `Department::soft_delete(refs, at, by)` mutator in `crates/domains/hr/src/aggregate.rs` delegates the cross-aggregate check to the port and returns `DomainError::Conflict` if any active Staff row references this department; `delete_department` service function + `DeleteDepartmentCommand` wire the guard end-to-end; 4 new behavioral tests in `crates/domains/hr/tests/department.rs` covering happy-path delete + 3 rejection paths (Staff-assigned / DepartmentHead-referenced / system-defined). NOTE: the original checklist row title said 'Tenant anchor' which is a structural typed-id property, not a spec invariant — flipped under the spec-faithful interpretation.)
+- [x] I-3: is_system_defined cannot delete (Wave 173 / spec #3: "`Department::ensure_deletable` mutator in `crates/domains/hr/src/aggregate.rs` returns `DomainError::Validation` when `is_system_defined == true`; `delete_department` service calls it as the first guard before the cross-aggregate reference check; 4 new behavioral tests in `crates/domains/hr/tests/department.rs` cover the rejection path. NOTE: the original checklist row title said 'Cannot delete while staff assigned' which is spec #2's concern — flipped under the spec-faithful interpretation.)
 
 ### Designation (3 invariants)
 - [ ] I-1: name unique per school
@@ -333,6 +339,37 @@ than the spec.
    match spec #1 (uniqueness), #2 (non-negative fields), #3 (active while applied). For
    Wave 172 the rows stay under their existing numbering but the spec wording is recorded
    here for traceability.
+
+## Spec Reconciliation (Wave 173)
+
+**Added:** 2026-08-02 (commit pending).
+**Issue:** Wave 173 audited the **Department** checklist rows against the spec at
+`docs/specs/hr/aggregates.md`. The same drift pattern Wave 171/172 found repeats here —
+the checklist uses different numbering and different semantics than the spec.
+
+### Drift map — Department (3 invariants)
+
+| Spec # | Spec wording (`docs/specs/hr/aggregates.md`) | Checklist row | Notes |
+|---|---|---|---|
+| 1 | "A `Department` is uniquely named within a school." | I-1: name unique per school | ✅ Matches. |
+| 2 | "A `Department` cannot be deleted while any `Staff` references it." | I-2: tenant anchor | **Major drift.** Spec is a deletion guard; checklist row is a structural typed-id property. |
+| 3 | "A `Department` with `is_system_defined` set is a system-defined department and cannot be deleted." | I-3: cannot delete while staff assigned | **Major drift.** Spec is the `is_system_defined` immutable guard; checklist row is spec #2's concern. |
+
+### Resolution (Wave 173)
+
+1. **Department I-1 row stays as-is** (name unique is correctly named and enforced).
+2. **Department I-2 will be flipped to `[x]` in Wave 173 under the spec-faithful
+   interpretation**: the tenant anchor is a structural typed-id property (not a spec
+   invariant), so the row will be marked `[x]` with the evidence pointing at the spec #2
+   "cannot delete while Staff references" guard (`DepartmentReferenceChecker` port +
+   `Department::soft_delete` mutator).
+3. **Department I-3 will be flipped to `[x]` in Wave 173 under the spec-faithful
+   interpretation**: the "cannot delete while staff assigned" is spec #2's concern, so the
+   row will be marked `[x]` with the evidence pointing at the spec #3 `is_system_defined`
+   immutable guard (`Department::ensure_deletable` mutator).
+4. **Designation rows have the identical drift pattern** (same spec wording, same
+   checklist mismatch). They will be flipped under the spec-faithful interpretation in
+   Wave 174.
 
 ## Implementation Order (suggested batches)
 
