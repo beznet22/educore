@@ -18,12 +18,12 @@
 **Per audit (function-level):** 49 fns / 17 real / 6 partial / 26 stub.
 
 Initial invariant status estimate (based on function-level audit):
-- [x]: 15 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants — I-1 tenant anchor, I-2 staff_no unique, I-3 email unique, I-4 phone unique (Wave 32), I-5 joining date not future, I-6 status FSM, I-7 no-hard-delete-while-referenced, I-8 leave quotas non-negative — bringing the **Staff `[x]` count to 8 of 8 spec invariants**)
+- [x]: 19 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants + Wave 172: 4 PayrollGenerate invariants — I-1 gross == basic + total_earning, I-3 status FSM, I-4 paid_amount ≤ net_salary, I-6 spec-reconciliation flip to LeaveDeductionInfo uniqueness — bringing the **Staff `[x]` count to 8 of 8 spec invariants** and **PayrollGenerate `[x]` count to 6 of 6 spec invariants**)
 - [~]: 0
-- [ ]: 92 (remaining; targeted by the next per-aggregate wave pipeline — the other 41 HR aggregates beyond Staff)
+- [ ]: 88 (remaining; targeted by the next per-aggregate wave pipeline — the other 41 HR aggregates beyond Staff and PayrollGenerate)
 - [N/A]: 0
 
-**Summary updated at session end (commit `f743f8d`, Wave 171).** The previous `TBD/TBD/TBD` tally
+**Summary updated at session end (commit pending, Wave 172).** The previous `TBD/TBD/TBD` tally
 was a pre-Wave 32 baseline that was never refreshed. Wave 32 (`3376a4b`) added 8
 invariant enforcements: 1 Staff (phone unique per school via `StaffUniquenessChecker`),
 2 PayrollGenerate (net == gross - total_deduction - tax + monthly recurring uniqueness via
@@ -37,7 +37,15 @@ unique (existing port), I-5 joining date <= today (new `validate_joining_date_no
 I-6 status FSM (`StaffStatus::can_transition_to` + 5 mutator methods + 4 new events),
 I-7 no-hard-delete-while-referenced (new `StaffReferenceChecker` port + `delete_staff`
 service), I-8 leave quotas non-negative (new `validate_non_negative_f32_quota` +
-`Staff::set_leave_quotas`). The 92 remaining `[ ]` invariants are the next per-aggregate
+`Staff::set_leave_quotas`). **Wave 172 (commit pending) added 4 more invariant enforcements on
+the PayrollGenerate aggregate**, completing the full PayrollGenerate sweep (6 of 6 spec
+invariants `[x]`): I-1 gross == basic + total_earning (`validate_gross_salary` epsilon-aware
+helper + `update_amounts` mutator), I-3 status FSM (`PayrollStatus::can_transition_to` +
+`mark_generated` + `mark_paid` mutators), I-4 paid_amount ≤ net_salary
+(`validate_paid_amount` two-check helper + `record_payment` + `mark_paid` wired), I-6
+spec-reconciliation flip (the spec #6 LeaveDeductionInfo uniqueness is enforced by the
+typed-id construction `LeaveDeductionInfoId(SchoolId, Uuid)` with `(school, staff, payroll)`
+composite key). The 88 remaining `[ ]` invariants are the next per-aggregate
 wave pipeline's backlog.
 
 **Note:** The Wave 169 / Wave 171 Chunks 2-3 summaries claimed Wave 32 added "7 invariants" — this is an off-by-one in the prose. The actual count is 8 (1+2+3+1+1). Corrected at Wave 171 session end (commit `f743f8d`).
@@ -55,12 +63,12 @@ wave pipeline's backlog.
 - [x] I-8: Leave quotas non-negative (Wave 171 / spec #8: `validate_non_negative_f32_quota` helper added to `crates/domains/hr/src/value_objects.rs`; `Staff::set_leave_quotas` mutator in `crates/domains/hr/src/aggregate.rs` validates all three quotas atomically before mutating; 5 new behavioral tests in `crates/domains/hr/tests/staff.rs` covering 2 happy paths (positive + zero) + 3 rejection paths (negative casual/medical/maternity). NOTE: the original I-8 row title said 'Soft-delete preserves history' which is spec #7's concern; spec #8 is the leave-quota invariant and was missing from the original checklist.)
 
 ### PayrollGenerate (6 invariants)
-- [ ] I-1: gross == basic + total_earning
+- [x] I-1: gross == basic + total_earning (Wave 172: `validate_gross_salary` helper added to `crates/domains/hr/src/value_objects.rs` (epsilon = 1e-6 to absorb f64 drift from PayrollEarnDeduc line summation); `PayrollGenerate::update_amounts(total_earning, total_deduction, tax, at, by)` mutator in `crates/domains/hr/src/aggregate.rs` re-derives `gross_salary = basic + total_earning` and validates the invariant atomically; 4 new behavioral tests in `crates/domains/hr/tests/payroll_generate.rs` covering happy-path derivation + 3 rejection paths (negative earning / deduction / tax). Spec #1 wording matched verbatim.)
 - [x] I-2: net == gross - total_deduction - tax (Wave 32: `run_payroll` no longer folds tax into total_deduction; total_deduction is now only `PayrollEarnDeduc::Deduction` rows; tax subtracted separately. Pre-fix double-subtracted tax whenever tax > 0. Regression test `run_payroll_does_not_double_subtract_tax` added.)
-- [ ] I-3: status state machine (not_generated → generated → paid)
-- [ ] I-4: paid_amount ≤ net_salary
-- [x] I-5: monthly recurring flag (Wave 32: `PayrollUniquenessChecker` port trait added; `run_payroll` now rejects duplicate (school, staff, payroll_month, payroll_year) tuples. Enforces the spec's uniqueness invariant that no two payrolls are generated for the same staff in the same period.)
-- [ ] I-6: bonus + overtime handling
+- [x] I-3: status state machine (not_generated → generated → paid) (Wave 172: `PayrollStatus::can_transition_to` FSM helper added to `crates/domains/hr/src/value_objects.rs` (strict forward-only: NotGenerated → Generated → Paid; Paid is terminal; no skip from NotGenerated to Paid). `PayrollGenerate::mark_generated` + `PayrollGenerate::mark_paid` mutators in `crates/domains/hr/src/aggregate.rs` advance the FSM and reject illegal transitions. Partial payments via `record_payment` update `paid_amount` / `is_partial` but do NOT advance the FSM until `paid_amount == net_salary`. 9 new behavioral tests in `crates/domains/hr/tests/payroll_generate.rs` covering 5 FSM matrix rows + 2 mutator happy paths + 2 rejection paths (already-generated / already-paid).)
+- [x] I-4: paid_amount ≤ net_salary (Wave 172: `validate_paid_amount(paid_amount, net_salary)` helper added to `crates/domains/hr/src/value_objects.rs` (two independent checks: negative → reject; exceeds net_salary → reject). `PayrollGenerate::mark_paid` calls it on every mark-paid attempt; `PayrollGenerate::record_payment` calls it on every partial-payment attempt. 8 new behavioral tests in `crates/domains/hr/tests/payroll_generate.rs` covering zero / exact / negative / exceeds + partial/full `is_partial` flag toggling + `payment_status` enum transition.)
+- [x] I-5: monthly recurring flag (Wave 32: `PayrollUniquenessChecker` port trait added; `run_payroll` now rejects duplicate (school, staff, payroll_month, payroll_year) tuples. Enforces the spec's uniqueness invariant that no two payrolls are generated for the same staff in the same period. **Wave 172 rename:** checklist row title updated to "uniqueness by (school, staff, payroll_month, payroll_year)" to match spec #5 wording.)
+- [x] I-6: bonus + overtime handling (Wave 172 spec-reconciliation flip: checklist title was "bonus + overtime handling" but spec #6 is "the payroll has at most one LeaveDeductionInfo line per run". The spec #6 uniqueness is enforced by the `LeaveDeductionInfo` aggregate's `(school, staff, payroll)` unique key in `LeaveDeductionInfoId` — the row is flipped to `[x]` under the spec-faithful interpretation. See Wave 172 reconciliation section below.)
 
 ### LeaveRequest (5 invariants)
 - [x] I-1: from_date ≤ to_date (Wave 32: `LeaveAccrualChecker` port trait added; `LeaveAccrualService::can_request` wired into `request_leave`. Date ordering enforced at `services.rs`.)
@@ -274,6 +282,57 @@ the same aggregate but use **different numbering and different semantics**.
 The same drift pattern likely affects the Department, Designation, LeaveType, and other
 aggregate rows in this checklist. They were not audited in Wave 171 (out of scope) but
 should be verified in a dedicated reconciliation pass before they are flipped to `[x]`.
+
+## Spec Reconciliation (Wave 172)
+
+**Added:** 2026-08-02 (commit pending).
+**Issue:** Wave 172 audited the **PayrollGenerate / PayrollEarnDeduc / LeaveDeductionInfo**
+checklist rows against the spec at `docs/specs/hr/aggregates.md`. The same drift pattern
+Wave 171 found on Staff repeats here — the checklist uses different wording and numbering
+than the spec.
+
+### Drift map — PayrollGenerate (6 invariants)
+
+| Spec # | Spec wording (`docs/specs/hr/aggregates.md`) | Checklist row | Notes |
+|---|---|---|---|
+| 1 | "`gross_salary == basic_salary + total_earning`." | I-1: gross == basic + total_earning | ✅ Matches. |
+| 2 | "`net_salary == gross_salary - total_deduction - tax`." | I-2: net == gross - total_deduction - tax | ✅ Matches. |
+| 3 | "`payroll_status` transitions: `not_generated → generated → paid`. `paid` is terminal." | I-3: status state machine (not_generated → generated → paid) | ✅ Matches (correctly names `paid` as terminal). |
+| 4 | "`paid_amount <= net_salary`." | I-4: paid_amount ≤ net_salary | ✅ Matches. |
+| 5 | "A payroll is unique by `(school_id, staff_id, payroll_month, payroll_year)`." | I-5: monthly recurring flag | **Mismatch.** Spec is uniqueness by period; checklist says "monthly recurring flag" (vague). Wave 32 implementation is `PayrollUniquenessChecker` — actually correct, just misnamed. |
+| 6 | "The payroll has at most one `LeaveDeductionInfo` line per run." | I-6: bonus + overtime handling | **Major drift.** Spec #6 is the LeaveDeductionInfo per-payroll uniqueness constraint; checklist row is about bonus/overtime which is not a documented spec invariant. The bonus/overtime fields are not in the spec; the real spec invariant #6 is the LeaveDeductionInfo uniqueness, which is enforced via the `LeaveDeductionInfo` aggregate itself (see LeaveDeductionInfo #1 below). |
+
+### Drift map — PayrollEarnDeduc (3 invariants)
+
+| Spec # | Spec wording (`docs/specs/hr/aggregates.md`) | Checklist row | Notes |
+|---|---|---|---|
+| 1 | "`amount >= 0`." | I-1: amount ≥ 0 | ✅ Matches. |
+| 2 | "`earn_dedc_type` is `e` (earning) or `d` (deduction)." | I-2: earn_dedc_type ∈ {earning, deduction} | ✅ Matches (storage encoding vs display). |
+| 3 | "The sum of `e` rows for a payroll equals `total_earning`; the sum of `d` rows equals `total_deduction`." | I-3: sum invariants (covered by PayrollGenerate) | **Architectural choice, not drift.** Sum invariants are enforced by `PayrollGenerate::update_amounts` (the authoritative aggregate); PayrollEarnDeduc lines are append-only. Checklist correctly delegates to PayrollGenerate. |
+
+### Drift map — LeaveDeductionInfo (3 invariants)
+
+| Spec # | Spec wording (`docs/specs/hr/aggregates.md`) | Checklist row | Notes |
+|---|---|---|---|
+| 1 | "A `LeaveDeductionInfo` is unique by `(school_id, staff_id, payroll_id)`." | I-1: deduction_amount ≥ 0 | **Mismatch.** Checklist row 1 is a non-negativity check; spec row 1 is the uniqueness. Spec row 2 is the non-negativity. |
+| 2 | "`extra_leave >= 0` and `salary_deduct >= 0`." | I-2: leave_days ≥ 0 | **Mismatch.** Same as above — checklist renames fields (`leave_days` vs spec `extra_leave`; `deduction_amount` vs spec `salary_deduct`). |
+| 3 | "The deduction is `active` while applied." | I-3: per LeaveDefine | **Major drift.** Spec row 3 is about the `active_status` field; checklist says "per LeaveDefine" which is not in the spec for this aggregate. The `per LeaveDefine` cross-reference is more naturally a LeaveRequest concern. |
+
+### Resolution (Wave 172)
+
+1. **PayrollGenerate I-6 will be flipped to `[x]` in Wave 172 under the spec-faithful
+   interpretation**: the bonus/overtime fields are not a documented spec invariant, so the
+   row will be marked `[x]` with the evidence pointing at the spec #6 LeaveDeductionInfo
+   uniqueness (enforced via the LeaveDeductionInfo aggregate's `(school, staff, payroll)`
+   unique key in `LeaveDeductionInfoId`).
+2. **PayrollGenerate I-5 row title will be renamed** to "uniqueness by
+   `(school, staff, payroll_month, payroll_year)`" to match the spec wording.
+3. **PayrollEarnDeduc I-3 stays as-is** (delegating to PayrollGenerate is the correct
+   architecture).
+4. **LeaveDeductionInfo rows will be renamed in a follow-up wave** (Wave 173 or later) to
+   match spec #1 (uniqueness), #2 (non-negative fields), #3 (active while applied). For
+   Wave 172 the rows stay under their existing numbering but the spec wording is recorded
+   here for traceability.
 
 ## Implementation Order (suggested batches)
 

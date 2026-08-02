@@ -541,6 +541,25 @@ impl PayrollStatus {
     pub const fn is_paid(self) -> bool {
         matches!(self, Self::Paid)
     }
+
+    /// Spec invariant PayrollGenerate#3:
+    /// `payroll_status` transitions:
+    /// `NotGenerated → Generated → Paid`. `Paid` is terminal.
+    ///
+    /// This FSM is intentionally stricter than `LeaveStatus`'s —
+    /// the payroll lifecycle is a strict forward-only progression
+    /// with no cancellation branch. Partial payments advance
+    /// `paid_amount` / `is_partial` but do **not** advance the
+    /// state until `paid_amount == net_salary` (see
+    /// `PayrollGenerate::mark_paid`).
+    #[must_use]
+    #[allow(clippy::match_like_matches_macro)]
+    pub const fn can_transition_to(self, to: Self) -> bool {
+        match (self, to) {
+            (Self::NotGenerated, Self::Generated) | (Self::Generated, Self::Paid) => true,
+            _ => false,
+        }
+    }
 }
 
 /// Earn/dedc line type (encoded `e` / `d` in storage).
@@ -942,6 +961,47 @@ pub fn validate_non_negative_f32_quota(name: &str, value: f32) -> Result<()> {
     if value < 0.0 {
         return Err(DomainError::validation(format!(
             "staff {name} quota must be >= 0.0, got {value}"
+        )));
+    }
+    Ok(())
+}
+
+/// Validates that a payroll `paid_amount` is **non-negative**
+/// and does not exceed `net_salary`
+/// (spec invariant PayrollGenerate#4: "`paid_amount <= net_salary`").
+///
+/// Returns [`DomainError::validation`] when either bound is
+/// violated. The two checks are independent so the caller can
+/// surface a precise error message.
+#[must_use]
+pub fn validate_paid_amount(paid_amount: f64, net_salary: f64) -> Result<()> {
+    if paid_amount < 0.0 {
+        return Err(DomainError::validation(format!(
+            "paid_amount must be >= 0.0, got {paid_amount}"
+        )));
+    }
+    if paid_amount > net_salary {
+        return Err(DomainError::validation(format!(
+            "paid_amount {paid_amount} exceeds net_salary {net_salary}"
+        )));
+    }
+    Ok(())
+}
+
+/// Validates that a payroll `gross_salary` equals
+/// `basic_salary + total_earning` within a small epsilon
+/// (spec invariant PayrollGenerate#1:
+/// "`gross_salary == basic_salary + total_earning`").
+///
+/// Floating-point drift is allowed up to `EPSILON = 1e-6` to
+/// absorb rounding from per-line `PayrollEarnDeduc` summation.
+#[must_use]
+pub fn validate_gross_salary(basic_salary: f64, total_earning: f64, gross_salary: f64) -> Result<()> {
+    const EPSILON: f64 = 1e-6;
+    let expected = basic_salary + total_earning;
+    if (gross_salary - expected).abs() > EPSILON {
+        return Err(DomainError::validation(format!(
+            "gross_salary {gross_salary} != basic_salary {basic_salary} + total_earning {total_earning} = {expected}"
         )));
     }
     Ok(())

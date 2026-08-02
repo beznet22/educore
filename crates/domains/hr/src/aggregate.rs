@@ -1091,6 +1091,128 @@ impl PayrollGenerate {
             correlation_id,
         }
     }
+
+    /// Spec invariant PayrollGenerate#3:
+    /// transitions `NotGenerated → Generated → Paid`.
+    ///
+    /// This is the I-3 mutator. The FSM is strictly forward-only;
+    /// see [`PayrollStatus::can_transition_to`] for the allowed
+    /// transitions. `Paid` is terminal — once a payroll is paid
+    /// it cannot be re-opened.
+    pub fn mark_generated(&mut self, at: Timestamp, by: UserId) -> Result<()> {
+        if !self.payroll_status.can_transition_to(PayrollStatus::Generated) {
+            return Err(DomainError::validation(format!(
+                "cannot mark payroll {} generated from status {:?}",
+                self.id, self.payroll_status
+            )));
+        }
+        self.payroll_status = PayrollStatus::Generated;
+        self.updated_at = at;
+        self.updated_by = by;
+        Ok(())
+    }
+
+    /// Spec invariant PayrollGenerate#3:
+    /// transitions `NotGenerated → Generated → Paid`.
+    ///
+    /// `Paid` is terminal. Partial payments advance `paid_amount`
+    /// via [`Self::record_payment`] but do **not** advance the FSM
+    /// until `paid_amount == net_salary`.
+    pub fn mark_paid(
+        &mut self,
+        at: Timestamp,
+        by: UserId,
+        paid_amount: f64,
+    ) -> Result<()> {
+        crate::value_objects::validate_paid_amount(paid_amount, self.net_salary)?;
+        self.paid_amount = paid_amount;
+        self.is_partial = paid_amount < self.net_salary;
+        if paid_amount > 0.0 {
+            self.payment_status = if self.is_partial {
+                PayrollPaymentStatus::Partial
+            } else {
+                PayrollPaymentStatus::FullyPaid
+            };
+        }
+        // Only advance the FSM to Paid when the full net_salary is paid.
+        if !self.is_partial && !self.payroll_status.can_transition_to(PayrollStatus::Paid) {
+            return Err(DomainError::validation(format!(
+                "cannot mark payroll {} paid from status {:?}",
+                self.id, self.payroll_status
+            )));
+        }
+        if !self.is_partial {
+            self.payroll_status = PayrollStatus::Paid;
+        }
+        self.updated_at = at;
+        self.updated_by = by;
+        Ok(())
+    }
+
+    /// Spec invariant PayrollGenerate#4:
+    /// "`paid_amount <= net_salary`".
+    ///
+    /// Used when a partial payment is recorded before the payroll
+    /// is fully paid. Delegates to
+    /// [`crate::value_objects::validate_paid_amount`].
+    pub fn record_payment(&mut self, paid_amount: f64) -> Result<()> {
+        crate::value_objects::validate_paid_amount(paid_amount, self.net_salary)?;
+        self.paid_amount = paid_amount;
+        self.is_partial = paid_amount < self.net_salary;
+        if paid_amount > 0.0 {
+            self.payment_status = if self.is_partial {
+                PayrollPaymentStatus::Partial
+            } else {
+                PayrollPaymentStatus::FullyPaid
+            };
+        }
+        Ok(())
+    }
+
+    /// Spec invariant PayrollGenerate#1:
+    /// "`gross_salary == basic_salary + total_earning`".
+    ///
+    /// Updates `total_earning` from the sum of `PayrollEarnDeduc`
+    /// earning lines + re-derives `gross_salary` and validates the
+    /// invariant. The dispatcher passes the summed value from the
+    /// storage layer; tests can call it directly.
+    pub fn update_amounts(
+        &mut self,
+        total_earning: f64,
+        total_deduction: f64,
+        tax: f64,
+        at: Timestamp,
+        by: UserId,
+    ) -> Result<()> {
+        if total_earning < 0.0 {
+            return Err(DomainError::validation(format!(
+                "total_earning must be >= 0.0, got {total_earning}"
+            )));
+        }
+        if total_deduction < 0.0 {
+            return Err(DomainError::validation(format!(
+                "total_deduction must be >= 0.0, got {total_deduction}"
+            )));
+        }
+        if tax < 0.0 {
+            return Err(DomainError::validation(format!(
+                "tax must be >= 0.0, got {tax}"
+            )));
+        }
+        let gross_salary = self.basic_salary + total_earning;
+        crate::value_objects::validate_gross_salary(self.basic_salary, total_earning, gross_salary)?;
+        // Spec invariant PayrollGenerate#2:
+        // net_salary == gross_salary - total_deduction - tax
+        let net_salary = (gross_salary - total_deduction - tax).max(0.0);
+        self.total_earning = total_earning;
+        self.total_deduction = total_deduction;
+        self.tax = tax;
+        self.gross_salary = gross_salary;
+        self.net_salary = net_salary;
+        self.updated_at = at;
+        self.updated_by = by;
+        Ok(())
+    }
 }
 
 // =============================================================================
