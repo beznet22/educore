@@ -1316,6 +1316,73 @@ pub struct SalaryTemplate {
 }
 
 impl SalaryTemplate {
+    /// Spec invariant SalaryTemplate#1: "A `SalaryTemplate` is
+    /// unique by `(school_id, salary_grades, academic_id)`."
+    ///
+    /// The mutator delegates the cross-aggregate uniqueness
+    /// check to a [`SalaryTemplateUniquenessChecker`] port
+    /// (defined in `crates/domains/hr/src/services.rs`).
+    pub fn ensure_unique(
+        &self,
+        uniqueness: &dyn crate::services::SalaryTemplateUniquenessChecker,
+    ) -> Result<()> {
+        if uniqueness.salary_template_exists(
+            self.school_id,
+            &self.salary_grades,
+            self.academic_id,
+        ) {
+            return Err(DomainError::conflict(format!(
+                "salary template already exists for (school, salary_grades, academic) composite key"
+            )));
+        }
+        Ok(())
+    }
+
+    /// Spec invariant SalaryTemplate#2: "`gross_salary ==
+    /// salary_basic + house_rent + provident_fund` (or the
+    /// consumer-defined composition)." The mutator validates
+    /// the invariant within a small epsilon (abs drift allowed
+    /// up to 1e-6 to absorb f64 rounding).
+    pub fn ensure_gross_salary_consistent(&self) -> Result<()> {
+        const EPSILON: f64 = 1e-6;
+        let expected = self.salary_basic + self.house_rent + self.provident_fund;
+        if (self.gross_salary - expected).abs() > EPSILON {
+            return Err(DomainError::validation(format!(
+                "gross_salary {} != salary_basic {} + house_rent {} + provident_fund {} = {}",
+                self.gross_salary, self.salary_basic, self.house_rent, self.provident_fund, expected
+            )));
+        }
+        Ok(())
+    }
+
+    /// Spec invariant SalaryTemplate#3: "`net_salary ==
+    /// gross_salary - total_deduction`." Validated within a
+    /// small epsilon.
+    pub fn ensure_net_salary_consistent(&self) -> Result<()> {
+        const EPSILON: f64 = 1e-6;
+        let expected = self.gross_salary - self.total_deduction;
+        if (self.net_salary - expected).abs() > EPSILON {
+            return Err(DomainError::validation(format!(
+                "net_salary {} != gross_salary {} - total_deduction {} = {}",
+                self.net_salary, self.gross_salary, self.total_deduction, expected
+            )));
+        }
+        Ok(())
+    }
+
+    /// Spec invariant SalaryTemplate#4: "The template is
+    /// `active` while in use." The mutator returns
+    /// `DomainError::Validation` when `active_status != Active`.
+    pub fn ensure_active(&self) -> Result<()> {
+        if self.active_status != ActiveStatus::Active {
+            return Err(DomainError::validation(format!(
+                "salary template {} is not active (active_status = {:?})",
+                self.id, self.active_status
+            )));
+        }
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn fresh(
         id: SalaryTemplateId,

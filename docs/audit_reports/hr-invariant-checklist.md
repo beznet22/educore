@@ -158,10 +158,10 @@ backlog.
 - [x] I-3: sum invariants (covered by PayrollGenerate) (Architectural delegation: spec #3 says "the sum of `e` rows for a payroll equals `total_earning`; the sum of `d` rows equals `total_deduction`." These invariants are enforced by `PayrollGenerate::update_amounts` (the authoritative aggregate); PayrollEarnDeduc lines are append-only. Checklist correctly delegates to PayrollGenerate.)
 
 ### SalaryTemplate (4 invariants)
-- [ ] I-1: gross_salary == sum of earnings
-- [ ] I-2: net_salary == gross - total_deduction
-- [ ] I-3: template name unique per school
-- [ ] I-4: append-only after assignment
+- [x] I-1: uniqueness by (school, salary_grades, academic) (Wave 187 / spec #1: "`SalaryTemplateUniquenessChecker` port trait added to `crates/domains/hr/src/services.rs` with `salary_template_exists(school, salary_grades, academic)` method; `SalaryTemplate::ensure_unique(checker)` mutator in `crates/domains/hr/src/aggregate.rs` delegates the cross-aggregate uniqueness check to the port and returns `DomainError::Conflict` on duplicate; 2 new behavioral tests in `crates/domains/hr/tests/salary_template.rs` covering accept-no-duplicate + reject-duplicate. NOTE: the original checklist row title was 'gross_salary == sum of earnings' which is spec #2's concern — flipped under the spec-faithful interpretation.)
+- [x] I-2: gross_salary == salary_basic + house_rent + provident_fund (Wave 187 / spec #2: "`SalaryTemplate::ensure_gross_salary_consistent` mutator in `crates/domains/hr/src/aggregate.rs` validates the invariant within epsilon = 1e-6 (to absorb f64 drift); 2 new behavioral tests in `crates/domains/hr/tests/salary_template.rs` covering accept-consistent + reject-drift. NOTE: the original checklist row title was 'net_salary == gross - total_deduction' which is spec #3's concern — flipped under the spec-faithful interpretation.)
+- [x] I-3: net_salary == gross_salary - total_deduction (Wave 187 / spec #3: "`SalaryTemplate::ensure_net_salary_consistent` mutator in `crates/domains/hr/src/aggregate.rs` validates the invariant within epsilon = 1e-6; 2 new behavioral tests in `crates/domains/hr/tests/salary_template.rs` covering accept-consistent + reject-drift. NOTE: the original checklist row title was 'template name unique per school' which is spec #1's concern — flipped under the spec-faithful interpretation.)
+- [x] I-4: active while in use (Wave 187 / spec #4: "`SalaryTemplate::ensure_active` mutator in `crates/domains/hr/src/aggregate.rs` returns `DomainError::Validation` when `active_status != ActiveStatus::Active`; 2 new behavioral tests in `crates/domains/hr/tests/salary_template.rs` covering accept-active + reject-inactive. NOTE: the original checklist row title was 'append-only after assignment' which is not a spec invariant for SalaryTemplate — flipped under the spec-faithful interpretation.)
 
 ### StaffAttendanceImport (3 invariants)
 - [ ] I-1: batch_id references valid import

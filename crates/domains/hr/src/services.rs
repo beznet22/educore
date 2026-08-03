@@ -1264,6 +1264,24 @@ pub trait AssignClassTeacherUniquenessChecker: Send + Sync {
     ) -> bool;
 }
 
+/// Per-school `SalaryTemplate` uniqueness checks. Implements
+/// spec invariant SalaryTemplate#1: "A `SalaryTemplate` is
+/// unique by `(school_id, salary_grades, academic_id)`."
+///
+/// The port returns `true` if a duplicate exists; the service
+/// then short-circuits with
+/// [`DomainError::conflict`](educore_core::error::DomainError::conflict).
+pub trait SalaryTemplateUniquenessChecker: Send + Sync {
+    /// Returns `true` if any `SalaryTemplate` row matches the
+    /// `(school, salary_grades, academic)` composite key.
+    fn salary_template_exists(
+        &self,
+        school: SchoolId,
+        salary_grades: &str,
+        academic_id: crate::value_objects::AcademicYearId,
+    ) -> bool;
+}
+
 /// Per-school payroll uniqueness checks. Implements spec
 /// invariant PayrollGenerate#5: a `PayrollGenerate` row is
 /// unique by `(school, staff, payroll_month, payroll_year)` —
