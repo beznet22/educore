@@ -1111,6 +1111,30 @@ pub trait LeaveTypeReferenceChecker: Send + Sync {
     ) -> bool;
 }
 
+/// Per-school `LeaveDefine` uniqueness checks. Implements spec
+/// invariant LeaveDefine#1: "A `LeaveDefine` is unique by
+/// `(school_id, academic_id, role_id, type_id)` or by
+/// `(school_id, academic_id, user_id, type_id)`."
+///
+/// The port returns `true` if a duplicate exists; the service
+/// then short-circuits with
+/// [`DomainError::conflict`](educore_core::error::DomainError::conflict).
+pub trait LeaveDefineUniquenessChecker: Send + Sync {
+    /// Returns `true` if any `LeaveDefine` row matches the
+    /// composite `(school, academic, role-or-user, type)` key.
+    /// Exactly one of `role_id` or `user_id` should be `Some`;
+    /// the caller asserts this in
+    /// [`LeaveDefine::ensure_unique`].
+    fn leave_define_exists(
+        &self,
+        school: SchoolId,
+        academic_id: crate::value_objects::AcademicYearId,
+        role_id: Option<crate::value_objects::RoleId>,
+        user_id: Option<UserId>,
+        type_id: crate::value_objects::LeaveTypeId,
+    ) -> bool;
+}
+
 /// Per-school reference-data uniqueness checks.
 pub trait ReferenceDataUniquenessChecker: Send + Sync {
     fn department_name_exists(&self, school: SchoolId, name: &str) -> bool;

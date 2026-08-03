@@ -735,6 +735,50 @@ impl LeaveDefine {
             correlation_id,
         })
     }
+
+    /// Spec invariant LeaveDefine#2: "`days >= 0` and
+    /// `total_days >= 0`." Both fields are `u32`, which is
+    /// structurally non-negative. This mutator documents the
+    /// invariant for callers and tests.
+    pub fn ensure_non_negative(&self) -> Result<()> {
+        // Structural invariant: u32 is always >= 0.
+        Ok(())
+    }
+
+    /// Spec invariant LeaveDefine#1: "A `LeaveDefine` is unique
+    /// by `(school_id, academic_id, role_id, type_id)` or by
+    /// `(school_id, academic_id, user_id, type_id)`."
+    ///
+    /// The mutator delegates the cross-aggregate uniqueness
+    /// check to a [`LeaveDefineUniquenessChecker`] port
+    /// (defined in `crates/domains/hr/src/services.rs`). The
+    /// composite key is `(school, academic, role-or-user, type)`;
+    /// the dispatcher decides which key to check based on
+    /// whether `role_id` or `user_id` is set.
+    pub fn ensure_unique(
+        &self,
+        uniqueness: &dyn crate::services::LeaveDefineUniquenessChecker,
+    ) -> Result<()> {
+        let role_id = self.role_id;
+        let user_id = self.user_id;
+        if role_id.is_none() && user_id.is_none() {
+            return Err(DomainError::validation(
+                "leave define must have either role_id or user_id set",
+            ));
+        }
+        if uniqueness.leave_define_exists(
+            self.school_id,
+            self.academic_id,
+            role_id,
+            user_id,
+            self.type_id,
+        ) {
+            return Err(DomainError::conflict(format!(
+                "leave define already exists for (school, academic, role/user, type) composite key"
+            )));
+        }
+        Ok(())
+    }
 }
 
 // =============================================================================

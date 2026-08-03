@@ -111,8 +111,8 @@ pub mod prelude {
         delete_department, delete_designation, delete_leave_type, hire_staff, request_leave,
         run_payroll, InMemoryPayrollPolicy, DepartmentReferenceChecker,
         DesignationReferenceChecker, LeaveAccrualChecker, LeaveAccrualService,
-        LeaveTypeReferenceChecker, PayrollPolicy, PayrollUniquenessChecker,
-        ReferenceDataUniquenessChecker, StaffUniquenessChecker,
+        LeaveDefineUniquenessChecker, LeaveTypeReferenceChecker, PayrollPolicy,
+        PayrollUniquenessChecker, ReferenceDataUniquenessChecker, StaffUniquenessChecker,
     };
     pub use crate::value_objects::{
         validate_address, validate_date_of_birth, validate_email, validate_leave_reason,

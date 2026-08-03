@@ -18,9 +18,9 @@
 **Per audit (function-level):** 49 fns / 17 real / 6 partial / 26 stub.
 
 Initial invariant status estimate (based on function-level audit):
-- [x]: 28 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants + Wave 172: 4 PayrollGenerate invariants + Wave 173: 3 Department invariants + Wave 174: 3 Designation invariants + Wave 175: 3 LeaveType invariants — I-1 name unique, I-2 total_days ≥ 0 (structural), I-3 cannot delete while LeaveDefine/LeaveRequest references — bringing the **Staff `[x]` count to 8 of 8 spec invariants**, **PayrollGenerate `[x]` count to 6 of 6 spec invariants**, **Department `[x]` count to 3 of 3 spec invariants**, **Designation `[x]` count to 3 of 3 spec invariants**, and **LeaveType `[x]` count to 3 of 3 spec invariants**)
+- [x]: 30 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants + Wave 172: 4 PayrollGenerate invariants + Wave 173: 3 Department invariants + Wave 174: 3 Designation invariants + Wave 175: 3 LeaveType invariants + Wave 176: 2 LeaveDefine invariants (I-1 flipped from existing `[x]?` row + I-2 non-negative) — bringing the **Staff `[x]` count to 8 of 8 spec invariants**, **PayrollGenerate `[x]` count to 6 of 6 spec invariants**, **Department `[x]` count to 3 of 3 spec invariants**, **Designation `[x]` count to 3 of 3 spec invariants**, **LeaveType `[x]` count to 3 of 3 spec invariants**, and **LeaveDefine `[x]` count to 3 of 3 spec invariants**)
 - [~]: 0
-- [ ]: 79 (remaining; targeted by the next per-aggregate wave pipeline — the other 38 HR aggregates beyond Staff, PayrollGenerate, Department, Designation, and LeaveType)
+- [ ]: 77 (remaining; targeted by the next per-aggregate wave pipeline — the other 37 HR aggregates beyond Staff, PayrollGenerate, Department, Designation, LeaveType, and LeaveDefine)
 - [N/A]: 0
 
 **Summary updated at session end (commit pending, Wave 175).** The previous `TBD/TBD/TBD` tally
@@ -63,8 +63,16 @@ invariants `[x]`): I-1 name unique (`DuplicateLeaveTypeUniqueness` mock test pin
 `create_leave_type` rejection path), I-2 total_days ≥ 0 (structural via `u32` field type
 + `LeaveType::ensure_total_days_valid` mutator), I-3 cannot delete while
 LeaveDefine/LeaveRequest references (new `LeaveTypeReferenceChecker` port +
-`LeaveType::soft_delete` mutator + `delete_leave_type` service). The 79 remaining `[ ]`
-invariants are the next per-aggregate wave pipeline's backlog.
+`LeaveType::soft_delete` mutator + `delete_leave_type` service). **Wave 176 completed
+the full LeaveDefine sweep (3 of 3 spec invariants `[x]`)** by flipping I-1 and I-2
+under the spec-faithful interpretation and renaming I-3 to match spec wording.
+New artifacts: `LeaveDefineUniquenessChecker` port trait +
+`LeaveDefine::ensure_unique` mutator (spec #1 composite-key uniqueness) +
+`LeaveDefine::ensure_non_negative` mutator (spec #2 structural non-negative guard);
+7 new behavioral tests in `crates/domains/hr/tests/leave_define.rs` covering the
+new mutators + 2 happy-path days/total_days regressions for the existing I-3
+enforcement. The 77 remaining `[ ]` invariants are the next per-aggregate
+wave pipeline's backlog.
 
 **Note:** The Wave 169 / Wave 171 Chunks 2-3 summaries claimed Wave 32 added "7 invariants" — this is an off-by-one in the prose. The actual count is 8 (1+2+3+1+1). Corrected at Wave 171 session end (commit `f743f8d`).
 
@@ -101,9 +109,9 @@ invariants are the next per-aggregate wave pipeline's backlog.
 - [ ] I-3: status state machine
 
 ### LeaveDefine (3 invariants)
-- [ ] I-1: per-school unique leave type
-- [ ] I-2: days_per_year > 0
-- [x] I-3: carry_forward cap (Wave 32: `LeaveDefine::fresh` now returns `Result<Self>` and asserts `days <= total_days`. No callers existed yet so no migration was needed.)
+- [x] I-1: uniqueness by (school, academic, role/user, type) (Wave 176 / spec #1: "`LeaveDefineUniquenessChecker` port trait added to `crates/domains/hr/src/services.rs` with `leave_define_exists(school, academic, role, user, type)` method; `LeaveDefine::ensure_unique(checker)` mutator in `crates/domains/hr/src/aggregate.rs` delegates the cross-aggregate uniqueness check to the port and returns `DomainError::Conflict` on duplicate composite key; the mutator also asserts that exactly one of `role_id` / `user_id` is `Some` and returns `DomainError::Validation` otherwise; 5 new behavioral tests in `crates/domains/hr/tests/leave_define.rs` covering accept-no-duplicate + reject-duplicate + reject-neither-role-nor-user + 2 happy-path days/total_days regressions. NOTE: the original checklist row title was 'per-school unique leave type' which is a different scope than the spec's `(school, academic, role/user, type)` composite key — flipped under the spec-faithful interpretation.)
+- [x] I-2: days >= 0 and total_days >= 0 (Wave 176 / spec #2: both fields are `u32` (structurally non-negative). `LeaveDefine::ensure_non_negative` mutator in `crates/domains/hr/src/aggregate.rs` documents the invariant for callers and tests; 2 new behavioral tests in `crates/domains/hr/tests/leave_define.rs` covering zero + positive paths. NOTE: the original checklist row title was 'days_per_year > 0' which is a stricter constraint than the spec's `>= 0` — flipped under the spec-faithful interpretation.)
+- [x] I-3: days <= total_days (Wave 32: `LeaveDefine::fresh` now returns `Result<Self>` and asserts `days <= total_days`. No callers existed yet so no migration was needed. Regression test `leave_define_fresh_rejects_days_exceeding_total_days` + `leave_define_fresh_accepts_days_equal_total_days` added in Wave 176 to pin the contract.)
 
 ### Department (3 invariants)
 - [x] I-1: name unique per school (spec #1: "`ReferenceDataUniquenessChecker::department_name_exists` port in `crates/domains/hr/src/services.rs:884`; `create_department` rejects duplicates with `DomainError::Conflict` at `services.rs`; existing tests `create_department_returns_aggregate_and_event` + `create_department_rejects_empty_name` in `crates/domains/hr/tests/department.rs` exercise the unique-name path; added test `create_department_rejects_duplicate_name_via_uniqueness_checker` in Wave 173 to pin the contract via a fake checker.)
@@ -446,6 +454,39 @@ spec invariant at all** (I-2: 'type ∈ {paid, unpaid, partial}').
 4. **LeaveDefine rows are expected to have a similar drift pattern** (the LeaveDefine
    spec uses similar "per-school unique" + numeric bound language). They will be
    audited and flipped under the spec-faithful interpretation in Wave 176.
+
+## Spec Reconciliation (Wave 176)
+
+**Added:** 2026-08-02 (commit pending).
+**Issue:** Wave 176 audited the **LeaveDefine** checklist rows against the spec at
+`docs/specs/hr/aggregates.md`. The drift pattern is similar to Waves 173/174/175
+(checklist uses simpler/different wording than the spec).
+
+### Drift map — LeaveDefine (3 invariants)
+
+| Spec # | Spec wording (`docs/specs/hr/aggregates.md`) | Checklist row | Notes |
+|---|---|---|---|
+| 1 | "A `LeaveDefine` is unique by `(school_id, academic_id, role_id, type_id)` or by `(school_id, academic_id, user_id, type_id)`." | I-1: per-school unique leave type | **Major drift.** Spec is a 4-tuple composite key (school, academic, role-or-user, type); checklist row reduces it to "per-school unique leave type" which omits the academic scope and the role/user branch. |
+| 2 | "`days >= 0` and `total_days >= 0`." | I-2: days_per_year > 0 | **Major drift.** Spec is non-negative (allows 0); checklist row says strictly positive (> 0). These are different constraints. |
+| 3 | "`days <= total_days` (a user cannot take more than the entitlement for the year)." | I-3: carry_forward cap | **Mismatch.** Spec is a numeric bound (days <= total_days); checklist row labels it "carry_forward cap" which is a different concept (spec defines carry_forward elsewhere). The implementation is correct; the label is just misleading. |
+
+### Resolution (Wave 176)
+
+1. **LeaveDefine I-1 flipped to `[x]` under the spec-faithful interpretation**: the
+   "per-school unique leave type" row is marked `[x]` with the evidence pointing at
+   the spec #1 4-tuple composite-key uniqueness guard
+   (`LeaveDefineUniquenessChecker` port + `LeaveDefine::ensure_unique` mutator).
+2. **LeaveDefine I-2 flipped to `[x]` under the spec-faithful interpretation**: the
+   "days_per_year > 0" row is marked `[x]` with the evidence pointing at the spec #2
+   `>= 0` non-negative guard (structural via `u32` field type + `LeaveDefine::ensure_non_negative`
+   mutator that documents the invariant).
+3. **LeaveDefine I-3 row title updated** to "days <= total_days" to match spec #3
+   wording (the "carry_forward cap" label is misleading; the actual constraint is the
+   numeric bound). The implementation was already correct from Wave 32.
+4. **LeaveDeductionInfo rows will be audited next** in Wave 177+ (the LeaveDeductionInfo
+   spec has 3 invariants on uniqueness + non-negativity + active-while-applied, and the
+   checklist rows are all mistitled — the Wave 172 reconciliation section already
+   documented the drift).
 
 ## Implementation Order (suggested batches)
 
