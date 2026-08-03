@@ -114,6 +114,7 @@ pub mod prelude {
         LeaveAccrualService, LeaveDeductionInfoUniquenessChecker,
         LeaveDefineUniquenessChecker, LeaveRequestUniquenessChecker,
         LeaveTypeReferenceChecker, PayrollPolicy, PayrollUniquenessChecker,
+        StaffAttendanceUniquenessChecker,
         ReferenceDataUniquenessChecker, StaffUniquenessChecker,
     };
     pub use crate::value_objects::{

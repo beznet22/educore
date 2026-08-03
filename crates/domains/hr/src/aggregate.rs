@@ -996,6 +996,51 @@ pub struct StaffAttendance {
 }
 
 impl StaffAttendance {
+    /// Spec invariant StaffAttendance#1: "A `StaffAttendance` is
+    /// unique by `(school_id, staff_id, attendance_date,
+    /// academic_id)`." Note: the struct doesn't have an
+    /// `academic_id` field directly — the composite key uses
+    /// the staff's current academic year. The mutator delegates
+    /// the cross-aggregate uniqueness check to a
+    /// [`StaffAttendanceUniquenessChecker`] port (defined in
+    /// `crates/domains/hr/src/services.rs`).
+    pub fn ensure_unique(
+        &self,
+        uniqueness: &dyn crate::services::StaffAttendanceUniquenessChecker,
+    ) -> Result<()> {
+        if uniqueness.staff_attendance_exists(
+            self.school_id,
+            self.staff_id,
+            self.attendance_date,
+        ) {
+            return Err(DomainError::conflict(format!(
+                "staff attendance already exists for (school, staff, date) composite key"
+            )));
+        }
+        Ok(())
+    }
+
+    /// Spec invariant StaffAttendance#3: "`attendance_date` is
+    /// required." This is **structural**: the field is
+    /// `NaiveDate` (non-Optional). The mutator documents the
+    /// invariant for callers and tests.
+    pub fn ensure_date_required(&self) -> Result<()> {
+        // Structural invariant: NaiveDate is always present.
+        Ok(())
+    }
+
+    /// Spec invariant StaffAttendance#2: "`attendance_type` is
+    /// one of `P` (Present), `L` (Late), `A` (Absent), `H`
+    /// (Holiday), `F` (Half Day)." The [`AttendanceType`]
+    /// enum has exactly these 5 variants and [`AttendanceType::parse`]
+    /// rejects unknown values at the storage boundary. The
+    /// mutator is a no-op that documents the invariant for
+    /// callers.
+    pub fn ensure_attendance_type_valid(&self) -> Result<()> {
+        // Structural invariant: enum is exhaustive.
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn fresh(
         id: StaffAttendanceId,
@@ -1530,6 +1575,29 @@ impl PayrollEarnDeduc {
             last_event_id: None,
             correlation_id,
         }
+    }
+
+    /// Spec invariant PayrollEarnDeduc#1: "`amount >= 0`."
+    /// `amount` is `f64`, so it needs a runtime validator.
+    pub fn ensure_amount_non_negative(&self) -> Result<()> {
+        if self.amount < 0.0 {
+            return Err(DomainError::validation(format!(
+                "payroll earn/deduc amount must be >= 0.0, got {}",
+                self.amount
+            )));
+        }
+        Ok(())
+    }
+
+    /// Spec invariant PayrollEarnDeduc#2: "`earn_dedc_type` is
+    /// `e` (earning) or `d` (deduction)." The [`EarnDeducType`]
+    /// enum has exactly these 2 variants and [`EarnDeducType::parse`]
+    /// rejects unknown values at the storage boundary. The
+    /// mutator is a no-op that documents the invariant for
+    /// callers.
+    pub fn ensure_earn_dedc_type_valid(&self) -> Result<()> {
+        // Structural invariant: enum is exhaustive.
+        Ok(())
     }
 }
 

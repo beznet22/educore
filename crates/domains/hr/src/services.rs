@@ -1222,6 +1222,29 @@ pub trait ReferenceDataUniquenessChecker: Send + Sync {
     fn leave_type_name_exists(&self, school: SchoolId, name: &str) -> bool;
 }
 
+/// Per-school `StaffAttendance` uniqueness checks. Implements
+/// spec invariant StaffAttendance#1: "A `StaffAttendance` is
+/// unique by `(school_id, staff_id, attendance_date,
+/// academic_id)`." The academic_id is resolved by the
+/// dispatcher from the staff's current academic year; the
+/// port signature takes the (school, staff, date) triple
+/// which is the operational uniqueness key for "one row per
+/// staff per day".
+///
+/// The port returns `true` if a duplicate exists; the service
+/// then short-circuits with
+/// [`DomainError::conflict`](educore_core::error::DomainError::conflict).
+pub trait StaffAttendanceUniquenessChecker: Send + Sync {
+    /// Returns `true` if any `StaffAttendance` row matches
+    /// the `(school, staff, attendance_date)` triple.
+    fn staff_attendance_exists(
+        &self,
+        school: SchoolId,
+        staff_id: crate::value_objects::StaffId,
+        attendance_date: chrono::NaiveDate,
+    ) -> bool;
+}
+
 /// Per-school payroll uniqueness checks. Implements spec
 /// invariant PayrollGenerate#5: a `PayrollGenerate` row is
 /// unique by `(school, staff, payroll_month, payroll_year)` —
