@@ -944,25 +944,42 @@ finance_aggregate_stub! {
 }
 finance_aggregate_stub! {
     /// FmFeesGroup (Phase 7 Workstream G).
+    ///
+    /// **Legacy stub.** Migrate to `RealFmFeesGroup` (Wave 66).
+    /// The `Fm` prefix is the legacy Fees Module prefix from the
+    /// Schoolify/InfixEdu project; per AGENTS.md § "Project
+    /// Identity", no legacy names are permitted in new code.
+    /// This stub is retained only for backward compatibility with
+    /// downstream code that referenced the type by name during
+    /// Phase 7. See `docs/audit_reports/stub-legacy-remediation.md`
+    /// §4 (Legacy `Fm*` Prefix) for the elimination plan.
     pub struct FmFeesGroup { _id: () }
 }
 finance_aggregate_stub! {
     /// FmFeesType (Phase 7 Workstream G).
-    /// Real aggregate: RealFmFeesType (Wave 129). The stub is kept
-    /// only to avoid breaking downstream code that referenced
+    ///
+    /// **Legacy stub.** Migrate to `RealFmFeesType` (Wave 129).
+    /// Real aggregate: `RealFmFeesType`. The stub is kept only
+    /// to avoid breaking downstream code that referenced
     /// `FmFeesType` as a type name during Phase 7.
     pub struct FmFeesType { _id: () }
 }
 finance_aggregate_stub! {
     /// FmFeesInvoice (Phase 7 Workstream G).
+    ///
+    /// **Legacy stub.** Migrate to `RealFmFeesInvoice` (Wave 129).
     pub struct FmFeesInvoice { _id: () }
 }
 finance_aggregate_stub! {
     /// FmFeesInvoiceChild (Phase 7 Workstream G).
+    ///
+    /// **Legacy stub.** Migrate to `RealFmFeesInvoiceChild` (Wave 129).
     pub struct FmFeesInvoiceChild { _id: () }
 }
 finance_aggregate_stub! {
     /// FmFeesInvoiceSetting (Phase 7 Workstream G).
+    ///
+    /// **Legacy stub.** Migrate to `RealFmFeesInvoiceSetting` (Wave 129).
     pub struct FmFeesInvoiceSetting { _id: () }
 }
 // `RealFmFeesTransaction` for new code; the stub is kept only
@@ -970,14 +987,20 @@ finance_aggregate_stub! {
 // `FmFeesTransaction` as a type name during Phase 7.
 finance_aggregate_stub! {
     /// FmFeesTransaction (Phase 7 Workstream G).
+    ///
+    /// **Legacy stub.** Migrate to `RealFmFeesTransaction`.
     pub struct FmFeesTransaction { _id: () }
 }
 finance_aggregate_stub! {
     /// FmFeesTransactionChild (Phase 7 Workstream G).
+    ///
+    /// **Legacy stub.** Migrate to `RealFmFeesTransactionChild`.
     pub struct FmFeesTransactionChild { _id: () }
 }
 finance_aggregate_stub! {
     /// FmFeesWeaver (Phase 7 Workstream G).
+    ///
+    /// **Legacy stub.** Migrate to `RealFmFeesWeaver`.
     pub struct FmFeesWeaver { _id: () }
 }
 finance_aggregate_stub! {
