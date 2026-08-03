@@ -1307,6 +1307,40 @@ pub struct HourlyRate {
 }
 
 impl HourlyRate {
+    /// Spec invariant HourlyRate#1: "An `HourlyRate` is
+    /// unique by `(school_id, grade, academic_id)`."
+    ///
+    /// The mutator delegates the cross-aggregate uniqueness
+    /// check to an [`HourlyRateUniquenessChecker`] port
+    /// (defined in `crates/domains/hr/src/services.rs`).
+    pub fn ensure_unique(
+        &self,
+        uniqueness: &dyn crate::services::HourlyRateUniquenessChecker,
+    ) -> Result<()> {
+        if uniqueness.hourly_rate_exists(
+            self.school_id,
+            &self.grade,
+            self.academic_id,
+        ) {
+            return Err(DomainError::conflict(format!(
+                "hourly rate already exists for (school, grade, academic) composite key"
+            )));
+        }
+        Ok(())
+    }
+
+    /// Spec invariant HourlyRate#2: "`rate > 0`." The mutator
+    /// returns `DomainError::Validation` when `rate <= 0`.
+    pub fn ensure_rate_positive(&self) -> Result<()> {
+        if self.rate <= 0.0 {
+            return Err(DomainError::validation(format!(
+                "hourly rate must be > 0.0, got {}",
+                self.rate
+            )));
+        }
+        Ok(())
+    }
+
     pub fn fresh(
         id: HourlyRateId,
         grade: String,

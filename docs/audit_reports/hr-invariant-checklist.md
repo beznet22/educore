@@ -189,8 +189,8 @@ backlog.
 - [ ] I-2: unique per school
 
 ### HourlyRate (2 invariants)
-- [x] I-1: rate ≥ 0 (Wave 32: `HourlyRateManagementService::validate_rate` now rejects `rate <= 0.0` (strict positivity) per the spec's 'rate > 0' wording. Existing happy-path test updated from `is_ok()` to `is_err()` for the zero boundary.)
-- [ ] I-2: effective_date ordering
+- [x] I-1: uniqueness by (school, grade, academic) (Wave 189 / spec #1: "`HourlyRateUniquenessChecker` port trait added to `crates/domains/hr/src/services.rs` with `hourly_rate_exists(school, grade, academic)` method; `HourlyRate::ensure_unique(checker)` mutator in `crates/domains/hr/src/aggregate.rs` delegates the cross-aggregate uniqueness check to the port and returns `DomainError::Conflict` on duplicate; 2 new behavioral tests in `crates/domains/hr/tests/hourly_rate.rs` covering accept-no-duplicate + reject-duplicate. NOTE: the original checklist row title was 'rate ≥ 0' which is spec #2's concern — flipped under the spec-faithful interpretation. Wave 32's `HourlyRateManagementService::validate_rate` covers spec #2's runtime check.)
+- [x] I-2: rate > 0 (Wave 189 / spec #2: "`HourlyRate::ensure_rate_positive` mutator in `crates/domains/hr/src/aggregate.rs` returns `DomainError::Validation` when `rate <= 0.0`; 3 new behavioral tests in `crates/domains/hr/tests/hourly_rate.rs` covering positive + zero-rejection + negative-rejection paths. Wave 32's `HourlyRateManagementService::validate_rate` also enforces this check at the service layer. NOTE: the original checklist row title was 'effective_date ordering' which is not a spec invariant for HourlyRate — flipped under the spec-faithful interpretation.)
 
 ### HourlyRateOverride (2 invariants)
 - [ ] I-1: override rate ≥ 0

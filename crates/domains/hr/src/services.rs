@@ -1304,6 +1304,24 @@ pub trait StaffAttendanceImportUniquenessChecker: Send + Sync {
     ) -> bool;
 }
 
+/// Per-school `HourlyRate` uniqueness checks. Implements spec
+/// invariant HourlyRate#1: "An `HourlyRate` is unique by
+/// `(school_id, grade, academic_id)`."
+///
+/// The port returns `true` if a duplicate exists; the service
+/// then short-circuits with
+/// [`DomainError::conflict`](educore_core::error::DomainError::conflict).
+pub trait HourlyRateUniquenessChecker: Send + Sync {
+    /// Returns `true` if any `HourlyRate` row matches the
+    /// `(school, grade, academic)` composite key.
+    fn hourly_rate_exists(
+        &self,
+        school: SchoolId,
+        grade: &str,
+        academic_id: crate::value_objects::AcademicYearId,
+    ) -> bool;
+}
+
 /// Per-school payroll uniqueness checks. Implements spec
 /// invariant PayrollGenerate#5: a `PayrollGenerate` row is
 /// unique by `(school, staff, payroll_month, payroll_year)` —
