@@ -23,6 +23,7 @@ use educore_core::error::{DomainError, Result};
 use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 use educore_core::value_objects::Timestamp;
+use educore_dispatcher::CommandDispatcher;
 use educore_rbac::ids::RoleId;
 
 use crate::aggregate::{
@@ -2141,6 +2142,61 @@ impl HourlyRateManagementService {
     pub fn is_rate_change(old_rate: f64, new_rate: f64, epsilon: f64) -> bool {
         (old_rate - new_rate).abs() > epsilon
     }
+}
+
+// =============================================================================
+// Dispatcher wrappers (Wave 205+)
+//
+// Each wrapper runs the plain service function through the
+// production `CommandDispatcher::dispatch` pipeline:
+// RBAC check → begin txn → idempotency lookup → service call
+// → outbox write → audit row → idempotency record → bus publish.
+//
+// Capability strings derive from the Wave 205 CommandBounds
+// impls. Cloning the command inside the closure satisfies the
+// borrow checker (dispatch borrows &cmd while the closure
+// moves cmd).
+// =============================================================================
+
+// Commands defined in services.rs (HR convention differs from
+// academic — some commands live alongside their service fns).
+// Only commands not already defined in commands.rs.
+impl educore_dispatcher::CommandBounds for HireStaffCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "hr.staff.hire" }
+    fn idempotency_key(&self) -> Option<educore_core::ids::IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "hire" }
+    fn target_type(&self) -> &'static str { "staff" }
+}
+impl educore_dispatcher::CommandBounds for RunPayrollCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "hr.payroll.run" }
+    fn idempotency_key(&self) -> Option<educore_core::ids::IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "run" }
+    fn target_type(&self) -> &'static str { "payroll" }
+}
+
+/// Dispatcher wrapper for [`hire_staff`].
+///
+/// Wraps the HR staff-hire command through the full
+/// `CommandDispatcher::dispatch` pipeline.
+pub async fn dispatch_hire_staff<C, G>(
+    dispatcher: &CommandDispatcher,
+    cmd: HireStaffCommand,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn StaffUniquenessChecker,
+) -> Result<(Staff, StaffRegistered)>
+where
+    C: Clock + ?Sized + Send + Sync,
+    G: IdGenerator + ?Sized + Send + Sync,
+{
+    use educore_dispatcher::CommandBounds as _;
+    dispatcher
+        .dispatch(&cmd, &["hr.staff.hire"], || async {
+            hire_staff::<C, G>(cmd.clone(), clock, ids, uniqueness)
+        })
+        .await
 }
 
 #[cfg(test)]
