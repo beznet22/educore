@@ -619,6 +619,49 @@ impl LeaveType {
             correlation_id,
         }
     }
+
+    /// Spec invariant LeaveType#3: "`total_days >= 0`." This is
+    /// structurally enforced by the `u32` field type (Rust's
+    /// unsigned 32-bit integer cannot hold a negative value),
+    /// so the mutator is a no-op that documents the invariant
+    /// for callers and tests.
+    pub fn ensure_total_days_valid(&self) -> Result<()> {
+        // Structural invariant: u32 is always >= 0.
+        Ok(())
+    }
+
+    /// Spec invariant LeaveType#2: "A `LeaveType` cannot be deleted
+    /// while any `LeaveDefine` or `LeaveRequest` references it."
+    ///
+    /// The mutator delegates the cross-aggregate reference check to
+    /// a [`LeaveTypeReferenceChecker`] port (defined in
+    /// `crates/domains/hr/src/services.rs`). On a clean check, the
+    /// mutator flips `active_status` to `Retired` (soft-delete; the
+    /// `LeaveTypeDeleted` event captures the lifecycle transition
+    /// for downstream consumers).
+    pub fn soft_delete(
+        &mut self,
+        refs: &dyn crate::services::LeaveTypeReferenceChecker,
+        at: Timestamp,
+        by: UserId,
+    ) -> Result<()> {
+        if refs.has_leave_define(self.school_id, self.id) {
+            return Err(DomainError::conflict(format!(
+                "cannot delete leave type {}: LeaveDefine rows reference it",
+                self.id
+            )));
+        }
+        if refs.has_leave_request(self.school_id, self.id) {
+            return Err(DomainError::conflict(format!(
+                "cannot delete leave type {}: LeaveRequest rows reference it",
+                self.id
+            )));
+        }
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = by;
+        Ok(())
+    }
 }
 
 // =============================================================================

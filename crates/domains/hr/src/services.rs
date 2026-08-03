@@ -44,7 +44,7 @@ use crate::commands::{
     CreateStaffBankDetailCommand, CreateStaffDocumentCommand, CreateStaffDrivingLicenseCommand,
     CreateStaffProfilePhotoCommand, CreateStaffRegistrationFieldOptionCommand,
     CreateStaffSocialLinkCommand, DeleteDepartmentCommand, DeleteDesignationCommand,
-    RecordLeaveRequestApprovalCommand, RecordPayrollGenerateAuditCommand,
+    DeleteLeaveTypeCommand, RecordLeaveRequestApprovalCommand, RecordPayrollGenerateAuditCommand,
     RecordStaffAttendancePunchCommand, RecordStaffImportResolutionCommand,
     RecordStaffLeaveHistoryCommand, RecordStaffPayrollHistoryCommand,
     RefreshStaffLeaveBalanceCommand, RefreshStaffTimelineCommand,
@@ -56,7 +56,7 @@ use crate::events::{
     AssignClassTeacherScopeAdded, BulkImportJobRecorded, DepartmentCreated, DepartmentDeleted,
     DepartmentHeadRecorded, DesignationDeleted, DesignationGradeRecorded, HourlyRateOverrideSet,
     LeaveApproved, LeaveDefineAdjustmentApplied, LeaveRequestApprovalRecorded,
-    LeaveRequestAttachmentRegistered, LeaveRequested,
+    LeaveRequestAttachmentRegistered, LeaveRequested, LeaveTypeDeleted,
     PayrollGenerateAuditAppended, PayrollGenerated, PayrollPaymentLinkCreated, StaffAddressAdded,
     StaffAttendanceImportBatchRecorded, StaffAttendancePunchCaptured, StaffBankDetailUpserted,
     StaffCustomFieldSet, StaffDeleted, StaffDocumentRegistered, StaffDrivingLicenseRegistered,
@@ -517,6 +517,61 @@ where
         now,
     );
     Ok((lt, event))
+}
+
+/// Soft-deletes a leave type (spec invariant LeaveType#2).
+///
+/// 1. Calls [`LeaveType::ensure_total_days_valid`] (structural
+///    invariant — `u32` is always `>= 0`).
+/// 2. Checks `LeaveTypeReferenceChecker` for `LeaveDefine`
+///    and `LeaveRequest` references. If any are found, returns
+///    [`DomainError::conflict`] and does not mutate the
+///    aggregate.
+/// 3. Calls [`LeaveType::soft_delete`] which flips
+///    `active_status = Retired` (preserving the row for audit
+///    purposes per spec invariant #2).
+/// 4. Returns a [`LeaveTypeDeleted`] event.
+///
+/// The dispatcher loads the existing `LeaveType` aggregate by
+/// `cmd.leave_type_id` and passes it as `&mut lt` so the
+/// mutator runs on the loaded state (mirrors the
+/// `delete_department` / `delete_designation` pattern).
+pub fn delete_leave_type<C, G>(
+    lt: &mut LeaveType,
+    cmd: DeleteLeaveTypeCommand,
+    clock: &C,
+    ids: &G,
+    reference: &dyn LeaveTypeReferenceChecker,
+) -> Result<LeaveTypeDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    // Structural invariant check (spec invariant #3).
+    lt.ensure_total_days_valid()?;
+
+    // Cross-aggregate reference checks (spec invariant #2).
+    if reference.has_leave_define(lt.school_id, lt.id) {
+        return Err(DomainError::conflict(format!(
+            "cannot delete leave type {}: LeaveDefine rows reference it",
+            lt.id
+        )));
+    }
+    if reference.has_leave_request(lt.school_id, lt.id) {
+        return Err(DomainError::conflict(format!(
+            "cannot delete leave type {}: LeaveRequest rows reference it",
+            lt.id
+        )));
+    }
+
+    lt.soft_delete(reference, now, cmd.tenant.actor_id)?;
+    lt.last_event_id = Some(event_id);
+
+    let event = LeaveTypeDeleted::new(lt.id, event_id, cmd.tenant.correlation_id, now);
+    Ok(event)
 }
 
 // =============================================================================
@@ -1029,6 +1084,30 @@ pub trait DesignationReferenceChecker: Send + Sync {
         &self,
         school: SchoolId,
         designation_id: crate::value_objects::DesignationId,
+    ) -> bool;
+}
+
+/// Per-school `LeaveType` reference checks. Implements spec
+/// invariant LeaveType#2: "A `LeaveType` cannot be deleted while
+/// any `LeaveDefine` or `LeaveRequest` references it."
+///
+/// The port returns `true` if a reference exists; the service
+/// then short-circuits with
+/// [`DomainError::conflict`](educore_core::error::DomainError::conflict).
+pub trait LeaveTypeReferenceChecker: Send + Sync {
+    /// Returns `true` if any `LeaveDefine` row references this
+    /// leave type.
+    fn has_leave_define(
+        &self,
+        school: SchoolId,
+        leave_type_id: crate::value_objects::LeaveTypeId,
+    ) -> bool;
+    /// Returns `true` if any `LeaveRequest` row references this
+    /// leave type.
+    fn has_leave_request(
+        &self,
+        school: SchoolId,
+        leave_type_id: crate::value_objects::LeaveTypeId,
     ) -> bool;
 }
 

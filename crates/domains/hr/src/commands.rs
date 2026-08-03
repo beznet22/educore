@@ -384,6 +384,22 @@ impl DeleteDesignationCommand {
         vec![Capability::HrDesignationDelete]
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeleteLeaveTypeCommand {
+    pub tenant: TenantContext,
+    pub leave_type_id: LeaveTypeId,
+    pub reason: String,
+}
+
+
+impl DeleteLeaveTypeCommand {
+    /// The capabilities required to dispatch this command.
+    #[must_use]
+    pub fn required_capabilities() -> Vec<Capability> {
+        vec![Capability::HrLeaveTypeDelete]
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateDesignationCommand {
     pub tenant: TenantContext,

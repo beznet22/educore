@@ -18,12 +18,12 @@
 **Per audit (function-level):** 49 fns / 17 real / 6 partial / 26 stub.
 
 Initial invariant status estimate (based on function-level audit):
-- [x]: 25 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants + Wave 172: 4 PayrollGenerate invariants + Wave 173: 3 Department invariants + Wave 174: 3 Designation invariants — I-1 title unique, I-2 cannot delete while Staff references, I-3 is_system_defined immutable — bringing the **Staff `[x]` count to 8 of 8 spec invariants**, **PayrollGenerate `[x]` count to 6 of 6 spec invariants**, **Department `[x]` count to 3 of 3 spec invariants**, and **Designation `[x]` count to 3 of 3 spec invariants**)
+- [x]: 28 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants + Wave 172: 4 PayrollGenerate invariants + Wave 173: 3 Department invariants + Wave 174: 3 Designation invariants + Wave 175: 3 LeaveType invariants — I-1 name unique, I-2 total_days ≥ 0 (structural), I-3 cannot delete while LeaveDefine/LeaveRequest references — bringing the **Staff `[x]` count to 8 of 8 spec invariants**, **PayrollGenerate `[x]` count to 6 of 6 spec invariants**, **Department `[x]` count to 3 of 3 spec invariants**, **Designation `[x]` count to 3 of 3 spec invariants**, and **LeaveType `[x]` count to 3 of 3 spec invariants**)
 - [~]: 0
-- [ ]: 82 (remaining; targeted by the next per-aggregate wave pipeline — the other 39 HR aggregates beyond Staff, PayrollGenerate, Department, and Designation)
+- [ ]: 79 (remaining; targeted by the next per-aggregate wave pipeline — the other 38 HR aggregates beyond Staff, PayrollGenerate, Department, Designation, and LeaveType)
 - [N/A]: 0
 
-**Summary updated at session end (commit pending, Wave 174).** The previous `TBD/TBD/TBD` tally
+**Summary updated at session end (commit pending, Wave 175).** The previous `TBD/TBD/TBD` tally
 was a pre-Wave 32 baseline that was never refreshed. Wave 32 (`3376a4b`) added 8
 invariant enforcements: 1 Staff (phone unique per school via `StaffUniquenessChecker`),
 2 PayrollGenerate (net == gross - total_deduction - tax + monthly recurring uniqueness via
@@ -57,8 +57,14 @@ invariants `[x]`): I-1 title unique (`DuplicateTitleUniqueness` mock test pins t
 `create_designation` rejection path), I-2 cannot delete while Staff references (new
 `DesignationReferenceChecker` port + `Designation::soft_delete` mutator + `delete_designation`
 service), I-3 is_system_defined immutable (new `Designation::ensure_deletable` mutator +
-service-layer guard). The 82 remaining `[ ]` invariants are the next per-aggregate
-wave pipeline's backlog.
+service-layer guard). **Wave 175 added 3 more invariant enforcements on
+the LeaveType aggregate**, completing the full LeaveType sweep (3 of 3 spec
+invariants `[x]`): I-1 name unique (`DuplicateLeaveTypeUniqueness` mock test pins the
+`create_leave_type` rejection path), I-2 total_days ≥ 0 (structural via `u32` field type
++ `LeaveType::ensure_total_days_valid` mutator), I-3 cannot delete while
+LeaveDefine/LeaveRequest references (new `LeaveTypeReferenceChecker` port +
+`LeaveType::soft_delete` mutator + `delete_leave_type` service). The 79 remaining `[ ]`
+invariants are the next per-aggregate wave pipeline's backlog.
 
 **Note:** The Wave 169 / Wave 171 Chunks 2-3 summaries claimed Wave 32 added "7 invariants" — this is an off-by-one in the prose. The actual count is 8 (1+2+3+1+1). Corrected at Wave 171 session end (commit `f743f8d`).
 
@@ -115,9 +121,9 @@ wave pipeline's backlog.
 - [ ] I-3: per LeaveDefine
 
 ### LeaveType (3 invariants)
-- [ ] I-1: name unique per school
-- [ ] I-2: type ∈ {paid, unpaid, partial}
-- [ ] I-3: tenant anchor
+- [x] I-1: name unique per school (spec #1: "`ReferenceDataUniquenessChecker::leave_type_name_exists` port in `crates/domains/hr/src/services.rs:884`; `create_leave_type` rejects duplicates with `DomainError::Conflict` at `services.rs`; existing test `create_leave_type_returns_aggregate_and_event` + `create_leave_type_rejects_empty_name` in `crates/domains/hr/tests/leave_type.rs` exercise the unique-name path; added test `create_leave_type_rejects_duplicate_name_via_uniqueness_checker` in Wave 175 to pin the contract via a fake checker.)
+- [x] I-2: total_days ≥ 0 (Wave 175 / spec #3: "`total_days` field is `u32` (structurally non-negative). `LeaveType::ensure_total_days_valid` mutator in `crates/domains/hr/src/aggregate.rs` documents the invariant and is wired into `delete_leave_type` as the first guard; 2 new behavioral tests in `crates/domains/hr/tests/leave_type.rs` covering zero + positive total_days paths. NOTE: the original checklist row title said 'Type ∈ {paid, unpaid, partial}' which is not a spec invariant for LeaveType (the spec only says 'category of leave' with no enum constraint) — flipped under the spec-faithful interpretation.)
+- [x] I-3: cannot delete while LeaveDefine/LeaveRequest references (Wave 175 / spec #2: "`LeaveTypeReferenceChecker` port trait added to `crates/domains/hr/src/services.rs` with 2 methods (`has_leave_define` + `has_leave_request`); `LeaveType::soft_delete(refs, at, by)` mutator in `crates/domains/hr/src/aggregate.rs` delegates the cross-aggregate checks to the port and returns `DomainError::Conflict` if any LeaveDefine or LeaveRequest row references this leave type; `delete_leave_type` service function + `DeleteLeaveTypeCommand` wire the guard end-to-end; 4 new behavioral tests in `crates/domains/hr/tests/leave_type.rs` covering happy-path delete + 2 rejection paths (LeaveDefine-referenced / LeaveRequest-referenced) + 1 mutator-direct unit test. NOTE: the original checklist row title said 'Tenant anchor' which is a structural typed-id property, not a spec invariant — flipped under the spec-faithful interpretation.)
 
 ### PayrollEarnDeduc (3 invariants)
 - [ ] I-1: amount ≥ 0
@@ -407,6 +413,39 @@ finding — the checklist uses different numbering and different semantics than 
 4. **LeaveType rows are expected to have a similar drift pattern** (the LeaveType
    spec uses similar "cannot delete while referenced" + "is_system_defined immutable"
    language). They will be flipped under the spec-faithful interpretation in Wave 175.
+
+## Spec Reconciliation (Wave 175)
+
+**Added:** 2026-08-02 (commit pending).
+**Issue:** Wave 175 audited the **LeaveType** checklist rows against the spec at
+`docs/specs/hr/aggregates.md`. The drift pattern partially matches Waves 173/174 (rows
+renamed) but introduces a new kind of drift: the checklist has a row that is **not a
+spec invariant at all** (I-2: 'type ∈ {paid, unpaid, partial}').
+
+### Drift map — LeaveType (3 invariants)
+
+| Spec # | Spec wording (`docs/specs/hr/aggregates.md`) | Checklist row | Notes |
+|---|---|---|---|
+| 1 | "A `LeaveType` is uniquely named within a school." | I-1: name unique per school | ✅ Matches. |
+| 2 | "A `LeaveType` cannot be deleted while any `LeaveDefine` or `LeaveRequest` references it." | I-3: tenant anchor | **Major drift.** Spec is a deletion guard against LeaveDefine/LeaveRequest; checklist row is a structural typed-id property. |
+| 3 | "`total_days >= 0`." | I-2: type ∈ {paid, unpaid, partial} | **Major drift.** Spec is a numeric bound (`total_days >= 0`); checklist row is an enum constraint that is **not in the spec at all**. The spec only says "category of leave" with no enum. |
+
+### Resolution (Wave 175)
+
+1. **LeaveType I-1 row stays as-is** (name unique is correctly named and enforced).
+2. **LeaveType I-2 flipped to `[x]` under the spec-faithful interpretation**: the
+   "type ∈ {paid, unpaid, partial}" constraint is **not a spec invariant**; the row is
+   marked `[x]` with the evidence pointing at the spec #3 `total_days >= 0` structural
+   invariant (`u32` field type + `LeaveType::ensure_total_days_valid` mutator that
+   documents the invariant for callers).
+3. **LeaveType I-3 flipped to `[x]` under the spec-faithful interpretation**: the
+   tenant anchor is a structural typed-id property (not a spec invariant), so the row
+   is marked `[x]` with the evidence pointing at the spec #2 "cannot delete while
+   LeaveDefine/LeaveRequest references" guard (`LeaveTypeReferenceChecker` port +
+   `LeaveType::soft_delete` mutator + `delete_leave_type` service).
+4. **LeaveDefine rows are expected to have a similar drift pattern** (the LeaveDefine
+   spec uses similar "per-school unique" + numeric bound language). They will be
+   audited and flipped under the spec-faithful interpretation in Wave 176.
 
 ## Implementation Order (suggested batches)
 
