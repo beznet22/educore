@@ -269,3 +269,4 @@ LICENSE.COMMERCIAL
 graphify-out/cost.json
 graphify-out/cache/
 tools/dispatcher-gen/__pycache__/
+crates/tools/wasm-demo/pkg/
