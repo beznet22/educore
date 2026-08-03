@@ -275,6 +275,24 @@ impl AdmitStudentCommand {
     }
 }
 
+impl educore_dispatcher::CommandBounds for AdmitStudentCommand {
+    fn tenant(&self) -> &TenantContext {
+        &self.tenant
+    }
+    fn command_type(&self) -> &'static str {
+        "academic.student.admit"
+    }
+    fn idempotency_key(&self) -> Option<educore_core::ids::IdempotencyKey> {
+        None
+    }
+    fn action(&self) -> &'static str {
+        "admit"
+    }
+    fn target_type(&self) -> &'static str {
+        "student"
+    }
+}
+
 /// Command: update a student's mutable profile fields.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateStudentProfileCommand {

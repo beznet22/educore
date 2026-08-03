@@ -16,6 +16,7 @@ educore-platform = { workspace = true }
 educore-rbac = { workspace = true }
 educore-events = { workspace = true }
 educore-settings = { workspace = true }
+educore-dispatcher = { workspace = true }
 async-trait = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }

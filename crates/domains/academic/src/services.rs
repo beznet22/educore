@@ -39,6 +39,8 @@ use educore_core::error::{DomainError, Result};
 use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::ActiveStatus;
+use educore_dispatcher::CommandDispatcher;
+use educore_events::domain_event::DomainEvent;
 
 use crate::aggregate::{
     AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
@@ -250,6 +252,36 @@ where
 /// persisting the mutated aggregate and publishing the
 /// event.
 ///
+/// Dispatcher-aware wrapper for [`admit_student`].
+///
+/// Runs the full `CommandDispatcher::dispatch` pipeline:
+/// RBAC check → begin txn → idempotency lookup → service
+/// call → outbox write → audit row → idempotency record → bus
+/// publish. The plain [`admit_student`] factory function
+/// remains for callers that already manage their own
+/// transaction (e.g. unit tests, the parity test suite).
+///
+/// `required_capabilities` is `["academic.student.create"]`
+/// per the engine RBAC policy.
+pub async fn dispatch_admit_student<C, G>(
+    dispatcher: &CommandDispatcher,
+    cmd: AdmitStudentCommand,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<(Student, StudentAdmitted)>
+where
+    C: Clock + ?Sized + Send + Sync,
+    G: IdGenerator + ?Sized + Send + Sync,
+{
+    use educore_dispatcher::CommandBounds as _;
+    dispatcher
+        .dispatch(&cmd, &["academic.student.create"], || async {
+            admit_student::<C, G>(cmd.clone(), clock, ids, uniqueness)
+        })
+        .await
+}
+
 /// # Errors
 ///
 /// - `Validation` if any of the supplied fields fails

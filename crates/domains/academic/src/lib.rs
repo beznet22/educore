@@ -99,7 +99,7 @@ pub use crate::events::{
 /// The 19 pure factory functions that turn a command into
 /// an aggregate plus a typed event.
 pub use crate::services::{
-    admit_student, assign_class_room, assign_class_teacher, assign_optional_subject,
+    admit_student, dispatch_admit_student, assign_class_room, assign_class_teacher, assign_optional_subject,
     assign_subject_teacher, assign_subject_to_class, close_academic_year, copy_academic_year,
     create_academic_year, create_certificate_aggregate, create_class, create_class_routine,
     create_class_section, create_class_subject, create_homework, create_id_card_aggregate, create_lesson,
