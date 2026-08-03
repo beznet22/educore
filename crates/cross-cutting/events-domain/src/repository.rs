@@ -17,8 +17,7 @@ use crate::aggregate::{
     AssignIncident, CalendarEvent, CalendarSetting, Holiday, Incident, IncidentComment, Weekend,
 };
 use crate::query::{
-    AssignIncidentQuery, CalendarEventQuery, CalendarSettingQuery, HolidayQuery,
-    IncidentCommentQuery, IncidentQuery, WeekendQuery,
+    CalendarEventQuery, CalendarSettingQuery, HolidayQuery, IncidentQuery,
 };
 use crate::value_objects::{
     AcademicYearRef, AssignIncidentId, CalendarEventId, CalendarSettingId, ForWhom, HolidayId,

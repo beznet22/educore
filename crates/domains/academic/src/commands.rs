@@ -24,8 +24,6 @@ use serde::{Deserialize, Serialize};
 use educore_core::ids::{SchoolId, UserId};
 use educore_rbac::value_objects::Capability;
 use educore_core::tenant::TenantContext;
-use educore_core::ids::IdempotencyKey;
-use educore_dispatcher::CommandBounds;
 
 use crate::value_objects::{
     AcademicYearId, AcademicYearRange, AdminSection, CertificateId, CertificateLayout, ClassId, ClassRoomId, ClassRoutineId,
@@ -33,7 +31,7 @@ use crate::value_objects::{
     IdCardId, LessonId, LessonPlanId, LabelName, LessonTopicId, OptionalSubjectAssignmentId, PhoneNumber,
     RegistrationFieldId, RegistrationFieldType, Relation, ResultStatus, SectionId, StudentCategoryId, StudentGroupId,
     StudentGuardianLinkId, StudentId, StudentPromotionId, StudentRecordId, SubjectId,
-    ClassPeriod, ClassTimeId,
+    ClassPeriod,
 };
 
 // =============================================================================

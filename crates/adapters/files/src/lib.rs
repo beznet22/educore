@@ -71,6 +71,14 @@ pub mod services;
 /// shape, evaluator trait, and default implementation.
 pub mod lifecycle;
 
+/// Per-school byte-quota policy and cross-tenant access guard.
+/// Pure value-level helpers that adapters (or the consumer's
+/// upload service) call **before** performing I/O. See
+/// [`policy::StoragePolicy::check_upload`] for the quota check
+/// and [`policy::TenantGuard::assert_same_tenant`] for the
+/// tenant-boundary check.
+pub mod policy;
+
 /// Package name constant. Re-exported so consumers can assert
 /// they are using the right crate version at compile time.
 pub const PACKAGE_NAME: &str = "educore-files";

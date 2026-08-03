@@ -34,7 +34,7 @@ use std::future::Future;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use educore_core::clock::{Clock, IdGenerator, SystemClock, SystemIdGen};
 use educore_core::error::{DomainError, Result};
@@ -549,9 +549,7 @@ fn build_dispatcher() -> (
     ));
     let rbac: Arc<dyn CapabilityCheck> = Arc::new(DenyAllRbac);
     let clock: Arc<dyn Clock> = Arc::new(SystemClock);
-    let id_gen: Arc<dyn IdGenerator> = Arc::new(SystemIdGen);
-
-    let dispatcher = CommandDispatcher::new(storage, rbac, bus.clone(), clock, id_gen);
+    let dispatcher = CommandDispatcher::new(storage, rbac, bus.clone(), clock);
     (dispatcher, bus, outbox, audit_log, idempotency)
 }
 
@@ -616,16 +614,18 @@ enum Domain {
     Hr,
 }
 
+/// Service-call return type — boxed future that yields
+/// `(TestAggregate, TestEvent)`. Aliased to keep the
+/// `build_service_call` signature readable.
+type ServiceFuture =
+    std::pin::Pin<Box<dyn Future<Output = Result<(TestAggregate, TestEvent)>> + Send>>;
+
 /// Service-call closure used by every test. The closure returns
 /// the same `(aggregate, event)` pair regardless of which
 /// capability is being denied — the closure must never run on the
 /// RBAC-rejection path, so its return value is irrelevant to the
 /// test's assertions.
-fn build_service_call(
-    school: SchoolId,
-) -> impl FnOnce() -> std::pin::Pin<
-    Box<dyn Future<Output = Result<(TestAggregate, TestEvent)>> + Send>,
-> {
+fn build_service_call(school: SchoolId) -> impl FnOnce() -> ServiceFuture {
     let id_gen = SystemIdGen;
     let aggregate_id = id_gen.next_uuid();
     let event_id = id_gen.next_event_id();

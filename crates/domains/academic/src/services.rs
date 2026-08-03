@@ -43,10 +43,9 @@ use educore_dispatcher::CommandDispatcher;
 use educore_events::domain_event::DomainEvent;
 
 use crate::aggregate::{
-    AcademicYear, Certificate, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework,
-    IdCard, Lesson, LessonPlan, LessonTopic, OptionalSubjectAssignment, RealCertificate, RealIdCard, RealLesson, RealLessonPlan,
-    RealLessonTopic, RealRegistrationField, RealStudentCategory, RealStudentGroup, RealStudentPromotion, RegistrationField, Section,
-    Student, StudentCategory, StudentGroup, StudentGuardianLink, StudentPromotion, StudentRecord,
+    AcademicYear, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework, OptionalSubjectAssignment, RealCertificate, RealIdCard, RealLesson, RealLessonPlan,
+    RealLessonTopic, RealRegistrationField, RealStudentCategory, RealStudentGroup, RealStudentPromotion, Section,
+    Student, StudentGroup, StudentGuardianLink, StudentPromotion, StudentRecord,
     Subject,
 };
 use crate::commands::{
@@ -56,11 +55,10 @@ use crate::commands::{
     validate_suspension_reason, validate_transfer_reason, validate_withdrawal_reason,
     validate_year_label, validate_year_title, AdmitStudentCommand, AssignClassRoomCommand,
     AssignClassTeacherCommand, AssignOptionalSubjectCommand, AssignSubjectTeacherCommand,
-    CloseAcademicYearCommand, CreateAcademicYearCommand, CreateCertificateCommand,
+    CloseAcademicYearCommand, CreateAcademicYearCommand,
     CreateClassCommand, CreateClassRoutineCommand, CreateClassSectionCommand,
-    AssignSubjectToClassCommand, CreateHomeworkCommand, CreateIdCardCommand, CreateLessonCommand,
-    CreateLessonPlanCommand, CreateLessonTopicCommand, CreateRegistrationFieldCommand,
-    CreateSectionCommand, CreateStudentCategoryCommand, CreateStudentGroupCommand, DeleteStudentCategoryCommand, DeleteStudentGroupCommand, RealCreateStudentCategoryCommand, UpdateStudentCategoryCommand,
+    AssignSubjectToClassCommand, CreateHomeworkCommand,
+    CreateSectionCommand, CreateStudentGroupCommand, DeleteStudentCategoryCommand, DeleteStudentGroupCommand, RealCreateStudentCategoryCommand, UpdateStudentCategoryCommand,
     CreateSubjectCommand, DeleteClassCommand, DeleteClassRoutineCommand,
     DeleteClassSectionCommand, DeleteSectionCommand, DeleteSubjectCommand, GraduateStudentCommand,
     LinkGuardianToStudentCommand, MarkPrimaryGuardianCommand, PromoteStudentCommand,
@@ -78,27 +76,23 @@ use crate::commands::{
     SetRollNumberCommand, UpdateLessonCommand, UpdateStudentGroupCommand, WithdrawStudentCommand,
 };
 use crate::events::{
-    AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated,
-    CertificateCreated, CertificateDeleted, CertificateUpdated, RealCertificateCreated, ClassCreated, ClassDeleted, ClassRoomAssigned, ClassRoutineDeleted,
+    AcademicYearClosed, AcademicYearCopied, AcademicYearCreated, AcademicYearDatesUpdated, CertificateDeleted, CertificateUpdated, RealCertificateCreated, ClassCreated, ClassDeleted, ClassRoomAssigned, ClassRoutineDeleted,
     ClassRoutinePeriodUpdated, ClassRoutinePeriodsSwapped, ClassRoutineScheduled,
     ClassSectionCreated, ClassSectionDeleted, ClassTeacherAssigned, SubjectAssignedToClass,
     ClassUpdated, CurrentAcademicYearSet, GuardianContactUpdated, GuardianLinkedToStudent,
     GuardianRegistered, GuardianRetired, GuardianUnlinkedFromStudent, HomeworkCancelled,
-    HomeworkCreated, HomeworkUpdated,
-    IdCardCreated, IdCardDeleted, IdCardUpdated, LessonCreated, LessonDeleted, RealIdCardCreated, LessonPlanCompleted, LessonPlanCreated,
-    LessonPlanDeleted, LessonPlanUpdated, LessonTopicCompleted, LessonTopicCreated, LessonTopicDeleted,
+    HomeworkCreated, HomeworkUpdated, IdCardDeleted, IdCardUpdated, LessonDeleted, RealIdCardCreated, LessonPlanCompleted,
+    LessonPlanDeleted, LessonPlanUpdated, LessonTopicCompleted, LessonTopicDeleted,
     RealLessonCreated, RealLessonPlanCreated, RealLessonTopicCreated, RollNumberAssigned,
     StudentMarkedGraduate, StudentRecordEnrolled, StudentRetired, StudentRetirementReason, SubTopicAdded, DefaultRecordSet, LessonUpdated,
-    OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked,
-    RegistrationFieldCreated, RegistrationFieldDeleted, RegistrationFieldUpdated, RealRegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
+    OptionalSubjectAssignmentCreated, OptionalSubjectGpaThresholdSet, PrimaryGuardianMarked, RegistrationFieldDeleted, RegistrationFieldUpdated, RealRegistrationFieldCreated, SectionCreated, SectionDeleted, SectionUpdated, StudentAdmitted,
     StudentAddedToGroup, StudentCategoryDeleted, StudentCategoryUpdated, StudentGroupDeleted, StudentGroupUpdated, StudentRemovedFromGroup, RealStudentCategoryCreated, RealStudentGroupCreated, StudentGraduated, StudentGroupCreated, StudentProfileUpdated,
     StudentPromoted, StudentPromotionRecorded, StudentReinstated, StudentSuspended,
     StudentTransferred, StudentWithdrawn, SubjectCreated, SubjectDeleted, SubjectUpdated,
     SubjectTeacherAssigned, SubjectUnassigned, TeacherReassigned,
 };
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, ClassId, ClassRoomId, ClassSectionId, CompletedStatus,
-    HomeworkMark, HomeworkStatus, ResultStatus, SectionId, StudentGuardianLinkId, StudentId,
+    AcademicYearId, AcademicYearRange, ClassId, CompletedStatus, HomeworkStatus, ResultStatus, SectionId, StudentGuardianLinkId, StudentId,
     StudentPromotionId, StudentRecordId,
     StudentStatus, SubTopic,
 };
@@ -274,7 +268,7 @@ where
     C: Clock + ?Sized + Send + Sync,
     G: IdGenerator + ?Sized + Send + Sync,
 {
-    use educore_dispatcher::CommandBounds as _;
+    
     dispatcher
         .dispatch(&cmd, &["academic.student.create"], || async {
             admit_student::<C, G>(cmd.clone(), clock, ids, uniqueness)

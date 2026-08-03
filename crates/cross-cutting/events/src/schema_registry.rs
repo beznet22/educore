@@ -23,7 +23,7 @@ use std::collections::BTreeMap;
 use std::sync::Mutex;
 
 use educore_core::error::{DomainError, Result};
-use educore_core::ids::{Identifier, SchoolId, UserId};
+use educore_core::ids::{SchoolId, UserId};
 use educore_core::value_objects::Timestamp;
 use uuid::Uuid;
 

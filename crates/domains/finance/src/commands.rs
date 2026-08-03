@@ -24,7 +24,6 @@ use educore_academic::{AcademicYearId, StudentId};
 use educore_core::ids::UserId;
 use educore_core::tenant::TenantContext;
 use educore_core::ids::IdempotencyKey;
-use educore_dispatcher::CommandBounds;
 use educore_core::value_objects::Timestamp;
 use educore_hr::value_objects::PayrollGenerateId;
 use educore_rbac::value_objects::Capability;

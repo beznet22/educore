@@ -37,7 +37,7 @@ use educore_core::value_objects::Timestamp;
 use crate::errors::{NotificationError, NotificationTemplateId};
 use crate::port::{
     BulkId, BulkReceipt, BulkRecipient, BulkRecipientIndex, Channel, DeliveryStatus,
-    NotificationProvider, NotificationReceipt, NotificationReceiptId, PhoneNumber, Priority,
+    NotificationProvider, NotificationReceipt, NotificationReceiptId, PhoneNumber,
     Recipient, SendBulkNotification, SendNotification,
 };
 // The port exposes a `Result<T>` type alias for

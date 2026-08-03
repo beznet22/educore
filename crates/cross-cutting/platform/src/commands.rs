@@ -17,7 +17,6 @@ use serde::{Deserialize, Serialize};
 use educore_core::ids::{IdempotencyKey, SchoolId, UserId};
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::Timestamp;
-use educore_dispatcher::CommandBounds;
 
 use crate::value_objects::{
     EmailAddress, HashedPassword, PackageId, PhoneNumber, RoleId, SchoolStatus, UserStatus,
@@ -412,79 +411,6 @@ pub enum ReportFormat {
     Pdf,
 }
 
-#[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::panic,
-    clippy::dbg_macro
-)]
-mod tests {
-    use super::*;
-    use educore_core::clock::{IdGenerator, SystemIdGen};
-    use educore_core::tenant::UserType;
-
-    fn ctx() -> TenantContext {
-        let g = SystemIdGen;
-        TenantContext::for_user(
-            g.next_school_id(),
-            g.next_user_id(),
-            g.next_correlation_id(),
-            UserType::SuperAdmin,
-        )
-    }
-
-    #[test]
-    fn create_school_command_new_minimal() {
-        let g = SystemIdGen;
-        let cmd = CreateSchoolCommand::new(
-            ctx(),
-            g.next_school_id(),
-            "Ada".to_owned(),
-            "ADA".to_owned(),
-        );
-        assert_eq!(cmd.name, "Ada");
-        assert_eq!(cmd.school_code, "ADA");
-        assert!(cmd.domain.is_none());
-        assert!(cmd.package_id.is_none());
-    }
-
-    #[test]
-    fn register_user_command_new_minimal() {
-        let g = SystemIdGen;
-        let cmd = RegisterUserCommand::new(
-            ctx(),
-            g.next_user_id(),
-            g.next_school_id(),
-            EmailAddress::new("ada@example.com").unwrap(),
-            "ada".to_owned(),
-            "Ada".to_owned(),
-            HashedPassword::from_hash("$argon2id$dummy"),
-        );
-        assert_eq!(cmd.username, "ada");
-        assert!(cmd.phone_number.is_none());
-        assert!(cmd.role_ids.is_empty());
-    }
-
-    #[test]
-    fn validate_reasons() {
-        assert!(validate_reason("").is_err());
-        assert!(validate_reason("ok").is_ok());
-    }
-
-    #[test]
-    fn validate_school_code_rejects_empty() {
-        assert!(validate_school_code("").is_err());
-        assert!(validate_school_code("ADA").is_ok());
-    }
-
-    #[test]
-    fn validate_username_rejects_overlong() {
-        let s = "a".repeat(193);
-        assert!(validate_username(&s).is_err());
-    }
-}
-
 // Wire_bounds — auto-appended CommandBounds impls
 
 impl educore_dispatcher::CommandBounds for CreateSchoolCommand {
@@ -559,3 +485,76 @@ impl educore_dispatcher::CommandBounds for GenerateRegulatorAuditCommand {
     fn target_type(&self) -> &'static str { "generateRegulatorAudit" }
 }
 
+
+#[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::dbg_macro
+)]
+mod tests {
+    use super::*;
+    use educore_core::clock::{IdGenerator, SystemIdGen};
+    use educore_core::tenant::UserType;
+
+    fn ctx() -> TenantContext {
+        let g = SystemIdGen;
+        TenantContext::for_user(
+            g.next_school_id(),
+            g.next_user_id(),
+            g.next_correlation_id(),
+            UserType::SuperAdmin,
+        )
+    }
+
+    #[test]
+    fn create_school_command_new_minimal() {
+        let g = SystemIdGen;
+        let cmd = CreateSchoolCommand::new(
+            ctx(),
+            g.next_school_id(),
+            "Ada".to_owned(),
+            "ADA".to_owned(),
+        );
+        assert_eq!(cmd.name, "Ada");
+        assert_eq!(cmd.school_code, "ADA");
+        assert!(cmd.domain.is_none());
+        assert!(cmd.package_id.is_none());
+    }
+
+    #[test]
+    fn register_user_command_new_minimal() {
+        let g = SystemIdGen;
+        let cmd = RegisterUserCommand::new(
+            ctx(),
+            g.next_user_id(),
+            g.next_school_id(),
+            EmailAddress::new("ada@example.com").unwrap(),
+            "ada".to_owned(),
+            "Ada".to_owned(),
+            HashedPassword::from_hash("$argon2id$dummy"),
+        );
+        assert_eq!(cmd.username, "ada");
+        assert!(cmd.phone_number.is_none());
+        assert!(cmd.role_ids.is_empty());
+    }
+
+    #[test]
+    fn validate_reasons() {
+        assert!(validate_reason("").is_err());
+        assert!(validate_reason("ok").is_ok());
+    }
+
+    #[test]
+    fn validate_school_code_rejects_empty() {
+        assert!(validate_school_code("").is_err());
+        assert!(validate_school_code("ADA").is_ok());
+    }
+
+    #[test]
+    fn validate_username_rejects_overlong() {
+        let s = "a".repeat(193);
+        assert!(validate_username(&s).is_err());
+    }
+}

@@ -20,7 +20,6 @@ use serde::{Deserialize, Serialize};
 use educore_core::ids::SchoolId;
 use educore_core::tenant::TenantContext;
 use educore_core::ids::IdempotencyKey;
-use educore_dispatcher::CommandBounds;
 
 use crate::ids::RoleId;
 use crate::value_objects::{Capability, RoleName, RoleType};
@@ -132,6 +131,48 @@ impl RevokeCapabilityCommand {
     }
 }
 
+// Wire_bounds — auto-appended CommandBounds impls
+
+impl educore_dispatcher::CommandBounds for CreateRoleCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.role.create" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "create" }
+    fn target_type(&self) -> &'static str { "role" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateRoleCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.role.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "role" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteRoleCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.role.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "role" }
+}
+
+impl educore_dispatcher::CommandBounds for AssignCapabilityCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.capability.assign" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "assign" }
+    fn target_type(&self) -> &'static str { "capability" }
+}
+
+impl educore_dispatcher::CommandBounds for RevokeCapabilityCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.revokeCapability.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "revokeCapability" }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
@@ -192,47 +233,5 @@ mod tests {
         c.as_denial = true;
         assert!(c.as_denial);
     }
-}
-
-// Wire_bounds — auto-appended CommandBounds impls
-
-impl educore_dispatcher::CommandBounds for CreateRoleCommand {
-    fn tenant(&self) -> &TenantContext { &self.tenant }
-    fn command_type(&self) -> &'static str { "unknown.role.create" }
-    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
-    fn action(&self) -> &'static str { "create" }
-    fn target_type(&self) -> &'static str { "role" }
-}
-
-impl educore_dispatcher::CommandBounds for UpdateRoleCommand {
-    fn tenant(&self) -> &TenantContext { &self.tenant }
-    fn command_type(&self) -> &'static str { "unknown.role.update" }
-    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
-    fn action(&self) -> &'static str { "update" }
-    fn target_type(&self) -> &'static str { "role" }
-}
-
-impl educore_dispatcher::CommandBounds for DeleteRoleCommand {
-    fn tenant(&self) -> &TenantContext { &self.tenant }
-    fn command_type(&self) -> &'static str { "unknown.role.delete" }
-    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
-    fn action(&self) -> &'static str { "delete" }
-    fn target_type(&self) -> &'static str { "role" }
-}
-
-impl educore_dispatcher::CommandBounds for AssignCapabilityCommand {
-    fn tenant(&self) -> &TenantContext { &self.tenant }
-    fn command_type(&self) -> &'static str { "unknown.capability.assign" }
-    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
-    fn action(&self) -> &'static str { "assign" }
-    fn target_type(&self) -> &'static str { "capability" }
-}
-
-impl educore_dispatcher::CommandBounds for RevokeCapabilityCommand {
-    fn tenant(&self) -> &TenantContext { &self.tenant }
-    fn command_type(&self) -> &'static str { "unknown.revokeCapability.unknown" }
-    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
-    fn action(&self) -> &'static str { "unknown" }
-    fn target_type(&self) -> &'static str { "revokeCapability" }
 }
 

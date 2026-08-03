@@ -13,10 +13,9 @@
 use async_trait::async_trait;
 
 use educore_core::error::Result;
-use educore_core::ids::{Identifier, SchoolId, UserId};
+use educore_core::ids::{SchoolId, UserId};
 use educore_core::value_objects::Timestamp;
 
-use crate::errors::AuditError;
 use educore_storage::AuditLogEntry;
 
 /// The audit sink port.

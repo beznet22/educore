@@ -75,11 +75,12 @@ use std::fmt;
 use std::result::Result as StdResult;
 
 use async_trait::async_trait;
+#[cfg(test)]
+use uuid::Uuid;
 use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_s3::types::StorageClass as S3StorageClass;
 use aws_sdk_s3::Client;
 use educore_core::value_objects::Timestamp;
-use uuid::Uuid;
 
 use crate::errors::{FileStorageError, InfrastructureError};
 use crate::port::{
@@ -1040,7 +1041,7 @@ mod tests {
             bucket: String::from("bucket"),
             key_prefix: String::new(),
         };
-        let mut source = FileReference {
+        let source = FileReference {
             key: FileKey::new("students/photos/ada.jpg"),
             etag: String::from("\"etag-original\""),
             size: 42,
@@ -1079,7 +1080,7 @@ mod tests {
             bucket: String::from("bucket"),
             key_prefix: String::new(),
         };
-        let mut source = FileReference {
+        let source = FileReference {
             key: FileKey::new("students/photos/ada.jpg"),
             etag: String::from("etag"),
             size: 1,

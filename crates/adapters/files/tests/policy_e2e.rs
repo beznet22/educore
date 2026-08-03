@@ -30,18 +30,10 @@
     clippy::dbg_macro
 )]
 
-// Include `policy.rs` directly via `#[path]` so the test exercises
-// the public API without requiring a `pub mod policy;` declaration
-// in `crates/adapters/files/src/lib.rs`. The module becomes a child
-// of this integration-test binary and inherits the same
-// extern-crate graph (educore_core, …) as the test itself.
-#[path = "../src/policy.rs"]
-mod policy;
-
 use educore_core::clock::{IdGenerator as _, SystemIdGen};
 use educore_core::ids::SchoolId;
 
-use policy::{CrossTenantError, QuotaExceededError, StoragePolicy, TenantGuard};
+use educore_files::policy::{CrossTenantError, QuotaExceededError, StoragePolicy, TenantGuard};
 
 /// Builds a fresh [`SchoolId`] via [`SystemIdGen`].
 ///

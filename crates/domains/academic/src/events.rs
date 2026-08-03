@@ -43,7 +43,7 @@ use crate::entities::StudentDocumentId;
 use crate::value_objects::{
     AcademicYearId, CertificateId, ClassId, ClassRoomId, ClassRoutineId, ClassSectionId,
     ClassSubjectId, FileId, GuardianId, HomeworkId, IdCardId, LessonId, LessonPlanId,
-    AdminSection, CertificateLayout, FieldName, LabelName, LessonTopicId, OptionalSubjectAssignmentId, RegistrationFieldId, RegistrationFieldType, Relation, ResultStatus,
+    AdminSection, CertificateLayout, FieldName, LabelName, LessonTopicId, OptionalSubjectAssignmentId, RegistrationFieldId, RegistrationFieldType, ResultStatus,
     StudentRecordId,
     SectionId, StudentCategoryId, StudentGroupId, StudentGuardianLinkId, StudentId,
     StudentPromotionId, StudentStatus, SubjectId, SubjectType,

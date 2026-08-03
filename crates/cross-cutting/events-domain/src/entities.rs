@@ -14,7 +14,6 @@
 #![allow(missing_docs, dead_code, clippy::all)]
 
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use educore_core::ids::{Identifier, SchoolId};
 use educore_core::value_objects::Timestamp;

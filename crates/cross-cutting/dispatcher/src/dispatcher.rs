@@ -112,16 +112,19 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tracing::{debug, instrument, warn};
 
-use educore_core::clock::{Clock, IdGenerator};
+use educore_core::clock::Clock;
+#[cfg(test)]
+use educore_core::clock::IdGenerator;
 use educore_core::error::{DomainError, Result};
-use educore_core::ids::{IdempotencyKey, SchoolId};
+use educore_core::ids::IdempotencyKey;
+#[cfg(test)]
+use educore_core::ids::SchoolId;
 use educore_core::tenant::TenantContext;
 use educore_core::value_objects::ActiveStatus;
 use educore_events::domain_event::DomainEvent;
-use educore_events::envelope::EventEnvelope;
 use educore_events::event_bus::EventBus;
 use educore_storage::AuditLogEntry;
 use educore_storage::idempotency::{
@@ -247,8 +250,8 @@ pub trait CommandBounds {
 /// types from a `Box<dyn CommandBounds>`.
 ///
 /// `Debug` is **not** derived because the port trait objects
-/// (`Arc<dyn CapabilityCheck>`, `Arc<dyn Clock>`, `Arc<dyn IdGenerator>`)
-/// are not required to implement `Debug`. Consumers that need
+/// (`Arc<dyn CapabilityCheck>`, `Arc<dyn Clock>`) are not
+/// required to implement `Debug`. Consumers that need
 /// `Debug` for logging can wrap the dispatcher in their own
 /// newtype.
 pub struct CommandDispatcher {
@@ -269,17 +272,12 @@ pub struct CommandDispatcher {
     /// instant for `occurred_at` on the audit row and the
     /// `recorded_at` on the idempotency record.
     clock: Arc<dyn Clock>,
-    /// The id generator port. Reserved for future use (e.g.
-    /// minting a fresh `correlation_id` for retries). Held
-    /// now so the dispatcher can be extended without a
-    /// breaking constructor change.
-    id_gen: Arc<dyn IdGenerator>,
 }
 
 impl CommandDispatcher {
     /// Constructs a new `CommandDispatcher`.
     ///
-    /// All five ports are required. Pass concrete adapter
+    /// All four ports are required. Pass concrete adapter
     /// types from the engine's `crates/adapters/` tree in
     /// production; pass testkit mocks (or inline test
     /// doubles) in unit tests.
@@ -289,22 +287,19 @@ impl CommandDispatcher {
         rbac: Arc<dyn CapabilityCheck>,
         bus: Arc<dyn EventBus>,
         clock: Arc<dyn Clock>,
-        id_gen: Arc<dyn IdGenerator>,
     ) -> Self {
         Self {
             storage,
             rbac,
             bus,
             clock,
-            id_gen,
         }
     }
 
     /// Returns the storage adapter. Exposed for callers that
     /// need to begin a transaction outside the dispatcher's
-    /// pipeline (e.g. read-only queries that still need to
-    /// share the dispatcher's clock + id generator). Mutating
-    /// writes should always go through `dispatch`.
+    /// pipeline (e.g. read-only queries). Mutating writes
+    /// should always go through `dispatch`.
     #[must_use]
     pub fn storage(&self) -> &Arc<dyn StorageAdapter> {
         &self.storage
@@ -424,7 +419,7 @@ impl CommandDispatcher {
         // transaction's `Drop` impl rolls back the staged
         // writes (PORT-STORE-014).
         // -----------------------------------------------------------------
-        let mut txn = self.storage.begin().await?;
+        let txn = self.storage.begin().await?;
 
         // -----------------------------------------------------------------
         // Step 3: Idempotency lookup.
@@ -653,6 +648,13 @@ mod tests {
 
     use async_trait::async_trait;
     use chrono::{TimeZone, Utc};
+    use serde::Deserialize;
+
+    /// Pinned, boxed, sendable future yielding a
+    /// `(TestAggregate, TestEvent)` pair — aliased so the
+    /// `sample_service_call` signature stays readable.
+    type SampleServiceFuture =
+        std::pin::Pin<Box<dyn std::future::Future<Output = Result<(TestAggregate, TestEvent)>> + Send>>;
 
     use educore_core::clock::SystemIdGen;
     use educore_core::ids::{CorrelationId, EventId, UserId};
@@ -1115,9 +1117,7 @@ mod tests {
         ));
         let rbac: Arc<dyn super::CapabilityCheck> = Arc::new(StubRbac::new(allow_caps));
         let clock: Arc<dyn Clock> = Arc::new(educore_core::clock::TestClock::at(ts(1_700_000_000)));
-        let id_gen: Arc<dyn IdGenerator> = Arc::new(SystemIdGen);
-
-        let dispatcher = CommandDispatcher::new(storage, rbac, bus.clone(), clock, id_gen);
+        let dispatcher = CommandDispatcher::new(storage, rbac, bus.clone(), clock);
         (dispatcher, bus, outbox, audit_log, idempotency)
     }
 
@@ -1140,9 +1140,7 @@ mod tests {
 
     fn sample_service_call(
         school: SchoolId,
-    ) -> impl FnOnce() -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = Result<(TestAggregate, TestEvent)>> + Send>,
-    > {
+    ) -> impl FnOnce() -> SampleServiceFuture {
         let g = SystemIdGen;
         let aggregate_id = g.next_uuid();
         let event_id = g.next_event_id();

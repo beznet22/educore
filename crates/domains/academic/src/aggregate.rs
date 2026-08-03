@@ -1979,9 +1979,7 @@ impl RealLessonPlan {
     ) -> educore_core::error::Result<Self> {
         use educore_core::error::DomainError;
         if lesson_id.school_id() != id.school_id() {
-            return Err(DomainError::Validation(format!(
-                "lesson_id school mismatch"
-            )));
+            return Err(DomainError::Validation("lesson_id school mismatch".to_string()));
         }
         if topic_id.school_id() != id.school_id() {
             return Err(DomainError::Validation("topic_id school mismatch".into()));

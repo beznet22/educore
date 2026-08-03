@@ -30,7 +30,7 @@
 
 use std::marker::PhantomData;
 
-use educore_core::error::{DomainError, Result};
+use educore_core::error::Result;
 use educore_core::value_objects::Timestamp;
 
 /// The kind of conflict a [`Conflict<T>`] describes.
@@ -265,7 +265,6 @@ impl KindPolicyResolver {
     /// defaulting to [`LastWriteWinsResolver`].
     #[must_use]
     pub fn new() -> Self {
-        let lww: Box<dyn ConflictResolver> = Box::new(LastWriteWinsResolver);
         Self {
             version_mismatch: Box::new(LastWriteWinsResolver),
             missing_aggregate: Box::new(LastWriteWinsResolver),

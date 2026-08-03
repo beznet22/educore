@@ -8,10 +8,9 @@
 #![allow(clippy::unwrap_used)]
 
 use chrono::NaiveDate;
-use educore_core::ids::{CorrelationId, Identifier, SchoolId, UserId};
+use educore_core::ids::{CorrelationId, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 use educore_core::ids::IdempotencyKey;
-use educore_dispatcher::CommandBounds;
 use educore_core::value_objects::Timestamp;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

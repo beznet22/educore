@@ -773,9 +773,7 @@ impl LeaveDefine {
             user_id,
             self.type_id,
         ) {
-            return Err(DomainError::conflict(format!(
-                "leave define already exists for (school, academic, role/user, type) composite key"
-            )));
+            return Err(DomainError::conflict("leave define already exists for (school, academic, role/user, type) composite key".to_string()));
         }
         Ok(())
     }
@@ -938,9 +936,7 @@ impl LeaveRequest {
             self.leave_to,
             self.type_id,
         ) {
-            return Err(DomainError::conflict(format!(
-                "leave request already exists for (school, staff, leave_from, leave_to, type) composite key"
-            )));
+            return Err(DomainError::conflict("leave request already exists for (school, staff, leave_from, leave_to, type) composite key".to_string()));
         }
         Ok(())
     }
@@ -1013,9 +1009,7 @@ impl StaffAttendance {
             self.staff_id,
             self.attendance_date,
         ) {
-            return Err(DomainError::conflict(format!(
-                "staff attendance already exists for (school, staff, date) composite key"
-            )));
+            return Err(DomainError::conflict("staff attendance already exists for (school, staff, date) composite key".to_string()));
         }
         Ok(())
     }
@@ -1125,9 +1119,7 @@ impl StaffAttendanceImport {
             self.staff_id,
             self.attendance_date,
         ) {
-            return Err(DomainError::conflict(format!(
-                "staff attendance import already exists for (school, staff, date) composite key"
-            )));
+            return Err(DomainError::conflict("staff attendance import already exists for (school, staff, date) composite key".to_string()));
         }
         Ok(())
     }
@@ -1233,9 +1225,7 @@ impl AssignClassTeacher {
             self.section_id,
             self.academic_id,
         ) {
-            return Err(DomainError::conflict(format!(
-                "assign class teacher already exists for (school, class, section, academic) composite key"
-            )));
+            return Err(DomainError::conflict("assign class teacher already exists for (school, class, section, academic) composite key".to_string()));
         }
         Ok(())
     }
@@ -1322,9 +1312,7 @@ impl HourlyRate {
             &self.grade,
             self.academic_id,
         ) {
-            return Err(DomainError::conflict(format!(
-                "hourly rate already exists for (school, grade, academic) composite key"
-            )));
+            return Err(DomainError::conflict("hourly rate already exists for (school, grade, academic) composite key".to_string()));
         }
         Ok(())
     }
@@ -1413,9 +1401,7 @@ impl SalaryTemplate {
             &self.salary_grades,
             self.academic_id,
         ) {
-            return Err(DomainError::conflict(format!(
-                "salary template already exists for (school, salary_grades, academic) composite key"
-            )));
+            return Err(DomainError::conflict("salary template already exists for (school, salary_grades, academic) composite key".to_string()));
         }
         Ok(())
     }
@@ -1878,9 +1864,7 @@ impl LeaveDeductionInfo {
             self.staff_id,
             self.payroll_id,
         ) {
-            return Err(DomainError::conflict(format!(
-                "leave deduction info already exists for (school, staff, payroll) composite key"
-            )));
+            return Err(DomainError::conflict("leave deduction info already exists for (school, staff, payroll) composite key".to_string()));
         }
         Ok(())
     }

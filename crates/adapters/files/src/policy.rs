@@ -3,6 +3,7 @@
 //! Per-school byte quota tracking and cross-tenant access enforcement
 //! for the [`FileStorage`](crate::port::FileStorage) port. Closes
 //! finding **ADAPTER-FILE-003** (tenant context enforcement) from
+//! `Wave 6.4`.
 //! `docs/audit_reports/findings/wave3-files.md`.
 //!
 //! ## Scope

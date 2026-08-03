@@ -22,13 +22,9 @@
     clippy::dbg_macro
 )]
 
-#[path = "../src/policy.rs"]
-mod policy;
-
 use educore_core::clock::{IdGenerator as _, SystemIdGen};
 use educore_core::ids::SchoolId;
-use policy::CrossTenantError;
-use policy::TenantGuard;
+use educore_files::policy::{CrossTenantError, TenantGuard};
 
 /// Mints a fresh [`SchoolId`]. Uses `SystemIdGen` so the test
 /// doesn't need `uuid` as a direct dev-dependency.

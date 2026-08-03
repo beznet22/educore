@@ -9,7 +9,6 @@
 
 use educore_core::tenant::TenantContext;
 use educore_core::ids::IdempotencyKey;
-use educore_dispatcher::CommandBounds;
 use educore_core::value_objects::Timestamp;
 
 use crate::aggregate::{

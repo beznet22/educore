@@ -39,7 +39,7 @@ use async_trait::async_trait;
 use crate::errors::{IntegrationError, Result as IntegrationResult};
 use crate::port::{
     HealthStatus, IntegrationCapability, IntegrationGateway, IntegrationHealth, IntegrationRequest,
-    IntegrationResponse, IntegrationStatus,
+    IntegrationResponse,
 };
 use educore_core::value_objects::Timestamp;
 

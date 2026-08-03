@@ -15,8 +15,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::value_objects::{
-    AssignIncidentId, CalendarEventId, CalendarSettingId, HolidayId, IncidentCommentId, IncidentId,
-    IncidentStatus, WeekendId,
+    AssignIncidentId, CalendarEventId, CalendarSettingId, HolidayId, IncidentCommentId, IncidentId, WeekendId,
 };
 
 // =============================================================================
