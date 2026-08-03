@@ -46,7 +46,7 @@ use educore_academic::prelude::admit_student;
 use educore_academic::value_objects::{AcademicYearId, AcademicYearRange, ClassId, SectionId, StudentId};
 use educore_academic::Student;
 use educore_core::clock::{IdGenerator, SystemClock, SystemIdGen};
-use educore_core::ids::{IdempotencyKey, Identifier, SchoolId};
+use educore_core::ids::{IdempotencyKey, Identifier, SchoolId, UserId};
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::Timestamp;
 use educore_event_bus::InProcessEventBus;
@@ -134,6 +134,63 @@ impl UniquenessChecker for TestUniqueness {
         &self,
         _school: SchoolId,
         _student_id: StudentId,
+    ) -> bool {
+        false
+    }
+    fn student_group_name_exists(&self, _school: SchoolId, _name: &str) -> bool {
+        false
+    }
+    fn student_category_name_exists(&self, _school: SchoolId, _name: &str) -> bool {
+        false
+    }
+    fn student_has_active_record(
+        &self,
+        _school: SchoolId,
+        _student_id: StudentId,
+        _academic_year_id: AcademicYearId,
+    ) -> bool {
+        false
+    }
+    fn lesson_title_exists(
+        &self,
+        _school: SchoolId,
+        _class_section_id: educore_academic::value_objects::ClassSectionId,
+        _subject_id: educore_academic::value_objects::SubjectId,
+        _title: &str,
+    ) -> bool {
+        false
+    }
+    fn class_section_exists(
+        &self,
+        _school: SchoolId,
+        _class_id: ClassId,
+        _section_id: SectionId,
+        _academic_year_id: AcademicYearId,
+    ) -> bool {
+        false
+    }
+    fn class_section_has_student_records(
+        &self,
+        _school: SchoolId,
+        _class_section_id: educore_academic::value_objects::ClassSectionId,
+    ) -> bool {
+        false
+    }
+    fn teacher_has_conflict(
+        &self,
+        _school: SchoolId,
+        _teacher_id: UserId,
+        _day: educore_academic::value_objects::DayOfWeek,
+        _period_number: u8,
+    ) -> bool {
+        false
+    }
+    fn room_has_conflict(
+        &self,
+        _school: SchoolId,
+        _room_id: educore_academic::value_objects::ClassRoomId,
+        _day: educore_academic::value_objects::DayOfWeek,
+        _period_number: u8,
     ) -> bool {
         false
     }
