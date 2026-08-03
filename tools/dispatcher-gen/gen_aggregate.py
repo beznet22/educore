@@ -27,7 +27,7 @@ def expand_stub(crate_dir: Path, struct_name: str, audit_footer: bool = True) ->
     src = agg_rs.read_text()
     pattern = re.compile(
         r"pub struct " + re.escape(struct_name) + r"\s*\{\s*"
-        r"pub id:\s*\w+(?:Id)?,\s*"
+        r"pub id:\s*[\w:]+(?:Id)?,\s*"
         r"pub school_id:\s*SchoolId,\s*"
         r"\}",
         re.DOTALL,

@@ -731,6 +731,33 @@ impl ResultStore {
 pub struct ExamSetup {
     pub id: crate::value_objects::ExamSetupId,
     pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Audit footer (per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl ExamSetup {
+    /// Returns true if currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate.
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 // --- MarkStore cluster ------------------------------------------------------
@@ -742,6 +769,33 @@ pub struct ExamSetup {
 pub struct MarkStore {
     pub id: crate::value_objects::MarkStoreId,
     pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Audit footer (per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl MarkStore {
+    /// Returns true if currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate.
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 // --- Result publication cluster --------------------------------------------
@@ -760,6 +814,33 @@ pub struct ResultSetting {
 pub struct MarksGrade {
     pub id: crate::value_objects::MarksGradeId,
     pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Audit footer (per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl MarksGrade {
+    /// Returns true if currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate.
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 // --- Exam publication cluster ----------------------------------------------
@@ -770,6 +851,33 @@ pub struct MarksGrade {
 pub struct ExamSetting {
     pub id: crate::value_objects::ExamSettingId,
     pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Audit footer (per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl ExamSetting {
+    /// Returns true if currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate.
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 /// A signature that may appear on report cards and admit cards
@@ -778,6 +886,33 @@ pub struct ExamSetting {
 pub struct ExamSignature {
     pub id: crate::value_objects::ExamSignatureId,
     pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Audit footer (per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl ExamSignature {
+    /// Returns true if currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate.
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 /// Public-facing content block for the exam routine page (`Title`,
@@ -826,6 +961,33 @@ pub struct FrontendExamResult {
 pub struct OnlineExam {
     pub id: crate::value_objects::OnlineExamId,
     pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Audit footer (per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl OnlineExam {
+    /// Returns true if currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate.
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 /// A reusable pool of questions (e.g. "Algebra Question Set 2026").
@@ -833,6 +995,33 @@ pub struct OnlineExam {
 pub struct QuestionBank {
     pub id: crate::value_objects::QuestionBankId,
     pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Audit footer (per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl QuestionBank {
+    /// Returns true if currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate.
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 /// A grouping for questions (e.g. "Algebra", "Geometry", "Grammar").
@@ -882,6 +1071,33 @@ pub struct AdmitCardSetting {
 pub struct TeacherEvaluation {
     pub id: crate::value_objects::TeacherEvaluationId,
     pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Audit footer (per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl TeacherEvaluation {
+    /// Returns true if currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate.
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 /// A teacher's narrative remark for a student for an exam type in an
