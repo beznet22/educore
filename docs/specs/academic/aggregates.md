@@ -535,34 +535,6 @@ class, section, session, roll number, and result status.
 
 ---
 
-## StudentCategory
-
-**Root type:** `StudentCategory`
-**Identity:** `StudentCategoryId(SchoolId, Uuid)`
-
-### Purpose
-
-A categorization for students (e.g. "Scholarship", "Sibling", "Staff
-Child"). Used for fee discounts and reporting.
-
-### Invariants
-
-1. A category is uniquely named within a school.
-
-### Commands
-
-- `CreateStudentCategory`
-- `UpdateStudentCategory`
-- `DeleteStudentCategory`
-
-### Events
-
-- `StudentCategoryCreated`
-- `StudentCategoryUpdated`
-- `StudentCategoryDeleted`
-
----
-
 ## StudentGroup
 
 **Root type:** `StudentGroup`
