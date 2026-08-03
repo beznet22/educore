@@ -83,4 +83,10 @@ pub enum Command {
         #[arg(long, default_value = "cash")]
         method: String,
     },
+    /// Run an end-to-end demo scenario exercising all engine domains.
+    Demo {
+        /// The school id (UUID). If omitted, a fresh school is created.
+        #[arg(long)]
+        school: Option<String>,
+    },
 }

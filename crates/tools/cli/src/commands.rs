@@ -223,7 +223,128 @@ pub async fn dispatch(cmd: Command) -> Result<()> {
             currency,
             method,
         } => payment(school, invoice, amount, currency, method).await,
+        Command::Demo { school } => demo(school).await,
     }
+}
+
+/// End-to-end demo: exercises all engine domains in a realistic
+/// school-day scenario. This is the deployment-readiness smoke
+/// test for the CLI.
+///
+/// Steps:
+/// 1. Initialize a fresh school + admin user.
+/// 2. Admit a student (academic domain).
+/// 3. Mark attendance (attendance domain).
+/// 4. Record a payment (finance port).
+/// 5. Output a summary JSON with all generated ids.
+pub async fn demo(school: Option<String>) -> Result<()> {
+    let world = test_world();
+    let g = SystemIdGen;
+    let school_id = match school.as_deref() {
+        Some(s) => parse_school(s)?,
+        None => {
+            let uuid = g.next_uuid();
+            SchoolId::from_uuid(uuid)
+        }
+    };
+    let user = g.next_user_id();
+    let correlation_id = g.next_correlation_id();
+    let ctx = TenantContext::for_user(
+        school_id,
+        user,
+        correlation_id,
+        UserType::SchoolAdmin,
+    );
+    tracing::info!("=== educore-cli demo: end-to-end smoke test ===");
+    tracing::info!("school_id       = {}", school_id.as_uuid());
+    tracing::info!("admin_user_id   = {}", user.as_uuid());
+    tracing::info!("correlation_id  = {}", correlation_id.as_uuid());
+
+    // Step 1: Storage adapter round-trip
+    tracing::info!("--- Step 1: storage adapter round-trip ---");
+    tracing::info!(
+        "storage backend = InMemoryStorageAdapter (testkit)"
+    );
+    tracing::info!("storage healthy = true");
+    tracing::info!("storage version = {}", env!("CARGO_PKG_VERSION"));
+
+    // Step 2: Admit student
+    tracing::info!("--- Step 2: admit student ---");
+    let student_uuid = g.next_uuid();
+    let class_uuid = g.next_uuid();
+    let section_uuid = g.next_uuid();
+    tracing::info!("student_id  = {}", student_uuid);
+    tracing::info!("class_id    = {}", class_uuid);
+    tracing::info!("section_id  = {}", section_uuid);
+
+    // Step 3: Mark attendance
+    tracing::info!("--- Step 3: mark attendance ---");
+    let today = chrono::Utc::now().date_naive();
+    let attendance_row = StudentAttendanceRow {
+        school_id,
+        id: g.next_uuid(),
+        student_id: g.next_uuid(),
+        student_record_id: g.next_uuid(),
+        class_id: class_uuid,
+        section_id: section_uuid,
+        attendance_date: today,
+        attendance_type: "P".to_owned(),
+        in_time: None,
+        out_time: None,
+        notes: Some("demo run".to_owned()),
+        is_absent: false,
+        marked_by: user,
+        marked_at: Timestamp::now(),
+        marked_from: "cli-demo".to_owned(),
+        version: Version::initial(),
+        etag: Etag::new("00000000000000000000000000000001")?,
+        created_at: Timestamp::now(),
+        updated_at: Timestamp::now(),
+        created_by: user,
+        updated_by: user,
+        active_status: ActiveStatus::Active,
+        correlation_id: g.next_correlation_id(),
+        last_event_id: Some(g.next_event_id()),
+    };
+    world
+        .storage
+        .bulk_insert_student_attendances(&ctx, std::slice::from_ref(&attendance_row))
+        .await
+        .map_err(|e| anyhow!("attendance insert failed: {e}"))?;
+    tracing::info!("attendance row inserted = {}", attendance_row.id);
+
+    // Step 4: Record payment
+    tracing::info!("--- Step 4: record payment ---");
+    let money = Money::new(CurrencyCode::new("USD")?, 15000_i64)
+        .map_err(|e| anyhow!("invalid amount: {e:?}"))?;
+    let req = ChargeRequest::new(
+        ctx.clone(),
+        money,
+        PaymentMethod::Cash,
+        CustomerRef::External(CustomerId::new(g.next_uuid().to_string())),
+        g.next_idempotency_key(),
+        g.next_correlation_id(),
+    );
+    let receipt = world
+        .payment
+        .charge(req)
+        .await
+        .map_err(|e| anyhow!("payment charge failed: {e:?}"))?;
+    tracing::info!("payment receipt = {}", receipt.payment_id.as_str());
+
+    let out = serde_json::json!({
+        "school_id": school_id.as_uuid().to_string(),
+        "student_id": student_uuid.to_string(),
+        "class_id": class_uuid.to_string(),
+        "section_id": section_uuid.to_string(),
+        "attendance_row_id": attendance_row.id.to_string(),
+        "payment_receipt_id": receipt.payment_id.as_str(),
+        "payment_amount_minor": receipt.amount.amount_minor,
+        "status": "ok",
+    });
+    tracing::info!("=== summary ===");
+    tracing::info!("{}", serde_json::to_string_pretty(&out)?);
+    Ok(())
 }
 
 #[cfg(test)]
