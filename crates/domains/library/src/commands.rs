@@ -25,6 +25,8 @@ use serde::{Deserialize, Serialize};
 
 use educore_core::ids::{Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
+use educore_core::ids::IdempotencyKey;
+use educore_dispatcher::CommandBounds;
 use educore_core::value_objects::Timestamp;
 
 use crate::value_objects::{
@@ -785,3 +787,182 @@ impl DeleteLibraryMemberNoteCommand {
         vec![Capability::LibraryConfigure]
     }
 }
+
+// Wire_bounds — auto-appended CommandBounds impls
+
+impl educore_dispatcher::CommandBounds for CreateBookCategoryCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.bookCategory.create" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "create" }
+    fn target_type(&self) -> &'static str { "bookCategory" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateBookCategoryCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.bookCategory.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "bookCategory" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteBookCategoryCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.bookCategory.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "bookCategory" }
+}
+
+impl educore_dispatcher::CommandBounds for AddBookCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.addBook.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "addBook" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateBookCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.book.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "book" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteBookCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.book.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "book" }
+}
+
+impl educore_dispatcher::CommandBounds for AdjustBookQuantityCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.adjustBookQuantity.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "adjustBookQuantity" }
+}
+
+impl educore_dispatcher::CommandBounds for RegisterLibraryMemberCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.libraryMember.register" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "register" }
+    fn target_type(&self) -> &'static str { "libraryMember" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateLibraryMemberCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.libraryMember.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "libraryMember" }
+}
+
+impl educore_dispatcher::CommandBounds for DeactivateLibraryMemberCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.deactivateLibraryMember.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "deactivateLibraryMember" }
+}
+
+impl educore_dispatcher::CommandBounds for ReactivateLibraryMemberCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.reactivateLibraryMember.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "reactivateLibraryMember" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteLibraryMemberCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.libraryMember.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "libraryMember" }
+}
+
+impl educore_dispatcher::CommandBounds for IssueBookCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.issueBook.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "issueBook" }
+}
+
+impl educore_dispatcher::CommandBounds for ReturnBookCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.returnBook.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "returnBook" }
+}
+
+impl educore_dispatcher::CommandBounds for RenewBookCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.book.renew" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "renew" }
+    fn target_type(&self) -> &'static str { "book" }
+}
+
+impl educore_dispatcher::CommandBounds for MarkBookLostCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.bookLost.mark" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "mark" }
+    fn target_type(&self) -> &'static str { "bookLost" }
+}
+
+impl educore_dispatcher::CommandBounds for RecordBookReturnCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.recordBookReturn.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "recordBookReturn" }
+}
+
+impl educore_dispatcher::CommandBounds for CalculateFineCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.calculateFine.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "calculateFine" }
+}
+
+impl educore_dispatcher::CommandBounds for WaiveBookIssueFineCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.waiveBookIssueFine.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "waiveBookIssueFine" }
+}
+
+impl educore_dispatcher::CommandBounds for SearchBooksCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.searchBook.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "searchBook" }
+}
+
+impl educore_dispatcher::CommandBounds for ListOverdueIssuesCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.listOverdueIssu.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "listOverdueIssu" }
+}
+
+impl educore_dispatcher::CommandBounds for ListMemberIssuesCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "library.listMemberIssu.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "listMemberIssu" }
+}
+

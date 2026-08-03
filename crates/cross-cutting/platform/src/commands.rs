@@ -14,9 +14,10 @@
 
 use serde::{Deserialize, Serialize};
 
-use educore_core::ids::{SchoolId, UserId};
+use educore_core::ids::{IdempotencyKey, SchoolId, UserId};
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::Timestamp;
+use educore_dispatcher::CommandBounds;
 
 use crate::value_objects::{
     EmailAddress, HashedPassword, PackageId, PhoneNumber, RoleId, SchoolStatus, UserStatus,
@@ -483,3 +484,78 @@ mod tests {
         assert!(validate_username(&s).is_err());
     }
 }
+
+// Wire_bounds — auto-appended CommandBounds impls
+
+impl educore_dispatcher::CommandBounds for CreateSchoolCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "platform.school.create" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "create" }
+    fn target_type(&self) -> &'static str { "school" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateSchoolCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "platform.school.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "school" }
+}
+
+impl educore_dispatcher::CommandBounds for DeactivateSchoolCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "platform.deactivateSchool.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "deactivateSchool" }
+}
+
+impl educore_dispatcher::CommandBounds for RegisterUserCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "platform.user.register" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "register" }
+    fn target_type(&self) -> &'static str { "user" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateUserCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "platform.user.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "user" }
+}
+
+impl educore_dispatcher::CommandBounds for DeactivateUserCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "platform.deactivateUser.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "deactivateUser" }
+}
+
+impl educore_dispatcher::CommandBounds for ExecuteSubjectErasureCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "platform.executeSubjectErasure.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "executeSubjectErasure" }
+}
+
+impl educore_dispatcher::CommandBounds for GenerateParentAccessReportCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "platform.generateParentAccessReport.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "generateParentAccessReport" }
+}
+
+impl educore_dispatcher::CommandBounds for GenerateRegulatorAuditCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "platform.generateRegulatorAudit.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "generateRegulatorAudit" }
+}
+

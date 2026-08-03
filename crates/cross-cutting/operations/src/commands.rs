@@ -11,6 +11,8 @@
 #![allow(missing_docs)]
 
 use educore_core::tenant::TenantContext;
+use educore_core::ids::IdempotencyKey;
+use educore_dispatcher::CommandBounds;
 use educore_core::value_objects::Timestamp;
 
 use crate::value_objects::{
@@ -603,3 +605,174 @@ mod tests {
         Ok(())
     }
 }
+
+// Wire_bounds — auto-appended CommandBounds impls
+
+impl educore_dispatcher::CommandBounds for CreateBackupCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.backup.create" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "create" }
+    fn target_type(&self) -> &'static str { "backup" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteBackupCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.backup.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "backup" }
+}
+
+impl educore_dispatcher::CommandBounds for RestoreBackupCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.restoreBackup.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "restoreBackup" }
+}
+
+impl educore_dispatcher::CommandBounds for MarkBackupActiveCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.backupActive.mark" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "mark" }
+    fn target_type(&self) -> &'static str { "backupActive" }
+}
+
+impl educore_dispatcher::CommandBounds for MarkBackupInactiveCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.backupInactive.mark" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "mark" }
+    fn target_type(&self) -> &'static str { "backupInactive" }
+}
+
+impl educore_dispatcher::CommandBounds for ScheduleJobCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.scheduleJob.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "scheduleJob" }
+}
+
+impl educore_dispatcher::CommandBounds for CancelJobCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.job.cancel" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "cancel" }
+    fn target_type(&self) -> &'static str { "job" }
+}
+
+// SKIP MarkJobReservedCommand: no `tenant: TenantContext` field (CommandBounds requires one)
+
+// SKIP MarkJobCompletedCommand: no `tenant: TenantContext` field (CommandBounds requires one)
+
+// SKIP MarkJobFailedCommand: no `tenant: TenantContext` field (CommandBounds requires one)
+
+// SKIP RecordFailedJobCommand: no `tenant: TenantContext` field (CommandBounds requires one)
+
+impl educore_dispatcher::CommandBounds for RetryFailedJobCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.retryFailedJob.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "retryFailedJob" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteFailedJobCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.failedJob.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "failedJob" }
+}
+
+impl educore_dispatcher::CommandBounds for RegisterSystemVersionCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.systemVersion.register" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "register" }
+    fn target_type(&self) -> &'static str { "systemVersion" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateSystemVersionCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.systemVersion.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "systemVersion" }
+}
+
+impl educore_dispatcher::CommandBounds for RecordVersionHistoryCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.recordVersionHistory.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "recordVersionHistory" }
+}
+
+impl educore_dispatcher::CommandBounds for RecordUserLogCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.recordUserLog.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "recordUserLog" }
+}
+
+impl educore_dispatcher::CommandBounds for ConfigureMaintenanceCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.configureMaintenance.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "configureMaintenance" }
+}
+
+impl educore_dispatcher::CommandBounds for EnableMaintenanceCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.enableMaintenance.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "enableMaintenance" }
+}
+
+impl educore_dispatcher::CommandBounds for DisableMaintenanceCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.disableMaintenance.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "disableMaintenance" }
+}
+
+impl educore_dispatcher::CommandBounds for CreateSidebarEntryCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.sidebarEntry.create" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "create" }
+    fn target_type(&self) -> &'static str { "sidebarEntry" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateSidebarEntryCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.sidebarEntry.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "sidebarEntry" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteSidebarEntryCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.sidebarEntry.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "sidebarEntry" }
+}
+
+impl educore_dispatcher::CommandBounds for ReorderSidebarCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.reorderSidebar.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "reorderSidebar" }
+}
+

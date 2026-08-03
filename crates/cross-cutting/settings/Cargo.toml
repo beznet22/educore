@@ -11,6 +11,7 @@ description = "General settings, language catalog, themes, base setups, custom l
 workspace = true
 
 [dependencies]
+educore-dispatcher = { workspace = true }
 educore-core = { workspace = true }
 educore-platform = { workspace = true }
 educore-events = { workspace = true }

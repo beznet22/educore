@@ -34,6 +34,8 @@ use serde::{Deserialize, Serialize};
 use educore_assessment::ExamId;
 use educore_core::ids::SchoolId;
 use educore_core::tenant::TenantContext;
+use educore_core::ids::IdempotencyKey;
+use educore_dispatcher::CommandBounds;
 use educore_core::value_objects::Timestamp;
 
 use crate::value_objects::{
@@ -859,3 +861,118 @@ mod tests {
         ));
     }
 }
+
+// Wire_bounds — auto-appended CommandBounds impls
+
+impl educore_dispatcher::CommandBounds for MarkStudentAttendanceCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.studentAttendance.mark" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "mark" }
+    fn target_type(&self) -> &'static str { "studentAttendance" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateStudentAttendanceCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.studentAttendance.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "studentAttendance" }
+}
+
+impl educore_dispatcher::CommandBounds for BulkMarkStudentAttendanceCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.bulkMarkStudentAttendance.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "bulkMarkStudentAttendance" }
+}
+
+impl educore_dispatcher::CommandBounds for MarkSubjectAttendanceCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.subjectAttendance.mark" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "mark" }
+    fn target_type(&self) -> &'static str { "subjectAttendance" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateSubjectAttendanceCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.subjectAttendance.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "subjectAttendance" }
+}
+
+impl educore_dispatcher::CommandBounds for MarkStaffAttendanceCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.staffAttendance.mark" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "mark" }
+    fn target_type(&self) -> &'static str { "staffAttendance" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateStaffAttendanceCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.staffAttendance.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "staffAttendance" }
+}
+
+impl educore_dispatcher::CommandBounds for MarkExamAttendanceCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.examAttendance.mark" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "mark" }
+    fn target_type(&self) -> &'static str { "examAttendance" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateExamAttendanceCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.examAttendance.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "examAttendance" }
+}
+
+impl educore_dispatcher::CommandBounds for ImportAttendanceCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.importAttendance.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "importAttendance" }
+}
+
+impl educore_dispatcher::CommandBounds for ValidateBulkImportCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.validateBulkImport.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "validateBulkImport" }
+}
+
+impl educore_dispatcher::CommandBounds for CommitBulkImportCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.commitBulkImport.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "commitBulkImport" }
+}
+
+impl educore_dispatcher::CommandBounds for CancelBulkImportCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.bulkImport.cancel" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "cancel" }
+    fn target_type(&self) -> &'static str { "bulkImport" }
+}
+
+impl educore_dispatcher::CommandBounds for RequestAbsenceNotificationCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "attendance.absenceNotification.request" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "request" }
+    fn target_type(&self) -> &'static str { "absenceNotification" }
+}
+

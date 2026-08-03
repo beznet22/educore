@@ -11,6 +11,7 @@ description = "Multi-tenancy substrate: schools, users, OTP, courses, modules, p
 workspace = true
 
 [dependencies]
+educore-dispatcher = { workspace = true }
 educore-core = { workspace = true }
 educore-events = { workspace = true }
 async-trait = { workspace = true }

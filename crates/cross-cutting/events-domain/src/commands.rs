@@ -10,6 +10,8 @@
 use chrono::NaiveDate;
 use educore_core::ids::{CorrelationId, Identifier, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
+use educore_core::ids::IdempotencyKey;
+use educore_dispatcher::CommandBounds;
 use educore_core::value_objects::Timestamp;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -552,3 +554,198 @@ mod tests {
         assert!(new.rrule.is_some());
     }
 }
+
+// Wire_bounds — auto-appended CommandBounds impls
+
+impl educore_dispatcher::CommandBounds for CreateEventCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.event.create" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "create" }
+    fn target_type(&self) -> &'static str { "event" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateEventCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.event.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "event" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteEventCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.event.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "event" }
+}
+
+impl educore_dispatcher::CommandBounds for CreateHolidayCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.holiday.create" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "create" }
+    fn target_type(&self) -> &'static str { "holiday" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateHolidayCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.holiday.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "holiday" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteHolidayCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.holiday.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "holiday" }
+}
+
+impl educore_dispatcher::CommandBounds for CreateCalendarSettingCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.calendarSetting.create" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "create" }
+    fn target_type(&self) -> &'static str { "calendarSetting" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateCalendarSettingCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.calendarSetting.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "calendarSetting" }
+}
+
+impl educore_dispatcher::CommandBounds for EnableCalendarSettingCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.enableCalendarSetting.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "enableCalendarSetting" }
+}
+
+impl educore_dispatcher::CommandBounds for DisableCalendarSettingCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.disableCalendarSetting.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "disableCalendarSetting" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteCalendarSettingCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.calendarSetting.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "calendarSetting" }
+}
+
+impl educore_dispatcher::CommandBounds for CreateIncidentCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.incident.create" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "create" }
+    fn target_type(&self) -> &'static str { "incident" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateIncidentCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.incident.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "incident" }
+}
+
+impl educore_dispatcher::CommandBounds for ResolveIncidentCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.resolveIncident.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "resolveIncident" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteIncidentCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.incident.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "incident" }
+}
+
+impl educore_dispatcher::CommandBounds for AssignIncidentCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.incident.assign" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "assign" }
+    fn target_type(&self) -> &'static str { "incident" }
+}
+
+impl educore_dispatcher::CommandBounds for ReassignIncidentCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.incident.reassign" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "reassign" }
+    fn target_type(&self) -> &'static str { "incident" }
+}
+
+impl educore_dispatcher::CommandBounds for UnassignIncidentCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.incident.unassign" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unassign" }
+    fn target_type(&self) -> &'static str { "incident" }
+}
+
+impl educore_dispatcher::CommandBounds for CommentOnIncidentCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.commentOnIncident.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "commentOnIncident" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteIncidentCommentCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.incidentComment.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "incidentComment" }
+}
+
+impl educore_dispatcher::CommandBounds for CreateWeekendCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.weekend.create" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "create" }
+    fn target_type(&self) -> &'static str { "weekend" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateWeekendCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.weekend.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "weekend" }
+}
+
+impl educore_dispatcher::CommandBounds for ConfigureWeekendsCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.configureWeekend.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "configureWeekend" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteWeekendCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "unknown.weekend.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "weekend" }
+}
+

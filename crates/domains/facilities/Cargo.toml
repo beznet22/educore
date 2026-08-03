@@ -11,6 +11,7 @@ description = "Transport vehicles and routes, dormitories and rooms, inventory a
 workspace = true
 
 [dependencies]
+educore-dispatcher = { workspace = true }
 educore-core = { workspace = true }
 educore-platform = { workspace = true }
 educore-rbac = { workspace = true }

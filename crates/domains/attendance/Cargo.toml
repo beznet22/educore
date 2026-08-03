@@ -11,6 +11,7 @@ description = "Student, subject, staff, and exam attendance, bulk import, absenc
 workspace = true
 
 [dependencies]
+educore-dispatcher = { workspace = true }
 educore-academic = { workspace = true }
 educore-assessment = { workspace = true }
 educore-core = { workspace = true }

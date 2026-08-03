@@ -11,6 +11,7 @@ description = "Fees groups, types, masters, invoices, payments, banking, expense
 workspace = true
 
 [dependencies]
+educore-dispatcher = { workspace = true }
 educore-academic = { workspace = true }
 educore-audit = { workspace = true }
 educore-core = { workspace = true }

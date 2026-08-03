@@ -32,6 +32,8 @@ use educore_core::error::Result;
 use educore_rbac::value_objects::Capability;
 use educore_core::ids::SchoolId;
 use educore_core::tenant::TenantContext;
+use educore_core::ids::IdempotencyKey;
+use educore_dispatcher::CommandBounds;
 use educore_core::value_objects::Timestamp;
 
 use crate::value_objects::{
@@ -1399,3 +1401,158 @@ pub struct RequestAbsenceNotificationCommand {
     pub school_id: SchoolId,
     pub exam_attendance_id: ExamAttendanceId,
 }
+
+// Wire_bounds — auto-appended CommandBounds impls
+
+impl educore_dispatcher::CommandBounds for CreateExamCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.exam.create" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "create" }
+    fn target_type(&self) -> &'static str { "exam" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateExamCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.exam.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "exam" }
+}
+
+impl educore_dispatcher::CommandBounds for DeleteExamCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.exam.delete" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "delete" }
+    fn target_type(&self) -> &'static str { "exam" }
+}
+
+impl educore_dispatcher::CommandBounds for ScheduleExamCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.scheduleExam.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "scheduleExam" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateExamScheduleCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.examSchedule.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "examSchedule" }
+}
+
+impl educore_dispatcher::CommandBounds for CancelExamScheduleCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.examSchedule.cancel" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "cancel" }
+    fn target_type(&self) -> &'static str { "examSchedule" }
+}
+
+impl educore_dispatcher::CommandBounds for GenerateSeatPlanCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.generateSeatPlan.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "generateSeatPlan" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateSeatPlanCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.seatPlan.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "seatPlan" }
+}
+
+impl educore_dispatcher::CommandBounds for CancelSeatPlanCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.seatPlan.cancel" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "cancel" }
+    fn target_type(&self) -> &'static str { "seatPlan" }
+}
+
+impl educore_dispatcher::CommandBounds for GenerateAdmitCardCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.generateAdmitCard.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "generateAdmitCard" }
+}
+
+impl educore_dispatcher::CommandBounds for RegenerateAdmitCardCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.regenerateAdmitCard.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "regenerateAdmitCard" }
+}
+
+impl educore_dispatcher::CommandBounds for CancelAdmitCardCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.admitCard.cancel" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "cancel" }
+    fn target_type(&self) -> &'static str { "admitCard" }
+}
+
+impl educore_dispatcher::CommandBounds for InitializeMarksRegisterCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.initializeMarksRegister.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "initializeMarksRegister" }
+}
+
+impl educore_dispatcher::CommandBounds for EnterMarksCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.enterMark.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "enterMark" }
+}
+
+impl educore_dispatcher::CommandBounds for SubmitMarksCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.submitMark.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "submitMark" }
+}
+
+impl educore_dispatcher::CommandBounds for PublishResultCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.publishResult.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "publishResult" }
+}
+
+impl educore_dispatcher::CommandBounds for RepublishResultCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.republishResult.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "republishResult" }
+}
+
+impl educore_dispatcher::CommandBounds for UpdateResultRemarksCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.resultRemark.update" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "update" }
+    fn target_type(&self) -> &'static str { "resultRemark" }
+}
+
+impl educore_dispatcher::CommandBounds for GenerateReportCardCommand {
+    fn tenant(&self) -> &TenantContext { &self.tenant }
+    fn command_type(&self) -> &'static str { "assessment.generateReportCard.unknown" }
+    fn idempotency_key(&self) -> Option<IdempotencyKey> { None }
+    fn action(&self) -> &'static str { "unknown" }
+    fn target_type(&self) -> &'static str { "generateReportCard" }
+}
+

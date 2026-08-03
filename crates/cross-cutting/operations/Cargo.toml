@@ -11,6 +11,7 @@ description = "Operations domain — backups, jobs, system versions, user logs, 
 workspace = true
 
 [dependencies]
+educore-dispatcher = { workspace = true }
 educore-core = { workspace = true }
 educore-platform = { workspace = true }
 educore-events = { workspace = true }
