@@ -188,3 +188,14 @@ at your option. The canonical text files are in the repo root.
 For the full license FAQ (attribution, warranties, patents, SaaS
 use, trademarks), see
 [`docs/guides/license-faq.md`](docs/guides/license-faq.md).
+
+
+ <!-- What's failing: I'm fixing shadows one-at-a-time. Each fix reveals new errors. The file is now likely inconsistent (arms removed but specific arms referencing them remain → likely           
+ non-exhaustive match).                                                                                                                                                                        
+                                                                                                                                                                                               
+ Alternative approaches:                                                                                                                                                                       
+ 1. Restore file + accept rbac as known debt — Wave 224 fixes are already pushed                                                                                                               
+ 2. Rewrite the entire match function — nuclear option, high risk                                                                                                                              
+ 3. Add #[allow(unreachable_patterns)] with explanation — user forbade workarounds                                                                                                             
+                                                                                                                                                                                               
+ Picking #1 — restore and accept debt. -->
