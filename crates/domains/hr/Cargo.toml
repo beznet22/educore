@@ -14,6 +14,7 @@ workspace = true
 educore-academic = { workspace = true }
 educore-audit = { workspace = true }
 educore-core = { workspace = true }
+educore-dispatcher = { workspace = true }
 educore-event-bus = { workspace = true }
 educore-events = { workspace = true }
 educore-platform = { workspace = true }
