@@ -1,11 +1,11 @@
 # Graph Report - smscore  (2026-08-03)
 
 ## Corpus Check
-- 650 files · ~2,325,783 words
+- 650 files · ~2,313,068 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 31242 nodes · 60578 edges · 1118 communities detected
+- 31242 nodes · 60578 edges · 1115 communities detected
 - Extraction: 69% EXTRACTED · 31% INFERRED · 0% AMBIGUOUS · INFERRED: 18719 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
@@ -902,6 +902,7 @@
 - [[_COMMUNITY_Community 889|Community 889]]
 - [[_COMMUNITY_Community 890|Community 890]]
 - [[_COMMUNITY_Community 891|Community 891]]
+- [[_COMMUNITY_Community 892|Community 892]]
 - [[_COMMUNITY_Community 893|Community 893]]
 - [[_COMMUNITY_Community 894|Community 894]]
 - [[_COMMUNITY_Community 895|Community 895]]
@@ -922,10 +923,10 @@
 - [[_COMMUNITY_Community 910|Community 910]]
 - [[_COMMUNITY_Community 911|Community 911]]
 - [[_COMMUNITY_Community 912|Community 912]]
-- [[_COMMUNITY_Community 913|Community 913]]
 - [[_COMMUNITY_Community 914|Community 914]]
 - [[_COMMUNITY_Community 915|Community 915]]
 - [[_COMMUNITY_Community 916|Community 916]]
+- [[_COMMUNITY_Community 917|Community 917]]
 - [[_COMMUNITY_Community 918|Community 918]]
 - [[_COMMUNITY_Community 919|Community 919]]
 - [[_COMMUNITY_Community 920|Community 920]]
@@ -1005,11 +1006,11 @@
 - [[_COMMUNITY_Community 994|Community 994]]
 - [[_COMMUNITY_Community 995|Community 995]]
 - [[_COMMUNITY_Community 996|Community 996]]
-- [[_COMMUNITY_Community 997|Community 997]]
-- [[_COMMUNITY_Community 998|Community 998]]
-- [[_COMMUNITY_Community 999|Community 999]]
-- [[_COMMUNITY_Community 1000|Community 1000]]
-- [[_COMMUNITY_Community 1029|Community 1029]]
+- [[_COMMUNITY_Community 1025|Community 1025]]
+- [[_COMMUNITY_Community 1030|Community 1030]]
+- [[_COMMUNITY_Community 1031|Community 1031]]
+- [[_COMMUNITY_Community 1032|Community 1032]]
+- [[_COMMUNITY_Community 1033|Community 1033]]
 - [[_COMMUNITY_Community 1034|Community 1034]]
 - [[_COMMUNITY_Community 1035|Community 1035]]
 - [[_COMMUNITY_Community 1036|Community 1036]]
@@ -1124,10 +1125,6 @@
 - [[_COMMUNITY_Community 1145|Community 1145]]
 - [[_COMMUNITY_Community 1146|Community 1146]]
 - [[_COMMUNITY_Community 1147|Community 1147]]
-- [[_COMMUNITY_Community 1148|Community 1148]]
-- [[_COMMUNITY_Community 1149|Community 1149]]
-- [[_COMMUNITY_Community 1150|Community 1150]]
-- [[_COMMUNITY_Community 1151|Community 1151]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `admin_context()` - 175 edges
@@ -1142,8 +1139,6 @@
 10. `SchoolId` - 86 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `School (aggregate)` --calls--> `SchoolId`  [INFERRED]
-  docs/events/platform.md → crates/infra/core/src/ids.rs
 - `School (aggregate)` --calls--> `audit_target_type_and_id_for_school()`  [INFERRED]
   docs/events/platform.md → crates/cross-cutting/audit/src/writer.rs
 - `role_recipient()` --calls--> `Role (aggregate)`  [INFERRED]
@@ -1152,20 +1147,22 @@
   crates/domains/facilities/tests/workflows.rs → docs/events/rbac.md
 - `booking_lifecycle_issue_emits_item_issued()` --calls--> `Role (aggregate)`  [INFERRED]
   crates/domains/facilities/tests/workflows.rs → docs/events/rbac.md
+- `booking_lifecycle_zero_quantity_issue_returns_validation_error()` --calls--> `Role (aggregate)`  [INFERRED]
+  crates/domains/facilities/tests/workflows.rs → docs/events/rbac.md
 
 ## Communities
 
 ### Community 0 - "Community 0"
 Cohesion: 0.0
-Nodes (535): AuditLogRow, MysqlAuditLog, PostgresAuditLog, SqliteAuditLog, String, bytes_to_json_value(), json_value_to_bytes(), opt_bytes_to_json_value() (+527 more)
+Nodes (566): AuditLogRow, MysqlAuditLog, PostgresAuditLog, SqliteAuditLog, auth_integration_mfa_generate_secret(), String, bytes_to_json_value(), json_value_to_bytes() (+558 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.0
-Nodes (978): AboutPage, AbsentNotificationTimeSetup Aggregate, AmountTransfer, assign_incident_requires_exactly_one_assignee(), AssignClassTeacher, AssignIncident, AssignVehicle, AttendanceBulk (+970 more)
+Nodes (1107): AboutPage, AbsentNotificationTimeSetup Aggregate, academic_year_fresh_starts_not_current_not_closed(), AcademicYear, actor(), AdmitCard, AdmitCardSetting, AllExamWisePosition (+1099 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.0
-Nodes (1496): admin_context(), admit_card_generate_builds_aggregate_and_emits_admit_card_generated_event(), admit_card_regenerate_emits_admit_card_regenerated_event(), flatten_audience(), LeaveType, Role (aggregate), school_fresh_starts_at_initial_version(), user_fresh_starts_active_with_no_roles() (+1488 more)
+Nodes (1500): admin_context(), admit_card_generate_builds_aggregate_and_emits_admit_card_generated_event(), admit_card_regenerate_emits_admit_card_regenerated_event(), flatten_audience(), LeaveType, Role (aggregate), school_fresh_starts_at_initial_version(), user_fresh_starts_active_with_no_roles() (+1492 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.0
@@ -1173,35 +1170,35 @@ Nodes (256): AddFeesInstallmentCreditCommand, AddWalletCreditCommand, ApproveBan
 
 ### Community 4 - "Community 4"
 Cohesion: 0.0
-Nodes (1237): about_page_id(), about_page_typed_id_round_trips_school(), about_page_typed_ids_are_distinct_within_school(), admin_context(), absent_notification_time_setup_create(), absent_notification_time_setup_update(), admin_context(), time_from() (+1229 more)
+Nodes (1220): about_page_id(), about_page_typed_id_round_trips_school(), about_page_typed_ids_are_distinct_within_school(), admin_context(), absent_notification_time_setup_create(), absent_notification_time_setup_update(), admin_context(), time_from() (+1212 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.01
-Nodes (560): academic_capability_check_gates_admit_student(), academic_event_type_round_trip_for_all_aggregates(), cross_cutting_integration_academic(), cross_cutting_integration_academic_mysql(), cross_cutting_integration_academic_postgres(), dispatch_admit_student(), relay_outbox_to_event_log(), setup_sqlite() (+552 more)
+Nodes (520): academic_capability_check_gates_admit_student(), academic_event_type_round_trip_for_all_aggregates(), cross_cutting_integration_academic(), cross_cutting_integration_academic_mysql(), cross_cutting_integration_academic_postgres(), dispatch_admit_student(), relay_outbox_to_event_log(), setup_sqlite() (+512 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.0
-Nodes (243): admin_context(), append_only_no_update_mutator_exists(), bank_account_id(), bank_payment_slip_audit_id(), bank_payment_slip_audit_typed_id_round_trips_school(), bank_payment_slip_audit_typed_ids_are_distinct_within_school(), bank_payment_slip_id(), fresh_appends_to_log_with_full_payload() (+235 more)
+Nodes (848): AboutPage.Create, AboutPage.Delete, AboutPage.Update, AbsentNotification.Configure, AbsentNotification.Delete, AbsentNotification.Disable, AbsentNotification.Enable, Chat.Accept (+840 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.01
-Nodes (312): about_page_new_succeeds(), contact_page_new_succeeds(), content_available_to_role_with_no_filter_returns_true(), content_new_with_empty_file_name_returns_error(), content_new_with_negative_size_returns_error(), content_share_list_cancel_only_in_draft(), content_share_list_dispatch_transitions_status(), content_share_list_invalid_window_returns_error() (+304 more)
+Cohesion: 0.0
+Nodes (194): admin_context(), append_only_no_update_mutator_exists(), bank_account_id(), bank_payment_slip_audit_id(), bank_payment_slip_audit_typed_id_round_trips_school(), bank_payment_slip_audit_typed_ids_are_distinct_within_school(), bank_payment_slip_id(), fresh_appends_to_log_with_full_payload() (+186 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.0
-Nodes (194): active_forms_matches_when_active_status_is_true(), ActiveForms, dispatches_in_date_range_inclusive_bounds(), DispatchesInDateRange, DocumentsCoordinator, DocumentsCoordinator<'a, E>, make_dispatch(), make_form() (+186 more)
+Cohesion: 0.01
+Nodes (295): about_page_new_succeeds(), contact_page_new_succeeds(), content_available_to_role_with_no_filter_returns_true(), content_new_with_empty_file_name_returns_error(), content_new_with_negative_size_returns_error(), content_share_list_cancel_only_in_draft(), content_share_list_dispatch_transitions_status(), content_share_list_invalid_window_returns_error() (+287 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.01
-Nodes (501): 17-Phase Sequential Build Plan (Phase 0..17), Academic Domain, academic_students domain aggregate example, AcademicYear (current flag, transitions), ActiveIncidents Specification, AdmitStudentCommand, ADR-015 External Crate Selection (27 crates, MSRV pinning policy), ADR-016 Engine Graph (graphify rationale + workflow) (+493 more)
+Cohesion: 0.0
+Nodes (214): BackupRepository, FailedJobRepository, JobRepository, MaintenanceSettingRepository, Migration, MigrationRepository, OAuthAccessToken, OAuthAccessTokenRepository (+206 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.01
-Nodes (499): ChartOfAccount.Create, ChartOfAccount.Delete, ChartOfAccount.Update, Platform.AddOn.Install, Platform.AddOn.Uninstall, Platform.AmountTransfer.Create, Platform.AmountTransfer.Delete, Platform.AmountTransfer.Update (+491 more)
-
-### Community 11 - "Community 11"
 Cohesion: 0.0
 Nodes (69): AcceptChatInvitationCommand, ActivateEmailSettingCommand, ActivateSmsGatewayCommand, AddComplaintNoteCommand, AddUserToChatGroupCommand, AssignComplaintCommand, BlockUserCommand, CancelSendMessageCommand (+61 more)
+
+### Community 11 - "Community 11"
+Cohesion: 0.01
+Nodes (447): AssignClassTeacher.Create, AssignClassTeacher.Delete, AssignClassTeacher.Update, Attendance.BulkMark, Attendance.Import, Attendance.Mark, Attendance.Notify, Attendance.Staff.Delete (+439 more)
 
 ### Community 12 - "Community 12"
 Cohesion: 0.0
@@ -1213,151 +1210,151 @@ Nodes (73): AbsentNotificationDeleted, AbsentNotificationDisabled, AbsentNotific
 
 ### Community 14 - "Community 14"
 Cohesion: 0.01
-Nodes (432): AssignClassTeacher.Create, AssignClassTeacher.Delete, AssignClassTeacher.Update, Attendance.BulkMark, Attendance.Import, Attendance.Mark, Attendance.Notify, Attendance.Staff.Delete (+424 more)
+Nodes (423): 17-Phase Sequential Build Plan (Phase 0..17), Academic Domain, academic_students domain aggregate example, AcademicYear (current flag, transitions), ActiveIncidents Specification, AdmitStudentCommand, ADR-015 External Crate Selection (27 crates, MSRV pinning policy), ADR-016 Engine Graph (graphify rationale + workflow) (+415 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.01
-Nodes (323): academic_year_fresh_starts_not_current_not_closed(), AcademicYear, actor(), AdmitCard, AdmitCardSetting, AllExamWisePosition, AssignClassTeacherScope, BackgroundSetting Aggregate (+315 more)
+Nodes (80): ActivateLanguageCommand, ActivateStyleCommand, ActivateThemeCommand, add_language_command_into_new_language(), AddBaseGroupCommand, AddBaseSetupCommand, AddDateFormatCommand, AddLanguageCommand (+72 more)
 
 ### Community 16 - "Community 16"
 Cohesion: 0.01
-Nodes (80): ActivateLanguageCommand, ActivateStyleCommand, ActivateThemeCommand, add_language_command_into_new_language(), AddBaseGroupCommand, AddBaseSetupCommand, AddDateFormatCommand, AddLanguageCommand (+72 more)
+Nodes (170): email_template_variable_substitution(), display_includes_message(), ErrorKind, idempotency_conflict_kind_is_conflict(), idempotency_pending_kind_is_conflict(), infrastructure_preserves_source(), message_is_some_for_carriers(), files_integration_async_s3_put_mock() (+162 more)
 
 ### Community 17 - "Community 17"
 Cohesion: 0.01
-Nodes (130): AggregateTypeFilter, change_filter_for_school(), change_filter_since_and_aggregate(), ChangeEvent, ChangeFilter, ChangeStream, MigrationReport, SchoolSnapshot (+122 more)
+Nodes (53): AddStopToRouteCommand, AssignDriverToVehicleCommand, AssignStudentToRoomCommand, AssignStudentToRouteCommand, AssignVehicleToRouteCommand, CancelItemReceiveCommand, CancelItemSellCommand, CreateDormitoryCommand (+45 more)
 
 ### Community 18 - "Community 18"
 Cohesion: 0.01
-Nodes (364): AboutPage.Create, AboutPage.Delete, AboutPage.Update, AbsentNotification.Configure, AbsentNotification.Delete, AbsentNotification.Disable, AbsentNotification.Enable, Chat.Accept (+356 more)
+Nodes (121): MigrationReport, validate_source_accepts_short(), validate_source_rejects_too_long(), infrastructure_preserves_source(), NotificationError, NotificationTemplateId, provider_displays_message(), template_id_round_trips_string() (+113 more)
 
 ### Community 19 - "Community 19"
 Cohesion: 0.01
-Nodes (141): InMemoryPageRepo, builder_with_appends_relation(), events_rrule_expansion_subset(), BackupRepository, FailedJobRepository, JobRepository, MaintenanceSettingRepository, Migration (+133 more)
+Nodes (148): CommandHandle, CommandOutcome, CommandRegistry, CommandStatus, handle(), handle_display_uses_short_id(), handle_serde_round_trip(), mark_completed_sets_terminal_state() (+140 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.01
-Nodes (53): AddStopToRouteCommand, AssignDriverToVehicleCommand, AssignStudentToRoomCommand, AssignStudentToRouteCommand, AssignVehicleToRouteCommand, CancelItemReceiveCommand, CancelItemSellCommand, CreateDormitoryCommand (+45 more)
+Nodes (130): InMemoryPageRepo, builder_with_appends_relation(), events_rrule_expansion_subset(), CalendarService, CalendarSettingService, ContentService, HolidayService, IncidentService (+122 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.01
-Nodes (206): AcademicYearRepository, AdmitCardRepository, AdmitCardSettingRepository, AllExamWisePositionRepository, AmountTransferRepository, _assert_object_safe(), AssignClassTeacherRepository, AssignClassTeacherScopeRepository (+198 more)
+Nodes (120): bulk_insert_into(), MysqlBulkAttendance, PostgresBulkAttendance, SqliteBulkAttendance, MysqlConnection, SqliteConnection, SurrealConnection, hydration_failure_carries_fields() (+112 more)
 
 ### Community 22 - "Community 22"
 Cohesion: 0.01
-Nodes (70): all_event_types_have_nonempty_wire_form(), dormitory_updated_and_deleted_event_happy_path(), DormitoryCreated, DormitoryDeleted, DormitoryUpdated, DriverAssignedToVehicle, fixture(), IssuedItemReturned (+62 more)
+Nodes (206): AcademicYearRepository, AdmitCardRepository, AdmitCardSettingRepository, AllExamWisePositionRepository, AmountTransferRepository, _assert_object_safe(), AssignClassTeacherRepository, AssignClassTeacherScopeRepository (+198 more)
 
 ### Community 23 - "Community 23"
 Cohesion: 0.01
-Nodes (64): AddLeaveDeductionInfoCommand, AddPayrollDeductionCommand, AddPayrollEarningCommand, ApproveLeaveCommand, ApprovePayrollCommand, AssignDepartmentHeadCommand, AssignStaffRoleCommand, CancelLeaveCommand (+56 more)
+Nodes (70): all_event_types_have_nonempty_wire_form(), dormitory_updated_and_deleted_event_happy_path(), DormitoryCreated, DormitoryDeleted, DormitoryUpdated, DriverAssignedToVehicle, fixture(), IssuedItemReturned (+62 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.01
-Nodes (142): email_template_variable_substitution(), files_integration_async_s3_put_mock(), integrations_integration_async_lms_roster_sync_mock(), integrations_integration_async_webhook_out_dispatch_mock(), integrations_integration_polling_schedule(), integrations_integration_retry_exponential(), integrations_integration_webhook_signature(), debug_redacts_api_credentials() (+134 more)
+Nodes (64): AddLeaveDeductionInfoCommand, AddPayrollDeductionCommand, AddPayrollEarningCommand, ApproveLeaveCommand, ApprovePayrollCommand, AssignDepartmentHeadCommand, AssignStaffRoleCommand, CancelLeaveCommand (+56 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.01
-Nodes (180): add_tenant_field(), main(), Find all XCommand structs without a tenant: TenantContext field., Add `pub tenant: TenantContext,` as first field of struct., scan_stub_commands(), Clock, deterministic_idgen_is_stable(), deterministic_idgen_starting_at_matches_advanced_counter() (+172 more)
+Nodes (195): add_tenant_field(), main(), Find all XCommand structs without a tenant: TenantContext field., Add `pub tenant: TenantContext,` as first field of struct., scan_stub_commands(), Parent, Command, derive_action_target() (+187 more)
 
 ### Community 26 - "Community 26"
 Cohesion: 0.01
-Nodes (130): admit(), attendance(), demo(), dispatch(), parse_school(), parse_uuid(), payment(), configuration_key_is_alias_for_setting_name() (+122 more)
+Nodes (51): AssignIncidentCommand, CancelJobCommand, command_types_have_wire_form(), CommentOnIncidentCommand, ConfigureMaintenanceCommand, ConfigureWeekendsCommand, CreateBackupCommand, CreateCalendarSettingCommand (+43 more)
 
 ### Community 27 - "Community 27"
 Cohesion: 0.01
-Nodes (51): AssignIncidentCommand, CancelJobCommand, command_types_have_wire_form(), CommentOnIncidentCommand, ConfigureMaintenanceCommand, ConfigureWeekendsCommand, CreateBackupCommand, CreateCalendarSettingCommand (+43 more)
+Nodes (97): AddStudentToGroupCommand, AddSubTopicCommand, admit_student_command_minimal_constructor(), AdmitStudentCommand, AssignClassRoomCommand, AssignClassTeacherCommand, AssignOptionalSubjectCommand, AssignStudentToSectionCommand (+89 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.01
-Nodes (97): AddStudentToGroupCommand, AddSubTopicCommand, admit_student_command_minimal_constructor(), AdmitStudentCommand, AssignClassRoomCommand, AssignClassTeacherCommand, AssignOptionalSubjectCommand, AssignStudentToSectionCommand (+89 more)
+Nodes (78): AddTeacherRemarkCommand, ApproveTeacherEvaluationCommand, AssessmentUniquenessChecker, CancelAdmitCardCommand, CancelExamScheduleCommand, CancelSeatPlanCommand, ConfigureAdmitCardSettingsCommand, ConfigureCustomResultSettingsCommand (+70 more)
 
 ### Community 29 - "Community 29"
 Cohesion: 0.01
-Nodes (78): AddTeacherRemarkCommand, ApproveTeacherEvaluationCommand, AssessmentUniquenessChecker, CancelAdmitCardCommand, CancelExamScheduleCommand, CancelSeatPlanCommand, ConfigureAdmitCardSettingsCommand, ConfigureCustomResultSettingsCommand (+70 more)
+Nodes (248): AcademicYear.Close, AcademicYear.Create, AcademicYear.SetCurrent, AcademicYear.Update, AdmissionQuery.Convert, AdmissionQuery.Create, AdmissionQuery.FollowUp, Certificate.Create (+240 more)
 
 ### Community 30 - "Community 30"
-Cohesion: 0.01
-Nodes (79): _assert_object_safe(), AttachmentRef, BankAccountId, BulkId, BulkRecipient, BulkRecipientIndex, CardToken, Channel (+71 more)
+Cohesion: 0.02
+Nodes (107): admit(), attendance(), demo(), dispatch(), parse_school(), parse_uuid(), payment(), configuration_key_is_alias_for_setting_name() (+99 more)
 
 ### Community 31 - "Community 31"
 Cohesion: 0.01
-Nodes (225): AcademicYear.Close, AcademicYear.Create, AcademicYear.SetCurrent, AcademicYear.Update, AdmissionQuery.Convert, AdmissionQuery.Create, AdmissionQuery.FollowUp, Certificate.Create (+217 more)
+Nodes (114): auth_capabilities_round_trip(), payment_mode_from_str_unknown_returns_err(), Capability (typed enum, atomic permission), configuration_value_round_trips_via_serde(), DocumentType, school_contact_round_trip_serde(), SchoolContact, student_document_round_trip_serde() (+106 more)
 
 ### Community 32 - "Community 32"
-Cohesion: 0.01
-Nodes (97): auth_capabilities_round_trip(), payment_mode_from_str_unknown_returns_err(), Capability (typed enum, atomic permission), configuration_value_round_trips_via_serde(), DocumentType, student_document_round_trip_serde(), StudentDocument, StudentDocumentId (+89 more)
+Cohesion: 0.02
+Nodes (147): class_id(), naive(), record_id(), section_id(), student_attendance_create_rejects_duplicate_day_with_conflict(), student_attendance_create_rejects_oversized_notes_with_validation_error(), student_attendance_create_then_update_mutates_aggregate_and_emits_events(), student_attendance_update_with_no_changes_returns_validation_error() (+139 more)
 
 ### Community 33 - "Community 33"
 Cohesion: 0.01
-Nodes (70): Author, BedNumber, BookNumber, BookPrice, BookStatus, BookTitle, CategoryName, ContactPersonName (+62 more)
+Nodes (79): _assert_object_safe(), AttachmentRef, BankAccountId, BulkId, BulkRecipient, BulkRecipientIndex, CardToken, Channel (+71 more)
 
 ### Community 34 - "Community 34"
-Cohesion: 0.01
-Nodes (93): AdmitCardCancelled, AdmitCardGenerated, AdmitCardRegenerated, AdmitCardSettingCreated, AdmitCardSettingUpdated, CustomResultSettingCreated, CustomResultSettingUpdated, CustomTemporaryResultCreated (+85 more)
+Cohesion: 0.02
+Nodes (104): ApiKeyAuthProvider, constant_time_eq(), empty_config_is_rejected(), hmac_digest(), hmac_digest_is_deterministic_and_label_bound(), non_api_key_credential_is_rejected(), test_jwt(), valid_key_authenticates_and_returns_session() (+96 more)
 
 ### Community 35 - "Community 35"
 Cohesion: 0.02
-Nodes (133): hydration_failure_carries_fields(), hydration_failure_display_includes_fields(), into_domain_error_is_infrastructure(), source_chain_preserves_storage_error(), StorageError, admin_context(), event_id_gen(), make_configure_cmd() (+125 more)
+Nodes (89): notify_integration_idempotency_derive_key(), payment_integration_idempotency_charge_key(), auth_required_accessor(), health_degrades_on_empty_cron(), health_propagates_inner_health(), invoke_delegates_to_inner(), new_constructs_with_initial_cursor(), poll_once_returns_current_cursor_unchanged() (+81 more)
 
 ### Community 36 - "Community 36"
 Cohesion: 0.01
 Nodes (185): AdmitCard.Configure, AdmitCard.Generate, Exam.Configure, Exam.Create, Exam.Delete, Exam.Schedule, Exam.Update, ExamAttendance.Mark (+177 more)
 
 ### Community 37 - "Community 37"
-Cohesion: 0.03
-Nodes (88): ApiKeyAuthProvider, constant_time_eq(), empty_config_is_rejected(), hmac_digest(), hmac_digest_is_deterministic_and_label_bound(), non_api_key_credential_is_rejected(), test_jwt(), valid_key_authenticates_and_returns_session() (+80 more)
-
-### Community 38 - "Community 38"
 Cohesion: 0.01
 Nodes (27): AddBookCommand, AdjustBookQuantityCommand, AppendBookCatalogEntryCommand, CalculateFineCommand, CreateBookAcquisitionCommand, CreateBookCategoryCommand, CreateLibraryMemberNoteCommand, DeactivateLibraryMemberCommand (+19 more)
 
-### Community 39 - "Community 39"
-Cohesion: 0.03
-Nodes (72): Parent, copy_then_original_still_exists(), ctx(), delete_removes_file(), drain(), exists_returns_true_after_put_false_after_delete(), head_returns_metadata_for_existing_file(), head_returns_not_found_for_missing_key() (+64 more)
-
-### Community 40 - "Community 40"
-Cohesion: 0.04
-Nodes (91): enter_marks(), online_exam_lifecycle_happy_path_emits_all_five_events(), OnlineExamLifecycleService, ResultService, schedule_exam(), school_matches(), admit_student_duplicate_admission_no_returns_conflict(), admit_student_empty_admission_no_returns_validation_error() (+83 more)
-
-### Community 41 - "Community 41"
+### Community 38 - "Community 38"
 Cohesion: 0.02
 Nodes (150): Dormitory.Create, Dormitory.Delete, Dormitory.Update, Inventory.CancelReceive, Inventory.CancelSell, Inventory.Issue, Inventory.Receive, Inventory.RefundSell (+142 more)
 
-### Community 42 - "Community 42"
+### Community 39 - "Community 39"
+Cohesion: 0.02
+Nodes (133): BackgroundSetting Aggregate, BaseGroup Aggregate, BaseSetup Aggregate, BehaviorRecordSetting Aggregate, ColorTheme Aggregate, CustomLink Aggregate, DashboardSetting Aggregate, DateFormat Aggregate (+125 more)
+
+### Community 40 - "Community 40"
 Cohesion: 0.02
 Nodes (109): Department (aggregate), HourlyRate (aggregate), LeaveDefine (aggregate), LeaveRequest (aggregate), PayrollGenerate (aggregate), SalaryTemplate (aggregate), Staff (aggregate), HR Domain — Aggregates (+101 more)
 
-### Community 43 - "Community 43"
-Cohesion: 0.04
-Nodes (54): facilities_inventory_conservation_invariant_holds_for_receive_issue_sell(), ct_eq(), default_policy_matches_constants(), clock_at(), signing_key_ring_remove_rotation_key_disables_verification(), signing_key_ring_sign_produces_valid_hmac(), signing_key_ring_sign_rejects_unknown_key(), signing_key_ring_sign_succeeds_with_rotation_key() (+46 more)
+### Community 41 - "Community 41"
+Cohesion: 0.05
+Nodes (66): PayrollGenerate, admin_context(), ay_id(), build_assign(), cancel_after_cancelled_returns_conflict_fa_i_4(), cancel_after_paid_returns_conflict_fa_i_4(), cancel_after_payment_returns_conflict_fa_i_4(), cancel_open_assignment_transitions_to_cancelled_fa_i_4() (+58 more)
 
-### Community 44 - "Community 44"
+### Community 42 - "Community 42"
 Cohesion: 0.05
 Nodes (55): LeaveRequest, Staff (aggregate), StaffAttendanceMarked, StaffRegistered, admin_context(), FakeLeaveRequestUniqueness, fresh_pending_leave_request(), leave_request_ensure_unique_accepts_when_no_duplicate() (+47 more)
 
-### Community 45 - "Community 45"
+### Community 43 - "Community 43"
 Cohesion: 0.04
 Nodes (94): AcademicYearId (from educore-academic), ActiveForms Specification, Form.Delete, Form.Read Capability, Form.Read.Public Capability, Form.Update, Form.Upload, Postal.Delete (+86 more)
 
-### Community 46 - "Community 46"
-Cohesion: 0.04
-Nodes (45): payment_integration_idempotency_charge_key(), auth_required_accessor(), health_degrades_on_empty_cron(), health_propagates_inner_health(), invoke_delegates_to_inner(), new_constructs_with_initial_cursor(), poll_once_returns_current_cursor_unchanged(), PollingConfig (+37 more)
+### Community 44 - "Community 44"
+Cohesion: 0.05
+Nodes (73): build_aggregate_ddl(), build_aggregate_ddl_emits_one_create_table_per_aggregate(), build_aggregate_ddl_is_idempotent_via_if_not_exists_or_do_block(), build_create_table_sql(), build_create_table_sql_emits_default_for_auto_uuid_pk(), build_create_table_sql_emits_table_and_columns(), build_create_table_sql_emits_text_for_custom_unknown(), build_create_table_sql_emits_unique_for_unique_columns() (+65 more)
 
-### Community 47 - "Community 47"
+### Community 45 - "Community 45"
 Cohesion: 0.02
 Nodes (43): AboutPageRepository, ContactPageRepository, ContentRepository, ContentShareListRepository, ContentTypeRepository, CoursePageRepository, FrontendPageRepository, HomePageSettingRepository (+35 more)
 
-### Community 48 - "Community 48"
-Cohesion: 0.03
-Nodes (87): Rbac.Capability.Assign, Rbac.Capability.Revoke, Rbac.ModulePermission.Assign, Rbac.ModulePermission.Create, Rbac.ModulePermission.Delete, Rbac.ModulePermission.Revoke, Rbac.ModulePermission.Update, Rbac.Override.Clear (+79 more)
+### Community 46 - "Community 46"
+Cohesion: 0.04
+Nodes (38): copy_then_original_still_exists(), ctx(), delete_removes_file(), drain(), exists_returns_true_after_put_false_after_delete(), head_returns_metadata_for_existing_file(), head_returns_not_found_for_missing_key(), InMemoryFileStorage (+30 more)
 
-### Community 49 - "Community 49"
+### Community 47 - "Community 47"
+Cohesion: 0.03
+Nodes (49): AckOutcome, alias_compiles_and_resolves_to_in_process_bus(), AuditSink, BatchFailure, consumer_id_round_trip(), ConsumerId, DeadLetterEntry, DeadLetterQueue (+41 more)
+
+### Community 48 - "Community 48"
 Cohesion: 0.02
 Nodes (11): BankAccountQuery, BankStatementQuery, ExpenseQuery, FeesCarryForwardQuery, FeesInvoiceQuery, FeesPaymentQuery, IncomeQuery, PayrollPaymentQuery (+3 more)
 
+### Community 49 - "Community 49"
+Cohesion: 0.05
+Nodes (42): AlwaysFailing, AuditMirrorConfig, dispatch_fans_out_to_all_matching_subscribers(), dispatch_records_failure_but_continues_to_peers(), dispatch_skips_non_matching_subscribers(), dispatch_stats_total_counts_all_subscribers(), DispatchStats, empty_registry_dispatch_is_noop() (+34 more)
+
 ### Community 50 - "Community 50"
 Cohesion: 0.03
-Nodes (26): BehaviorRecordSetting, BehaviorRecordFlag, active_languages_spec(), ActiveLanguages, ActiveThemes, background_service_validates_type_consistency(), BackgroundService, BaseSetupService (+18 more)
+Nodes (78): Academic Domain (cross-reference), Communication Domain (cross-reference), Finance Domain (cross-reference), Operations Domain (cross-reference), RBAC Domain (cross-reference), Settings Domain (cross-reference), Specification: ActiveUsers, AddOn Aggregate (+70 more)
 
 ### Community 51 - "Community 51"
 Cohesion: 0.05
@@ -1372,40 +1369,40 @@ Cohesion: 0.04
 Nodes (69): RBAC Domain Aggregates, AssignCapabilityCommand, AssignPermission Aggregate, AssignPermissionRepository, assign_permissions Table, Audit Log (cross-cutting), Audit Workflow, Bootstrap Lock Recovery (+61 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.09
-Nodes (53): PayrollGenerate, admin_context(), ay_id(), build_assign(), cancel_after_cancelled_returns_conflict_fa_i_4(), cancel_after_paid_returns_conflict_fa_i_4(), cancel_after_payment_returns_conflict_fa_i_4(), cancel_open_assignment_transitions_to_cancelled_fa_i_4() (+45 more)
+Cohesion: 0.04
+Nodes (64): Rbac.Capability.Assign, Rbac.Capability.Revoke, Rbac.ModulePermission.Assign, Rbac.ModulePermission.Create, Rbac.ModulePermission.Delete, Rbac.ModulePermission.Revoke, Rbac.ModulePermission.Update, Rbac.Override.Clear (+56 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.04
-Nodes (39): AckOutcome, alias_compiles_and_resolves_to_in_process_bus(), AuditSink, BatchFailure, consumer_id_round_trip(), ConsumerId, DeadLetterEntry, DeadLetterQueue (+31 more)
+Nodes (63): CalendarSetting.Create, CalendarSetting.Delete, CalendarSetting.Disable, CalendarSetting.Enable, CalendarSetting.Update, Event.Create, Event.Delete, Event.Update (+55 more)
 
 ### Community 56 - "Community 56"
 Cohesion: 0.04
-Nodes (63): CalendarSetting.Create, CalendarSetting.Delete, CalendarSetting.Disable, CalendarSetting.Enable, CalendarSetting.Update, Event.Create, Event.Delete, Event.Update (+55 more)
-
-### Community 57 - "Community 57"
-Cohesion: 0.04
 Nodes (31): AuditPartition, backup_file_constructs(), backup_storage_ref_constructs(), BackupFile, BackupRetention, BackupSchedule, BackupStorageRef, FailedJobExceptionView (+23 more)
 
-### Community 58 - "Community 58"
+### Community 57 - "Community 57"
 Cohesion: 0.05
 Nodes (60): Book.Add, Book.AdjustQuantity, Book.Delete, Book.Read, Book.Update, BookCategory.Create, BookCategory.Delete, BookCategory.Update (+52 more)
 
-### Community 59 - "Community 59"
+### Community 58 - "Community 58"
 Cohesion: 0.04
 Nodes (29): assign_permission_query_chains_filters(), AssignPermissionQuery, column_type_variants_are_distinct(), ColumnDescriptor, ColumnType, DummyField, EntityDescriptor, ForeignKeyAction (+21 more)
 
-### Community 60 - "Community 60"
+### Community 59 - "Community 59"
 Cohesion: 0.05
 Nodes (57): AcademicYear Aggregate, AdmissionQuery Aggregate, Student.Admit Capability, Student.Promote Capability, Class Aggregate, ClassSection Aggregate, ClassTime Entity, AdmitStudent Command (+49 more)
 
-### Community 61 - "Community 61"
+### Community 60 - "Community 60"
 Cohesion: 0.04
 Nodes (57): BulkAttendanceImport aggregate, ClassAttendance projection, ExamAttendance aggregate (delegated to assessment), StudentAttendance aggregate, BulkMarkStudentAttendanceCommand, CommitBulkImportCommand, ImportAttendanceCommand, MarkStudentAttendanceCommand (+49 more)
 
-### Community 62 - "Community 62"
+### Community 61 - "Community 61"
 Cohesion: 0.08
 Nodes (28): batch_limit_to_usize(), CountingBus, deserialize(), envelope_serde_round_trip(), from_event_envelope_preserves_fields(), into_event_envelope_round_trips(), sample_event_envelope(), sample_serialized() (+20 more)
+
+### Community 62 - "Community 62"
+Cohesion: 0.04
+Nodes (26): Author, BookNumber, BookPrice, BookStatus, BookTitle, DaysOverdue, Details, Edition (+18 more)
 
 ### Community 63 - "Community 63"
 Cohesion: 0.12
@@ -1416,56 +1413,56 @@ Cohesion: 0.14
 Nodes (20): academic_year_id(), admin_context(), build_cmd(), class_id(), class_room_id(), class_section_assign_class_and_subject_teacher(), class_section_assign_class_room_appends(), class_section_assign_teacher_cross_school_rejected() (+12 more)
 
 ### Community 65 - "Community 65"
-Cohesion: 0.04
-Nodes (5): CancelBulkImportCommand, MarkSubjectAttendanceCommand, UpdateStaffAttendanceCommand, UpdateStudentAttendanceCommand, ValidateBulkImportCommand
-
-### Community 66 - "Community 66"
 Cohesion: 0.08
 Nodes (10): academic_year_query_builder_setter_methods(), AcademicYearQuery, class_query_builder_setter_methods(), ClassQuery, section_query_builder_setter_methods(), SectionQuery, student_query_builder_setter_methods(), StudentQuery (+2 more)
 
-### Community 67 - "Community 67"
+### Community 66 - "Community 66"
 Cohesion: 0.06
 Nodes (37): ADR-017 SurrealDB First, ADR-018 Sync Engine Architecture, AGENTS SurrealDB Primary, AGENTS Sync Engine ADRs, Build Plan Phase 0 Crates, Build Plan SurrealDB First, Build Plan Sync Engine, CONTRIBUTING Sync Rules (+29 more)
 
-### Community 68 - "Community 68"
-Cohesion: 0.11
-Nodes (27): LeaveDeductionInfo, StaffAttendanceImport, admin_context(), FakeLeaveDeductionInfoUniqueness, fresh_leave_deduction_info(), leave_deduction_info_ensure_active_accepts_active(), leave_deduction_info_ensure_active_rejects_inactive(), leave_deduction_info_ensure_non_negative_accepts_positive() (+19 more)
-
-### Community 69 - "Community 69"
+### Community 67 - "Community 67"
 Cohesion: 0.06
 Nodes (6): DateRange, _NullBookIssueRepo, _NullBookReturnRepo, _NullFineRepo, ReportsService, service_factory_reports_service_wiring()
 
-### Community 70 - "Community 70"
+### Community 68 - "Community 68"
 Cohesion: 0.07
 Nodes (35): ActiveNews specification, News.Create capability, Page.Create capability, Page.Publish capability, CmsCoordinator cross-domain facade, CreateNews command, CreatePage command, News aggregate (+27 more)
 
-### Community 71 - "Community 71"
+### Community 69 - "Community 69"
 Cohesion: 0.06
 Nodes (35): ActiveMembers Specification, AvailableBooks Specification, Book Aggregate, BookAcquisition Entity, BookCatalogEntry Entity, BookIssue Aggregate, BookIssueFine Entity, BookIssueRenewal Entity (+27 more)
 
-### Community 72 - "Community 72"
-Cohesion: 0.09
-Nodes (10): all_four_event_types_are_unique(), event_id_from(), sync_lifecycle_events(), sync_paused_correlates_to_started(), sync_started_event_type_is_namespaced(), sync_started_serialises_to_expected_json_shape(), SyncPaused, SyncResumed (+2 more)
-
-### Community 73 - "Community 73"
+### Community 70 - "Community 70"
 Cohesion: 0.11
 Nodes (19): cross_tenant_delete_rejected(), cross_tenant_order_independent(), cross_tenant_read_rejected(), cross_tenant_same_school_allowed(), cross_tenant_school_only_not_actor(), cross_tenant_write_rejected(), school(), CrossTenantError (+11 more)
 
-### Community 74 - "Community 74"
+### Community 71 - "Community 71"
 Cohesion: 0.08
 Nodes (32): AdmitCard Aggregate, Exam Aggregate, ExamAttendance Aggregate, ExamSchedule Aggregate, ExamSetup Aggregate, MarksRegister Aggregate, MeritPosition Aggregate, ResultStore Aggregate (+24 more)
 
-### Community 75 - "Community 75"
+### Community 72 - "Community 72"
+Cohesion: 0.13
+Nodes (18): Department, Designation, admin_context(), create_department_rejects_duplicate_name_via_uniqueness_checker(), create_department_rejects_empty_name(), create_department_returns_aggregate_and_event(), delete_department_happy_path_when_no_references(), delete_department_rejects_system_defined() (+10 more)
+
+### Community 73 - "Community 73"
 Cohesion: 0.08
 Nodes (14): CmsError, conflict_carries_message(), DocumentsError, duplicate_reference_no_carries_payload(), duplicate_slug_carries_payload(), forbidden_carries_message(), from_domain_error_conflict_maps_to_cms_conflict(), from_domain_error_forbidden_maps_to_cms_forbidden() (+6 more)
 
-### Community 76 - "Community 76"
+### Community 74 - "Community 74"
 Cohesion: 0.06
 Nodes (15): BackgroundSettingRepository, BaseGroupRepository, BaseSetupRepository, BehaviorRecordSettingRepository, ColorRepository, ColorThemeRepository, CustomLinkRepository, DashboardSettingRepository (+7 more)
 
-### Community 77 - "Community 77"
+### Community 75 - "Community 75"
+Cohesion: 0.15
+Nodes (25): LeaveDeductionInfo, admin_context(), FakeLeaveDeductionInfoUniqueness, fresh_leave_deduction_info(), leave_deduction_info_ensure_active_accepts_active(), leave_deduction_info_ensure_active_rejects_inactive(), leave_deduction_info_ensure_non_negative_accepts_positive(), leave_deduction_info_ensure_non_negative_accepts_zero() (+17 more)
+
+### Community 76 - "Community 76"
 Cohesion: 0.1
 Nodes (5): FmFeesTypeKind, LifecycleStatus, PaymentMode, ProductPurchaseLifecycleStatus, TransactionLifecycleStatus
+
+### Community 77 - "Community 77"
+Cohesion: 0.1
+Nodes (9): AdmitCardQuery, exam_query_execute_returns_not_supported(), exam_query_new_has_default_paging(), exam_query_setters_chain(), ExamQuery, ExamScheduleQuery, MarksRegisterQuery, ResultStoreQuery (+1 more)
 
 ### Community 78 - "Community 78"
 Cohesion: 0.11
@@ -1476,4154 +1473,4142 @@ Cohesion: 0.1
 Nodes (26): ADR-001: Domain-Driven Design, ADR-003: Multi-Tenant by Default, ADR-004: Command-Oriented Execution, ADR-005: Event-Driven Design, ADR-006: Compile-Time-Safe Query Layer, ADR-007: Audit-First Design, ADR-008: Offline-Capable Design, ADR-009: Capability-Based Permissions (+18 more)
 
 ### Community 80 - "Community 80"
-Cohesion: 0.19
-Nodes (15): admin_context(), fresh_staff_attendance(), naive(), staff_attendance_create_rejects_duplicate_day_with_conflict(), staff_attendance_create_then_update_mutates_aggregate_and_emits_events(), staff_attendance_ensure_attendance_type_valid_accepts_all_variants(), staff_attendance_ensure_date_required_accepts_any_date(), staff_attendance_ensure_unique_accepts_when_no_duplicate() (+7 more)
-
-### Community 81 - "Community 81"
-Cohesion: 0.22
-Nodes (13): fresh_schema_cid(), get_missing_returns_none(), InMemorySchemaRegistry, latest_picks_highest_version(), list_filters_by_kind_and_sorts(), register_and_get_round_trip(), register_conflicts_on_different_content(), register_is_idempotent_with_identical_content() (+5 more)
-
-### Community 82 - "Community 82"
-Cohesion: 0.35
-Nodes (19): admin_context(), bank_account_id(), event_id_gen(), make_record_cmd(), payment_method_id(), payroll_generate_id(), payroll_payment_id(), pp_event_carries_full_payload() (+11 more)
-
-### Community 83 - "Community 83"
 Cohesion: 0.18
 Nodes (10): cutoff_for_subtracts_retention_days(), cutoff_for_zero_retention_is_now_minus_zero(), default_policy_is_90_days_one_hour(), RetentionPolicy, RetentionSweeper, sweeper_after_interval_returns_true(), sweeper_first_call_seeds_and_returns_false(), sweeper_records_new_last_sweep_at() (+2 more)
 
-### Community 84 - "Community 84"
+### Community 81 - "Community 81"
 Cohesion: 0.11
 Nodes (5): BulkCommandCompleted, BulkCommandItemProcessed, BulkCommandStarted, BulkFailurePolicy, event_id_from()
 
-### Community 85 - "Community 85"
+### Community 82 - "Community 82"
 Cohesion: 0.11
 Nodes (19): AssignFeesToClassCommand, FeesAssign aggregate, FeesAssignRepository port, finance_fees_assigns table, FeesGroup aggregate, FeesGroup.* capabilities, FeesGroupRepository port, FeesMaster aggregate (+11 more)
 
+### Community 83 - "Community 83"
+Cohesion: 0.11
+Nodes (1): NoOpUniquenessChecker
+
+### Community 84 - "Community 84"
+Cohesion: 0.11
+Nodes (1): NoOpUniquenessChecker
+
+### Community 85 - "Community 85"
+Cohesion: 0.11
+Nodes (1): NoOpUniquenessChecker
+
 ### Community 86 - "Community 86"
-Cohesion: 0.11
-Nodes (1): NoOpUniquenessChecker
-
-### Community 87 - "Community 87"
-Cohesion: 0.11
-Nodes (1): NoOpUniquenessChecker
-
-### Community 88 - "Community 88"
-Cohesion: 0.11
-Nodes (1): InMemoryUniqueness
-
-### Community 89 - "Community 89"
-Cohesion: 0.11
-Nodes (1): NoOpUniquenessChecker
-
-### Community 90 - "Community 90"
-Cohesion: 0.11
-Nodes (1): TestUniqueness
-
-### Community 91 - "Community 91"
-Cohesion: 0.33
-Nodes (10): class_id(), naive(), record_id(), section_id(), student_attendance_create_rejects_duplicate_day_with_conflict(), student_attendance_create_rejects_oversized_notes_with_validation_error(), student_attendance_create_then_update_mutates_aggregate_and_emits_events(), student_attendance_update_with_no_changes_returns_validation_error() (+2 more)
-
-### Community 92 - "Community 92"
 Cohesion: 0.12
 Nodes (8): BackupQuery, FailedJobQuery, JobQuery, MaintenanceSettingQuery, SidebarQuery, SystemVersionQuery, UserLogQuery, VersionHistoryQuery
 
-### Community 93 - "Community 93"
+### Community 87 - "Community 87"
+Cohesion: 0.27
+Nodes (12): HourlyRate, admin_context(), FakeHourlyRateUniqueness, fresh_hourly_rate(), hourly_rate_ensure_rate_positive_accepts_positive(), hourly_rate_ensure_rate_positive_rejects_negative(), hourly_rate_ensure_rate_positive_rejects_zero(), hourly_rate_ensure_unique_accepts_when_no_duplicate() (+4 more)
+
+### Community 88 - "Community 88"
+Cohesion: 0.12
+Nodes (2): UpdateStudentAttendanceCommand, ValidateBulkImportCommand
+
+### Community 89 - "Community 89"
 Cohesion: 0.21
 Nodes (6): school_query_builder_setter_methods(), school_query_execute_returns_not_supported(), SchoolQuery, user_query_builder_setter_methods(), user_query_execute_returns_not_supported(), UserQuery
 
-### Community 94 - "Community 94"
+### Community 90 - "Community 90"
 Cohesion: 0.13
 Nodes (7): AssignIncidentRepository, CalendarEventRepository, CalendarSettingRepository, HolidayRepository, IncidentCommentRepository, IncidentRepository, WeekendRepository
 
-### Community 95 - "Community 95"
+### Community 91 - "Community 91"
 Cohesion: 0.13
 Nodes (15): ClassId from educore-academic, Content aggregate, ContentAvailability embedded value, ContentCreated event, ContentRepository port, ContentRevision entity, ContentService domain service, CreateContent command (+7 more)
 
-### Community 96 - "Community 96"
+### Community 92 - "Community 92"
 Cohesion: 0.14
 Nodes (15): BookIssueEligibility Policy, CalculateFineCommand, IssueBookCommand, MarkBookLostCommand, RegisterLibraryMemberCommand, ReturnBookCommand, LibraryCoordinator, BookIssued Event (+7 more)
 
-### Community 97 - "Community 97"
+### Community 93 - "Community 93"
+Cohesion: 0.21
+Nodes (3): BehaviorRecordSetting, BehaviorRecordFlag, BehaviorRecordService
+
+### Community 94 - "Community 94"
 Cohesion: 0.23
 Nodes (1): CommunicationError
 
-### Community 98 - "Community 98"
+### Community 95 - "Community 95"
 Cohesion: 0.18
 Nodes (13): ContentShareList.Dispatch capability, ContentShareList aggregate, ContentShareListAudience entity, ContentShareListContent join entity, ContentShareListDispatched event, ContentShareListRepository port, ContentShareListService domain service, CreateContentShareList command (+5 more)
 
-### Community 99 - "Community 99"
+### Community 96 - "Community 96"
 Cohesion: 0.29
 Nodes (10): aggregate_topic_falls_back_to_aggregate_type(), aggregate_topic_uses_event_type_domain(), envelope_payload_serde_round_trip(), is_for_school_matches(), sample(), envelope_bytes(), envelope_bytes_can_serialize_to_value(), payload_bytes() (+2 more)
 
-### Community 100 - "Community 100"
+### Community 97 - "Community 97"
 Cohesion: 0.18
 Nodes (12): finance_invoices table, FmFeesInvoice aggregate, FmFeesInvoiceGenerated event, FmFeesInvoiceRepository port, InvoiceGenerationService, InvoiceNumber / ReceiptNumber value objects, PayrollCalculationService, PayrollGenerate aggregate (+4 more)
 
-### Community 101 - "Community 101"
-Cohesion: 0.2
-Nodes (3): event_id_from(), IdempotencyRetentionPolicy, IdempotencyTtlSweepDue
+### Community 98 - "Community 98"
+Cohesion: 0.47
+Nodes (9): admin_context(), fresh_payroll_earn_deduc(), payroll_earn_deduc_ensure_amount_non_negative_accepts_positive(), payroll_earn_deduc_ensure_amount_non_negative_accepts_zero(), payroll_earn_deduc_ensure_amount_non_negative_rejects_negative(), payroll_earn_deduc_ensure_earn_dedc_type_valid_accepts_both_variants(), payroll_earn_deduc_id(), payroll_earn_deduc_typed_id_round_trips_school() (+1 more)
 
-### Community 102 - "Community 102"
+### Community 99 - "Community 99"
 Cohesion: 0.22
 Nodes (11): NewsComment.Moderate capability, CommentOnNews command, ModerateNewsComment command, NewsComment aggregate, NewsCommentAdded event, NewsCommentApproved event, NewsCommentPolicy, NewsCommentRepository port (+3 more)
 
-### Community 103 - "Community 103"
-Cohesion: 0.2
-Nodes (1): MysqlConnection
-
-### Community 104 - "Community 104"
+### Community 100 - "Community 100"
 Cohesion: 0.29
 Nodes (6): has_capability_checks_cache(), is_replicated_flag_round_trips(), is_system_includes_role_type_system(), Permission, PermissionSection, sample_role()
 
-### Community 105 - "Community 105"
+### Community 101 - "Community 101"
 Cohesion: 0.22
 Nodes (2): EventLogRetentionPolicy, EventLogRetentionSweepDue
 
-### Community 106 - "Community 106"
+### Community 102 - "Community 102"
 Cohesion: 0.2
 Nodes (10): StaffImportBulkTemporary (aggregate), BulkImportService, ImportStaffBulkCommand, PromoteStaffImportCommand, BulkImportJob, StaffImportResolution, StaffImportPromoted, StaffImportBulkTemporaryRepository (+2 more)
 
-### Community 107 - "Community 107"
+### Community 103 - "Community 103"
 Cohesion: 0.31
 Nodes (10): Library Aggregates, Anti-Goal: Inter-library loans out of scope, Library Commands, Library Entities, Library Events, Library Domain Overview, Library Repositories, Library Tables (+2 more)
 
-### Community 108 - "Community 108"
+### Community 104 - "Community 104"
 Cohesion: 0.22
 Nodes (10): DisableMaintenanceCommand, EnableMaintenanceCommand, MaintenanceDisabled Event, MaintenanceEnabled Event, Maintenance Mode Workflow, MaintenanceService, MaintenanceSetting Aggregate, MaintenanceSettingRepository (+2 more)
 
-### Community 109 - "Community 109"
+### Community 105 - "Community 105"
 Cohesion: 0.2
 Nodes (10): ApplyRemoteChangeCommand, ConflictRecord Aggregate, ConflictReported Event, OutboxDrained Event, OutboxEntry Aggregate, ResolveConflictCommand, SwitchSchoolCommand, SyncCursor Aggregate (+2 more)
 
-### Community 110 - "Community 110"
+### Community 106 - "Community 106"
 Cohesion: 0.2
 Nodes (10): SQL Comparison SurrealDB, SQL Dialects SurrealDB Added, DEFINE EVENT Trigger, DEFINE FIELD Statement, DEFINE INDEX Statement, DEFINE TABLE Statement, SurrealDB Dialect Conventions, LIVE SELECT Change Feed (+2 more)
 
-### Community 111 - "Community 111"
+### Community 107 - "Community 107"
 Cohesion: 0.22
 Nodes (2): StaffAttendanceImport, StudentAttendanceImport
 
-### Community 112 - "Community 112"
+### Community 108 - "Community 108"
 Cohesion: 0.22
 Nodes (9): educore-operations README, docs/specs/operations/, Engine-Internal Tables, Backups, Operations Domain, Engine Lifecycle Recording, Runtime Maintenance Windows, Scheduled Jobs (+1 more)
 
-### Community 113 - "Community 113"
+### Community 109 - "Community 109"
 Cohesion: 0.22
 Nodes (8): CLI as reference implementation, educore-cli (sample binary), Engine is library-only, Applying migrations, Draining the outbox, Starting the runtime, docs/guides/saas-backend.md, Running scheduled jobs
 
-### Community 114 - "Community 114"
+### Community 110 - "Community 110"
 Cohesion: 0.22
 Nodes (9): operations_system_versions Table, RecordVersionHistoryCommand, RegisterSystemVersionCommand, SystemVersion Aggregate, System Version Bump Workflow, SystemVersionBumped Event, SystemVersionRegistered Event, SystemVersionRepository (+1 more)
 
-### Community 115 - "Community 115"
+### Community 111 - "Community 111"
 Cohesion: 0.25
 Nodes (1): MarkStudentAttendanceCommand
+
+### Community 112 - "Community 112"
+Cohesion: 0.25
+Nodes (1): BulkMarkStudentAttendanceCommand
+
+### Community 113 - "Community 113"
+Cohesion: 0.25
+Nodes (1): MarkSubjectAttendanceCommand
+
+### Community 114 - "Community 114"
+Cohesion: 0.25
+Nodes (1): UpdateSubjectAttendanceCommand
+
+### Community 115 - "Community 115"
+Cohesion: 0.25
+Nodes (1): UpdateStaffAttendanceCommand
 
 ### Community 116 - "Community 116"
 Cohesion: 0.25
-Nodes (1): BulkMarkStudentAttendanceCommand
+Nodes (1): ImportAttendanceCommand
 
 ### Community 117 - "Community 117"
 Cohesion: 0.25
-Nodes (1): UpdateSubjectAttendanceCommand
+Nodes (1): CommitBulkImportCommand
 
 ### Community 118 - "Community 118"
 Cohesion: 0.25
-Nodes (1): ImportAttendanceCommand
+Nodes (1): CancelBulkImportCommand
 
 ### Community 119 - "Community 119"
-Cohesion: 0.25
-Nodes (1): CommitBulkImportCommand
-
-### Community 120 - "Community 120"
 Cohesion: 0.29
 Nodes (8): CreateHomework Command, Homework Aggregate, HomeworkSubmission Entity, HomeworkRepository, Teacher Role, HomeworkService, academic_homeworks Table, Homework Workflow
 
-### Community 121 - "Community 121"
+### Community 120 - "Community 120"
 Cohesion: 0.25
 Nodes (8): CommandEnvelope Type, CommandOutcome Type, Device Token Auth, Event Bus Sync Bridge, EventFilter Type, SchoolSnapshot Type, SyncAdapter Trait, SyncHealth Type
 
-### Community 122 - "Community 122"
+### Community 121 - "Community 121"
 Cohesion: 0.25
 Nodes (8): SurrealDB audit_log Table, SurrealDB include_str! Pattern, SurrealDB Namespace Database, SurrealDB event_log Table, SurrealDB idempotency Table, SurrealDB outbox Table, SurrealDB schema_registry Table, SurrealDB system_user Table
 
-### Community 123 - "Community 123"
+### Community 122 - "Community 122"
 Cohesion: 0.67
 Nodes (6): admin_context(), create_online_exam_emits_event_for_anchored_id(), create_online_exam_rejects_cross_tenant_id(), online_exam_id(), online_exam_publish_cross_tenant_rejected(), online_exam_publish_happy_path()
 
-### Community 124 - "Community 124"
+### Community 123 - "Community 123"
 Cohesion: 0.29
 Nodes (3): ExamScheduleSubject, MarksRegisterChild, SeatPlanChild
 
-### Community 125 - "Community 125"
+### Community 124 - "Community 124"
 Cohesion: 0.29
 Nodes (1): DeleteFormCommand
+
+### Community 125 - "Community 125"
+Cohesion: 0.29
+Nodes (1): DeletePostalDispatchCommand
 
 ### Community 126 - "Community 126"
 Cohesion: 0.29
-Nodes (1): DeletePostalDispatchCommand
+Nodes (1): DeletePostalReceiveCommand
 
 ### Community 127 - "Community 127"
 Cohesion: 0.29
-Nodes (1): DeletePostalReceiveCommand
+Nodes (1): _NullBookCategoryRepo
 
 ### Community 128 - "Community 128"
 Cohesion: 0.29
-Nodes (1): _NullBookCategoryRepo
+Nodes (1): UpdateRoleCommand
 
 ### Community 129 - "Community 129"
 Cohesion: 0.29
-Nodes (1): CreateRoleCommand
+Nodes (1): DeleteRoleCommand
 
 ### Community 130 - "Community 130"
 Cohesion: 0.29
-Nodes (1): UpdateRoleCommand
+Nodes (1): AssignCapabilityCommand
 
 ### Community 131 - "Community 131"
 Cohesion: 0.29
-Nodes (1): DeleteRoleCommand
+Nodes (1): RevokeCapabilityCommand
 
 ### Community 132 - "Community 132"
 Cohesion: 0.29
-Nodes (1): AssignCapabilityCommand
+Nodes (7): CreateLessonPlan Command, Lesson Aggregate, LessonPlan Aggregate, LessonTopic Aggregate, LessonPlanService, lesson_planners Table, Lesson Plan Workflow
 
 ### Community 133 - "Community 133"
 Cohesion: 0.29
-Nodes (1): RevokeCapabilityCommand
-
-### Community 134 - "Community 134"
-Cohesion: 0.29
-Nodes (7): CreateLessonPlan Command, Lesson Aggregate, LessonPlan Aggregate, LessonTopic Aggregate, LessonPlanService, lesson_planners Table, Lesson Plan Workflow
-
-### Community 135 - "Community 135"
-Cohesion: 0.29
 Nodes (7): OnlineExam Aggregate, QuestionBank Aggregate, OnlineExamRepository Port, OnlineExamService, OnlineExamStatus Enum, QuestionType Enum, Online Exam Lifecycle Workflow
 
-### Community 136 - "Community 136"
+### Community 134 - "Community 134"
 Cohesion: 0.33
 Nodes (7): SubjectAttendance aggregate, MarkSubjectAttendanceCommand, SubjectAbsentNotificationRequested, SubjectAttendanceMarked, Attendance.Subject.Mark capability, SubjectAttendanceRepository, attendance_subject_attendances table
 
-### Community 137 - "Community 137"
+### Community 135 - "Community 135"
 Cohesion: 0.38
 Nodes (7): StaffAttendance aggregate, MarkStaffAttendanceCommand, StaffAbsentForDay, StaffAttendanceMarked, Attendance.Staff.Mark capability, StaffAttendanceRepository, attendance_staff_attendances table
 
-### Community 138 - "Community 138"
+### Community 136 - "Community 136"
 Cohesion: 0.33
 Nodes (7): Facilities Domain Aggregates, Facilities Domain Commands, Facilities Domain Entities, Facilities Domain Events, Facilities Domain Overview, Facilities Domain Tables, Facilities Domain Value Objects
 
-### Community 139 - "Community 139"
+### Community 137 - "Community 137"
 Cohesion: 0.29
 Nodes (7): InventoryService Domain Service, ItemReceive Aggregate, ItemReceiveChild Aggregate, PaidStatus Value Object, PaymentMethod Value Object, Supplier Aggregate, SupplierStatus Value Object
 
-### Community 140 - "Community 140"
+### Community 138 - "Community 138"
 Cohesion: 0.29
 Nodes (7): Vehicle.Create Capability, CreateVehicleCommand, DriverAssignment Entity, RouteStop Entity, Vehicle Aggregate, VehicleCreated Event, VehicleStatus Value Object
 
-### Community 141 - "Community 141"
+### Community 139 - "Community 139"
 Cohesion: 0.33
 Nodes (1): UploadFormCommand
 
-### Community 142 - "Community 142"
+### Community 140 - "Community 140"
 Cohesion: 0.33
 Nodes (1): UpdateFormCommand
 
-### Community 143 - "Community 143"
+### Community 141 - "Community 141"
 Cohesion: 0.33
 Nodes (1): DeleteFormCommand
 
-### Community 144 - "Community 144"
+### Community 142 - "Community 142"
 Cohesion: 0.33
 Nodes (1): DispatchPostalCommand
 
-### Community 145 - "Community 145"
+### Community 143 - "Community 143"
 Cohesion: 0.33
 Nodes (1): UpdatePostalDispatchCommand
 
-### Community 146 - "Community 146"
+### Community 144 - "Community 144"
 Cohesion: 0.33
 Nodes (1): DeletePostalDispatchCommand
 
-### Community 147 - "Community 147"
+### Community 145 - "Community 145"
 Cohesion: 0.33
 Nodes (1): ReceivePostalCommand
 
-### Community 148 - "Community 148"
+### Community 146 - "Community 146"
 Cohesion: 0.33
 Nodes (1): UpdatePostalReceiveCommand
 
-### Community 149 - "Community 149"
+### Community 147 - "Community 147"
 Cohesion: 0.33
 Nodes (1): DeletePostalReceiveCommand
 
-### Community 150 - "Community 150"
+### Community 148 - "Community 148"
 Cohesion: 0.33
 Nodes (1): TrackPostalCommand
 
-### Community 151 - "Community 151"
+### Community 149 - "Community 149"
 Cohesion: 0.33
 Nodes (1): CreateFeesGroupCommand
 
-### Community 152 - "Community 152"
+### Community 150 - "Community 150"
 Cohesion: 0.33
 Nodes (1): UpdateFeesGroupCommand
 
-### Community 153 - "Community 153"
+### Community 151 - "Community 151"
 Cohesion: 0.33
 Nodes (1): DeleteFeesGroupCommand
 
-### Community 154 - "Community 154"
+### Community 152 - "Community 152"
 Cohesion: 0.33
 Nodes (1): ReadFeesGroupCommand
 
-### Community 155 - "Community 155"
+### Community 153 - "Community 153"
 Cohesion: 0.33
 Nodes (1): CreateFeesTypeCommand
 
-### Community 156 - "Community 156"
+### Community 154 - "Community 154"
 Cohesion: 0.33
 Nodes (1): UpdateFeesTypeCommand
 
-### Community 157 - "Community 157"
+### Community 155 - "Community 155"
 Cohesion: 0.33
 Nodes (1): DeleteFeesTypeCommand
 
-### Community 158 - "Community 158"
+### Community 156 - "Community 156"
 Cohesion: 0.33
 Nodes (1): ReadFeesTypeCommand
 
-### Community 159 - "Community 159"
+### Community 157 - "Community 157"
 Cohesion: 0.33
 Nodes (1): CreateFeesMasterCommand
 
-### Community 160 - "Community 160"
+### Community 158 - "Community 158"
 Cohesion: 0.33
 Nodes (1): UpdateFeesMasterCommand
 
-### Community 161 - "Community 161"
+### Community 159 - "Community 159"
 Cohesion: 0.33
 Nodes (1): DeleteFeesMasterCommand
 
-### Community 162 - "Community 162"
+### Community 160 - "Community 160"
 Cohesion: 0.33
 Nodes (1): RetireFeesMasterCommand
 
-### Community 163 - "Community 163"
+### Community 161 - "Community 161"
 Cohesion: 0.33
 Nodes (1): ReadFeesMasterCommand
 
-### Community 164 - "Community 164"
+### Community 162 - "Community 162"
 Cohesion: 0.33
 Nodes (1): CreateFeesDiscountCommand
 
-### Community 165 - "Community 165"
+### Community 163 - "Community 163"
 Cohesion: 0.33
 Nodes (1): UpdateFeesDiscountCommand
 
-### Community 166 - "Community 166"
+### Community 164 - "Community 164"
 Cohesion: 0.33
 Nodes (1): DeleteFeesDiscountCommand
 
-### Community 167 - "Community 167"
+### Community 165 - "Community 165"
 Cohesion: 0.33
 Nodes (1): ReadFeesDiscountCommand
 
-### Community 168 - "Community 168"
+### Community 166 - "Community 166"
 Cohesion: 0.33
 Nodes (1): CreateFeesAssignCommand
 
-### Community 169 - "Community 169"
+### Community 167 - "Community 167"
 Cohesion: 0.33
 Nodes (1): UpdateFeesAssignCommand
 
-### Community 170 - "Community 170"
+### Community 168 - "Community 168"
 Cohesion: 0.33
 Nodes (1): DeleteFeesAssignCommand
 
-### Community 171 - "Community 171"
+### Community 169 - "Community 169"
 Cohesion: 0.33
 Nodes (1): ReadFeesAssignCommand
 
-### Community 172 - "Community 172"
+### Community 170 - "Community 170"
 Cohesion: 0.33
 Nodes (1): RecordFeesAssignPaymentCommand
 
-### Community 173 - "Community 173"
+### Community 171 - "Community 171"
 Cohesion: 0.33
 Nodes (1): CancelFeesAssignCommand
 
-### Community 174 - "Community 174"
+### Community 172 - "Community 172"
 Cohesion: 0.33
 Nodes (1): CreateFeesInstallmentCommand
 
-### Community 175 - "Community 175"
+### Community 173 - "Community 173"
 Cohesion: 0.33
 Nodes (1): UpdateFeesInstallmentCommand
 
-### Community 176 - "Community 176"
+### Community 174 - "Community 174"
 Cohesion: 0.33
 Nodes (1): DeleteFeesInstallmentCommand
 
-### Community 177 - "Community 177"
+### Community 175 - "Community 175"
 Cohesion: 0.33
 Nodes (1): ReadFeesInstallmentCommand
 
-### Community 178 - "Community 178"
+### Community 176 - "Community 176"
 Cohesion: 0.33
 Nodes (1): RetireFeesInstallmentCommand
 
-### Community 179 - "Community 179"
+### Community 177 - "Community 177"
 Cohesion: 0.33
 Nodes (1): CreateDirectFeesInstallmentCommand
 
-### Community 180 - "Community 180"
+### Community 178 - "Community 178"
 Cohesion: 0.33
 Nodes (1): UpdateDirectFeesInstallmentCommand
 
-### Community 181 - "Community 181"
+### Community 179 - "Community 179"
 Cohesion: 0.33
 Nodes (1): DeleteDirectFeesInstallmentCommand
 
-### Community 182 - "Community 182"
+### Community 180 - "Community 180"
 Cohesion: 0.33
 Nodes (1): ReadDirectFeesInstallmentCommand
 
-### Community 183 - "Community 183"
+### Community 181 - "Community 181"
 Cohesion: 0.33
 Nodes (1): RetireDirectFeesInstallmentCommand
 
-### Community 184 - "Community 184"
+### Community 182 - "Community 182"
 Cohesion: 0.33
 Nodes (1): CreateDirectFeesInstallmentAssignCommand
 
-### Community 185 - "Community 185"
+### Community 183 - "Community 183"
 Cohesion: 0.33
 Nodes (1): ReadDirectFeesInstallmentAssignCommand
 
-### Community 186 - "Community 186"
+### Community 184 - "Community 184"
 Cohesion: 0.33
 Nodes (1): RetireDirectFeesInstallmentAssignCommand
 
-### Community 187 - "Community 187"
+### Community 185 - "Community 185"
 Cohesion: 0.33
 Nodes (1): CreateDirectFeesInstallmentAssignChildCommand
 
-### Community 188 - "Community 188"
+### Community 186 - "Community 186"
 Cohesion: 0.33
 Nodes (1): CreateDirectFeesSettingCommand
 
-### Community 189 - "Community 189"
+### Community 187 - "Community 187"
 Cohesion: 0.33
 Nodes (1): UpdateDirectFeesSettingCommand
 
-### Community 190 - "Community 190"
+### Community 188 - "Community 188"
 Cohesion: 0.33
 Nodes (1): DeleteDirectFeesSettingCommand
 
-### Community 191 - "Community 191"
+### Community 189 - "Community 189"
 Cohesion: 0.33
 Nodes (1): CreateDirectFeesReminderCommand
 
-### Community 192 - "Community 192"
+### Community 190 - "Community 190"
 Cohesion: 0.33
 Nodes (1): UpdateDirectFeesReminderCommand
 
-### Community 193 - "Community 193"
+### Community 191 - "Community 191"
 Cohesion: 0.33
 Nodes (1): DeleteDirectFeesReminderCommand
 
-### Community 194 - "Community 194"
+### Community 192 - "Community 192"
 Cohesion: 0.33
 Nodes (1): CreatePaymentMethodCommand
 
-### Community 195 - "Community 195"
+### Community 193 - "Community 193"
 Cohesion: 0.33
 Nodes (1): RetirePaymentMethodCommand
 
-### Community 196 - "Community 196"
+### Community 194 - "Community 194"
 Cohesion: 0.33
 Nodes (1): CreateFeesInstallmentAssignCommand
 
-### Community 197 - "Community 197"
+### Community 195 - "Community 195"
 Cohesion: 0.33
 Nodes (1): ReadFeesInstallmentAssignCommand
 
-### Community 198 - "Community 198"
+### Community 196 - "Community 196"
 Cohesion: 0.33
 Nodes (1): RetireFeesInstallmentAssignCommand
 
-### Community 199 - "Community 199"
+### Community 197 - "Community 197"
 Cohesion: 0.33
 Nodes (1): CloseFeesInstallmentAssignCommand
 
-### Community 200 - "Community 200"
+### Community 198 - "Community 198"
 Cohesion: 0.33
 Nodes (1): CancelFeesInstallmentAssignCommand
 
-### Community 201 - "Community 201"
+### Community 199 - "Community 199"
 Cohesion: 0.33
 Nodes (1): UpdatePaymentMethodCommand
 
-### Community 202 - "Community 202"
+### Community 200 - "Community 200"
 Cohesion: 0.33
 Nodes (1): DeletePaymentMethodCommand
 
-### Community 203 - "Community 203"
+### Community 201 - "Community 201"
 Cohesion: 0.33
 Nodes (1): ReadPaymentMethodCommand
 
-### Community 204 - "Community 204"
+### Community 202 - "Community 202"
 Cohesion: 0.33
 Nodes (1): CreatePaymentGatewayCommand
 
-### Community 205 - "Community 205"
+### Community 203 - "Community 203"
 Cohesion: 0.33
 Nodes (1): UpdatePaymentGatewayCommand
 
-### Community 206 - "Community 206"
+### Community 204 - "Community 204"
 Cohesion: 0.33
 Nodes (1): DeletePaymentGatewayCommand
 
-### Community 207 - "Community 207"
+### Community 205 - "Community 205"
 Cohesion: 0.33
 Nodes (1): GenerateInvoiceCommand
 
-### Community 208 - "Community 208"
+### Community 206 - "Community 206"
 Cohesion: 0.33
 Nodes (1): UpdateInvoiceCommand
 
-### Community 209 - "Community 209"
+### Community 207 - "Community 207"
 Cohesion: 0.33
 Nodes (1): CancelInvoiceCommand
 
-### Community 210 - "Community 210"
+### Community 208 - "Community 208"
 Cohesion: 0.33
 Nodes (1): ReadInvoiceCommand
 
-### Community 211 - "Community 211"
+### Community 209 - "Community 209"
 Cohesion: 0.33
 Nodes (1): ReversePaymentCommand
 
-### Community 212 - "Community 212"
+### Community 210 - "Community 210"
 Cohesion: 0.33
 Nodes (1): RefundPaymentCommand
 
-### Community 213 - "Community 213"
+### Community 211 - "Community 211"
 Cohesion: 0.33
 Nodes (1): ReadFeesPaymentCommand
 
-### Community 214 - "Community 214"
+### Community 212 - "Community 212"
 Cohesion: 0.33
 Nodes (1): UpdateExpenseCommand
 
-### Community 215 - "Community 215"
+### Community 213 - "Community 213"
 Cohesion: 0.33
 Nodes (1): DeleteExpenseCommand
 
-### Community 216 - "Community 216"
+### Community 214 - "Community 214"
 Cohesion: 0.33
 Nodes (1): ApproveExpenseCommand
 
-### Community 217 - "Community 217"
+### Community 215 - "Community 215"
 Cohesion: 0.33
 Nodes (1): CreateIncomeCommand
 
-### Community 218 - "Community 218"
+### Community 216 - "Community 216"
 Cohesion: 0.33
 Nodes (1): UpdateIncomeCommand
 
-### Community 219 - "Community 219"
+### Community 217 - "Community 217"
 Cohesion: 0.33
 Nodes (1): DeleteIncomeCommand
 
-### Community 220 - "Community 220"
+### Community 218 - "Community 218"
 Cohesion: 0.33
 Nodes (1): ReadIncomeCommand
 
-### Community 221 - "Community 221"
+### Community 219 - "Community 219"
 Cohesion: 0.33
 Nodes (1): RetireIncomeCommand
 
-### Community 222 - "Community 222"
+### Community 220 - "Community 220"
 Cohesion: 0.33
 Nodes (1): ApproveIncomeCommand
 
-### Community 223 - "Community 223"
+### Community 221 - "Community 221"
 Cohesion: 0.33
 Nodes (1): UpdateExpenseHeadCommand
 
-### Community 224 - "Community 224"
+### Community 222 - "Community 222"
 Cohesion: 0.33
 Nodes (1): DeleteExpenseHeadCommand
 
-### Community 225 - "Community 225"
+### Community 223 - "Community 223"
 Cohesion: 0.33
 Nodes (1): CreateIncomeHeadCommand
 
-### Community 226 - "Community 226"
+### Community 224 - "Community 224"
 Cohesion: 0.33
 Nodes (1): UpdateIncomeHeadCommand
 
-### Community 227 - "Community 227"
+### Community 225 - "Community 225"
 Cohesion: 0.33
 Nodes (1): DeleteIncomeHeadCommand
 
-### Community 228 - "Community 228"
+### Community 226 - "Community 226"
 Cohesion: 0.33
 Nodes (1): OpenBankAccountCommand
 
-### Community 229 - "Community 229"
+### Community 227 - "Community 227"
 Cohesion: 0.33
 Nodes (1): UpdateBankAccountCommand
 
-### Community 230 - "Community 230"
+### Community 228 - "Community 228"
 Cohesion: 0.33
 Nodes (1): DeleteBankAccountCommand
 
-### Community 231 - "Community 231"
+### Community 229 - "Community 229"
 Cohesion: 0.33
 Nodes (1): ReadBankAccountCommand
 
-### Community 232 - "Community 232"
+### Community 230 - "Community 230"
 Cohesion: 0.33
 Nodes (1): ReadBankStatementCommand
 
-### Community 233 - "Community 233"
+### Community 231 - "Community 231"
 Cohesion: 0.33
 Nodes (1): GenerateBankSlipCommand
 
-### Community 234 - "Community 234"
+### Community 232 - "Community 232"
 Cohesion: 0.33
 Nodes (1): UpdateBankSlipCommand
 
-### Community 235 - "Community 235"
+### Community 233 - "Community 233"
 Cohesion: 0.33
 Nodes (1): ApproveBankSlipCommand
 
-### Community 236 - "Community 236"
+### Community 234 - "Community 234"
 Cohesion: 0.33
 Nodes (1): ReadBankSlipCommand
 
-### Community 237 - "Community 237"
+### Community 235 - "Community 235"
 Cohesion: 0.33
 Nodes (1): GeneratePayrollCommand
 
-### Community 238 - "Community 238"
+### Community 236 - "Community 236"
 Cohesion: 0.33
 Nodes (1): ApprovePayrollCommand
 
-### Community 239 - "Community 239"
+### Community 237 - "Community 237"
 Cohesion: 0.33
 Nodes (1): PayPayrollCommand
 
-### Community 240 - "Community 240"
+### Community 238 - "Community 238"
 Cohesion: 0.33
 Nodes (1): ReadPayrollCommand
 
-### Community 241 - "Community 241"
+### Community 239 - "Community 239"
 Cohesion: 0.33
 Nodes (1): ApprovePayrollPaymentCommand
 
-### Community 242 - "Community 242"
+### Community 240 - "Community 240"
 Cohesion: 0.33
 Nodes (1): PayPayrollPaymentCommand
 
-### Community 243 - "Community 243"
+### Community 241 - "Community 241"
 Cohesion: 0.33
 Nodes (1): ReadPayrollPaymentCommand
 
-### Community 244 - "Community 244"
+### Community 242 - "Community 242"
 Cohesion: 0.33
 Nodes (1): ReadWalletCommand
 
-### Community 245 - "Community 245"
+### Community 243 - "Community 243"
 Cohesion: 0.33
 Nodes (1): ApproveWalletTransactionCommand
 
-### Community 246 - "Community 246"
+### Community 244 - "Community 244"
 Cohesion: 0.33
 Nodes (1): RejectWalletTransactionCommand
 
-### Community 247 - "Community 247"
+### Community 245 - "Community 245"
 Cohesion: 0.33
 Nodes (1): CreateWalletTransactionApprovalCommand
 
-### Community 248 - "Community 248"
+### Community 246 - "Community 246"
 Cohesion: 0.33
 Nodes (1): ApproveWalletTransactionApprovalCommand
 
-### Community 249 - "Community 249"
+### Community 247 - "Community 247"
 Cohesion: 0.33
 Nodes (1): RejectWalletTransactionApprovalCommand
 
-### Community 250 - "Community 250"
+### Community 248 - "Community 248"
 Cohesion: 0.33
 Nodes (1): CreateExpenseApprovalCommand
 
-### Community 251 - "Community 251"
+### Community 249 - "Community 249"
 Cohesion: 0.33
 Nodes (1): ApproveExpenseApprovalCommand
 
-### Community 252 - "Community 252"
+### Community 250 - "Community 250"
 Cohesion: 0.33
 Nodes (1): RejectExpenseApprovalCommand
 
-### Community 253 - "Community 253"
+### Community 251 - "Community 251"
 Cohesion: 0.33
 Nodes (1): CreateIncomeApprovalCommand
 
-### Community 254 - "Community 254"
+### Community 252 - "Community 252"
 Cohesion: 0.33
 Nodes (1): ApproveIncomeApprovalCommand
 
-### Community 255 - "Community 255"
+### Community 253 - "Community 253"
 Cohesion: 0.33
 Nodes (1): RejectIncomeApprovalCommand
 
-### Community 256 - "Community 256"
+### Community 254 - "Community 254"
 Cohesion: 0.33
 Nodes (1): CreatePayrollPaymentApprovalCommand
 
-### Community 257 - "Community 257"
+### Community 255 - "Community 255"
 Cohesion: 0.33
 Nodes (1): ApprovePayrollPaymentApprovalCommand
 
-### Community 258 - "Community 258"
+### Community 256 - "Community 256"
 Cohesion: 0.33
 Nodes (1): RejectPayrollPaymentApprovalCommand
 
-### Community 259 - "Community 259"
+### Community 257 - "Community 257"
 Cohesion: 0.33
 Nodes (1): ReadWalletTransactionCommand
 
-### Community 260 - "Community 260"
+### Community 258 - "Community 258"
 Cohesion: 0.33
 Nodes (1): ReadFeesCarryForwardCommand
 
-### Community 261 - "Community 261"
+### Community 259 - "Community 259"
 Cohesion: 0.33
 Nodes (1): ConfigureFeesCarryForwardCommand
 
-### Community 262 - "Community 262"
+### Community 260 - "Community 260"
 Cohesion: 0.33
 Nodes (1): CreateFeesCarryForwardCommand
 
-### Community 263 - "Community 263"
+### Community 261 - "Community 261"
 Cohesion: 0.33
 Nodes (1): RetireFeesCarryForwardCommand
 
-### Community 264 - "Community 264"
+### Community 262 - "Community 262"
 Cohesion: 0.33
 Nodes (1): CreateFeesCarryForwardLogCommand
 
-### Community 265 - "Community 265"
+### Community 263 - "Community 263"
 Cohesion: 0.33
 Nodes (1): CreateFeesCarryForwardSettingCommand
 
-### Community 266 - "Community 266"
+### Community 264 - "Community 264"
 Cohesion: 0.33
 Nodes (1): CreateFmFeesInvoiceLineNoteCommand
 
-### Community 267 - "Community 267"
+### Community 265 - "Community 265"
 Cohesion: 0.33
 Nodes (1): CreateFmFeesTransactionLineNoteCommand
 
-### Community 268 - "Community 268"
+### Community 266 - "Community 266"
 Cohesion: 0.33
 Nodes (1): ReadFeesCarryForwardLogCommand
 
-### Community 269 - "Community 269"
+### Community 267 - "Community 267"
 Cohesion: 0.33
 Nodes (1): UnblockLoginForDueFeesCommand
 
-### Community 270 - "Community 270"
+### Community 268 - "Community 268"
 Cohesion: 0.33
 Nodes (1): ReadDueFeesBlockCommand
 
-### Community 271 - "Community 271"
+### Community 269 - "Community 269"
 Cohesion: 0.33
 Nodes (1): ConfigureDueFeesBlockSettingCommand
 
-### Community 272 - "Community 272"
+### Community 270 - "Community 270"
 Cohesion: 0.33
 Nodes (1): CreateAmountTransferCommand
 
-### Community 273 - "Community 273"
+### Community 271 - "Community 271"
 Cohesion: 0.33
 Nodes (1): RetireAmountTransferCommand
 
-### Community 274 - "Community 274"
+### Community 272 - "Community 272"
 Cohesion: 0.33
 Nodes (1): ReadAmountTransferCommand
 
-### Community 275 - "Community 275"
+### Community 273 - "Community 273"
 Cohesion: 0.33
 Nodes (1): ReadChartOfAccountCommand
 
-### Community 276 - "Community 276"
+### Community 274 - "Community 274"
 Cohesion: 0.33
 Nodes (1): CreateInvoiceSettingCommand
 
-### Community 277 - "Community 277"
+### Community 275 - "Community 275"
 Cohesion: 0.33
 Nodes (1): ReadInvoiceSettingCommand
 
-### Community 278 - "Community 278"
+### Community 276 - "Community 276"
 Cohesion: 0.33
 Nodes (1): CreateQuestionBankFeeCommand
 
-### Community 279 - "Community 279"
+### Community 277 - "Community 277"
 Cohesion: 0.33
 Nodes (1): ReadFeesPaymentSlipCommand
 
-### Community 280 - "Community 280"
+### Community 278 - "Community 278"
 Cohesion: 0.33
 Nodes (1): ReadFeesCollectionReportCommand
 
-### Community 281 - "Community 281"
+### Community 279 - "Community 279"
 Cohesion: 0.33
 Nodes (1): ReadOutstandingFeesReportCommand
 
-### Community 282 - "Community 282"
+### Community 280 - "Community 280"
 Cohesion: 0.33
 Nodes (1): ReadExpenseReportCommand
 
-### Community 283 - "Community 283"
+### Community 281 - "Community 281"
 Cohesion: 0.33
 Nodes (1): ReadIncomeReportCommand
 
-### Community 284 - "Community 284"
+### Community 282 - "Community 282"
 Cohesion: 0.33
 Nodes (1): ReadBankStatementReportCommand
 
-### Community 285 - "Community 285"
+### Community 283 - "Community 283"
 Cohesion: 0.33
 Nodes (1): ReadWalletBalanceReportCommand
 
-### Community 286 - "Community 286"
+### Community 284 - "Community 284"
 Cohesion: 0.33
 Nodes (1): ReadPayrollReportCommand
 
-### Community 287 - "Community 287"
+### Community 285 - "Community 285"
 Cohesion: 0.33
 Nodes (1): ReadPaymentMethodReportCommand
 
-### Community 288 - "Community 288"
+### Community 286 - "Community 286"
 Cohesion: 0.33
 Nodes (1): ReadFeesDiscountReportCommand
 
-### Community 289 - "Community 289"
+### Community 287 - "Community 287"
 Cohesion: 0.33
 Nodes (1): ReadDueFeesReportCommand
 
-### Community 290 - "Community 290"
+### Community 288 - "Community 288"
 Cohesion: 0.33
 Nodes (1): ReadClassWiseCollectionReportCommand
 
-### Community 291 - "Community 291"
+### Community 289 - "Community 289"
 Cohesion: 0.33
 Nodes (1): ReadDailyCollectionReportCommand
 
-### Community 292 - "Community 292"
+### Community 290 - "Community 290"
 Cohesion: 0.33
 Nodes (1): ReadMonthlyCollectionReportCommand
 
-### Community 293 - "Community 293"
+### Community 291 - "Community 291"
 Cohesion: 0.33
 Nodes (1): ReadHeadWiseExpenseReportCommand
 
-### Community 294 - "Community 294"
+### Community 292 - "Community 292"
 Cohesion: 0.33
 Nodes (1): ReadHeadWiseIncomeReportCommand
 
-### Community 295 - "Community 295"
+### Community 293 - "Community 293"
 Cohesion: 0.33
 Nodes (1): ReadCashFlowReportCommand
 
-### Community 296 - "Community 296"
+### Community 294 - "Community 294"
 Cohesion: 0.33
 Nodes (1): ReadProfitLossReportCommand
 
-### Community 297 - "Community 297"
+### Community 295 - "Community 295"
 Cohesion: 0.33
 Nodes (1): ReadBalanceSheetReportCommand
 
-### Community 298 - "Community 298"
+### Community 296 - "Community 296"
 Cohesion: 0.33
 Nodes (1): ReadTrialBalanceReportCommand
 
-### Community 299 - "Community 299"
+### Community 297 - "Community 297"
 Cohesion: 0.33
 Nodes (1): ReadLedgerReportCommand
 
-### Community 300 - "Community 300"
+### Community 298 - "Community 298"
 Cohesion: 0.33
 Nodes (1): ReadReceiptReportCommand
 
-### Community 301 - "Community 301"
+### Community 299 - "Community 299"
 Cohesion: 0.33
 Nodes (1): ReadRefundReportCommand
 
-### Community 302 - "Community 302"
+### Community 300 - "Community 300"
 Cohesion: 0.33
 Nodes (1): ConfigureFeesGroupCommand
 
-### Community 303 - "Community 303"
+### Community 301 - "Community 301"
 Cohesion: 0.33
 Nodes (1): ConfigureFeesTypeCommand
 
-### Community 304 - "Community 304"
+### Community 302 - "Community 302"
 Cohesion: 0.33
 Nodes (1): CreateExpenseHeadCommand
 
-### Community 305 - "Community 305"
+### Community 303 - "Community 303"
 Cohesion: 0.33
 Nodes (1): BlockLoginForDueFeesCommand
 
-### Community 306 - "Community 306"
+### Community 304 - "Community 304"
 Cohesion: 0.33
 Nodes (1): CarryForwardFeesBalanceCommand
 
-### Community 307 - "Community 307"
+### Community 305 - "Community 305"
 Cohesion: 0.33
 Nodes (1): CreateFeesAssignDiscountCommand
 
-### Community 308 - "Community 308"
+### Community 306 - "Community 306"
 Cohesion: 0.33
 Nodes (1): ReadFeesAssignDiscountCommand
 
-### Community 309 - "Community 309"
+### Community 307 - "Community 307"
 Cohesion: 0.33
 Nodes (1): CreateDirectFeesInstallmentChildPaymentCommand
 
-### Community 310 - "Community 310"
+### Community 308 - "Community 308"
 Cohesion: 0.33
 Nodes (1): ReadDirectFeesInstallmentChildPaymentCommand
 
-### Community 311 - "Community 311"
+### Community 309 - "Community 309"
 Cohesion: 0.33
 Nodes (1): RetireDirectFeesInstallmentChildPaymentCommand
 
-### Community 312 - "Community 312"
+### Community 310 - "Community 310"
 Cohesion: 0.33
 Nodes (1): CreateFmFeesGroupCommand
 
-### Community 313 - "Community 313"
+### Community 311 - "Community 311"
 Cohesion: 0.33
 Nodes (1): ReadFmFeesGroupCommand
 
-### Community 314 - "Community 314"
+### Community 312 - "Community 312"
 Cohesion: 0.33
 Nodes (1): CreateFmFeesTypeCommand
 
-### Community 315 - "Community 315"
+### Community 313 - "Community 313"
 Cohesion: 0.33
 Nodes (1): ReadFmFeesTypeCommand
 
-### Community 316 - "Community 316"
+### Community 314 - "Community 314"
 Cohesion: 0.33
 Nodes (1): RetireFmFeesTypeCommand
 
-### Community 317 - "Community 317"
+### Community 315 - "Community 315"
 Cohesion: 0.33
 Nodes (1): CreateBankPaymentSlipCommand
 
-### Community 318 - "Community 318"
+### Community 316 - "Community 316"
 Cohesion: 0.33
 Nodes (1): ReadBankPaymentSlipCommand
 
-### Community 319 - "Community 319"
+### Community 317 - "Community 317"
 Cohesion: 0.33
 Nodes (1): RetireBankPaymentSlipCommand
 
-### Community 320 - "Community 320"
+### Community 318 - "Community 318"
 Cohesion: 0.33
 Nodes (1): ApproveBankPaymentSlipCommand
 
-### Community 321 - "Community 321"
+### Community 319 - "Community 319"
 Cohesion: 0.33
 Nodes (1): RejectBankPaymentSlipCommand
 
-### Community 322 - "Community 322"
+### Community 320 - "Community 320"
 Cohesion: 0.33
 Nodes (1): CreateFmFeesInvoiceCommand
 
-### Community 323 - "Community 323"
+### Community 321 - "Community 321"
 Cohesion: 0.33
 Nodes (1): ReadFmFeesInvoiceCommand
 
-### Community 324 - "Community 324"
+### Community 322 - "Community 322"
 Cohesion: 0.33
 Nodes (1): RetireFmFeesInvoiceCommand
 
-### Community 325 - "Community 325"
+### Community 323 - "Community 323"
 Cohesion: 0.33
 Nodes (1): ApproveFmFeesInvoiceCommand
 
-### Community 326 - "Community 326"
+### Community 324 - "Community 324"
 Cohesion: 0.33
 Nodes (1): RejectFmFeesInvoiceCommand
 
-### Community 327 - "Community 327"
+### Community 325 - "Community 325"
 Cohesion: 0.33
 Nodes (1): CreateFmFeesInvoiceChildCommand
 
-### Community 328 - "Community 328"
+### Community 326 - "Community 326"
 Cohesion: 0.33
 Nodes (1): ReadFmFeesInvoiceChildCommand
 
-### Community 329 - "Community 329"
+### Community 327 - "Community 327"
 Cohesion: 0.33
 Nodes (1): RetireFmFeesInvoiceChildCommand
 
-### Community 330 - "Community 330"
+### Community 328 - "Community 328"
 Cohesion: 0.33
 Nodes (1): CreateFmFeesInvoiceSettingCommand
 
-### Community 331 - "Community 331"
+### Community 329 - "Community 329"
 Cohesion: 0.33
 Nodes (1): ReadFmFeesInvoiceSettingCommand
 
-### Community 332 - "Community 332"
+### Community 330 - "Community 330"
 Cohesion: 0.33
 Nodes (1): UpdateFmFeesInvoiceSettingCommand
 
-### Community 333 - "Community 333"
+### Community 331 - "Community 331"
 Cohesion: 0.33
 Nodes (1): RetireFmFeesInvoiceSettingCommand
 
-### Community 334 - "Community 334"
+### Community 332 - "Community 332"
 Cohesion: 0.33
 Nodes (1): CreateFmFeesTransactionCommand
 
-### Community 335 - "Community 335"
+### Community 333 - "Community 333"
 Cohesion: 0.33
 Nodes (1): ReadFmFeesTransactionCommand
 
-### Community 336 - "Community 336"
+### Community 334 - "Community 334"
 Cohesion: 0.33
 Nodes (1): RetireFmFeesTransactionCommand
 
-### Community 337 - "Community 337"
+### Community 335 - "Community 335"
 Cohesion: 0.33
 Nodes (1): ApproveFmFeesTransactionCommand
 
-### Community 338 - "Community 338"
+### Community 336 - "Community 336"
 Cohesion: 0.33
 Nodes (1): RejectFmFeesTransactionCommand
 
-### Community 339 - "Community 339"
+### Community 337 - "Community 337"
 Cohesion: 0.33
 Nodes (1): CreateFmFeesTransactionChildCommand
 
-### Community 340 - "Community 340"
+### Community 338 - "Community 338"
 Cohesion: 0.33
 Nodes (1): ReadFmFeesTransactionChildCommand
 
-### Community 341 - "Community 341"
+### Community 339 - "Community 339"
 Cohesion: 0.33
 Nodes (1): CreateFmFeesWeaverCommand
 
-### Community 342 - "Community 342"
+### Community 340 - "Community 340"
 Cohesion: 0.33
 Nodes (1): ReadFmFeesWeaverCommand
 
-### Community 343 - "Community 343"
+### Community 341 - "Community 341"
 Cohesion: 0.33
 Nodes (1): RetireFmFeesWeaverCommand
 
-### Community 344 - "Community 344"
+### Community 342 - "Community 342"
 Cohesion: 0.33
 Nodes (1): CreateFeesInvoiceSettingCommand
 
-### Community 345 - "Community 345"
+### Community 343 - "Community 343"
 Cohesion: 0.33
 Nodes (1): ReadFeesInvoiceSettingCommand
 
-### Community 346 - "Community 346"
+### Community 344 - "Community 344"
 Cohesion: 0.33
 Nodes (1): UpdateFeesInvoiceSettingCommand
 
-### Community 347 - "Community 347"
+### Community 345 - "Community 345"
 Cohesion: 0.33
 Nodes (1): DeleteFeesInvoiceSettingCommand
 
-### Community 348 - "Community 348"
+### Community 346 - "Community 346"
 Cohesion: 0.33
 Nodes (1): CreateFeesInstallmentCreditCommand
 
-### Community 349 - "Community 349"
+### Community 347 - "Community 347"
 Cohesion: 0.33
 Nodes (1): ReadFeesInstallmentCreditCommand
 
-### Community 350 - "Community 350"
+### Community 348 - "Community 348"
 Cohesion: 0.33
 Nodes (1): RetireFeesInstallmentCreditCommand
 
-### Community 351 - "Community 351"
+### Community 349 - "Community 349"
 Cohesion: 0.33
 Nodes (1): CreateTransactionCommand
 
-### Community 352 - "Community 352"
+### Community 350 - "Community 350"
 Cohesion: 0.33
 Nodes (1): ReadTransactionCommand
 
-### Community 353 - "Community 353"
+### Community 351 - "Community 351"
 Cohesion: 0.33
 Nodes (1): RetireTransactionCommand
 
-### Community 354 - "Community 354"
+### Community 352 - "Community 352"
 Cohesion: 0.33
 Nodes (1): PostTransactionCommand
 
-### Community 355 - "Community 355"
+### Community 353 - "Community 353"
 Cohesion: 0.33
 Nodes (1): CreateFeesInstallmentAssignDiscountCommand
 
-### Community 356 - "Community 356"
+### Community 354 - "Community 354"
 Cohesion: 0.33
 Nodes (1): ReadFeesInstallmentAssignDiscountCommand
 
-### Community 357 - "Community 357"
+### Community 355 - "Community 355"
 Cohesion: 0.33
 Nodes (1): RetireFeesInstallmentAssignDiscountCommand
 
-### Community 358 - "Community 358"
+### Community 356 - "Community 356"
 Cohesion: 0.33
 Nodes (1): CreateDonorCommand
 
-### Community 359 - "Community 359"
+### Community 357 - "Community 357"
 Cohesion: 0.33
 Nodes (1): ReadDonorCommand
 
-### Community 360 - "Community 360"
+### Community 358 - "Community 358"
 Cohesion: 0.33
 Nodes (1): CreateProductPurchaseCommand
 
-### Community 361 - "Community 361"
+### Community 359 - "Community 359"
 Cohesion: 0.33
 Nodes (1): ReadProductPurchaseCommand
 
-### Community 362 - "Community 362"
+### Community 360 - "Community 360"
 Cohesion: 0.33
 Nodes (1): RetireProductPurchaseCommand
 
-### Community 363 - "Community 363"
+### Community 361 - "Community 361"
 Cohesion: 0.33
 Nodes (1): RecordProductPurchaseReceiptCommand
 
-### Community 364 - "Community 364"
+### Community 362 - "Community 362"
 Cohesion: 0.33
 Nodes (1): CancelProductPurchaseCommand
 
-### Community 365 - "Community 365"
+### Community 363 - "Community 363"
 Cohesion: 0.33
 Nodes (1): CreateInventoryPaymentCommand
 
-### Community 366 - "Community 366"
+### Community 364 - "Community 364"
 Cohesion: 0.33
 Nodes (1): ReadInventoryPaymentCommand
 
-### Community 367 - "Community 367"
+### Community 365 - "Community 365"
 Cohesion: 0.33
 Nodes (1): RetireInventoryPaymentCommand
 
-### Community 368 - "Community 368"
+### Community 366 - "Community 366"
 Cohesion: 0.33
 Nodes (1): UpdateFeesMasterAmountCommand
 
-### Community 369 - "Community 369"
+### Community 367 - "Community 367"
 Cohesion: 0.33
 Nodes (1): AssignFeesToClassCommand
 
-### Community 370 - "Community 370"
+### Community 368 - "Community 368"
 Cohesion: 0.33
 Nodes (1): AssignFeesToStudentCommand
 
-### Community 371 - "Community 371"
+### Community 369 - "Community 369"
 Cohesion: 0.33
 Nodes (1): UpdateFeesAssignDiscountCommand
 
-### Community 372 - "Community 372"
+### Community 370 - "Community 370"
 Cohesion: 0.33
 Nodes (1): RetireFeesAssignDiscountCommand
 
-### Community 373 - "Community 373"
+### Community 371 - "Community 371"
 Cohesion: 0.33
 Nodes (1): CloseFeesAssignCommand
 
-### Community 374 - "Community 374"
+### Community 372 - "Community 372"
 Cohesion: 0.33
 Nodes (1): RetireFeesAssignCommand
 
-### Community 375 - "Community 375"
+### Community 373 - "Community 373"
 Cohesion: 0.33
 Nodes (1): AssignInstallmentToStudentCommand
 
-### Community 376 - "Community 376"
+### Community 374 - "Community 374"
 Cohesion: 0.33
 Nodes (1): ConfigureInvoiceNumberingCommand
 
-### Community 377 - "Community 377"
+### Community 375 - "Community 375"
 Cohesion: 0.33
 Nodes (1): PayInvoiceCommand
 
-### Community 378 - "Community 378"
+### Community 376 - "Community 376"
 Cohesion: 0.33
 Nodes (1): PayInstallmentCommand
 
-### Community 379 - "Community 379"
+### Community 377 - "Community 377"
 Cohesion: 0.33
 Nodes (1): ConfigureDirectFeesInstallmentCommand
 
-### Community 380 - "Community 380"
+### Community 378 - "Community 378"
 Cohesion: 0.33
 Nodes (1): AssignDirectInstallmentCommand
 
-### Community 381 - "Community 381"
+### Community 379 - "Community 379"
 Cohesion: 0.33
 Nodes (1): PayDirectInstallmentCommand
 
-### Community 382 - "Community 382"
+### Community 380 - "Community 380"
 Cohesion: 0.33
 Nodes (1): ConfigureDirectFeesCommand
 
-### Community 383 - "Community 383"
+### Community 381 - "Community 381"
 Cohesion: 0.33
 Nodes (1): ConfigureFeesReminderCommand
 
-### Community 384 - "Community 384"
+### Community 382 - "Community 382"
 Cohesion: 0.33
 Nodes (1): RecordBankStatementCommand
 
-### Community 385 - "Community 385"
+### Community 383 - "Community 383"
 Cohesion: 0.33
 Nodes (1): GenerateBankPaymentSlipCommand
 
-### Community 386 - "Community 386"
+### Community 384 - "Community 384"
 Cohesion: 0.33
 Nodes (1): ApproveBankPaymentCommand
 
-### Community 387 - "Community 387"
+### Community 385 - "Community 385"
 Cohesion: 0.33
 Nodes (1): RejectBankPaymentCommand
 
-### Community 388 - "Community 388"
+### Community 386 - "Community 386"
 Cohesion: 0.33
 Nodes (1): TransferFundsCommand
 
-### Community 389 - "Community 389"
+### Community 387 - "Community 387"
 Cohesion: 0.33
 Nodes (1): RecordExpenseCommand
 
-### Community 390 - "Community 390"
+### Community 388 - "Community 388"
 Cohesion: 0.33
 Nodes (1): RecordIncomeCommand
 
-### Community 391 - "Community 391"
+### Community 389 - "Community 389"
 Cohesion: 0.33
 Nodes (1): AddWalletCreditCommand
 
-### Community 392 - "Community 392"
+### Community 390 - "Community 390"
 Cohesion: 0.33
 Nodes (1): DeductWalletCreditCommand
 
-### Community 393 - "Community 393"
+### Community 391 - "Community 391"
 Cohesion: 0.33
 Nodes (1): RecordPayrollPaymentCommand
 
-### Community 394 - "Community 394"
+### Community 392 - "Community 392"
 Cohesion: 0.33
 Nodes (1): RecordInventoryPaymentCommand
 
-### Community 395 - "Community 395"
+### Community 393 - "Community 393"
 Cohesion: 0.33
 Nodes (1): RecordProductPurchaseCommand
 
-### Community 396 - "Community 396"
+### Community 394 - "Community 394"
 Cohesion: 0.33
 Nodes (1): RecordProductPaymentCommand
 
-### Community 397 - "Community 397"
+### Community 395 - "Community 395"
 Cohesion: 0.33
 Nodes (1): ConfigureInvoiceSettingsCommand
 
-### Community 398 - "Community 398"
+### Community 396 - "Community 396"
 Cohesion: 0.33
 Nodes (1): ConfigurePaymentGatewayCommand
 
-### Community 399 - "Community 399"
+### Community 397 - "Community 397"
 Cohesion: 0.33
 Nodes (1): AttachFeesToQuestionBankCommand
 
-### Community 400 - "Community 400"
+### Community 398 - "Community 398"
 Cohesion: 0.33
 Nodes (1): CreateChartOfAccountCommand
 
-### Community 401 - "Community 401"
+### Community 399 - "Community 399"
 Cohesion: 0.33
 Nodes (1): CreateSalaryTemplateCommand
 
-### Community 402 - "Community 402"
+### Community 400 - "Community 400"
 Cohesion: 0.33
 Nodes (1): CreateBankPaymentSlipAuditCommand
 
-### Community 403 - "Community 403"
+### Community 401 - "Community 401"
 Cohesion: 0.33
 Nodes (1): CreateBankStatementAttachmentCommand
 
-### Community 404 - "Community 404"
+### Community 402 - "Community 402"
 Cohesion: 0.33
 Nodes (1): CreateBankStatementCommand
 
-### Community 405 - "Community 405"
+### Community 403 - "Community 403"
 Cohesion: 0.33
 Nodes (1): UpdateBankStatementCommand
 
-### Community 406 - "Community 406"
+### Community 404 - "Community 404"
 Cohesion: 0.33
 Nodes (1): ReverseBankStatementCommand
 
-### Community 407 - "Community 407"
+### Community 405 - "Community 405"
 Cohesion: 0.33
 Nodes (1): RetireBankStatementCommand
 
-### Community 408 - "Community 408"
+### Community 406 - "Community 406"
 Cohesion: 0.33
 Nodes (1): SetHourlyRateCommand
 
-### Community 409 - "Community 409"
+### Community 407 - "Community 407"
 Cohesion: 0.33
 Nodes (1): AddFeesInstallmentCreditCommand
 
-### Community 410 - "Community 410"
+### Community 408 - "Community 408"
 Cohesion: 0.33
 Nodes (1): ConsumeFeesInstallmentCreditCommand
 
-### Community 411 - "Community 411"
+### Community 409 - "Community 409"
 Cohesion: 0.33
 Nodes (1): UpdateGeneralSettingsCommand
 
-### Community 412 - "Community 412"
+### Community 410 - "Community 410"
 Cohesion: 0.33
 Nodes (1): SeedGeneralSettingsCommand
 
-### Community 413 - "Community 413"
+### Community 411 - "Community 411"
 Cohesion: 0.33
 Nodes (1): SelectActiveThemeCommand
 
-### Community 414 - "Community 414"
+### Community 412 - "Community 412"
 Cohesion: 0.33
 Nodes (1): SelectLanguageCommand
 
-### Community 415 - "Community 415"
+### Community 413 - "Community 413"
 Cohesion: 0.33
 Nodes (1): SelectDateFormatCommand
 
-### Community 416 - "Community 416"
+### Community 414 - "Community 414"
 Cohesion: 0.33
 Nodes (1): SelectTimeZoneCommand
 
-### Community 417 - "Community 417"
+### Community 415 - "Community 415"
 Cohesion: 0.33
 Nodes (1): SelectSessionCommand
 
-### Community 418 - "Community 418"
+### Community 416 - "Community 416"
 Cohesion: 0.33
 Nodes (1): EnableTwoFactorCommand
 
-### Community 419 - "Community 419"
+### Community 417 - "Community 417"
 Cohesion: 0.33
 Nodes (1): DisableTwoFactorCommand
 
-### Community 420 - "Community 420"
+### Community 418 - "Community 418"
 Cohesion: 0.33
 Nodes (1): AddLanguageCommand
 
-### Community 421 - "Community 421"
+### Community 419 - "Community 419"
 Cohesion: 0.33
 Nodes (1): UpdateLanguageCommand
 
-### Community 422 - "Community 422"
+### Community 420 - "Community 420"
 Cohesion: 0.33
 Nodes (1): DeleteLanguageCommand
 
-### Community 423 - "Community 423"
+### Community 421 - "Community 421"
 Cohesion: 0.33
 Nodes (1): ActivateLanguageCommand
 
-### Community 424 - "Community 424"
+### Community 422 - "Community 422"
 Cohesion: 0.33
 Nodes (1): DeactivateLanguageCommand
 
-### Community 425 - "Community 425"
+### Community 423 - "Community 423"
 Cohesion: 0.33
 Nodes (1): AddLanguagePhraseCommand
 
-### Community 426 - "Community 426"
+### Community 424 - "Community 424"
 Cohesion: 0.33
 Nodes (1): UpdateLanguagePhraseCommand
 
-### Community 427 - "Community 427"
+### Community 425 - "Community 425"
 Cohesion: 0.33
 Nodes (1): DeleteLanguagePhraseCommand
 
-### Community 428 - "Community 428"
+### Community 426 - "Community 426"
 Cohesion: 0.33
 Nodes (1): TranslateLanguagePhraseCommand
 
-### Community 429 - "Community 429"
+### Community 427 - "Community 427"
 Cohesion: 0.33
 Nodes (1): AddBaseGroupCommand
 
-### Community 430 - "Community 430"
+### Community 428 - "Community 428"
 Cohesion: 0.33
 Nodes (1): UpdateBaseGroupCommand
 
-### Community 431 - "Community 431"
+### Community 429 - "Community 429"
 Cohesion: 0.33
 Nodes (1): DeleteBaseGroupCommand
 
-### Community 432 - "Community 432"
+### Community 430 - "Community 430"
 Cohesion: 0.33
 Nodes (1): AddBaseSetupCommand
 
-### Community 433 - "Community 433"
+### Community 431 - "Community 431"
 Cohesion: 0.33
 Nodes (1): UpdateBaseSetupCommand
 
-### Community 434 - "Community 434"
+### Community 432 - "Community 432"
 Cohesion: 0.33
 Nodes (1): DeleteBaseSetupCommand
 
-### Community 435 - "Community 435"
+### Community 433 - "Community 433"
 Cohesion: 0.33
 Nodes (1): AddDateFormatCommand
 
-### Community 436 - "Community 436"
+### Community 434 - "Community 434"
 Cohesion: 0.33
 Nodes (1): UpdateDateFormatCommand
 
-### Community 437 - "Community 437"
+### Community 435 - "Community 435"
 Cohesion: 0.33
 Nodes (1): DeleteDateFormatCommand
 
-### Community 438 - "Community 438"
+### Community 436 - "Community 436"
 Cohesion: 0.33
 Nodes (1): CreateStyleCommand
 
-### Community 439 - "Community 439"
+### Community 437 - "Community 437"
 Cohesion: 0.33
 Nodes (1): UpdateStyleCommand
 
-### Community 440 - "Community 440"
+### Community 438 - "Community 438"
 Cohesion: 0.33
 Nodes (1): ActivateStyleCommand
 
-### Community 441 - "Community 441"
+### Community 439 - "Community 439"
 Cohesion: 0.33
 Nodes (1): DeleteStyleCommand
 
-### Community 442 - "Community 442"
+### Community 440 - "Community 440"
 Cohesion: 0.33
 Nodes (1): CreateBackgroundSettingCommand
 
-### Community 443 - "Community 443"
+### Community 441 - "Community 441"
 Cohesion: 0.33
 Nodes (1): UpdateBackgroundSettingCommand
 
-### Community 444 - "Community 444"
+### Community 442 - "Community 442"
 Cohesion: 0.33
 Nodes (1): DeleteBackgroundSettingCommand
 
-### Community 445 - "Community 445"
+### Community 443 - "Community 443"
 Cohesion: 0.33
 Nodes (1): CreateDashboardSettingCommand
 
-### Community 446 - "Community 446"
+### Community 444 - "Community 444"
 Cohesion: 0.33
 Nodes (1): UpdateDashboardSettingCommand
 
-### Community 447 - "Community 447"
+### Community 445 - "Community 445"
 Cohesion: 0.33
 Nodes (1): DeleteDashboardSettingCommand
 
-### Community 448 - "Community 448"
+### Community 446 - "Community 446"
 Cohesion: 0.33
 Nodes (1): UpdateCustomLinksCommand
 
-### Community 449 - "Community 449"
+### Community 447 - "Community 447"
 Cohesion: 0.33
 Nodes (1): ResetCustomLinksCommand
 
-### Community 450 - "Community 450"
+### Community 448 - "Community 448"
 Cohesion: 0.33
 Nodes (1): CreateThemeCommand
 
-### Community 451 - "Community 451"
+### Community 449 - "Community 449"
 Cohesion: 0.33
 Nodes (1): UpdateThemeCommand
 
-### Community 452 - "Community 452"
+### Community 450 - "Community 450"
 Cohesion: 0.33
 Nodes (1): ActivateThemeCommand
 
-### Community 453 - "Community 453"
+### Community 451 - "Community 451"
 Cohesion: 0.33
 Nodes (1): DeleteThemeCommand
 
-### Community 454 - "Community 454"
+### Community 452 - "Community 452"
 Cohesion: 0.33
 Nodes (1): ReplicateThemeCommand
 
-### Community 455 - "Community 455"
+### Community 453 - "Community 453"
 Cohesion: 0.33
 Nodes (1): CreateColorCommand
 
-### Community 456 - "Community 456"
+### Community 454 - "Community 454"
 Cohesion: 0.33
 Nodes (1): UpdateColorCommand
 
-### Community 457 - "Community 457"
+### Community 455 - "Community 455"
 Cohesion: 0.33
 Nodes (1): DeleteColorCommand
 
-### Community 458 - "Community 458"
+### Community 456 - "Community 456"
 Cohesion: 0.33
 Nodes (1): CreateColorThemeCommand
 
-### Community 459 - "Community 459"
+### Community 457 - "Community 457"
 Cohesion: 0.33
 Nodes (1): UpdateColorThemeCommand
 
-### Community 460 - "Community 460"
+### Community 458 - "Community 458"
 Cohesion: 0.33
 Nodes (1): DeleteColorThemeCommand
 
-### Community 461 - "Community 461"
+### Community 459 - "Community 459"
 Cohesion: 0.33
 Nodes (1): UpdateBehaviorRecordSettingCommand
 
-### Community 462 - "Community 462"
+### Community 460 - "Community 460"
 Cohesion: 0.33
 Nodes (1): AddSetupAdminCommand
 
-### Community 463 - "Community 463"
+### Community 461 - "Community 461"
 Cohesion: 0.33
 Nodes (1): UpdateSetupAdminCommand
 
-### Community 464 - "Community 464"
+### Community 462 - "Community 462"
 Cohesion: 0.33
 Nodes (1): DeleteSetupAdminCommand
 
-### Community 465 - "Community 465"
+### Community 463 - "Community 463"
 Cohesion: 0.33
 Nodes (1): CreateBookCategoryCommand
 
-### Community 466 - "Community 466"
+### Community 464 - "Community 464"
 Cohesion: 0.33
 Nodes (1): UpdateBookCategoryCommand
 
-### Community 467 - "Community 467"
+### Community 465 - "Community 465"
 Cohesion: 0.33
 Nodes (1): DeleteBookCategoryCommand
 
-### Community 468 - "Community 468"
+### Community 466 - "Community 466"
 Cohesion: 0.33
 Nodes (1): AddBookCommand
 
-### Community 469 - "Community 469"
+### Community 467 - "Community 467"
 Cohesion: 0.33
 Nodes (1): UpdateBookCommand
 
-### Community 470 - "Community 470"
+### Community 468 - "Community 468"
 Cohesion: 0.33
 Nodes (1): DeleteBookCommand
 
-### Community 471 - "Community 471"
+### Community 469 - "Community 469"
 Cohesion: 0.33
 Nodes (1): AdjustBookQuantityCommand
 
-### Community 472 - "Community 472"
+### Community 470 - "Community 470"
 Cohesion: 0.33
 Nodes (1): RegisterLibraryMemberCommand
 
-### Community 473 - "Community 473"
+### Community 471 - "Community 471"
 Cohesion: 0.33
 Nodes (1): UpdateLibraryMemberCommand
 
-### Community 474 - "Community 474"
+### Community 472 - "Community 472"
 Cohesion: 0.33
 Nodes (1): DeactivateLibraryMemberCommand
 
-### Community 475 - "Community 475"
+### Community 473 - "Community 473"
 Cohesion: 0.33
 Nodes (1): ReactivateLibraryMemberCommand
 
-### Community 476 - "Community 476"
+### Community 474 - "Community 474"
 Cohesion: 0.33
 Nodes (1): DeleteLibraryMemberCommand
 
-### Community 477 - "Community 477"
+### Community 475 - "Community 475"
 Cohesion: 0.33
 Nodes (1): IssueBookCommand
 
-### Community 478 - "Community 478"
+### Community 476 - "Community 476"
 Cohesion: 0.33
 Nodes (1): ReturnBookCommand
 
-### Community 479 - "Community 479"
+### Community 477 - "Community 477"
 Cohesion: 0.33
 Nodes (1): RenewBookCommand
 
-### Community 480 - "Community 480"
+### Community 478 - "Community 478"
 Cohesion: 0.33
 Nodes (1): MarkBookLostCommand
 
-### Community 481 - "Community 481"
+### Community 479 - "Community 479"
 Cohesion: 0.33
 Nodes (1): RecordBookReturnCommand
 
-### Community 482 - "Community 482"
+### Community 480 - "Community 480"
 Cohesion: 0.33
 Nodes (1): CalculateFineCommand
 
-### Community 483 - "Community 483"
+### Community 481 - "Community 481"
 Cohesion: 0.33
 Nodes (1): WaiveBookIssueFineCommand
 
-### Community 484 - "Community 484"
+### Community 482 - "Community 482"
 Cohesion: 0.33
 Nodes (1): SearchBooksCommand
 
-### Community 485 - "Community 485"
+### Community 483 - "Community 483"
 Cohesion: 0.33
 Nodes (1): ListOverdueIssuesCommand
 
-### Community 486 - "Community 486"
+### Community 484 - "Community 484"
 Cohesion: 0.33
 Nodes (1): ListMemberIssuesCommand
 
-### Community 487 - "Community 487"
+### Community 485 - "Community 485"
 Cohesion: 0.33
 Nodes (1): CreateExamCommand
 
-### Community 488 - "Community 488"
+### Community 486 - "Community 486"
 Cohesion: 0.33
 Nodes (1): UpdateExamCommand
 
-### Community 489 - "Community 489"
+### Community 487 - "Community 487"
 Cohesion: 0.33
 Nodes (1): DeleteExamCommand
 
-### Community 490 - "Community 490"
+### Community 488 - "Community 488"
 Cohesion: 0.33
 Nodes (1): ScheduleExamCommand
 
-### Community 491 - "Community 491"
+### Community 489 - "Community 489"
 Cohesion: 0.33
 Nodes (1): UpdateExamScheduleCommand
 
-### Community 492 - "Community 492"
+### Community 490 - "Community 490"
 Cohesion: 0.33
 Nodes (1): CancelExamScheduleCommand
 
-### Community 493 - "Community 493"
+### Community 491 - "Community 491"
 Cohesion: 0.33
 Nodes (1): GenerateSeatPlanCommand
 
-### Community 494 - "Community 494"
+### Community 492 - "Community 492"
 Cohesion: 0.33
 Nodes (1): UpdateSeatPlanCommand
 
-### Community 495 - "Community 495"
+### Community 493 - "Community 493"
 Cohesion: 0.33
 Nodes (1): CancelSeatPlanCommand
 
-### Community 496 - "Community 496"
+### Community 494 - "Community 494"
 Cohesion: 0.33
 Nodes (1): GenerateAdmitCardCommand
 
-### Community 497 - "Community 497"
+### Community 495 - "Community 495"
 Cohesion: 0.33
 Nodes (1): RegenerateAdmitCardCommand
 
-### Community 498 - "Community 498"
+### Community 496 - "Community 496"
 Cohesion: 0.33
 Nodes (1): CancelAdmitCardCommand
 
-### Community 499 - "Community 499"
+### Community 497 - "Community 497"
 Cohesion: 0.33
 Nodes (1): InitializeMarksRegisterCommand
 
-### Community 500 - "Community 500"
+### Community 498 - "Community 498"
 Cohesion: 0.33
 Nodes (1): EnterMarksCommand
 
-### Community 501 - "Community 501"
+### Community 499 - "Community 499"
 Cohesion: 0.33
 Nodes (1): SubmitMarksCommand
 
-### Community 502 - "Community 502"
+### Community 500 - "Community 500"
 Cohesion: 0.33
 Nodes (1): PublishResultCommand
 
-### Community 503 - "Community 503"
+### Community 501 - "Community 501"
 Cohesion: 0.33
 Nodes (1): RepublishResultCommand
 
-### Community 504 - "Community 504"
+### Community 502 - "Community 502"
 Cohesion: 0.33
 Nodes (1): UpdateResultRemarksCommand
 
-### Community 505 - "Community 505"
+### Community 503 - "Community 503"
 Cohesion: 0.33
 Nodes (1): GenerateReportCardCommand
 
-### Community 506 - "Community 506"
+### Community 504 - "Community 504"
 Cohesion: 0.33
 Nodes (1): CreateNoticeCommand
 
-### Community 507 - "Community 507"
+### Community 505 - "Community 505"
 Cohesion: 0.33
 Nodes (1): UpdateNoticeCommand
 
-### Community 508 - "Community 508"
+### Community 506 - "Community 506"
 Cohesion: 0.33
 Nodes (1): PublishNoticeCommand
 
-### Community 509 - "Community 509"
+### Community 507 - "Community 507"
 Cohesion: 0.33
 Nodes (1): UnpublishNoticeCommand
 
-### Community 510 - "Community 510"
+### Community 508 - "Community 508"
 Cohesion: 0.33
 Nodes (1): DeleteNoticeCommand
 
-### Community 511 - "Community 511"
+### Community 509 - "Community 509"
 Cohesion: 0.33
 Nodes (1): RegisterComplaintCommand
 
-### Community 512 - "Community 512"
+### Community 510 - "Community 510"
 Cohesion: 0.33
 Nodes (1): AssignComplaintCommand
 
-### Community 513 - "Community 513"
+### Community 511 - "Community 511"
 Cohesion: 0.33
 Nodes (1): UpdateComplaintStatusCommand
 
-### Community 514 - "Community 514"
+### Community 512 - "Community 512"
 Cohesion: 0.33
 Nodes (1): ResolveComplaintCommand
 
-### Community 515 - "Community 515"
+### Community 513 - "Community 513"
 Cohesion: 0.33
 Nodes (1): AddComplaintNoteCommand
 
-### Community 516 - "Community 516"
+### Community 514 - "Community 514"
 Cohesion: 0.33
 Nodes (1): CreateComplaintTypeCommand
 
-### Community 517 - "Community 517"
+### Community 515 - "Community 515"
 Cohesion: 0.33
 Nodes (1): UpdateComplaintTypeCommand
 
-### Community 518 - "Community 518"
+### Community 516 - "Community 516"
 Cohesion: 0.33
 Nodes (1): DeleteComplaintTypeCommand
 
-### Community 519 - "Community 519"
+### Community 517 - "Community 517"
 Cohesion: 0.33
 Nodes (1): SendNotificationCommand
 
-### Community 520 - "Community 520"
+### Community 518 - "Community 518"
 Cohesion: 0.33
 Nodes (1): MarkNotificationReadCommand
 
-### Community 521 - "Community 521"
+### Community 519 - "Community 519"
 Cohesion: 0.33
 Nodes (1): WithdrawNotificationCommand
 
-### Community 522 - "Community 522"
+### Community 520 - "Community 520"
 Cohesion: 0.33
 Nodes (1): LogEmailSentCommand
 
-### Community 523 - "Community 523"
+### Community 521 - "Community 521"
 Cohesion: 0.33
 Nodes (1): LogSmsSentCommand
 
-### Community 524 - "Community 524"
+### Community 522 - "Community 522"
 Cohesion: 0.33
 Nodes (1): CreateSmsTemplateCommand
 
-### Community 525 - "Community 525"
+### Community 523 - "Community 523"
 Cohesion: 0.33
 Nodes (1): UpdateSmsTemplateCommand
 
-### Community 526 - "Community 526"
+### Community 524 - "Community 524"
 Cohesion: 0.33
 Nodes (1): EnableSmsTemplateCommand
 
-### Community 527 - "Community 527"
+### Community 525 - "Community 525"
 Cohesion: 0.33
 Nodes (1): DisableSmsTemplateCommand
 
-### Community 528 - "Community 528"
+### Community 526 - "Community 526"
 Cohesion: 0.33
 Nodes (1): DeleteSmsTemplateCommand
 
-### Community 529 - "Community 529"
+### Community 527 - "Community 527"
 Cohesion: 0.33
 Nodes (1): ConfigureEmailSettingCommand
 
-### Community 530 - "Community 530"
+### Community 528 - "Community 528"
 Cohesion: 0.33
 Nodes (1): ActivateEmailSettingCommand
 
-### Community 531 - "Community 531"
+### Community 529 - "Community 529"
 Cohesion: 0.33
 Nodes (1): DeleteEmailSettingCommand
 
-### Community 532 - "Community 532"
+### Community 530 - "Community 530"
 Cohesion: 0.33
 Nodes (1): ConfigureSmsGatewayCommand
 
-### Community 533 - "Community 533"
+### Community 531 - "Community 531"
 Cohesion: 0.33
 Nodes (1): ActivateSmsGatewayCommand
 
-### Community 534 - "Community 534"
+### Community 532 - "Community 532"
 Cohesion: 0.33
 Nodes (1): DeleteSmsGatewayCommand
 
-### Community 535 - "Community 535"
+### Community 533 - "Community 533"
 Cohesion: 0.33
 Nodes (1): CreateCustomSmsSettingCommand
 
-### Community 536 - "Community 536"
+### Community 534 - "Community 534"
 Cohesion: 0.33
 Nodes (1): UpdateCustomSmsSettingCommand
 
-### Community 537 - "Community 537"
+### Community 535 - "Community 535"
 Cohesion: 0.33
 Nodes (1): DeleteCustomSmsSettingCommand
 
-### Community 538 - "Community 538"
+### Community 536 - "Community 536"
 Cohesion: 0.33
 Nodes (1): CreateNotificationSettingCommand
 
-### Community 539 - "Community 539"
+### Community 537 - "Community 537"
 Cohesion: 0.33
 Nodes (1): UpdateNotificationSettingCommand
 
-### Community 540 - "Community 540"
+### Community 538 - "Community 538"
 Cohesion: 0.33
 Nodes (1): DeleteNotificationSettingCommand
 
-### Community 541 - "Community 541"
+### Community 539 - "Community 539"
 Cohesion: 0.33
 Nodes (1): ConfigureAbsentNotificationCommand
 
-### Community 542 - "Community 542"
+### Community 540 - "Community 540"
 Cohesion: 0.33
 Nodes (1): EnableAbsentNotificationCommand
 
-### Community 543 - "Community 543"
+### Community 541 - "Community 541"
 Cohesion: 0.33
 Nodes (1): DisableAbsentNotificationCommand
 
-### Community 544 - "Community 544"
+### Community 542 - "Community 542"
 Cohesion: 0.33
 Nodes (1): DeleteAbsentNotificationCommand
 
-### Community 545 - "Community 545"
+### Community 543 - "Community 543"
 Cohesion: 0.33
 Nodes (1): OpenChatConversationCommand
 
-### Community 546 - "Community 546"
+### Community 544 - "Community 544"
 Cohesion: 0.33
 Nodes (1): CloseChatConversationCommand
 
-### Community 547 - "Community 547"
+### Community 545 - "Community 545"
 Cohesion: 0.33
 Nodes (1): SendChatMessageCommand
 
-### Community 548 - "Community 548"
+### Community 546 - "Community 546"
 Cohesion: 0.33
 Nodes (1): MarkChatMessageSeenCommand
 
-### Community 549 - "Community 549"
+### Community 547 - "Community 547"
 Cohesion: 0.33
 Nodes (1): DeleteChatMessageCommand
 
-### Community 550 - "Community 550"
+### Community 548 - "Community 548"
 Cohesion: 0.33
 Nodes (1): CreateChatGroupCommand
 
-### Community 551 - "Community 551"
+### Community 549 - "Community 549"
 Cohesion: 0.33
 Nodes (1): UpdateChatGroupCommand
 
-### Community 552 - "Community 552"
+### Community 550 - "Community 550"
 Cohesion: 0.33
 Nodes (1): SetChatGroupReadOnlyCommand
 
-### Community 553 - "Community 553"
+### Community 551 - "Community 551"
 Cohesion: 0.33
 Nodes (1): DeleteChatGroupCommand
 
-### Community 554 - "Community 554"
+### Community 552 - "Community 552"
 Cohesion: 0.33
 Nodes (1): AddUserToChatGroupCommand
 
-### Community 555 - "Community 555"
+### Community 553 - "Community 553"
 Cohesion: 0.33
 Nodes (1): SetChatGroupUserRoleCommand
 
-### Community 556 - "Community 556"
+### Community 554 - "Community 554"
 Cohesion: 0.33
 Nodes (1): RemoveUserFromChatGroupCommand
 
-### Community 557 - "Community 557"
+### Community 555 - "Community 555"
 Cohesion: 0.33
 Nodes (1): RecordGroupMessageRecipientCommand
 
-### Community 558 - "Community 558"
+### Community 556 - "Community 556"
 Cohesion: 0.33
 Nodes (1): MarkGroupMessageReadCommand
 
-### Community 559 - "Community 559"
+### Community 557 - "Community 557"
 Cohesion: 0.33
 Nodes (1): RemoveGroupMessageForUserCommand
 
-### Community 560 - "Community 560"
+### Community 558 - "Community 558"
 Cohesion: 0.33
 Nodes (1): BlockUserCommand
 
-### Community 561 - "Community 561"
+### Community 559 - "Community 559"
 Cohesion: 0.33
 Nodes (1): UnblockUserCommand
 
-### Community 562 - "Community 562"
+### Community 560 - "Community 560"
 Cohesion: 0.33
 Nodes (1): SendChatInvitationCommand
 
-### Community 563 - "Community 563"
+### Community 561 - "Community 561"
 Cohesion: 0.33
 Nodes (1): AcceptChatInvitationCommand
 
-### Community 564 - "Community 564"
+### Community 562 - "Community 562"
 Cohesion: 0.33
 Nodes (1): RejectChatInvitationCommand
 
-### Community 565 - "Community 565"
+### Community 563 - "Community 563"
 Cohesion: 0.33
 Nodes (1): ClassifyChatInvitationCommand
 
-### Community 566 - "Community 566"
+### Community 564 - "Community 564"
 Cohesion: 0.33
 Nodes (1): SetChatStatusCommand
 
-### Community 567 - "Community 567"
+### Community 565 - "Community 565"
 Cohesion: 0.33
 Nodes (1): CreateSendMessageCommand
 
-### Community 568 - "Community 568"
+### Community 566 - "Community 566"
 Cohesion: 0.33
 Nodes (1): DispatchSendMessageCommand
 
-### Community 569 - "Community 569"
+### Community 567 - "Community 567"
 Cohesion: 0.33
 Nodes (1): CancelSendMessageCommand
 
-### Community 570 - "Community 570"
+### Community 568 - "Community 568"
 Cohesion: 0.33
 Nodes (1): ReceiveContactMessageCommand
 
-### Community 571 - "Community 571"
+### Community 569 - "Community 569"
 Cohesion: 0.33
 Nodes (1): MarkContactMessageViewedCommand
 
-### Community 572 - "Community 572"
+### Community 570 - "Community 570"
 Cohesion: 0.33
 Nodes (1): ReplyToContactMessageCommand
 
-### Community 573 - "Community 573"
+### Community 571 - "Community 571"
 Cohesion: 0.33
 Nodes (1): CreateSpeechSliderCommand
+
+### Community 572 - "Community 572"
+Cohesion: 0.33
+Nodes (1): UpdateSpeechSliderCommand
+
+### Community 573 - "Community 573"
+Cohesion: 0.33
+Nodes (1): DeleteSpeechSliderCommand
 
 ### Community 574 - "Community 574"
 Cohesion: 0.33
-Nodes (1): UpdateSpeechSliderCommand
+Nodes (1): LogPhoneCallCommand
 
 ### Community 575 - "Community 575"
 Cohesion: 0.33
-Nodes (1): DeleteSpeechSliderCommand
+Nodes (1): UpdatePhoneCallFollowUpCommand
 
 ### Community 576 - "Community 576"
 Cohesion: 0.33
-Nodes (1): LogPhoneCallCommand
+Nodes (1): CreateVehicleCommand
 
 ### Community 577 - "Community 577"
 Cohesion: 0.33
-Nodes (1): UpdatePhoneCallFollowUpCommand
+Nodes (1): UpdateVehicleCommand
 
 ### Community 578 - "Community 578"
 Cohesion: 0.33
-Nodes (1): CreateVehicleCommand
+Nodes (1): AssignDriverToVehicleCommand
 
 ### Community 579 - "Community 579"
 Cohesion: 0.33
-Nodes (1): UpdateVehicleCommand
+Nodes (1): DeactivateVehicleCommand
 
 ### Community 580 - "Community 580"
 Cohesion: 0.33
-Nodes (1): AssignDriverToVehicleCommand
+Nodes (1): DeleteVehicleCommand
 
 ### Community 581 - "Community 581"
 Cohesion: 0.33
-Nodes (1): DeactivateVehicleCommand
+Nodes (1): CreateRouteCommand
 
 ### Community 582 - "Community 582"
 Cohesion: 0.33
-Nodes (1): DeleteVehicleCommand
+Nodes (1): UpdateRouteCommand
 
 ### Community 583 - "Community 583"
 Cohesion: 0.33
-Nodes (1): CreateRouteCommand
+Nodes (1): AddStopToRouteCommand
 
 ### Community 584 - "Community 584"
 Cohesion: 0.33
-Nodes (1): UpdateRouteCommand
+Nodes (1): UpdateStopOnRouteCommand
 
 ### Community 585 - "Community 585"
 Cohesion: 0.33
-Nodes (1): AddStopToRouteCommand
+Nodes (1): RemoveStopFromRouteCommand
 
 ### Community 586 - "Community 586"
 Cohesion: 0.33
-Nodes (1): UpdateStopOnRouteCommand
+Nodes (1): DeleteRouteCommand
 
 ### Community 587 - "Community 587"
 Cohesion: 0.33
-Nodes (1): RemoveStopFromRouteCommand
+Nodes (1): AssignVehicleToRouteCommand
 
 ### Community 588 - "Community 588"
 Cohesion: 0.33
-Nodes (1): DeleteRouteCommand
+Nodes (1): UnassignVehicleFromRouteCommand
 
 ### Community 589 - "Community 589"
 Cohesion: 0.33
-Nodes (1): AssignVehicleToRouteCommand
+Nodes (1): AssignStudentToRouteCommand
 
 ### Community 590 - "Community 590"
 Cohesion: 0.33
-Nodes (1): UnassignVehicleFromRouteCommand
+Nodes (1): UnassignStudentFromRouteCommand
 
 ### Community 591 - "Community 591"
 Cohesion: 0.33
-Nodes (1): AssignStudentToRouteCommand
+Nodes (1): CreateRoomTypeCommand
 
 ### Community 592 - "Community 592"
 Cohesion: 0.33
-Nodes (1): UnassignStudentFromRouteCommand
+Nodes (1): UpdateRoomTypeCommand
 
 ### Community 593 - "Community 593"
 Cohesion: 0.33
-Nodes (1): CreateRoomTypeCommand
+Nodes (1): DeleteRoomTypeCommand
 
 ### Community 594 - "Community 594"
 Cohesion: 0.33
-Nodes (1): UpdateRoomTypeCommand
+Nodes (1): CreateDormitoryCommand
 
 ### Community 595 - "Community 595"
 Cohesion: 0.33
-Nodes (1): DeleteRoomTypeCommand
+Nodes (1): UpdateDormitoryCommand
 
 ### Community 596 - "Community 596"
 Cohesion: 0.33
-Nodes (1): CreateDormitoryCommand
+Nodes (1): DeleteDormitoryCommand
 
 ### Community 597 - "Community 597"
 Cohesion: 0.33
-Nodes (1): UpdateDormitoryCommand
+Nodes (1): CreateRoomCommand
 
 ### Community 598 - "Community 598"
 Cohesion: 0.33
-Nodes (1): DeleteDormitoryCommand
+Nodes (1): UpdateRoomCommand
 
 ### Community 599 - "Community 599"
 Cohesion: 0.33
-Nodes (1): CreateRoomCommand
+Nodes (1): DeleteRoomCommand
 
 ### Community 600 - "Community 600"
 Cohesion: 0.33
-Nodes (1): UpdateRoomCommand
+Nodes (1): AssignStudentToRoomCommand
 
 ### Community 601 - "Community 601"
 Cohesion: 0.33
-Nodes (1): DeleteRoomCommand
+Nodes (1): UnassignStudentFromRoomCommand
 
 ### Community 602 - "Community 602"
 Cohesion: 0.33
-Nodes (1): AssignStudentToRoomCommand
+Nodes (1): CreateItemCategoryCommand
 
 ### Community 603 - "Community 603"
 Cohesion: 0.33
-Nodes (1): UnassignStudentFromRoomCommand
+Nodes (1): UpdateItemCategoryCommand
 
 ### Community 604 - "Community 604"
 Cohesion: 0.33
-Nodes (1): CreateItemCategoryCommand
+Nodes (1): DeleteItemCategoryCommand
 
 ### Community 605 - "Community 605"
 Cohesion: 0.33
-Nodes (1): UpdateItemCategoryCommand
+Nodes (1): CreateItemCommand
 
 ### Community 606 - "Community 606"
 Cohesion: 0.33
-Nodes (1): DeleteItemCategoryCommand
+Nodes (1): UpdateItemCommand
 
 ### Community 607 - "Community 607"
 Cohesion: 0.33
-Nodes (1): CreateItemCommand
+Nodes (1): DeleteItemCommand
 
 ### Community 608 - "Community 608"
 Cohesion: 0.33
-Nodes (1): UpdateItemCommand
+Nodes (1): CreateItemStoreCommand
 
 ### Community 609 - "Community 609"
 Cohesion: 0.33
-Nodes (1): DeleteItemCommand
+Nodes (1): UpdateItemStoreCommand
 
 ### Community 610 - "Community 610"
 Cohesion: 0.33
-Nodes (1): CreateItemStoreCommand
+Nodes (1): DeleteItemStoreCommand
 
 ### Community 611 - "Community 611"
 Cohesion: 0.33
-Nodes (1): UpdateItemStoreCommand
+Nodes (1): ReceiveItemCommand
 
 ### Community 612 - "Community 612"
 Cohesion: 0.33
-Nodes (1): DeleteItemStoreCommand
+Nodes (1): UpdateItemReceiveCommand
 
 ### Community 613 - "Community 613"
 Cohesion: 0.33
-Nodes (1): ReceiveItemCommand
+Nodes (1): CancelItemReceiveCommand
 
 ### Community 614 - "Community 614"
 Cohesion: 0.33
-Nodes (1): UpdateItemReceiveCommand
+Nodes (1): IssueItemCommand
 
 ### Community 615 - "Community 615"
 Cohesion: 0.33
-Nodes (1): CancelItemReceiveCommand
+Nodes (1): UpdateIssueStatusCommand
 
 ### Community 616 - "Community 616"
 Cohesion: 0.33
-Nodes (1): IssueItemCommand
+Nodes (1): ReturnIssuedItemCommand
 
 ### Community 617 - "Community 617"
 Cohesion: 0.33
-Nodes (1): UpdateIssueStatusCommand
+Nodes (1): SellItemCommand
 
 ### Community 618 - "Community 618"
 Cohesion: 0.33
-Nodes (1): ReturnIssuedItemCommand
+Nodes (1): UpdateItemSellCommand
 
 ### Community 619 - "Community 619"
 Cohesion: 0.33
-Nodes (1): SellItemCommand
+Nodes (1): CancelItemSellCommand
 
 ### Community 620 - "Community 620"
 Cohesion: 0.33
-Nodes (1): UpdateItemSellCommand
+Nodes (1): RefundItemSellCommand
 
 ### Community 621 - "Community 621"
 Cohesion: 0.33
-Nodes (1): CancelItemSellCommand
+Nodes (1): CreateSupplierCommand
 
 ### Community 622 - "Community 622"
 Cohesion: 0.33
-Nodes (1): RefundItemSellCommand
+Nodes (1): UpdateSupplierCommand
 
 ### Community 623 - "Community 623"
 Cohesion: 0.33
-Nodes (1): CreateSupplierCommand
+Nodes (1): DeactivateSupplierCommand
 
 ### Community 624 - "Community 624"
 Cohesion: 0.33
-Nodes (1): UpdateSupplierCommand
+Nodes (1): DeleteSupplierCommand
 
 ### Community 625 - "Community 625"
 Cohesion: 0.33
-Nodes (1): DeactivateSupplierCommand
+Nodes (1): CreateRoleCommand
 
 ### Community 626 - "Community 626"
 Cohesion: 0.33
-Nodes (1): DeleteSupplierCommand
+Nodes (1): UpdateRoleCommand
 
 ### Community 627 - "Community 627"
 Cohesion: 0.33
-Nodes (1): CreateRoleCommand
+Nodes (1): DeleteRoleCommand
 
 ### Community 628 - "Community 628"
 Cohesion: 0.33
-Nodes (1): UpdateRoleCommand
+Nodes (1): AssignCapabilityCommand
 
 ### Community 629 - "Community 629"
 Cohesion: 0.33
-Nodes (1): DeleteRoleCommand
+Nodes (1): RevokeCapabilityCommand
 
 ### Community 630 - "Community 630"
 Cohesion: 0.33
-Nodes (1): AssignCapabilityCommand
+Nodes (1): SuspendStaffCommand
 
 ### Community 631 - "Community 631"
 Cohesion: 0.33
-Nodes (1): RevokeCapabilityCommand
+Nodes (1): ChangeStaffDepartmentCommand
 
 ### Community 632 - "Community 632"
 Cohesion: 0.33
-Nodes (1): SuspendStaffCommand
+Nodes (1): ChangeStaffDesignationCommand
 
 ### Community 633 - "Community 633"
 Cohesion: 0.33
-Nodes (1): ChangeStaffDepartmentCommand
+Nodes (1): ChangeStaffRoleCommand
 
 ### Community 634 - "Community 634"
 Cohesion: 0.33
-Nodes (1): ChangeStaffDesignationCommand
+Nodes (1): DeleteStaffCommand
 
 ### Community 635 - "Community 635"
 Cohesion: 0.33
-Nodes (1): ChangeStaffRoleCommand
+Nodes (1): RejectLeaveCommand
 
 ### Community 636 - "Community 636"
 Cohesion: 0.33
-Nodes (1): DeleteStaffCommand
+Nodes (1): CancelLeaveCommand
 
 ### Community 637 - "Community 637"
 Cohesion: 0.33
-Nodes (1): RejectLeaveCommand
+Nodes (1): MarkStaffAttendanceCommand
 
 ### Community 638 - "Community 638"
 Cohesion: 0.33
-Nodes (1): CancelLeaveCommand
+Nodes (1): ApprovePayrollCommand
 
 ### Community 639 - "Community 639"
 Cohesion: 0.33
-Nodes (1): MarkStaffAttendanceCommand
+Nodes (1): MarkPayrollPaidCommand
 
 ### Community 640 - "Community 640"
 Cohesion: 0.33
-Nodes (1): ApprovePayrollCommand
+Nodes (1): AssignClassTeacherCommand
 
 ### Community 641 - "Community 641"
 Cohesion: 0.33
-Nodes (1): MarkPayrollPaidCommand
+Nodes (1): DeleteAssignClassTeacherCommand
 
 ### Community 642 - "Community 642"
 Cohesion: 0.33
-Nodes (1): AssignClassTeacherCommand
+Nodes (1): SetHourlyRateCommand
 
 ### Community 643 - "Community 643"
 Cohesion: 0.33
-Nodes (1): DeleteAssignClassTeacherCommand
+Nodes (1): CreateSalaryTemplateCommand
 
 ### Community 644 - "Community 644"
 Cohesion: 0.33
-Nodes (1): SetHourlyRateCommand
+Nodes (1): CreateStaffRegistrationFieldCommand
 
 ### Community 645 - "Community 645"
 Cohesion: 0.33
-Nodes (1): CreateSalaryTemplateCommand
+Nodes (1): CreateDepartmentCommand
 
 ### Community 646 - "Community 646"
 Cohesion: 0.33
-Nodes (1): CreateStaffRegistrationFieldCommand
+Nodes (1): DeleteDepartmentCommand
 
 ### Community 647 - "Community 647"
 Cohesion: 0.33
-Nodes (1): CreateDepartmentCommand
+Nodes (1): DeleteDesignationCommand
 
 ### Community 648 - "Community 648"
 Cohesion: 0.33
-Nodes (1): DeleteDepartmentCommand
+Nodes (1): DeleteLeaveTypeCommand
 
 ### Community 649 - "Community 649"
 Cohesion: 0.33
-Nodes (1): DeleteDesignationCommand
+Nodes (1): CreateDesignationCommand
 
 ### Community 650 - "Community 650"
 Cohesion: 0.33
-Nodes (1): DeleteLeaveTypeCommand
+Nodes (1): CreateLeaveTypeCommand
 
 ### Community 651 - "Community 651"
 Cohesion: 0.33
-Nodes (1): CreateDesignationCommand
+Nodes (1): ApproveLeaveCommand
 
 ### Community 652 - "Community 652"
 Cohesion: 0.33
-Nodes (1): CreateLeaveTypeCommand
+Nodes (1): DefineLeavePolicyCommand
 
 ### Community 653 - "Community 653"
 Cohesion: 0.33
-Nodes (1): ApproveLeaveCommand
+Nodes (1): ImportStaffBulkCommand
 
 ### Community 654 - "Community 654"
 Cohesion: 0.33
-Nodes (1): DefineLeavePolicyCommand
+Nodes (1): RegisterStaffCommand
 
 ### Community 655 - "Community 655"
 Cohesion: 0.33
-Nodes (1): ImportStaffBulkCommand
+Nodes (1): UpdateStaffCommand
 
 ### Community 656 - "Community 656"
 Cohesion: 0.33
-Nodes (1): RegisterStaffCommand
+Nodes (1): UpdateAssignClassTeacherCommand
 
 ### Community 657 - "Community 657"
 Cohesion: 0.33
-Nodes (1): UpdateStaffCommand
+Nodes (1): ImportStaffAttendanceCommand
 
 ### Community 658 - "Community 658"
 Cohesion: 0.33
-Nodes (1): UpdateAssignClassTeacherCommand
+Nodes (1): PromoteStaffAttendanceCommand
 
 ### Community 659 - "Community 659"
 Cohesion: 0.33
-Nodes (1): ImportStaffAttendanceCommand
+Nodes (1): RejectStaffAttendanceCommand
 
 ### Community 660 - "Community 660"
 Cohesion: 0.33
-Nodes (1): PromoteStaffAttendanceCommand
+Nodes (1): GeneratePayrollCommand
 
 ### Community 661 - "Community 661"
 Cohesion: 0.33
-Nodes (1): RejectStaffAttendanceCommand
+Nodes (1): UpdatePayrollAmountsCommand
 
 ### Community 662 - "Community 662"
 Cohesion: 0.33
-Nodes (1): GeneratePayrollCommand
+Nodes (1): AddPayrollEarningCommand
 
 ### Community 663 - "Community 663"
 Cohesion: 0.33
-Nodes (1): UpdatePayrollAmountsCommand
+Nodes (1): AddPayrollDeductionCommand
 
 ### Community 664 - "Community 664"
 Cohesion: 0.33
-Nodes (1): AddPayrollEarningCommand
+Nodes (1): AddLeaveDeductionInfoCommand
 
 ### Community 665 - "Community 665"
 Cohesion: 0.33
-Nodes (1): AddPayrollDeductionCommand
+Nodes (1): PromoteStaffImportCommand
 
 ### Community 666 - "Community 666"
 Cohesion: 0.33
-Nodes (1): AddLeaveDeductionInfoCommand
+Nodes (1): RejectStaffImportCommand
 
 ### Community 667 - "Community 667"
 Cohesion: 0.33
-Nodes (1): PromoteStaffImportCommand
+Nodes (1): AssignSubjectTeacherCommand
 
 ### Community 668 - "Community 668"
 Cohesion: 0.33
-Nodes (1): RejectStaffImportCommand
+Nodes (1): RequestLeaveCommand
 
 ### Community 669 - "Community 669"
 Cohesion: 0.33
-Nodes (1): AssignSubjectTeacherCommand
+Nodes (1): CreateBackupCommand
 
 ### Community 670 - "Community 670"
 Cohesion: 0.33
-Nodes (1): RequestLeaveCommand
+Nodes (1): DeleteBackupCommand
 
 ### Community 671 - "Community 671"
 Cohesion: 0.33
-Nodes (1): CreateBackupCommand
+Nodes (1): RestoreBackupCommand
 
 ### Community 672 - "Community 672"
 Cohesion: 0.33
-Nodes (1): DeleteBackupCommand
+Nodes (1): MarkBackupActiveCommand
 
 ### Community 673 - "Community 673"
 Cohesion: 0.33
-Nodes (1): RestoreBackupCommand
+Nodes (1): MarkBackupInactiveCommand
 
 ### Community 674 - "Community 674"
 Cohesion: 0.33
-Nodes (1): MarkBackupActiveCommand
+Nodes (1): ScheduleJobCommand
 
 ### Community 675 - "Community 675"
 Cohesion: 0.33
-Nodes (1): MarkBackupInactiveCommand
+Nodes (1): CancelJobCommand
 
 ### Community 676 - "Community 676"
 Cohesion: 0.33
-Nodes (1): ScheduleJobCommand
+Nodes (1): RetryFailedJobCommand
 
 ### Community 677 - "Community 677"
 Cohesion: 0.33
-Nodes (1): CancelJobCommand
+Nodes (1): DeleteFailedJobCommand
 
 ### Community 678 - "Community 678"
 Cohesion: 0.33
-Nodes (1): RetryFailedJobCommand
+Nodes (1): RegisterSystemVersionCommand
 
 ### Community 679 - "Community 679"
 Cohesion: 0.33
-Nodes (1): DeleteFailedJobCommand
+Nodes (1): UpdateSystemVersionCommand
 
 ### Community 680 - "Community 680"
 Cohesion: 0.33
-Nodes (1): RegisterSystemVersionCommand
+Nodes (1): RecordVersionHistoryCommand
 
 ### Community 681 - "Community 681"
 Cohesion: 0.33
-Nodes (1): UpdateSystemVersionCommand
+Nodes (1): RecordUserLogCommand
 
 ### Community 682 - "Community 682"
 Cohesion: 0.33
-Nodes (1): RecordVersionHistoryCommand
+Nodes (1): ConfigureMaintenanceCommand
 
 ### Community 683 - "Community 683"
 Cohesion: 0.33
-Nodes (1): RecordUserLogCommand
+Nodes (1): EnableMaintenanceCommand
 
 ### Community 684 - "Community 684"
 Cohesion: 0.33
-Nodes (1): ConfigureMaintenanceCommand
+Nodes (1): DisableMaintenanceCommand
 
 ### Community 685 - "Community 685"
 Cohesion: 0.33
-Nodes (1): EnableMaintenanceCommand
+Nodes (1): CreateSidebarEntryCommand
 
 ### Community 686 - "Community 686"
 Cohesion: 0.33
-Nodes (1): DisableMaintenanceCommand
+Nodes (1): UpdateSidebarEntryCommand
 
 ### Community 687 - "Community 687"
 Cohesion: 0.33
-Nodes (1): CreateSidebarEntryCommand
+Nodes (1): DeleteSidebarEntryCommand
 
 ### Community 688 - "Community 688"
 Cohesion: 0.33
-Nodes (1): UpdateSidebarEntryCommand
+Nodes (1): ReorderSidebarCommand
 
 ### Community 689 - "Community 689"
 Cohesion: 0.33
-Nodes (1): DeleteSidebarEntryCommand
+Nodes (1): CreatePageCommand
 
 ### Community 690 - "Community 690"
 Cohesion: 0.33
-Nodes (1): ReorderSidebarCommand
+Nodes (1): PublishPageCommand
 
 ### Community 691 - "Community 691"
 Cohesion: 0.33
-Nodes (1): CreatePageCommand
+Nodes (1): ArchivePageCommand
 
 ### Community 692 - "Community 692"
 Cohesion: 0.33
-Nodes (1): PublishPageCommand
+Nodes (1): DeletePageCommand
 
 ### Community 693 - "Community 693"
 Cohesion: 0.33
-Nodes (1): ArchivePageCommand
+Nodes (1): CreateNewsCommand
 
 ### Community 694 - "Community 694"
 Cohesion: 0.33
-Nodes (1): DeletePageCommand
+Nodes (1): CreateTestimonialCommand
 
 ### Community 695 - "Community 695"
 Cohesion: 0.33
-Nodes (1): CreateNewsCommand
+Nodes (1): CreateHomeSliderCommand
 
 ### Community 696 - "Community 696"
 Cohesion: 0.33
-Nodes (1): CreateTestimonialCommand
+Nodes (1): CreateContentCommand
 
 ### Community 697 - "Community 697"
 Cohesion: 0.33
-Nodes (1): CreateHomeSliderCommand
+Nodes (1): CreateContentShareListCommand
 
 ### Community 698 - "Community 698"
 Cohesion: 0.33
-Nodes (1): CreateContentCommand
+Nodes (1): ConfigureHomePageCommand
 
 ### Community 699 - "Community 699"
 Cohesion: 0.33
-Nodes (1): CreateContentShareListCommand
+Nodes (1): UpdatePageCommand
 
 ### Community 700 - "Community 700"
 Cohesion: 0.33
-Nodes (1): ConfigureHomePageCommand
+Nodes (1): UpdateNewsCommand
 
 ### Community 701 - "Community 701"
 Cohesion: 0.33
-Nodes (1): UpdatePageCommand
+Nodes (1): PublishNewsCommand
 
 ### Community 702 - "Community 702"
 Cohesion: 0.33
-Nodes (1): UpdateNewsCommand
+Nodes (1): UnpublishNewsCommand
 
 ### Community 703 - "Community 703"
 Cohesion: 0.33
-Nodes (1): PublishNewsCommand
+Nodes (1): DeleteNewsCommand
 
 ### Community 704 - "Community 704"
 Cohesion: 0.33
-Nodes (1): UnpublishNewsCommand
+Nodes (1): CommentOnNewsCommand
 
 ### Community 705 - "Community 705"
 Cohesion: 0.33
-Nodes (1): DeleteNewsCommand
+Nodes (1): ModerateNewsCommentCommand
 
 ### Community 706 - "Community 706"
 Cohesion: 0.33
-Nodes (1): CommentOnNewsCommand
+Nodes (1): DeleteNewsCommentCommand
 
 ### Community 707 - "Community 707"
 Cohesion: 0.33
-Nodes (1): ModerateNewsCommentCommand
+Nodes (1): CreateNoticeBoardCommand
 
 ### Community 708 - "Community 708"
 Cohesion: 0.33
-Nodes (1): DeleteNewsCommentCommand
+Nodes (1): PublishNoticeBoardCommand
 
 ### Community 709 - "Community 709"
 Cohesion: 0.33
-Nodes (1): CreateNoticeBoardCommand
+Nodes (1): UpdateNoticeBoardCommand
 
 ### Community 710 - "Community 710"
 Cohesion: 0.33
-Nodes (1): PublishNoticeBoardCommand
+Nodes (1): UnpublishNoticeBoardCommand
 
 ### Community 711 - "Community 711"
 Cohesion: 0.33
-Nodes (1): UpdateNoticeBoardCommand
+Nodes (1): DeleteNoticeBoardCommand
 
 ### Community 712 - "Community 712"
 Cohesion: 0.33
-Nodes (1): UnpublishNoticeBoardCommand
+Nodes (1): UpdateTestimonialCommand
 
 ### Community 713 - "Community 713"
 Cohesion: 0.33
-Nodes (1): DeleteNoticeBoardCommand
+Nodes (1): DeleteTestimonialCommand
 
 ### Community 714 - "Community 714"
 Cohesion: 0.33
-Nodes (1): UpdateTestimonialCommand
+Nodes (1): UpdateHomeSliderCommand
 
 ### Community 715 - "Community 715"
 Cohesion: 0.33
-Nodes (1): DeleteTestimonialCommand
+Nodes (1): DeleteHomeSliderCommand
 
 ### Community 716 - "Community 716"
 Cohesion: 0.33
-Nodes (1): UpdateHomeSliderCommand
+Nodes (1): UpdateContentCommand
 
 ### Community 717 - "Community 717"
 Cohesion: 0.33
-Nodes (1): DeleteHomeSliderCommand
+Nodes (1): DeleteContentCommand
 
 ### Community 718 - "Community 718"
 Cohesion: 0.33
-Nodes (1): UpdateContentCommand
+Nodes (1): DispatchContentShareListCommand
 
 ### Community 719 - "Community 719"
 Cohesion: 0.33
-Nodes (1): DeleteContentCommand
+Nodes (1): CancelContentShareListCommand
 
 ### Community 720 - "Community 720"
 Cohesion: 0.33
-Nodes (1): DispatchContentShareListCommand
+Nodes (1): DeleteContentShareListCommand
 
 ### Community 721 - "Community 721"
 Cohesion: 0.33
-Nodes (1): CancelContentShareListCommand
+Nodes (1): CreateTeacherUploadContentCommand
 
 ### Community 722 - "Community 722"
 Cohesion: 0.33
-Nodes (1): DeleteContentShareListCommand
+Nodes (1): UpdateTeacherUploadContentCommand
 
 ### Community 723 - "Community 723"
 Cohesion: 0.33
-Nodes (1): CreateTeacherUploadContentCommand
+Nodes (1): DeleteTeacherUploadContentCommand
 
 ### Community 724 - "Community 724"
 Cohesion: 0.33
-Nodes (1): UpdateTeacherUploadContentCommand
+Nodes (1): CreateUploadContentCommand
 
 ### Community 725 - "Community 725"
 Cohesion: 0.33
-Nodes (1): DeleteTeacherUploadContentCommand
+Nodes (1): UpdateUploadContentCommand
 
 ### Community 726 - "Community 726"
 Cohesion: 0.33
-Nodes (1): CreateUploadContentCommand
+Nodes (1): DeleteUploadContentCommand
 
 ### Community 727 - "Community 727"
 Cohesion: 0.33
-Nodes (1): UpdateUploadContentCommand
+Nodes (1): CreateAboutPageCommand
 
 ### Community 728 - "Community 728"
 Cohesion: 0.33
-Nodes (1): DeleteUploadContentCommand
+Nodes (1): UpdateAboutPageCommand
 
 ### Community 729 - "Community 729"
 Cohesion: 0.33
-Nodes (1): CreateAboutPageCommand
+Nodes (1): DeleteAboutPageCommand
 
 ### Community 730 - "Community 730"
 Cohesion: 0.33
-Nodes (1): UpdateAboutPageCommand
+Nodes (1): CreateContactPageCommand
 
 ### Community 731 - "Community 731"
 Cohesion: 0.33
-Nodes (1): DeleteAboutPageCommand
+Nodes (1): UpdateContactPageCommand
 
 ### Community 732 - "Community 732"
 Cohesion: 0.33
-Nodes (1): CreateContactPageCommand
+Nodes (1): DeleteContactPageCommand
 
 ### Community 733 - "Community 733"
 Cohesion: 0.33
-Nodes (1): UpdateContactPageCommand
+Nodes (1): CreateCoursePageCommand
 
 ### Community 734 - "Community 734"
 Cohesion: 0.33
-Nodes (1): DeleteContactPageCommand
+Nodes (1): UpdateCoursePageCommand
 
 ### Community 735 - "Community 735"
 Cohesion: 0.33
-Nodes (1): CreateCoursePageCommand
+Nodes (1): DeleteCoursePageCommand
 
 ### Community 736 - "Community 736"
 Cohesion: 0.33
-Nodes (1): UpdateCoursePageCommand
+Nodes (1): CreateFrontendPageCommand
 
 ### Community 737 - "Community 737"
 Cohesion: 0.33
-Nodes (1): DeleteCoursePageCommand
+Nodes (1): UpdateFrontendPageCommand
 
 ### Community 738 - "Community 738"
 Cohesion: 0.33
-Nodes (1): CreateFrontendPageCommand
+Nodes (1): DeleteFrontendPageCommand
 
 ### Community 739 - "Community 739"
 Cohesion: 0.33
-Nodes (1): UpdateFrontendPageCommand
+Nodes (1): CreateNewsPageCommand
 
 ### Community 740 - "Community 740"
 Cohesion: 0.33
-Nodes (1): DeleteFrontendPageCommand
+Nodes (1): UpdateNewsPageCommand
 
 ### Community 741 - "Community 741"
 Cohesion: 0.33
-Nodes (1): CreateNewsPageCommand
+Nodes (1): DeleteNewsPageCommand
 
 ### Community 742 - "Community 742"
 Cohesion: 0.33
-Nodes (1): UpdateNewsPageCommand
+Nodes (1): CreateNewsCategoryCommand
 
 ### Community 743 - "Community 743"
 Cohesion: 0.33
-Nodes (1): DeleteNewsPageCommand
+Nodes (1): UpdateNewsCategoryCommand
 
 ### Community 744 - "Community 744"
 Cohesion: 0.33
-Nodes (1): CreateNewsCategoryCommand
+Nodes (1): DeleteNewsCategoryCommand
 
 ### Community 745 - "Community 745"
 Cohesion: 0.33
-Nodes (1): UpdateNewsCategoryCommand
+Nodes (1): CreateContentTypeCommand
 
 ### Community 746 - "Community 746"
 Cohesion: 0.33
-Nodes (1): DeleteNewsCategoryCommand
+Nodes (1): UpdateContentTypeCommand
 
 ### Community 747 - "Community 747"
 Cohesion: 0.33
-Nodes (1): CreateContentTypeCommand
+Nodes (1): DeleteContentTypeCommand
 
 ### Community 748 - "Community 748"
 Cohesion: 0.33
-Nodes (1): UpdateContentTypeCommand
+Nodes (1): CreateSpeechSliderCommand
 
 ### Community 749 - "Community 749"
 Cohesion: 0.33
-Nodes (1): DeleteContentTypeCommand
+Nodes (1): UpdateSpeechSliderCommand
 
 ### Community 750 - "Community 750"
 Cohesion: 0.33
-Nodes (1): CreateSpeechSliderCommand
+Nodes (1): DeleteSpeechSliderCommand
 
 ### Community 751 - "Community 751"
 Cohesion: 0.33
-Nodes (1): UpdateSpeechSliderCommand
+Nodes (1): MarkStudentAttendanceCommand
 
 ### Community 752 - "Community 752"
 Cohesion: 0.33
-Nodes (1): DeleteSpeechSliderCommand
+Nodes (1): UpdateStudentAttendanceCommand
 
 ### Community 753 - "Community 753"
 Cohesion: 0.33
-Nodes (1): MarkStudentAttendanceCommand
+Nodes (1): BulkMarkStudentAttendanceCommand
 
 ### Community 754 - "Community 754"
 Cohesion: 0.33
-Nodes (1): UpdateStudentAttendanceCommand
+Nodes (1): MarkSubjectAttendanceCommand
 
 ### Community 755 - "Community 755"
 Cohesion: 0.33
-Nodes (1): BulkMarkStudentAttendanceCommand
+Nodes (1): UpdateSubjectAttendanceCommand
 
 ### Community 756 - "Community 756"
 Cohesion: 0.33
-Nodes (1): MarkSubjectAttendanceCommand
+Nodes (1): MarkStaffAttendanceCommand
 
 ### Community 757 - "Community 757"
 Cohesion: 0.33
-Nodes (1): UpdateSubjectAttendanceCommand
+Nodes (1): UpdateStaffAttendanceCommand
 
 ### Community 758 - "Community 758"
 Cohesion: 0.33
-Nodes (1): MarkStaffAttendanceCommand
+Nodes (1): MarkExamAttendanceCommand
 
 ### Community 759 - "Community 759"
 Cohesion: 0.33
-Nodes (1): UpdateStaffAttendanceCommand
+Nodes (1): UpdateExamAttendanceCommand
 
 ### Community 760 - "Community 760"
 Cohesion: 0.33
-Nodes (1): MarkExamAttendanceCommand
+Nodes (1): ImportAttendanceCommand
 
 ### Community 761 - "Community 761"
 Cohesion: 0.33
-Nodes (1): UpdateExamAttendanceCommand
+Nodes (1): ValidateBulkImportCommand
 
 ### Community 762 - "Community 762"
 Cohesion: 0.33
-Nodes (1): ImportAttendanceCommand
+Nodes (1): CommitBulkImportCommand
 
 ### Community 763 - "Community 763"
 Cohesion: 0.33
-Nodes (1): ValidateBulkImportCommand
+Nodes (1): CancelBulkImportCommand
 
 ### Community 764 - "Community 764"
 Cohesion: 0.33
-Nodes (1): CommitBulkImportCommand
+Nodes (1): RequestAbsenceNotificationCommand
 
 ### Community 765 - "Community 765"
 Cohesion: 0.33
-Nodes (1): CancelBulkImportCommand
+Nodes (1): CreateSchoolCommand
 
 ### Community 766 - "Community 766"
 Cohesion: 0.33
-Nodes (1): RequestAbsenceNotificationCommand
+Nodes (1): UpdateSchoolCommand
 
 ### Community 767 - "Community 767"
 Cohesion: 0.33
-Nodes (1): CreateSchoolCommand
+Nodes (1): DeactivateSchoolCommand
 
 ### Community 768 - "Community 768"
 Cohesion: 0.33
-Nodes (1): UpdateSchoolCommand
+Nodes (1): RegisterUserCommand
 
 ### Community 769 - "Community 769"
 Cohesion: 0.33
-Nodes (1): DeactivateSchoolCommand
+Nodes (1): UpdateUserCommand
 
 ### Community 770 - "Community 770"
 Cohesion: 0.33
-Nodes (1): RegisterUserCommand
+Nodes (1): DeactivateUserCommand
 
 ### Community 771 - "Community 771"
 Cohesion: 0.33
-Nodes (1): UpdateUserCommand
+Nodes (1): ExecuteSubjectErasureCommand
 
 ### Community 772 - "Community 772"
 Cohesion: 0.33
-Nodes (1): DeactivateUserCommand
+Nodes (1): GenerateParentAccessReportCommand
 
 ### Community 773 - "Community 773"
 Cohesion: 0.33
-Nodes (1): ExecuteSubjectErasureCommand
+Nodes (1): GenerateRegulatorAuditCommand
 
 ### Community 774 - "Community 774"
 Cohesion: 0.33
-Nodes (1): GenerateParentAccessReportCommand
+Nodes (1): CreateEventCommand
 
 ### Community 775 - "Community 775"
 Cohesion: 0.33
-Nodes (1): GenerateRegulatorAuditCommand
+Nodes (1): UpdateEventCommand
 
 ### Community 776 - "Community 776"
 Cohesion: 0.33
-Nodes (1): CreateEventCommand
+Nodes (1): DeleteEventCommand
 
 ### Community 777 - "Community 777"
 Cohesion: 0.33
-Nodes (1): UpdateEventCommand
+Nodes (1): CreateHolidayCommand
 
 ### Community 778 - "Community 778"
 Cohesion: 0.33
-Nodes (1): DeleteEventCommand
+Nodes (1): UpdateHolidayCommand
 
 ### Community 779 - "Community 779"
 Cohesion: 0.33
-Nodes (1): CreateHolidayCommand
+Nodes (1): DeleteHolidayCommand
 
 ### Community 780 - "Community 780"
 Cohesion: 0.33
-Nodes (1): UpdateHolidayCommand
+Nodes (1): CreateCalendarSettingCommand
 
 ### Community 781 - "Community 781"
 Cohesion: 0.33
-Nodes (1): DeleteHolidayCommand
+Nodes (1): UpdateCalendarSettingCommand
 
 ### Community 782 - "Community 782"
 Cohesion: 0.33
-Nodes (1): CreateCalendarSettingCommand
+Nodes (1): EnableCalendarSettingCommand
 
 ### Community 783 - "Community 783"
 Cohesion: 0.33
-Nodes (1): UpdateCalendarSettingCommand
+Nodes (1): DisableCalendarSettingCommand
 
 ### Community 784 - "Community 784"
 Cohesion: 0.33
-Nodes (1): EnableCalendarSettingCommand
+Nodes (1): DeleteCalendarSettingCommand
 
 ### Community 785 - "Community 785"
 Cohesion: 0.33
-Nodes (1): DisableCalendarSettingCommand
+Nodes (1): CreateIncidentCommand
 
 ### Community 786 - "Community 786"
 Cohesion: 0.33
-Nodes (1): DeleteCalendarSettingCommand
+Nodes (1): UpdateIncidentCommand
 
 ### Community 787 - "Community 787"
 Cohesion: 0.33
-Nodes (1): CreateIncidentCommand
+Nodes (1): ResolveIncidentCommand
 
 ### Community 788 - "Community 788"
 Cohesion: 0.33
-Nodes (1): UpdateIncidentCommand
+Nodes (1): DeleteIncidentCommand
 
 ### Community 789 - "Community 789"
 Cohesion: 0.33
-Nodes (1): ResolveIncidentCommand
+Nodes (1): AssignIncidentCommand
 
 ### Community 790 - "Community 790"
 Cohesion: 0.33
-Nodes (1): DeleteIncidentCommand
+Nodes (1): ReassignIncidentCommand
 
 ### Community 791 - "Community 791"
 Cohesion: 0.33
-Nodes (1): AssignIncidentCommand
+Nodes (1): UnassignIncidentCommand
 
 ### Community 792 - "Community 792"
 Cohesion: 0.33
-Nodes (1): ReassignIncidentCommand
+Nodes (1): CommentOnIncidentCommand
 
 ### Community 793 - "Community 793"
 Cohesion: 0.33
-Nodes (1): UnassignIncidentCommand
+Nodes (1): DeleteIncidentCommentCommand
 
 ### Community 794 - "Community 794"
 Cohesion: 0.33
-Nodes (1): CommentOnIncidentCommand
+Nodes (1): CreateWeekendCommand
 
 ### Community 795 - "Community 795"
 Cohesion: 0.33
-Nodes (1): DeleteIncidentCommentCommand
+Nodes (1): UpdateWeekendCommand
 
 ### Community 796 - "Community 796"
 Cohesion: 0.33
-Nodes (1): CreateWeekendCommand
+Nodes (1): ConfigureWeekendsCommand
 
 ### Community 797 - "Community 797"
 Cohesion: 0.33
-Nodes (1): UpdateWeekendCommand
+Nodes (1): DeleteWeekendCommand
 
 ### Community 798 - "Community 798"
 Cohesion: 0.33
-Nodes (1): ConfigureWeekendsCommand
+Nodes (1): AdmitStudentCommand
 
 ### Community 799 - "Community 799"
 Cohesion: 0.33
-Nodes (1): DeleteWeekendCommand
+Nodes (1): UpdateStudentProfileCommand
 
 ### Community 800 - "Community 800"
 Cohesion: 0.33
-Nodes (1): AdmitStudentCommand
+Nodes (1): SuspendStudentCommand
 
 ### Community 801 - "Community 801"
 Cohesion: 0.33
-Nodes (1): UpdateStudentProfileCommand
+Nodes (1): ReinstateStudentCommand
 
 ### Community 802 - "Community 802"
 Cohesion: 0.33
-Nodes (1): SuspendStudentCommand
+Nodes (1): WithdrawStudentCommand
 
 ### Community 803 - "Community 803"
 Cohesion: 0.33
-Nodes (1): ReinstateStudentCommand
+Nodes (1): TransferStudentCommand
 
 ### Community 804 - "Community 804"
 Cohesion: 0.33
-Nodes (1): WithdrawStudentCommand
+Nodes (1): PromoteStudentCommand
 
 ### Community 805 - "Community 805"
 Cohesion: 0.33
-Nodes (1): TransferStudentCommand
+Nodes (1): GraduateStudentCommand
 
 ### Community 806 - "Community 806"
 Cohesion: 0.33
-Nodes (1): PromoteStudentCommand
+Nodes (1): CreateClassCommand
 
 ### Community 807 - "Community 807"
 Cohesion: 0.33
-Nodes (1): GraduateStudentCommand
+Nodes (1): UpdateClassCommand
 
 ### Community 808 - "Community 808"
 Cohesion: 0.33
-Nodes (1): CreateClassCommand
+Nodes (1): SetOptionalSubjectGpaThresholdCommand
 
 ### Community 809 - "Community 809"
 Cohesion: 0.33
-Nodes (1): UpdateClassCommand
+Nodes (1): DeleteClassCommand
 
 ### Community 810 - "Community 810"
 Cohesion: 0.33
-Nodes (1): SetOptionalSubjectGpaThresholdCommand
+Nodes (1): CreateSectionCommand
 
 ### Community 811 - "Community 811"
 Cohesion: 0.33
-Nodes (1): DeleteClassCommand
+Nodes (1): UpdateSectionCommand
 
 ### Community 812 - "Community 812"
 Cohesion: 0.33
-Nodes (1): CreateSectionCommand
+Nodes (1): DeleteSectionCommand
 
 ### Community 813 - "Community 813"
 Cohesion: 0.33
-Nodes (1): UpdateSectionCommand
+Nodes (1): CreateSubjectCommand
 
 ### Community 814 - "Community 814"
 Cohesion: 0.33
-Nodes (1): DeleteSectionCommand
+Nodes (1): UpdateSubjectCommand
 
 ### Community 815 - "Community 815"
 Cohesion: 0.33
-Nodes (1): CreateSubjectCommand
+Nodes (1): DeleteSubjectCommand
 
 ### Community 816 - "Community 816"
 Cohesion: 0.33
-Nodes (1): UpdateSubjectCommand
+Nodes (1): CreateAcademicYearCommand
 
 ### Community 817 - "Community 817"
 Cohesion: 0.33
-Nodes (1): DeleteSubjectCommand
+Nodes (1): UpdateAcademicYearDatesCommand
 
 ### Community 818 - "Community 818"
 Cohesion: 0.33
-Nodes (1): CreateAcademicYearCommand
+Nodes (1): SetCurrentAcademicYearCommand
 
 ### Community 819 - "Community 819"
 Cohesion: 0.33
-Nodes (1): UpdateAcademicYearDatesCommand
+Nodes (1): CloseAcademicYearCommand
 
 ### Community 820 - "Community 820"
 Cohesion: 0.33
-Nodes (1): SetCurrentAcademicYearCommand
+Nodes (1): LinkGuardianToStudentCommand
 
 ### Community 821 - "Community 821"
 Cohesion: 0.33
-Nodes (1): CloseAcademicYearCommand
+Nodes (1): UnlinkGuardianFromStudentCommand
 
 ### Community 822 - "Community 822"
 Cohesion: 0.33
-Nodes (1): LinkGuardianToStudentCommand
+Nodes (1): MarkPrimaryGuardianCommand
 
 ### Community 823 - "Community 823"
 Cohesion: 0.33
-Nodes (1): UnlinkGuardianFromStudentCommand
+Nodes (1): UpdateGuardianContactCommand
 
 ### Community 824 - "Community 824"
 Cohesion: 0.33
-Nodes (1): MarkPrimaryGuardianCommand
+Nodes (1): RetireGuardianCommand
 
 ### Community 825 - "Community 825"
 Cohesion: 0.33
-Nodes (1): UpdateGuardianContactCommand
+Nodes (1): CreateClassSectionCommand
 
 ### Community 826 - "Community 826"
 Cohesion: 0.33
-Nodes (1): RetireGuardianCommand
+Nodes (1): CreateClassRoutineCommand
 
 ### Community 827 - "Community 827"
 Cohesion: 0.33
-Nodes (1): CreateClassSectionCommand
+Nodes (1): UpdateClassRoutinePeriodCommand
 
 ### Community 828 - "Community 828"
 Cohesion: 0.33
-Nodes (1): CreateClassRoutineCommand
+Nodes (1): SwapClassRoutinePeriodsCommand
 
 ### Community 829 - "Community 829"
 Cohesion: 0.33
-Nodes (1): UpdateClassRoutinePeriodCommand
+Nodes (1): DeleteClassRoutineCommand
 
 ### Community 830 - "Community 830"
 Cohesion: 0.33
-Nodes (1): SwapClassRoutinePeriodsCommand
+Nodes (1): CreateHomeworkCommand
 
 ### Community 831 - "Community 831"
 Cohesion: 0.33
-Nodes (1): DeleteClassRoutineCommand
+Nodes (1): UpdateHomeworkCommand
 
 ### Community 832 - "Community 832"
 Cohesion: 0.33
-Nodes (1): CreateHomeworkCommand
+Nodes (1): CancelHomeworkCommand
 
 ### Community 833 - "Community 833"
 Cohesion: 0.33
-Nodes (1): UpdateHomeworkCommand
+Nodes (1): RealCreateLessonPlanCommand
 
 ### Community 834 - "Community 834"
 Cohesion: 0.33
-Nodes (1): CancelHomeworkCommand
+Nodes (1): UpdateLessonPlanCommand
 
 ### Community 835 - "Community 835"
 Cohesion: 0.33
-Nodes (1): RealCreateLessonPlanCommand
+Nodes (1): MarkLessonPlanCompletedCommand
 
 ### Community 836 - "Community 836"
 Cohesion: 0.33
-Nodes (1): UpdateLessonPlanCommand
+Nodes (1): AddSubTopicCommand
 
 ### Community 837 - "Community 837"
 Cohesion: 0.33
-Nodes (1): MarkLessonPlanCompletedCommand
+Nodes (1): DeleteLessonPlanCommand
 
 ### Community 838 - "Community 838"
 Cohesion: 0.33
-Nodes (1): AddSubTopicCommand
+Nodes (1): RealCreateLessonCommand
 
 ### Community 839 - "Community 839"
 Cohesion: 0.33
-Nodes (1): DeleteLessonPlanCommand
+Nodes (1): UpdateLessonCommand
 
 ### Community 840 - "Community 840"
 Cohesion: 0.33
-Nodes (1): RealCreateLessonCommand
+Nodes (1): DeleteLessonCommand
 
 ### Community 841 - "Community 841"
 Cohesion: 0.33
-Nodes (1): UpdateLessonCommand
+Nodes (1): RealCreateLessonTopicCommand
 
 ### Community 842 - "Community 842"
 Cohesion: 0.33
-Nodes (1): DeleteLessonCommand
+Nodes (1): MarkTopicCompletedCommand
 
 ### Community 843 - "Community 843"
 Cohesion: 0.33
-Nodes (1): RealCreateLessonTopicCommand
+Nodes (1): DeleteLessonTopicCommand
 
 ### Community 844 - "Community 844"
 Cohesion: 0.33
-Nodes (1): MarkTopicCompletedCommand
+Nodes (1): RealCreateStudentCategoryCommand
 
 ### Community 845 - "Community 845"
 Cohesion: 0.33
-Nodes (1): DeleteLessonTopicCommand
+Nodes (1): UpdateStudentCategoryCommand
 
 ### Community 846 - "Community 846"
 Cohesion: 0.33
-Nodes (1): RealCreateStudentCategoryCommand
+Nodes (1): DeleteStudentCategoryCommand
 
 ### Community 847 - "Community 847"
 Cohesion: 0.33
-Nodes (1): UpdateStudentCategoryCommand
+Nodes (1): RealCreateStudentGroupCommand
 
 ### Community 848 - "Community 848"
 Cohesion: 0.33
-Nodes (1): DeleteStudentCategoryCommand
+Nodes (1): UpdateStudentGroupCommand
 
 ### Community 849 - "Community 849"
 Cohesion: 0.33
-Nodes (1): RealCreateStudentGroupCommand
+Nodes (1): AddStudentToGroupCommand
 
 ### Community 850 - "Community 850"
 Cohesion: 0.33
-Nodes (1): UpdateStudentGroupCommand
+Nodes (1): RemoveStudentFromGroupCommand
 
 ### Community 851 - "Community 851"
 Cohesion: 0.33
-Nodes (1): AddStudentToGroupCommand
+Nodes (1): DeleteStudentGroupCommand
 
 ### Community 852 - "Community 852"
 Cohesion: 0.33
-Nodes (1): RemoveStudentFromGroupCommand
+Nodes (1): RealCreateRegistrationFieldCommand
 
 ### Community 853 - "Community 853"
 Cohesion: 0.33
-Nodes (1): DeleteStudentGroupCommand
+Nodes (1): UpdateRegistrationFieldCommand
 
 ### Community 854 - "Community 854"
 Cohesion: 0.33
-Nodes (1): RealCreateRegistrationFieldCommand
+Nodes (1): DeleteRegistrationFieldCommand
 
 ### Community 855 - "Community 855"
 Cohesion: 0.33
-Nodes (1): UpdateRegistrationFieldCommand
+Nodes (1): RealCreateCertificateCommand
 
 ### Community 856 - "Community 856"
 Cohesion: 0.33
-Nodes (1): DeleteRegistrationFieldCommand
+Nodes (1): UpdateCertificateCommand
 
 ### Community 857 - "Community 857"
 Cohesion: 0.33
-Nodes (1): RealCreateCertificateCommand
+Nodes (1): DeleteCertificateCommand
 
 ### Community 858 - "Community 858"
 Cohesion: 0.33
-Nodes (1): UpdateCertificateCommand
+Nodes (1): RealCreateIdCardCommand
 
 ### Community 859 - "Community 859"
 Cohesion: 0.33
-Nodes (1): DeleteCertificateCommand
+Nodes (1): UpdateIdCardCommand
 
 ### Community 860 - "Community 860"
 Cohesion: 0.33
-Nodes (1): RealCreateIdCardCommand
+Nodes (1): DeleteIdCardCommand
 
 ### Community 861 - "Community 861"
 Cohesion: 0.33
-Nodes (1): UpdateIdCardCommand
+Nodes (1): AssignStudentToSectionCommand
 
 ### Community 862 - "Community 862"
 Cohesion: 0.33
-Nodes (1): DeleteIdCardCommand
+Nodes (1): ChangeStudentCategoryCommand
 
 ### Community 863 - "Community 863"
 Cohesion: 0.33
-Nodes (1): AssignStudentToSectionCommand
+Nodes (1): AssignOptionalSubjectCommand
 
 ### Community 864 - "Community 864"
 Cohesion: 0.33
-Nodes (1): ChangeStudentCategoryCommand
+Nodes (1): UploadStudentDocumentCommand
 
 ### Community 865 - "Community 865"
 Cohesion: 0.33
-Nodes (1): AssignOptionalSubjectCommand
+Nodes (1): AssignClassTeacherCommand
 
 ### Community 866 - "Community 866"
 Cohesion: 0.33
-Nodes (1): UploadStudentDocumentCommand
+Nodes (1): AssignSubjectTeacherCommand
 
 ### Community 867 - "Community 867"
 Cohesion: 0.33
-Nodes (1): AssignClassTeacherCommand
+Nodes (1): AssignClassRoomCommand
 
 ### Community 868 - "Community 868"
 Cohesion: 0.33
-Nodes (1): AssignSubjectTeacherCommand
+Nodes (1): DeleteClassSectionCommand
 
 ### Community 869 - "Community 869"
 Cohesion: 0.33
-Nodes (1): AssignClassRoomCommand
+Nodes (1): AssignSubjectToClassCommand
 
 ### Community 870 - "Community 870"
 Cohesion: 0.33
-Nodes (1): DeleteClassSectionCommand
+Nodes (1): ReassignTeacherCommand
 
 ### Community 871 - "Community 871"
 Cohesion: 0.33
-Nodes (1): AssignSubjectToClassCommand
+Nodes (1): UnassignSubjectCommand
 
 ### Community 872 - "Community 872"
 Cohesion: 0.33
-Nodes (1): ReassignTeacherCommand
+Nodes (1): SubmitHomeworkCommand
 
 ### Community 873 - "Community 873"
 Cohesion: 0.33
-Nodes (1): UnassignSubjectCommand
+Nodes (1): EvaluateHomeworkCommand
 
 ### Community 874 - "Community 874"
 Cohesion: 0.33
-Nodes (1): SubmitHomeworkCommand
+Nodes (1): RegisterAdmissionQueryCommand
 
 ### Community 875 - "Community 875"
 Cohesion: 0.33
-Nodes (1): EvaluateHomeworkCommand
+Nodes (1): EnrollStudentCommand
 
 ### Community 876 - "Community 876"
 Cohesion: 0.33
-Nodes (1): RegisterAdmissionQueryCommand
+Nodes (1): SetRollNumberCommand
 
 ### Community 877 - "Community 877"
 Cohesion: 0.33
-Nodes (1): EnrollStudentCommand
+Nodes (1): SetDefaultRecordCommand
 
 ### Community 878 - "Community 878"
 Cohesion: 0.33
-Nodes (1): SetRollNumberCommand
-
-### Community 879 - "Community 879"
-Cohesion: 0.33
-Nodes (1): SetDefaultRecordCommand
-
-### Community 880 - "Community 880"
-Cohesion: 0.33
 Nodes (1): MarkGraduateCommand
 
-### Community 881 - "Community 881"
+### Community 879 - "Community 879"
 Cohesion: 0.53
 Nodes (5): convenience_constructors_build_expected_variants(), deserialize_failed(), not_supported(), publish_failed(), subscribe_failed()
 
-### Community 882 - "Community 882"
+### Community 880 - "Community 880"
 Cohesion: 0.33
 Nodes (1): RunPayrollCommand
 
-### Community 883 - "Community 883"
+### Community 881 - "Community 881"
 Cohesion: 0.33
 Nodes (1): HireStaffCommand
 
-### Community 884 - "Community 884"
+### Community 882 - "Community 882"
 Cohesion: 0.33
 Nodes (2): SyncHealth, SyncStatus
 
-### Community 885 - "Community 885"
+### Community 883 - "Community 883"
 Cohesion: 0.33
 Nodes (6): CreateNoticeBoard command, NoticeBoard aggregate (public-site), NoticeBoardRepository port, cms_notice_boards table, Url value object, Notice aggregate (communication domain)
 
-### Community 886 - "Community 886"
+### Community 884 - "Community 884"
 Cohesion: 0.33
 Nodes (6): CreateTestimonial command, Testimonial aggregate, TestimonialCreated event, TestimonialService domain service, StarRating value object, Testimonial Curation Workflow
 
-### Community 887 - "Community 887"
+### Community 885 - "Community 885"
 Cohesion: 0.33
 Nodes (6): Dormitory Aggregate, DormitoryService Domain Service, DormitoryType Value Object, Room Aggregate, RoomAssignment Entity, RoomType Aggregate
 
-### Community 888 - "Community 888"
+### Community 886 - "Community 886"
 Cohesion: 0.33
 Nodes (6): CarryForwardFeesBalanceCommand, CarryForwardService, Carry Forward workflow, FeesCarriedForward event, FeesCarryForward aggregate, fees_carry_forwards table
 
-### Community 889 - "Community 889"
+### Community 887 - "Community 887"
 Cohesion: 0.33
 Nodes (6): StaffAttendanceImport (aggregate), AttendanceImportService, StaffAttendanceImportBatch, StaffAttendancePromotion, StaffAttendanceImportRepository, Table: attendance_staff_attendance_imports
 
-### Community 890 - "Community 890"
+### Community 888 - "Community 888"
 Cohesion: 0.33
 Nodes (6): IpAddress Value Object, LoginOutcome Value Object, Operations.Audit.* Capabilities, RecordUserLogCommand, UserLogService, UserLogged Event
 
-### Community 891 - "Community 891"
-Cohesion: 0.4
-Nodes (1): ChannelService
-
-### Community 893 - "Community 893"
+### Community 889 - "Community 889"
 Cohesion: 0.5
 Nodes (5): ClassRoutine Aggregate, ClassRoutineRepository, RoutineService, academic_class_routines Table, Routine Construction Workflow
 
-### Community 894 - "Community 894"
-Cohesion: 0.4
-Nodes (5): CreateHomeSlider command, HomeSlider aggregate, HomeSliderService domain service, HomeSliderUpdated event, FileReference value object
-
-### Community 895 - "Community 895"
+### Community 890 - "Community 890"
 Cohesion: 0.4
 Nodes (5): CoursePage aggregate, CoursePageRelation entity, CreateCoursePage command, cms_course_pages table, Course Page Workflow
 
-### Community 896 - "Community 896"
+### Community 891 - "Community 891"
+Cohesion: 0.4
+Nodes (5): CreateHomeSlider command, HomeSlider aggregate, HomeSliderService domain service, HomeSliderUpdated event, FileReference value object
+
+### Community 892 - "Community 892"
 Cohesion: 0.4
 Nodes (5): HomePageSetting.Configure capability, ConfigureHomePage command, HomePageSetting aggregate, cms_home_page_settings table, Home Page Configuration Workflow
 
-### Community 897 - "Community 897"
+### Community 893 - "Community 893"
 Cohesion: 0.4
 Nodes (5): IssueAuthorization Policy, IssueItemCommand, ItemIssued Event, Facilities Domain Permissions, Facilities Domain Services
 
-### Community 898 - "Community 898"
+### Community 894 - "Community 894"
 Cohesion: 0.4
 Nodes (5): Designation (aggregate), CreateDesignationCommand, DesignationRepository, DesignationGrade, Table: hr_designations
 
-### Community 899 - "Community 899"
+### Community 895 - "Community 895"
 Cohesion: 0.4
 Nodes (5): StaffAttendance (aggregate), AttendanceService, StaffAttendancePunch, StaffAttendanceRepository, Table: hr_staff_attendances
 
-### Community 900 - "Community 900"
+### Community 896 - "Community 896"
 Cohesion: 0.4
 Nodes (5): StaffRegistrationField (aggregate), CreateStaffRegistrationFieldCommand, StaffRegistrationFieldOption, StaffRegistrationFieldRepository, Table: hr_staff_registration_fields
 
-### Community 901 - "Community 901"
+### Community 897 - "Community 897"
 Cohesion: 0.4
 Nodes (5): Operations Aggregates, Operations Commands, Operations Events, Operations Domain Overview, Operations Value Objects
 
-### Community 902 - "Community 902"
+### Community 898 - "Community 898"
 Cohesion: 0.5
 Nodes (5): AuditService, operations_user_logs Table, UserLog Aggregate, UserLogRepository, User Log Retention Workflow
 
-### Community 903 - "Community 903"
+### Community 899 - "Community 899"
 Cohesion: 0.4
 Nodes (5): rbac_sidebars Table, Sidebar Aggregate, SidebarEntry Entity, Sidebar Layout Workflow, SidebarRepository
 
-### Community 904 - "Community 904"
+### Community 900 - "Community 900"
 Cohesion: 0.67
 Nodes (2): dummy_witness(), dummy_witness_returns_unit()
 
-### Community 905 - "Community 905"
+### Community 901 - "Community 901"
 Cohesion: 0.5
 Nodes (4): ADR-002: Hexagonal Architecture, ADR-013: Crate Layout (5-tier), Port & Adapter (Hexagonal), 5-Tier Crate Layout (lint-enforced)
 
-### Community 906 - "Community 906"
+### Community 902 - "Community 902"
 Cohesion: 0.5
 Nodes (4): EventEnvelope, EventBus trait, EventSubscription trait, Topic + SubscribeOptions
 
-### Community 907 - "Community 907"
+### Community 903 - "Community 903"
 Cohesion: 0.67
 Nodes (4): Assessment Domain Aggregates, Assessment Domain Overview, Assessment Domain Tables, Assessment Domain Value Objects
 
-### Community 908 - "Community 908"
+### Community 904 - "Community 904"
 Cohesion: 0.5
 Nodes (4): CreateUploadContent command, UploadContent aggregate, UploadContentScope embedded value, Admin Content Upload Workflow
 
-### Community 909 - "Community 909"
+### Community 905 - "Community 905"
 Cohesion: 0.5
 Nodes (4): AssignVehicleToRouteCommand, TransportService Domain Service, VehicleAssigned Event, VehicleAssignmentEligibility Policy
 
-### Community 910 - "Community 910"
+### Community 906 - "Community 906"
 Cohesion: 0.5
 Nodes (4): AssignStudentToRoomCommand, AssignStudentToRouteCommand, StudentAssignedToRoom Event, StudentAssignedToRoute Event
 
-### Community 911 - "Community 911"
+### Community 907 - "Community 907"
 Cohesion: 0.5
 Nodes (4): BlockLoginForDueFeesCommand, DueFees.Block capability, DueFeesLoginPrevent aggregate, DueFeesLoginPrevented event
 
-### Community 912 - "Community 912"
+### Community 908 - "Community 908"
 Cohesion: 0.5
 Nodes (4): AssignClassTeacher (aggregate), AssignClassTeacherRepository, AssignClassTeacherScope, Table: hr_assign_class_teachers
 
-### Community 913 - "Community 913"
+### Community 909 - "Community 909"
 Cohesion: 0.5
 Nodes (4): LeaveType (aggregate), CreateLeaveTypeCommand, LeaveTypeRepository, Table: hr_leave_types
 
-### Community 914 - "Community 914"
+### Community 910 - "Community 910"
 Cohesion: 0.5
 Nodes (4): BookRenewalEligibility Policy, RenewBookCommand, BookRenewed Event, Book Renewal Workflow
 
-### Community 915 - "Community 915"
+### Community 911 - "Community 911"
 Cohesion: 0.5
 Nodes (4): WaiveBookIssueFineCommand, FineWaived Event, BookIssue.WaiveFine Capability, Librarian Default Role
 
-### Community 916 - "Community 916"
+### Community 912 - "Community 912"
 Cohesion: 0.5
 Nodes (4): JobQueue Value Object, JobScheduled Event, Operations.Job.* Capabilities, ScheduleJobCommand
 
-### Community 918 - "Community 918"
+### Community 914 - "Community 914"
 Cohesion: 0.67
 Nodes (2): Cli, Command
 
-### Community 919 - "Community 919"
+### Community 915 - "Community 915"
 Cohesion: 1.0
 Nodes (3): Report Card Generation Guide, MarksGrade, Report Card Generation Workflow
 
-### Community 920 - "Community 920"
+### Community 916 - "Community 916"
 Cohesion: 1.0
 Nodes (3): BulkStudentImporter, School Onboarding Guide, School Onboarding Workflow
 
-### Community 921 - "Community 921"
+### Community 917 - "Community 917"
 Cohesion: 0.67
 Nodes (3): Guardian Aggregate, GuardianRepository, academic_parents Table
 
-### Community 922 - "Community 922"
+### Community 918 - "Community 918"
 Cohesion: 0.67
 Nodes (3): AssignOptionalSubject Command, StudentSuspended, OptionalSubjectEligibility
 
-### Community 923 - "Community 923"
+### Community 919 - "Community 919"
 Cohesion: 1.0
 Nodes (3): TransferStudent Command, StudentTransferred, Transfer Workflow
 
-### Community 924 - "Community 924"
+### Community 920 - "Community 920"
 Cohesion: 0.67
 Nodes (3): MarksGrade Aggregate, MarksGradeService, Grade Value Object
 
-### Community 925 - "Community 925"
+### Community 921 - "Community 921"
 Cohesion: 0.67
 Nodes (3): CMS Aggregates Spec, CMS Domain Overview, CMS Value Objects Spec
 
-### Community 926 - "Community 926"
+### Community 922 - "Community 922"
 Cohesion: 0.67
 Nodes (3): NewsCategory aggregate, NewsCategoryRepository port, cms_news_categories table
 
-### Community 927 - "Community 927"
+### Community 923 - "Community 923"
 Cohesion: 0.67
 Nodes (3): CreateFrontendPage command, FrontendPage aggregate, cms_frontend_pages table
 
-### Community 928 - "Community 928"
+### Community 924 - "Community 924"
 Cohesion: 0.67
 Nodes (3): CreateSpeechSlider command, SpeechSlider aggregate (CMS-side), SpeechSlider (communication domain)
 
-### Community 929 - "Community 929"
+### Community 925 - "Community 925"
 Cohesion: 0.67
 Nodes (3): Item Aggregate, ItemCategory Aggregate, StockMovement Entity
 
-### Community 930 - "Community 930"
+### Community 926 - "Community 926"
 Cohesion: 0.67
 Nodes (3): Inventory.Receive Capability, ItemReceived Event, ReceiveItemCommand
 
-### Community 931 - "Community 931"
+### Community 927 - "Community 927"
 Cohesion: 0.67
 Nodes (3): InventoryOnHandReport, TransportRosterReport, Facilities Domain Workflows
 
-### Community 932 - "Community 932"
+### Community 928 - "Community 928"
 Cohesion: 0.67
 Nodes (3): BankAccount aggregate, BankAccountRepository port, Bank.Transfer capability
 
-### Community 933 - "Community 933"
+### Community 929 - "Community 929"
 Cohesion: 0.67
 Nodes (3): BankReconciliationService, BankStatement aggregate, ChartOfAccount aggregate
 
-### Community 934 - "Community 934"
+### Community 930 - "Community 930"
 Cohesion: 0.67
 Nodes (3): BankPaymentApproved event, BankPaymentSlip aggregate, GenerateBankPaymentSlipCommand
 
-### Community 935 - "Community 935"
+### Community 931 - "Community 931"
 Cohesion: 0.67
 Nodes (3): Donor aggregate, finance_transactions table, Transaction aggregate
 
-### Community 936 - "Community 936"
+### Community 932 - "Community 932"
 Cohesion: 0.67
 Nodes (3): PayrollEarnDeduc (aggregate), PayrollEarnDeducRepository, Table: hr_payroll_earn_deducs
 
-### Community 937 - "Community 937"
+### Community 933 - "Community 933"
 Cohesion: 0.67
 Nodes (3): LeaveDeductionInfo (aggregate), LeaveDeductionInfoRepository, Table: hr_leave_deduction_infos
 
-### Community 938 - "Community 938"
+### Community 934 - "Community 934"
 Cohesion: 1.0
 Nodes (3): AssignSubjectTeacherCommand, SubjectTeacherAssigned, Workflow: Subject Teacher Assignment
 
-### Community 939 - "Community 939"
+### Community 935 - "Community 935"
 Cohesion: 1.0
 Nodes (3): AssignClassTeacherCommand, ClassTeacherAssigned, Workflow: Class Teacher Assignment
 
-### Community 940 - "Community 940"
+### Community 936 - "Community 936"
 Cohesion: 0.67
 Nodes (3): BookCategory Aggregate, BookCategoryRepository, library_book_categories Table
 
-### Community 941 - "Community 941"
+### Community 937 - "Community 937"
 Cohesion: 0.67
 Nodes (3): AddBookCommand, BookAdded Event, Book Cataloging Workflow
 
-### Community 942 - "Community 942"
+### Community 938 - "Community 938"
 Cohesion: 0.67
 Nodes (3): FailedJob Aggregate, FailedJobRepository, failed_jobs Table
 
-### Community 943 - "Community 943"
+### Community 939 - "Community 939"
 Cohesion: 1.0
 Nodes (1): LibraryError
 
-### Community 944 - "Community 944"
+### Community 940 - "Community 940"
 Cohesion: 1.0
 Nodes (1): SyncAdapter
 
-### Community 945 - "Community 945"
+### Community 941 - "Community 941"
 Cohesion: 1.0
 Nodes (1): SyncCommand
 
-### Community 946 - "Community 946"
+### Community 942 - "Community 942"
 Cohesion: 1.0
 Nodes (1): ConflictResolution<T>
 
-### Community 947 - "Community 947"
+### Community 943 - "Community 943"
 Cohesion: 1.0
 Nodes (1): SdkError
 
-### Community 948 - "Community 948"
+### Community 944 - "Community 944"
 Cohesion: 1.0
 Nodes (1): DateTime<Utc>
 
-### Community 949 - "Community 949"
+### Community 945 - "Community 945"
 Cohesion: 1.0
 Nodes (1): Repository
 
-### Community 950 - "Community 950"
+### Community 946 - "Community 946"
 Cohesion: 1.0
 Nodes (2): License FAQ, Dual License MIT/Apache-2.0
 
-### Community 951 - "Community 951"
+### Community 947 - "Community 947"
 Cohesion: 1.0
 Nodes (2): Notification Templates Guide, NotificationTemplate
 
-### Community 952 - "Community 952"
+### Community 948 - "Community 948"
 Cohesion: 1.0
 Nodes (2): FileReference + PutRequest, FileStorage trait
 
-### Community 953 - "Community 953"
+### Community 949 - "Community 949"
 Cohesion: 1.0
 Nodes (2): Channel + Recipient + DeliveryStatus, NotificationProvider trait
 
-### Community 954 - "Community 954"
+### Community 950 - "Community 950"
 Cohesion: 1.0
 Nodes (2): ChargeRequest + RefundRequest + PaymentMethod, PaymentProvider trait
 
-### Community 955 - "Community 955"
+### Community 951 - "Community 951"
 Cohesion: 1.0
 Nodes (2): Subject Aggregate, academic_subjects Table
 
-### Community 956 - "Community 956"
+### Community 952 - "Community 952"
 Cohesion: 1.0
 Nodes (2): GraduateStudent Command, StudentGraduated
 
-### Community 957 - "Community 957"
+### Community 953 - "Community 953"
 Cohesion: 1.0
 Nodes (2): ExamType Aggregate, ExamTerm Enum
 
-### Community 958 - "Community 958"
+### Community 954 - "Community 954"
 Cohesion: 1.0
 Nodes (2): Assessment Domain Commands, Assessment Domain Events
 
-### Community 959 - "Community 959"
+### Community 955 - "Community 955"
 Cohesion: 1.0
 Nodes (2): Assessment Domain Permissions, Assessment Domain Services
 
-### Community 960 - "Community 960"
+### Community 956 - "Community 956"
 Cohesion: 1.0
 Nodes (2): CancelBulkImportCommand, BulkImportCancelled
 
-### Community 961 - "Community 961"
+### Community 957 - "Community 957"
 Cohesion: 1.0
 Nodes (2): RequestAbsenceNotificationCommand, AbsenceNotificationRequested
 
-### Community 962 - "Community 962"
+### Community 958 - "Community 958"
 Cohesion: 1.0
 Nodes (2): CMS Permissions Spec, CMS Services Spec
 
-### Community 963 - "Community 963"
+### Community 959 - "Community 959"
 Cohesion: 1.0
 Nodes (2): CMS Commands Spec, CMS Events Spec
 
-### Community 964 - "Community 964"
+### Community 960 - "Community 960"
 Cohesion: 1.0
 Nodes (2): PageUpdated event, UpdatePage command
 
-### Community 965 - "Community 965"
+### Community 961 - "Community 961"
 Cohesion: 1.0
 Nodes (2): ArchivePage command, PageArchived event
 
-### Community 966 - "Community 966"
+### Community 962 - "Community 962"
 Cohesion: 1.0
 Nodes (2): DeletePage command, PageDeleted event
 
-### Community 967 - "Community 967"
+### Community 963 - "Community 963"
 Cohesion: 1.0
 Nodes (2): NewsUnpublished event, UnpublishNews command
 
-### Community 968 - "Community 968"
+### Community 964 - "Community 964"
 Cohesion: 1.0
 Nodes (2): IssueStatus Value Object, ItemIssue Aggregate
 
-### Community 969 - "Community 969"
+### Community 965 - "Community 965"
 Cohesion: 1.0
 Nodes (2): ItemSell Aggregate, ItemSellChild Aggregate
 
-### Community 970 - "Community 970"
+### Community 966 - "Community 966"
 Cohesion: 1.0
 Nodes (2): AssignVehicle Aggregate, TransportMembership Entity
 
-### Community 971 - "Community 971"
+### Community 967 - "Community 967"
 Cohesion: 1.0
 Nodes (2): ItemStore Aggregate, StoreStocktake Entity
 
-### Community 972 - "Community 972"
+### Community 968 - "Community 968"
 Cohesion: 1.0
 Nodes (2): ItemSold Event, SellItemCommand
 
-### Community 973 - "Community 973"
+### Community 969 - "Community 969"
 Cohesion: 1.0
 Nodes (2): CreateSupplierCommand, SupplierCreated Event
 
-### Community 974 - "Community 974"
+### Community 970 - "Community 970"
 Cohesion: 1.0
 Nodes (2): ItemRepository, facilities_items Table
 
-### Community 975 - "Community 975"
+### Community 971 - "Community 971"
 Cohesion: 1.0
 Nodes (2): VehicleRepository, facilities_vehicles Table
 
-### Community 976 - "Community 976"
+### Community 972 - "Community 972"
 Cohesion: 1.0
 Nodes (2): DiscountService, FeesDiscount aggregate
 
-### Community 977 - "Community 977"
+### Community 973 - "Community 973"
 Cohesion: 1.0
 Nodes (2): WalletService, WalletTransaction aggregate
 
-### Community 978 - "Community 978"
+### Community 974 - "Community 974"
 Cohesion: 1.0
 Nodes (2): DirectFeesInstallment aggregate, PayDirectInstallmentCommand
 
-### Community 979 - "Community 979"
+### Community 975 - "Community 975"
 Cohesion: 1.0
 Nodes (2): UpdateStaffCommand, StaffUpdated
 
-### Community 980 - "Community 980"
+### Community 976 - "Community 976"
 Cohesion: 1.0
 Nodes (2): ChangeStaffDepartmentCommand, StaffDepartmentChanged
 
-### Community 981 - "Community 981"
+### Community 977 - "Community 977"
 Cohesion: 1.0
 Nodes (2): CreateDepartmentCommand, DepartmentCreated
 
-### Community 982 - "Community 982"
+### Community 978 - "Community 978"
 Cohesion: 1.0
 Nodes (2): AddPayrollEarningCommand, PayrollEarningAdded
 
-### Community 983 - "Community 983"
+### Community 979 - "Community 979"
 Cohesion: 1.0
 Nodes (2): AddPayrollDeductionCommand, PayrollDeductionAdded
 
-### Community 984 - "Community 984"
+### Community 980 - "Community 980"
 Cohesion: 1.0
 Nodes (2): ChangeStaffDesignationCommand, StaffDesignationChanged
 
-### Community 985 - "Community 985"
+### Community 981 - "Community 981"
 Cohesion: 1.0
 Nodes (2): RejectLeaveCommand, LeaveRejected
 
-### Community 986 - "Community 986"
+### Community 982 - "Community 982"
 Cohesion: 1.0
 Nodes (2): CancelLeaveCommand, LeaveCancelled
 
-### Community 987 - "Community 987"
+### Community 983 - "Community 983"
 Cohesion: 1.0
 Nodes (2): PromoteStaffAttendanceCommand, StaffAttendancePromoted
 
-### Community 988 - "Community 988"
+### Community 984 - "Community 984"
 Cohesion: 1.0
 Nodes (2): Library Permissions, Library Services
 
-### Community 989 - "Community 989"
+### Community 985 - "Community 985"
 Cohesion: 1.0
 Nodes (2): Anti-Goal: Reservations deferred, BookReservation (future)
 
-### Community 990 - "Community 990"
+### Community 986 - "Community 986"
 Cohesion: 1.0
 Nodes (2): Operations Permissions, Operations Services
 
-### Community 991 - "Community 991"
+### Community 987 - "Community 987"
 Cohesion: 1.0
 Nodes (2): MaintenanceLockout Policy, MaintenanceLockout (auth flow rejects non-admin logins)
 
-### Community 992 - "Community 992"
+### Community 988 - "Community 988"
 Cohesion: 1.0
 Nodes (2): DisableMaintenanceGuard Policy, Self-Authorization Guard (last SuperAdmin)
 
-### Community 993 - "Community 993"
+### Community 989 - "Community 989"
 Cohesion: 1.0
 Nodes (2): operations_version_histories Table, VersionHistory Aggregate
 
-### Community 994 - "Community 994"
+### Community 990 - "Community 990"
 Cohesion: 1.0
 Nodes (2): CustomField Aggregate, CustomFieldValue Aggregate
 
-### Community 995 - "Community 995"
+### Community 991 - "Community 991"
 Cohesion: 1.0
 Nodes (2): POST /v1/sync Endpoint, WS /v1/sync/subscribe Endpoint
 
-### Community 996 - "Community 996"
+### Community 992 - "Community 992"
 Cohesion: 1.0
 Nodes (2): RequestSyncCommand, SyncStarted Event
 
-### Community 997 - "Community 997"
+### Community 993 - "Community 993"
 Cohesion: 1.0
 Nodes (2): PauseSyncCommand, ResumeSyncCommand
 
-### Community 998 - "Community 998"
+### Community 994 - "Community 994"
 Cohesion: 1.0
 Nodes (2): ASSERT Constraints, SCHEMAFUL Mode
 
-### Community 999 - "Community 999"
+### Community 995 - "Community 995"
 Cohesion: 1.0
 Nodes (2): Central Fan-out Event Bus, Local In-Process Event Bus
 
-### Community 1000 - "Community 1000"
+### Community 996 - "Community 996"
 Cohesion: 1.0
 Nodes (1): Settings Domain Commands
 
-### Community 1029 - "Community 1029"
+### Community 1025 - "Community 1025"
 Cohesion: 1.0
 Nodes (1): T
 
-### Community 1034 - "Community 1034"
+### Community 1030 - "Community 1030"
 Cohesion: 1.0
 Nodes (1): Scan a crate's src/services.rs for pub fn signatures.
 
-### Community 1035 - "Community 1035"
+### Community 1031 - "Community 1031"
 Cohesion: 1.0
 Nodes (1): admit_student -> 'admit'; update_student_profile -> 'update'.
 
-### Community 1036 - "Community 1036"
+### Community 1032 - "Community 1032"
 Cohesion: 1.0
 Nodes (1): AdmitStudentCommand -> 'student'; CreateClassCommand -> 'class'.
 
-### Community 1037 - "Community 1037"
+### Community 1033 - "Community 1033"
 Cohesion: 1.0
 Nodes (1): AdmitStudentCommand -> 'academic.student.create'.
 
-### Community 1038 - "Community 1038"
+### Community 1034 - "Community 1034"
 Cohesion: 1.0
 Nodes (1): Generate the CommandBounds impl block for the command.
 
-### Community 1039 - "Community 1039"
+### Community 1035 - "Community 1035"
 Cohesion: 1.0
 Nodes (1): Generate the dispatch_X wrapper function.
 
-### Community 1040 - "Community 1040"
+### Community 1036 - "Community 1036"
 Cohesion: 1.0
 Nodes (1): Run a check and return (passed, evidence).      `passed=True` means the item is
+
+### Community 1037 - "Community 1037"
+Cohesion: 1.0
+Nodes (1): Run a shell command, treat exit 0 as DONE.      For long-running commands (cargo
+
+### Community 1038 - "Community 1038"
+Cohesion: 1.0
+Nodes (1): Return a map of item_id -> (done, evidence).
+
+### Community 1039 - "Community 1039"
+Cohesion: 1.0
+Nodes (1): Return a checkbox string. Manual items are always [~].
+
+### Community 1040 - "Community 1040"
+Cohesion: 1.0
+Nodes (1): Render items for one COMPUTED section.      section format: items.<priority>.<ar
 
 ### Community 1041 - "Community 1041"
 Cohesion: 1.0
-Nodes (1): Run a shell command, treat exit 0 as DONE.      For long-running commands (cargo
+Nodes (1): Dispatch to the right renderer based on section name.
 
 ### Community 1042 - "Community 1042"
 Cohesion: 1.0
-Nodes (1): Return a map of item_id -> (done, evidence).
+Nodes (1): Run a check and return (passed, evidence).      `passed=True` means the item is
 
 ### Community 1043 - "Community 1043"
 Cohesion: 1.0
-Nodes (1): Return a checkbox string. Manual items are always [~].
+Nodes (1): Run a shell command, treat exit 0 as DONE.      For long-running commands (cargo
 
 ### Community 1044 - "Community 1044"
 Cohesion: 1.0
-Nodes (1): Render items for one COMPUTED section.      section format: items.<priority>.<ar
+Nodes (1): Return a map of item_id -> (done, evidence).
 
 ### Community 1045 - "Community 1045"
 Cohesion: 1.0
-Nodes (1): Dispatch to the right renderer based on section name.
+Nodes (1): Return a checkbox string. Manual items are always [~].
 
 ### Community 1046 - "Community 1046"
 Cohesion: 1.0
-Nodes (1): Run a check and return (passed, evidence).      `passed=True` means the item is
+Nodes (1): Render items for one COMPUTED section.      section format: items.<priority>.<ar
 
 ### Community 1047 - "Community 1047"
 Cohesion: 1.0
-Nodes (1): Run a shell command, treat exit 0 as DONE.      For long-running commands (cargo
+Nodes (1): Dispatch to the right renderer based on section name.
 
 ### Community 1048 - "Community 1048"
 Cohesion: 1.0
-Nodes (1): Return a map of item_id -> (done, evidence).
+Nodes (1): General Settings
 
 ### Community 1049 - "Community 1049"
 Cohesion: 1.0
-Nodes (1): Return a checkbox string. Manual items are always [~].
+Nodes (1): Language Catalog
 
 ### Community 1050 - "Community 1050"
 Cohesion: 1.0
-Nodes (1): Render items for one COMPUTED section.      section format: items.<priority>.<ar
+Nodes (1): Themes
 
 ### Community 1051 - "Community 1051"
 Cohesion: 1.0
-Nodes (1): Dispatch to the right renderer based on section name.
+Nodes (1): Base Setups
 
 ### Community 1052 - "Community 1052"
 Cohesion: 1.0
-Nodes (1): General Settings
+Nodes (1): Custom Links
 
 ### Community 1053 - "Community 1053"
 Cohesion: 1.0
-Nodes (1): Language Catalog
+Nodes (1): EntityDescriptor AST (table, columns, indexes, foreign_keys, rls) emitted by macro
 
 ### Community 1054 - "Community 1054"
 Cohesion: 1.0
-Nodes (1): Themes
+Nodes (1): ExamScheduled
 
 ### Community 1055 - "Community 1055"
 Cohesion: 1.0
-Nodes (1): Base Setups
+Nodes (1): JobScheduled
 
 ### Community 1056 - "Community 1056"
 Cohesion: 1.0
-Nodes (1): Custom Links
+Nodes (1): Implementation Guides README
 
 ### Community 1057 - "Community 1057"
 Cohesion: 1.0
-Nodes (1): EntityDescriptor AST (table, columns, indexes, foreign_keys, rls) emitted by macro
+Nodes (1): LeaveType (Sick/Casual/Earned/Maternity)
 
 ### Community 1058 - "Community 1058"
 Cohesion: 1.0
-Nodes (1): ExamScheduled
+Nodes (1): ClassSubject Aggregate
 
 ### Community 1059 - "Community 1059"
 Cohesion: 1.0
-Nodes (1): JobScheduled
+Nodes (1): StudentCategory Aggregate
 
 ### Community 1060 - "Community 1060"
 Cohesion: 1.0
-Nodes (1): Implementation Guides README
+Nodes (1): StudentGroup Aggregate
 
 ### Community 1061 - "Community 1061"
 Cohesion: 1.0
-Nodes (1): LeaveType (Sick/Casual/Earned/Maternity)
+Nodes (1): RegistrationField Aggregate
 
 ### Community 1062 - "Community 1062"
 Cohesion: 1.0
-Nodes (1): ClassSubject Aggregate
+Nodes (1): Certificate Aggregate
 
 ### Community 1063 - "Community 1063"
 Cohesion: 1.0
-Nodes (1): StudentCategory Aggregate
+Nodes (1): IdCard Aggregate
 
 ### Community 1064 - "Community 1064"
 Cohesion: 1.0
-Nodes (1): StudentGroup Aggregate
+Nodes (1): ClassRoom Entity
 
 ### Community 1065 - "Community 1065"
 Cohesion: 1.0
-Nodes (1): RegistrationField Aggregate
+Nodes (1): MarkStore Aggregate
 
 ### Community 1066 - "Community 1066"
 Cohesion: 1.0
-Nodes (1): Certificate Aggregate
+Nodes (1): ExamSetting Aggregate
 
 ### Community 1067 - "Community 1067"
 Cohesion: 1.0
-Nodes (1): IdCard Aggregate
+Nodes (1): ExamSignature Aggregate
 
 ### Community 1068 - "Community 1068"
 Cohesion: 1.0
-Nodes (1): ClassRoom Entity
+Nodes (1): TeacherEvaluation Aggregate
 
 ### Community 1069 - "Community 1069"
 Cohesion: 1.0
-Nodes (1): MarkStore Aggregate
+Nodes (1): TeacherRemark Aggregate
 
 ### Community 1070 - "Community 1070"
 Cohesion: 1.0
-Nodes (1): ExamSetting Aggregate
+Nodes (1): CustomResultSetting Aggregate
 
 ### Community 1071 - "Community 1071"
 Cohesion: 1.0
-Nodes (1): ExamSignature Aggregate
+Nodes (1): Assessment Domain Entities
 
 ### Community 1072 - "Community 1072"
 Cohesion: 1.0
-Nodes (1): TeacherEvaluation Aggregate
+Nodes (1): Assessment Domain Repositories
 
 ### Community 1073 - "Community 1073"
 Cohesion: 1.0
-Nodes (1): TeacherRemark Aggregate
+Nodes (1): Assessment Domain Workflows
 
 ### Community 1074 - "Community 1074"
 Cohesion: 1.0
-Nodes (1): CustomResultSetting Aggregate
+Nodes (1): CMS Entities Spec
 
 ### Community 1075 - "Community 1075"
 Cohesion: 1.0
-Nodes (1): Assessment Domain Entities
+Nodes (1): CMS Repositories Spec
 
 ### Community 1076 - "Community 1076"
 Cohesion: 1.0
-Nodes (1): Assessment Domain Repositories
+Nodes (1): CMS Workflows Spec
 
 ### Community 1077 - "Community 1077"
 Cohesion: 1.0
-Nodes (1): Assessment Domain Workflows
+Nodes (1): CMS Tables Spec
 
 ### Community 1078 - "Community 1078"
 Cohesion: 1.0
-Nodes (1): CMS Entities Spec
+Nodes (1): NewsPage aggregate
 
 ### Community 1079 - "Community 1079"
 Cohesion: 1.0
-Nodes (1): CMS Repositories Spec
+Nodes (1): ContentType aggregate
 
 ### Community 1080 - "Community 1080"
 Cohesion: 1.0
-Nodes (1): CMS Workflows Spec
+Nodes (1): AboutPage aggregate
 
 ### Community 1081 - "Community 1081"
 Cohesion: 1.0
-Nodes (1): CMS Tables Spec
+Nodes (1): ContactPage aggregate
 
 ### Community 1082 - "Community 1082"
 Cohesion: 1.0
-Nodes (1): NewsPage aggregate
+Nodes (1): ChatStatus Aggregate
 
 ### Community 1083 - "Community 1083"
 Cohesion: 1.0
-Nodes (1): ContentType aggregate
+Nodes (1): Facilities Domain Repositories
 
 ### Community 1084 - "Community 1084"
 Cohesion: 1.0
-Nodes (1): AboutPage aggregate
+Nodes (1): Route Aggregate
 
 ### Community 1085 - "Community 1085"
 Cohesion: 1.0
-Nodes (1): ContactPage aggregate
+Nodes (1): SupplierService Domain Service
 
 ### Community 1086 - "Community 1086"
 Cohesion: 1.0
-Nodes (1): ChatStatus Aggregate
+Nodes (1): facilities_routes Table
 
 ### Community 1087 - "Community 1087"
 Cohesion: 1.0
-Nodes (1): Facilities Domain Repositories
+Nodes (1): facilities_assign_vehicles Table
 
 ### Community 1088 - "Community 1088"
 Cohesion: 1.0
-Nodes (1): Route Aggregate
+Nodes (1): facilities_dormitories Table
 
 ### Community 1089 - "Community 1089"
 Cohesion: 1.0
-Nodes (1): SupplierService Domain Service
+Nodes (1): facilities_rooms Table
 
 ### Community 1090 - "Community 1090"
 Cohesion: 1.0
-Nodes (1): facilities_routes Table
+Nodes (1): facilities_item_receives Table
 
 ### Community 1091 - "Community 1091"
 Cohesion: 1.0
-Nodes (1): facilities_assign_vehicles Table
+Nodes (1): facilities_item_sells Table
 
 ### Community 1092 - "Community 1092"
 Cohesion: 1.0
-Nodes (1): facilities_dormitories Table
+Nodes (1): facilities_suppliers Table
 
 ### Community 1093 - "Community 1093"
 Cohesion: 1.0
-Nodes (1): facilities_rooms Table
+Nodes (1): PaymentStatus / ApprovalStatus value objects
 
 ### Community 1094 - "Community 1094"
 Cohesion: 1.0
-Nodes (1): facilities_item_receives Table
+Nodes (1): ConfigurePaymentGatewayCommand
 
 ### Community 1095 - "Community 1095"
 Cohesion: 1.0
-Nodes (1): facilities_item_sells Table
+Nodes (1): HR Domain — Workflows
 
 ### Community 1096 - "Community 1096"
 Cohesion: 1.0
-Nodes (1): facilities_suppliers Table
+Nodes (1): ImportStaffAttendanceCommand
 
 ### Community 1097 - "Community 1097"
 Cohesion: 1.0
-Nodes (1): PaymentStatus / ApprovalStatus value objects
+Nodes (1): BookQuantityAdjusted Event
 
 ### Community 1098 - "Community 1098"
 Cohesion: 1.0
-Nodes (1): ConfigurePaymentGatewayCommand
+Nodes (1): Operations Repositories
 
 ### Community 1099 - "Community 1099"
 Cohesion: 1.0
-Nodes (1): HR Domain — Workflows
+Nodes (1): Operations Workflows
 
 ### Community 1100 - "Community 1100"
 Cohesion: 1.0
-Nodes (1): ImportStaffAttendanceCommand
+Nodes (1): Operations Entities
 
 ### Community 1101 - "Community 1101"
 Cohesion: 1.0
-Nodes (1): BookQuantityAdjusted Event
+Nodes (1): Operations Tables
 
 ### Community 1102 - "Community 1102"
 Cohesion: 1.0
-Nodes (1): Operations Repositories
+Nodes (1): VersionHistoryRepository
 
 ### Community 1103 - "Community 1103"
 Cohesion: 1.0
-Nodes (1): Operations Workflows
+Nodes (1): SidebarLevel Value Object
 
 ### Community 1104 - "Community 1104"
 Cohesion: 1.0
-Nodes (1): Operations Entities
+Nodes (1): SidebarService
 
 ### Community 1105 - "Community 1105"
 Cohesion: 1.0
-Nodes (1): Operations Tables
+Nodes (1): Platform Domain Repositories
 
 ### Community 1106 - "Community 1106"
 Cohesion: 1.0
-Nodes (1): VersionHistoryRepository
+Nodes (1): Platform Domain Workflows
 
 ### Community 1107 - "Community 1107"
 Cohesion: 1.0
-Nodes (1): SidebarLevel Value Object
+Nodes (1): Platform Domain Entities
 
 ### Community 1108 - "Community 1108"
 Cohesion: 1.0
-Nodes (1): SidebarService
+Nodes (1): Platform Domain Permissions
 
 ### Community 1109 - "Community 1109"
 Cohesion: 1.0
-Nodes (1): Platform Domain Repositories
+Nodes (1): Platform Domain Value Objects
 
 ### Community 1110 - "Community 1110"
 Cohesion: 1.0
-Nodes (1): Platform Domain Workflows
+Nodes (1): Platform Domain Tables
 
 ### Community 1111 - "Community 1111"
 Cohesion: 1.0
-Nodes (1): Platform Domain Entities
+Nodes (1): Platform Domain Services
 
 ### Community 1112 - "Community 1112"
 Cohesion: 1.0
-Nodes (1): Platform Domain Permissions
+Nodes (1): Platform Domain Commands
 
 ### Community 1113 - "Community 1113"
 Cohesion: 1.0
-Nodes (1): Platform Domain Value Objects
+Nodes (1): CoursePage Aggregate
 
 ### Community 1114 - "Community 1114"
 Cohesion: 1.0
-Nodes (1): Platform Domain Tables
+Nodes (1): ModuleManager Aggregate
 
 ### Community 1115 - "Community 1115"
 Cohesion: 1.0
-Nodes (1): Platform Domain Services
+Nodes (1): ModuleStudentParentInfo Aggregate
 
 ### Community 1116 - "Community 1116"
 Cohesion: 1.0
-Nodes (1): Platform Domain Commands
+Nodes (1): TimeZone Aggregate
 
 ### Community 1117 - "Community 1117"
 Cohesion: 1.0
-Nodes (1): CoursePage Aggregate
+Nodes (1): Country Aggregate
 
 ### Community 1118 - "Community 1118"
 Cohesion: 1.0
-Nodes (1): ModuleManager Aggregate
+Nodes (1): Continent Aggregate
 
 ### Community 1119 - "Community 1119"
 Cohesion: 1.0
-Nodes (1): ModuleStudentParentInfo Aggregate
+Nodes (1): Currency Aggregate
 
 ### Community 1120 - "Community 1120"
 Cohesion: 1.0
-Nodes (1): TimeZone Aggregate
+Nodes (1): Language Aggregate
 
 ### Community 1121 - "Community 1121"
 Cohesion: 1.0
-Nodes (1): Country Aggregate
+Nodes (1): SocialMediaIcon Aggregate
 
 ### Community 1122 - "Community 1122"
 Cohesion: 1.0
-Nodes (1): Continent Aggregate
+Nodes (1): HeaderMenuManager Aggregate
 
 ### Community 1123 - "Community 1123"
 Cohesion: 1.0
-Nodes (1): Currency Aggregate
+Nodes (1): PhotoGallery Aggregate
 
 ### Community 1124 - "Community 1124"
 Cohesion: 1.0
-Nodes (1): Language Aggregate
+Nodes (1): VideoGallery Aggregate
 
 ### Community 1125 - "Community 1125"
 Cohesion: 1.0
-Nodes (1): SocialMediaIcon Aggregate
+Nodes (1): Visitor Aggregate
 
 ### Community 1126 - "Community 1126"
 Cohesion: 1.0
-Nodes (1): HeaderMenuManager Aggregate
+Nodes (1): ToDo Aggregate
 
 ### Community 1127 - "Community 1127"
 Cohesion: 1.0
-Nodes (1): PhotoGallery Aggregate
+Nodes (1): Instruction Aggregate
 
 ### Community 1128 - "Community 1128"
 Cohesion: 1.0
-Nodes (1): VideoGallery Aggregate
+Nodes (1): ExpertTeacher Aggregate
 
 ### Community 1129 - "Community 1129"
 Cohesion: 1.0
-Nodes (1): Visitor Aggregate
+Nodes (1): FrontendPermission Aggregate
 
 ### Community 1130 - "Community 1130"
 Cohesion: 1.0
-Nodes (1): ToDo Aggregate
+Nodes (1): AmountTransfer Aggregate
 
 ### Community 1131 - "Community 1131"
 Cohesion: 1.0
-Nodes (1): Instruction Aggregate
+Nodes (1): Plugin Aggregate
 
 ### Community 1132 - "Community 1132"
 Cohesion: 1.0
-Nodes (1): ExpertTeacher Aggregate
+Nodes (1): Comment Aggregate
 
 ### Community 1133 - "Community 1133"
 Cohesion: 1.0
-Nodes (1): FrontendPermission Aggregate
+Nodes (1): CommentTag Aggregate
 
 ### Community 1134 - "Community 1134"
 Cohesion: 1.0
-Nodes (1): AmountTransfer Aggregate
+Nodes (1): CommentPivot Aggregate
 
 ### Community 1135 - "Community 1135"
 Cohesion: 1.0
-Nodes (1): Plugin Aggregate
+Nodes (1): VideoUpload Aggregate
 
 ### Community 1136 - "Community 1136"
 Cohesion: 1.0
-Nodes (1): Comment Aggregate
+Nodes (1): LocaleService
 
 ### Community 1137 - "Community 1137"
 Cohesion: 1.0
-Nodes (1): CommentTag Aggregate
+Nodes (1): Settings Domain Events
 
 ### Community 1138 - "Community 1138"
 Cohesion: 1.0
-Nodes (1): CommentPivot Aggregate
+Nodes (1): Settings Domain Workflows
 
 ### Community 1139 - "Community 1139"
 Cohesion: 1.0
-Nodes (1): VideoUpload Aggregate
+Nodes (1): CurrencyCode
 
 ### Community 1140 - "Community 1140"
 Cohesion: 1.0
-Nodes (1): LocaleService
+Nodes (1): LocaleCode
 
 ### Community 1141 - "Community 1141"
 Cohesion: 1.0
-Nodes (1): Settings Domain Events
+Nodes (1): DateFormatPattern
 
 ### Community 1142 - "Community 1142"
 Cohesion: 1.0
-Nodes (1): Settings Domain Workflows
+Nodes (1): Sync Port Contract
 
 ### Community 1143 - "Community 1143"
 Cohesion: 1.0
-Nodes (1): CurrencyCode
+Nodes (1): SyncCompleted Event
 
 ### Community 1144 - "Community 1144"
 Cohesion: 1.0
-Nodes (1): LocaleCode
+Nodes (1): Storage Sync Primitives Section
 
 ### Community 1145 - "Community 1145"
 Cohesion: 1.0
-Nodes (1): DateFormatPattern
+Nodes (1): Storage ChangeFilter Type
 
 ### Community 1146 - "Community 1146"
 Cohesion: 1.0
-Nodes (1): Sync Port Contract
-
-### Community 1147 - "Community 1147"
-Cohesion: 1.0
-Nodes (1): SyncCompleted Event
-
-### Community 1148 - "Community 1148"
-Cohesion: 1.0
-Nodes (1): Storage Sync Primitives Section
-
-### Community 1149 - "Community 1149"
-Cohesion: 1.0
-Nodes (1): Storage ChangeFilter Type
-
-### Community 1150 - "Community 1150"
-Cohesion: 1.0
 Nodes (1): Storage ChangeStream Type
 
-### Community 1151 - "Community 1151"
+### Community 1147 - "Community 1147"
 Cohesion: 1.0
 Nodes (1): Storage VersionCursor Type
 
@@ -5636,1897 +5621,1895 @@ Nodes (1): Storage VersionCursor Type
 ## Knowledge Gaps
 - **3110 isolated node(s):** `Replace `pub struct X { pub id: XId, pub school_id: SchoolId }`     with the ful`, `Add `educore-dispatcher = { workspace = true }` to Cargo.toml dependencies.`, `Add IdempotencyKey + CommandBounds imports to commands.rs.`, `Append CommandBounds impls from template, skipping duplicates.     Returns (appe`, `Returns (crate, status, appended, skipped, cargo_ok).` (+3105 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 86`** (18 nodes): `NoOpUniquenessChecker`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
+- **Thin community `Community 83`** (18 nodes): `NoOpUniquenessChecker`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 87`** (18 nodes): `NoOpUniquenessChecker`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
+- **Thin community `Community 84`** (18 nodes): `NoOpUniquenessChecker`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 88`** (18 nodes): `InMemoryUniqueness`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
+- **Thin community `Community 85`** (18 nodes): `NoOpUniquenessChecker`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 89`** (18 nodes): `NoOpUniquenessChecker`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
+- **Thin community `Community 88`** (16 nodes): `UpdateStudentAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`, `ValidateBulkImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 90`** (18 nodes): `TestUniqueness`, `.academic_year_overlaps()`, `.class_name_exists()`, `.class_section_exists()`, `.class_section_has_student_records()`, `.lesson_title_exists()`, `.optional_subject_assigned_exists()`, `.primary_guardian_link_exists()`, `.roll_no_exists()`, `.room_has_conflict()`, `.section_name_exists()`, `.student_admission_no_exists()`, `.student_category_name_exists()`, `.student_email_exists()`, `.student_group_name_exists()`, `.student_has_active_record()`, `.subject_code_exists()`, `.teacher_has_conflict()`
+- **Thin community `Community 94`** (13 nodes): `.mark_deleted()`, `errors.rs`, `CommunicationError`, `.anonymous_requires_no_identity()`, `.channel_unavailable()`, `.chat_blocked()`, `.conflict()`, `.forbidden()`, `.not_found()`, `.notice_has_recipients()`, `.setting_misconfigured()`, `.template_render()`, `.validation()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 97`** (13 nodes): `.mark_deleted()`, `errors.rs`, `CommunicationError`, `.anonymous_requires_no_identity()`, `.channel_unavailable()`, `.chat_blocked()`, `.conflict()`, `.forbidden()`, `.not_found()`, `.notice_has_recipients()`, `.setting_misconfigured()`, `.template_render()`, `.validation()`
+- **Thin community `Community 101`** (10 nodes): `event_retention.rs`, `EventLogRetentionPolicy`, `.default()`, `EventLogRetentionSweepDue`, `.aggregate_id()`, `.event_id()`, `.new()`, `.occurred_at()`, `.school_id()`, `.typed_event_id()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 103`** (10 nodes): `appends_when_no_query_string()`, `appends_with_amp_when_query_present()`, `case_insensitive_on_param_name()`, `idempotent_when_already_present()`, `MysqlConnection`, `.db()`, `.fmt()`, `.into_inner()`, `.school()`, `connection.rs`
+- **Thin community `Community 107`** (9 nodes): `entities.rs`, `StaffAttendanceImport`, `.is_validated()`, `.is_well_formed()`, `.school_id()`, `StudentAttendanceImport`, `.is_validated()`, `.is_well_formed()`, `.school_id()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 105`** (10 nodes): `event_retention.rs`, `EventLogRetentionPolicy`, `.default()`, `EventLogRetentionSweepDue`, `.aggregate_id()`, `.event_id()`, `.new()`, `.occurred_at()`, `.school_id()`, `.typed_event_id()`
+- **Thin community `Community 111`** (8 nodes): `MarkStudentAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 111`** (9 nodes): `entities.rs`, `StaffAttendanceImport`, `.is_validated()`, `.is_well_formed()`, `.school_id()`, `StudentAttendanceImport`, `.is_validated()`, `.is_well_formed()`, `.school_id()`
+- **Thin community `Community 112`** (8 nodes): `BulkMarkStudentAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 115`** (8 nodes): `MarkStudentAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 113`** (8 nodes): `MarkSubjectAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 116`** (8 nodes): `BulkMarkStudentAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 114`** (8 nodes): `UpdateSubjectAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 117`** (8 nodes): `UpdateSubjectAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 115`** (8 nodes): `UpdateStaffAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 118`** (8 nodes): `ImportAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 116`** (8 nodes): `ImportAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 119`** (8 nodes): `CommitBulkImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 117`** (8 nodes): `CommitBulkImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 125`** (7 nodes): `DeleteFormCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 118`** (8 nodes): `CancelBulkImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.school_id()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 126`** (7 nodes): `DeletePostalDispatchCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 124`** (7 nodes): `DeleteFormCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 127`** (7 nodes): `DeletePostalReceiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 125`** (7 nodes): `DeletePostalDispatchCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 128`** (7 nodes): `_NullBookCategoryRepo`, `.delete()`, `.find_by_name()`, `.get()`, `.insert()`, `.list()`, `.update()`
+- **Thin community `Community 126`** (7 nodes): `DeletePostalReceiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.required_capabilities()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 129`** (7 nodes): `CreateRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.school_id()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 127`** (7 nodes): `_NullBookCategoryRepo`, `.delete()`, `.find_by_name()`, `.get()`, `.insert()`, `.list()`, `.update()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 130`** (7 nodes): `UpdateRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.school_id()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 128`** (7 nodes): `UpdateRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.school_id()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 131`** (7 nodes): `DeleteRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.school_id()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 129`** (7 nodes): `DeleteRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.school_id()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 132`** (7 nodes): `AssignCapabilityCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.school_id()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 130`** (7 nodes): `AssignCapabilityCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.school_id()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 133`** (7 nodes): `RevokeCapabilityCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.school_id()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 131`** (7 nodes): `RevokeCapabilityCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.school_id()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 141`** (6 nodes): `UploadFormCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 139`** (6 nodes): `UploadFormCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 142`** (6 nodes): `UpdateFormCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 140`** (6 nodes): `UpdateFormCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 143`** (6 nodes): `DeleteFormCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 141`** (6 nodes): `DeleteFormCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 144`** (6 nodes): `DispatchPostalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 142`** (6 nodes): `DispatchPostalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 145`** (6 nodes): `UpdatePostalDispatchCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 143`** (6 nodes): `UpdatePostalDispatchCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 146`** (6 nodes): `DeletePostalDispatchCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 144`** (6 nodes): `DeletePostalDispatchCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 147`** (6 nodes): `ReceivePostalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 145`** (6 nodes): `ReceivePostalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 148`** (6 nodes): `UpdatePostalReceiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 146`** (6 nodes): `UpdatePostalReceiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 149`** (6 nodes): `DeletePostalReceiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 147`** (6 nodes): `DeletePostalReceiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 150`** (6 nodes): `TrackPostalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 148`** (6 nodes): `TrackPostalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 151`** (6 nodes): `CreateFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 149`** (6 nodes): `CreateFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 152`** (6 nodes): `UpdateFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 150`** (6 nodes): `UpdateFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 153`** (6 nodes): `DeleteFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 151`** (6 nodes): `DeleteFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 154`** (6 nodes): `ReadFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 152`** (6 nodes): `ReadFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 155`** (6 nodes): `CreateFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 153`** (6 nodes): `CreateFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 156`** (6 nodes): `UpdateFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 154`** (6 nodes): `UpdateFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 157`** (6 nodes): `DeleteFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 155`** (6 nodes): `DeleteFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 158`** (6 nodes): `ReadFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 156`** (6 nodes): `ReadFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 159`** (6 nodes): `CreateFeesMasterCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 157`** (6 nodes): `CreateFeesMasterCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 160`** (6 nodes): `UpdateFeesMasterCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 158`** (6 nodes): `UpdateFeesMasterCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 161`** (6 nodes): `DeleteFeesMasterCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 159`** (6 nodes): `DeleteFeesMasterCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 162`** (6 nodes): `RetireFeesMasterCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 160`** (6 nodes): `RetireFeesMasterCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 163`** (6 nodes): `ReadFeesMasterCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 161`** (6 nodes): `ReadFeesMasterCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 164`** (6 nodes): `CreateFeesDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 162`** (6 nodes): `CreateFeesDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 165`** (6 nodes): `UpdateFeesDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 163`** (6 nodes): `UpdateFeesDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 166`** (6 nodes): `DeleteFeesDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 164`** (6 nodes): `DeleteFeesDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 167`** (6 nodes): `ReadFeesDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 165`** (6 nodes): `ReadFeesDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 168`** (6 nodes): `CreateFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 166`** (6 nodes): `CreateFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 169`** (6 nodes): `UpdateFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 167`** (6 nodes): `UpdateFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 170`** (6 nodes): `DeleteFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 168`** (6 nodes): `DeleteFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 171`** (6 nodes): `ReadFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 169`** (6 nodes): `ReadFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 172`** (6 nodes): `RecordFeesAssignPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 170`** (6 nodes): `RecordFeesAssignPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 173`** (6 nodes): `CancelFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 171`** (6 nodes): `CancelFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 174`** (6 nodes): `CreateFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 172`** (6 nodes): `CreateFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 175`** (6 nodes): `UpdateFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 173`** (6 nodes): `UpdateFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 176`** (6 nodes): `DeleteFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 174`** (6 nodes): `DeleteFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 177`** (6 nodes): `ReadFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 175`** (6 nodes): `ReadFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 178`** (6 nodes): `RetireFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 176`** (6 nodes): `RetireFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 179`** (6 nodes): `CreateDirectFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 177`** (6 nodes): `CreateDirectFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 180`** (6 nodes): `UpdateDirectFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 178`** (6 nodes): `UpdateDirectFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 181`** (6 nodes): `DeleteDirectFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 179`** (6 nodes): `DeleteDirectFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 182`** (6 nodes): `ReadDirectFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 180`** (6 nodes): `ReadDirectFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 183`** (6 nodes): `RetireDirectFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 181`** (6 nodes): `RetireDirectFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 184`** (6 nodes): `CreateDirectFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 182`** (6 nodes): `CreateDirectFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 185`** (6 nodes): `ReadDirectFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 183`** (6 nodes): `ReadDirectFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 186`** (6 nodes): `RetireDirectFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 184`** (6 nodes): `RetireDirectFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 187`** (6 nodes): `CreateDirectFeesInstallmentAssignChildCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 185`** (6 nodes): `CreateDirectFeesInstallmentAssignChildCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 188`** (6 nodes): `CreateDirectFeesSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 186`** (6 nodes): `CreateDirectFeesSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 189`** (6 nodes): `UpdateDirectFeesSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 187`** (6 nodes): `UpdateDirectFeesSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 190`** (6 nodes): `DeleteDirectFeesSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 188`** (6 nodes): `DeleteDirectFeesSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 191`** (6 nodes): `CreateDirectFeesReminderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 189`** (6 nodes): `CreateDirectFeesReminderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 192`** (6 nodes): `UpdateDirectFeesReminderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 190`** (6 nodes): `UpdateDirectFeesReminderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 193`** (6 nodes): `DeleteDirectFeesReminderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 191`** (6 nodes): `DeleteDirectFeesReminderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 194`** (6 nodes): `CreatePaymentMethodCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 192`** (6 nodes): `CreatePaymentMethodCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 195`** (6 nodes): `RetirePaymentMethodCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 193`** (6 nodes): `RetirePaymentMethodCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 196`** (6 nodes): `CreateFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 194`** (6 nodes): `CreateFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 197`** (6 nodes): `ReadFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 195`** (6 nodes): `ReadFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 198`** (6 nodes): `RetireFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 196`** (6 nodes): `RetireFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 199`** (6 nodes): `CloseFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 197`** (6 nodes): `CloseFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 200`** (6 nodes): `CancelFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 198`** (6 nodes): `CancelFeesInstallmentAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 201`** (6 nodes): `UpdatePaymentMethodCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 199`** (6 nodes): `UpdatePaymentMethodCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 202`** (6 nodes): `DeletePaymentMethodCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 200`** (6 nodes): `DeletePaymentMethodCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 203`** (6 nodes): `ReadPaymentMethodCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 201`** (6 nodes): `ReadPaymentMethodCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 204`** (6 nodes): `CreatePaymentGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 202`** (6 nodes): `CreatePaymentGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 205`** (6 nodes): `UpdatePaymentGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 203`** (6 nodes): `UpdatePaymentGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 206`** (6 nodes): `DeletePaymentGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 204`** (6 nodes): `DeletePaymentGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 207`** (6 nodes): `GenerateInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 205`** (6 nodes): `GenerateInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 208`** (6 nodes): `UpdateInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 206`** (6 nodes): `UpdateInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 209`** (6 nodes): `CancelInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 207`** (6 nodes): `CancelInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 210`** (6 nodes): `ReadInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 208`** (6 nodes): `ReadInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 211`** (6 nodes): `ReversePaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 209`** (6 nodes): `ReversePaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 212`** (6 nodes): `RefundPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 210`** (6 nodes): `RefundPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 213`** (6 nodes): `ReadFeesPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 211`** (6 nodes): `ReadFeesPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 214`** (6 nodes): `UpdateExpenseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 212`** (6 nodes): `UpdateExpenseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 215`** (6 nodes): `DeleteExpenseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 213`** (6 nodes): `DeleteExpenseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 216`** (6 nodes): `ApproveExpenseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 214`** (6 nodes): `ApproveExpenseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 217`** (6 nodes): `CreateIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 215`** (6 nodes): `CreateIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 218`** (6 nodes): `UpdateIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 216`** (6 nodes): `UpdateIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 219`** (6 nodes): `DeleteIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 217`** (6 nodes): `DeleteIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 220`** (6 nodes): `ReadIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 218`** (6 nodes): `ReadIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 221`** (6 nodes): `RetireIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 219`** (6 nodes): `RetireIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 222`** (6 nodes): `ApproveIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 220`** (6 nodes): `ApproveIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 223`** (6 nodes): `UpdateExpenseHeadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 221`** (6 nodes): `UpdateExpenseHeadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 224`** (6 nodes): `DeleteExpenseHeadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 222`** (6 nodes): `DeleteExpenseHeadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 225`** (6 nodes): `CreateIncomeHeadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 223`** (6 nodes): `CreateIncomeHeadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 226`** (6 nodes): `UpdateIncomeHeadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 224`** (6 nodes): `UpdateIncomeHeadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 227`** (6 nodes): `DeleteIncomeHeadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 225`** (6 nodes): `DeleteIncomeHeadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 228`** (6 nodes): `OpenBankAccountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 226`** (6 nodes): `OpenBankAccountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 229`** (6 nodes): `UpdateBankAccountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 227`** (6 nodes): `UpdateBankAccountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 230`** (6 nodes): `DeleteBankAccountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 228`** (6 nodes): `DeleteBankAccountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 231`** (6 nodes): `ReadBankAccountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 229`** (6 nodes): `ReadBankAccountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 232`** (6 nodes): `ReadBankStatementCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 230`** (6 nodes): `ReadBankStatementCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 233`** (6 nodes): `GenerateBankSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 231`** (6 nodes): `GenerateBankSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 234`** (6 nodes): `UpdateBankSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 232`** (6 nodes): `UpdateBankSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 235`** (6 nodes): `ApproveBankSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 233`** (6 nodes): `ApproveBankSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 236`** (6 nodes): `ReadBankSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 234`** (6 nodes): `ReadBankSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 237`** (6 nodes): `GeneratePayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 235`** (6 nodes): `GeneratePayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 238`** (6 nodes): `ApprovePayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 236`** (6 nodes): `ApprovePayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 239`** (6 nodes): `PayPayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 237`** (6 nodes): `PayPayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 240`** (6 nodes): `ReadPayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 238`** (6 nodes): `ReadPayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 241`** (6 nodes): `ApprovePayrollPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 239`** (6 nodes): `ApprovePayrollPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 242`** (6 nodes): `PayPayrollPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 240`** (6 nodes): `PayPayrollPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 243`** (6 nodes): `ReadPayrollPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 241`** (6 nodes): `ReadPayrollPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 244`** (6 nodes): `ReadWalletCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 242`** (6 nodes): `ReadWalletCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 245`** (6 nodes): `ApproveWalletTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 243`** (6 nodes): `ApproveWalletTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 246`** (6 nodes): `RejectWalletTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 244`** (6 nodes): `RejectWalletTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 247`** (6 nodes): `CreateWalletTransactionApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 245`** (6 nodes): `CreateWalletTransactionApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 248`** (6 nodes): `ApproveWalletTransactionApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 246`** (6 nodes): `ApproveWalletTransactionApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 249`** (6 nodes): `RejectWalletTransactionApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 247`** (6 nodes): `RejectWalletTransactionApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 250`** (6 nodes): `CreateExpenseApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 248`** (6 nodes): `CreateExpenseApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 251`** (6 nodes): `ApproveExpenseApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 249`** (6 nodes): `ApproveExpenseApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 252`** (6 nodes): `RejectExpenseApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 250`** (6 nodes): `RejectExpenseApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 253`** (6 nodes): `CreateIncomeApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 251`** (6 nodes): `CreateIncomeApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 254`** (6 nodes): `ApproveIncomeApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 252`** (6 nodes): `ApproveIncomeApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 255`** (6 nodes): `RejectIncomeApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 253`** (6 nodes): `RejectIncomeApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 256`** (6 nodes): `CreatePayrollPaymentApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 254`** (6 nodes): `CreatePayrollPaymentApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 257`** (6 nodes): `ApprovePayrollPaymentApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 255`** (6 nodes): `ApprovePayrollPaymentApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 258`** (6 nodes): `RejectPayrollPaymentApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 256`** (6 nodes): `RejectPayrollPaymentApprovalCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 259`** (6 nodes): `ReadWalletTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 257`** (6 nodes): `ReadWalletTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 260`** (6 nodes): `ReadFeesCarryForwardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 258`** (6 nodes): `ReadFeesCarryForwardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 261`** (6 nodes): `ConfigureFeesCarryForwardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 259`** (6 nodes): `ConfigureFeesCarryForwardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 262`** (6 nodes): `CreateFeesCarryForwardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 260`** (6 nodes): `CreateFeesCarryForwardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 263`** (6 nodes): `RetireFeesCarryForwardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 261`** (6 nodes): `RetireFeesCarryForwardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 264`** (6 nodes): `CreateFeesCarryForwardLogCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 262`** (6 nodes): `CreateFeesCarryForwardLogCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 265`** (6 nodes): `CreateFeesCarryForwardSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 263`** (6 nodes): `CreateFeesCarryForwardSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 266`** (6 nodes): `CreateFmFeesInvoiceLineNoteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 264`** (6 nodes): `CreateFmFeesInvoiceLineNoteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 267`** (6 nodes): `CreateFmFeesTransactionLineNoteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 265`** (6 nodes): `CreateFmFeesTransactionLineNoteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 268`** (6 nodes): `ReadFeesCarryForwardLogCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 266`** (6 nodes): `ReadFeesCarryForwardLogCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 269`** (6 nodes): `UnblockLoginForDueFeesCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 267`** (6 nodes): `UnblockLoginForDueFeesCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 270`** (6 nodes): `ReadDueFeesBlockCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 268`** (6 nodes): `ReadDueFeesBlockCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 271`** (6 nodes): `ConfigureDueFeesBlockSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 269`** (6 nodes): `ConfigureDueFeesBlockSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 272`** (6 nodes): `CreateAmountTransferCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 270`** (6 nodes): `CreateAmountTransferCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 273`** (6 nodes): `RetireAmountTransferCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 271`** (6 nodes): `RetireAmountTransferCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 274`** (6 nodes): `ReadAmountTransferCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 272`** (6 nodes): `ReadAmountTransferCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 275`** (6 nodes): `ReadChartOfAccountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 273`** (6 nodes): `ReadChartOfAccountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 276`** (6 nodes): `CreateInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 274`** (6 nodes): `CreateInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 277`** (6 nodes): `ReadInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 275`** (6 nodes): `ReadInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 278`** (6 nodes): `CreateQuestionBankFeeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 276`** (6 nodes): `CreateQuestionBankFeeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 279`** (6 nodes): `ReadFeesPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 277`** (6 nodes): `ReadFeesPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 280`** (6 nodes): `ReadFeesCollectionReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 278`** (6 nodes): `ReadFeesCollectionReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 281`** (6 nodes): `ReadOutstandingFeesReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 279`** (6 nodes): `ReadOutstandingFeesReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 282`** (6 nodes): `ReadExpenseReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 280`** (6 nodes): `ReadExpenseReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 283`** (6 nodes): `ReadIncomeReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 281`** (6 nodes): `ReadIncomeReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 284`** (6 nodes): `ReadBankStatementReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 282`** (6 nodes): `ReadBankStatementReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 285`** (6 nodes): `ReadWalletBalanceReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 283`** (6 nodes): `ReadWalletBalanceReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 286`** (6 nodes): `ReadPayrollReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 284`** (6 nodes): `ReadPayrollReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 287`** (6 nodes): `ReadPaymentMethodReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 285`** (6 nodes): `ReadPaymentMethodReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 288`** (6 nodes): `ReadFeesDiscountReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 286`** (6 nodes): `ReadFeesDiscountReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 289`** (6 nodes): `ReadDueFeesReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 287`** (6 nodes): `ReadDueFeesReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 290`** (6 nodes): `ReadClassWiseCollectionReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 288`** (6 nodes): `ReadClassWiseCollectionReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 291`** (6 nodes): `ReadDailyCollectionReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 289`** (6 nodes): `ReadDailyCollectionReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 292`** (6 nodes): `ReadMonthlyCollectionReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 290`** (6 nodes): `ReadMonthlyCollectionReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 293`** (6 nodes): `ReadHeadWiseExpenseReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 291`** (6 nodes): `ReadHeadWiseExpenseReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 294`** (6 nodes): `ReadHeadWiseIncomeReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 292`** (6 nodes): `ReadHeadWiseIncomeReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 295`** (6 nodes): `ReadCashFlowReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 293`** (6 nodes): `ReadCashFlowReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 296`** (6 nodes): `ReadProfitLossReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 294`** (6 nodes): `ReadProfitLossReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 297`** (6 nodes): `ReadBalanceSheetReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 295`** (6 nodes): `ReadBalanceSheetReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 298`** (6 nodes): `ReadTrialBalanceReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 296`** (6 nodes): `ReadTrialBalanceReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 299`** (6 nodes): `ReadLedgerReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 297`** (6 nodes): `ReadLedgerReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 300`** (6 nodes): `ReadReceiptReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 298`** (6 nodes): `ReadReceiptReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 301`** (6 nodes): `ReadRefundReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 299`** (6 nodes): `ReadRefundReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 302`** (6 nodes): `ConfigureFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 300`** (6 nodes): `ConfigureFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 303`** (6 nodes): `ConfigureFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 301`** (6 nodes): `ConfigureFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 304`** (6 nodes): `CreateExpenseHeadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 302`** (6 nodes): `CreateExpenseHeadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 305`** (6 nodes): `BlockLoginForDueFeesCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 303`** (6 nodes): `BlockLoginForDueFeesCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 306`** (6 nodes): `CarryForwardFeesBalanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 304`** (6 nodes): `CarryForwardFeesBalanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 307`** (6 nodes): `CreateFeesAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 305`** (6 nodes): `CreateFeesAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 308`** (6 nodes): `ReadFeesAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 306`** (6 nodes): `ReadFeesAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 309`** (6 nodes): `CreateDirectFeesInstallmentChildPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 307`** (6 nodes): `CreateDirectFeesInstallmentChildPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 310`** (6 nodes): `ReadDirectFeesInstallmentChildPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 308`** (6 nodes): `ReadDirectFeesInstallmentChildPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 311`** (6 nodes): `RetireDirectFeesInstallmentChildPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 309`** (6 nodes): `RetireDirectFeesInstallmentChildPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 312`** (6 nodes): `CreateFmFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 310`** (6 nodes): `CreateFmFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 313`** (6 nodes): `ReadFmFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 311`** (6 nodes): `ReadFmFeesGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 314`** (6 nodes): `CreateFmFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 312`** (6 nodes): `CreateFmFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 315`** (6 nodes): `ReadFmFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 313`** (6 nodes): `ReadFmFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 316`** (6 nodes): `RetireFmFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 314`** (6 nodes): `RetireFmFeesTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 317`** (6 nodes): `CreateBankPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 315`** (6 nodes): `CreateBankPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 318`** (6 nodes): `ReadBankPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 316`** (6 nodes): `ReadBankPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 319`** (6 nodes): `RetireBankPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 317`** (6 nodes): `RetireBankPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 320`** (6 nodes): `ApproveBankPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 318`** (6 nodes): `ApproveBankPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 321`** (6 nodes): `RejectBankPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 319`** (6 nodes): `RejectBankPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 322`** (6 nodes): `CreateFmFeesInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 320`** (6 nodes): `CreateFmFeesInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 323`** (6 nodes): `ReadFmFeesInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 321`** (6 nodes): `ReadFmFeesInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 324`** (6 nodes): `RetireFmFeesInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 322`** (6 nodes): `RetireFmFeesInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 325`** (6 nodes): `ApproveFmFeesInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 323`** (6 nodes): `ApproveFmFeesInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 326`** (6 nodes): `RejectFmFeesInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 324`** (6 nodes): `RejectFmFeesInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 327`** (6 nodes): `CreateFmFeesInvoiceChildCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 325`** (6 nodes): `CreateFmFeesInvoiceChildCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 328`** (6 nodes): `ReadFmFeesInvoiceChildCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 326`** (6 nodes): `ReadFmFeesInvoiceChildCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 329`** (6 nodes): `RetireFmFeesInvoiceChildCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 327`** (6 nodes): `RetireFmFeesInvoiceChildCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 330`** (6 nodes): `CreateFmFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 328`** (6 nodes): `CreateFmFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 331`** (6 nodes): `ReadFmFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 329`** (6 nodes): `ReadFmFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 332`** (6 nodes): `UpdateFmFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 330`** (6 nodes): `UpdateFmFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 333`** (6 nodes): `RetireFmFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 331`** (6 nodes): `RetireFmFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 334`** (6 nodes): `CreateFmFeesTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 332`** (6 nodes): `CreateFmFeesTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 335`** (6 nodes): `ReadFmFeesTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 333`** (6 nodes): `ReadFmFeesTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 336`** (6 nodes): `RetireFmFeesTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 334`** (6 nodes): `RetireFmFeesTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 337`** (6 nodes): `ApproveFmFeesTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 335`** (6 nodes): `ApproveFmFeesTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 338`** (6 nodes): `RejectFmFeesTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 336`** (6 nodes): `RejectFmFeesTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 339`** (6 nodes): `CreateFmFeesTransactionChildCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 337`** (6 nodes): `CreateFmFeesTransactionChildCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 340`** (6 nodes): `ReadFmFeesTransactionChildCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 338`** (6 nodes): `ReadFmFeesTransactionChildCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 341`** (6 nodes): `CreateFmFeesWeaverCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 339`** (6 nodes): `CreateFmFeesWeaverCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 342`** (6 nodes): `ReadFmFeesWeaverCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 340`** (6 nodes): `ReadFmFeesWeaverCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 343`** (6 nodes): `RetireFmFeesWeaverCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 341`** (6 nodes): `RetireFmFeesWeaverCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 344`** (6 nodes): `CreateFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 342`** (6 nodes): `CreateFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 345`** (6 nodes): `ReadFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 343`** (6 nodes): `ReadFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 346`** (6 nodes): `UpdateFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 344`** (6 nodes): `UpdateFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 347`** (6 nodes): `DeleteFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 345`** (6 nodes): `DeleteFeesInvoiceSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 348`** (6 nodes): `CreateFeesInstallmentCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 346`** (6 nodes): `CreateFeesInstallmentCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 349`** (6 nodes): `ReadFeesInstallmentCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 347`** (6 nodes): `ReadFeesInstallmentCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 350`** (6 nodes): `RetireFeesInstallmentCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 348`** (6 nodes): `RetireFeesInstallmentCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 351`** (6 nodes): `CreateTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 349`** (6 nodes): `CreateTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 352`** (6 nodes): `ReadTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 350`** (6 nodes): `ReadTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 353`** (6 nodes): `RetireTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 351`** (6 nodes): `RetireTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 354`** (6 nodes): `PostTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 352`** (6 nodes): `PostTransactionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 355`** (6 nodes): `CreateFeesInstallmentAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 353`** (6 nodes): `CreateFeesInstallmentAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 356`** (6 nodes): `ReadFeesInstallmentAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 354`** (6 nodes): `ReadFeesInstallmentAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 357`** (6 nodes): `RetireFeesInstallmentAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 355`** (6 nodes): `RetireFeesInstallmentAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 358`** (6 nodes): `CreateDonorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 356`** (6 nodes): `CreateDonorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 359`** (6 nodes): `ReadDonorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 357`** (6 nodes): `ReadDonorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 360`** (6 nodes): `CreateProductPurchaseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 358`** (6 nodes): `CreateProductPurchaseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 361`** (6 nodes): `ReadProductPurchaseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 359`** (6 nodes): `ReadProductPurchaseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 362`** (6 nodes): `RetireProductPurchaseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 360`** (6 nodes): `RetireProductPurchaseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 363`** (6 nodes): `RecordProductPurchaseReceiptCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 361`** (6 nodes): `RecordProductPurchaseReceiptCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 364`** (6 nodes): `CancelProductPurchaseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 362`** (6 nodes): `CancelProductPurchaseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 365`** (6 nodes): `CreateInventoryPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 363`** (6 nodes): `CreateInventoryPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 366`** (6 nodes): `ReadInventoryPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 364`** (6 nodes): `ReadInventoryPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 367`** (6 nodes): `RetireInventoryPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 365`** (6 nodes): `RetireInventoryPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 368`** (6 nodes): `UpdateFeesMasterAmountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 366`** (6 nodes): `UpdateFeesMasterAmountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 369`** (6 nodes): `AssignFeesToClassCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 367`** (6 nodes): `AssignFeesToClassCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 370`** (6 nodes): `AssignFeesToStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 368`** (6 nodes): `AssignFeesToStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 371`** (6 nodes): `UpdateFeesAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 369`** (6 nodes): `UpdateFeesAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 372`** (6 nodes): `RetireFeesAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 370`** (6 nodes): `RetireFeesAssignDiscountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 373`** (6 nodes): `CloseFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 371`** (6 nodes): `CloseFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 374`** (6 nodes): `RetireFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 372`** (6 nodes): `RetireFeesAssignCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 375`** (6 nodes): `AssignInstallmentToStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 373`** (6 nodes): `AssignInstallmentToStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 376`** (6 nodes): `ConfigureInvoiceNumberingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 374`** (6 nodes): `ConfigureInvoiceNumberingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 377`** (6 nodes): `PayInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 375`** (6 nodes): `PayInvoiceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 378`** (6 nodes): `PayInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 376`** (6 nodes): `PayInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 379`** (6 nodes): `ConfigureDirectFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 377`** (6 nodes): `ConfigureDirectFeesInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 380`** (6 nodes): `AssignDirectInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 378`** (6 nodes): `AssignDirectInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 381`** (6 nodes): `PayDirectInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 379`** (6 nodes): `PayDirectInstallmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 382`** (6 nodes): `ConfigureDirectFeesCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 380`** (6 nodes): `ConfigureDirectFeesCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 383`** (6 nodes): `ConfigureFeesReminderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 381`** (6 nodes): `ConfigureFeesReminderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 384`** (6 nodes): `RecordBankStatementCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 382`** (6 nodes): `RecordBankStatementCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 385`** (6 nodes): `GenerateBankPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 383`** (6 nodes): `GenerateBankPaymentSlipCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 386`** (6 nodes): `ApproveBankPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 384`** (6 nodes): `ApproveBankPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 387`** (6 nodes): `RejectBankPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 385`** (6 nodes): `RejectBankPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 388`** (6 nodes): `TransferFundsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 386`** (6 nodes): `TransferFundsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 389`** (6 nodes): `RecordExpenseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 387`** (6 nodes): `RecordExpenseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 390`** (6 nodes): `RecordIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 388`** (6 nodes): `RecordIncomeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 391`** (6 nodes): `AddWalletCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 389`** (6 nodes): `AddWalletCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 392`** (6 nodes): `DeductWalletCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 390`** (6 nodes): `DeductWalletCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 393`** (6 nodes): `RecordPayrollPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 391`** (6 nodes): `RecordPayrollPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 394`** (6 nodes): `RecordInventoryPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 392`** (6 nodes): `RecordInventoryPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 395`** (6 nodes): `RecordProductPurchaseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 393`** (6 nodes): `RecordProductPurchaseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 396`** (6 nodes): `RecordProductPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 394`** (6 nodes): `RecordProductPaymentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 397`** (6 nodes): `ConfigureInvoiceSettingsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 395`** (6 nodes): `ConfigureInvoiceSettingsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 398`** (6 nodes): `ConfigurePaymentGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 396`** (6 nodes): `ConfigurePaymentGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 399`** (6 nodes): `AttachFeesToQuestionBankCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 397`** (6 nodes): `AttachFeesToQuestionBankCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 400`** (6 nodes): `CreateChartOfAccountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 398`** (6 nodes): `CreateChartOfAccountCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 401`** (6 nodes): `CreateSalaryTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 399`** (6 nodes): `CreateSalaryTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 402`** (6 nodes): `CreateBankPaymentSlipAuditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 400`** (6 nodes): `CreateBankPaymentSlipAuditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 403`** (6 nodes): `CreateBankStatementAttachmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 401`** (6 nodes): `CreateBankStatementAttachmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 404`** (6 nodes): `CreateBankStatementCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 402`** (6 nodes): `CreateBankStatementCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 405`** (6 nodes): `UpdateBankStatementCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 403`** (6 nodes): `UpdateBankStatementCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 406`** (6 nodes): `ReverseBankStatementCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 404`** (6 nodes): `ReverseBankStatementCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 407`** (6 nodes): `RetireBankStatementCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 405`** (6 nodes): `RetireBankStatementCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 408`** (6 nodes): `SetHourlyRateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 406`** (6 nodes): `SetHourlyRateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 409`** (6 nodes): `AddFeesInstallmentCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 407`** (6 nodes): `AddFeesInstallmentCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 410`** (6 nodes): `ConsumeFeesInstallmentCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 408`** (6 nodes): `ConsumeFeesInstallmentCreditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 411`** (6 nodes): `UpdateGeneralSettingsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 409`** (6 nodes): `UpdateGeneralSettingsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 412`** (6 nodes): `SeedGeneralSettingsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 410`** (6 nodes): `SeedGeneralSettingsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 413`** (6 nodes): `SelectActiveThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 411`** (6 nodes): `SelectActiveThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 414`** (6 nodes): `SelectLanguageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 412`** (6 nodes): `SelectLanguageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 415`** (6 nodes): `SelectDateFormatCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 413`** (6 nodes): `SelectDateFormatCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 416`** (6 nodes): `SelectTimeZoneCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 414`** (6 nodes): `SelectTimeZoneCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 417`** (6 nodes): `SelectSessionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 415`** (6 nodes): `SelectSessionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 418`** (6 nodes): `EnableTwoFactorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 416`** (6 nodes): `EnableTwoFactorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 419`** (6 nodes): `DisableTwoFactorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 417`** (6 nodes): `DisableTwoFactorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 420`** (6 nodes): `AddLanguageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 418`** (6 nodes): `AddLanguageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 421`** (6 nodes): `UpdateLanguageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 419`** (6 nodes): `UpdateLanguageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 422`** (6 nodes): `DeleteLanguageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 420`** (6 nodes): `DeleteLanguageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 423`** (6 nodes): `ActivateLanguageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 421`** (6 nodes): `ActivateLanguageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 424`** (6 nodes): `DeactivateLanguageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 422`** (6 nodes): `DeactivateLanguageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 425`** (6 nodes): `AddLanguagePhraseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 423`** (6 nodes): `AddLanguagePhraseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 426`** (6 nodes): `UpdateLanguagePhraseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 424`** (6 nodes): `UpdateLanguagePhraseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 427`** (6 nodes): `DeleteLanguagePhraseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 425`** (6 nodes): `DeleteLanguagePhraseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 428`** (6 nodes): `TranslateLanguagePhraseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 426`** (6 nodes): `TranslateLanguagePhraseCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 429`** (6 nodes): `AddBaseGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 427`** (6 nodes): `AddBaseGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 430`** (6 nodes): `UpdateBaseGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 428`** (6 nodes): `UpdateBaseGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 431`** (6 nodes): `DeleteBaseGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 429`** (6 nodes): `DeleteBaseGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 432`** (6 nodes): `AddBaseSetupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 430`** (6 nodes): `AddBaseSetupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 433`** (6 nodes): `UpdateBaseSetupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 431`** (6 nodes): `UpdateBaseSetupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 434`** (6 nodes): `DeleteBaseSetupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 432`** (6 nodes): `DeleteBaseSetupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 435`** (6 nodes): `AddDateFormatCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 433`** (6 nodes): `AddDateFormatCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 436`** (6 nodes): `UpdateDateFormatCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 434`** (6 nodes): `UpdateDateFormatCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 437`** (6 nodes): `DeleteDateFormatCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 435`** (6 nodes): `DeleteDateFormatCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 438`** (6 nodes): `CreateStyleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 436`** (6 nodes): `CreateStyleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 439`** (6 nodes): `UpdateStyleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 437`** (6 nodes): `UpdateStyleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 440`** (6 nodes): `ActivateStyleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 438`** (6 nodes): `ActivateStyleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 441`** (6 nodes): `DeleteStyleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 439`** (6 nodes): `DeleteStyleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 442`** (6 nodes): `CreateBackgroundSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 440`** (6 nodes): `CreateBackgroundSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 443`** (6 nodes): `UpdateBackgroundSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 441`** (6 nodes): `UpdateBackgroundSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 444`** (6 nodes): `DeleteBackgroundSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 442`** (6 nodes): `DeleteBackgroundSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 445`** (6 nodes): `CreateDashboardSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 443`** (6 nodes): `CreateDashboardSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 446`** (6 nodes): `UpdateDashboardSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 444`** (6 nodes): `UpdateDashboardSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 447`** (6 nodes): `DeleteDashboardSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 445`** (6 nodes): `DeleteDashboardSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 448`** (6 nodes): `UpdateCustomLinksCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 446`** (6 nodes): `UpdateCustomLinksCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 449`** (6 nodes): `ResetCustomLinksCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 447`** (6 nodes): `ResetCustomLinksCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 450`** (6 nodes): `CreateThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 448`** (6 nodes): `CreateThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 451`** (6 nodes): `UpdateThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 449`** (6 nodes): `UpdateThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 452`** (6 nodes): `ActivateThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 450`** (6 nodes): `ActivateThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 453`** (6 nodes): `DeleteThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 451`** (6 nodes): `DeleteThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 454`** (6 nodes): `ReplicateThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 452`** (6 nodes): `ReplicateThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 455`** (6 nodes): `CreateColorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 453`** (6 nodes): `CreateColorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 456`** (6 nodes): `UpdateColorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 454`** (6 nodes): `UpdateColorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 457`** (6 nodes): `DeleteColorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 455`** (6 nodes): `DeleteColorCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 458`** (6 nodes): `CreateColorThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 456`** (6 nodes): `CreateColorThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 459`** (6 nodes): `UpdateColorThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 457`** (6 nodes): `UpdateColorThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 460`** (6 nodes): `DeleteColorThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 458`** (6 nodes): `DeleteColorThemeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 461`** (6 nodes): `UpdateBehaviorRecordSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 459`** (6 nodes): `UpdateBehaviorRecordSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 462`** (6 nodes): `AddSetupAdminCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 460`** (6 nodes): `AddSetupAdminCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 463`** (6 nodes): `UpdateSetupAdminCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 461`** (6 nodes): `UpdateSetupAdminCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 464`** (6 nodes): `DeleteSetupAdminCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 462`** (6 nodes): `DeleteSetupAdminCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 465`** (6 nodes): `CreateBookCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 463`** (6 nodes): `CreateBookCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 466`** (6 nodes): `UpdateBookCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 464`** (6 nodes): `UpdateBookCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 467`** (6 nodes): `DeleteBookCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 465`** (6 nodes): `DeleteBookCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 468`** (6 nodes): `AddBookCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 466`** (6 nodes): `AddBookCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 469`** (6 nodes): `UpdateBookCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 467`** (6 nodes): `UpdateBookCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 470`** (6 nodes): `DeleteBookCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 468`** (6 nodes): `DeleteBookCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 471`** (6 nodes): `AdjustBookQuantityCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 469`** (6 nodes): `AdjustBookQuantityCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 472`** (6 nodes): `RegisterLibraryMemberCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 470`** (6 nodes): `RegisterLibraryMemberCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 473`** (6 nodes): `UpdateLibraryMemberCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 471`** (6 nodes): `UpdateLibraryMemberCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 474`** (6 nodes): `DeactivateLibraryMemberCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 472`** (6 nodes): `DeactivateLibraryMemberCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 475`** (6 nodes): `ReactivateLibraryMemberCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 473`** (6 nodes): `ReactivateLibraryMemberCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 476`** (6 nodes): `DeleteLibraryMemberCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 474`** (6 nodes): `DeleteLibraryMemberCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 477`** (6 nodes): `IssueBookCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 475`** (6 nodes): `IssueBookCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 478`** (6 nodes): `ReturnBookCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 476`** (6 nodes): `ReturnBookCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 479`** (6 nodes): `RenewBookCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 477`** (6 nodes): `RenewBookCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 480`** (6 nodes): `MarkBookLostCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 478`** (6 nodes): `MarkBookLostCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 481`** (6 nodes): `RecordBookReturnCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 479`** (6 nodes): `RecordBookReturnCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 482`** (6 nodes): `CalculateFineCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 480`** (6 nodes): `CalculateFineCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 483`** (6 nodes): `WaiveBookIssueFineCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 481`** (6 nodes): `WaiveBookIssueFineCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 484`** (6 nodes): `SearchBooksCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 482`** (6 nodes): `SearchBooksCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 485`** (6 nodes): `ListOverdueIssuesCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 483`** (6 nodes): `ListOverdueIssuesCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 486`** (6 nodes): `ListMemberIssuesCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 484`** (6 nodes): `ListMemberIssuesCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 487`** (6 nodes): `CreateExamCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 485`** (6 nodes): `CreateExamCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 488`** (6 nodes): `UpdateExamCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 486`** (6 nodes): `UpdateExamCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 489`** (6 nodes): `DeleteExamCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 487`** (6 nodes): `DeleteExamCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 490`** (6 nodes): `ScheduleExamCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 488`** (6 nodes): `ScheduleExamCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 491`** (6 nodes): `UpdateExamScheduleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 489`** (6 nodes): `UpdateExamScheduleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 492`** (6 nodes): `CancelExamScheduleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 490`** (6 nodes): `CancelExamScheduleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 493`** (6 nodes): `GenerateSeatPlanCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 491`** (6 nodes): `GenerateSeatPlanCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 494`** (6 nodes): `UpdateSeatPlanCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 492`** (6 nodes): `UpdateSeatPlanCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 495`** (6 nodes): `CancelSeatPlanCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 493`** (6 nodes): `CancelSeatPlanCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 496`** (6 nodes): `GenerateAdmitCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 494`** (6 nodes): `GenerateAdmitCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 497`** (6 nodes): `RegenerateAdmitCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 495`** (6 nodes): `RegenerateAdmitCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 498`** (6 nodes): `CancelAdmitCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 496`** (6 nodes): `CancelAdmitCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 499`** (6 nodes): `InitializeMarksRegisterCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 497`** (6 nodes): `InitializeMarksRegisterCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 500`** (6 nodes): `EnterMarksCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 498`** (6 nodes): `EnterMarksCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 501`** (6 nodes): `SubmitMarksCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 499`** (6 nodes): `SubmitMarksCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 502`** (6 nodes): `PublishResultCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 500`** (6 nodes): `PublishResultCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 503`** (6 nodes): `RepublishResultCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 501`** (6 nodes): `RepublishResultCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 504`** (6 nodes): `UpdateResultRemarksCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 502`** (6 nodes): `UpdateResultRemarksCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 505`** (6 nodes): `GenerateReportCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 503`** (6 nodes): `GenerateReportCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 506`** (6 nodes): `CreateNoticeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 504`** (6 nodes): `CreateNoticeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 507`** (6 nodes): `UpdateNoticeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 505`** (6 nodes): `UpdateNoticeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 508`** (6 nodes): `PublishNoticeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 506`** (6 nodes): `PublishNoticeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 509`** (6 nodes): `UnpublishNoticeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 507`** (6 nodes): `UnpublishNoticeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 510`** (6 nodes): `DeleteNoticeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 508`** (6 nodes): `DeleteNoticeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 511`** (6 nodes): `RegisterComplaintCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 509`** (6 nodes): `RegisterComplaintCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 512`** (6 nodes): `AssignComplaintCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 510`** (6 nodes): `AssignComplaintCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 513`** (6 nodes): `UpdateComplaintStatusCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 511`** (6 nodes): `UpdateComplaintStatusCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 514`** (6 nodes): `ResolveComplaintCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 512`** (6 nodes): `ResolveComplaintCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 515`** (6 nodes): `AddComplaintNoteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 513`** (6 nodes): `AddComplaintNoteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 516`** (6 nodes): `CreateComplaintTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 514`** (6 nodes): `CreateComplaintTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 517`** (6 nodes): `UpdateComplaintTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 515`** (6 nodes): `UpdateComplaintTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 518`** (6 nodes): `DeleteComplaintTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 516`** (6 nodes): `DeleteComplaintTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 519`** (6 nodes): `SendNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 517`** (6 nodes): `SendNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 520`** (6 nodes): `MarkNotificationReadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 518`** (6 nodes): `MarkNotificationReadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 521`** (6 nodes): `WithdrawNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 519`** (6 nodes): `WithdrawNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 522`** (6 nodes): `LogEmailSentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 520`** (6 nodes): `LogEmailSentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 523`** (6 nodes): `LogSmsSentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 521`** (6 nodes): `LogSmsSentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 524`** (6 nodes): `CreateSmsTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 522`** (6 nodes): `CreateSmsTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 525`** (6 nodes): `UpdateSmsTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 523`** (6 nodes): `UpdateSmsTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 526`** (6 nodes): `EnableSmsTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 524`** (6 nodes): `EnableSmsTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 527`** (6 nodes): `DisableSmsTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 525`** (6 nodes): `DisableSmsTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 528`** (6 nodes): `DeleteSmsTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 526`** (6 nodes): `DeleteSmsTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 529`** (6 nodes): `ConfigureEmailSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 527`** (6 nodes): `ConfigureEmailSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 530`** (6 nodes): `ActivateEmailSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 528`** (6 nodes): `ActivateEmailSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 531`** (6 nodes): `DeleteEmailSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 529`** (6 nodes): `DeleteEmailSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 532`** (6 nodes): `ConfigureSmsGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 530`** (6 nodes): `ConfigureSmsGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 533`** (6 nodes): `ActivateSmsGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 531`** (6 nodes): `ActivateSmsGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 534`** (6 nodes): `DeleteSmsGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 532`** (6 nodes): `DeleteSmsGatewayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 535`** (6 nodes): `CreateCustomSmsSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 533`** (6 nodes): `CreateCustomSmsSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 536`** (6 nodes): `UpdateCustomSmsSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 534`** (6 nodes): `UpdateCustomSmsSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 537`** (6 nodes): `DeleteCustomSmsSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 535`** (6 nodes): `DeleteCustomSmsSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 538`** (6 nodes): `CreateNotificationSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 536`** (6 nodes): `CreateNotificationSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 539`** (6 nodes): `UpdateNotificationSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 537`** (6 nodes): `UpdateNotificationSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 540`** (6 nodes): `DeleteNotificationSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 538`** (6 nodes): `DeleteNotificationSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 541`** (6 nodes): `ConfigureAbsentNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 539`** (6 nodes): `ConfigureAbsentNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 542`** (6 nodes): `EnableAbsentNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 540`** (6 nodes): `EnableAbsentNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 543`** (6 nodes): `DisableAbsentNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 541`** (6 nodes): `DisableAbsentNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 544`** (6 nodes): `DeleteAbsentNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 542`** (6 nodes): `DeleteAbsentNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 545`** (6 nodes): `OpenChatConversationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 543`** (6 nodes): `OpenChatConversationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 546`** (6 nodes): `CloseChatConversationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 544`** (6 nodes): `CloseChatConversationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 547`** (6 nodes): `SendChatMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 545`** (6 nodes): `SendChatMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 548`** (6 nodes): `MarkChatMessageSeenCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 546`** (6 nodes): `MarkChatMessageSeenCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 549`** (6 nodes): `DeleteChatMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 547`** (6 nodes): `DeleteChatMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 550`** (6 nodes): `CreateChatGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 548`** (6 nodes): `CreateChatGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 551`** (6 nodes): `UpdateChatGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 549`** (6 nodes): `UpdateChatGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 552`** (6 nodes): `SetChatGroupReadOnlyCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 550`** (6 nodes): `SetChatGroupReadOnlyCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 553`** (6 nodes): `DeleteChatGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 551`** (6 nodes): `DeleteChatGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 554`** (6 nodes): `AddUserToChatGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 552`** (6 nodes): `AddUserToChatGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 555`** (6 nodes): `SetChatGroupUserRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 553`** (6 nodes): `SetChatGroupUserRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 556`** (6 nodes): `RemoveUserFromChatGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 554`** (6 nodes): `RemoveUserFromChatGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 557`** (6 nodes): `RecordGroupMessageRecipientCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 555`** (6 nodes): `RecordGroupMessageRecipientCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 558`** (6 nodes): `MarkGroupMessageReadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 556`** (6 nodes): `MarkGroupMessageReadCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 559`** (6 nodes): `RemoveGroupMessageForUserCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 557`** (6 nodes): `RemoveGroupMessageForUserCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 560`** (6 nodes): `BlockUserCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 558`** (6 nodes): `BlockUserCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 561`** (6 nodes): `UnblockUserCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 559`** (6 nodes): `UnblockUserCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 562`** (6 nodes): `SendChatInvitationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 560`** (6 nodes): `SendChatInvitationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 563`** (6 nodes): `AcceptChatInvitationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 561`** (6 nodes): `AcceptChatInvitationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 564`** (6 nodes): `RejectChatInvitationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 562`** (6 nodes): `RejectChatInvitationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 565`** (6 nodes): `ClassifyChatInvitationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 563`** (6 nodes): `ClassifyChatInvitationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 566`** (6 nodes): `SetChatStatusCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 564`** (6 nodes): `SetChatStatusCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 567`** (6 nodes): `CreateSendMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 565`** (6 nodes): `CreateSendMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 568`** (6 nodes): `DispatchSendMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 566`** (6 nodes): `DispatchSendMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 569`** (6 nodes): `CancelSendMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 567`** (6 nodes): `CancelSendMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 570`** (6 nodes): `ReceiveContactMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 568`** (6 nodes): `ReceiveContactMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 571`** (6 nodes): `MarkContactMessageViewedCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 569`** (6 nodes): `MarkContactMessageViewedCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 572`** (6 nodes): `ReplyToContactMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 570`** (6 nodes): `ReplyToContactMessageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 573`** (6 nodes): `CreateSpeechSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 571`** (6 nodes): `CreateSpeechSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 574`** (6 nodes): `UpdateSpeechSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 572`** (6 nodes): `UpdateSpeechSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 575`** (6 nodes): `DeleteSpeechSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 573`** (6 nodes): `DeleteSpeechSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 576`** (6 nodes): `LogPhoneCallCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 574`** (6 nodes): `LogPhoneCallCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 577`** (6 nodes): `UpdatePhoneCallFollowUpCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 575`** (6 nodes): `UpdatePhoneCallFollowUpCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 578`** (6 nodes): `CreateVehicleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 576`** (6 nodes): `CreateVehicleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 579`** (6 nodes): `UpdateVehicleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 577`** (6 nodes): `UpdateVehicleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 580`** (6 nodes): `AssignDriverToVehicleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 578`** (6 nodes): `AssignDriverToVehicleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 581`** (6 nodes): `DeactivateVehicleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 579`** (6 nodes): `DeactivateVehicleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 582`** (6 nodes): `DeleteVehicleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 580`** (6 nodes): `DeleteVehicleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 583`** (6 nodes): `CreateRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 581`** (6 nodes): `CreateRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 584`** (6 nodes): `UpdateRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 582`** (6 nodes): `UpdateRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 585`** (6 nodes): `AddStopToRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 583`** (6 nodes): `AddStopToRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 586`** (6 nodes): `UpdateStopOnRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 584`** (6 nodes): `UpdateStopOnRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 587`** (6 nodes): `RemoveStopFromRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 585`** (6 nodes): `RemoveStopFromRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 588`** (6 nodes): `DeleteRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 586`** (6 nodes): `DeleteRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 589`** (6 nodes): `AssignVehicleToRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 587`** (6 nodes): `AssignVehicleToRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 590`** (6 nodes): `UnassignVehicleFromRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 588`** (6 nodes): `UnassignVehicleFromRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 591`** (6 nodes): `AssignStudentToRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 589`** (6 nodes): `AssignStudentToRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 592`** (6 nodes): `UnassignStudentFromRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 590`** (6 nodes): `UnassignStudentFromRouteCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 593`** (6 nodes): `CreateRoomTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 591`** (6 nodes): `CreateRoomTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 594`** (6 nodes): `UpdateRoomTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 592`** (6 nodes): `UpdateRoomTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 595`** (6 nodes): `DeleteRoomTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 593`** (6 nodes): `DeleteRoomTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 596`** (6 nodes): `CreateDormitoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 594`** (6 nodes): `CreateDormitoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 597`** (6 nodes): `UpdateDormitoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 595`** (6 nodes): `UpdateDormitoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 598`** (6 nodes): `DeleteDormitoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 596`** (6 nodes): `DeleteDormitoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 599`** (6 nodes): `CreateRoomCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 597`** (6 nodes): `CreateRoomCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 600`** (6 nodes): `UpdateRoomCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 598`** (6 nodes): `UpdateRoomCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 601`** (6 nodes): `DeleteRoomCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 599`** (6 nodes): `DeleteRoomCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 602`** (6 nodes): `AssignStudentToRoomCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 600`** (6 nodes): `AssignStudentToRoomCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 603`** (6 nodes): `UnassignStudentFromRoomCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 601`** (6 nodes): `UnassignStudentFromRoomCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 604`** (6 nodes): `CreateItemCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 602`** (6 nodes): `CreateItemCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 605`** (6 nodes): `UpdateItemCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 603`** (6 nodes): `UpdateItemCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 606`** (6 nodes): `DeleteItemCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 604`** (6 nodes): `DeleteItemCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 607`** (6 nodes): `CreateItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 605`** (6 nodes): `CreateItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 608`** (6 nodes): `UpdateItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 606`** (6 nodes): `UpdateItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 609`** (6 nodes): `DeleteItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 607`** (6 nodes): `DeleteItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 610`** (6 nodes): `CreateItemStoreCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 608`** (6 nodes): `CreateItemStoreCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 611`** (6 nodes): `UpdateItemStoreCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 609`** (6 nodes): `UpdateItemStoreCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 612`** (6 nodes): `DeleteItemStoreCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 610`** (6 nodes): `DeleteItemStoreCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 613`** (6 nodes): `ReceiveItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 611`** (6 nodes): `ReceiveItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 614`** (6 nodes): `UpdateItemReceiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 612`** (6 nodes): `UpdateItemReceiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 615`** (6 nodes): `CancelItemReceiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 613`** (6 nodes): `CancelItemReceiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 616`** (6 nodes): `IssueItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 614`** (6 nodes): `IssueItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 617`** (6 nodes): `UpdateIssueStatusCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 615`** (6 nodes): `UpdateIssueStatusCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 618`** (6 nodes): `ReturnIssuedItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 616`** (6 nodes): `ReturnIssuedItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 619`** (6 nodes): `SellItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 617`** (6 nodes): `SellItemCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 620`** (6 nodes): `UpdateItemSellCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 618`** (6 nodes): `UpdateItemSellCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 621`** (6 nodes): `CancelItemSellCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 619`** (6 nodes): `CancelItemSellCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 622`** (6 nodes): `RefundItemSellCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 620`** (6 nodes): `RefundItemSellCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 623`** (6 nodes): `CreateSupplierCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 621`** (6 nodes): `CreateSupplierCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 624`** (6 nodes): `UpdateSupplierCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 622`** (6 nodes): `UpdateSupplierCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 625`** (6 nodes): `DeactivateSupplierCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 623`** (6 nodes): `DeactivateSupplierCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 626`** (6 nodes): `DeleteSupplierCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 624`** (6 nodes): `DeleteSupplierCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 627`** (6 nodes): `CreateRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 625`** (6 nodes): `CreateRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 628`** (6 nodes): `UpdateRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 626`** (6 nodes): `UpdateRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 629`** (6 nodes): `DeleteRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 627`** (6 nodes): `DeleteRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 630`** (6 nodes): `AssignCapabilityCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 628`** (6 nodes): `AssignCapabilityCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 631`** (6 nodes): `RevokeCapabilityCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 629`** (6 nodes): `RevokeCapabilityCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 632`** (6 nodes): `SuspendStaffCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 630`** (6 nodes): `SuspendStaffCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 633`** (6 nodes): `ChangeStaffDepartmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 631`** (6 nodes): `ChangeStaffDepartmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 634`** (6 nodes): `ChangeStaffDesignationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 632`** (6 nodes): `ChangeStaffDesignationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 635`** (6 nodes): `ChangeStaffRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 633`** (6 nodes): `ChangeStaffRoleCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 636`** (6 nodes): `DeleteStaffCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 634`** (6 nodes): `DeleteStaffCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 637`** (6 nodes): `RejectLeaveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 635`** (6 nodes): `RejectLeaveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 638`** (6 nodes): `CancelLeaveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 636`** (6 nodes): `CancelLeaveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 639`** (6 nodes): `MarkStaffAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 637`** (6 nodes): `MarkStaffAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 640`** (6 nodes): `ApprovePayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 638`** (6 nodes): `ApprovePayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 641`** (6 nodes): `MarkPayrollPaidCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 639`** (6 nodes): `MarkPayrollPaidCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 642`** (6 nodes): `AssignClassTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 640`** (6 nodes): `AssignClassTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 643`** (6 nodes): `DeleteAssignClassTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 641`** (6 nodes): `DeleteAssignClassTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 644`** (6 nodes): `SetHourlyRateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 642`** (6 nodes): `SetHourlyRateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 645`** (6 nodes): `CreateSalaryTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 643`** (6 nodes): `CreateSalaryTemplateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 646`** (6 nodes): `CreateStaffRegistrationFieldCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 644`** (6 nodes): `CreateStaffRegistrationFieldCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 647`** (6 nodes): `CreateDepartmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 645`** (6 nodes): `CreateDepartmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 648`** (6 nodes): `DeleteDepartmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 646`** (6 nodes): `DeleteDepartmentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 649`** (6 nodes): `DeleteDesignationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 647`** (6 nodes): `DeleteDesignationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 650`** (6 nodes): `DeleteLeaveTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 648`** (6 nodes): `DeleteLeaveTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 651`** (6 nodes): `CreateDesignationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 649`** (6 nodes): `CreateDesignationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 652`** (6 nodes): `CreateLeaveTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 650`** (6 nodes): `CreateLeaveTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 653`** (6 nodes): `ApproveLeaveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 651`** (6 nodes): `ApproveLeaveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 654`** (6 nodes): `DefineLeavePolicyCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 652`** (6 nodes): `DefineLeavePolicyCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 655`** (6 nodes): `ImportStaffBulkCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 653`** (6 nodes): `ImportStaffBulkCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 656`** (6 nodes): `RegisterStaffCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 654`** (6 nodes): `RegisterStaffCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 657`** (6 nodes): `UpdateStaffCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 655`** (6 nodes): `UpdateStaffCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 658`** (6 nodes): `UpdateAssignClassTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 656`** (6 nodes): `UpdateAssignClassTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 659`** (6 nodes): `ImportStaffAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 657`** (6 nodes): `ImportStaffAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 660`** (6 nodes): `PromoteStaffAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 658`** (6 nodes): `PromoteStaffAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 661`** (6 nodes): `RejectStaffAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 659`** (6 nodes): `RejectStaffAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 662`** (6 nodes): `GeneratePayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 660`** (6 nodes): `GeneratePayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 663`** (6 nodes): `UpdatePayrollAmountsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 661`** (6 nodes): `UpdatePayrollAmountsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 664`** (6 nodes): `AddPayrollEarningCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 662`** (6 nodes): `AddPayrollEarningCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 665`** (6 nodes): `AddPayrollDeductionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 663`** (6 nodes): `AddPayrollDeductionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 666`** (6 nodes): `AddLeaveDeductionInfoCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 664`** (6 nodes): `AddLeaveDeductionInfoCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 667`** (6 nodes): `PromoteStaffImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 665`** (6 nodes): `PromoteStaffImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 668`** (6 nodes): `RejectStaffImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 666`** (6 nodes): `RejectStaffImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 669`** (6 nodes): `AssignSubjectTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 667`** (6 nodes): `AssignSubjectTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 670`** (6 nodes): `RequestLeaveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 668`** (6 nodes): `RequestLeaveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 671`** (6 nodes): `CreateBackupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 669`** (6 nodes): `CreateBackupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 672`** (6 nodes): `DeleteBackupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 670`** (6 nodes): `DeleteBackupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 673`** (6 nodes): `RestoreBackupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 671`** (6 nodes): `RestoreBackupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 674`** (6 nodes): `MarkBackupActiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 672`** (6 nodes): `MarkBackupActiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 675`** (6 nodes): `MarkBackupInactiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 673`** (6 nodes): `MarkBackupInactiveCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 676`** (6 nodes): `ScheduleJobCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 674`** (6 nodes): `ScheduleJobCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 677`** (6 nodes): `CancelJobCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 675`** (6 nodes): `CancelJobCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 678`** (6 nodes): `RetryFailedJobCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 676`** (6 nodes): `RetryFailedJobCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 679`** (6 nodes): `DeleteFailedJobCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 677`** (6 nodes): `DeleteFailedJobCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 680`** (6 nodes): `RegisterSystemVersionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 678`** (6 nodes): `RegisterSystemVersionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 681`** (6 nodes): `UpdateSystemVersionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 679`** (6 nodes): `UpdateSystemVersionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 682`** (6 nodes): `RecordVersionHistoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 680`** (6 nodes): `RecordVersionHistoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 683`** (6 nodes): `RecordUserLogCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 681`** (6 nodes): `RecordUserLogCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 684`** (6 nodes): `ConfigureMaintenanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 682`** (6 nodes): `ConfigureMaintenanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 685`** (6 nodes): `EnableMaintenanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 683`** (6 nodes): `EnableMaintenanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 686`** (6 nodes): `DisableMaintenanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 684`** (6 nodes): `DisableMaintenanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 687`** (6 nodes): `CreateSidebarEntryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 685`** (6 nodes): `CreateSidebarEntryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 688`** (6 nodes): `UpdateSidebarEntryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 686`** (6 nodes): `UpdateSidebarEntryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 689`** (6 nodes): `DeleteSidebarEntryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 687`** (6 nodes): `DeleteSidebarEntryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 690`** (6 nodes): `ReorderSidebarCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 688`** (6 nodes): `ReorderSidebarCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 691`** (6 nodes): `CreatePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 689`** (6 nodes): `CreatePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 692`** (6 nodes): `PublishPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 690`** (6 nodes): `PublishPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 693`** (6 nodes): `ArchivePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 691`** (6 nodes): `ArchivePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 694`** (6 nodes): `DeletePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 692`** (6 nodes): `DeletePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 695`** (6 nodes): `CreateNewsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 693`** (6 nodes): `CreateNewsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 696`** (6 nodes): `CreateTestimonialCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 694`** (6 nodes): `CreateTestimonialCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 697`** (6 nodes): `CreateHomeSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 695`** (6 nodes): `CreateHomeSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 698`** (6 nodes): `CreateContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 696`** (6 nodes): `CreateContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 699`** (6 nodes): `CreateContentShareListCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 697`** (6 nodes): `CreateContentShareListCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 700`** (6 nodes): `ConfigureHomePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 698`** (6 nodes): `ConfigureHomePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 701`** (6 nodes): `UpdatePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 699`** (6 nodes): `UpdatePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 702`** (6 nodes): `UpdateNewsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 700`** (6 nodes): `UpdateNewsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 703`** (6 nodes): `PublishNewsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 701`** (6 nodes): `PublishNewsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 704`** (6 nodes): `UnpublishNewsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 702`** (6 nodes): `UnpublishNewsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 705`** (6 nodes): `DeleteNewsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 703`** (6 nodes): `DeleteNewsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 706`** (6 nodes): `CommentOnNewsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 704`** (6 nodes): `CommentOnNewsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 707`** (6 nodes): `ModerateNewsCommentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 705`** (6 nodes): `ModerateNewsCommentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 708`** (6 nodes): `DeleteNewsCommentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 706`** (6 nodes): `DeleteNewsCommentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 709`** (6 nodes): `CreateNoticeBoardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 707`** (6 nodes): `CreateNoticeBoardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 710`** (6 nodes): `PublishNoticeBoardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 708`** (6 nodes): `PublishNoticeBoardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 711`** (6 nodes): `UpdateNoticeBoardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 709`** (6 nodes): `UpdateNoticeBoardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 712`** (6 nodes): `UnpublishNoticeBoardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 710`** (6 nodes): `UnpublishNoticeBoardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 713`** (6 nodes): `DeleteNoticeBoardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 711`** (6 nodes): `DeleteNoticeBoardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 714`** (6 nodes): `UpdateTestimonialCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 712`** (6 nodes): `UpdateTestimonialCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 715`** (6 nodes): `DeleteTestimonialCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 713`** (6 nodes): `DeleteTestimonialCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 716`** (6 nodes): `UpdateHomeSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 714`** (6 nodes): `UpdateHomeSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 717`** (6 nodes): `DeleteHomeSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 715`** (6 nodes): `DeleteHomeSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 718`** (6 nodes): `UpdateContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 716`** (6 nodes): `UpdateContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 719`** (6 nodes): `DeleteContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 717`** (6 nodes): `DeleteContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 720`** (6 nodes): `DispatchContentShareListCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 718`** (6 nodes): `DispatchContentShareListCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 721`** (6 nodes): `CancelContentShareListCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 719`** (6 nodes): `CancelContentShareListCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 722`** (6 nodes): `DeleteContentShareListCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 720`** (6 nodes): `DeleteContentShareListCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 723`** (6 nodes): `CreateTeacherUploadContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 721`** (6 nodes): `CreateTeacherUploadContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 724`** (6 nodes): `UpdateTeacherUploadContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 722`** (6 nodes): `UpdateTeacherUploadContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 725`** (6 nodes): `DeleteTeacherUploadContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 723`** (6 nodes): `DeleteTeacherUploadContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 726`** (6 nodes): `CreateUploadContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 724`** (6 nodes): `CreateUploadContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 727`** (6 nodes): `UpdateUploadContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 725`** (6 nodes): `UpdateUploadContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 728`** (6 nodes): `DeleteUploadContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 726`** (6 nodes): `DeleteUploadContentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 729`** (6 nodes): `CreateAboutPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 727`** (6 nodes): `CreateAboutPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 730`** (6 nodes): `UpdateAboutPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 728`** (6 nodes): `UpdateAboutPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 731`** (6 nodes): `DeleteAboutPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 729`** (6 nodes): `DeleteAboutPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 732`** (6 nodes): `CreateContactPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 730`** (6 nodes): `CreateContactPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 733`** (6 nodes): `UpdateContactPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 731`** (6 nodes): `UpdateContactPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 734`** (6 nodes): `DeleteContactPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 732`** (6 nodes): `DeleteContactPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 735`** (6 nodes): `CreateCoursePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 733`** (6 nodes): `CreateCoursePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 736`** (6 nodes): `UpdateCoursePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 734`** (6 nodes): `UpdateCoursePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 737`** (6 nodes): `DeleteCoursePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 735`** (6 nodes): `DeleteCoursePageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 738`** (6 nodes): `CreateFrontendPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 736`** (6 nodes): `CreateFrontendPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 739`** (6 nodes): `UpdateFrontendPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 737`** (6 nodes): `UpdateFrontendPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 740`** (6 nodes): `DeleteFrontendPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 738`** (6 nodes): `DeleteFrontendPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 741`** (6 nodes): `CreateNewsPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 739`** (6 nodes): `CreateNewsPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 742`** (6 nodes): `UpdateNewsPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 740`** (6 nodes): `UpdateNewsPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 743`** (6 nodes): `DeleteNewsPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 741`** (6 nodes): `DeleteNewsPageCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 744`** (6 nodes): `CreateNewsCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 742`** (6 nodes): `CreateNewsCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 745`** (6 nodes): `UpdateNewsCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 743`** (6 nodes): `UpdateNewsCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 746`** (6 nodes): `DeleteNewsCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 744`** (6 nodes): `DeleteNewsCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 747`** (6 nodes): `CreateContentTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 745`** (6 nodes): `CreateContentTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 748`** (6 nodes): `UpdateContentTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 746`** (6 nodes): `UpdateContentTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 749`** (6 nodes): `DeleteContentTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 747`** (6 nodes): `DeleteContentTypeCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 750`** (6 nodes): `CreateSpeechSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 748`** (6 nodes): `CreateSpeechSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 751`** (6 nodes): `UpdateSpeechSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 749`** (6 nodes): `UpdateSpeechSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 752`** (6 nodes): `DeleteSpeechSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 750`** (6 nodes): `DeleteSpeechSliderCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 753`** (6 nodes): `MarkStudentAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 751`** (6 nodes): `MarkStudentAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 754`** (6 nodes): `UpdateStudentAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 752`** (6 nodes): `UpdateStudentAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 755`** (6 nodes): `BulkMarkStudentAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 753`** (6 nodes): `BulkMarkStudentAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 756`** (6 nodes): `MarkSubjectAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 754`** (6 nodes): `MarkSubjectAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 757`** (6 nodes): `UpdateSubjectAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 755`** (6 nodes): `UpdateSubjectAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 758`** (6 nodes): `MarkStaffAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 756`** (6 nodes): `MarkStaffAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 759`** (6 nodes): `UpdateStaffAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 757`** (6 nodes): `UpdateStaffAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 760`** (6 nodes): `MarkExamAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 758`** (6 nodes): `MarkExamAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 761`** (6 nodes): `UpdateExamAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 759`** (6 nodes): `UpdateExamAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 762`** (6 nodes): `ImportAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 760`** (6 nodes): `ImportAttendanceCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 763`** (6 nodes): `ValidateBulkImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 761`** (6 nodes): `ValidateBulkImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 764`** (6 nodes): `CommitBulkImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 762`** (6 nodes): `CommitBulkImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 765`** (6 nodes): `CancelBulkImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 763`** (6 nodes): `CancelBulkImportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 766`** (6 nodes): `RequestAbsenceNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 764`** (6 nodes): `RequestAbsenceNotificationCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 767`** (6 nodes): `CreateSchoolCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 765`** (6 nodes): `CreateSchoolCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 768`** (6 nodes): `UpdateSchoolCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 766`** (6 nodes): `UpdateSchoolCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 769`** (6 nodes): `DeactivateSchoolCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 767`** (6 nodes): `DeactivateSchoolCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 770`** (6 nodes): `RegisterUserCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 768`** (6 nodes): `RegisterUserCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 771`** (6 nodes): `UpdateUserCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 769`** (6 nodes): `UpdateUserCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 772`** (6 nodes): `DeactivateUserCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 770`** (6 nodes): `DeactivateUserCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 773`** (6 nodes): `ExecuteSubjectErasureCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 771`** (6 nodes): `ExecuteSubjectErasureCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 774`** (6 nodes): `GenerateParentAccessReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 772`** (6 nodes): `GenerateParentAccessReportCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 775`** (6 nodes): `GenerateRegulatorAuditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 773`** (6 nodes): `GenerateRegulatorAuditCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 776`** (6 nodes): `CreateEventCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 774`** (6 nodes): `CreateEventCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 777`** (6 nodes): `UpdateEventCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 775`** (6 nodes): `UpdateEventCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 778`** (6 nodes): `DeleteEventCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 776`** (6 nodes): `DeleteEventCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 779`** (6 nodes): `CreateHolidayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 777`** (6 nodes): `CreateHolidayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 780`** (6 nodes): `UpdateHolidayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 778`** (6 nodes): `UpdateHolidayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 781`** (6 nodes): `DeleteHolidayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 779`** (6 nodes): `DeleteHolidayCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 782`** (6 nodes): `CreateCalendarSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 780`** (6 nodes): `CreateCalendarSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 783`** (6 nodes): `UpdateCalendarSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 781`** (6 nodes): `UpdateCalendarSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 784`** (6 nodes): `EnableCalendarSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 782`** (6 nodes): `EnableCalendarSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 785`** (6 nodes): `DisableCalendarSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 783`** (6 nodes): `DisableCalendarSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 786`** (6 nodes): `DeleteCalendarSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 784`** (6 nodes): `DeleteCalendarSettingCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 787`** (6 nodes): `CreateIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 785`** (6 nodes): `CreateIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 788`** (6 nodes): `UpdateIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 786`** (6 nodes): `UpdateIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 789`** (6 nodes): `ResolveIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 787`** (6 nodes): `ResolveIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 790`** (6 nodes): `DeleteIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 788`** (6 nodes): `DeleteIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 791`** (6 nodes): `AssignIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 789`** (6 nodes): `AssignIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 792`** (6 nodes): `ReassignIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 790`** (6 nodes): `ReassignIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 793`** (6 nodes): `UnassignIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 791`** (6 nodes): `UnassignIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 794`** (6 nodes): `CommentOnIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 792`** (6 nodes): `CommentOnIncidentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 795`** (6 nodes): `DeleteIncidentCommentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 793`** (6 nodes): `DeleteIncidentCommentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 796`** (6 nodes): `CreateWeekendCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 794`** (6 nodes): `CreateWeekendCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 797`** (6 nodes): `UpdateWeekendCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 795`** (6 nodes): `UpdateWeekendCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 798`** (6 nodes): `ConfigureWeekendsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 796`** (6 nodes): `ConfigureWeekendsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 799`** (6 nodes): `DeleteWeekendCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 797`** (6 nodes): `DeleteWeekendCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 800`** (6 nodes): `AdmitStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 798`** (6 nodes): `AdmitStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 801`** (6 nodes): `UpdateStudentProfileCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 799`** (6 nodes): `UpdateStudentProfileCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 802`** (6 nodes): `SuspendStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 800`** (6 nodes): `SuspendStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 803`** (6 nodes): `ReinstateStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 801`** (6 nodes): `ReinstateStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 804`** (6 nodes): `WithdrawStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 802`** (6 nodes): `WithdrawStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 805`** (6 nodes): `TransferStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 803`** (6 nodes): `TransferStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 806`** (6 nodes): `PromoteStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 804`** (6 nodes): `PromoteStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 807`** (6 nodes): `GraduateStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 805`** (6 nodes): `GraduateStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 808`** (6 nodes): `CreateClassCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 806`** (6 nodes): `CreateClassCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 809`** (6 nodes): `UpdateClassCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 807`** (6 nodes): `UpdateClassCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 810`** (6 nodes): `SetOptionalSubjectGpaThresholdCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 808`** (6 nodes): `SetOptionalSubjectGpaThresholdCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 811`** (6 nodes): `DeleteClassCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 809`** (6 nodes): `DeleteClassCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 812`** (6 nodes): `CreateSectionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 810`** (6 nodes): `CreateSectionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 813`** (6 nodes): `UpdateSectionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 811`** (6 nodes): `UpdateSectionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 814`** (6 nodes): `DeleteSectionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 812`** (6 nodes): `DeleteSectionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 815`** (6 nodes): `CreateSubjectCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 813`** (6 nodes): `CreateSubjectCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 816`** (6 nodes): `UpdateSubjectCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 814`** (6 nodes): `UpdateSubjectCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 817`** (6 nodes): `DeleteSubjectCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 815`** (6 nodes): `DeleteSubjectCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 818`** (6 nodes): `CreateAcademicYearCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 816`** (6 nodes): `CreateAcademicYearCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 819`** (6 nodes): `UpdateAcademicYearDatesCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 817`** (6 nodes): `UpdateAcademicYearDatesCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 820`** (6 nodes): `SetCurrentAcademicYearCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 818`** (6 nodes): `SetCurrentAcademicYearCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 821`** (6 nodes): `CloseAcademicYearCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 819`** (6 nodes): `CloseAcademicYearCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 822`** (6 nodes): `LinkGuardianToStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 820`** (6 nodes): `LinkGuardianToStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 823`** (6 nodes): `UnlinkGuardianFromStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 821`** (6 nodes): `UnlinkGuardianFromStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 824`** (6 nodes): `MarkPrimaryGuardianCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 822`** (6 nodes): `MarkPrimaryGuardianCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 825`** (6 nodes): `UpdateGuardianContactCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 823`** (6 nodes): `UpdateGuardianContactCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 826`** (6 nodes): `RetireGuardianCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 824`** (6 nodes): `RetireGuardianCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 827`** (6 nodes): `CreateClassSectionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 825`** (6 nodes): `CreateClassSectionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 828`** (6 nodes): `CreateClassRoutineCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 826`** (6 nodes): `CreateClassRoutineCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 829`** (6 nodes): `UpdateClassRoutinePeriodCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 827`** (6 nodes): `UpdateClassRoutinePeriodCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 830`** (6 nodes): `SwapClassRoutinePeriodsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 828`** (6 nodes): `SwapClassRoutinePeriodsCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 831`** (6 nodes): `DeleteClassRoutineCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 829`** (6 nodes): `DeleteClassRoutineCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 832`** (6 nodes): `CreateHomeworkCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 830`** (6 nodes): `CreateHomeworkCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 833`** (6 nodes): `UpdateHomeworkCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 831`** (6 nodes): `UpdateHomeworkCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 834`** (6 nodes): `CancelHomeworkCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 832`** (6 nodes): `CancelHomeworkCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 835`** (6 nodes): `RealCreateLessonPlanCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 833`** (6 nodes): `RealCreateLessonPlanCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 836`** (6 nodes): `UpdateLessonPlanCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 834`** (6 nodes): `UpdateLessonPlanCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 837`** (6 nodes): `MarkLessonPlanCompletedCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 835`** (6 nodes): `MarkLessonPlanCompletedCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 838`** (6 nodes): `AddSubTopicCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 836`** (6 nodes): `AddSubTopicCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 839`** (6 nodes): `DeleteLessonPlanCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 837`** (6 nodes): `DeleteLessonPlanCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 840`** (6 nodes): `RealCreateLessonCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 838`** (6 nodes): `RealCreateLessonCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 841`** (6 nodes): `UpdateLessonCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 839`** (6 nodes): `UpdateLessonCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 842`** (6 nodes): `DeleteLessonCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 840`** (6 nodes): `DeleteLessonCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 843`** (6 nodes): `RealCreateLessonTopicCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 841`** (6 nodes): `RealCreateLessonTopicCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 844`** (6 nodes): `MarkTopicCompletedCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 842`** (6 nodes): `MarkTopicCompletedCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 845`** (6 nodes): `DeleteLessonTopicCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 843`** (6 nodes): `DeleteLessonTopicCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 846`** (6 nodes): `RealCreateStudentCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 844`** (6 nodes): `RealCreateStudentCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 847`** (6 nodes): `UpdateStudentCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 845`** (6 nodes): `UpdateStudentCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 848`** (6 nodes): `DeleteStudentCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 846`** (6 nodes): `DeleteStudentCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 849`** (6 nodes): `RealCreateStudentGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 847`** (6 nodes): `RealCreateStudentGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 850`** (6 nodes): `UpdateStudentGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 848`** (6 nodes): `UpdateStudentGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 851`** (6 nodes): `AddStudentToGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 849`** (6 nodes): `AddStudentToGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 852`** (6 nodes): `RemoveStudentFromGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 850`** (6 nodes): `RemoveStudentFromGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 853`** (6 nodes): `DeleteStudentGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 851`** (6 nodes): `DeleteStudentGroupCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 854`** (6 nodes): `RealCreateRegistrationFieldCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 852`** (6 nodes): `RealCreateRegistrationFieldCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 855`** (6 nodes): `UpdateRegistrationFieldCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 853`** (6 nodes): `UpdateRegistrationFieldCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 856`** (6 nodes): `DeleteRegistrationFieldCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 854`** (6 nodes): `DeleteRegistrationFieldCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 857`** (6 nodes): `RealCreateCertificateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 855`** (6 nodes): `RealCreateCertificateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 858`** (6 nodes): `UpdateCertificateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 856`** (6 nodes): `UpdateCertificateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 859`** (6 nodes): `DeleteCertificateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 857`** (6 nodes): `DeleteCertificateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 860`** (6 nodes): `RealCreateIdCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 858`** (6 nodes): `RealCreateIdCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 861`** (6 nodes): `UpdateIdCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 859`** (6 nodes): `UpdateIdCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 862`** (6 nodes): `DeleteIdCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 860`** (6 nodes): `DeleteIdCardCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 863`** (6 nodes): `AssignStudentToSectionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 861`** (6 nodes): `AssignStudentToSectionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 864`** (6 nodes): `ChangeStudentCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 862`** (6 nodes): `ChangeStudentCategoryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 865`** (6 nodes): `AssignOptionalSubjectCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 863`** (6 nodes): `AssignOptionalSubjectCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 866`** (6 nodes): `UploadStudentDocumentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 864`** (6 nodes): `UploadStudentDocumentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 867`** (6 nodes): `AssignClassTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 865`** (6 nodes): `AssignClassTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 868`** (6 nodes): `AssignSubjectTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 866`** (6 nodes): `AssignSubjectTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 869`** (6 nodes): `AssignClassRoomCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 867`** (6 nodes): `AssignClassRoomCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 870`** (6 nodes): `DeleteClassSectionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 868`** (6 nodes): `DeleteClassSectionCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 871`** (6 nodes): `AssignSubjectToClassCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 869`** (6 nodes): `AssignSubjectToClassCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 872`** (6 nodes): `ReassignTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 870`** (6 nodes): `ReassignTeacherCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 873`** (6 nodes): `UnassignSubjectCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 871`** (6 nodes): `UnassignSubjectCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 874`** (6 nodes): `SubmitHomeworkCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 872`** (6 nodes): `SubmitHomeworkCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 875`** (6 nodes): `EvaluateHomeworkCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 873`** (6 nodes): `EvaluateHomeworkCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 876`** (6 nodes): `RegisterAdmissionQueryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 874`** (6 nodes): `RegisterAdmissionQueryCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 877`** (6 nodes): `EnrollStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 875`** (6 nodes): `EnrollStudentCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 878`** (6 nodes): `SetRollNumberCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 876`** (6 nodes): `SetRollNumberCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 879`** (6 nodes): `SetDefaultRecordCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 877`** (6 nodes): `SetDefaultRecordCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 880`** (6 nodes): `MarkGraduateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 878`** (6 nodes): `MarkGraduateCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 882`** (6 nodes): `RunPayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 880`** (6 nodes): `RunPayrollCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 883`** (6 nodes): `HireStaffCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
+- **Thin community `Community 881`** (6 nodes): `HireStaffCommand`, `.action()`, `.command_type()`, `.idempotency_key()`, `.target_type()`, `.tenant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 884`** (6 nodes): `health.rs`, `SyncHealth`, `.default()`, `SyncStatus`, `.as_str()`, `.default()`
+- **Thin community `Community 882`** (6 nodes): `health.rs`, `SyncHealth`, `.default()`, `SyncStatus`, `.as_str()`, `.default()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 891`** (5 nodes): `ChannelService`, `.fan_out_targets()`, `.is_async()`, `.new()`, `.requires_authentication()`
+- **Thin community `Community 900`** (4 nodes): `sync.rs`, `dummy_witness()`, `dummy_witness_returns_unit()`, `module_loads()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 904`** (4 nodes): `sync.rs`, `dummy_witness()`, `dummy_witness_returns_unit()`, `module_loads()`
+- **Thin community `Community 914`** (3 nodes): `lib.rs`, `Cli`, `Command`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 918`** (3 nodes): `lib.rs`, `Cli`, `Command`
+- **Thin community `Community 939`** (2 nodes): `errors.rs`, `LibraryError`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 943`** (2 nodes): `errors.rs`, `LibraryError`
+- **Thin community `Community 940`** (2 nodes): `port.rs`, `SyncAdapter`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 944`** (2 nodes): `port.rs`, `SyncAdapter`
+- **Thin community `Community 941`** (2 nodes): `SyncCommand`, `command.rs`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 945`** (2 nodes): `SyncCommand`, `command.rs`
+- **Thin community `Community 942`** (2 nodes): `ConflictResolution<T>`, `.into_winner()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 946`** (2 nodes): `ConflictResolution<T>`, `.into_winner()`
+- **Thin community `Community 943`** (2 nodes): `errors.rs`, `SdkError`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 947`** (2 nodes): `errors.rs`, `SdkError`
+- **Thin community `Community 944`** (2 nodes): `DateTime<Utc>`, `.from()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 948`** (2 nodes): `DateTime<Utc>`, `.from()`
+- **Thin community `Community 945`** (2 nodes): `repository.rs`, `Repository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 949`** (2 nodes): `repository.rs`, `Repository`
+- **Thin community `Community 946`** (2 nodes): `License FAQ`, `Dual License MIT/Apache-2.0`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 950`** (2 nodes): `License FAQ`, `Dual License MIT/Apache-2.0`
+- **Thin community `Community 947`** (2 nodes): `Notification Templates Guide`, `NotificationTemplate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 951`** (2 nodes): `Notification Templates Guide`, `NotificationTemplate`
+- **Thin community `Community 948`** (2 nodes): `FileReference + PutRequest`, `FileStorage trait`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 952`** (2 nodes): `FileReference + PutRequest`, `FileStorage trait`
+- **Thin community `Community 949`** (2 nodes): `Channel + Recipient + DeliveryStatus`, `NotificationProvider trait`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 953`** (2 nodes): `Channel + Recipient + DeliveryStatus`, `NotificationProvider trait`
+- **Thin community `Community 950`** (2 nodes): `ChargeRequest + RefundRequest + PaymentMethod`, `PaymentProvider trait`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 954`** (2 nodes): `ChargeRequest + RefundRequest + PaymentMethod`, `PaymentProvider trait`
+- **Thin community `Community 951`** (2 nodes): `Subject Aggregate`, `academic_subjects Table`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 955`** (2 nodes): `Subject Aggregate`, `academic_subjects Table`
+- **Thin community `Community 952`** (2 nodes): `GraduateStudent Command`, `StudentGraduated`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 956`** (2 nodes): `GraduateStudent Command`, `StudentGraduated`
+- **Thin community `Community 953`** (2 nodes): `ExamType Aggregate`, `ExamTerm Enum`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 957`** (2 nodes): `ExamType Aggregate`, `ExamTerm Enum`
+- **Thin community `Community 954`** (2 nodes): `Assessment Domain Commands`, `Assessment Domain Events`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 958`** (2 nodes): `Assessment Domain Commands`, `Assessment Domain Events`
+- **Thin community `Community 955`** (2 nodes): `Assessment Domain Permissions`, `Assessment Domain Services`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 959`** (2 nodes): `Assessment Domain Permissions`, `Assessment Domain Services`
+- **Thin community `Community 956`** (2 nodes): `CancelBulkImportCommand`, `BulkImportCancelled`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 960`** (2 nodes): `CancelBulkImportCommand`, `BulkImportCancelled`
+- **Thin community `Community 957`** (2 nodes): `RequestAbsenceNotificationCommand`, `AbsenceNotificationRequested`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 961`** (2 nodes): `RequestAbsenceNotificationCommand`, `AbsenceNotificationRequested`
+- **Thin community `Community 958`** (2 nodes): `CMS Permissions Spec`, `CMS Services Spec`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 962`** (2 nodes): `CMS Permissions Spec`, `CMS Services Spec`
+- **Thin community `Community 959`** (2 nodes): `CMS Commands Spec`, `CMS Events Spec`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 963`** (2 nodes): `CMS Commands Spec`, `CMS Events Spec`
+- **Thin community `Community 960`** (2 nodes): `PageUpdated event`, `UpdatePage command`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 964`** (2 nodes): `PageUpdated event`, `UpdatePage command`
+- **Thin community `Community 961`** (2 nodes): `ArchivePage command`, `PageArchived event`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 965`** (2 nodes): `ArchivePage command`, `PageArchived event`
+- **Thin community `Community 962`** (2 nodes): `DeletePage command`, `PageDeleted event`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 966`** (2 nodes): `DeletePage command`, `PageDeleted event`
+- **Thin community `Community 963`** (2 nodes): `NewsUnpublished event`, `UnpublishNews command`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 967`** (2 nodes): `NewsUnpublished event`, `UnpublishNews command`
+- **Thin community `Community 964`** (2 nodes): `IssueStatus Value Object`, `ItemIssue Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 968`** (2 nodes): `IssueStatus Value Object`, `ItemIssue Aggregate`
+- **Thin community `Community 965`** (2 nodes): `ItemSell Aggregate`, `ItemSellChild Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 969`** (2 nodes): `ItemSell Aggregate`, `ItemSellChild Aggregate`
+- **Thin community `Community 966`** (2 nodes): `AssignVehicle Aggregate`, `TransportMembership Entity`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 970`** (2 nodes): `AssignVehicle Aggregate`, `TransportMembership Entity`
+- **Thin community `Community 967`** (2 nodes): `ItemStore Aggregate`, `StoreStocktake Entity`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 971`** (2 nodes): `ItemStore Aggregate`, `StoreStocktake Entity`
+- **Thin community `Community 968`** (2 nodes): `ItemSold Event`, `SellItemCommand`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 972`** (2 nodes): `ItemSold Event`, `SellItemCommand`
+- **Thin community `Community 969`** (2 nodes): `CreateSupplierCommand`, `SupplierCreated Event`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 973`** (2 nodes): `CreateSupplierCommand`, `SupplierCreated Event`
+- **Thin community `Community 970`** (2 nodes): `ItemRepository`, `facilities_items Table`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 974`** (2 nodes): `ItemRepository`, `facilities_items Table`
+- **Thin community `Community 971`** (2 nodes): `VehicleRepository`, `facilities_vehicles Table`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 975`** (2 nodes): `VehicleRepository`, `facilities_vehicles Table`
+- **Thin community `Community 972`** (2 nodes): `DiscountService`, `FeesDiscount aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 976`** (2 nodes): `DiscountService`, `FeesDiscount aggregate`
+- **Thin community `Community 973`** (2 nodes): `WalletService`, `WalletTransaction aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 977`** (2 nodes): `WalletService`, `WalletTransaction aggregate`
+- **Thin community `Community 974`** (2 nodes): `DirectFeesInstallment aggregate`, `PayDirectInstallmentCommand`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 978`** (2 nodes): `DirectFeesInstallment aggregate`, `PayDirectInstallmentCommand`
+- **Thin community `Community 975`** (2 nodes): `UpdateStaffCommand`, `StaffUpdated`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 979`** (2 nodes): `UpdateStaffCommand`, `StaffUpdated`
+- **Thin community `Community 976`** (2 nodes): `ChangeStaffDepartmentCommand`, `StaffDepartmentChanged`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 980`** (2 nodes): `ChangeStaffDepartmentCommand`, `StaffDepartmentChanged`
+- **Thin community `Community 977`** (2 nodes): `CreateDepartmentCommand`, `DepartmentCreated`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 981`** (2 nodes): `CreateDepartmentCommand`, `DepartmentCreated`
+- **Thin community `Community 978`** (2 nodes): `AddPayrollEarningCommand`, `PayrollEarningAdded`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 982`** (2 nodes): `AddPayrollEarningCommand`, `PayrollEarningAdded`
+- **Thin community `Community 979`** (2 nodes): `AddPayrollDeductionCommand`, `PayrollDeductionAdded`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 983`** (2 nodes): `AddPayrollDeductionCommand`, `PayrollDeductionAdded`
+- **Thin community `Community 980`** (2 nodes): `ChangeStaffDesignationCommand`, `StaffDesignationChanged`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 984`** (2 nodes): `ChangeStaffDesignationCommand`, `StaffDesignationChanged`
+- **Thin community `Community 981`** (2 nodes): `RejectLeaveCommand`, `LeaveRejected`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 985`** (2 nodes): `RejectLeaveCommand`, `LeaveRejected`
+- **Thin community `Community 982`** (2 nodes): `CancelLeaveCommand`, `LeaveCancelled`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 986`** (2 nodes): `CancelLeaveCommand`, `LeaveCancelled`
+- **Thin community `Community 983`** (2 nodes): `PromoteStaffAttendanceCommand`, `StaffAttendancePromoted`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 987`** (2 nodes): `PromoteStaffAttendanceCommand`, `StaffAttendancePromoted`
+- **Thin community `Community 984`** (2 nodes): `Library Permissions`, `Library Services`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 988`** (2 nodes): `Library Permissions`, `Library Services`
+- **Thin community `Community 985`** (2 nodes): `Anti-Goal: Reservations deferred`, `BookReservation (future)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 989`** (2 nodes): `Anti-Goal: Reservations deferred`, `BookReservation (future)`
+- **Thin community `Community 986`** (2 nodes): `Operations Permissions`, `Operations Services`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 990`** (2 nodes): `Operations Permissions`, `Operations Services`
+- **Thin community `Community 987`** (2 nodes): `MaintenanceLockout Policy`, `MaintenanceLockout (auth flow rejects non-admin logins)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 991`** (2 nodes): `MaintenanceLockout Policy`, `MaintenanceLockout (auth flow rejects non-admin logins)`
+- **Thin community `Community 988`** (2 nodes): `DisableMaintenanceGuard Policy`, `Self-Authorization Guard (last SuperAdmin)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 992`** (2 nodes): `DisableMaintenanceGuard Policy`, `Self-Authorization Guard (last SuperAdmin)`
+- **Thin community `Community 989`** (2 nodes): `operations_version_histories Table`, `VersionHistory Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 993`** (2 nodes): `operations_version_histories Table`, `VersionHistory Aggregate`
+- **Thin community `Community 990`** (2 nodes): `CustomField Aggregate`, `CustomFieldValue Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 994`** (2 nodes): `CustomField Aggregate`, `CustomFieldValue Aggregate`
+- **Thin community `Community 991`** (2 nodes): `POST /v1/sync Endpoint`, `WS /v1/sync/subscribe Endpoint`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 995`** (2 nodes): `POST /v1/sync Endpoint`, `WS /v1/sync/subscribe Endpoint`
+- **Thin community `Community 992`** (2 nodes): `RequestSyncCommand`, `SyncStarted Event`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 996`** (2 nodes): `RequestSyncCommand`, `SyncStarted Event`
+- **Thin community `Community 993`** (2 nodes): `PauseSyncCommand`, `ResumeSyncCommand`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 997`** (2 nodes): `PauseSyncCommand`, `ResumeSyncCommand`
+- **Thin community `Community 994`** (2 nodes): `ASSERT Constraints`, `SCHEMAFUL Mode`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 998`** (2 nodes): `ASSERT Constraints`, `SCHEMAFUL Mode`
+- **Thin community `Community 995`** (2 nodes): `Central Fan-out Event Bus`, `Local In-Process Event Bus`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 999`** (2 nodes): `Central Fan-out Event Bus`, `Local In-Process Event Bus`
+- **Thin community `Community 996`** (1 nodes): `Settings Domain Commands`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1000`** (1 nodes): `Settings Domain Commands`
+- **Thin community `Community 1025`** (1 nodes): `T`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1029`** (1 nodes): `T`
+- **Thin community `Community 1030`** (1 nodes): `Scan a crate's src/services.rs for pub fn signatures.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1034`** (1 nodes): `Scan a crate's src/services.rs for pub fn signatures.`
+- **Thin community `Community 1031`** (1 nodes): `admit_student -> 'admit'; update_student_profile -> 'update'.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1035`** (1 nodes): `admit_student -> 'admit'; update_student_profile -> 'update'.`
+- **Thin community `Community 1032`** (1 nodes): `AdmitStudentCommand -> 'student'; CreateClassCommand -> 'class'.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1036`** (1 nodes): `AdmitStudentCommand -> 'student'; CreateClassCommand -> 'class'.`
+- **Thin community `Community 1033`** (1 nodes): `AdmitStudentCommand -> 'academic.student.create'.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1037`** (1 nodes): `AdmitStudentCommand -> 'academic.student.create'.`
+- **Thin community `Community 1034`** (1 nodes): `Generate the CommandBounds impl block for the command.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1038`** (1 nodes): `Generate the CommandBounds impl block for the command.`
+- **Thin community `Community 1035`** (1 nodes): `Generate the dispatch_X wrapper function.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1039`** (1 nodes): `Generate the dispatch_X wrapper function.`
+- **Thin community `Community 1036`** (1 nodes): `Run a check and return (passed, evidence).      `passed=True` means the item is`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1040`** (1 nodes): `Run a check and return (passed, evidence).      `passed=True` means the item is`
+- **Thin community `Community 1037`** (1 nodes): `Run a shell command, treat exit 0 as DONE.      For long-running commands (cargo`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1041`** (1 nodes): `Run a shell command, treat exit 0 as DONE.      For long-running commands (cargo`
+- **Thin community `Community 1038`** (1 nodes): `Return a map of item_id -> (done, evidence).`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1042`** (1 nodes): `Return a map of item_id -> (done, evidence).`
+- **Thin community `Community 1039`** (1 nodes): `Return a checkbox string. Manual items are always [~].`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1043`** (1 nodes): `Return a checkbox string. Manual items are always [~].`
+- **Thin community `Community 1040`** (1 nodes): `Render items for one COMPUTED section.      section format: items.<priority>.<ar`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1044`** (1 nodes): `Render items for one COMPUTED section.      section format: items.<priority>.<ar`
+- **Thin community `Community 1041`** (1 nodes): `Dispatch to the right renderer based on section name.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1045`** (1 nodes): `Dispatch to the right renderer based on section name.`
+- **Thin community `Community 1042`** (1 nodes): `Run a check and return (passed, evidence).      `passed=True` means the item is`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1046`** (1 nodes): `Run a check and return (passed, evidence).      `passed=True` means the item is`
+- **Thin community `Community 1043`** (1 nodes): `Run a shell command, treat exit 0 as DONE.      For long-running commands (cargo`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1047`** (1 nodes): `Run a shell command, treat exit 0 as DONE.      For long-running commands (cargo`
+- **Thin community `Community 1044`** (1 nodes): `Return a map of item_id -> (done, evidence).`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1048`** (1 nodes): `Return a map of item_id -> (done, evidence).`
+- **Thin community `Community 1045`** (1 nodes): `Return a checkbox string. Manual items are always [~].`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1049`** (1 nodes): `Return a checkbox string. Manual items are always [~].`
+- **Thin community `Community 1046`** (1 nodes): `Render items for one COMPUTED section.      section format: items.<priority>.<ar`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1050`** (1 nodes): `Render items for one COMPUTED section.      section format: items.<priority>.<ar`
+- **Thin community `Community 1047`** (1 nodes): `Dispatch to the right renderer based on section name.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1051`** (1 nodes): `Dispatch to the right renderer based on section name.`
+- **Thin community `Community 1048`** (1 nodes): `General Settings`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1052`** (1 nodes): `General Settings`
+- **Thin community `Community 1049`** (1 nodes): `Language Catalog`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1053`** (1 nodes): `Language Catalog`
+- **Thin community `Community 1050`** (1 nodes): `Themes`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1054`** (1 nodes): `Themes`
+- **Thin community `Community 1051`** (1 nodes): `Base Setups`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1055`** (1 nodes): `Base Setups`
+- **Thin community `Community 1052`** (1 nodes): `Custom Links`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1056`** (1 nodes): `Custom Links`
+- **Thin community `Community 1053`** (1 nodes): `EntityDescriptor AST (table, columns, indexes, foreign_keys, rls) emitted by macro`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1057`** (1 nodes): `EntityDescriptor AST (table, columns, indexes, foreign_keys, rls) emitted by macro`
+- **Thin community `Community 1054`** (1 nodes): `ExamScheduled`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1058`** (1 nodes): `ExamScheduled`
+- **Thin community `Community 1055`** (1 nodes): `JobScheduled`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1059`** (1 nodes): `JobScheduled`
+- **Thin community `Community 1056`** (1 nodes): `Implementation Guides README`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1060`** (1 nodes): `Implementation Guides README`
+- **Thin community `Community 1057`** (1 nodes): `LeaveType (Sick/Casual/Earned/Maternity)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1061`** (1 nodes): `LeaveType (Sick/Casual/Earned/Maternity)`
+- **Thin community `Community 1058`** (1 nodes): `ClassSubject Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1062`** (1 nodes): `ClassSubject Aggregate`
+- **Thin community `Community 1059`** (1 nodes): `StudentCategory Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1063`** (1 nodes): `StudentCategory Aggregate`
+- **Thin community `Community 1060`** (1 nodes): `StudentGroup Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1064`** (1 nodes): `StudentGroup Aggregate`
+- **Thin community `Community 1061`** (1 nodes): `RegistrationField Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1065`** (1 nodes): `RegistrationField Aggregate`
+- **Thin community `Community 1062`** (1 nodes): `Certificate Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1066`** (1 nodes): `Certificate Aggregate`
+- **Thin community `Community 1063`** (1 nodes): `IdCard Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1067`** (1 nodes): `IdCard Aggregate`
+- **Thin community `Community 1064`** (1 nodes): `ClassRoom Entity`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1068`** (1 nodes): `ClassRoom Entity`
+- **Thin community `Community 1065`** (1 nodes): `MarkStore Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1069`** (1 nodes): `MarkStore Aggregate`
+- **Thin community `Community 1066`** (1 nodes): `ExamSetting Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1070`** (1 nodes): `ExamSetting Aggregate`
+- **Thin community `Community 1067`** (1 nodes): `ExamSignature Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1071`** (1 nodes): `ExamSignature Aggregate`
+- **Thin community `Community 1068`** (1 nodes): `TeacherEvaluation Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1072`** (1 nodes): `TeacherEvaluation Aggregate`
+- **Thin community `Community 1069`** (1 nodes): `TeacherRemark Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1073`** (1 nodes): `TeacherRemark Aggregate`
+- **Thin community `Community 1070`** (1 nodes): `CustomResultSetting Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1074`** (1 nodes): `CustomResultSetting Aggregate`
+- **Thin community `Community 1071`** (1 nodes): `Assessment Domain Entities`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1075`** (1 nodes): `Assessment Domain Entities`
+- **Thin community `Community 1072`** (1 nodes): `Assessment Domain Repositories`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1076`** (1 nodes): `Assessment Domain Repositories`
+- **Thin community `Community 1073`** (1 nodes): `Assessment Domain Workflows`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1077`** (1 nodes): `Assessment Domain Workflows`
+- **Thin community `Community 1074`** (1 nodes): `CMS Entities Spec`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1078`** (1 nodes): `CMS Entities Spec`
+- **Thin community `Community 1075`** (1 nodes): `CMS Repositories Spec`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1079`** (1 nodes): `CMS Repositories Spec`
+- **Thin community `Community 1076`** (1 nodes): `CMS Workflows Spec`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1080`** (1 nodes): `CMS Workflows Spec`
+- **Thin community `Community 1077`** (1 nodes): `CMS Tables Spec`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1081`** (1 nodes): `CMS Tables Spec`
+- **Thin community `Community 1078`** (1 nodes): `NewsPage aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1082`** (1 nodes): `NewsPage aggregate`
+- **Thin community `Community 1079`** (1 nodes): `ContentType aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1083`** (1 nodes): `ContentType aggregate`
+- **Thin community `Community 1080`** (1 nodes): `AboutPage aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1084`** (1 nodes): `AboutPage aggregate`
+- **Thin community `Community 1081`** (1 nodes): `ContactPage aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1085`** (1 nodes): `ContactPage aggregate`
+- **Thin community `Community 1082`** (1 nodes): `ChatStatus Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1086`** (1 nodes): `ChatStatus Aggregate`
+- **Thin community `Community 1083`** (1 nodes): `Facilities Domain Repositories`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1087`** (1 nodes): `Facilities Domain Repositories`
+- **Thin community `Community 1084`** (1 nodes): `Route Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1088`** (1 nodes): `Route Aggregate`
+- **Thin community `Community 1085`** (1 nodes): `SupplierService Domain Service`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1089`** (1 nodes): `SupplierService Domain Service`
+- **Thin community `Community 1086`** (1 nodes): `facilities_routes Table`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1090`** (1 nodes): `facilities_routes Table`
+- **Thin community `Community 1087`** (1 nodes): `facilities_assign_vehicles Table`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1091`** (1 nodes): `facilities_assign_vehicles Table`
+- **Thin community `Community 1088`** (1 nodes): `facilities_dormitories Table`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1092`** (1 nodes): `facilities_dormitories Table`
+- **Thin community `Community 1089`** (1 nodes): `facilities_rooms Table`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1093`** (1 nodes): `facilities_rooms Table`
+- **Thin community `Community 1090`** (1 nodes): `facilities_item_receives Table`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1094`** (1 nodes): `facilities_item_receives Table`
+- **Thin community `Community 1091`** (1 nodes): `facilities_item_sells Table`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1095`** (1 nodes): `facilities_item_sells Table`
+- **Thin community `Community 1092`** (1 nodes): `facilities_suppliers Table`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1096`** (1 nodes): `facilities_suppliers Table`
+- **Thin community `Community 1093`** (1 nodes): `PaymentStatus / ApprovalStatus value objects`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1097`** (1 nodes): `PaymentStatus / ApprovalStatus value objects`
+- **Thin community `Community 1094`** (1 nodes): `ConfigurePaymentGatewayCommand`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1098`** (1 nodes): `ConfigurePaymentGatewayCommand`
+- **Thin community `Community 1095`** (1 nodes): `HR Domain — Workflows`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1099`** (1 nodes): `HR Domain — Workflows`
+- **Thin community `Community 1096`** (1 nodes): `ImportStaffAttendanceCommand`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1100`** (1 nodes): `ImportStaffAttendanceCommand`
+- **Thin community `Community 1097`** (1 nodes): `BookQuantityAdjusted Event`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1101`** (1 nodes): `BookQuantityAdjusted Event`
+- **Thin community `Community 1098`** (1 nodes): `Operations Repositories`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1102`** (1 nodes): `Operations Repositories`
+- **Thin community `Community 1099`** (1 nodes): `Operations Workflows`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1103`** (1 nodes): `Operations Workflows`
+- **Thin community `Community 1100`** (1 nodes): `Operations Entities`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1104`** (1 nodes): `Operations Entities`
+- **Thin community `Community 1101`** (1 nodes): `Operations Tables`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1105`** (1 nodes): `Operations Tables`
+- **Thin community `Community 1102`** (1 nodes): `VersionHistoryRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1106`** (1 nodes): `VersionHistoryRepository`
+- **Thin community `Community 1103`** (1 nodes): `SidebarLevel Value Object`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1107`** (1 nodes): `SidebarLevel Value Object`
+- **Thin community `Community 1104`** (1 nodes): `SidebarService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1108`** (1 nodes): `SidebarService`
+- **Thin community `Community 1105`** (1 nodes): `Platform Domain Repositories`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1109`** (1 nodes): `Platform Domain Repositories`
+- **Thin community `Community 1106`** (1 nodes): `Platform Domain Workflows`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1110`** (1 nodes): `Platform Domain Workflows`
+- **Thin community `Community 1107`** (1 nodes): `Platform Domain Entities`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1111`** (1 nodes): `Platform Domain Entities`
+- **Thin community `Community 1108`** (1 nodes): `Platform Domain Permissions`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1112`** (1 nodes): `Platform Domain Permissions`
+- **Thin community `Community 1109`** (1 nodes): `Platform Domain Value Objects`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1113`** (1 nodes): `Platform Domain Value Objects`
+- **Thin community `Community 1110`** (1 nodes): `Platform Domain Tables`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1114`** (1 nodes): `Platform Domain Tables`
+- **Thin community `Community 1111`** (1 nodes): `Platform Domain Services`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1115`** (1 nodes): `Platform Domain Services`
+- **Thin community `Community 1112`** (1 nodes): `Platform Domain Commands`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1116`** (1 nodes): `Platform Domain Commands`
+- **Thin community `Community 1113`** (1 nodes): `CoursePage Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1117`** (1 nodes): `CoursePage Aggregate`
+- **Thin community `Community 1114`** (1 nodes): `ModuleManager Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1118`** (1 nodes): `ModuleManager Aggregate`
+- **Thin community `Community 1115`** (1 nodes): `ModuleStudentParentInfo Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1119`** (1 nodes): `ModuleStudentParentInfo Aggregate`
+- **Thin community `Community 1116`** (1 nodes): `TimeZone Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1120`** (1 nodes): `TimeZone Aggregate`
+- **Thin community `Community 1117`** (1 nodes): `Country Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1121`** (1 nodes): `Country Aggregate`
+- **Thin community `Community 1118`** (1 nodes): `Continent Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1122`** (1 nodes): `Continent Aggregate`
+- **Thin community `Community 1119`** (1 nodes): `Currency Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1123`** (1 nodes): `Currency Aggregate`
+- **Thin community `Community 1120`** (1 nodes): `Language Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1124`** (1 nodes): `Language Aggregate`
+- **Thin community `Community 1121`** (1 nodes): `SocialMediaIcon Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1125`** (1 nodes): `SocialMediaIcon Aggregate`
+- **Thin community `Community 1122`** (1 nodes): `HeaderMenuManager Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1126`** (1 nodes): `HeaderMenuManager Aggregate`
+- **Thin community `Community 1123`** (1 nodes): `PhotoGallery Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1127`** (1 nodes): `PhotoGallery Aggregate`
+- **Thin community `Community 1124`** (1 nodes): `VideoGallery Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1128`** (1 nodes): `VideoGallery Aggregate`
+- **Thin community `Community 1125`** (1 nodes): `Visitor Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1129`** (1 nodes): `Visitor Aggregate`
+- **Thin community `Community 1126`** (1 nodes): `ToDo Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1130`** (1 nodes): `ToDo Aggregate`
+- **Thin community `Community 1127`** (1 nodes): `Instruction Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1131`** (1 nodes): `Instruction Aggregate`
+- **Thin community `Community 1128`** (1 nodes): `ExpertTeacher Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1132`** (1 nodes): `ExpertTeacher Aggregate`
+- **Thin community `Community 1129`** (1 nodes): `FrontendPermission Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1133`** (1 nodes): `FrontendPermission Aggregate`
+- **Thin community `Community 1130`** (1 nodes): `AmountTransfer Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1134`** (1 nodes): `AmountTransfer Aggregate`
+- **Thin community `Community 1131`** (1 nodes): `Plugin Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1135`** (1 nodes): `Plugin Aggregate`
+- **Thin community `Community 1132`** (1 nodes): `Comment Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1136`** (1 nodes): `Comment Aggregate`
+- **Thin community `Community 1133`** (1 nodes): `CommentTag Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1137`** (1 nodes): `CommentTag Aggregate`
+- **Thin community `Community 1134`** (1 nodes): `CommentPivot Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1138`** (1 nodes): `CommentPivot Aggregate`
+- **Thin community `Community 1135`** (1 nodes): `VideoUpload Aggregate`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1139`** (1 nodes): `VideoUpload Aggregate`
+- **Thin community `Community 1136`** (1 nodes): `LocaleService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1140`** (1 nodes): `LocaleService`
+- **Thin community `Community 1137`** (1 nodes): `Settings Domain Events`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1141`** (1 nodes): `Settings Domain Events`
+- **Thin community `Community 1138`** (1 nodes): `Settings Domain Workflows`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1142`** (1 nodes): `Settings Domain Workflows`
+- **Thin community `Community 1139`** (1 nodes): `CurrencyCode`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1143`** (1 nodes): `CurrencyCode`
+- **Thin community `Community 1140`** (1 nodes): `LocaleCode`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1144`** (1 nodes): `LocaleCode`
+- **Thin community `Community 1141`** (1 nodes): `DateFormatPattern`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1145`** (1 nodes): `DateFormatPattern`
+- **Thin community `Community 1142`** (1 nodes): `Sync Port Contract`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1146`** (1 nodes): `Sync Port Contract`
+- **Thin community `Community 1143`** (1 nodes): `SyncCompleted Event`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1147`** (1 nodes): `SyncCompleted Event`
+- **Thin community `Community 1144`** (1 nodes): `Storage Sync Primitives Section`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1148`** (1 nodes): `Storage Sync Primitives Section`
+- **Thin community `Community 1145`** (1 nodes): `Storage ChangeFilter Type`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1149`** (1 nodes): `Storage ChangeFilter Type`
+- **Thin community `Community 1146`** (1 nodes): `Storage ChangeStream Type`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1150`** (1 nodes): `Storage ChangeStream Type`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1151`** (1 nodes): `Storage VersionCursor Type`
+- **Thin community `Community 1147`** (1 nodes): `Storage VersionCursor Type`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
@@ -7536,11 +7519,11 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
 - **What is the exact relationship between `StudentSuspended` and `AssignOptionalSubject Command`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `Capability (typed enum, atomic permission)` connect `Community 32` to `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 37`, `Community 38`, `Community 9`, `Community 11`, `Community 12`, `Community 19`, `Community 20`, `Community 23`, `Community 24`, `Community 28`, `Community 29`?**
+- **Why does `Capability (typed enum, atomic permission)` connect `Community 31` to `Community 1`, `Community 34`, `Community 3`, `Community 4`, `Community 5`, `Community 2`, `Community 37`, `Community 10`, `Community 12`, `Community 14`, `Community 16`, `Community 17`, `Community 20`, `Community 24`, `Community 27`, `Community 28`?**
   _High betweenness centrality (0.173) - this node is a cross-community bridge._
-- **Why does `<domain>_<aggregate> naming convention` connect `Community 48` to `Community 36`, `Community 10`, `Community 14`, `Community 18`, `Community 31`?**
+- **Why does `<domain>_<aggregate> naming convention` connect `Community 29` to `Community 54`, `Community 11`, `Community 36`, `Community 6`?**
   _High betweenness centrality (0.058) - this node is a cross-community bridge._
-- **Why does `SendMessageDispatched` connect `Community 18` to `Community 1`?**
+- **Why does `SendMessageDispatched` connect `Community 6` to `Community 1`?**
   _High betweenness centrality (0.040) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `admin_context()` (e.g. with `.for_user()` and `UserId`) actually correct?**
   _`admin_context()` has 4 INFERRED edges - model-reasoned connections that need verification._

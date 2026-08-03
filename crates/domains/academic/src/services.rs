@@ -92,7 +92,7 @@ use crate::events::{
     SubjectTeacherAssigned, SubjectUnassigned, TeacherReassigned,
 };
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, ClassId, CompletedStatus, HomeworkStatus, ResultStatus, SectionId, StudentGuardianLinkId, StudentId,
+    AcademicYearId, AcademicYearRange, ClassId, ClassSectionId, CompletedStatus, HomeworkStatus, ResultStatus, SectionId, StudentGuardianLinkId, StudentId,
     StudentPromotionId, StudentRecordId,
     StudentStatus, SubTopic,
 };

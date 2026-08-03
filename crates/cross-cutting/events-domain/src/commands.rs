@@ -8,7 +8,7 @@
 #![allow(clippy::unwrap_used)]
 
 use chrono::NaiveDate;
-use educore_core::ids::{CorrelationId, SchoolId, UserId};
+use educore_core::ids::{CorrelationId, Identifier, SchoolId, UserId, PUBLIC_SCHOOL_ID};
 use educore_core::tenant::TenantContext;
 use educore_core::ids::IdempotencyKey;
 use educore_core::value_objects::Timestamp;
@@ -528,7 +528,7 @@ mod tests {
 
     #[test]
     fn create_event_command_into_new_event() {
-        let school = SchoolId::from_uuid(Uuid::nil());
+        let school = PUBLIC_SCHOOL_ID;
         let user = UserId::from_uuid(Uuid::nil());
         let corr = CorrelationId::from_uuid(Uuid::nil());
         let tenant =
