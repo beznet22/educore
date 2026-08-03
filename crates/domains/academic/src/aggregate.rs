@@ -1857,10 +1857,48 @@ impl Homework {
         Ok(())
     }
 }
-academic_aggregate_stub! {
-    /// A teacher's plan for a specific lesson topic on a specific
+/// Real aggregate (Wave 220 upgrade from academic_aggregate_stub!).
+/// A teacher's plan for a specific lesson topic on a specific
     /// date. See `docs/specs/academic/aggregates.md` § LessonPlan.
-    pub struct LessonPlan { id: LessonPlanId }
+    pub struct LessonPlan {
+    /// The typed id.
+    pub id: LessonPlanId,
+    /// The owning school (tenant anchor).
+    pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Monotonic version for optimistic concurrency.
+    pub version: Version,
+    /// Entity tag for change detection.
+    pub etag: Etag,
+    /// When the aggregate was first created.
+    pub created_at: Timestamp,
+    /// When the aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// User who created the aggregate.
+    pub created_by: UserId,
+    /// User who last mutated the aggregate.
+    pub updated_by: UserId,
+    /// Correlation id for trace propagation.
+    pub correlation_id: CorrelationId,
+    /// Last event id emitted.
+    pub last_event_id: Option<EventId>,
+}
+
+impl LessonPlan {
+    /// Returns `true` if the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate (sets `active_status = Retired`).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 // ---- Real LessonPlan aggregate (Wave 53) -----------------------------------
@@ -2081,10 +2119,48 @@ impl RealLessonPlan {
         self.version = self.version.next();
     }
 }
-academic_aggregate_stub! {
-    /// A unit of study within a subject, owned by a class-section.
+/// Real aggregate (Wave 220 upgrade from academic_aggregate_stub!).
+/// A unit of study within a subject, owned by a class-section.
     /// See `docs/specs/academic/aggregates.md` § Lesson.
-    pub struct Lesson { id: LessonId }
+    pub struct Lesson {
+    /// The typed id.
+    pub id: LessonId,
+    /// The owning school (tenant anchor).
+    pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Monotonic version for optimistic concurrency.
+    pub version: Version,
+    /// Entity tag for change detection.
+    pub etag: Etag,
+    /// When the aggregate was first created.
+    pub created_at: Timestamp,
+    /// When the aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// User who created the aggregate.
+    pub created_by: UserId,
+    /// User who last mutated the aggregate.
+    pub updated_by: UserId,
+    /// Correlation id for trace propagation.
+    pub correlation_id: CorrelationId,
+    /// Last event id emitted.
+    pub last_event_id: Option<EventId>,
+}
+
+impl Lesson {
+    /// Returns `true` if the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate (sets `active_status = Retired`).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 // ---- Real Lesson aggregate (Wave 54) ---------------------------------------
@@ -2233,10 +2309,48 @@ impl RealLesson {
         self.version = self.version.next();
     }
 }
-academic_aggregate_stub! {
-    /// A topic within a lesson, trackable through a syllabus.
+/// Real aggregate (Wave 220 upgrade from academic_aggregate_stub!).
+/// A topic within a lesson, trackable through a syllabus.
     /// See `docs/specs/academic/aggregates.md` § LessonTopic.
-    pub struct LessonTopic { id: LessonTopicId }
+    pub struct LessonTopic {
+    /// The typed id.
+    pub id: LessonTopicId,
+    /// The owning school (tenant anchor).
+    pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Monotonic version for optimistic concurrency.
+    pub version: Version,
+    /// Entity tag for change detection.
+    pub etag: Etag,
+    /// When the aggregate was first created.
+    pub created_at: Timestamp,
+    /// When the aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// User who created the aggregate.
+    pub created_by: UserId,
+    /// User who last mutated the aggregate.
+    pub updated_by: UserId,
+    /// Correlation id for trace propagation.
+    pub correlation_id: CorrelationId,
+    /// Last event id emitted.
+    pub last_event_id: Option<EventId>,
+}
+
+impl LessonTopic {
+    /// Returns `true` if the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate (sets `active_status = Retired`).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 // ---- Real LessonTopic aggregate (Wave 55) ----------------------------------
@@ -2482,11 +2596,49 @@ impl RealStudentPromotion {
         })
     }
 }
-academic_aggregate_stub! {
-    /// A categorization for students, used for fee discounts and
+/// Real aggregate (Wave 220 upgrade from academic_aggregate_stub!).
+/// A categorization for students, used for fee discounts and
     /// reporting. See `docs/specs/academic/aggregates.md` §
     /// StudentCategory.
-    pub struct StudentCategory { id: StudentCategoryId }
+    pub struct StudentCategory {
+    /// The typed id.
+    pub id: StudentCategoryId,
+    /// The owning school (tenant anchor).
+    pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Monotonic version for optimistic concurrency.
+    pub version: Version,
+    /// Entity tag for change detection.
+    pub etag: Etag,
+    /// When the aggregate was first created.
+    pub created_at: Timestamp,
+    /// When the aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// User who created the aggregate.
+    pub created_by: UserId,
+    /// User who last mutated the aggregate.
+    pub updated_by: UserId,
+    /// Correlation id for trace propagation.
+    pub correlation_id: CorrelationId,
+    /// Last event id emitted.
+    pub last_event_id: Option<EventId>,
+}
+
+impl StudentCategory {
+    /// Returns `true` if the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate (sets `active_status = Retired`).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 // ---- Real StudentCategory aggregate (Wave 58) -------------------------------
@@ -2747,10 +2899,48 @@ impl RealStudentGroup {
         self.version = self.version.next();
     }
 }
-academic_aggregate_stub! {
-    /// A custom field on the student or staff registration form.
+/// Real aggregate (Wave 220 upgrade from academic_aggregate_stub!).
+/// A custom field on the student or staff registration form.
     /// See `docs/specs/academic/aggregates.md` § RegistrationField.
-    pub struct RegistrationField { id: RegistrationFieldId }
+    pub struct RegistrationField {
+    /// The typed id.
+    pub id: RegistrationFieldId,
+    /// The owning school (tenant anchor).
+    pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Monotonic version for optimistic concurrency.
+    pub version: Version,
+    /// Entity tag for change detection.
+    pub etag: Etag,
+    /// When the aggregate was first created.
+    pub created_at: Timestamp,
+    /// When the aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// User who created the aggregate.
+    pub created_by: UserId,
+    /// User who last mutated the aggregate.
+    pub updated_by: UserId,
+    /// Correlation id for trace propagation.
+    pub correlation_id: CorrelationId,
+    /// Last event id emitted.
+    pub last_event_id: Option<EventId>,
+}
+
+impl RegistrationField {
+    /// Returns `true` if the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate (sets `active_status = Retired`).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 // ---- Real RegistrationField aggregate (Wave 60) ------------------------------
@@ -2873,11 +3063,49 @@ impl RealRegistrationField {
         self.version = self.version.next();
     }
 }
-academic_aggregate_stub! {
-    /// A configurable certificate template: transfer, character,
+/// Real aggregate (Wave 220 upgrade from academic_aggregate_stub!).
+/// A configurable certificate template: transfer, character,
     /// course completion, etc. See
     /// `docs/specs/academic/aggregates.md` § Certificate.
-    pub struct Certificate { id: CertificateId }
+    pub struct Certificate {
+    /// The typed id.
+    pub id: CertificateId,
+    /// The owning school (tenant anchor).
+    pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Monotonic version for optimistic concurrency.
+    pub version: Version,
+    /// Entity tag for change detection.
+    pub etag: Etag,
+    /// When the aggregate was first created.
+    pub created_at: Timestamp,
+    /// When the aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// User who created the aggregate.
+    pub created_by: UserId,
+    /// User who last mutated the aggregate.
+    pub updated_by: UserId,
+    /// Correlation id for trace propagation.
+    pub correlation_id: CorrelationId,
+    /// Last event id emitted.
+    pub last_event_id: Option<EventId>,
+}
+
+impl Certificate {
+    /// Returns `true` if the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate (sets `active_status = Retired`).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 // ---- Real Certificate aggregate (Wave 61) -----------------------------------
@@ -3069,10 +3297,48 @@ impl RealCertificate {
         self.version = self.version.next();
     }
 }
-academic_aggregate_stub! {
-    /// A configurable student ID card template. See
+/// Real aggregate (Wave 220 upgrade from academic_aggregate_stub!).
+/// A configurable student ID card template. See
     /// `docs/specs/academic/aggregates.md` § IdCard.
-    pub struct IdCard { id: IdCardId }
+    pub struct IdCard {
+    /// The typed id.
+    pub id: IdCardId,
+    /// The owning school (tenant anchor).
+    pub school_id: SchoolId,
+    /// Active status (Active | Retired).
+    pub active_status: ActiveStatus,
+    /// Monotonic version for optimistic concurrency.
+    pub version: Version,
+    /// Entity tag for change detection.
+    pub etag: Etag,
+    /// When the aggregate was first created.
+    pub created_at: Timestamp,
+    /// When the aggregate was last mutated.
+    pub updated_at: Timestamp,
+    /// User who created the aggregate.
+    pub created_by: UserId,
+    /// User who last mutated the aggregate.
+    pub updated_by: UserId,
+    /// Correlation id for trace propagation.
+    pub correlation_id: CorrelationId,
+    /// Last event id emitted.
+    pub last_event_id: Option<EventId>,
+}
+
+impl IdCard {
+    /// Returns `true` if the aggregate is currently active.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Soft-deletes the aggregate (sets `active_status = Retired`).
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 // ---- Real IdCard aggregate (Wave 62) ----------------------------------------
