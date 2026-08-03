@@ -880,6 +880,91 @@ impl LeaveRequest {
     pub fn can_transition(&self, to: LeaveStatus) -> bool {
         self.approve_status.can_transition_to(to)
     }
+
+    /// Spec invariant LeaveRequest#3: "`approve_status` is `pending`
+    /// on creation; it transitions to `approved` or `rejected` and
+    /// never returns to `pending`."
+    ///
+    /// This is the I-3 reject mutator. The transition guard
+    /// (`Pending → {Approved, Rejected}`) is enforced by
+    /// [`LeaveStatus::can_transition_to`] (Wave 32). This mutator
+    /// also enforces spec I-5 (reason required for rejections):
+    /// the rejection reason must be non-empty when transitioning
+    /// to `Rejected`.
+    pub fn reject(
+        &mut self,
+        rejecter_id: UserId,
+        rejection_reason: String,
+        at: Timestamp,
+    ) -> Result<()> {
+        if !self.approve_status.can_transition_to(LeaveStatus::Rejected) {
+            return Err(DomainError::validation(format!(
+                "cannot reject leave request in status {:?}",
+                self.approve_status
+            )));
+        }
+        let trimmed = rejection_reason.trim();
+        if trimmed.is_empty() {
+            return Err(DomainError::validation(
+                "rejection reason is required (spec LeaveRequest I-5)",
+            ));
+        }
+        self.approve_status = LeaveStatus::Rejected;
+        self.rejecter_id = Some(rejecter_id);
+        self.rejected_at = Some(at);
+        self.rejection_reason = Some(rejection_reason);
+        self.updated_at = at;
+        self.updated_by = rejecter_id;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Spec invariant LeaveRequest#1: "A `LeaveRequest` is unique
+    /// by `(school_id, staff_id, leave_from, leave_to, type_id)`
+    /// per academic year."
+    ///
+    /// The mutator delegates the cross-aggregate uniqueness check
+    /// to a [`LeaveRequestUniquenessChecker`] port (defined in
+    /// `crates/domains/hr/src/services.rs`). On a duplicate the
+    /// mutator returns `DomainError::Conflict`.
+    pub fn ensure_unique(
+        &self,
+        uniqueness: &dyn crate::services::LeaveRequestUniquenessChecker,
+    ) -> Result<()> {
+        if uniqueness.leave_request_exists(
+            self.school_id,
+            self.staff_id,
+            self.leave_from,
+            self.leave_to,
+            self.type_id,
+        ) {
+            return Err(DomainError::conflict(format!(
+                "leave request already exists for (school, staff, leave_from, leave_to, type) composite key"
+            )));
+        }
+        Ok(())
+    }
+
+    /// Spec invariant LeaveRequest#5: "The number of days in the
+    /// request must not exceed the `LeaveDefine.total_days`."
+    ///
+    /// The mutator is a pure validator: it compares
+    /// [`Self::duration_days`] against the supplied
+    /// `leave_define_total_days` and returns
+    /// [`DomainError::validation`] if the request would exceed
+    /// the entitlement.
+    pub fn ensure_within_leave_define(
+        &self,
+        leave_define_total_days: u32,
+    ) -> Result<()> {
+        let requested = self.duration_days();
+        if requested > leave_define_total_days {
+            return Err(DomainError::validation(format!(
+                "leave request duration {requested} days exceeds LeaveDefine.total_days {leave_define_total_days}"
+            )));
+        }
+        Ok(())
+    }
 }
 
 // =============================================================================

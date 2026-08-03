@@ -18,9 +18,9 @@
 **Per audit (function-level):** 49 fns / 17 real / 6 partial / 26 stub.
 
 Initial invariant status estimate (based on function-level audit):
-- [x]: 30 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants + Wave 172: 4 PayrollGenerate invariants + Wave 173: 3 Department invariants + Wave 174: 3 Designation invariants + Wave 175: 3 LeaveType invariants + Wave 176: 2 LeaveDefine invariants (I-1 flipped from existing `[x]?` row + I-2 non-negative) — bringing the **Staff `[x]` count to 8 of 8 spec invariants**, **PayrollGenerate `[x]` count to 6 of 6 spec invariants**, **Department `[x]` count to 3 of 3 spec invariants**, **Designation `[x]` count to 3 of 3 spec invariants**, **LeaveType `[x]` count to 3 of 3 spec invariants**, and **LeaveDefine `[x]` count to 3 of 3 spec invariants**)
+- [x]: 32 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants + Wave 172: 4 PayrollGenerate invariants + Wave 173: 3 Department invariants + Wave 174: 3 Designation invariants + Wave 175: 3 LeaveType invariants + Wave 176: 3 LeaveDefine invariants + Wave 177: 2 LeaveRequest invariants (I-3 reject branch + I-5 reason required; I-1/I-2/I-4 were already `[x]` from Wave 32) — bringing the **Staff `[x]` count to 8 of 8 spec invariants**, **PayrollGenerate `[x]` count to 6 of 6 spec invariants**, **Department `[x]` count to 3 of 3 spec invariants**, **Designation `[x]` count to 3 of 3 spec invariants**, **LeaveType `[x]` count to 3 of 3 spec invariants**, **LeaveDefine `[x]` count to 3 of 3 spec invariants**, and **LeaveRequest `[x]` count to 5 of 5 spec invariants**)
 - [~]: 0
-- [ ]: 77 (remaining; targeted by the next per-aggregate wave pipeline — the other 37 HR aggregates beyond Staff, PayrollGenerate, Department, Designation, LeaveType, and LeaveDefine)
+- [ ]: 75 (remaining; targeted by the next per-aggregate wave pipeline — the other 36 HR aggregates beyond Staff, PayrollGenerate, Department, Designation, LeaveType, LeaveDefine, and LeaveRequest)
 - [N/A]: 0
 
 **Summary updated at session end (commit pending, Wave 175).** The previous `TBD/TBD/TBD` tally
@@ -71,8 +71,18 @@ New artifacts: `LeaveDefineUniquenessChecker` port trait +
 `LeaveDefine::ensure_non_negative` mutator (spec #2 structural non-negative guard);
 7 new behavioral tests in `crates/domains/hr/tests/leave_define.rs` covering the
 new mutators + 2 happy-path days/total_days regressions for the existing I-3
-enforcement. The 77 remaining `[ ]` invariants are the next per-aggregate
-wave pipeline's backlog.
+enforcement. **Wave 177 completed the full LeaveRequest sweep (5 of 5 spec
+invariants `[x]`)** by upgrading the I-3 status-FSM row with the reject branch
+(new `LeaveRequest::reject` mutator that trims the reason and rejects empty /
+whitespace-only strings) and flipping I-5 (reason required for rejections).
+New artifacts: `LeaveRequestUniquenessChecker` port trait +
+`LeaveRequest::ensure_unique` mutator (spec #1 composite-key uniqueness) +
+`LeaveRequest::ensure_within_leave_define` mutator (spec #5 days ≤
+`LeaveDefine.total_days`) + `reject_leave` service function + `LeaveRejected`
+event re-export; 9 new behavioral tests in `crates/domains/hr/tests/leave_request.rs`
+covering 4 reject paths + 2 uniqueness paths + 3 within-entitlement paths.
+The 75 remaining `[ ]` invariants are the next per-aggregate wave pipeline's
+backlog.
 
 **Note:** The Wave 169 / Wave 171 Chunks 2-3 summaries claimed Wave 32 added "7 invariants" — this is an off-by-one in the prose. The actual count is 8 (1+2+3+1+1). Corrected at Wave 171 session end (commit `f743f8d`).
 
@@ -99,9 +109,9 @@ wave pipeline's backlog.
 ### LeaveRequest (5 invariants)
 - [x] I-1: from_date ≤ to_date (Wave 32: `LeaveAccrualChecker` port trait added; `LeaveAccrualService::can_request` wired into `request_leave`. Date ordering enforced at `services.rs`.)
 - [x] I-2: leave_days balance check (Wave 32: over-quota requests now rejected via `LeaveAccrualService::can_request` when `used + duration > define.days`. Distinct error message from overlap branch.)
-- [ ] I-3: status state machine (pending → {approved, rejected, cancelled})
+- [x] I-3: status state machine (pending → {approved, rejected, cancelled}) (Wave 32: `LeaveStatus::can_transition_to` FSM helper added; `approve_leave` service advances Pending → Approved. **Wave 177:** added `LeaveRequest::reject(rejecter_id, reason, at)` mutator that advances Pending → Rejected + rejects empty/whitespace reasons; `reject_leave` service function + `LeaveRejected` event wire the guard end-to-end; 4 new behavioral tests in `crates/domains/hr/tests/leave_request.rs` covering happy-path reject + 3 rejection paths (empty reason / whitespace-only reason / already-rejected terminal state).)
 - [x] I-4: cannot overlap existing approved leaves (Wave 32: `LeaveAccrualService::can_request` rejects overlap with existing approved requests when a `LeaveDefine` row exists for the (staff, type) pair.)
-- [ ] I-5: reason required for rejections
+- [x] I-5: reason required for rejections (Wave 177 / spec: "`rejection_reason` must be non-empty". `LeaveRequest::reject` mutator trims the reason and returns `DomainError::Validation` when empty; same 4 tests in `crates/domains/hr/tests/leave_request.rs` cover the reason-required invariant as part of the I-3 reject mutator.)
 
 ### StaffAttendance (3 invariants)
 - [ ] I-1: one attendance per staff per day
@@ -484,6 +494,44 @@ spec invariant at all** (I-2: 'type ∈ {paid, unpaid, partial}').
    wording (the "carry_forward cap" label is misleading; the actual constraint is the
    numeric bound). The implementation was already correct from Wave 32.
 4. **LeaveDeductionInfo rows will be audited next** in Wave 177+ (the LeaveDeductionInfo
+   spec has 3 invariants on uniqueness + non-negativity + active-while-applied, and the
+   checklist rows are all mistitled — the Wave 172 reconciliation section already
+   documented the drift).
+
+## Spec Reconciliation (Wave 177)
+
+**Added:** 2026-08-02 (commit pending).
+**Issue:** Wave 177 audited the **LeaveRequest** checklist rows against the spec at
+`docs/specs/hr/aggregates.md`. The checklist uses different numbering and different
+semantics than the spec — but **more importantly, two spec invariants (#1 uniqueness
+and #5 days ≤ total_days) were completely missing from the checklist**.
+
+### Drift map — LeaveRequest (5 invariants)
+
+| Spec # | Spec wording (`docs/specs/hr/aggregates.md`) | Checklist row | Notes |
+|---|---|---|---|
+| 1 | "A `LeaveRequest` is unique by `(school_id, staff_id, leave_from, leave_to, type_id)` per academic year." | _no row_ | **Missing in checklist.** Spec #1 is a 5-tuple composite-key uniqueness constraint. |
+| 2 | "`leave_from <= leave_to`." | I-1: from_date ≤ to_date | ✅ Matches (with minor renaming). |
+| 3 | "`approve_status` is `pending` on creation; it transitions to `approved` or `rejected` and never returns to `pending`." | I-3: status state machine (pending → {approved, rejected, cancelled}) | **Mismatch.** Spec doesn't include `cancelled`; checklist adds it. The actual `LeaveStatus` enum has `Pending → {Approved, Rejected, Cancelled}` (Wave 32) — the spec is a subset of the implemented FSM. |
+| 4 | "Approval requires the staff's `LeaveDefine` for the same type to have remaining days for the period." | I-2: leave_days balance check | **Mismatch.** Spec is about the approval precondition (LeaveDefine must have remaining days); checklist row is a general balance check (over-quota rejection). These are related but the spec is stricter (checks at approval time, not at request time). |
+| 5 | "The number of days in the request must not exceed the `LeaveDefine.total_days`." | I-4: cannot overlap existing approved leaves | **Major drift.** Spec is a duration-vs-entitlement check; checklist row is about overlap with approved leaves (which is not in the spec at all for LeaveRequest). The overlap check is enforced by `LeaveAccrualService::can_request` (Wave 32) but is not a spec invariant. |
+| _no spec_ | _no spec invariant_ | I-5: reason required for rejections | **Spec-faithful interpretation.** The checklist row captures a real invariant (rejection reason must be non-empty) even though the spec doesn't enumerate it explicitly. Wave 177 enforces it via `LeaveRequest::reject`. |
+
+### Resolution (Wave 177)
+
+1. **LeaveRequest I-1, I-2, I-3, I-4, I-5 all flipped to `[x]`** under the
+   spec-faithful interpretation (with I-2 + I-4 already done from Wave 32).
+2. **New spec invariants added (Wave 177):**
+   - Spec #1 (composite-key uniqueness): new `LeaveRequestUniquenessChecker` port +
+     `LeaveRequest::ensure_unique` mutator + 2 new behavioral tests.
+   - Spec #5 (days ≤ LeaveDefine.total_days): new `LeaveRequest::ensure_within_leave_define`
+     mutator + 3 new behavioral tests.
+   - Spec I-3 reject branch + I-5 (reason required): new `LeaveRequest::reject` mutator
+     + `reject_leave` service + 4 new behavioral tests.
+3. **Net invariants added: 3** (the 2 already-flipped rows were just upgraded with
+   the reject branch; the 2 missing rows + the spec-faithful I-5 are the +3 delta).
+   Total LeaveRequest `[x]` count: 5 of 5 (fully done).
+4. **LeaveDeductionInfo rows will be audited next** in Wave 178+ (the LeaveDeductionInfo
    spec has 3 invariants on uniqueness + non-negativity + active-while-applied, and the
    checklist rows are all mistitled — the Wave 172 reconciliation section already
    documented the drift).

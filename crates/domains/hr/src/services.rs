@@ -55,7 +55,7 @@ use educore_events::domain_event::DomainEvent;
 use crate::events::{
     AssignClassTeacherScopeAdded, BulkImportJobRecorded, DepartmentCreated, DepartmentDeleted,
     DepartmentHeadRecorded, DesignationDeleted, DesignationGradeRecorded, HourlyRateOverrideSet,
-    LeaveApproved, LeaveDefineAdjustmentApplied, LeaveRequestApprovalRecorded,
+    LeaveApproved, LeaveDefineAdjustmentApplied, LeaveRejected, LeaveRequestApprovalRecorded,
     LeaveRequestAttachmentRegistered, LeaveRequested, LeaveTypeDeleted,
     PayrollGenerateAuditAppended, PayrollGenerated, PayrollPaymentLinkCreated, StaffAddressAdded,
     StaffAttendanceImportBatchRecorded, StaffAttendancePunchCaptured, StaffBankDetailUpserted,
@@ -747,6 +747,46 @@ where
     ))
 }
 
+/// Rejects a leave request (spec invariants LeaveRequest#3 + I-5).
+///
+/// 1. Calls [`LeaveRequest::reject`] which enforces the FSM
+///    transition guard (Pending → Rejected only) AND validates
+///    that the rejection reason is non-empty (spec I-5).
+/// 2. Returns a [`LeaveRejected`] event.
+///
+/// The dispatcher loads the existing `LeaveRequest` aggregate by
+/// `cmd.leave_request_id` and passes it as `&mut lr` so the
+/// mutator runs on the loaded state (mirrors the `approve_leave`
+/// pattern).
+pub fn reject_leave<C, G>(
+    leave_request: &mut LeaveRequest,
+    rejecter_tenant: TenantContext,
+    reason: String,
+    clock: &C,
+    ids: &G,
+) -> Result<LeaveRejected>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = ids.next_event_id();
+
+    // Spec invariants LeaveRequest#3 (FSM) + I-5 (reason required).
+    leave_request.reject(rejecter_tenant.actor_id, reason.clone(), now)?;
+    leave_request.last_event_id = Some(event_id);
+
+    Ok(LeaveRejected::new(
+        leave_request.id,
+        rejecter_tenant.actor_id,
+        reason,
+        now,
+        event_id,
+        rejecter_tenant.correlation_id,
+        now,
+    ))
+}
+
 // =============================================================================
 // LeaveAccrual service
 // =============================================================================
@@ -1131,6 +1171,28 @@ pub trait LeaveDefineUniquenessChecker: Send + Sync {
         academic_id: crate::value_objects::AcademicYearId,
         role_id: Option<crate::value_objects::RoleId>,
         user_id: Option<UserId>,
+        type_id: crate::value_objects::LeaveTypeId,
+    ) -> bool;
+}
+
+/// Per-school `LeaveRequest` uniqueness checks. Implements spec
+/// invariant LeaveRequest#1: "A `LeaveRequest` is unique by
+/// `(school_id, staff_id, leave_from, leave_to, type_id)` per
+/// academic year."
+///
+/// The port returns `true` if a duplicate exists; the service
+/// then short-circuits with
+/// [`DomainError::conflict`](educore_core::error::DomainError::conflict).
+pub trait LeaveRequestUniquenessChecker: Send + Sync {
+    /// Returns `true` if any `LeaveRequest` row matches the
+    /// composite `(school, staff, leave_from, leave_to, type)`
+    /// key.
+    fn leave_request_exists(
+        &self,
+        school: SchoolId,
+        staff_id: crate::value_objects::StaffId,
+        leave_from: chrono::NaiveDate,
+        leave_to: chrono::NaiveDate,
         type_id: crate::value_objects::LeaveTypeId,
     ) -> bool;
 }
