@@ -154,9 +154,20 @@ impl Outbox for MysqlOutbox {
     #[instrument(skip(self))]
     async fn pending(
         &self,
-        _school_id: educore_core::ids::SchoolId,
+        school_id: educore_core::ids::SchoolId,
         limit: u32,
     ) -> Result<Vec<SerializedEnvelope>> {
+        // QW-13 / school-partitioning contract: the caller-supplied
+        // `school_id` MUST match the handle's scope. The query
+        // binds `self.school` (not the caller-supplied value) to
+        // prevent cross-tenant leakage. Mismatches are rejected
+        // with `TenantViolation` (same pattern as `pending_count`).
+        if school_id != self.school {
+            return Err(DomainError::tenant_violation(format!(
+                "outbox::pending: caller school {school_id} does not match handle scope {}",
+                self.school
+            )));
+        }
         // School partition: the `WHERE school_id = ?` clause
         // scopes the drain to the adapter's bound `self.school`
         // (set at `MysqlStorageAdapter::connect` time).

@@ -9,7 +9,7 @@ use bytes::Bytes;
 use chrono::{DateTime, Utc};
 use surrealdb::sql::{Datetime, Uuid as SurrealUuid};
 
-use educore_core::error::Result;
+use educore_core::error::{DomainError, Result};
 use educore_core::ids::{CorrelationId, EventId, Identifier as _, SchoolId, UserId};
 use educore_core::value_objects::Timestamp;
 use educore_storage::outbox::{Outbox, SerializedEnvelope};
@@ -231,9 +231,20 @@ impl Outbox for SurrealOutbox {
 
     async fn pending(
         &self,
-        _school_id: educore_core::ids::SchoolId,
+        school_id: educore_core::ids::SchoolId,
         limit: u32,
     ) -> Result<Vec<SerializedEnvelope>> {
+        // QW-13 / school-partitioning contract: the caller-supplied
+        // `school_id` MUST match the handle's scope. The query
+        // binds `self.school` (not the caller-supplied value) to
+        // prevent cross-tenant leakage. Mismatches are rejected
+        // with `TenantViolation` (same pattern as SQLite/Postgres/MySQL).
+        if school_id != self.school {
+            return Err(DomainError::tenant_violation(format!(
+                "outbox::pending: caller school {school_id} does not match handle scope {}",
+                self.school
+            )));
+        }
         let school_uuid = SurrealUuid::from(self.school.as_uuid());
         let mut response = self
             .db
