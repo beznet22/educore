@@ -1282,6 +1282,28 @@ pub trait SalaryTemplateUniquenessChecker: Send + Sync {
     ) -> bool;
 }
 
+/// Per-school `StaffAttendanceImport` uniqueness checks.
+/// Implements spec invariant StaffAttendanceImport#1: "A
+/// `StaffAttendanceImport` is unique by `(school_id, staff_id,
+/// attendance_date, academic_id)`." NOTE: the struct doesn't
+/// have an `academic_id` field directly; the operational
+/// uniqueness key is the (school, staff, attendance_date)
+/// triple.
+///
+/// The port returns `true` if a duplicate exists; the service
+/// then short-circuits with
+/// [`DomainError::conflict`](educore_core::error::DomainError::conflict).
+pub trait StaffAttendanceImportUniquenessChecker: Send + Sync {
+    /// Returns `true` if any `StaffAttendanceImport` row
+    /// matches the `(school, staff, attendance_date)` triple.
+    fn staff_attendance_import_exists(
+        &self,
+        school: SchoolId,
+        staff_id: crate::value_objects::StaffId,
+        attendance_date: chrono::NaiveDate,
+    ) -> bool;
+}
+
 /// Per-school payroll uniqueness checks. Implements spec
 /// invariant PayrollGenerate#5: a `PayrollGenerate` row is
 /// unique by `(school, staff, payroll_month, payroll_year)` —

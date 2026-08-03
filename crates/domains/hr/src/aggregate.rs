@@ -1107,6 +1107,54 @@ pub struct StaffAttendanceImport {
 }
 
 impl StaffAttendanceImport {
+    /// Spec invariant StaffAttendanceImport#1: "A
+    /// `StaffAttendanceImport` is unique by `(school_id,
+    /// staff_id, attendance_date, academic_id)`." NOTE: the
+    /// struct doesn't have an `academic_id` field directly;
+    /// the operational uniqueness key is the (school, staff,
+    /// attendance_date) triple. The mutator delegates the
+    /// cross-aggregate uniqueness check to a
+    /// [`StaffAttendanceImportUniquenessChecker`] port
+    /// (defined in `crates/domains/hr/src/services.rs`).
+    pub fn ensure_unique(
+        &self,
+        uniqueness: &dyn crate::services::StaffAttendanceImportUniquenessChecker,
+    ) -> Result<()> {
+        if uniqueness.staff_attendance_import_exists(
+            self.school_id,
+            self.staff_id,
+            self.attendance_date,
+        ) {
+            return Err(DomainError::conflict(format!(
+                "staff attendance import already exists for (school, staff, date) composite key"
+            )));
+        }
+        Ok(())
+    }
+
+    /// Spec invariant StaffAttendanceImport#2: "`in_time` and
+    /// `out_time` are stored as `String` to accommodate
+    /// arbitrary source formats; promotion validates them."
+    /// This is structural: both fields are `Option<String>`.
+    /// The mutator documents the invariant for callers.
+    pub fn ensure_time_fields_valid(&self) -> Result<()> {
+        // Structural invariant: Option<String> accepts any format.
+        Ok(())
+    }
+
+    /// Spec invariant StaffAttendanceImport#3: "The import is
+    /// marked as `active` while pending promotion." Returns
+    /// `DomainError::Validation` when `active_status != Active`.
+    pub fn ensure_active(&self) -> Result<()> {
+        if self.active_status != ActiveStatus::Active {
+            return Err(DomainError::validation(format!(
+                "staff attendance import {} is not active (active_status = {:?})",
+                self.id, self.active_status
+            )));
+        }
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn fresh(
         id: StaffAttendanceImportId,
