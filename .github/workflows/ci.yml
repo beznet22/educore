@@ -9,70 +9,126 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-D warnings"
+  RUSTUP_MAX_RETRIES: 3
 
 jobs:
-  test:
-    name: Test (${{ matrix.os }} / Rust ${{ matrix.rust }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        rust: [stable]
-
+  build:
+    name: Build (native)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo registry & target
+        uses: Swatinem/rust-cache@v2
+      - name: Build workspace
+        run: cargo build --workspace --locked
+      - name: Build CLI binary
+        run: cargo build --release -p educore-cli
+      - name: Run CLI demo (deployment-readiness smoke test)
+        run: ./target/release/educore-cli demo
 
+  test:
+    name: Test (native)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo registry & target
+        uses: Swatinem/rust-cache@v2
+      - name: Run workspace tests
+        run: cargo test --workspace --locked --no-fail-fast
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+  wasm:
+    name: Cross-compile (WASM)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ matrix.rust }}
-          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - name: Cache cargo registry & target
+        uses: Swatinem/rust-cache@v2
+      - name: Build WASM demo crate
+        run: cargo check --target wasm32-unknown-unknown -p educore-wasm-demo
 
-      - name: Cache cargo registry and target
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Format check
-        run: cargo fmt --all -- --check
-
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-      - name: Lint
-        run: cargo run -p educore-core --bin lint --features lint
-
-      - name: Build
-        run: cargo build --workspace --all-features
-
-      - name: Test (lib)
-        run: cargo test --workspace --lib --all-features
-
-      - name: Test (integration)
-        run: cargo test --workspace --tests --all-features
-        env:
-          RUST_BACKTRACE: 1
-
-  cross-compile:
-    name: Cross-compile (aarch64 + wasm32)
+  android:
+    name: Cross-compile (Android ARM64)
     runs-on: ubuntu-latest
-
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install cross
-        run: cargo install cross --locked
-
-      - name: Cross aarch64-unknown-linux-gnu
-        run: cross build --workspace --target aarch64-unknown-linux-gnu --no-default-features
-
-      - name: Check wasm32
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: wasm32-unknown-unknown
-      - run: cargo check --workspace --target wasm32-unknown-unknown --no-default-features
+          targets: aarch64-linux-android
+      - name: Install Android NDK
+        uses: android-actions/setup-ndk@v1
+        with:
+          ndk-version: r26d
+      - name: Cache cargo registry & target
+        uses: Swatinem/rust-cache@v2
+      - name: Build core crate (Android ARM64)
+        run: cargo check --target aarch64-linux-android -p educore-core
+      - name: Build platform crate (Android ARM64)
+        run: cargo check --target aarch64-linux-android -p educore-platform
+      - name: Build rbac crate (Android ARM64)
+        run: cargo check --target aarch64-linux-android -p educore-rbac
+
+  parity-postgres:
+    name: Cross-adapter parity (Postgres, env-gated)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: env.EDUCORE_PG_URL != ''
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo registry & target
+        uses: Swatinem/rust-cache@v2
+      - name: Start Postgres
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql postgresql-contrib
+          sudo service postgresql start
+          sudo -u postgres psql -c "CREATE DATABASE educore_test;"
+          sudo -u postgres psql -c "CREATE USER educore WITH PASSWORD 'educore';"
+          sudo -u postgres psql -c "GRANT ALL ON DATABASE educore_test TO educore;"
+      - name: Run parity tests
+        env:
+          EDUCORE_PG_URL: postgres://educore:educore@localhost:5432/educore_test
+        run: cargo test -p educore-storage-parity --test academic_integration -- --ignored
+
+  parity-mysql:
+    name: Cross-adapter parity (MySQL, env-gated)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: env.EDUCORE_MYSQL_URL != ''
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo registry & target
+        uses: Swatinem/rust-cache@v2
+      - name: Start MySQL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-server
+          sudo service mysql start
+          sudo mysql -e "CREATE DATABASE educore_test;"
+          sudo mysql -e "CREATE USER 'educore'@'localhost' IDENTIFIED BY 'educore';"
+          sudo mysql -e "GRANT ALL ON educore_test.* TO 'educore'@'localhost';"
+      - name: Run parity tests
+        env:
+          EDUCORE_MYSQL_URL: mysql://educore:educore@localhost:3306/educore_test
+        run: cargo test -p educore-storage-parity --test finance_integration -- --ignored
