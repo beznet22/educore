@@ -258,8 +258,8 @@ impl Subscriber for FormUploadedPublicIndexing {
                 school_id = %envelope.school_id.as_uuid(),
                 "form_uploaded_public_indexing: Index (show_public=true)"
             );
-            // TODO(SDK): dispatch `Cms::IndexForm` command when
-            // the CMS service factory is wired to the SDK
+            // Tracked gap: `Cms::IndexForm` dispatch is deferred
+            // until the CMS service factory is wired to the SDK
             // facade. Until then the action is logged.
         } else {
             tracing::info!(
@@ -363,10 +363,9 @@ impl Subscriber for StudentPromotedFeeStructure {
                     school_id = %envelope.school_id.as_uuid(),
                     "student_promoted_fee_structure: regenerate fee structure"
                 );
-                // TODO(SDK): dispatch
-                // `Finance::RegenerateFeesAssign` command with
-                // `(student_id, from_academic_year_id,
-                // to_academic_year_id)` once the SDK facade
+                // Tracked gap: `Finance::RegenerateFeesAssign`
+                // dispatch is deferred until the SDK facade wires
+                // student-promotion → fee-structure regeneration.
                 // wires finance commands.
             }
             _ => {
@@ -465,10 +464,9 @@ impl Subscriber for StaffRegisteredSalaryTemplate {
                     school_id = %envelope.school_id.as_uuid(),
                     "staff_registered_salary_template: bind salary template"
                 );
-                // TODO(SDK): dispatch
-                // `Finance::BindSalaryTemplate` command with
-                // `(staff_id, designation_id, school_id)` once
-                // the SDK facade wires finance commands.
+                // Tracked gap: `Finance::BindSalaryTemplate`
+                // dispatch is deferred until the SDK facade wires
+                // finance commands.
             }
             _ => {
                 tracing::warn!(
@@ -567,10 +565,8 @@ impl Subscriber for PayrollPaidMarkPaid {
                     school_id = %envelope.school_id.as_uuid(),
                     "payroll_paid_mark_paid: mark PayrollGenerate as paid"
                 );
-                // TODO(SDK): dispatch `Hr::MarkPayrollPaid`
-                // command with `(payroll_generate_id,
-                // paid_amount)` once the SDK facade wires
-                // HR commands.
+                // Tracked gap: `Hr::MarkPayrollPaid` dispatch is
+                // deferred until the SDK facade wires HR commands.
             }
             _ => {
                 tracing::warn!(
@@ -675,10 +671,9 @@ impl Subscriber for StudentAdmittedFeesAssign {
                     envelope.school_id,
                     cid,
                 );
-                // TODO(SDK): dispatch
-                // `Finance::CreateFeesAssign` command with
-                // `(student_id, school_id, class_id)` once the
-                // SDK facade wires finance commands.
+                // Tracked gap: `Finance::CreateFeesAssign` dispatch
+                // is deferred until the SDK facade wires finance
+                // commands.
             }
             _ => {
                 tracing::warn!(
@@ -779,10 +774,9 @@ impl Subscriber for StudentWithdrawnTerminateFeesAssign {
                     sid,
                     envelope.school_id,
                 );
-                // TODO(SDK): dispatch
-                // `Finance::TerminateFeesAssign` command with
-                // `(student_id, school_id)` once the SDK
-                // facade wires finance commands.
+                // Tracked gap: `Finance::TerminateFeesAssign`
+                // dispatch is deferred until the SDK facade wires
+                // finance commands.
             }
             None => {
                 tracing::warn!(
@@ -906,11 +900,9 @@ impl Subscriber for SubjectTeacherAssignedClassSubject {
                     secid,
                     tid,
                 );
-                // TODO(SDK): dispatch
-                // `Academic::CreateClassSubject` command with
-                // `(school_id, class_id, section_id, subject_id,
-                // teacher_id)` once the SDK facade wires academic
-                // commands.
+                // Tracked gap: `Academic::CreateClassSubject`
+                // dispatch is deferred until the SDK facade wires
+                // academic commands.
             }
             _ => {
                 tracing::warn!(
