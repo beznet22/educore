@@ -890,57 +890,382 @@ macro_rules! finance_aggregate_stub {
     };
 }
 
-finance_aggregate_stub! {
-    /// FeesGroup (Phase 7 Workstream E).
-    pub struct FeesGroup { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// FeesGroup (Phase 7 Workstream E).
+    pub struct FeesGroup {
+    pub id: crate::value_objects::FeesGroupId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// FeesType (Phase 7 Workstream E).
-    pub struct FeesType { _id: () }
+
+impl FeesGroup {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// FeesMaster (Phase 7 Workstream E).
-    pub struct FeesMaster { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// FeesType (Phase 7 Workstream E).
+    pub struct FeesType {
+    pub id: crate::value_objects::FeesTypeId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// FeesDiscount (Phase 7 Workstream E).
-    pub struct FeesDiscount { _id: () }
+
+impl FeesType {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// FeesAssign (Phase 7 Workstream F).
-    pub struct FeesAssign { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// FeesMaster (Phase 7 Workstream E).
+    pub struct FeesMaster {
+    pub id: crate::value_objects::FeesMasterId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// FeesAssignDiscount (Phase 7 Workstream F).
-    pub struct FeesAssignDiscount { _id: () }
+
+impl FeesMaster {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// FeesInstallment (Phase 7 Workstream F).
-    pub struct FeesInstallment { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// FeesDiscount (Phase 7 Workstream E).
+    pub struct FeesDiscount {
+    pub id: crate::value_objects::FeesDiscountId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// FeesInstallmentAssign (Phase 7 Workstream F).
-    pub struct FeesInstallmentAssign { _id: () }
+
+impl FeesDiscount {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// DirectFeesInstallment (Phase 7 Workstream F).
-    pub struct DirectFeesInstallment { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// FeesAssign (Phase 7 Workstream F).
+    pub struct FeesAssign {
+    pub id: crate::value_objects::FeesAssignId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// DirectFeesInstallmentAssign (Phase 7 Workstream F).
-    pub struct DirectFeesInstallmentAssign { _id: () }
+
+impl FeesAssign {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// DirectFeesInstallmentChildPayment (Phase 7 Workstream F).
-    pub struct DirectFeesInstallmentChildPayment { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// FeesAssignDiscount (Phase 7 Workstream F).
+    pub struct FeesAssignDiscount {
+    pub id: crate::value_objects::FeesAssignDiscountId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// DirectFeesSetting (Phase 7 Workstream F).
-    pub struct DirectFeesSetting { _id: () }
+
+impl FeesAssignDiscount {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// DirectFeesReminder (Phase 7 Workstream F).
-    pub struct DirectFeesReminder { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// FeesInstallment (Phase 7 Workstream F).
+    pub struct FeesInstallment {
+    pub id: crate::value_objects::FeesInstallmentId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl FeesInstallment {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// FeesInstallmentAssign (Phase 7 Workstream F).
+    pub struct FeesInstallmentAssign {
+    pub id: crate::value_objects::FeesInstallmentAssignId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl FeesInstallmentAssign {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// DirectFeesInstallment (Phase 7 Workstream F).
+    pub struct DirectFeesInstallment {
+    pub id: crate::value_objects::DirectFeesInstallmentId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl DirectFeesInstallment {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// DirectFeesInstallmentAssign (Phase 7 Workstream F).
+    pub struct DirectFeesInstallmentAssign {
+    pub id: crate::value_objects::DirectFeesInstallmentAssignId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl DirectFeesInstallmentAssign {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// DirectFeesInstallmentChildPayment (Phase 7 Workstream F).
+    pub struct DirectFeesInstallmentChildPayment {
+    pub id: crate::value_objects::DirectFeesInstallmentChildPaymentId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl DirectFeesInstallmentChildPayment {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// DirectFeesSetting (Phase 7 Workstream F).
+    pub struct DirectFeesSetting {
+    pub id: crate::value_objects::DirectFeesSettingId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl DirectFeesSetting {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// DirectFeesReminder (Phase 7 Workstream F).
+    pub struct DirectFeesReminder {
+    pub id: crate::value_objects::DirectFeesReminderId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl DirectFeesReminder {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 finance_aggregate_stub! {
     /// FmFeesGroup (Phase 7 Workstream G).
@@ -1003,52 +1328,327 @@ finance_aggregate_stub! {
     /// **Legacy stub.** Migrate to `RealFmFeesWeaver`.
     pub struct FmFeesWeaver { _id: () }
 }
-finance_aggregate_stub! {
-    /// FeesInvoiceSetting (Phase 7 Workstream B).
-    pub struct FeesInvoiceSetting { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// FeesInvoiceSetting (Phase 7 Workstream B).
+    pub struct FeesInvoiceSetting {
+    pub id: crate::value_objects::FeesInvoiceSettingId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// InvoiceSetting (Phase 7 Workstream B).
-    pub struct InvoiceSetting { _id: () }
+
+impl FeesInvoiceSetting {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// BankAccount (Phase 7 Workstream D).
-    pub struct BankAccount { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// InvoiceSetting (Phase 7 Workstream B).
+    pub struct InvoiceSetting {
+    pub id: crate::value_objects::InvoiceSettingId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// BankStatement (Phase 7 Workstream D).
-    pub struct BankStatement { _id: () }
+
+impl InvoiceSetting {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// BankPaymentSlip (Phase 7 Workstream H).
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// BankAccount (Phase 7 Workstream D).
+    pub struct BankAccount {
+    pub id: crate::value_objects::BankAccountId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl BankAccount {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// BankStatement (Phase 7 Workstream D).
+    pub struct BankStatement {
+    pub id: crate::value_objects::BankStatementId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl BankStatement {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// BankPaymentSlip (Phase 7 Workstream H).
     /// Real aggregate: RealBankPaymentSlip (Wave 130). The stub is
     /// kept only to avoid breaking downstream code that referenced
     /// `BankPaymentSlip` as a type name during Phase 7.
-    pub struct BankPaymentSlip { _id: () }
+    pub struct BankPaymentSlip {
+    pub id: crate::value_objects::BankPaymentSlipId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// Income (Phase 7 Workstream D).
-    pub struct Income { _id: () }
+
+impl BankPaymentSlip {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// Donor (Phase 7 Workstream D).
-    pub struct Donor { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// Income (Phase 7 Workstream D).
+    pub struct Income {
+    pub id: crate::value_objects::IncomeId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// ExpenseHead (Phase 7 Workstream D).
-    pub struct ExpenseHead { _id: () }
+
+impl Income {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// IncomeHead (Phase 7 Workstream D).
-    pub struct IncomeHead { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// Donor (Phase 7 Workstream D).
+    pub struct Donor {
+    pub id: crate::value_objects::DonorId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// Transaction — the double-entry journal line (Phase 7 Workstream C).
-    pub struct Transaction { _id: () }
+
+impl Donor {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// PayrollPayment — finance-side accounting record (Phase 7 Workstream I).
-    pub struct PayrollPayment { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// ExpenseHead (Phase 7 Workstream D).
+    pub struct ExpenseHead {
+    pub id: crate::value_objects::ExpenseHeadId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl ExpenseHead {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// IncomeHead (Phase 7 Workstream D).
+    pub struct IncomeHead {
+    pub id: crate::value_objects::IncomeHeadId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl IncomeHead {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// Transaction — the double-entry journal line (Phase 7 Workstream C).
+    pub struct Transaction {
+    pub id: crate::value_objects::TransactionId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl Transaction {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// PayrollPayment — finance-side accounting record (Phase 7 Workstream I).
+    pub struct PayrollPayment {
+    pub id: crate::value_objects::PayrollPaymentId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl PayrollPayment {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 // -- Wave 149 -- RealPayrollPayment -- finance-side payment record for a payroll --
@@ -1160,29 +1760,179 @@ finance_aggregate_stub! {
     /// `SalaryTemplate`).
     pub struct SalaryTemplate { _id: () }
 }
-finance_aggregate_stub! {
-    /// ProductPurchase (Phase 7 Workstream L).
-    pub struct ProductPurchase { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// ProductPurchase (Phase 7 Workstream L).
+    pub struct ProductPurchase {
+    pub id: crate::value_objects::ProductPurchaseId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// InventoryPayment (Phase 7 Workstream L).
-    pub struct InventoryPayment { _id: () }
+
+impl ProductPurchase {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// AmountTransfer (Phase 7 Workstream D).
-    pub struct AmountTransfer { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// InventoryPayment (Phase 7 Workstream L).
+    pub struct InventoryPayment {
+    pub id: crate::value_objects::InventoryPaymentId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// ChartOfAccount (Phase 7 Workstream D).
-    pub struct ChartOfAccount { _id: () }
+
+impl InventoryPayment {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// QuestionBankFee (Phase 7 Workstream K).
-    pub struct QuestionBankFee { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// AmountTransfer (Phase 7 Workstream D).
+    pub struct AmountTransfer {
+    pub id: crate::value_objects::AmountTransferId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// PaymentGatewaySetting (Phase 7 Workstream K).
-    pub struct PaymentGatewaySetting { _id: () }
+
+impl AmountTransfer {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// ChartOfAccount (Phase 7 Workstream D).
+    pub struct ChartOfAccount {
+    pub id: crate::value_objects::ChartOfAccountId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl ChartOfAccount {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// QuestionBankFee (Phase 7 Workstream K).
+    pub struct QuestionBankFee {
+    pub id: crate::value_objects::QuestionBankFeeId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl QuestionBankFee {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// PaymentGatewaySetting (Phase 7 Workstream K).
+    pub struct PaymentGatewaySetting {
+    pub id: crate::value_objects::PaymentGatewaySettingId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl PaymentGatewaySetting {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 
 // -- Wave 148 -- RealPaymentGatewaySetting -- per-gateway credentials + mode --
@@ -1386,29 +2136,179 @@ impl RealPaymentGatewaySetting {
         Ok(())
     }
 }
-finance_aggregate_stub! {
-    /// PaymentMethod (Phase 7 Workstream K).
-    pub struct PaymentMethod { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// PaymentMethod (Phase 7 Workstream K).
+    pub struct PaymentMethod {
+    pub id: crate::value_objects::PaymentMethodId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// DueFeesLoginPrevent (Phase 7 Workstream J).
-    pub struct DueFeesLoginPrevent { _id: () }
+
+impl PaymentMethod {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// FeesCarryForward (Phase 7 Workstream J).
-    pub struct FeesCarryForward { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// DueFeesLoginPrevent (Phase 7 Workstream J).
+    pub struct DueFeesLoginPrevent {
+    pub id: crate::value_objects::DueFeesLoginPreventId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// FeesCarryForwardLog (Phase 7 Workstream J).
-    pub struct FeesCarryForwardLog { _id: () }
+
+impl DueFeesLoginPrevent {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
-finance_aggregate_stub! {
-    /// FeesCarryForwardSetting (Phase 7 Workstream J).
-    pub struct FeesCarryForwardSetting { _id: () }
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// FeesCarryForward (Phase 7 Workstream J).
+    pub struct FeesCarryForward {
+    pub id: crate::value_objects::FeesCarryForwardId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
 }
-finance_aggregate_stub! {
-    /// FeesInstallmentCredit (Phase 7 Workstream F).
-    pub struct FeesInstallmentCredit { _id: () }
+
+impl FeesCarryForward {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// FeesCarryForwardLog (Phase 7 Workstream J).
+    pub struct FeesCarryForwardLog {
+    pub id: crate::value_objects::FeesCarryForwardLogId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl FeesCarryForwardLog {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// FeesCarryForwardSetting (Phase 7 Workstream J).
+    pub struct FeesCarryForwardSetting {
+    pub id: crate::value_objects::FeesCarryForwardSettingId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl FeesCarryForwardSetting {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
+}
+/// Real aggregate (Wave 218 upgrade from finance_aggregate_stub!).
+/// FeesInstallmentCredit (Phase 7 Workstream F).
+    pub struct FeesInstallmentCredit {
+    pub id: crate::value_objects::FeesInstallmentCreditId,
+    pub school_id: SchoolId,
+    pub active_status: ActiveStatus,
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub correlation_id: CorrelationId,
+    pub last_event_id: Option<EventId>,
+}
+
+impl FeesInstallmentCredit {
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 // -----------------------------------------------------------------------------
 // Spec'd child-entity stubs (per `docs/specs/finance/entities.md`). These
