@@ -1169,6 +1169,42 @@ pub struct AssignClassTeacher {
 }
 
 impl AssignClassTeacher {
+    /// Spec invariant AssignClassTeacher#1: "An `AssignClassTeacher`
+    /// is unique by `(school_id, class_id, section_id, academic_id)`."
+    ///
+    /// The mutator delegates the cross-aggregate uniqueness check
+    /// to an [`AssignClassTeacherUniquenessChecker`] port
+    /// (defined in `crates/domains/hr/src/services.rs`).
+    pub fn ensure_unique(
+        &self,
+        uniqueness: &dyn crate::services::AssignClassTeacherUniquenessChecker,
+    ) -> Result<()> {
+        if uniqueness.assign_class_teacher_exists(
+            self.school_id,
+            self.class_id,
+            self.section_id,
+            self.academic_id,
+        ) {
+            return Err(DomainError::conflict(format!(
+                "assign class teacher already exists for (school, class, section, academic) composite key"
+            )));
+        }
+        Ok(())
+    }
+
+    /// Spec invariant AssignClassTeacher#2: "`active_status` is `1`
+    /// while the assignment is open." The mutator returns
+    /// `DomainError::Validation` when `active_status != 1`.
+    pub fn ensure_active_open(&self) -> Result<()> {
+        if self.active_status != 1 {
+            return Err(DomainError::validation(format!(
+                "assign class teacher {} is not open (active_status = {})",
+                self.id, self.active_status
+            )));
+        }
+        Ok(())
+    }
+
     pub fn fresh(
         id: AssignClassTeacherId,
         class_id: ClassId,

@@ -169,8 +169,8 @@ backlog.
 - [ ] I-3: idempotency on (staff, date)
 
 ### AssignClassTeacher (2 invariants)
-- [ ] I-1: teacher active status
-- [ ] I-2: class-section reference valid
+- [x] I-1: uniqueness by (school, class, section, academic) (Wave 180 / spec #1: "`AssignClassTeacherUniquenessChecker` port trait added to `crates/domains/hr/src/services.rs` with `assign_class_teacher_exists(school, class, section, academic)` method; `AssignClassTeacher::ensure_unique(checker)` mutator in `crates/domains/hr/src/aggregate.rs` delegates the cross-aggregate uniqueness check to the port and returns `DomainError::Conflict` on duplicate; 2 new behavioral tests in `crates/domains/hr/tests/assign_class_teacher.rs` covering accept-no-duplicate + reject-duplicate. NOTE: the original checklist row title was 'teacher active status' which is a different concern — flipped under the spec-faithful interpretation.)
+- [x] I-2: active_status == 1 while open (Wave 180 / spec #2: "`AssignClassTeacher::ensure_active_open` mutator in `crates/domains/hr/src/aggregate.rs` returns `DomainError::Validation` when `active_status != 1`; 2 new behavioral tests in `crates/domains/hr/tests/assign_class_teacher.rs` covering accept-active + reject-inactive. NOTE: the original checklist row title was 'class-section reference valid' which is not a spec invariant — flipped under the spec-faithful interpretation.)
 
 ### AssignClassTeacherScope (2 invariants)
 - [ ] I-1: scope ∈ {class, section, subject}

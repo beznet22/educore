@@ -116,6 +116,7 @@ pub mod prelude {
         LeaveTypeReferenceChecker, PayrollPolicy, PayrollUniquenessChecker,
         StaffAttendanceUniquenessChecker,
         ReferenceDataUniquenessChecker, StaffUniquenessChecker,
+        AssignClassTeacherUniquenessChecker,
     };
     pub use crate::value_objects::{
         validate_address, validate_date_of_birth, validate_email, validate_leave_reason,

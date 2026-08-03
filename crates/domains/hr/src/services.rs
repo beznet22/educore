@@ -1245,6 +1245,25 @@ pub trait StaffAttendanceUniquenessChecker: Send + Sync {
     ) -> bool;
 }
 
+/// Per-school `AssignClassTeacher` uniqueness checks. Implements
+/// spec invariant AssignClassTeacher#1: "An `AssignClassTeacher`
+/// is unique by `(school_id, class_id, section_id, academic_id)`."
+///
+/// The port returns `true` if a duplicate exists; the service
+/// then short-circuits with
+/// [`DomainError::conflict`](educore_core::error::DomainError::conflict).
+pub trait AssignClassTeacherUniquenessChecker: Send + Sync {
+    /// Returns `true` if any `AssignClassTeacher` row matches
+    /// the `(school, class, section, academic)` composite key.
+    fn assign_class_teacher_exists(
+        &self,
+        school: SchoolId,
+        class_id: educore_academic::value_objects::ClassId,
+        section_id: educore_academic::value_objects::SectionId,
+        academic_id: crate::value_objects::AcademicYearId,
+    ) -> bool;
+}
+
 /// Per-school payroll uniqueness checks. Implements spec
 /// invariant PayrollGenerate#5: a `PayrollGenerate` row is
 /// unique by `(school, staff, payroll_month, payroll_year)` —
