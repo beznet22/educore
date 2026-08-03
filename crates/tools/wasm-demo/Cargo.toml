@@ -1,0 +1,33 @@
+[package]
+name = "educore-wasm-demo"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "WASM-compatible demo of the Educore engine's pure logic (tenancy, ids, validation, value objects). Compiles to wasm32-unknown-unknown for browser execution."
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+educore-core = { workspace = true }
+educore-rbac = { workspace = true }
+educore-academic = { workspace = true }
+educore-events = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde-wasm-bindgen = "0.6"
+thiserror = { workspace = true }
+uuid = { workspace = true }
+console_error_panic_hook = "0.1"
+wasm-bindgen = "0.2"
+js-sys = "0.3"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
