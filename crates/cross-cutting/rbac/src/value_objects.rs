@@ -3111,7 +3111,8 @@ impl Capability {
             Self::CommunicationNotificationReadAll => "Notification",
             Self::CommunicationComplaint => "Complaint",
             Self::DocumentsFormReadPublic => "Form",
-            Self::AcademicStudentDocumentUpload | Self::AcademicStudentDocumentDownload | Self::AcademicStudentHomeworkSubmit | Self::AcademicStudentHomeworkEvaluate | Self::AcademicStudentCategory | Self::AcademicStudentGroup => "Student",
+            Self::AcademicStudentDocumentUpload | Self::AcademicStudentDocumentDownload | Self::AcademicStudentHomeworkSubmit | Self::AcademicStudentHomeworkEvaluate => "Student",
+
             Self::AcademicGuardian => "Guardian",
             Self::AcademicSection => "Section",
             Self::AcademicClassSection | Self::AcademicClassSubject | Self::AcademicClassRoutine
@@ -3122,16 +3123,7 @@ impl Capability {
             Self::AcademicLessonTopicCreate | Self::AcademicLessonTopicComplete | Self::AcademicLessonTopicDelete => "LessonTopic",
             Self::AcademicLessonPlanCreate | Self::AcademicLessonPlanUpdate | Self::AcademicLessonPlanComplete | Self::AcademicLessonPlanSubTopic | Self::AcademicLessonPlanDelete => "LessonPlan",
             Self::AcademicCertificate | Self::AcademicCertificateCreate | Self::AcademicCertificateUpdate | Self::AcademicCertificateDelete => "Certificate",
-            Self::AcademicCertificate => "Certificate",
-            Self::AcademicCertificateCreate => "Create",
-            Self::AcademicCertificateUpdate => "Update",
-            Self::AcademicCertificateDelete => "Delete",
-            Self::AcademicIdCard => "Id",
-            Self::AcademicRegistrationFieldCreate | Self::AcademicRegistrationFieldUpdate | Self::AcademicRegistrationFieldDelete => "RegistrationField",
-            Self::AcademicRegistrationFieldCreate => "Create",
-            Self::AcademicRegistrationFieldUpdate => "Update",
-            Self::AcademicRegistrationFieldDelete => "Delete",
-            Self::AcademicIdCardCreate => "Create",
+
             Self::AcademicAdmissionQuery => "Admission",
             Self::AssessmentExamType | Self::AssessmentExamSetup | Self::AssessmentExamAttendance => "Exam",
             Self::AssessmentMarkStore => "Mark",
@@ -3198,9 +3190,8 @@ impl Capability {
             | Self::AttendanceSubjectCreate
             | Self::AttendanceStaffCreate
             | Self::AttendanceExamCreate
-            | Self::AcademicRegistrationFieldCreate => "Create",
-            | Self::AcademicIdCardCreate => "Create",
-            | Self::AcademicRegistrationFieldCreate => "Create",
+            | Self::AcademicRegistrationFieldCreate
+            | Self::AcademicIdCardCreate
             | Self::AttendanceImportCreate => "Create",
             Self::PlatformSchoolRead
             | Self::PlatformUserRead
@@ -3340,9 +3331,8 @@ impl Capability {
             | Self::CmsAboutPageUpdate
             | Self::CmsContactPageUpdate
             | Self::CmsCoursePageUpdate
-            | Self::AcademicIdCardUpdate => "Update",
-            | Self::AcademicIdCardUpdate => "Update",
-            | Self::AcademicRegistrationFieldUpdate => "Update",
+            | Self::AcademicIdCardUpdate
+            | Self::AcademicRegistrationFieldUpdate
             | Self::CmsFrontendPageUpdate => "Update",
             Self::PlatformSchoolDelete
             | Self::PlatformUserDelete
@@ -3403,9 +3393,8 @@ impl Capability {
             | Self::CmsContactPageDelete
             | Self::CmsCoursePageDelete
             | Self::CmsHomePageSettingDelete
-            | Self::AcademicIdCardDelete => "Delete",
-            | Self::AcademicIdCardDelete => "Delete",
-            | Self::AcademicRegistrationFieldDelete => "Delete",
+            | Self::AcademicIdCardDelete
+            | Self::AcademicRegistrationFieldDelete
             | Self::CmsFrontendPageDelete => "Delete",
             Self::RbacRoleManage => "Manage",
             Self::RbacRoleClone => "Clone",
@@ -3860,29 +3849,21 @@ impl Capability {
             Self::AcademicLessonPlanSubTopic => "SubTopic",
             Self::AcademicLessonPlanDelete => "Delete",
             Self::AcademicStudentCategory | Self::AcademicStudentRecordEnroll | Self::AcademicStudentRecordSetRoll | Self::AcademicStudentRecordSetDefault | Self::AcademicStudentRecordGraduate => "StudentRecord",
-            Self::AcademicStudentCategory | Self::AcademicStudentCategoryCreate | Self::AcademicStudentCategoryUpdate | Self::AcademicStudentCategoryDelete => "Category",
-            Self::AcademicStudentCategory => "Category",
-            Self::AcademicStudentCategoryCreate => "Create",
-            Self::AcademicStudentCategoryUpdate => "Update",
-            Self::AcademicStudentCategoryDelete => "Delete",
+            Self::AcademicStudentCategoryCreate | Self::AcademicStudentCategoryUpdate | Self::AcademicStudentCategoryDelete => "Category",
+
             Self::AcademicStudentGroup => "Group",
             Self::AcademicStudentGroupCreate => "Create",
             Self::AcademicStudentGroupUpdate => "Update",
             Self::AcademicStudentGroupAdd => "Add",
             Self::AcademicStudentGroupRemove => "Remove",
             Self::AcademicStudentGroupDelete => "Delete",
-            Self::AcademicStudentRecordEnroll => "Enroll",
-            Self::AcademicStudentRecordSetRoll => "SetRoll",
-            Self::AcademicStudentRecordSetDefault => "SetDefault",
-            Self::AcademicStudentRecordGraduate => "Graduate",
-            Self::AcademicStudentGroup => "Group",
+
             Self::AcademicCertificate => "Certificate",
             Self::AcademicCertificateCreate => "Create",
             Self::AcademicCertificateUpdate => "Update",
             Self::AcademicCertificateDelete => "Delete",
             Self::AcademicIdCard => "Card",
-            Self::AcademicIdCardUpdate => "Update",
-            Self::AcademicIdCardDelete => "Delete",
+
             Self::AcademicAdmissionQuery => "Query",
             Self::AssessmentExamType => "Type",
             Self::AssessmentExamSetup => "Setup",
