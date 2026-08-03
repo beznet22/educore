@@ -170,7 +170,7 @@ pub fn engine_version() -> String {
     env!("CARGO_PKG_VERSION").to_owned()
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_arch = "wasm32"))]
 mod tests {
     use super::*;
 

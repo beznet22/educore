@@ -884,6 +884,136 @@ pub struct ExamAttendance {
 pub struct ExamType {
     pub id: ExamTypeId,
     pub school_id: SchoolId,
+    /// Spec I-1: unique title within school (non-empty after trim).
+    pub title: String,
+    /// Spec I-2: percentage in [0, 100].
+    pub percentage: f64,
+    /// Spec I-3: marks the type as averaged across instances.
+    pub is_average: bool,
+    /// Spec I-4: average mark non-negative (cap for averaging).
+    pub average_mark: f64,
+    /// Spec I-5: optional parent for composite exam types.
+    pub parent_id: Option<ExamTypeId>,
+    /// Audit footer (per `AGENTS.md`).
+    pub version: Version,
+    pub etag: Etag,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub created_by: UserId,
+    pub updated_by: UserId,
+    pub active_status: ActiveStatus,
+    pub last_event_id: Option<EventId>,
+    pub correlation_id: CorrelationId,
+}
+
+impl ExamType {
+    /// Constructs a new `ExamType`. Enforces spec invariants I-1
+    /// (title non-empty after trim), I-2 (percentage in [0, 100]),
+    /// I-4 (average_mark non-negative).
+    pub fn fresh(
+        id: ExamTypeId,
+        title: String,
+        percentage: f64,
+        is_average: bool,
+        average_mark: f64,
+        parent_id: Option<ExamTypeId>,
+        created_by: UserId,
+        created_at: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        let trimmed = title.trim();
+        if trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "ExamType title must be non-empty after trim (I-1)",
+            ));
+        }
+        if !(0.0..=100.0).contains(&percentage) {
+            return Err(educore_core::error::DomainError::validation(
+                "ExamType percentage must be in [0, 100] (I-2)",
+            ));
+        }
+        if average_mark < 0.0 {
+            return Err(educore_core::error::DomainError::validation(
+                "ExamType average_mark must be non-negative (I-4)",
+            ));
+        }
+        if let Some(pid) = parent_id {
+            if pid.school_id() != id.school_id() {
+                return Err(educore_core::error::DomainError::tenant_violation(
+                    "ExamType parent must belong to the same school",
+                ));
+            }
+        }
+        Ok(Self {
+            school_id: id.school_id(),
+            id,
+            title: trimmed.to_owned(),
+            percentage,
+            is_average,
+            average_mark,
+            parent_id,
+            version: Version::initial(),
+            etag: fresh_etag(),
+            created_at,
+            updated_at: created_at,
+            created_by,
+            updated_by: created_by,
+            active_status: ActiveStatus::Active,
+            last_event_id: None,
+            correlation_id,
+        })
+    }
+
+    /// Returns true if this ExamType is currently active.
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.active_status.is_active()
+    }
+
+    /// Mutates title + percentage. Re-validates I-1, I-2.
+    pub fn update_metadata(
+        &mut self,
+        title: String,
+        percentage: f64,
+        is_average: bool,
+        average_mark: f64,
+        at: Timestamp,
+        actor: UserId,
+    ) -> educore_core::error::Result<()> {
+        let trimmed = title.trim();
+        if trimmed.is_empty() {
+            return Err(educore_core::error::DomainError::validation(
+                "ExamType title must be non-empty after trim (I-1)",
+            ));
+        }
+        if !(0.0..=100.0).contains(&percentage) {
+            return Err(educore_core::error::DomainError::validation(
+                "ExamType percentage must be in [0, 100] (I-2)",
+            ));
+        }
+        if average_mark < 0.0 {
+            return Err(educore_core::error::DomainError::validation(
+                "ExamType average_mark must be non-negative (I-4)",
+            ));
+        }
+        self.title = trimmed.to_owned();
+        self.percentage = percentage;
+        self.is_average = is_average;
+        self.average_mark = average_mark;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+        Ok(())
+    }
+
+    /// Soft-deletes the ExamType. Spec does not require reference
+    /// check; aggregates can always be retired.
+    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
+        self.active_status = ActiveStatus::Retired;
+        self.updated_at = at;
+        self.updated_by = actor;
+        self.version = self.version.next();
+    }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExamScheduleSubject {

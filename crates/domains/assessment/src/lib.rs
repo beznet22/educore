@@ -67,7 +67,7 @@ pub mod prelude {
     pub use educore_rbac::value_objects::Capability;
 
     pub use crate::aggregate::{
-        AdmitCard, Exam, ExamSchedule, MarksRegister, ResultStore, SeatPlan,
+        AdmitCard, Exam, ExamSchedule, ExamType, MarksRegister, ResultStore, SeatPlan,
     };
     pub use crate::commands::{
         validate_exam_code, validate_exam_mark, validate_exam_name, validate_pass_mark,
