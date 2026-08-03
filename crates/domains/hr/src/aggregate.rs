@@ -1594,6 +1594,59 @@ impl LeaveDeductionInfo {
             correlation_id,
         }
     }
+
+    /// Spec invariant LeaveDeductionInfo#2: "`extra_leave >= 0`
+    /// and `salary_deduct >= 0`." `extra_leave` is `u32`
+    /// (structurally non-negative); `salary_deduct` is `f64`
+    /// and needs a runtime validator.
+    pub fn ensure_non_negative(&self) -> Result<()> {
+        if self.salary_deduct < 0.0 {
+            return Err(DomainError::validation(format!(
+                "leave deduction salary_deduct must be >= 0.0, got {}",
+                self.salary_deduct
+            )));
+        }
+        // extra_leave is u32, structurally >= 0.
+        Ok(())
+    }
+
+    /// Spec invariant LeaveDeductionInfo#1: "A `LeaveDeductionInfo`
+    /// is unique by `(school_id, staff_id, payroll_id)`."
+    ///
+    /// The mutator delegates the cross-aggregate uniqueness check
+    /// to a [`LeaveDeductionInfoUniquenessChecker`] port
+    /// (defined in `crates/domains/hr/src/services.rs`).
+    pub fn ensure_unique(
+        &self,
+        uniqueness: &dyn crate::services::LeaveDeductionInfoUniquenessChecker,
+    ) -> Result<()> {
+        if uniqueness.leave_deduction_info_exists(
+            self.school_id,
+            self.staff_id,
+            self.payroll_id,
+        ) {
+            return Err(DomainError::conflict(format!(
+                "leave deduction info already exists for (school, staff, payroll) composite key"
+            )));
+        }
+        Ok(())
+    }
+
+    /// Spec invariant LeaveDeductionInfo#3: "The deduction is
+    /// `active` while applied." The aggregate stores this as
+    /// `active_status: i32` (1 = active, 0 = inactive per the
+    /// legacy Laravel convention). The mutator returns
+    /// `Ok(())` when the deduction is active and
+    /// [`DomainError::validation`] when it is inactive.
+    pub fn ensure_active(&self) -> Result<()> {
+        if self.active_status == 0 {
+            return Err(DomainError::validation(format!(
+                "leave deduction info {} is inactive (active_status = 0)",
+                self.id
+            )));
+        }
+        Ok(())
+    }
 }
 
 // =============================================================================

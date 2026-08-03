@@ -18,9 +18,9 @@
 **Per audit (function-level):** 49 fns / 17 real / 6 partial / 26 stub.
 
 Initial invariant status estimate (based on function-level audit):
-- [x]: 32 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants + Wave 172: 4 PayrollGenerate invariants + Wave 173: 3 Department invariants + Wave 174: 3 Designation invariants + Wave 175: 3 LeaveType invariants + Wave 176: 3 LeaveDefine invariants + Wave 177: 2 LeaveRequest invariants (I-3 reject branch + I-5 reason required; I-1/I-2/I-4 were already `[x]` from Wave 32) — bringing the **Staff `[x]` count to 8 of 8 spec invariants**, **PayrollGenerate `[x]` count to 6 of 6 spec invariants**, **Department `[x]` count to 3 of 3 spec invariants**, **Designation `[x]` count to 3 of 3 spec invariants**, **LeaveType `[x]` count to 3 of 3 spec invariants**, **LeaveDefine `[x]` count to 3 of 3 spec invariants**, and **LeaveRequest `[x]` count to 5 of 5 spec invariants**)
+- [x]: 35 (Wave 32: 8 invariants + Wave 171: 7 Staff invariants + Wave 172: 4 PayrollGenerate invariants + Wave 173: 3 Department invariants + Wave 174: 3 Designation invariants + Wave 175: 3 LeaveType invariants + Wave 176: 3 LeaveDefine invariants + Wave 177: 2 LeaveRequest invariants + Wave 178: 3 LeaveDeductionInfo invariants — bringing the **Staff `[x]` count to 8 of 8 spec invariants**, **PayrollGenerate `[x]` count to 6 of 6 spec invariants**, **Department `[x]` count to 3 of 3 spec invariants**, **Designation `[x]` count to 3 of 3 spec invariants**, **LeaveType `[x]` count to 3 of 3 spec invariants**, **LeaveDefine `[x]` count to 3 of 3 spec invariants**, **LeaveRequest `[x]` count to 5 of 5 spec invariants**, and **LeaveDeductionInfo `[x]` count to 3 of 3 spec invariants**)
 - [~]: 0
-- [ ]: 75 (remaining; targeted by the next per-aggregate wave pipeline — the other 36 HR aggregates beyond Staff, PayrollGenerate, Department, Designation, LeaveType, LeaveDefine, and LeaveRequest)
+- [ ]: 72 (remaining; targeted by the next per-aggregate wave pipeline — the other 35 HR aggregates beyond Staff, PayrollGenerate, Department, Designation, LeaveType, LeaveDefine, LeaveRequest, and LeaveDeductionInfo)
 - [N/A]: 0
 
 **Summary updated at session end (commit pending, Wave 175).** The previous `TBD/TBD/TBD` tally
@@ -81,7 +81,16 @@ New artifacts: `LeaveRequestUniquenessChecker` port trait +
 `LeaveDefine.total_days`) + `reject_leave` service function + `LeaveRejected`
 event re-export; 9 new behavioral tests in `crates/domains/hr/tests/leave_request.rs`
 covering 4 reject paths + 2 uniqueness paths + 3 within-entitlement paths.
-The 75 remaining `[ ]` invariants are the next per-aggregate wave pipeline's
+**Wave 178 completed the full LeaveDeductionInfo sweep (3 of 3 spec
+invariants `[x]`)** by flipping all 3 rows under the spec-faithful
+interpretation. New artifacts: `LeaveDeductionInfoUniquenessChecker` port trait +
+`LeaveDeductionInfo::ensure_unique` mutator (spec #1 3-tuple composite-key
+uniqueness) + `LeaveDeductionInfo::ensure_non_negative` mutator (spec #2
+runtime check on `salary_deduct` f64 + structural `u32` for `extra_leave`) +
+`LeaveDeductionInfo::ensure_active` mutator (spec #3 active-while-applied);
+7 new behavioral tests in `crates/domains/hr/tests/leave_deduction_info.rs`
+covering 3 non-negative paths + 2 uniqueness paths + 2 active-status paths.
+The 72 remaining `[ ]` invariants are the next per-aggregate wave pipeline's
 backlog.
 
 **Note:** The Wave 169 / Wave 171 Chunks 2-3 summaries claimed Wave 32 added "7 invariants" — this is an off-by-one in the prose. The actual count is 8 (1+2+3+1+1). Corrected at Wave 171 session end (commit `f743f8d`).
@@ -134,9 +143,9 @@ backlog.
 - [x] I-3: is_system_defined cannot delete (Wave 174 / spec #3: "`Designation::ensure_deletable` mutator in `crates/domains/hr/src/aggregate.rs` returns `DomainError::Validation` when `is_system_defined == true`; `delete_designation` service calls it as the first guard before the cross-aggregate reference check; 4 new behavioral tests in `crates/domains/hr/tests/designation.rs` cover the rejection path. NOTE: the original checklist row title said 'Cannot delete while staff assigned' which is spec #2's concern — flipped under the spec-faithful interpretation.)
 
 ### LeaveDeductionInfo (3 invariants)
-- [ ] I-1: deduction_amount ≥ 0
-- [ ] I-2: leave_days ≥ 0
-- [ ] I-3: per LeaveDefine
+- [x] I-1: uniqueness by (school, staff, payroll) (Wave 178 / spec #1: "`LeaveDeductionInfoUniquenessChecker` port trait added to `crates/domains/hr/src/services.rs` with `leave_deduction_info_exists(school, staff, payroll)` method; `LeaveDeductionInfo::ensure_unique(checker)` mutator in `crates/domains/hr/src/aggregate.rs` delegates the cross-aggregate uniqueness check to the port and returns `DomainError::Conflict` on duplicate composite key; 2 new behavioral tests in `crates/domains/hr/tests/leave_deduction_info.rs` covering accept-no-duplicate + reject-duplicate. NOTE: the original checklist row title was 'deduction_amount ≥ 0' which is spec #2's concern — flipped under the spec-faithful interpretation.)
+- [x] I-2: extra_leave ≥ 0 and salary_deduct ≥ 0 (Wave 178 / spec #2: "`extra_leave` is `u32` (structurally non-negative); `salary_deduct` is `f64` and needs a runtime validator. `LeaveDeductionInfo::ensure_non_negative` mutator in `crates/domains/hr/src/aggregate.rs` validates `salary_deduct >= 0.0` and returns `DomainError::Validation` on negative; 3 new behavioral tests in `crates/domains/hr/tests/leave_deduction_info.rs` covering zero + positive + negative-salary rejection. NOTE: the original checklist row title was 'leave_days ≥ 0' which uses a different field name than the spec's `extra_leave` — flipped under the spec-faithful interpretation.)
+- [x] I-3: active while applied (Wave 178 / spec #3: "The deduction is `active` while applied." `LeaveDeductionInfo::ensure_active` mutator in `crates/domains/hr/src/aggregate.rs` returns `DomainError::Validation` when `active_status == 0` (inactive per the legacy Laravel convention); 2 new behavioral tests in `crates/domains/hr/tests/leave_deduction_info.rs` covering accept-active + reject-inactive. NOTE: the original checklist row title was 'per LeaveDefine' which is not a spec invariant for LeaveDeductionInfo — flipped under the spec-faithful interpretation.)
 
 ### LeaveType (3 invariants)
 - [x] I-1: name unique per school (spec #1: "`ReferenceDataUniquenessChecker::leave_type_name_exists` port in `crates/domains/hr/src/services.rs:884`; `create_leave_type` rejects duplicates with `DomainError::Conflict` at `services.rs`; existing test `create_leave_type_returns_aggregate_and_event` + `create_leave_type_rejects_empty_name` in `crates/domains/hr/tests/leave_type.rs` exercise the unique-name path; added test `create_leave_type_rejects_duplicate_name_via_uniqueness_checker` in Wave 175 to pin the contract via a fake checker.)
@@ -535,6 +544,35 @@ and #5 days ≤ total_days) were completely missing from the checklist**.
    spec has 3 invariants on uniqueness + non-negativity + active-while-applied, and the
    checklist rows are all mistitled — the Wave 172 reconciliation section already
    documented the drift).
+
+## Spec Reconciliation (Wave 178)
+
+**Added:** 2026-08-02 (commit pending).
+**Issue:** Wave 178 audited the **LeaveDeductionInfo** checklist rows against the
+spec at `docs/specs/hr/aggregates.md`. All 3 rows were mistitled (the Wave 172
+reconciliation section already documented the drift; this wave actually flips them).
+
+### Drift map — LeaveDeductionInfo (3 invariants)
+
+| Spec # | Spec wording (`docs/specs/hr/aggregates.md`) | Checklist row | Notes |
+|---|---|---|---|
+| 1 | "A `LeaveDeductionInfo` is unique by `(school_id, staff_id, payroll_id)`." | I-1: deduction_amount ≥ 0 | **Major drift.** Spec is a 3-tuple composite-key uniqueness constraint; checklist row is a non-negativity check. |
+| 2 | "`extra_leave >= 0` and `salary_deduct >= 0`." | I-2: leave_days ≥ 0 | **Mismatch.** Spec uses `extra_leave`; checklist uses `leave_days` (different field name). Both are non-negativity checks but on different fields. |
+| 3 | "The deduction is `active` while applied." | I-3: per LeaveDefine | **Major drift.** Spec is about the `active_status` field; checklist says "per LeaveDefine" which is not a spec invariant for LeaveDeductionInfo. |
+
+### Resolution (Wave 178)
+
+1. **LeaveDeductionInfo I-1 flipped to `[x]` under the spec-faithful interpretation**:
+   the "deduction_amount ≥ 0" row is marked `[x]` with the evidence pointing at the
+   spec #1 3-tuple composite-key uniqueness guard (`LeaveDeductionInfoUniquenessChecker`
+   port + `LeaveDeductionInfo::ensure_unique` mutator).
+2. **LeaveDeductionInfo I-2 flipped to `[x]` under the spec-faithful interpretation**:
+   the "leave_days ≥ 0" row is marked `[x]` with the evidence pointing at the spec #2
+   `extra_leave ≥ 0` and `salary_deduct ≥ 0` non-negative guard (`u32` field type +
+   `LeaveDeductionInfo::ensure_non_negative` mutator).
+3. **LeaveDeductionInfo I-3 flipped to `[x]` under the spec-faithful interpretation**:
+   the "per LeaveDefine" row is marked `[x]` with the evidence pointing at the spec #3
+   `active while applied` guard (`LeaveDeductionInfo::ensure_active` mutator).
 
 ## Implementation Order (suggested batches)
 

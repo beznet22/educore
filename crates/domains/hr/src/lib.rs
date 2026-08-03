@@ -111,7 +111,8 @@ pub mod prelude {
         delete_department, delete_designation, delete_leave_type, hire_staff,
         reject_leave, request_leave, run_payroll, InMemoryPayrollPolicy,
         DepartmentReferenceChecker, DesignationReferenceChecker, LeaveAccrualChecker,
-        LeaveAccrualService, LeaveDefineUniquenessChecker, LeaveRequestUniquenessChecker,
+        LeaveAccrualService, LeaveDeductionInfoUniquenessChecker,
+        LeaveDefineUniquenessChecker, LeaveRequestUniquenessChecker,
         LeaveTypeReferenceChecker, PayrollPolicy, PayrollUniquenessChecker,
         ReferenceDataUniquenessChecker, StaffUniquenessChecker,
     };

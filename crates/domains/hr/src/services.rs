@@ -1197,6 +1197,24 @@ pub trait LeaveRequestUniquenessChecker: Send + Sync {
     ) -> bool;
 }
 
+/// Per-school `LeaveDeductionInfo` uniqueness checks. Implements
+/// spec invariant LeaveDeductionInfo#1: "A `LeaveDeductionInfo`
+/// is unique by `(school_id, staff_id, payroll_id)`."
+///
+/// The port returns `true` if a duplicate exists; the service
+/// then short-circuits with
+/// [`DomainError::conflict`](educore_core::error::DomainError::conflict).
+pub trait LeaveDeductionInfoUniquenessChecker: Send + Sync {
+    /// Returns `true` if any `LeaveDeductionInfo` row matches
+    /// the composite `(school, staff, payroll)` key.
+    fn leave_deduction_info_exists(
+        &self,
+        school: SchoolId,
+        staff_id: crate::value_objects::StaffId,
+        payroll_id: crate::value_objects::PayrollGenerateId,
+    ) -> bool;
+}
+
 /// Per-school reference-data uniqueness checks.
 pub trait ReferenceDataUniquenessChecker: Send + Sync {
     fn department_name_exists(&self, school: SchoolId, name: &str) -> bool;
