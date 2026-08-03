@@ -114,7 +114,13 @@ impl Exam {
     /// The 32-char zero etag for a freshly minted aggregate.
     pub const FRESH_ETAG: &'static str = "00000000000000000000000000000000";
 
-    /// Constructs a new [`Exam`] aggregate.
+    /// Constructs a new [`Exam`] aggregate. Enforces spec I-2:
+    /// `pass_mark <= exam_mark` (both already non-negative via
+    /// their type-level validation).
+    ///
+    /// # Panics
+    /// Panics if `pass_mark > exam_mark` (I-2 violation). Use
+    /// [`Exam::try_fresh`] for a fallible constructor.
     #[allow(clippy::too_many_arguments)]
     #[must_use]
     pub fn fresh(
@@ -133,6 +139,15 @@ impl Exam {
         now: Timestamp,
         correlation_id: CorrelationId,
     ) -> Self {
+        // I-2: pass_mark <= exam_mark — panics if violated.
+        // Callers that need a fallible constructor should use
+        // `Exam::try_fresh`.
+        assert!(
+            pass_mark.as_f32() <= exam_mark.as_f32(),
+            "Exam: pass_mark must be <= exam_mark (I-2), got pass={} exam={}",
+            pass_mark.as_f32(),
+            exam_mark.as_f32(),
+        );
         Self {
             school_id: id.school_id(),
             id,
@@ -157,6 +172,63 @@ impl Exam {
             last_event_id: None,
             correlation_id,
         }
+    }
+
+    /// Fallible constructor for [`Exam::fresh`]. Enforces spec
+    /// I-2 (`pass_mark <= exam_mark`) and the tenant boundary
+    /// (all typed ids must share the aggregate's school).
+    ///
+    /// # Errors
+    /// - `Validation` if `pass_mark > exam_mark` (I-2 violation).
+    /// - `TenantViolation` if any typed-id school doesn't match.
+    pub fn try_fresh(
+        id: ExamId,
+        exam_type_id: ExamTypeId,
+        class_id: ClassId,
+        section_id: SectionId,
+        subject_id: SubjectId,
+        academic_year_id: AcademicYearId,
+        name: ExamName,
+        code: ExamCode,
+        exam_mark: ExamMark,
+        pass_mark: PassMark,
+        exam_date: NaiveDate,
+        actor: UserId,
+        now: Timestamp,
+        correlation_id: CorrelationId,
+    ) -> educore_core::error::Result<Self> {
+        if pass_mark.as_f32() > exam_mark.as_f32() {
+            return Err(educore_core::error::DomainError::validation(
+                "Exam: pass_mark must be <= exam_mark (I-2)",
+            ));
+        }
+        let s = id.school_id();
+        if exam_type_id.school_id() != s
+            || class_id.school_id() != s
+            || section_id.school_id() != s
+            || subject_id.school_id() != s
+            || academic_year_id.school_id() != s
+        {
+            return Err(educore_core::error::DomainError::tenant_violation(
+                "Exam: all typed ids must share the same school",
+            ));
+        }
+        Ok(Self::fresh(
+            id,
+            exam_type_id,
+            class_id,
+            section_id,
+            subject_id,
+            academic_year_id,
+            name,
+            code,
+            exam_mark,
+            pass_mark,
+            exam_date,
+            actor,
+            now,
+            correlation_id,
+        ))
     }
 
     /// Returns `true` if the exam is currently published.
