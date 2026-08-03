@@ -196,7 +196,7 @@ The 25+ stub aggregates with stub specs are deferred until the specs are fleshed
 
 ## 7. Final State for the Session
 
-This session (Waves 171-189) is the **most productive HR-engine sweep in the project's history**:
+This session (Waves 171-192) is the **most productive HR-engine sweep in the project's history**:
 
 - **+37 HR invariants `[x]`** (15 → 52)
 - **+97 HR tests** (134 → 231)
@@ -205,4 +205,29 @@ This session (Waves 171-189) is the **most productive HR-engine sweep in the pro
 - **6 workspace test failures closed** (full workspace now green)
 - **4 cross-tenant probe vulnerabilities closed** (all 4 storage adapters)
 
-**The remaining 55 `[ ]` HR invariants are predominantly on stub aggregates with stub specs** — continuing to build them from scratch is the documented anti-pattern. The recommended next session is the **dispatcher wrapper layer** on `educore-academic`, which is the highest-impact remaining work and unblocks production I-7-style cross-aggregate reference checks.
+**The remaining 55 `[ ]` HR invariants are predominantly on stub aggregates with stub specs** — continuing to build them from scratch is the documented anti-pattern.
+
+## 8. Wave 192 Addendum — Dispatcher Wrapper Template (commit `a71b701`)
+
+Per the recommended next step (§4.1), Wave 192 built the **first dispatcher wrapper** for the production `CommandDispatcher::dispatch` pipeline.
+
+### 8.1 What landed
+
+* `crates/domains/academic/src/commands.rs`: `impl educore_dispatcher::CommandBounds for AdmitStudentCommand` — returns tenant, command_type `"academic.student.admit"`, idempotency_key None, action `"admit"`, target_type `"student"`.
+* `crates/domains/academic/src/services.rs`: `dispatch_admit_student<C, G>(dispatcher, cmd, clock, ids, uniqueness)` — wraps the plain `admit_student` factory through `CommandDispatcher::dispatch` with the required capability `"academic.student.create"`. Clones `cmd` inside the closure to satisfy the borrow checker.
+* `crates/domains/academic/src/lib.rs`: re-exports `dispatch_admit_student` alongside `admit_student`.
+* `crates/domains/academic/Cargo.toml`: added `educore-dispatcher` as a workspace dependency.
+
+### 8.2 What was deferred
+
+A full E2E integration test (wiring real `InMemoryStorageAdapter` + `InMemoryEventBus` + `SystemClock` + `SystemIdGen` through the dispatcher) was attempted but deferred due to cross-crate visibility issues (`educore_events::bus`, `educore_storage::StorageAdapter` are `pub` but the test would need a separate dev-dependency setup for `educore-testkit` + `tokio` + `async-trait`).
+
+### 8.3 Recommended next wave (Wave 193+)
+
+The Wave 192 wrapper is the **template** for the remaining 508 service-function wrappers. Recommended sequence:
+
+1. **Wave 193**: Add `educore-testkit` + `tokio` as dev-dependencies to `educore-academic` (or a dedicated dispatcher-test crate); land the E2E integration test.
+2. **Wave 194+**: Wrap the remaining academic service functions (~37) using the same template. Use a scripted loop to bulk-wrap the trivial ones (with capability strings from the existing RBAC checks).
+3. **Wave N**: Repeat for the other 8 real domains.
+
+**Estimated work:** ~10 sessions for all 37 packages × ~509 service functions.
