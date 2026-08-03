@@ -137,23 +137,18 @@ async fn teacher_evaluation_create_cross_tenant_rejected() {
 /// updated to assert that the returned event is
 /// `TeacherEvaluationApproved` (or the spec-mandated name).
 #[tokio::test]
-async fn teacher_evaluation_update_currently_returns_not_supported() {
+async fn teacher_evaluation_update_returns_event_for_same_tenant() {
     let (_tenant, g) = admin_context();
     let school = _tenant.school_id;
-    let _ids = SystemIdGen;
 
     let cmd = ApproveTeacherEvaluationCommand {
         school_id: school,
         teacher_evaluation_id: teacher_evaluation_id(&g, school),
     };
 
-    let err = approve_teacher_evaluation(cmd)
+    let _result = approve_teacher_evaluation(cmd)
         .await
-        .expect_err("approve_teacher_evaluation is currently a stub");
-    assert!(
-        matches!(err, DomainError::NotSupported(_)),
-        "expected NotSupported (current stub contract), got {err:?}"
-    );
+        .expect("approve_teacher_evaluation must succeed for same-tenant typed id");
 }
 
 // Keep a reference to the event type so the test compiles

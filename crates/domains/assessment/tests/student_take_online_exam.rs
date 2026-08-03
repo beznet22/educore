@@ -96,7 +96,7 @@ fn online_exam_id(g: &SystemIdGen, school: SchoolId) -> OnlineExamId {
 /// - The aggregate is school-scoped and active,
 /// - `total_marks >= 0` is enforced.
 #[tokio::test]
-async fn student_take_online_exam_start_currently_returns_not_supported() {
+async fn student_take_online_exam_start_returns_event_for_same_tenant() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
 
@@ -105,12 +105,29 @@ async fn student_take_online_exam_start_currently_returns_not_supported() {
         online_exam_id: online_exam_id(&g, school),
     };
 
+    let event = start_online_exam(cmd)
+        .await
+        .expect("start_online_exam must succeed for same-tenant typed id");
+    assert_eq!(event.school_id, school);
+}
+
+#[tokio::test]
+async fn student_take_online_exam_start_rejects_cross_tenant_typed_id() {
+    let (_tenant, g) = admin_context();
+    let cmd_school = g.next_school_id();
+    let typed_id_school = g.next_school_id();
+
+    let cmd = StartOnlineExamCommand {
+        school_id: cmd_school,
+        online_exam_id: online_exam_id(&g, typed_id_school),
+    };
+
     let err = start_online_exam(cmd)
         .await
-        .expect_err("start_online_exam is currently a stub");
+        .expect_err("cross-tenant typed id must be rejected");
     assert!(
-        matches!(err, DomainError::NotSupported(_)),
-        "expected NotSupported (current stub contract), got {err:?}"
+        matches!(err, DomainError::Validation(_)),
+        "expected Validation, got {err:?}"
     );
 }
 
@@ -133,7 +150,7 @@ async fn student_take_online_exam_start_currently_returns_not_supported() {
 /// - The aggregate's `StudentDone` flag flips to `true`
 ///   and `version` increments.
 #[tokio::test]
-async fn student_take_online_exam_submit_currently_returns_not_supported() {
+async fn student_take_online_exam_submit_returns_event_for_same_tenant() {
     let (tenant, g) = admin_context();
     let school = tenant.school_id;
 
@@ -142,11 +159,8 @@ async fn student_take_online_exam_submit_currently_returns_not_supported() {
         online_exam_id: online_exam_id(&g, school),
     };
 
-    let err = submit_online_exam_answer(cmd)
+    let event = submit_online_exam_answer(cmd)
         .await
-        .expect_err("submit_online_exam_answer is currently a stub");
-    assert!(
-        matches!(err, DomainError::NotSupported(_)),
-        "expected NotSupported (current stub contract), got {err:?}"
-    );
+        .expect("submit_online_exam_answer must succeed for same-tenant typed id");
+    assert_eq!(event.school_id, school);
 }
