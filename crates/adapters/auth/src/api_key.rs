@@ -165,8 +165,9 @@ impl AuthProvider for ApiKeyAuthProvider {
                 // Successful authentication. Mint a session for
                 // the service principal via the wrapped JWT
                 // provider.
-                self.jwt
-                    .mint_session_for_service(&format!("apikey:{}", self.key_id))
+                Ok(self
+                    .jwt
+                    .mint_session_for_service(&format!("apikey:{}", self.key_id)))
             }
             // All other credential variants are rejected. The
             // ApiKeyAuthProvider only knows how to authenticate
