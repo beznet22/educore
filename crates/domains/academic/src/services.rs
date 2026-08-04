@@ -3484,6 +3484,577 @@ where
     })
 }
 
+
+// =============================================================================
+// StudentRecord services (Wave 56: full impl)
+// =============================================================================
+
+/// Enroll a student in a (class, section, academic_year).
+///
+/// Per `docs/specs/academic/aggregates.md` § StudentRecord:
+/// - **I-1**: rejects if `uniqueness.student_has_active_record(...)` is `true`.
+pub fn enroll_student<C, G>(
+    cmd: EnrollStudentCommand,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<(StudentRecord, StudentRecordEnrolled)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    // I-1: at most one non-graduate, non-withdrawn record per student per year.
+    if uniqueness.student_has_active_record(
+        cmd.student_record_id.school_id(),
+        cmd.student_id,
+        cmd.academic_year_id,
+    ) {
+        return Err(DomainError::Conflict(format!(
+            "StudentRecord: student {} already has an active record for academic year {}",
+            cmd.student_id, cmd.academic_year_id
+        )));
+    }
+
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+
+    let aggregate = StudentRecord::fresh(
+        cmd.student_record_id,
+        cmd.student_id,
+        cmd.class_id,
+        cmd.section_id,
+        cmd.academic_year_id,
+        cmd.admission_number,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+
+    let event = StudentRecordEnrolled {
+        student_record_id: aggregate.id,
+        student_id: aggregate.student_id,
+        class_id: aggregate.class_id,
+        section_id: aggregate.section_id,
+        academic_year_id: aggregate.academic_year_id,
+        admission_number: aggregate.admission_number.clone(),
+        is_default: aggregate.is_default,
+        event_id,
+        correlation_id: aggregate.correlation_id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Set a roll number on a StudentRecord (I-2 uniqueness enforced by service).
+pub fn set_roll_number<C, G>(
+    cmd: SetRollNumberCommand,
+    record: &mut StudentRecord,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<RollNumberAssigned>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    // I-2: roll number unique within (class, section, academic_year).
+    if uniqueness.roll_no_exists(
+        record.school_id,
+        record.class_id,
+        record.section_id,
+        record.academic_year_id,
+        &cmd.roll_number,
+    ) {
+        return Err(DomainError::Conflict(format!(
+            "RollNumber {} already exists in (class={}, section={}, year={})",
+            cmd.roll_number, record.class_id, record.section_id, record.academic_year_id
+        )));
+    }
+
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    record.set_roll_number(cmd.roll_number.clone(), actor, now);
+
+    Ok(RollNumberAssigned {
+        student_record_id: record.id,
+        roll_number: cmd.roll_number,
+        event_id,
+        correlation_id: record.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Mark a StudentRecord as the student's default (I-3).
+pub fn set_default_record<C, G>(
+    cmd: SetDefaultRecordCommand,
+    record: &mut StudentRecord,
+    clock: &C,
+    ids: &G,
+) -> Result<DefaultRecordSet>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    record.set_default(actor, now);
+
+    Ok(DefaultRecordSet {
+        student_record_id: record.id,
+        event_id,
+        correlation_id: record.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Mark a StudentRecord as graduated (I-5).
+pub fn mark_graduate<C, G>(
+    cmd: MarkGraduateCommand,
+    record: &mut StudentRecord,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentMarkedGraduate>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    record.mark_graduate(actor, now);
+
+    Ok(StudentMarkedGraduate {
+        student_record_id: record.id,
+        event_id,
+        correlation_id: record.correlation_id,
+        occurred_at: now,
+    })
+}
+
+// =============================================================================
+// StudentPromotion services (Wave 57: full impl)
+// =============================================================================
+
+/// Record a [`RealStudentPromotion`] and emit a [`StudentPromoted`] event.
+///
+/// Per `docs/specs/academic/aggregates.md` § StudentPromotion:
+/// - **I-1**: from and to `StudentRecord`s are both required and distinct.
+/// - **I-2**: result_status must be Pass, Fail, or Manual (validated via enum).
+/// - **I-3**: aggregate is immutable once written (no mutator service exposed).
+pub fn record_student_promotion_aggregate<C, G>(
+    id: StudentPromotionId,
+    student_id: StudentId,
+    from_student_record_id: StudentRecordId,
+    to_student_record_id: StudentRecordId,
+    from_academic_year_id: AcademicYearId,
+    to_academic_year_id: AcademicYearId,
+    from_class_id: ClassId,
+    from_section_id: SectionId,
+    to_class_id: ClassId,
+    to_section_id: SectionId,
+    from_roll_number: Option<String>,
+    to_roll_number: String,
+    result_status: ResultStatus,
+    promotion_date: chrono::NaiveDate,
+    actor: UserId,
+    clock: &C,
+    _ids: &G,
+) -> Result<(RealStudentPromotion, StudentPromoted)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let correlation_id = CorrelationId::from_uuid(uuid::Uuid::now_v7());
+    let event_id = EventId::from_uuid(uuid::Uuid::now_v7());
+
+    let aggregate = RealStudentPromotion::fresh(
+        id,
+        student_id,
+        from_student_record_id,
+        to_student_record_id,
+        from_academic_year_id,
+        to_academic_year_id,
+        from_class_id,
+        from_section_id,
+        to_class_id,
+        to_section_id,
+        from_roll_number.clone(),
+        to_roll_number.clone(),
+        result_status,
+        promotion_date,
+        actor,
+        now,
+        correlation_id,
+    )?;
+
+    let event = StudentPromoted::new(
+        student_id,
+        from_class_id,
+        from_section_id,
+        to_class_id,
+        to_section_id,
+        from_academic_year_id,
+        to_academic_year_id,
+        to_roll_number.clone(),
+        result_status,
+        event_id,
+        correlation_id,
+        now,
+    );
+
+    Ok((aggregate, event))
+}
+
+// =============================================================================
+// StudentCategory services (Wave 58: full impl)
+// =============================================================================
+
+/// Create a [`RealStudentCategory`] and emit a `StudentCategoryCreated` event.
+///
+/// Per `docs/specs/academic/aggregates.md` § StudentCategory:
+/// - **I-1**: rejects if `uniqueness.student_category_name_exists(...)` is `true`.
+pub fn create_student_category_aggregate<C, G>(
+    cmd: RealCreateStudentCategoryCommand,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<(RealStudentCategory, RealStudentCategoryCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    if uniqueness.student_category_name_exists(cmd.student_category_id.school_id(), &cmd.name) {
+        return Err(DomainError::Conflict(format!(
+            "StudentCategory name {:?} already exists in school", cmd.name
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    let aggregate = RealStudentCategory::fresh(
+        cmd.student_category_id,
+        cmd.name,
+        cmd.description,
+        cmd.discount_percent,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    let event = RealStudentCategoryCreated {
+        student_category_id: aggregate.id,
+        name: aggregate.name.clone(),
+        description: aggregate.description.clone(),
+        discount_percent: aggregate.discount_percent,
+        event_id,
+        correlation_id: aggregate.correlation_id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Update a [`RealStudentCategory`] and emit a `StudentCategoryUpdated` event.
+pub fn update_student_category<C, G>(
+    cmd: UpdateStudentCategoryCommand,
+    category: &mut RealStudentCategory,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentCategoryUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    category.update(cmd.name, cmd.description, cmd.discount_percent, actor, now)?;
+    Ok(StudentCategoryUpdated {
+        student_category_id: category.id,
+        name: Some(category.name.clone()),
+        description: Some(category.description.clone()),
+        discount_percent: Some(category.discount_percent),
+        event_id,
+        correlation_id: category.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Soft-delete a [`RealStudentCategory`].
+pub fn delete_student_category<C, G>(
+    _cmd: DeleteStudentCategoryCommand,
+    category: &mut RealStudentCategory,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentCategoryDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = _cmd.tenant.actor_id;
+    category.delete(actor, now);
+    Ok(StudentCategoryDeleted {
+        student_category_id: category.id,
+        event_id,
+        correlation_id: category.correlation_id,
+        occurred_at: now,
+    })
+}
+
+// =============================================================================
+// StudentGroup services (Wave 59: full impl)
+// =============================================================================
+
+/// Create a [`RealStudentGroup`] and emit a `RealStudentGroupCreated` event.
+///
+/// Per `docs/specs/academic/aggregates.md` § StudentGroup:
+/// - **I-1**: rejects if `uniqueness.student_group_name_exists(...)` is `true`.
+pub fn create_student_group_aggregate<C, G>(
+    cmd: RealCreateStudentGroupCommand,
+    clock: &C,
+    ids: &G,
+    uniqueness: &dyn UniquenessChecker,
+) -> Result<(RealStudentGroup, RealStudentGroupCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    if uniqueness.student_group_name_exists(cmd.student_group_id.school_id(), &cmd.name) {
+        return Err(DomainError::Conflict(format!(
+            "StudentGroup name {:?} already exists in school", cmd.name
+        )));
+    }
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    let aggregate = RealStudentGroup::fresh(
+        cmd.student_group_id,
+        cmd.name,
+        cmd.description,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    let event = RealStudentGroupCreated {
+        student_group_id: aggregate.id,
+        name: aggregate.name.clone(),
+        description: aggregate.description.clone(),
+        event_id,
+        correlation_id: aggregate.correlation_id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Update a [`RealStudentGroup`] and emit a `StudentGroupUpdated` event.
+pub fn update_student_group<C, G>(
+    cmd: UpdateStudentGroupCommand,
+    group: &mut RealStudentGroup,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentGroupUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    group.update(cmd.name, cmd.description, actor, now)?;
+    Ok(StudentGroupUpdated {
+        student_group_id: group.id,
+        name: Some(group.name.clone()),
+        description: Some(group.description.clone()),
+        event_id,
+        correlation_id: group.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Add a student to a group (I-2: idempotent).
+pub fn add_student_to_group<C, G>(
+    cmd: AddStudentToGroupCommand,
+    group: &mut RealStudentGroup,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentAddedToGroup>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    group.add_student(cmd.student_id, actor, now);
+    Ok(StudentAddedToGroup {
+        student_group_id: group.id,
+        student_id: cmd.student_id,
+        event_id,
+        correlation_id: group.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Remove a student from a group (I-2: idempotent).
+pub fn remove_student_from_group<C, G>(
+    cmd: RemoveStudentFromGroupCommand,
+    group: &mut RealStudentGroup,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentRemovedFromGroup>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    group.remove_student(&cmd.student_id, actor, now);
+    Ok(StudentRemovedFromGroup {
+        student_group_id: group.id,
+        student_id: cmd.student_id,
+        event_id,
+        correlation_id: group.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Soft-delete a [`RealStudentGroup`].
+pub fn delete_student_group<C, G>(
+    _cmd: DeleteStudentGroupCommand,
+    group: &mut RealStudentGroup,
+    clock: &C,
+    ids: &G,
+) -> Result<StudentGroupDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = _cmd.tenant.actor_id;
+    group.delete(actor, now);
+    Ok(StudentGroupDeleted {
+        student_group_id: group.id,
+        event_id,
+        correlation_id: group.correlation_id,
+        occurred_at: now,
+    })
+}
+
+// =============================================================================
+// RegistrationField services (Wave 60: full impl)
+// =============================================================================
+
+/// Create a [`RealRegistrationField`] and emit a [`RealRegistrationFieldCreated`] event.
+pub fn create_registration_field_aggregate<C, G>(
+    cmd: RealCreateRegistrationFieldCommand,
+    clock: &C,
+    ids: &G,
+) -> Result<(RealRegistrationField, RealRegistrationFieldCreated)>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    let aggregate = RealRegistrationField::fresh(
+        cmd.registration_field_id,
+        cmd.field_name,
+        cmd.label_name,
+        cmd.field_type,
+        cmd.is_required,
+        cmd.is_visible,
+        cmd.is_editable,
+        cmd.admin_section,
+        cmd.display_order,
+        actor,
+        now,
+        cmd.tenant.correlation_id,
+    )?;
+    let event = RealRegistrationFieldCreated {
+        registration_field_id: aggregate.id,
+        field_name: aggregate.field_name.clone(),
+        label_name: aggregate.label_name.clone(),
+        field_type: aggregate.field_type,
+        is_required: aggregate.is_required,
+        is_visible: aggregate.is_visible,
+        is_editable: aggregate.is_editable,
+        admin_section: aggregate.admin_section,
+        display_order: aggregate.display_order,
+        event_id,
+        correlation_id: aggregate.correlation_id,
+        occurred_at: now,
+    };
+    Ok((aggregate, event))
+}
+
+/// Update a [`RealRegistrationField`] and emit a [`RegistrationFieldUpdated`] event.
+pub fn update_registration_field<C, G>(
+    cmd: UpdateRegistrationFieldCommand,
+    field: &mut RealRegistrationField,
+    clock: &C,
+    ids: &G,
+) -> Result<RegistrationFieldUpdated>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = cmd.tenant.actor_id;
+    field.update(
+        cmd.label_name,
+        cmd.is_required,
+        cmd.is_visible,
+        cmd.is_editable,
+        cmd.admin_section,
+        cmd.display_order,
+        actor,
+        now,
+    );
+    Ok(RegistrationFieldUpdated {
+        registration_field_id: field.id,
+        label_name: Some(field.label_name.clone()),
+        is_required: Some(field.is_required),
+        is_visible: Some(field.is_visible),
+        is_editable: Some(field.is_editable),
+        admin_section: Some(field.admin_section),
+        display_order: Some(field.display_order),
+        event_id,
+        correlation_id: field.correlation_id,
+        occurred_at: now,
+    })
+}
+
+/// Soft-delete a [`RealRegistrationField`].
+pub fn delete_registration_field<C, G>(
+    _cmd: DeleteRegistrationFieldCommand,
+    field: &mut RealRegistrationField,
+    clock: &C,
+    ids: &G,
+) -> Result<RegistrationFieldDeleted>
+where
+    C: Clock + ?Sized,
+    G: IdGenerator + ?Sized,
+{
+    let now = clock.now();
+    let event_id = fresh_event_id(ids);
+    let actor = _cmd.tenant.actor_id;
+    field.delete(actor, now);
+    Ok(RegistrationFieldDeleted {
+        registration_field_id: field.id,
+        event_id,
+        correlation_id: field.correlation_id,
+        occurred_at: now,
+    })
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
@@ -4255,574 +4826,4 @@ mod tests {
         assert_eq!(event.changed_fields, vec!["first_name".to_owned()]);
         assert_eq!(student.first_name, "Augusta Ada");
     }
-}
-
-// =============================================================================
-// StudentRecord services (Wave 56: full impl)
-// =============================================================================
-
-/// Enroll a student in a (class, section, academic_year).
-///
-/// Per `docs/specs/academic/aggregates.md` § StudentRecord:
-/// - **I-1**: rejects if `uniqueness.student_has_active_record(...)` is `true`.
-pub fn enroll_student<C, G>(
-    cmd: EnrollStudentCommand,
-    clock: &C,
-    ids: &G,
-    uniqueness: &dyn UniquenessChecker,
-) -> Result<(StudentRecord, StudentRecordEnrolled)>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    // I-1: at most one non-graduate, non-withdrawn record per student per year.
-    if uniqueness.student_has_active_record(
-        cmd.student_record_id.school_id(),
-        cmd.student_id,
-        cmd.academic_year_id,
-    ) {
-        return Err(DomainError::Conflict(format!(
-            "StudentRecord: student {} already has an active record for academic year {}",
-            cmd.student_id, cmd.academic_year_id
-        )));
-    }
-
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = cmd.tenant.actor_id;
-
-    let aggregate = StudentRecord::fresh(
-        cmd.student_record_id,
-        cmd.student_id,
-        cmd.class_id,
-        cmd.section_id,
-        cmd.academic_year_id,
-        cmd.admission_number,
-        actor,
-        now,
-        cmd.tenant.correlation_id,
-    )?;
-
-    let event = StudentRecordEnrolled {
-        student_record_id: aggregate.id,
-        student_id: aggregate.student_id,
-        class_id: aggregate.class_id,
-        section_id: aggregate.section_id,
-        academic_year_id: aggregate.academic_year_id,
-        admission_number: aggregate.admission_number.clone(),
-        is_default: aggregate.is_default,
-        event_id,
-        correlation_id: aggregate.correlation_id,
-        occurred_at: now,
-    };
-    Ok((aggregate, event))
-}
-
-/// Set a roll number on a StudentRecord (I-2 uniqueness enforced by service).
-pub fn set_roll_number<C, G>(
-    cmd: SetRollNumberCommand,
-    record: &mut StudentRecord,
-    clock: &C,
-    ids: &G,
-    uniqueness: &dyn UniquenessChecker,
-) -> Result<RollNumberAssigned>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    // I-2: roll number unique within (class, section, academic_year).
-    if uniqueness.roll_no_exists(
-        record.school_id,
-        record.class_id,
-        record.section_id,
-        record.academic_year_id,
-        &cmd.roll_number,
-    ) {
-        return Err(DomainError::Conflict(format!(
-            "RollNumber {} already exists in (class={}, section={}, year={})",
-            cmd.roll_number, record.class_id, record.section_id, record.academic_year_id
-        )));
-    }
-
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = cmd.tenant.actor_id;
-    record.set_roll_number(cmd.roll_number.clone(), actor, now);
-
-    Ok(RollNumberAssigned {
-        student_record_id: record.id,
-        roll_number: cmd.roll_number,
-        event_id,
-        correlation_id: record.correlation_id,
-        occurred_at: now,
-    })
-}
-
-/// Mark a StudentRecord as the student's default (I-3).
-pub fn set_default_record<C, G>(
-    cmd: SetDefaultRecordCommand,
-    record: &mut StudentRecord,
-    clock: &C,
-    ids: &G,
-) -> Result<DefaultRecordSet>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = cmd.tenant.actor_id;
-    record.set_default(actor, now);
-
-    Ok(DefaultRecordSet {
-        student_record_id: record.id,
-        event_id,
-        correlation_id: record.correlation_id,
-        occurred_at: now,
-    })
-}
-
-/// Mark a StudentRecord as graduated (I-5).
-pub fn mark_graduate<C, G>(
-    cmd: MarkGraduateCommand,
-    record: &mut StudentRecord,
-    clock: &C,
-    ids: &G,
-) -> Result<StudentMarkedGraduate>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = cmd.tenant.actor_id;
-    record.mark_graduate(actor, now);
-
-    Ok(StudentMarkedGraduate {
-        student_record_id: record.id,
-        event_id,
-        correlation_id: record.correlation_id,
-        occurred_at: now,
-    })
-}
-
-// =============================================================================
-// StudentPromotion services (Wave 57: full impl)
-// =============================================================================
-
-/// Record a [`RealStudentPromotion`] and emit a [`StudentPromoted`] event.
-///
-/// Per `docs/specs/academic/aggregates.md` § StudentPromotion:
-/// - **I-1**: from and to `StudentRecord`s are both required and distinct.
-/// - **I-2**: result_status must be Pass, Fail, or Manual (validated via enum).
-/// - **I-3**: aggregate is immutable once written (no mutator service exposed).
-pub fn record_student_promotion_aggregate<C, G>(
-    id: StudentPromotionId,
-    student_id: StudentId,
-    from_student_record_id: StudentRecordId,
-    to_student_record_id: StudentRecordId,
-    from_academic_year_id: AcademicYearId,
-    to_academic_year_id: AcademicYearId,
-    from_class_id: ClassId,
-    from_section_id: SectionId,
-    to_class_id: ClassId,
-    to_section_id: SectionId,
-    from_roll_number: Option<String>,
-    to_roll_number: String,
-    result_status: ResultStatus,
-    promotion_date: chrono::NaiveDate,
-    actor: UserId,
-    clock: &C,
-    _ids: &G,
-) -> Result<(RealStudentPromotion, StudentPromoted)>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let now = clock.now();
-    let correlation_id = CorrelationId::from_uuid(uuid::Uuid::now_v7());
-    let event_id = EventId::from_uuid(uuid::Uuid::now_v7());
-
-    let aggregate = RealStudentPromotion::fresh(
-        id,
-        student_id,
-        from_student_record_id,
-        to_student_record_id,
-        from_academic_year_id,
-        to_academic_year_id,
-        from_class_id,
-        from_section_id,
-        to_class_id,
-        to_section_id,
-        from_roll_number.clone(),
-        to_roll_number.clone(),
-        result_status,
-        promotion_date,
-        actor,
-        now,
-        correlation_id,
-    )?;
-
-    let event = StudentPromoted::new(
-        student_id,
-        from_class_id,
-        from_section_id,
-        to_class_id,
-        to_section_id,
-        from_academic_year_id,
-        to_academic_year_id,
-        to_roll_number.clone(),
-        result_status,
-        event_id,
-        correlation_id,
-        now,
-    );
-
-    Ok((aggregate, event))
-}
-
-// =============================================================================
-// StudentCategory services (Wave 58: full impl)
-// =============================================================================
-
-/// Create a [`RealStudentCategory`] and emit a `StudentCategoryCreated` event.
-///
-/// Per `docs/specs/academic/aggregates.md` § StudentCategory:
-/// - **I-1**: rejects if `uniqueness.student_category_name_exists(...)` is `true`.
-pub fn create_student_category_aggregate<C, G>(
-    cmd: RealCreateStudentCategoryCommand,
-    clock: &C,
-    ids: &G,
-    uniqueness: &dyn UniquenessChecker,
-) -> Result<(RealStudentCategory, RealStudentCategoryCreated)>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    if uniqueness.student_category_name_exists(cmd.student_category_id.school_id(), &cmd.name) {
-        return Err(DomainError::Conflict(format!(
-            "StudentCategory name {:?} already exists in school", cmd.name
-        )));
-    }
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = cmd.tenant.actor_id;
-    let aggregate = RealStudentCategory::fresh(
-        cmd.student_category_id,
-        cmd.name,
-        cmd.description,
-        cmd.discount_percent,
-        actor,
-        now,
-        cmd.tenant.correlation_id,
-    )?;
-    let event = RealStudentCategoryCreated {
-        student_category_id: aggregate.id,
-        name: aggregate.name.clone(),
-        description: aggregate.description.clone(),
-        discount_percent: aggregate.discount_percent,
-        event_id,
-        correlation_id: aggregate.correlation_id,
-        occurred_at: now,
-    };
-    Ok((aggregate, event))
-}
-
-/// Update a [`RealStudentCategory`] and emit a `StudentCategoryUpdated` event.
-pub fn update_student_category<C, G>(
-    cmd: UpdateStudentCategoryCommand,
-    category: &mut RealStudentCategory,
-    clock: &C,
-    ids: &G,
-) -> Result<StudentCategoryUpdated>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = cmd.tenant.actor_id;
-    category.update(cmd.name, cmd.description, cmd.discount_percent, actor, now)?;
-    Ok(StudentCategoryUpdated {
-        student_category_id: category.id,
-        name: Some(category.name.clone()),
-        description: Some(category.description.clone()),
-        discount_percent: Some(category.discount_percent),
-        event_id,
-        correlation_id: category.correlation_id,
-        occurred_at: now,
-    })
-}
-
-/// Soft-delete a [`RealStudentCategory`].
-pub fn delete_student_category<C, G>(
-    _cmd: DeleteStudentCategoryCommand,
-    category: &mut RealStudentCategory,
-    clock: &C,
-    ids: &G,
-) -> Result<StudentCategoryDeleted>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = _cmd.tenant.actor_id;
-    category.delete(actor, now);
-    Ok(StudentCategoryDeleted {
-        student_category_id: category.id,
-        event_id,
-        correlation_id: category.correlation_id,
-        occurred_at: now,
-    })
-}
-
-// =============================================================================
-// StudentGroup services (Wave 59: full impl)
-// =============================================================================
-
-/// Create a [`RealStudentGroup`] and emit a `RealStudentGroupCreated` event.
-///
-/// Per `docs/specs/academic/aggregates.md` § StudentGroup:
-/// - **I-1**: rejects if `uniqueness.student_group_name_exists(...)` is `true`.
-pub fn create_student_group_aggregate<C, G>(
-    cmd: RealCreateStudentGroupCommand,
-    clock: &C,
-    ids: &G,
-    uniqueness: &dyn UniquenessChecker,
-) -> Result<(RealStudentGroup, RealStudentGroupCreated)>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    if uniqueness.student_group_name_exists(cmd.student_group_id.school_id(), &cmd.name) {
-        return Err(DomainError::Conflict(format!(
-            "StudentGroup name {:?} already exists in school", cmd.name
-        )));
-    }
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = cmd.tenant.actor_id;
-    let aggregate = RealStudentGroup::fresh(
-        cmd.student_group_id,
-        cmd.name,
-        cmd.description,
-        actor,
-        now,
-        cmd.tenant.correlation_id,
-    )?;
-    let event = RealStudentGroupCreated {
-        student_group_id: aggregate.id,
-        name: aggregate.name.clone(),
-        description: aggregate.description.clone(),
-        event_id,
-        correlation_id: aggregate.correlation_id,
-        occurred_at: now,
-    };
-    Ok((aggregate, event))
-}
-
-/// Update a [`RealStudentGroup`] and emit a `StudentGroupUpdated` event.
-pub fn update_student_group<C, G>(
-    cmd: UpdateStudentGroupCommand,
-    group: &mut RealStudentGroup,
-    clock: &C,
-    ids: &G,
-) -> Result<StudentGroupUpdated>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = cmd.tenant.actor_id;
-    group.update(cmd.name, cmd.description, actor, now)?;
-    Ok(StudentGroupUpdated {
-        student_group_id: group.id,
-        name: Some(group.name.clone()),
-        description: Some(group.description.clone()),
-        event_id,
-        correlation_id: group.correlation_id,
-        occurred_at: now,
-    })
-}
-
-/// Add a student to a group (I-2: idempotent).
-pub fn add_student_to_group<C, G>(
-    cmd: AddStudentToGroupCommand,
-    group: &mut RealStudentGroup,
-    clock: &C,
-    ids: &G,
-) -> Result<StudentAddedToGroup>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = cmd.tenant.actor_id;
-    group.add_student(cmd.student_id, actor, now);
-    Ok(StudentAddedToGroup {
-        student_group_id: group.id,
-        student_id: cmd.student_id,
-        event_id,
-        correlation_id: group.correlation_id,
-        occurred_at: now,
-    })
-}
-
-/// Remove a student from a group (I-2: idempotent).
-pub fn remove_student_from_group<C, G>(
-    cmd: RemoveStudentFromGroupCommand,
-    group: &mut RealStudentGroup,
-    clock: &C,
-    ids: &G,
-) -> Result<StudentRemovedFromGroup>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = cmd.tenant.actor_id;
-    group.remove_student(&cmd.student_id, actor, now);
-    Ok(StudentRemovedFromGroup {
-        student_group_id: group.id,
-        student_id: cmd.student_id,
-        event_id,
-        correlation_id: group.correlation_id,
-        occurred_at: now,
-    })
-}
-
-/// Soft-delete a [`RealStudentGroup`].
-pub fn delete_student_group<C, G>(
-    _cmd: DeleteStudentGroupCommand,
-    group: &mut RealStudentGroup,
-    clock: &C,
-    ids: &G,
-) -> Result<StudentGroupDeleted>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = _cmd.tenant.actor_id;
-    group.delete(actor, now);
-    Ok(StudentGroupDeleted {
-        student_group_id: group.id,
-        event_id,
-        correlation_id: group.correlation_id,
-        occurred_at: now,
-    })
-}
-
-// =============================================================================
-// RegistrationField services (Wave 60: full impl)
-// =============================================================================
-
-/// Create a [`RealRegistrationField`] and emit a [`RealRegistrationFieldCreated`] event.
-pub fn create_registration_field_aggregate<C, G>(
-    cmd: RealCreateRegistrationFieldCommand,
-    clock: &C,
-    ids: &G,
-) -> Result<(RealRegistrationField, RealRegistrationFieldCreated)>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = cmd.tenant.actor_id;
-    let aggregate = RealRegistrationField::fresh(
-        cmd.registration_field_id,
-        cmd.field_name,
-        cmd.label_name,
-        cmd.field_type,
-        cmd.is_required,
-        cmd.is_visible,
-        cmd.is_editable,
-        cmd.admin_section,
-        cmd.display_order,
-        actor,
-        now,
-        cmd.tenant.correlation_id,
-    )?;
-    let event = RealRegistrationFieldCreated {
-        registration_field_id: aggregate.id,
-        field_name: aggregate.field_name.clone(),
-        label_name: aggregate.label_name.clone(),
-        field_type: aggregate.field_type,
-        is_required: aggregate.is_required,
-        is_visible: aggregate.is_visible,
-        is_editable: aggregate.is_editable,
-        admin_section: aggregate.admin_section,
-        display_order: aggregate.display_order,
-        event_id,
-        correlation_id: aggregate.correlation_id,
-        occurred_at: now,
-    };
-    Ok((aggregate, event))
-}
-
-/// Update a [`RealRegistrationField`] and emit a [`RegistrationFieldUpdated`] event.
-pub fn update_registration_field<C, G>(
-    cmd: UpdateRegistrationFieldCommand,
-    field: &mut RealRegistrationField,
-    clock: &C,
-    ids: &G,
-) -> Result<RegistrationFieldUpdated>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = cmd.tenant.actor_id;
-    field.update(
-        cmd.label_name,
-        cmd.is_required,
-        cmd.is_visible,
-        cmd.is_editable,
-        cmd.admin_section,
-        cmd.display_order,
-        actor,
-        now,
-    );
-    Ok(RegistrationFieldUpdated {
-        registration_field_id: field.id,
-        label_name: Some(field.label_name.clone()),
-        is_required: Some(field.is_required),
-        is_visible: Some(field.is_visible),
-        is_editable: Some(field.is_editable),
-        admin_section: Some(field.admin_section),
-        display_order: Some(field.display_order),
-        event_id,
-        correlation_id: field.correlation_id,
-        occurred_at: now,
-    })
-}
-
-/// Soft-delete a [`RealRegistrationField`].
-pub fn delete_registration_field<C, G>(
-    _cmd: DeleteRegistrationFieldCommand,
-    field: &mut RealRegistrationField,
-    clock: &C,
-    ids: &G,
-) -> Result<RegistrationFieldDeleted>
-where
-    C: Clock + ?Sized,
-    G: IdGenerator + ?Sized,
-{
-    let now = clock.now();
-    let event_id = fresh_event_id(ids);
-    let actor = _cmd.tenant.actor_id;
-    field.delete(actor, now);
-    Ok(RegistrationFieldDeleted {
-        registration_field_id: field.id,
-        event_id,
-        correlation_id: field.correlation_id,
-        occurred_at: now,
-    })
 }
