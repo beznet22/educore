@@ -915,7 +915,6 @@ impl ClassSection {
     /// `class_id.school_id()`, `section_id.school_id()`, or
     /// `academic_year_id.school_id()`.
     #[allow(clippy::too_many_arguments)]
-    #[must_use]
     pub fn fresh(
         id: ClassSectionId,
         class_id: ClassId,
@@ -2307,50 +2306,6 @@ impl RealLesson {
         self.version = self.version.next();
     }
 }
-/// Real aggregate (Wave 220 upgrade from academic_aggregate_stub!).
-/// A topic within a lesson, trackable through a syllabus.
-    /// See `docs/specs/academic/aggregates.md` § LessonTopic.
-    pub struct LessonTopic {
-    /// The typed id.
-    pub id: LessonTopicId,
-    /// The owning school (tenant anchor).
-    pub school_id: SchoolId,
-    /// Active status (Active | Retired).
-    pub active_status: ActiveStatus,
-    /// Monotonic version for optimistic concurrency.
-    pub version: Version,
-    /// Entity tag for change detection.
-    pub etag: Etag,
-    /// When the aggregate was first created.
-    pub created_at: Timestamp,
-    /// When the aggregate was last mutated.
-    pub updated_at: Timestamp,
-    /// User who created the aggregate.
-    pub created_by: UserId,
-    /// User who last mutated the aggregate.
-    pub updated_by: UserId,
-    /// Correlation id for trace propagation.
-    pub correlation_id: CorrelationId,
-    /// Last event id emitted.
-    pub last_event_id: Option<EventId>,
-}
-
-impl LessonTopic {
-    /// Returns `true` if the aggregate is currently active.
-    #[must_use]
-    pub fn is_active(&self) -> bool {
-        self.active_status.is_active()
-    }
-
-    /// Soft-deletes the aggregate (sets `active_status = Retired`).
-    pub fn retire(&mut self, at: Timestamp, actor: UserId) {
-        self.active_status = ActiveStatus::Retired;
-        self.updated_at = at;
-        self.updated_by = actor;
-        self.version = self.version.next();
-    }
-}
-
 // ---- Real LessonTopic aggregate (Wave 55) ----------------------------------
 //
 // Per `docs/specs/academic/aggregates.md` § LessonTopic:

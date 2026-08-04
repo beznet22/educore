@@ -1501,15 +1501,6 @@ impl fmt::Display for ResultStatus {
 // tenant-scoped metadata.
 // =============================================================================
 
-/// A typed id for an uploaded file (an attachment) referenced
-/// from an aggregate (e.g. a homework's attached worksheet).
-///
-/// Per `docs/specs/academic/aggregates.md` § Homework § I-4,
-/// a homework may have an attached file. The `FileId` is
-/// opaque to the academic crate; the storage-adapter layer
-/// resolves it to a blob in the documents domain. The
-/// academic crate uses the typed id only for tenant scoping
-/// and event payload identity.
 academic_typed_id! {
     /// A typed id for a file attachment (e.g. homework
     /// worksheet, syllabus PDF).

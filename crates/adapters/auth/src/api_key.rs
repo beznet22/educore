@@ -29,6 +29,8 @@
 use async_trait::async_trait;
 
 use hmac::{Hmac, Mac};
+
+use crate::errors::InfrastructureError;
 use sha2::Sha256;
 
 use crate::errors::AuthError;
@@ -113,22 +115,27 @@ impl ApiKeyAuthProvider {
     /// Returns `true` iff the presented key matches the stored
     /// secret. Uses HMAC-SHA256 over a fixed label and a
     /// constant-time digest comparison.
-    fn verify_key(&self, presented: &str) -> bool {
-        let stored = hmac_digest(self.secret.as_bytes());
-        let given = hmac_digest(presented.as_bytes());
-        constant_time_eq(&stored, &given)
+    fn verify_key(&self, presented: &str) -> Result<bool, AuthError> {
+        let stored = hmac_digest(self.secret.as_bytes())?;
+        let given = hmac_digest(presented.as_bytes())?;
+        Ok(constant_time_eq(&stored, &given))
     }
 }
 
 /// Computes the HMAC-SHA256 digest of `key` over
 /// [`APIKEY_HMAC_LABEL`].
-fn hmac_digest(key: &[u8]) -> [u8; 32] {
-    let mut mac = <HmacSha256 as Mac>::new_from_slice(key).expect("HMAC accepts any key length");
+///
+/// Returns [`AuthError::Infrastructure`] only if the HMAC
+/// key length is rejected (which the `hmac` crate reserves
+/// for future algorithm modes; SHA-256 accepts any length).
+fn hmac_digest(key: &[u8]) -> Result<[u8; 32], AuthError> {
+    let mut mac = <HmacSha256 as Mac>::new_from_slice(key)
+        .map_err(|e| AuthError::Infrastructure(InfrastructureError::from_boxed(Box::new(e))))?;
     mac.update(APIKEY_HMAC_LABEL);
     let result = mac.finalize().into_bytes();
     let mut out = [0u8; 32];
     out.copy_from_slice(&result);
-    out
+    Ok(out)
 }
 
 /// Constant-time byte-slice equality. Returns `false` on length
@@ -152,7 +159,7 @@ impl AuthProvider for ApiKeyAuthProvider {
                 if id != self.key_id {
                     return Err(AuthError::InvalidCredentials);
                 }
-                if !self.verify_key(&key) {
+                if !self.verify_key(&key)? {
                     return Err(AuthError::InvalidCredentials);
                 }
                 // Successful authentication. Mint a session for

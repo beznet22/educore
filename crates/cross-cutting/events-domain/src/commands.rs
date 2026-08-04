@@ -8,7 +8,7 @@
 #![allow(clippy::unwrap_used)]
 
 use chrono::NaiveDate;
-use educore_core::ids::{CorrelationId, Identifier, SchoolId, UserId, PUBLIC_SCHOOL_ID};
+use educore_core::ids::{CorrelationId, SchoolId, UserId};
 use educore_core::tenant::TenantContext;
 use educore_core::ids::IdempotencyKey;
 use educore_core::value_objects::Timestamp;
@@ -488,7 +488,8 @@ fn _ensure_ids_compile(school: SchoolId) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::value_objects::{CalendarStatus, RecurrenceFreq};
+    use crate::value_objects::RecurrenceFreq;
+    use educore_core::ids::{Identifier, PUBLIC_SCHOOL_ID};
 
     #[test]
     fn command_types_have_wire_form() {

@@ -6718,7 +6718,7 @@ mod tests {
     #[test]
     fn capability_domain_matches_aggregate_prefix() {
         for c in Capability::all() {
-            if NAMING_EXCEPTIONS.contains(&c) {
+            if NAMING_EXCEPTIONS.contains(c) {
                 continue;
             }
 
@@ -6731,7 +6731,7 @@ mod tests {
     #[test]
     fn capability_action_matches_third_segment() {
         for c in Capability::all() {
-            if NAMING_EXCEPTIONS.contains(&c) {
+            if NAMING_EXCEPTIONS.contains(c) {
                 continue;
             }
 

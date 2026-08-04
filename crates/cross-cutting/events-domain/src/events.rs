@@ -8,7 +8,7 @@
 #![allow(missing_docs)]
 
 use chrono::NaiveDate;
-use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
+use educore_core::ids::{CorrelationId, EventId, SchoolId, UserId};
 use educore_core::value_objects::Timestamp;
 use educore_events::domain_event::DomainEvent;
 use serde::{Deserialize, Serialize};
@@ -1289,7 +1289,6 @@ impl DomainEvent for WeekendDeleted {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn all_event_wire_forms_resolve() {

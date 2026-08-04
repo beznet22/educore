@@ -49,7 +49,7 @@ pub mod entities;
 pub mod errors;
 pub mod events;
 mod query;
-mod repository;
+pub mod repository;
 pub mod services;
 pub mod value_objects;
 
@@ -102,7 +102,7 @@ pub use crate::services::{
     admit_student, dispatch_admit_student, assign_class_room, assign_class_teacher, assign_optional_subject,
     assign_subject_teacher, assign_subject_to_class, close_academic_year, copy_academic_year,
     create_academic_year, create_certificate_aggregate, create_class, create_class_routine,
-    create_class_section, create_class_subject, create_homework, create_id_card_aggregate, create_lesson,
+    create_class_section, create_homework, create_id_card_aggregate, create_lesson,
     create_lesson_plan, create_lesson_topic, create_registration_field_aggregate, create_section,
     create_student_category_aggregate, create_student_group, create_subject, delete_class,
     delete_class_routine, delete_class_section, delete_section, delete_subject, graduate_student,
@@ -117,11 +117,8 @@ pub use crate::services::{
 
 // ---- Per-aggregate repository port traits -----------------------------------
 
-/// The 5 repository port traits.
-pub use crate::repository::{
-    AcademicYearRepository, ClassRepository, SectionRepository, StudentRepository,
-    SubjectRepository,
-};
+/// Repository port traits live in `crate::repository` and are
+/// visible to adapter crates via the module path.
 
 // ---- Typed query stubs ------------------------------------------------------
 
@@ -215,15 +212,11 @@ pub mod prelude {
     pub use crate::query::{
         AcademicYearQuery, ClassQuery, SectionQuery, StudentQuery, SubjectQuery,
     };
-    pub use crate::repository::{
-        AcademicYearRepository, ClassRepository, SectionRepository, StudentRepository,
-        SubjectRepository,
-    };
     pub use crate::services::{
         admit_student, assign_class_room, assign_class_teacher, assign_optional_subject,
         assign_subject_teacher, assign_subject_to_class, close_academic_year, copy_academic_year,
         create_academic_year, create_certificate_aggregate, create_class, create_class_routine,
-        create_class_section, create_class_subject, create_homework, create_id_card_aggregate, create_lesson,
+        create_class_section, create_homework, create_id_card_aggregate, create_lesson,
         create_lesson_plan, create_lesson_topic, create_registration_field_aggregate, create_section,
         create_student_category_aggregate, create_student_group, create_subject, delete_class,
         delete_class_routine, delete_class_section, delete_section, delete_subject,

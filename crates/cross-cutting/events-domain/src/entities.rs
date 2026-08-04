@@ -15,7 +15,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use educore_core::ids::{Identifier, SchoolId};
+use educore_core::ids::SchoolId;
 use educore_core::value_objects::Timestamp;
 
 use crate::value_objects::{

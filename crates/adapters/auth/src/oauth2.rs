@@ -145,10 +145,10 @@ impl OAuth2Config {
 /// Wraps a [`JwtAuthProvider`] so that, once authorization-code
 /// + PKCE exchange ships, the post-callback [`Session`] can be
 /// minted as a JWT and surfaced through the same
-/// `Authorization: Bearer ...` plumbing the rest of the engine
-/// uses. Until then, only `Credential::Oauth2` is intentionally
-/// rejected; everything else (Bearer token validation, refresh,
-/// revocation) is forwarded to the wrapped provider.
+///   `Authorization: Bearer ...` plumbing the rest of the engine
+///   uses. Until then, only `Credential::Oauth2` is intentionally
+///   rejected; everything else (Bearer token validation, refresh,
+///   revocation) is forwarded to the wrapped provider.
 ///
 /// Construct with [`OAuth2AuthProvider::new`] and the provider
 /// is wired into the engine at startup alongside the other

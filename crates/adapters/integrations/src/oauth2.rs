@@ -478,8 +478,8 @@ mod tests {
     use educore_core::ids::{CorrelationId, Identifier, SchoolId, UserId};
     use educore_core::tenant::{Locale, TenantContext, TimeZone, UserType};
 
-    fn school_id(byte: u8) -> SchoolId {
-        // UUIDv7 with the first byte set to `byte` for stable test IDs.
+    fn school_id(_byte: u8) -> SchoolId {
+        // UUIDv7 for stable test IDs.
         SchoolId::from_uuid(uuid::Uuid::now_v7())
     }
 

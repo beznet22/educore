@@ -324,9 +324,8 @@ impl WeekendService {
 mod tests {
     use super::*;
     use crate::value_objects::{IncidentAction, RecurrenceFreq, WeekendId};
-    use chrono::Datelike;
-    use educore_core::ids::{CorrelationId, Identifier, SchoolId, UserId};
-    use educore_core::value_objects::{Etag, Timestamp, Version};
+    use educore_core::ids::{Identifier, SchoolId, UserId};
+    use educore_core::value_objects::Timestamp;
 
     #[test]
     fn calendar_service_in_range() {

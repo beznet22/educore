@@ -40,7 +40,7 @@ use educore_core::ids::{CorrelationId, EventId, Identifier, SchoolId, UserId};
 use educore_core::tenant::{TenantContext, UserType};
 use educore_core::value_objects::ActiveStatus;
 use educore_dispatcher::CommandDispatcher;
-use educore_events::domain_event::DomainEvent;
+
 
 use crate::aggregate::{
     AcademicYear, Class, ClassRoutine, ClassSection, ClassSubject, Guardian, Homework, OptionalSubjectAssignment, RealCertificate, RealIdCard, RealLesson, RealLessonPlan,
@@ -92,7 +92,7 @@ use crate::events::{
     SubjectTeacherAssigned, SubjectUnassigned, TeacherReassigned,
 };
 use crate::value_objects::{
-    AcademicYearId, AcademicYearRange, ClassId, ClassSectionId, CompletedStatus, HomeworkStatus, ResultStatus, SectionId, StudentGuardianLinkId, StudentId,
+    AcademicYearId, AcademicYearRange, ClassId, CompletedStatus, HomeworkStatus, ResultStatus, SectionId, StudentGuardianLinkId, StudentId,
     StudentPromotionId, StudentRecordId,
     StudentStatus, SubTopic,
 };
@@ -3226,7 +3226,7 @@ where
 /// Create a [`RealStudentCategory`] and emit a [`RealStudentCategoryCreated`] event.
 /// (Old stub `create_student_category` removed in Wave 58; replaced by
 /// `create_student_category_aggregate` below.)
-
+///
 /// Create a [`StudentGroup`] and emit a [`StudentGroupCreated`] event.
 pub fn create_student_group<C, G>(
     cmd: CreateStudentGroupCommand,
@@ -3257,7 +3257,7 @@ where
 }
 
 /// Create a [`RealRegistrationField`] (Wave 60 replacement).
-
+///
 /// Create a [`RealCertificate`] and emit a [`RealCertificateCreated`] event.
 pub fn create_certificate_aggregate<C, G>(
     cmd: RealCreateCertificateCommand,
@@ -3501,7 +3501,7 @@ mod tests {
         WithdrawStudentCommand,
     };
     use crate::value_objects::{
-        AcademicYearId, ClassId, ResultStatus, SectionId, StudentId, SubjectId,
+        AcademicYearId, ClassId, ClassSectionId, ResultStatus, SectionId, StudentId, SubjectId,
     };
     use educore_core::clock::{DeterministicIdGen, IdGenerator, SystemIdGen, TestClock};
     use educore_core::ids::Identifier;

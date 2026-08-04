@@ -571,7 +571,7 @@ impl JwtAuthProvider {
     /// public school (services are not anchored to a single
     /// tenant) and carries no roles.
     #[allow(dead_code)] // Used by crate::api_key::ApiKeyAuthProvider; see PORT-AUTH-APIKEY
-    pub(crate) fn mint_session_for_service(&self, service_id: &str) -> Result<Session, AuthError> {
+    pub(crate) fn mint_session_for_service(&self, service_id: &str) -> Session {
         let now = Timestamp::now();
         let exp = Timestamp::from_datetime(
             Utc.timestamp_opt(now.as_datetime().timestamp() + self.access_ttl_secs, 0)
@@ -582,7 +582,7 @@ impl JwtAuthProvider {
         // identifier — stable per service across processes.
         let service_user_id =
             UserId::from_uuid(Uuid::new_v5(&Uuid::NAMESPACE_OID, service_id.as_bytes()));
-        Ok(Session {
+        Session {
             session_id: SessionId::from_uuid(Uuid::now_v7()),
             user_id: service_user_id,
             school_ids: vec![PUBLIC_SCHOOL_ID],
@@ -593,7 +593,7 @@ impl JwtAuthProvider {
             issued_at: now,
             expires_at: exp,
             metadata: BTreeMap::new(),
-        })
+        }
     }
 
     /// Locks the revocation set and inserts the given `sid`.
